@@ -31,19 +31,19 @@ import (
 func readRole(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	role, roleDiags := elasticsearch.GetRole(ctx, client, resourceID)
+	result, roleDiags := elasticsearch.GetRole(ctx, client, resourceID)
 	diags.Append(roleDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
 
-	if role == nil {
+	if result == nil {
 		tflog.Warn(ctx, fmt.Sprintf(`Role "%s" not found`, resourceID))
 		return state, false, diags
 	}
 
 	// Convert from API model
-	diags.Append(state.fromAPIModel(ctx, role)...)
+	diags.Append(state.fromAPIModel(ctx, result.Role, result.Global)...)
 	if diags.HasError() {
 		return state, false, diags
 	}

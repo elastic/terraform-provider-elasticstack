@@ -153,7 +153,7 @@ func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T)
 
 	diags := d.fromAPIModel(ctx, &estypes.Role{
 		Description: nil,
-	})
+	}, nil)
 	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)
 
 	require.False(t, d.Description.IsNull())

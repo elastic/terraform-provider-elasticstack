@@ -287,8 +287,10 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*estypes.F
 	return &fieldSecurity, diags
 }
 
-// fromAPIModel converts the API model to the Terraform model
-func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Diagnostics {
+// fromAPIModel converts the API model to the Terraform model. The raw `global`
+// JSON is passed separately because the typed client cannot decode it (see
+// elasticsearch.GetRole / elasticsearch-specification#6377).
+func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role, rawGlobal json.RawMessage) diag.Diagnostics {
 	var diags diag.Diagnostics
 	// Preserve original null values for optional attributes to distinguish between:
 	// - User doesn't set attribute (null) - should remain null even if API returns empty array
@@ -363,13 +365,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 	}
 
 	// Global
-	if role.Global != nil {
-		global, err := json.Marshal(role.Global)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
-			return diags
-		}
-		data.Global = customtypes.NewJSONWithDefaultsValue(string(global), populateGlobalPrivilegesDefaults)
+	if len(rawGlobal) > 0 {
+		data.Global = customtypes.NewJSONWithDefaultsValue(string(rawGlobal), populateGlobalPrivilegesDefaults)
 	} else {
 		data.Global = customtypes.NewJSONWithDefaultsNull(populateGlobalPrivilegesDefaults)
 	}

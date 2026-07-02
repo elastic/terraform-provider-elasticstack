@@ -229,14 +229,14 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	config.ID = types.StringValue(id.String())
 
 	// Call GetRole
-	role, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	result, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
 	diags.Append(roleDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
 
 	// Not-found: return empty ID, keep name, no diagnostics
-	if role == nil {
+	if result == nil {
 		config.ID = types.StringValue("")
 		config.Description = types.StringNull()
 		config.Cluster = types.SetNull(types.StringType)
@@ -250,7 +250,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	}
 
 	// Map API response to model
-	diags.Append(config.fromAPIModel(ctx, role)...)
+	diags.Append(config.fromAPIModel(ctx, result.Role, result.Global)...)
 	if diags.HasError() {
 		return config, diags
 	}
@@ -261,7 +261,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	return config, diags
 }
 
-func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role) diag.Diagnostics {
+func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role, rawGlobal json.RawMessage) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Description
@@ -288,13 +288,8 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	config.RunAs = runAsSet
 
 	// Global
-	if role.Global != nil {
-		globalBytes, err := json.Marshal(role.Global)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
-			return diags
-		}
-		config.Global = jsontypes.NewNormalizedValue(string(globalBytes))
+	if len(rawGlobal) > 0 {
+		config.Global = jsontypes.NewNormalizedValue(string(rawGlobal))
 	} else {
 		config.Global = jsontypes.NewNormalizedNull()
 	}
