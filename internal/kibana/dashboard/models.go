@@ -49,7 +49,16 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	// Map the dashboard data fields
 	m.Title = types.StringValue(data.Data.Title)
 
-	m.Description = typeutils.StringishPointerValue(data.Data.Description)
+	// Description: Kibana 9.5 returns `""` when description is omitted, but the
+	// prior state/plan intent may have been null. Preserve null in that case so
+	// Terraform does not flag a null -> "" inconsistency after apply. An explicit
+	// description = "" set by the practitioner is preserved (REQ-008 / REQ-009).
+	apiDescription := typeutils.StringishPointerValue(data.Data.Description)
+	if apiDescription.ValueString() == "" && m.Description.IsNull() {
+		m.Description = types.StringNull()
+	} else {
+		m.Description = apiDescription
+	}
 
 	// Map time range (preserve prior time_range.mode when GET omits it; see REQ-009)
 	var preservedMode types.String
