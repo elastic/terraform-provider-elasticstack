@@ -48,20 +48,29 @@ func SchemaAttribute() schema.Attribute {
 		BlockName:  "range_slider_control_config",
 		PanelType:  panelType,
 		Required:   true,
-		Attributes: nestedAttributes(),
+		Attributes: NestedAttributes(),
 		ExtraValidators: []validator.Object{
-			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-				AttrNames:     []string{"by_field", "by_esql"},
-				Summary:       "Invalid range_slider_control_config",
-				MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`.",
-				TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`, not both.",
-				Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `range_slider_control_config`.",
-			}),
+			ExactlyOneOfBranchValidator(),
 		},
 	})
 }
 
-func nestedAttributes() map[string]schema.Attribute {
+// ExactlyOneOfBranchValidator enforces that exactly one of `by_field` / `by_esql` is configured
+// inside a block using NestedAttributes(). Shared by the regular panel schema and the pinned-panel
+// control-bar schema.
+func ExactlyOneOfBranchValidator() validator.Object {
+	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{"by_field", "by_esql"},
+		Summary:       "Invalid range_slider_control_config",
+		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`.",
+		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`, not both.",
+		Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `range_slider_control_config`.",
+	})
+}
+
+// NestedAttributes returns the `by_field` / `by_esql` branch attribute map shared by the regular
+// panel schema (SchemaAttribute) and the pinned-panel control-bar schema.
+func NestedAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"by_field": schema.SingleNestedAttribute{
 			MarkdownDescription: "Range slider sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",

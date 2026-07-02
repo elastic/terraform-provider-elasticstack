@@ -51,33 +51,47 @@ func SchemaAttribute() schema.Attribute {
 		BlockName:   "options_list_control_config",
 		PanelType:   panelType,
 		Required:    true,
-		Attributes: map[string]schema.Attribute{
-			optionsListBranchByField: schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",
-				Optional:            true,
-				Attributes:          byFieldAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(optionsListBranchByEsql)),
-				},
-			},
-			optionsListBranchByEsql: schema.SingleNestedAttribute{
-				MarkdownDescription: "Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`.",
-				Optional:            true,
-				Attributes:          byEsqlAttributes(),
-				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(optionsListBranchByField)),
-				},
-			},
-		},
+		Attributes:  NestedAttributes(),
 		ExtraValidators: []validator.Object{
-			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-				AttrNames:     []string{optionsListBranchByField, optionsListBranchByEsql},
-				Summary:       "Invalid options_list_control_config",
-				MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`.",
-				TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`, not both.",
-				Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `options_list_control_config`.",
-			}),
+			ExactlyOneOfBranchValidator(),
 		},
+	})
+}
+
+// NestedAttributes returns the `by_field` / `by_esql` branch attribute map shared by the regular
+// panel schema (SchemaAttribute) and the pinned-panel control-bar schema, which wraps the same
+// branches in its own SingleNestedAttribute with pinned-specific sibling validators.
+func NestedAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		optionsListBranchByField: schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",
+			Optional:            true,
+			Attributes:          byFieldAttributes(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(optionsListBranchByEsql)),
+			},
+		},
+		optionsListBranchByEsql: schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`.",
+			Optional:            true,
+			Attributes:          byEsqlAttributes(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(optionsListBranchByField)),
+			},
+		},
+	}
+}
+
+// ExactlyOneOfBranchValidator enforces that exactly one of `by_field` / `by_esql` is configured
+// inside a block using NestedAttributes(). Shared by the regular panel schema and the pinned-panel
+// control-bar schema.
+func ExactlyOneOfBranchValidator() validator.Object {
+	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{optionsListBranchByField, optionsListBranchByEsql},
+		Summary:       "Invalid options_list_control_config",
+		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`.",
+		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`, not both.",
+		Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `options_list_control_config`.",
 	})
 }
 
