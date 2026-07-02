@@ -22,12 +22,28 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/stretchr/testify/require"
 )
 
-func runMigrateV0ToV1(t *testing.T, raw map[string]any) map[string]any {
+// testResourceSchema builds the schema exactly as terraform-plugin-framework
+// would via the resource's Schema RPC (rather than calling getSchema()
+// directly), so it includes any attributes injected by the entitycore
+// resource envelope (e.g. `timeouts`) that getSchema() alone does not define.
+func testResourceSchema(t *testing.T) rschema.Schema {
+	t.Helper()
+	ctx := context.Background()
+	var resp resource.SchemaResponse
+	newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	return resp.Schema
+}
+
+func runMigrateV0ToV1Resp(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
 	t.Helper()
 
 	rawJSON, err := json.Marshal(raw)
@@ -36,11 +52,51 @@ func runMigrateV0ToV1(t *testing.T, raw map[string]any) map[string]any {
 	req := resource.UpgradeStateRequest{RawState: &tfprotov6.RawState{JSON: rawJSON}}
 	resp := &resource.UpgradeStateResponse{}
 	migrateV0ToV1(context.Background(), req, resp)
+	return resp
+}
+
+func runMigrateV0ToV1(t *testing.T, raw map[string]any) map[string]any {
+	t.Helper()
+
+	resp := runMigrateV0ToV1Resp(t, raw)
 	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
 
 	var got map[string]any
 	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
 	return got
+}
+
+// requireUpgradedStateDecodes proves that the upgraded (v1) state produced by the
+// state upgrader isn't just structurally plausible JSON, but actually decodes
+// cleanly under the *current* (v1) resource schema and populates the resource's
+// Go model — i.e. it exercises the exact consumption path
+// terraform-plugin-framework itself uses after UpgradeState returns
+// (fwserver.upgradeResourceState calls
+// `resp.DynamicValue.Unmarshal(req.ResourceSchema.Type().TerraformType(ctx))`,
+// see server_upgraderesourcestate.go). This is the established pattern for
+// acceptance-adjacent state-upgrade verification elsewhere in this repo (see
+// internal/elasticsearch/index/componenttemplate/state_upgrade_test.go and
+// internal/elasticsearch/index/template/state_upgrade_test.go).
+func requireUpgradedStateDecodes(t *testing.T, resp *resource.UpgradeStateResponse) {
+	t.Helper()
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	require.NotNil(t, resp.DynamicValue)
+	require.NotNil(t, resp.DynamicValue.JSON)
+
+	ctx := context.Background()
+	sch := testResourceSchema(t)
+	tfType := sch.Type().TerraformType(ctx)
+
+	raw, err := resp.DynamicValue.Unmarshal(tfType)
+	require.NoError(t, err, "upgraded state must decode under the v1 resource schema's Terraform type")
+
+	state := tfsdk.State{Schema: sch, Raw: raw}
+	var model models.DashboardModel
+	diags := state.Get(ctx, &model)
+	for _, d := range diags.Errors() {
+		t.Logf("decode diagnostic: %s: %s", d.Summary(), d.Detail())
+	}
+	require.False(t, diags.HasError(), "upgraded state must decode into the resource's Go model")
 }
 
 func TestMigrateV0ToV1_OptionsListControl(t *testing.T) {
@@ -296,6 +352,137 @@ func TestMigrateV0ToV1_PinnedPanelsAndSections(t *testing.T) {
 	sectionByField, ok := sectionCfg["by_field"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "orders-view", sectionByField["data_view_id"])
+}
+
+// TestMigrateV0ToV1_UpgradedStateDecodesUnderV1Schema is the OpenSpec task 8.7
+// "pre-upgrade (v0 flat) state migration" verification. A genuine acceptance
+// test (TF_ACC=1 against a real terraform binary) can't easily seed a
+// resource with a v0 (pre-restructure) state, since acceptance tests always
+// start from an empty state and apply the *current* schema. Instead, this
+// follows the precedent set by this repo's other ResourceWithUpgradeState
+// resources (componenttemplate, template): drive the upgrader directly with a
+// realistic v0 raw state JSON, then prove the resulting v1 state is not just
+// structurally-plausible JSON but actually decodes end-to-end through the
+// exact path terraform-plugin-framework uses in production
+// (DynamicValue.Unmarshal against the v1 schema's Terraform type, followed by
+// tfsdk.State.Get into the resource's Go model). This is stronger than the
+// raw-JSON-shape assertions in the tests above, which only check key
+// relocation.
+func TestMigrateV0ToV1_UpgradedStateDecodesUnderV1Schema(t *testing.T) {
+	t.Parallel()
+
+	raw := map[string]any{
+		"panels": []any{
+			map[string]any{
+				"type": "markdown",
+				"id":   "md-1",
+				"grid": map[string]any{"x": 0.0, "y": 0.0, "w": 12.0, "h": 4.0},
+				"markdown_config": map[string]any{
+					"by_value": map[string]any{
+						"content":  "# Hello",
+						"settings": map[string]any{},
+					},
+				},
+			},
+			map[string]any{
+				"type": panelTypeOptionsListControl,
+				"id":   "ol-1",
+				"grid": map[string]any{"x": 0.0, "y": 4.0, "w": 12.0, "h": 4.0},
+				"options_list_control_config": map[string]any{
+					"data_view_id":       "logs-view",
+					"field_name":         "service.name",
+					"title":              "Service",
+					"use_global_filters": true,
+					"ignore_validations": false,
+					"single_select":      true,
+					"exclude":            false,
+					"exists_selected":    false,
+					"run_past_timeout":   true,
+					"search_technique":   "prefix",
+					"selected_options":   []any{"auth-service"},
+					"display_settings": map[string]any{
+						"placeholder":     "Pick a service",
+						"hide_action_bar": true,
+						"hide_exclude":    false,
+						"hide_exists":     false,
+						"hide_sort":       false,
+					},
+					"sort": map[string]any{
+						"by":        "_count",
+						"direction": "desc",
+					},
+				},
+			},
+			map[string]any{
+				"type": panelTypeRangeSlider,
+				"id":   "rs-1",
+				"grid": map[string]any{"x": 0.0, "y": 8.0, "w": 24.0, "h": 4.0},
+				"range_slider_control_config": map[string]any{
+					"data_view_id":       "orders-view",
+					"field_name":         "price",
+					"title":              "Price",
+					"use_global_filters": true,
+					"ignore_validations": false,
+					"value":              []any{"10", "500"},
+					"step":               5.0,
+				},
+			},
+		},
+		"pinned_panels": []any{
+			map[string]any{
+				"type": panelTypeOptionsListControl,
+				"options_list_control_config": map[string]any{
+					"data_view_id": "pinned-dv",
+					"field_name":   "status",
+				},
+			},
+		},
+		"sections": []any{
+			map[string]any{
+				"id":   "section-1",
+				"grid": map[string]any{"y": 12.0},
+				"panels": []any{
+					map[string]any{
+						"type": panelTypeRangeSlider,
+						"id":   "sectioned-rs-1",
+						"grid": map[string]any{"x": 0.0, "y": 0.0, "w": 24.0, "h": 4.0},
+						"range_slider_control_config": map[string]any{
+							"data_view_id": "orders-view",
+							"field_name":   "price",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	resp := runMigrateV0ToV1Resp(t, raw)
+	requireUpgradedStateDecodes(t, resp)
+
+	// Belt-and-braces: also confirm the decoded model actually carries the
+	// relocated by_field values through to the typed Go struct, not just that
+	// decoding didn't error.
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	panels, ok := got["panels"].([]any)
+	require.True(t, ok)
+	require.Len(t, panels, 3)
+
+	olPanel, ok := panels[1].(map[string]any)
+	require.True(t, ok)
+	olCfg, ok := olPanel["options_list_control_config"].(map[string]any)
+	require.True(t, ok)
+	olByField, ok := olCfg["by_field"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "logs-view", olByField["data_view_id"])
+
+	rsPanel, ok := panels[2].(map[string]any)
+	require.True(t, ok)
+	rsCfg, ok := rsPanel["range_slider_control_config"].(map[string]any)
+	require.True(t, ok)
+	rsByField, ok := rsCfg["by_field"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "orders-view", rsByField["data_view_id"])
 }
 
 func TestUpgradeState_RegistersV0Upgrader(t *testing.T) {
