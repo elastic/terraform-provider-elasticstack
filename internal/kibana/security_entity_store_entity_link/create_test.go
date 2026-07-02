@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package entity
+package security_entity_store_entity_link
 
 import (
 	"context"
@@ -28,6 +28,19 @@ import (
 
 const testPollInterval = 10 * time.Millisecond
 
+func TestClassifyCreateStatus(t *testing.T) {
+	t.Parallel()
+
+	require.Nil(t, classifyCreateStatus(http.StatusOK, nil), "2xx should be non-fatal")
+	require.Nil(t, classifyCreateStatus(http.StatusCreated, nil), "2xx should be non-fatal")
+	require.Nil(t, classifyCreateStatus(http.StatusInternalServerError, nil), "500 should be retriable, not fatal")
+
+	fatal := classifyCreateStatus(http.StatusBadRequest, []byte(`{"error":"bad"}`))
+	require.NotNil(t, fatal, "400 should be fatal")
+	require.True(t, fatal.diagnostics.HasError())
+	require.Error(t, fatal.err)
+}
+
 func TestRetryCreateOnServerError_SucceedsImmediately(t *testing.T) {
 	t.Parallel()
 
@@ -37,7 +50,7 @@ func TestRetryCreateOnServerError_SucceedsImmediately(t *testing.T) {
 		return http.StatusOK, nil, nil
 	}
 
-	diags := retryCreateOnServerError(context.Background(), "entity", "host", attempt, testPollInterval)
+	diags := retryCreateOnServerError(context.Background(), "test", "id", attempt, testPollInterval)
 	require.False(t, diags.HasError())
 	require.Equal(t, 1, calls, "happy path should not enter the retry loop")
 }
@@ -56,7 +69,7 @@ func TestRetryCreateOnServerError_RetriesThenSucceeds(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	diags := retryCreateOnServerError(ctx, "entity", "host", attempt, testPollInterval)
+	diags := retryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
 	require.False(t, diags.HasError())
 	require.Equal(t, 3, calls)
 }
@@ -70,7 +83,7 @@ func TestRetryCreateOnServerError_FailFastOnNon500(t *testing.T) {
 		return http.StatusBadRequest, []byte(`{"error":"bad request"}`), nil
 	}
 
-	diags := retryCreateOnServerError(context.Background(), "entity", "host", attempt, testPollInterval)
+	diags := retryCreateOnServerError(context.Background(), "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Equal(t, 1, calls, "non-500 non-2xx must fail fast without retrying")
 }
@@ -84,7 +97,7 @@ func TestRetryCreateOnServerError_DeadlineWhileStill500(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	diags := retryCreateOnServerError(ctx, "entity", "host", attempt, testPollInterval)
+	diags := retryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Contains(t, diags[0].Detail(), "still installing", "final 500 body should be surfaced")
 }
@@ -98,7 +111,7 @@ func TestRetryCreateOnServerError_TransportErrorFailsFast(t *testing.T) {
 		return 0, nil, context.Canceled
 	}
 
-	diags := retryCreateOnServerError(context.Background(), "entity", "host", attempt, testPollInterval)
+	diags := retryCreateOnServerError(context.Background(), "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Equal(t, 1, calls)
 }

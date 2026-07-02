@@ -34,19 +34,19 @@
 
 ## 3. Provider: retry HTTP 500 in entity-link and entity Create
 
-- [ ] 3.1 Wrap the `POST /api/security/entity_store/resolution/link` call in
+- [x] 3.1 Wrap the `POST /api/security/entity_store/resolution/link` call in
       `internal/kibana/security_entity_store_entity_link/create.go` with
       `asyncutils.WaitForStateTransition` (bounded by the Create `ctx` deadline from the resource
       `timeouts` block; `asyncutils.WithPollInterval` for cadence). The `StateChecker` performs the
       create call and maps the result: HTTP 2xx → `(true, nil)`; HTTP 500 → `(false, nil)` (retry);
       any other non-2xx → `(false, err)` (fail fast). Do NOT introduce a separate wall-clock budget.
-- [ ] 3.2 Apply the same pattern to the entity Create call in
+- [x] 3.2 Apply the same pattern to the entity Create call in
       `internal/kibana/security_entity_store/entity/write.go` (the `POST` that creates an
       entity-store entity, which also hits 500 during store initialization).
-- [ ] 3.3 Reuse the existing `internal/asyncutils` package for both callsites — do NOT create a new
+- [x] 3.3 Reuse the existing `internal/asyncutils` package for both callsites — do NOT create a new
       `retryutil` package. If exponential back-off is genuinely required, add it as a
       `WithBackoff` option to `asyncutils` in a separate change rather than forking a utility.
-- [ ] 3.4 Add unit tests for the `StateChecker` closures: verify 500 maps to retry
+- [x] 3.4 Add unit tests for the `StateChecker` closures: verify 500 maps to retry
       (`false, nil`), non-500 non-2xx maps to fail-fast (`false, err`), and 2xx maps to done
       (`true, nil`). Verify a deadline-expired `ctx` surfaces `ctx.Err()` as an error diagnostic.
 

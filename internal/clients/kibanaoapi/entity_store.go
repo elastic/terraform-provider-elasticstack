@@ -75,6 +75,18 @@ func StopSecurityEntityStore(ctx context.Context, client *Client, spaceID string
 
 // CreateSecurityEntityStoreEntity creates a single entity record.
 func CreateSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceID string, entityType string, body io.Reader) diag.Diagnostics {
+	statusCode, respBody, err := CreateSecurityEntityStoreEntityStatus(ctx, client, spaceID, entityType, body)
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return diagutil.HandleStatusResponse(statusCode, respBody, http.StatusOK)
+}
+
+// CreateSecurityEntityStoreEntityStatus creates a single entity record and
+// returns the raw HTTP status code and response body without collapsing them
+// into diagnostics. This lets callers implement status-specific behavior such
+// as retrying on HTTP 500 while the entity store is still initializing.
+func CreateSecurityEntityStoreEntityStatus(ctx context.Context, client *Client, spaceID string, entityType string, body io.Reader) (int, []byte, error) {
 	resp, err := client.API.PostSecurityEntityStoreEntitiesEntitytypeWithBodyWithResponse(
 		ctx,
 		kbapi.PostSecurityEntityStoreEntitiesEntitytypeParamsEntityType(entityType),
@@ -83,9 +95,9 @@ func CreateSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceI
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+		return 0, nil, err
 	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
+	return resp.StatusCode(), resp.Body, nil
 }
 
 // UpdateSecurityEntityStoreEntity updates a single entity record.
