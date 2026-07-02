@@ -86,8 +86,8 @@
 
 ## 6. Validate and integrate
 
-- [ ] 6.1 Run `make build` to confirm no compilation errors are introduced.
-- [ ] 6.2 Run the entity-store acceptance test suite (without `TF_ACC` matrix requirements but
+- [x] 6.1 Run `make build` to confirm no compilation errors are introduced.
+- [x] 6.2 Run the entity-store acceptance test suite (without `TF_ACC` matrix requirements but
       including a sanity build) using `go test -run 'TestAccResourceKibanaSecurityEntityStore|TestAccDataSourceKibana|TestAccResourceSecurityEntityStoreEntityLink|TestAccDataSourceSecurityEntityStoreResolutionGroup'`
       against a running 9.5 stack to confirm the flakiness is resolved.
-- [ ] 6.3 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate security-entity-store-test-isolation-and-provider-waits --type change` and fix any reported problems.
+- [x] 6.3 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate security-entity-store-test-isolation-and-provider-waits --type change` and fix any reported problems.
