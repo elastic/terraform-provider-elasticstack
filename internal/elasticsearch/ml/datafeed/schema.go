@@ -127,7 +127,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					ml.MLDuration(),
+					ml.Duration(),
 				},
 			},
 			"query_delay": schema.StringAttribute{
@@ -138,7 +138,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					ml.MLDuration(),
+					ml.Duration(),
 				},
 			},
 			"max_empty_searches": schema.Int64Attribute{
@@ -171,7 +171,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringplanmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.String{
-							ml.MLDuration(),
+							ml.Duration(),
 							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName(attrMode), "manual", validators.AllowedIfOptions{}),
 						},
 					},
@@ -197,7 +197,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringplanmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.String{
-							ml.MLDuration(),
+							ml.Duration(),
 						},
 					},
 				},

@@ -32,9 +32,9 @@ const mlDurationMessage = "must be a valid duration (e.g., 15m, 1h)"
 // m (minutes), d (days), h (hours).
 var mlDurationRegexp = regexp.MustCompile(`^\d+[nsumdh]$`)
 
-// MLDuration returns a validator that accepts ML short-duration strings such as
+// Duration returns a validator that accepts ML short-duration strings such as
 // "15m", "1h", "150s". This covers the same format accepted by the bucket_span,
 // frequency, query_delay, chunking time_span, and check_window attributes.
-func MLDuration() validator.String {
+func Duration() validator.String {
 	return stringvalidator.RegexMatches(mlDurationRegexp, mlDurationMessage)
 }

@@ -86,7 +86,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:            true,
 						Optional:            true,
 						Validators: []validator.String{
-							ml.MLDuration(),
+							ml.Duration(),
 						},
 					},
 					"categorization_field_name": schema.StringAttribute{

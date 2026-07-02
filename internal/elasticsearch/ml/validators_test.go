@@ -83,7 +83,7 @@ func TestMLDuration(t *testing.T) {
 		{"1ms", true},
 	}
 
-	v := MLDuration()
+	v := Duration()
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("%q", tc.input), func(t *testing.T) {
 			t.Parallel()
