@@ -19,7 +19,11 @@ package rangeslider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,47 +31,113 @@ import (
 
 const panelType = "range_slider_control"
 
-// SchemaAttribute returns the dashboard panel range_slider_control_config block.
+// esqlValuesSourceUserValue is the only value the Terraform-facing `by_esql.values_source`
+// attribute accepts. It intentionally differs from the Kibana API wire enum value (see
+// kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql, whose wire
+// value is "esql", not "esql_query"). The model layer (api.go) translates between the two so the
+// user-facing attribute stays this stable, descriptive constant while the API payload matches the
+// real wire contract.
+const esqlValuesSourceUserValue = "esql_query"
+
+// SchemaAttribute returns the dashboard panel range_slider_control_config block. Exactly one of the
+// `by_field` (data view field) or `by_esql` (ES|QL query) nested blocks must be set.
 func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
-		Description: "Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field.",
-		BlockName:   "range_slider_control_config",
-		PanelType:   panelType,
-		Required:    true,
-		Attributes: map[string]schema.Attribute{
-			"title": schema.StringAttribute{
-				MarkdownDescription: "A human-readable title for the control.",
-				Optional:            true,
-			},
-			"data_view_id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the data view that the control is tied to.",
-				Required:            true,
-			},
-			"field_name": schema.StringAttribute{
-				MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-				Required:            true,
-			},
-			"use_global_filters": schema.BoolAttribute{
-				MarkdownDescription: "Whether the control respects dashboard-level filters.",
-				Optional:            true,
-			},
-			"ignore_validations": schema.BoolAttribute{
-				MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
-				Optional:            true,
-			},
-			"value": schema.ListAttribute{
-				MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
-				ElementType:         types.StringType,
-				Optional:            true,
-				Validators: []validator.List{
-					listvalidator.SizeAtLeast(2),
-					listvalidator.SizeAtMost(2),
-				},
-			},
-			"step": schema.Float32Attribute{
-				MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
-				Optional:            true,
-			},
+		Description: "Configuration for a range slider control panel. Provides a min/max range filter sourced from " +
+			"either a data view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set.",
+		BlockName:  "range_slider_control_config",
+		PanelType:  panelType,
+		Required:   true,
+		Attributes: nestedAttributes(),
+		ExtraValidators: []validator.Object{
+			validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+				AttrNames:     []string{"by_field", "by_esql"},
+				Summary:       "Invalid range_slider_control_config",
+				MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`.",
+				TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`, not both.",
+				Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `range_slider_control_config`.",
+			}),
 		},
 	})
+}
+
+func nestedAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"by_field": schema.SingleNestedAttribute{
+			MarkdownDescription: "Range slider sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",
+			Optional:            true,
+			Attributes:          byFieldAttributes(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_esql")),
+			},
+		},
+		"by_esql": schema.SingleNestedAttribute{
+			MarkdownDescription: "Range slider sourced from an ES|QL query. Mutually exclusive with `by_field`.",
+			Optional:            true,
+			Attributes:          byEsqlAttributes(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_field")),
+			},
+		},
+	}
+}
+
+// sharedAttributes returns the attributes common to both `by_field` and `by_esql`.
+func sharedAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "A human-readable title for the control.",
+			Optional:            true,
+		},
+		"use_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "Whether the control respects dashboard-level filters.",
+			Optional:            true,
+		},
+		"ignore_validations": schema.BoolAttribute{
+			MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
+			Optional:            true,
+		},
+		"value": schema.ListAttribute{
+			MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
+			ElementType:         types.StringType,
+			Optional:            true,
+			Validators: []validator.List{
+				listvalidator.SizeAtLeast(2),
+				listvalidator.SizeAtMost(2),
+			},
+		},
+		"step": schema.Float32Attribute{
+			MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
+			Optional:            true,
+		},
+	}
+}
+
+func byFieldAttributes() map[string]schema.Attribute {
+	attrs := sharedAttributes()
+	attrs["data_view_id"] = schema.StringAttribute{
+		MarkdownDescription: "The ID of the data view that the control is tied to.",
+		Required:            true,
+	}
+	attrs["field_name"] = schema.StringAttribute{
+		MarkdownDescription: "The name of the field in the data view that the control is tied to.",
+		Required:            true,
+	}
+	return attrs
+}
+
+func byEsqlAttributes() map[string]schema.Attribute {
+	attrs := sharedAttributes()
+	attrs["esql_query"] = schema.StringAttribute{
+		MarkdownDescription: "The ES|QL query that produces the min/max range values.",
+		Required:            true,
+	}
+	attrs["values_source"] = schema.StringAttribute{
+		MarkdownDescription: "The source of the range values. Must be `esql_query`.",
+		Required:            true,
+		Validators: []validator.String{
+			stringvalidator.OneOf(esqlValuesSourceUserValue),
+		},
+	}
+	return attrs
 }
