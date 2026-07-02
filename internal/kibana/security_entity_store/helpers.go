@@ -106,18 +106,6 @@ type entityStoreEngineError struct {
 	Message string `json:"message"`
 }
 
-func stringListPtr(ctx context.Context, list types.List) (*[]string, diag.Diagnostics) {
-	if list.IsNull() || list.IsUnknown() {
-		return nil, nil
-	}
-	var diags diag.Diagnostics
-	result := typeutils.ListTypeToSliceString(ctx, list, path.Empty(), &diags)
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &result, diags
-}
-
 func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEntityStoreInstallJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PostSecurityEntityStoreInstallJSONRequestBody{}
 	entityTypes, diags := expandEntityTypes(ctx, model.EntityTypes)
@@ -206,10 +194,8 @@ func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object)
 	if diags.HasError() {
 		return nil, diags
 	}
-	add, d := stringListPtr(ctx, model.AdditionalIndexPatterns)
-	diags.Append(d...)
-	excl, d := stringListPtr(ctx, model.ExcludedIndexPatterns)
-	diags.Append(d...)
+	add := typeutils.ListTypeToSliceStringPtr(ctx, model.AdditionalIndexPatterns, path.Empty(), &diags)
+	excl := typeutils.ListTypeToSliceStringPtr(ctx, model.ExcludedIndexPatterns, path.Empty(), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}

@@ -936,3 +936,73 @@ func TestSetValueFrom(t *testing.T) {
 		})
 	}
 }
+
+func TestSetTypeToSliceStringPtr(t *testing.T) {
+	t.Parallel()
+
+	stringSetUnk := types.SetUnknown(types.StringType)
+	stringSetNil := types.SetNull(types.StringType)
+	stringSetEmpty := types.SetValueMust(types.StringType, []attr.Value{})
+	stringSetFull := types.SetValueMust(types.StringType, []attr.Value{
+		types.StringValue("v1"),
+		types.StringValue("v2"),
+		types.StringValue("v3"),
+	})
+	want := []string{"v1", "v2", "v3"}
+
+	tests := []struct {
+		name  string
+		input types.Set
+		want  *[]string
+	}{
+		{name: "returns nil for unknown set", input: stringSetUnk, want: nil},
+		{name: "returns nil for null set", input: stringSetNil, want: nil},
+		{name: "returns nil for empty set", input: stringSetEmpty, want: nil},
+		{name: "returns pointer for non-empty set", input: stringSetFull, want: &want},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := typeutils.SetTypeToSliceStringPtr(context.Background(), tt.input, path.Empty(), &diags)
+			require.Empty(t, diags)
+			if tt.want == nil {
+				require.Nil(t, got)
+			} else {
+				require.NotNil(t, got)
+				require.ElementsMatch(t, *tt.want, *got)
+			}
+		})
+	}
+}
+
+func TestListTypeToSliceStringPtr(t *testing.T) {
+	t.Parallel()
+
+	want := []string{"v1", "v2", "v3"}
+
+	tests := []struct {
+		name  string
+		input types.List
+		want  *[]string
+	}{
+		{name: "returns nil for unknown list", input: stringListUnk, want: nil},
+		{name: "returns nil for null list", input: stringListNil, want: nil},
+		{name: "returns pointer for empty list", input: stringListEmpty, want: &[]string{}},
+		{name: "returns pointer for non-empty list", input: stringListFull, want: &want},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := typeutils.ListTypeToSliceStringPtr(context.Background(), tt.input, path.Empty(), &diags)
+			require.Empty(t, diags)
+			if tt.want == nil {
+				require.Nil(t, got)
+			} else {
+				require.NotNil(t, got)
+				require.Equal(t, *tt.want, *got)
+			}
+		})
+	}
+}
