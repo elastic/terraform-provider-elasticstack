@@ -38,15 +38,16 @@ func populateGlobalPrivilegesDefaults(model map[string]any) map[string]any {
 	}
 	out := maps.Clone(model)
 
-	if roleVal, ok := out["role"]; ok {
-		if roleMap, ok := roleVal.(map[string]any); ok && len(roleMap) == 0 {
-			delete(out, "role")
-		}
-	}
-
 	for key, val := range out {
-		if arr, ok := val.([]any); ok && len(arr) == 0 {
-			delete(out, key)
+		switch v := val.(type) {
+		case map[string]any:
+			if key == "role" && len(v) == 0 {
+				delete(out, key)
+			}
+		case []any:
+			if len(v) == 0 {
+				delete(out, key)
+			}
 		}
 	}
 

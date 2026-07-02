@@ -229,14 +229,14 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	config.ID = types.StringValue(id.String())
 
 	// Call GetRole
-	result, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
+	role, roleDiags := elasticsearch.GetRole(ctx, esClient, roleName)
 	diags.Append(roleDiags...)
 	if diags.HasError() {
 		return config, diags
 	}
 
 	// Not-found: return empty ID, keep name, no diagnostics
-	if result == nil {
+	if role == nil {
 		config.ID = types.StringValue("")
 		config.Description = types.StringNull()
 		config.Cluster = types.SetNull(types.StringType)
@@ -250,7 +250,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	}
 
 	// Map API response to model
-	diags.Append(config.fromAPIModel(ctx, result.Role, result.Global)...)
+	diags.Append(config.fromAPIModel(ctx, role)...)
 	if diags.HasError() {
 		return config, diags
 	}
@@ -261,7 +261,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	return config, diags
 }
 
-func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role, rawGlobal json.RawMessage) diag.Diagnostics {
+func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Description
@@ -288,8 +288,8 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	config.RunAs = runAsSet
 
 	// Global
-	if len(rawGlobal) > 0 {
-		config.Global = jsontypes.NewNormalizedValue(string(rawGlobal))
+	if len(role.Global) > 0 {
+		config.Global = jsontypes.NewNormalizedValue(string(role.Global))
 	} else {
 		config.Global = jsontypes.NewNormalizedNull()
 	}

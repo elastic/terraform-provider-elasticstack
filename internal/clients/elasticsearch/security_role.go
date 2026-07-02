@@ -18,32 +18,46 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// RoleWithRawGlobal carries the typed role fields alongside the raw `global`
-// JSON. The `global` field is kept as raw JSON because the go-elasticsearch
-// typed client declares Role.Global as map[string]map[string]map[string][]string,
-// which cannot decode heterogeneous per-category shapes such as the
-// "data_source": [] array introduced in Elasticsearch 9.5.
-// Upstream tracking: elasticsearch-specification#6377.
-type RoleWithRawGlobal struct {
-	Role   *types.Role
-	Global json.RawMessage
+// Role is the provider's own representation of an Elasticsearch role
+// document, used instead of the go-elasticsearch typed client's types.Role.
+// It mirrors types.Role's JSON shape field-for-field, except `Global` is
+// declared as raw JSON instead of the typed client's
+// map[string]map[string]map[string][]string. types.Role has a hand-written
+// UnmarshalJSON that decodes `global` eagerly into that fixed shape and fails
+// on heterogeneous per-category values such as the "data_source": [] array
+// introduced in Elasticsearch 9.5 (upstream: elasticsearch-specification#6377).
+// Role has no custom UnmarshalJSON/MarshalJSON of its own, so the ordinary
+// reflection-based encoder/decoder applies to `global` regardless of shape.
+//
+// Keep this in sync with types.Role if a go-elasticsearch upgrade adds,
+// removes, or renames fields.
+type Role struct {
+	Applications      []types.ApplicationPrivileges       `json:"applications"`
+	Cluster           []clusterprivilege.ClusterPrivilege `json:"cluster"`
+	Description       *string                             `json:"description,omitempty"`
+	Global            json.RawMessage                     `json:"global,omitempty"`
+	Indices           []types.IndicesPrivileges           `json:"indices"`
+	Metadata          types.Metadata                      `json:"metadata"`
+	RemoteCluster     []types.RemoteClusterPrivileges     `json:"remote_cluster,omitempty"`
+	RemoteIndices     []types.RemoteIndicesPrivileges     `json:"remote_indices,omitempty"`
+	RoleTemplates     []types.RoleTemplate                `json:"role_templates,omitempty"`
+	RunAs             []string                            `json:"run_as,omitempty"`
+	TransientMetadata map[string]json.RawMessage          `json:"transient_metadata,omitempty"`
 }
 
-func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *types.Role) fwdiag.Diagnostics {
+func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *Role) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Security.PutRole(name)
@@ -54,12 +68,8 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 		req.Description(*role.Description)
 	}
 	if role.Global != nil {
-		globalJSON, err := json.Marshal(role.Global)
-		if err != nil {
-			return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to marshal global privileges", err.Error())}
-		}
 		var global map[string]json.RawMessage
-		if err := json.Unmarshal(globalJSON, &global); err != nil {
+		if err := json.Unmarshal(role.Global, &global); err != nil {
 			return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to convert global privileges", err.Error())}
 		}
 		req.Global(global)
@@ -78,17 +88,15 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 // GetRole fetches a role via a raw GET /_security/role/<name> transport call
-// rather than the typed Security.GetRole client. This bypasses the typed
-// client's Role.Global decode, which fails on heterogeneous per-category
-// shapes such as the "data_source": [] array introduced in Elasticsearch 9.5
-// (upstream: elasticsearch-specification#6377). The raw `global` JSON is
-// extracted before the remaining fields are decoded into the typed types.Role,
-// and is carried back to the caller out-of-band via RoleWithRawGlobal.
-func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*RoleWithRawGlobal, fwdiag.Diagnostics) {
+// rather than the typed Security.GetRole client, decoding the response
+// directly into Role. This bypasses the typed client's Role.Global decode,
+// which fails on heterogeneous per-category shapes such as the
+// "data_source": [] array introduced in Elasticsearch 9.5
+// (upstream: elasticsearch-specification#6377).
+func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*Role, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	path := fmt.Sprintf("/_security/role/%s", url.PathEscape(rolename))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, nil)
+	req, err := typedClient.Security.GetRole().Name(rolename).HttpRequest(ctx)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
@@ -105,10 +113,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	if httpRes.StatusCode >= 400 {
 		body, _ := io.ReadAll(httpRes.Body)
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
-			"Unable to get a role",
-			fmt.Sprintf("status: %d, body: %s", httpRes.StatusCode, string(body)),
-		)}
+		return nil, diagutil.ReportUnknownHTTPError(httpRes.StatusCode, body)
 	}
 
 	var roles map[string]json.RawMessage
@@ -121,33 +126,18 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 		return nil, nil
 	}
 
-	// Split the per-role entry into its fields so we can extract `global` as
-	// raw JSON and decode everything else into the typed struct.
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(rawRole, &fields); err != nil {
+	var role Role
+	if err := json.Unmarshal(rawRole, &role); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-
-	rawGlobal := fields["global"]
-	delete(fields, "global")
 
 	// Treat an explicit JSON null the same as an absent global so state is
 	// stored as null rather than the literal string "null".
-	if bytes.Equal(rawGlobal, []byte("null")) {
-		rawGlobal = nil
+	if string(role.Global) == "null" {
+		role.Global = nil
 	}
 
-	remainder, err := json.Marshal(fields)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	var role types.Role
-	if err := json.Unmarshal(remainder, &role); err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return &RoleWithRawGlobal{Role: &role, Global: rawGlobal}, nil
+	return &role, nil
 }
 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) fwdiag.Diagnostics {

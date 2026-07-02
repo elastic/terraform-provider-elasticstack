@@ -21,27 +21,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-// newMockElasticsearchServerForRole returns an httptest.Server that responds to
-// the security role GET API, always advertising the Elasticsearch product
-// header and answering the transport product-check on `/`.
-func newMockElasticsearchServerForRole(t *testing.T, handler http.HandlerFunc) *httptest.Server {
-	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Elastic-Product", "Elasticsearch")
-		if r.Method == http.MethodGet && r.URL.Path == "/" {
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"cluster_uuid":"test-cluster","version":{"number":"9.5.0","build_flavor":"default"}}`)
-			return
-		}
-		handler(w, r)
-	}))
-}
 
 func TestGetRole(t *testing.T) {
 	t.Parallel()
@@ -53,7 +36,7 @@ func TestGetRole(t *testing.T) {
 		handler      http.HandlerFunc
 		wantNil      bool
 		wantErr      bool
-		assertResult func(t *testing.T, result *RoleWithRawGlobal)
+		assertResult func(t *testing.T, result *Role)
 	}{
 		{
 			name: "not found returns nil without error",
@@ -93,12 +76,11 @@ func TestGetRole(t *testing.T) {
 					"global":{"data_source":[],"application":{}}
 				}}`)
 			},
-			assertResult: func(t *testing.T, result *RoleWithRawGlobal) {
+			assertResult: func(t *testing.T, result *Role) {
 				require.NotNil(t, result)
-				require.NotNil(t, result.Role)
 				require.JSONEq(t, `{"data_source":[],"application":{}}`, string(result.Global))
-				require.Len(t, result.Role.Cluster, 1)
-				require.Equal(t, "all", result.Role.Cluster[0].Name)
+				require.Len(t, result.Cluster, 1)
+				require.Equal(t, "all", result.Cluster[0].Name)
 			},
 		},
 		{
@@ -107,7 +89,7 @@ func TestGetRole(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{"test-role":{"cluster":["all"],"global":null}}`)
 			},
-			assertResult: func(t *testing.T, result *RoleWithRawGlobal) {
+			assertResult: func(t *testing.T, result *Role) {
 				require.NotNil(t, result)
 				require.Nil(t, result.Global)
 			},
@@ -118,11 +100,11 @@ func TestGetRole(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{"test-role":{"cluster":["all"]}}`)
 			},
-			assertResult: func(t *testing.T, result *RoleWithRawGlobal) {
+			assertResult: func(t *testing.T, result *Role) {
 				require.NotNil(t, result)
 				require.Nil(t, result.Global)
-				require.Len(t, result.Role.Cluster, 1)
-				require.Equal(t, "all", result.Role.Cluster[0].Name)
+				require.Len(t, result.Cluster, 1)
+				require.Equal(t, "all", result.Cluster[0].Name)
 			},
 		},
 	}
@@ -130,7 +112,7 @@ func TestGetRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			srv := newMockElasticsearchServerForRole(t, tt.handler)
+			srv := newMockElasticsearchServer(t, tt.handler)
 			defer srv.Close()
 
 			apiClient := newMockScopedClient(t, srv)
