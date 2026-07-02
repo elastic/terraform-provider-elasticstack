@@ -323,10 +323,18 @@ func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 				MarkdownDescription: "Agent condition expression to evaluate whether to apply this input.",
 			},
 			policyshape.AttrVars: schema.StringAttribute{
-				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
-				Sensitive:           varsAreSensitive,
-				MarkdownDescription: "Input-level variables as JSON.",
+				Computed:   true,
+				Optional:   true,
+				CustomType: jsontypes.NormalizedType{},
+				Sensitive:  varsAreSensitive,
+				MarkdownDescription: "Input-level variables as JSON. Computed (not purely Optional): some packages " +
+					"(e.g. cloud_security_posture/CSPM) populate informational input-level vars " +
+					"(such as CloudFormation quick-create template URLs) that are always present in the API " +
+					"response regardless of configuration; Computed with UseStateForUnknown lets those flow " +
+					"through without requiring the user to declare them.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			policyshape.AttrStreams: schema.MapNestedAttribute{
 				Optional:            true,

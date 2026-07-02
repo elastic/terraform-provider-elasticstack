@@ -37,6 +37,61 @@ type InputValue struct {
 	basetypes.ObjectValue
 }
 
+// inputModelSansDefaults mirrors InputModel but omits the Defaults field, for
+// InputType configurations that don't declare a `defaults` attribute at all
+// (e.g. the elasticstack_fleet_agentless_policy resource's InputType --
+// see internal/fleet/agentlesspolicy/schema.go's
+// agentlessInputAttributeTypes, which deliberately excludes `defaults`
+// because agentless policies don't surface package-defaults introspection).
+//
+// terraform-plugin-framework's ObjectValue.As() requires an exact
+// field/attribute match: a target struct field with no corresponding object
+// attribute produces a "Value Conversion Error: mismatch between struct and
+// object: Struct defines fields not found in object: defaults" hard error.
+// InputModel unconditionally declares `defaults`, so it cannot be used to
+// decode an InputValue whose object type has no such attribute -- this
+// struct is the fallback for that case. See decodeInputModel, which picks
+// between the two based on whether `defaults` is actually present.
+type inputModelSansDefaults struct {
+	Enabled   types.Bool           `tfsdk:"enabled"`
+	Condition types.String         `tfsdk:"condition"`
+	Vars      jsontypes.Normalized `tfsdk:"vars"`
+	Streams   types.Map            `tfsdk:"streams"`
+}
+
+// toInputModel widens m into an InputModel with a null Defaults, so all of
+// this file's existing defaults-aware logic (applyDefaultsToInput,
+// EnabledByDefault's typeutils.IsKnown(input.Defaults) check, etc.) treats a
+// schema with no `defaults` attribute exactly like one where `defaults` is
+// present but was left unset -- both already correctly no-op the
+// defaults-merging step.
+func (m inputModelSansDefaults) toInputModel() InputModel {
+	return InputModel{
+		Enabled:   m.Enabled,
+		Condition: m.Condition,
+		Vars:      m.Vars,
+		Defaults:  types.ObjectNull(InputDefaultsAttributeTypes()),
+		Streams:   m.Streams,
+	}
+}
+
+// decodeInputModel decodes v into an InputModel, tolerating InputType
+// configurations that don't declare a `defaults` attribute (see
+// inputModelSansDefaults). This is the shared entry point EnabledByDefault,
+// MaybeEnabled, and ObjectSemanticEquals use instead of calling v.As(ctx,
+// &InputModel{}, ...) directly, so none of them hard-fail against the
+// agentless_policy resource's defaults-less InputType.
+func decodeInputModel(ctx context.Context, v InputValue, opts basetypes.ObjectAsOptions) (InputModel, diag.Diagnostics) {
+	if _, ok := v.AttributeTypes(ctx)[AttrDefaults]; !ok {
+		var m inputModelSansDefaults
+		diags := v.As(ctx, &m, opts)
+		return m.toInputModel(), diags
+	}
+	var m InputModel
+	diags := v.As(ctx, &m, opts)
+	return m, diags
+}
+
 // Type returns an InputType.
 func (v InputValue) Type(ctx context.Context) attr.Type {
 	return NewInputType(v.AttributeTypes(ctx))
@@ -56,8 +111,7 @@ func (v InputValue) EnabledByDefault(ctx context.Context) (bool, diag.Diagnostic
 		return false, nil
 	}
 
-	var input InputModel
-	diags := v.As(ctx, &input, basetypes.ObjectAsOptions{})
+	input, diags := decodeInputModel(ctx, v, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return false, diags
 	}
@@ -88,8 +142,7 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 		return false, nil
 	}
 
-	var input InputModel
-	diags := v.As(ctx, &input, basetypes.ObjectAsOptions{})
+	input, diags := decodeInputModel(ctx, v, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return false, diags
 	}
@@ -139,8 +192,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 	}
 
 	// Convert both values to the model
-	var oldInput InputModel
-	d := v.As(ctx, &oldInput, basetypes.ObjectAsOptions{
+	oldInput, d := decodeInputModel(ctx, v, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty:    true,
 		UnhandledUnknownAsEmpty: true,
 	})
@@ -149,8 +201,7 @@ func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basety
 		return false, diags
 	}
 
-	var newInput InputModel
-	d = newValue.As(ctx, &newInput, basetypes.ObjectAsOptions{
+	newInput, d := decodeInputModel(ctx, newValue, basetypes.ObjectAsOptions{
 		UnhandledNullAsEmpty:    true,
 		UnhandledUnknownAsEmpty: true,
 	})

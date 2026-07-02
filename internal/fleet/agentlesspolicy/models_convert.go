@@ -283,11 +283,60 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 	return v
 }
 
+// inputsKnownKeySet captures the set of keys of inputs's map value, or nil if
+// inputs is not Known (null or unknown) -- see populateInputsModel's knownKeys
+// parameter for how this is used to filter an API response before it
+// overwrites the very model this was read from.
+func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
+	if !typeutils.IsKnown(inputs.MapValue) {
+		return nil
+	}
+	keys := make(map[string]struct{}, len(inputs.Elements()))
+	for k := range inputs.Elements() {
+		keys[k] = struct{}{}
+	}
+	return keys
+}
+
 // populateInputsModel builds the `inputs` map attribute from decoded wire
 // inputs (see decodeMappedInputs), shared by populateFromCreateResponse and
 // populateFromPackagePolicy so the conversion is only written once despite
 // the two API response shapes.
-func populateInputsModel(ctx context.Context, wireInputs map[string]mappedInputWire, diags *diag.Diagnostics) policyshape.InputsValue {
+//
+// knownKeys filters wireInputs down to the given key set before decoding, or
+// performs no filtering at all when nil. This works around a real behavior
+// of both the POST /api/fleet/agentless_policies response and the
+// package_policies GET/PUT (?format=simplified) response for
+// multi-policy-template packages such as cloud_security_posture (CSPM):
+// empirically (see the fleet-agentless-policy OpenSpec change's Task 8
+// acceptance-test work), both responses include an entry for *every* input
+// declared by the package across *all* of its policy templates (e.g. CSPM's
+// kspm-cloudbeat/cis_k8s, kspm-cloudbeat/cis_eks, cspm-cloudbeat/cis_gcp,
+// cspm-cloudbeat/cis_azure, and vuln_mgmt-cloudbeat/vuln_mgmt_aws all appear
+// disabled, in addition to whichever single input the config actually
+// enables), not just the input(s) the policy_template/config selected. The
+// `inputs` schema attribute is Optional+Computed (schema.go), so when config
+// sets a known, explicit inputs map (e.g. one entry), Terraform requires the
+// applied state to contain *exactly* those keys -- the framework hard-fails
+// with "Provider produced inconsistent result after apply: .inputs: new
+// element ... has appeared" otherwise. Filtering the response down to the
+// caller-supplied knownKeys (the model's own Inputs map value captured
+// *before* this function overwrites it -- the plan's value on Create, or the
+// prior model's value on Read/Update) makes state mirror what was actually
+// planned. When inputs is unset entirely (Unknown on Create, or Known from
+// prior state on Read/Update), knownKeys is nil and no filtering happens,
+// preserving the widest-possible-response behavior for that case.
+func populateInputsModel(ctx context.Context, wireInputs map[string]mappedInputWire, knownKeys map[string]struct{}, diags *diag.Diagnostics) policyshape.InputsValue {
+	if knownKeys != nil {
+		filtered := make(map[string]mappedInputWire, len(knownKeys))
+		for k := range knownKeys {
+			if wire, ok := wireInputs[k]; ok {
+				filtered[k] = wire
+			}
+		}
+		wireInputs = filtered
+	}
+
 	if len(wireInputs) == 0 {
 		return policyshape.NewInputsNull(agentlessInputType())
 	}
@@ -573,11 +622,12 @@ func (m *agentlessPolicyModel) populateFromCreateResponse(ctx context.Context, s
 		m.GlobalDataTags = globalDataTagsToModel(ctx, tagsWire, &diags)
 	}
 
+	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
 	inputsWire, err := decodeMappedInputs(item.Inputs)
 	if err != nil {
 		diags.AddError("Failed to decode inputs from the create response", err.Error())
 	} else {
-		m.Inputs = populateInputsModel(ctx, inputsWire, &diags)
+		m.Inputs = populateInputsModel(ctx, inputsWire, inputsKnownKeys, &diags)
 	}
 
 	return diags
@@ -663,11 +713,12 @@ func (m *agentlessPolicyModel) populateFromPackagePolicy(ctx context.Context, sp
 	if err != nil {
 		mappedInputs = kbapi.PackagePolicyMappedInputs{}
 	}
+	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
 	inputsWire, err := decodeMappedInputs(mappedInputs)
 	if err != nil {
 		diags.AddError("Failed to decode inputs", err.Error())
 	} else {
-		m.Inputs = populateInputsModel(ctx, inputsWire, &diags)
+		m.Inputs = populateInputsModel(ctx, inputsWire, inputsKnownKeys, &diags)
 	}
 
 	return diags
