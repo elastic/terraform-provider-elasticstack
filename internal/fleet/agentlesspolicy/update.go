@@ -238,6 +238,44 @@ func mergeVarsInto[V any](dst **V, planVars map[string]any, diags *diag.Diagnost
 	}
 }
 
+// onlyCreateOnlyFlagsChanged reports whether prior and plan are identical in
+// every attribute except create_dataset_templates, force, and force_delete.
+// Those three are create/delete-request-only knobs -- never part of the
+// Fleet API's read response, and deliberately not RequiresReplace (see
+// spec.md's "Schema attributes" requirement and this file's
+// updateAgentlessPolicy) -- so a config change confined to them carries no
+// information the API needs to see, and per spec.md's "Create" requirement
+// changing them "SHALL NOT make any API call". Comparing every other field
+// (rather than allowlisting "the fields Update actually sends") is
+// deliberately conservative: if anything else in the model also drifted --
+// including drift entitycore/Terraform itself wouldn't have produced, such
+// as a concurrent out-of-band edit surfaced by a prior Read -- this returns
+// false and the normal GET+PUT path below runs instead.
+//
+// kibana_connection (ResourceTimeoutsField) and the Timeouts block are
+// intentionally excluded: they are pure provider-side plumbing that is never
+// part of the Fleet request body either, so their presence or absence has no
+// bearing on whether an API call is needed.
+func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
+	return prior.ID.Equal(plan.ID) &&
+		prior.PolicyID.Equal(plan.PolicyID) &&
+		prior.Name.Equal(plan.Name) &&
+		prior.Description.Equal(plan.Description) &&
+		prior.Namespace.Equal(plan.Namespace) &&
+		prior.SpaceIDs.Equal(plan.SpaceIDs) &&
+		prior.Package.Equal(plan.Package) &&
+		prior.PolicyTemplate.Equal(plan.PolicyTemplate) &&
+		prior.VarsJSON.Equal(plan.VarsJSON) &&
+		prior.VarGroupSelections.Equal(plan.VarGroupSelections) &&
+		prior.Inputs.Equal(plan.Inputs) &&
+		prior.CloudConnector.Equal(plan.CloudConnector) &&
+		prior.GlobalDataTags.Equal(plan.GlobalDataTags) &&
+		prior.AdditionalDatastreamsPermissions.Equal(plan.AdditionalDatastreamsPermissions) &&
+		prior.SkipTopologyCheck.Equal(plan.SkipTopologyCheck) &&
+		prior.CreatedAt.Equal(plan.CreatedAt) &&
+		prior.UpdatedAt.Equal(plan.UpdatedAt)
+}
+
 // updateAgentlessPolicy implements Task 5.3 of the fleet-agentless-policy
 // OpenSpec change: calls fleetclient.UpdateAgentlessPolicyViaPackagePolicy
 // (PUT /api/fleet/package_policies/{id}, space-aware) with only the
@@ -264,6 +302,21 @@ func updateAgentlessPolicy(
 ) (entitycore.KibanaWriteResult[agentlessPolicyModel], diag.Diagnostics) {
 	plan := req.Plan
 	var diags diag.Diagnostics
+
+	// spec.md's "Create" requirement ("create_dataset_templates sent only on
+	// create" scenario) and the "Operation flags" schema section are explicit
+	// that create_dataset_templates, force, and force_delete are
+	// create/delete-only knobs that are never read back from the API: a
+	// config-only change to one of them "SHALL NOT make any API call". Since
+	// none of the three is RequiresReplace, Terraform still invokes this
+	// Update callback whenever one changes (it has no way to know the change
+	// is inert), so that guarantee has to be enforced here: if req.Prior
+	// (the prior state) is identical to plan in every attribute *except*
+	// these three, skip the GET+PUT round trip entirely and persist plan
+	// as-is.
+	if req.Prior != nil && onlyCreateOnlyFlagsChanged(*req.Prior, plan) {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
+	}
 
 	fleetClient := client.GetFleetClient()
 
