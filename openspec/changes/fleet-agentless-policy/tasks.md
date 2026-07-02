@@ -101,9 +101,15 @@
 
 ## 10. Validation and cleanup
 
-- [ ] 10.1 Run `make build` — fix any compilation errors
-- [ ] 10.2 Run `make check-lint` — fix any lint issues
-- [ ] 10.3 Run `make check-openspec` — confirm the change validates cleanly
-- [ ] 10.4 Run the full unit test suite for the new packages: `go test ./internal/fleet/agentlesspolicy/... ./internal/clients/fleet/...` plus the shared package
-- [ ] 10.5 Run Phase 1 integration_policy acceptance tests one final time to confirm parity was maintained end-to-end: `go test -v -run TestAcc ./internal/fleet/integration_policy/ -timeout 30m`
-- [ ] 10.6 Self-review with the `requirements-verification` skill against this change's specs
+- [x] 10.1 Run `make build` — fix any compilation errors
+  - Clean, exit 0. No compilation errors.
+- [x] 10.2 Run `make check-lint` — fix any lint issues
+  - Clean: `make check-lint` (setup, `check-openspec`, `golangci-lint-custom`, `check-fmt`, `gen`, `check-docs`) all passed with no diff and no lint findings.
+- [x] 10.3 Run `make check-openspec` — confirm the change validates cleanly
+  - 230 passed, 0 failed.
+- [x] 10.4 Run the full unit test suite for the new packages: `go test ./internal/fleet/agentlesspolicy/... ./internal/clients/fleet/...` plus the shared package
+  - All packages pass (`./internal/fleet/agentlesspolicy/...`, `./internal/clients/fleet/...`, `./internal/fleet/policyshape/...`).
+- [x] 10.5 Run Phase 1 integration_policy acceptance tests one final time to confirm parity was maintained end-to-end: `go test -v -run TestAcc ./internal/fleet/integration_policy/ -timeout 30m`
+  - All pass against the local self-managed `.env` stack (one pre-existing, unrelated version-gated skip: `TestAccResourceIntegrationPolicySecretsFromSDK` requires ES <8.16.0).
+- [x] 10.6 Self-review with the `requirements-verification` skill against this change's specs
+  - Ran across all three specs (fleet-agentless-policy, fleet-integration-policy, fleet-policyshape). 21/22 requirements Met outright; one genuine gap found and fixed: `updateAgentlessPolicy` unconditionally did a GET+PUT round trip even when only `create_dataset_templates`/`force`/`force_delete` changed, contradicting spec.md's "SHALL NOT make any API call" guarantee for that case (these three attributes are not `RequiresReplace`, so Terraform still invokes Update). Fixed via `onlyCreateOnlyFlagsChanged` in `internal/fleet/agentlesspolicy/update.go`, which short-circuits to a state-only write when the diff is confined to those three fields; covered by `TestUpdateAgentlessPolicy_createOnlyFlags` and `TestOnlyCreateOnlyFlagsChanged` in the new `update_test.go`. Also fixed a minor spec-wording overreach (`package.*` forces replacement, when `package.title` is the documented exception) in specs/fleet-agentless-policy/spec.md's "Resource identity and composite ID" requirement. Re-ran `make build`/`make check-lint`/`make check-openspec`/unit tests/both acceptance suites (local integration_policy + live-cloud agentless_policy) after the fix — all still pass.
