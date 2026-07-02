@@ -1,6 +1,6 @@
 ## 1. Define the install-space error sentinel
 
-- [ ] 1.1 In `internal/fleet/integration/delete.go`, define a package-level constant `installSpaceDeleteRejectedMsg` set to `"Impossible to delete kibana assets from the space where the package was installed"` (the substring of the Fleet 9.5 400 message).
+- [ ] 1.1 In `internal/fleet/integration/delete.go`, define a package-level constant `installSpaceDeleteRejectedMsg` set to "space where the package was installed" (a stable substring of the Fleet 9.5 400 message); when matching diagnostics, normalize whitespace/newlines before checking `Contains`.
 
 ## 2. Implement the DeleteKibanaAssets fallback in deleteIntegration
 

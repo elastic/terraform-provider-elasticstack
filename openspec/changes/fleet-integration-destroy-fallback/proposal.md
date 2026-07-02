@@ -22,4 +22,4 @@ A single behavioural change in the `elasticstack_fleet_integration` destroy path
 - **Modified code**: `internal/fleet/integration/delete.go` and/or `internal/clients/fleet/packages.go` — error handling for the 400 install-space rejection.
 - **Test fix**: `TestAccResourceIntegrationSkipDestroy` passes on Fleet 9.5.0-SNAPSHOT CI matrix once the fallback is in place.
 - **No schema change**: no new attributes, no state upgrader, no provider config changes.
-- **Backward compatibility**: the fallback is only triggered by the specific 400 message from Fleet 9.5+. On older Fleet versions this code path is not reached.
+- **Backward compatibility**: the fallback is only triggered by the specific 400 message from Fleet 9.5+. On older Fleet versions this fallback path is not reached.

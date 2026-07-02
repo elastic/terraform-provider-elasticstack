@@ -1,8 +1,8 @@
 ## MODIFIED Requirements
 
-### Requirement: Delete — multi-space destroy SHALL fall back to Uninstall when DeleteKibanaAssets is rejected by the install space (REQ-015-ext)
+### Requirement: Delete — space-aware uninstall (REQ-015) — install-space 400 fallback
 
-This requirement extends REQ-015 (space-aware uninstall). When the Fleet API returns HTTP 400 with a message containing the substring `"Impossible to delete kibana assets from the space where the package was installed"` in response to `DELETE /api/fleet/epm/packages/{pkg}/{version}/kibana_assets`, the resource SHALL NOT surface this as a Terraform error. The resource SHALL instead fall back to calling `fleet.Uninstall` (`DELETE /api/fleet/epm/packages/{name}/{version}`) with the `force` flag from state. The resource SHALL emit a DEBUG log entry before the fallback recording the package name, version, and space ID. All other non-success responses from `DeleteKibanaAssets` SHALL still be surfaced as Terraform diagnostics without triggering the fallback.
+This requirement modifies REQ-015 (space-aware uninstall). When the Fleet API returns HTTP 400 with a message containing the substring "Impossible to delete kibana assets from the space where the package was installed" in response to `DELETE /api/fleet/epm/packages/{pkg}/{version}/kibana_assets`, the resource SHALL NOT surface this as a Terraform error and SHALL instead call `fleet.Uninstall` (`DELETE /api/fleet/epm/packages/{name}/{version}`) with the `force` flag from state (which uninstalls the package globally, since install-space asset-only deletion is not supported). The resource SHALL emit a DEBUG log entry before the fallback recording the package name, version, and space ID. All other non-success responses from `DeleteKibanaAssets` SHALL still be surfaced as Terraform diagnostics without triggering the fallback.
 
 #### Scenario: DeleteKibanaAssets returns install-space 400
 
