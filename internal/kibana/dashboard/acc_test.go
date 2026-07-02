@@ -749,6 +749,7 @@ func TestAccResourceKibanaDashboard_IDChangeTriggersReplace(t *testing.T) {
 // inconsistent result after apply (null -> ""). This test asserts both:
 //   - an explicitly omitted description round-trips as null in state, and
 //   - an explicit description = "" is preserved as "" in state.
+//
 // with no drift on a follow-up plan-only step.
 func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 	dashboardTitle := "Test Dashboard Description Normalization " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)

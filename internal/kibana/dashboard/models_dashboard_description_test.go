@@ -33,7 +33,7 @@ func newDashboardAPIResponse(description *string) *kbapi.GetDashboardsIdResponse
 	return &kbapi.GetDashboardsIdResponse{
 		JSON200: &struct {
 			Data     kbapi.KibanaHTTPAPIsKbnDashboardData                   `json:"data"`
-			Id       string                                                 `json:"id"`
+			Id       string                                                 `json:"id"` //nolint:revive // var-naming: API struct field
 			Meta     kbapi.KibanaHTTPAPIsKbnAsCodeMeta                      `json:"meta"`
 			Warnings *[]kbapi.KibanaHTTPAPIsKbnDashboardDroppedPanelWarning `json:"warnings,omitempty"`
 		}{
