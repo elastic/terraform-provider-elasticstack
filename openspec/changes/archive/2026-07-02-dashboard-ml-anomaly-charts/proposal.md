@@ -14,14 +14,14 @@ The Kibana Dashboard API defines a first-class `ml_anomaly_charts` panel type wh
   - `title`, `description` (optional strings) — panel presentation fields via `PanelPresentationAttributes()`.
   - `hide_title`, `hide_border` (optional booleans) — panel presentation fields via `PanelPresentationAttributes()`.
   - `time_range` (optional object: `from`, `to`, optional `mode`) — reuses `panelkit.TimeRangeSchema`, identical shape to the dashboard root `time_range`.
-- The model layer expands named severities to canonical `{min, max}` API pairs at write time:
+- The model layer expands named severities to canonical `{min, max}` API pairs at write time (matching the generated Kibana OpenAPI const values):
 
 | `severity` value | Expanded API payload |
 |---|---|
-| `low`      | `{min: 0,  max: 2}`  |
-| `warning`  | `{min: 3,  max: 24}` |
-| `minor`    | `{min: 25, max: 49}` |
-| `major`    | `{min: 50, max: 74}` |
+| `low`      | `{min: 0,  max: 3}`  |
+| `warning`  | `{min: 3,  max: 25}` |
+| `minor`    | `{min: 25, max: 50}` |
+| `major`    | `{min: 50, max: 75}` |
 | `critical` | `{min: 75}` (open-ended) |
 
 - On read, the provider preserves the practitioner-chosen form of each `severity_threshold` item — storing the named `severity` when the practitioner configured a named severity, and the raw `min`/`max` when they configured limits — recovered from prior state so a stable configuration produces no plan diff. Normalization to the named form is permitted only on import, where no prior form exists to preserve.
@@ -36,7 +36,7 @@ None.
 
 ### Modified Capabilities
 
-- `kibana-dashboard`: extend the dashboard panel registry with a new `ml_anomaly_charts` panel handler (REQ-047).
+- `kibana-dashboard`: extend the dashboard panel registry with a new `ml_anomaly_charts` panel handler (REQ-053).
 
 ## Impact
 

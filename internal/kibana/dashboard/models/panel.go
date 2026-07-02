@@ -41,6 +41,7 @@ type PanelModel struct {
 	SloAlertsConfig               *SloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
 	DiscoverSessionConfig         *DiscoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
 	MlAnomalySwimlaneConfig       *MlAnomalySwimlaneConfigModel                     `tfsdk:"ml_anomaly_swimlane_config"`
+	MlAnomalyChartsConfig         *MlAnomalyChartsConfigModel                       `tfsdk:"ml_anomaly_charts_config"`
 	MlSingleMetricViewerConfig    *MlSingleMetricViewerConfigModel                  `tfsdk:"ml_single_metric_viewer_config"`
 	ApmServiceMapConfig           *ApmServiceMapConfigModel                         `tfsdk:"apm_service_map_config"`
 	AiopsLogRateAnalysisConfig    *AiopsLogRateAnalysisConfigModel                  `tfsdk:"aiops_log_rate_analysis_config"`

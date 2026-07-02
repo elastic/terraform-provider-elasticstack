@@ -76,6 +76,15 @@ func Int64Pointer(v types.Int64) *int64 {
 	return &val
 }
 
+// Int64ToFloat32Ptr converts a types.Int64 to a *float32, returning nil when null or unknown.
+func Int64ToFloat32Ptr(v types.Int64) *float32 {
+	if p := Int64Pointer(v); p != nil {
+		val := float32(*p)
+		return &val
+	}
+	return nil
+}
+
 // IntPointerToInt64Value converts a *int to a types.Int64, returning types.Int64Null() when the pointer is nil.
 func IntPointerToInt64Value(v *int) types.Int64 {
 	return types.Int64PointerValue(Itol(v))
@@ -87,6 +96,16 @@ func Float32PointerToFloat64Value(v *float32) types.Float64 {
 		return types.Float64Null()
 	}
 	return types.Float64Value(float64(*v))
+}
+
+// Float32PointerToInt64Pointer converts a *float32 to a *int64, truncating any fractional part.
+// Intended for numeric API fields that represent whole-number counts (e.g. a maximum series/points-to-plot value).
+func Float32PointerToInt64Pointer(v *float32) *int64 {
+	if v == nil {
+		return nil
+	}
+	val := int64(*v)
+	return &val
 }
 
 // NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,

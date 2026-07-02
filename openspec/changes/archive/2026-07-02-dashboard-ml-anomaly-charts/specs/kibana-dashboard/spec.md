@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: ML anomaly charts panel behavior (REQ-047)
+### Requirement: ML anomaly charts panel behavior (REQ-053)
 
 The resource SHALL support `type = "ml_anomaly_charts"` panels through the typed `ml_anomaly_charts_config` block. When a panel entry sets `type = "ml_anomaly_charts"`, the resource SHALL require the `ml_anomaly_charts_config` block and SHALL return an error diagnostic when it is absent.
 
@@ -17,14 +17,14 @@ The block accepts the following attributes:
 - `hide_border` (optional bool): when true, hides the panel border. Subject to REQ-009 null-preservation.
 - `time_range` (optional object: `from` string required, `to` string required, `mode` string optional): a panel-level time range override, identical in shape to the dashboard root `time_range`. Reuses `panelkit.TimeRangeSchema`. Subject to REQ-009 null-preservation: when prior state has `time_range` null, the provider SHALL keep it null even if the API returns a default; when `mode` is null in prior state, the provider SHALL keep `mode` null.
 
-The model layer SHALL expand named severity values to the following canonical `{min, max}` API pairs:
+The model layer SHALL expand named severity values to the following canonical `{min, max}` API pairs (matching the generated Kibana OpenAPI const values in `KibanaHTTPAPIsMlAnomalyChartsSeverityThreshold0`–`SeverityThreshold4`):
 
 | `severity` | API `min` | API `max`    |
 |---|---|---|
-| `low`       | 0         | 2            |
-| `warning`   | 3         | 24           |
-| `minor`     | 25        | 49           |
-| `major`     | 50        | 74           |
+| `low`       | 0         | 3            |
+| `warning`   | 3         | 25           |
+| `minor`     | 25        | 50           |
+| `major`     | 50        | 75           |
 | `critical`  | 75        | (omitted — open-ended upper bound) |
 
 On write, the provider SHALL map `ml_anomaly_charts_config` to the `config` object in the `KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts` API schema. Optional fields SHALL be included only when set in state; absent optional fields SHALL NOT be sent to the API.
@@ -45,7 +45,7 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 - GIVEN a panel with `type = "ml_anomaly_charts"` and `ml_anomaly_charts_config` containing `job_ids = ["my-job"]` and `severity_threshold = [{ severity = "critical" }, { severity = "major" }]`
 - WHEN create runs
-- THEN the provider SHALL send `job_ids = ["my-job"]` and `severity_threshold = [{min: 75}, {min: 50, max: 74}]` in the API request
+- THEN the provider SHALL send `job_ids = ["my-job"]` and `severity_threshold = [{min: 75}, {min: 50, max: 75}]` in the API request
 - AND after the post-apply read, state SHALL represent both items as named severities
 - AND a subsequent plan SHALL show no changes
 
@@ -65,15 +65,15 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: Raw range coinciding with a canonical band is preserved (no diff)
 
-- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 3, max = 24 }]` (coincides with the `warning` canonical band)
-- WHEN create runs and the post-apply read returns `{min: 3, max: 24}`
-- THEN the provider SHALL store `min = 3` and `max = 24` in state (NOT coerced to `severity = "warning"`)
+- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 3, max = 25 }]` (coincides with the `warning` canonical band)
+- WHEN create runs and the post-apply read returns `{min: 3, max: 25}`
+- THEN the provider SHALL store `min = 3` and `max = 25` in state (NOT coerced to `severity = "warning"`)
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: severity_threshold form is preserved across refresh
 
 - GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 10, max = 20 }]`
-- WHEN a refresh runs and the API returns `[{min: 50, max: 74}, {min: 10, max: 20}]`
+- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 10, max: 20}]`
 - THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 10, max = 20`
 - AND a subsequent plan SHALL show no changes
 
@@ -87,13 +87,13 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 #### Scenario: Switching severity form is a configuration change
 
 - GIVEN state holds `severity_threshold = [{ severity = "warning" }]`
-- WHEN the configuration changes to `{ min = 3, max = 24 }` (same band, raw form)
+- WHEN the configuration changes to `{ min = 3, max = 25 }` (same band, raw form)
 - THEN the plan SHALL report a change for that item
-- AND after apply the state SHALL settle to `{ min = 3, max = 24 }` with a subsequent plan showing no changes
+- AND after apply the state SHALL settle to `{ min = 3, max = 25 }` with a subsequent plan showing no changes
 
 #### Scenario: Import defaults to named form for canonical bands
 
-- GIVEN an existing panel whose API `severity_threshold` is `[{min: 3, max: 24}]` and no prior Terraform state
+- GIVEN an existing panel whose API `severity_threshold` is `[{min: 3, max: 25}]` and no prior Terraform state
 - WHEN the panel is imported
 - THEN state SHALL store `severity = "warning"` (named form preferred only on import, where no practitioner form exists to preserve)
 
@@ -105,7 +105,7 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: Plan-time validation — max without min
 
-- GIVEN a `severity_threshold` item with `max = 74` but neither `severity` nor `min` set
+- GIVEN a `severity_threshold` item with `max = 75` but neither `severity` nor `min` set
 - WHEN Terraform validates the configuration
 - THEN the resource SHALL return an error diagnostic
 

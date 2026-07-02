@@ -285,6 +285,29 @@ func TestOptionalInt(t *testing.T) {
 	}
 }
 
+func TestInt64ToFloat32Ptr(t *testing.T) {
+	t.Parallel()
+
+	value := float32(42)
+
+	tests := []struct {
+		name  string
+		input types.Int64
+		want  *float32
+	}{
+		{name: "converts unknown", input: types.Int64Unknown(), want: nil},
+		{name: "converts null", input: types.Int64Null(), want: nil},
+		{name: "converts value", input: types.Int64Value(42), want: &value},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := typeutils.Int64ToFloat32Ptr(tt.input)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestFloat64PointerValue(t *testing.T) {
 	t.Parallel()
 

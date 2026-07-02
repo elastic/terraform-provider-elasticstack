@@ -314,8 +314,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"The configuration of the panel as a JSON string. "+
 				"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-				"Typed panel kinds such as `image`, `slo_alerts`, `discover_session`, `ml_anomaly_swimlane`, and `ml_single_metric_viewer` use their dedicated blocks "+
-				"(`image_config`, `slo_alerts_config`, `discover_session_config`, `ml_anomaly_swimlane_config`, `ml_single_metric_viewer_config`), not panel-level `config_json`.",
+				"Typed panel kinds such as `image`, `slo_alerts`, `discover_session`, `ml_anomaly_swimlane`, `ml_anomaly_charts`, and `ml_single_metric_viewer` use their dedicated blocks "+
+				"(`image_config`, `slo_alerts_config`, `discover_session_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`), not panel-level `config_json`.",
 			"config_json",
 			names,
 		),
