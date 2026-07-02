@@ -20,6 +20,7 @@ package security_entity_store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -491,16 +492,27 @@ func makeStartedStateChecker(getStatus entityStoreStatusFunc, capture func(*enti
 	}
 }
 
-// startedWaitDiagsFromError converts a WaitForStateTransition error into a warning
-// diagnostic. A nil error yields nil diagnostics. Read intentionally degrades
-// rather than failing when the store is still installing after the deadline.
+// startedWaitDiagsFromError converts a WaitForStateTransition error into diagnostics.
+// A nil error yields nil diagnostics. Only a Read timeout (context deadline
+// exceeded) is downgraded to a warning so Read can degrade to a partial read;
+// any other error (including context cancellation or an unexpected wait failure)
+// is returned as an error diagnostic so the read fails fast rather than
+// proceeding after cancellation.
 func startedWaitDiagsFromError(err error) diag.Diagnostics {
 	if err == nil {
 		return nil
 	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return diag.Diagnostics{
+			diag.NewWarningDiagnostic(
+				"Security Entity Store is still installing; returning partial read data",
+				err.Error(),
+			),
+		}
+	}
 	return diag.Diagnostics{
-		diag.NewWarningDiagnostic(
-			"Security Entity Store is still installing; returning partial read data",
+		diag.NewErrorDiagnostic(
+			"Failed while waiting for Security Entity Store to finish installing",
 			err.Error(),
 		),
 	}

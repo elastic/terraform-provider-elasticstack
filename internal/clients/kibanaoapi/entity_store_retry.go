@@ -19,6 +19,7 @@ package kibanaoapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -54,38 +55,54 @@ func RetryCreateOnServerError(ctx context.Context, resourceType, resourceID stri
 		return diagutil.ReportUnknownHTTPError(status, respBody)
 	}
 
-	// Still 500: enter the retry loop, capturing the last-observed response so a
-	// deadline expiry (or a fatal status that stops the loop) can surface the
-	// final status and body.
+	// Still 500: enter the retry loop, capturing the last-observed 500 response so
+	// a deadline expiry can describe the final HTTP 500 (REQ-WAIT-003).
 	lastStatus, lastBody := status, respBody
 	checker := func(ctx context.Context) (bool, error) {
 		status, respBody, err := attempt(ctx)
 		if err != nil {
+			// Transport error: surface it directly rather than masking it with
+			// the last HTTP 500.
 			return false, err
 		}
-		lastStatus, lastBody = status, respBody
 		if status == http.StatusInternalServerError {
+			lastStatus, lastBody = status, respBody
 			return false, nil
 		}
 		if status < 200 || status >= 300 {
-			return false, &fatalCreateError{status: status}
+			// Non-500 non-2xx: fatal, carry the status and body out of the loop.
+			return false, &fatalCreateError{status: status, body: respBody}
 		}
 		return true, nil
 	}
 
-	if waitErr := asyncutils.WaitForStateTransition(ctx, resourceType, resourceID, checker, asyncutils.WithPollInterval(pollInterval)); waitErr != nil {
-		if lastStatus != 0 && (lastStatus < 200 || lastStatus >= 300) {
-			return diagutil.ReportUnknownHTTPError(lastStatus, lastBody)
-		}
-		return diagutil.FrameworkDiagFromError(waitErr)
+	waitErr := asyncutils.WaitForStateTransition(ctx, resourceType, resourceID, checker, asyncutils.WithPollInterval(pollInterval))
+	if waitErr == nil {
+		return nil
 	}
-	return nil
+
+	// A non-500 non-2xx response stopped the loop: report that HTTP failure.
+	if fatal, ok := errors.AsType[*fatalCreateError](waitErr); ok {
+		return diagutil.ReportUnknownHTTPError(fatal.status, fatal.body)
+	}
+
+	// The Create deadline bounded the retries while the store kept returning
+	// HTTP 500: describe the final 500 (REQ-WAIT-003).
+	if errors.Is(waitErr, context.DeadlineExceeded) {
+		return diagutil.ReportUnknownHTTPError(lastStatus, lastBody)
+	}
+
+	// Context cancellation or a transport error encountered during retries:
+	// surface it directly rather than reporting a stale HTTP 500.
+	return diagutil.FrameworkDiagFromError(waitErr)
 }
 
 // fatalCreateError signals a non-retriable create failure so the retry loop
-// stops immediately.
+// stops immediately, carrying the HTTP status and response body so the caller
+// can build an accurate diagnostic.
 type fatalCreateError struct {
 	status int
+	body   []byte
 }
 
 func (e *fatalCreateError) Error() string {

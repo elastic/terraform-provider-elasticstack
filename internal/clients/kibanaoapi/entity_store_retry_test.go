@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -107,6 +108,29 @@ func TestRetryCreateOnServerError_DeadlineWhileStill500(t *testing.T) {
 	diags := RetryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Contains(t, diags[0].Detail(), "still installing", "final 500 body should be surfaced")
+}
+
+func TestRetryCreateOnServerError_TransportErrorAfterInitial500(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	attempt := func(_ context.Context) (int, []byte, error) {
+		calls++
+		if calls == 1 {
+			return http.StatusInternalServerError, []byte("still installing"), nil
+		}
+		return 0, nil, context.Canceled
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	diags := RetryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
+	require.True(t, diags.HasError())
+	// The transport error must be surfaced, not masked by the earlier HTTP 500.
+	msg := diags[0].Summary() + diags[0].Detail()
+	assert.Contains(t, msg, context.Canceled.Error())
+	assert.NotContains(t, msg, "still installing")
+	require.Equal(t, 2, calls)
 }
 
 func TestRetryCreateOnServerError_TransportErrorFailsFast(t *testing.T) {

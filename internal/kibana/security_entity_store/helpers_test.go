@@ -20,6 +20,7 @@ package security_entity_store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -150,12 +151,15 @@ func TestStartedWaitDiagsFromError(t *testing.T) {
 	cases := []struct {
 		name        string
 		giveErr     error
+		wantNone    bool
 		wantWarning bool
+		wantError   bool
 		wantSummary string
 	}{
 		{
-			name:    "nil error returns no diagnostics",
-			giveErr: nil,
+			name:     "nil error returns no diagnostics",
+			giveErr:  nil,
+			wantNone: true,
 		},
 		{
 			name:        "context deadline exceeded maps to warning diagnostic",
@@ -164,10 +168,22 @@ func TestStartedWaitDiagsFromError(t *testing.T) {
 			wantSummary: "Security Entity Store is still installing; returning partial read data",
 		},
 		{
-			name:        "arbitrary error maps to warning diagnostic",
-			giveErr:     errors.New("something failed"),
+			name:        "wrapped deadline exceeded maps to warning diagnostic",
+			giveErr:     fmt.Errorf("wait failed: %w", context.DeadlineExceeded),
 			wantWarning: true,
 			wantSummary: "Security Entity Store is still installing; returning partial read data",
+		},
+		{
+			name:        "context canceled maps to error diagnostic",
+			giveErr:     context.Canceled,
+			wantError:   true,
+			wantSummary: "Failed while waiting for Security Entity Store to finish installing",
+		},
+		{
+			name:        "arbitrary error maps to error diagnostic",
+			giveErr:     errors.New("something failed"),
+			wantError:   true,
+			wantSummary: "Failed while waiting for Security Entity Store to finish installing",
 		},
 	}
 
@@ -175,13 +191,19 @@ func TestStartedWaitDiagsFromError(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			diags := startedWaitDiagsFromError(tc.giveErr)
-			if !tc.wantWarning {
+			if tc.wantNone {
 				assert.False(t, diags.HasError())
 				assert.Empty(t, diags.Warnings())
 				return
 			}
 			require.Len(t, diags, 1)
-			assert.False(t, diags.HasError())
+			if tc.wantWarning {
+				assert.False(t, diags.HasError())
+				require.Len(t, diags.Warnings(), 1)
+			} else {
+				require.True(t, tc.wantError)
+				assert.True(t, diags.HasError())
+			}
 			assert.Equal(t, tc.wantSummary, diags[0].Summary())
 			assert.Equal(t, tc.giveErr.Error(), diags[0].Detail())
 		})
