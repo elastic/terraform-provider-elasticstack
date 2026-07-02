@@ -23,11 +23,8 @@ import (
 
 // populateLegacyMetricLensAttributes is the canonical opaque-attribute JSON defaulting for VizConverter.PopulateJSONDefaults.
 func populateLegacyMetricLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
 	}
 	if metric, ok := attrs["metric"].(map[string]any); ok {
 		attrs["metric"] = lenscommon.PopulateLegacyMetricMetricDefaults(metric)

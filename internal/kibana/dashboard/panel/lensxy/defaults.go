@@ -20,11 +20,8 @@ package lensxy
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
 func populateXYChartLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
 	}
 	if layers, ok := attrs["layers"].([]any); ok {
 		for _, layer := range layers {
