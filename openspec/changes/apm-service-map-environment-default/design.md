@@ -70,13 +70,7 @@ backstop in case any edge path still surfaces `environment` post-import; the tes
   sentinel, the suppression won't fire. Mitigation: the fix is data-driven — changing the constant
   is a one-line change. Because the code already uses `apmServiceMapPreserveNullIntentFromPrior`,
   adding a constant is consistent with the surrounding style.
-- [Low risk] An explicit `environment = "ENVIRONMENT_ALL"` is preserved correctly through the
-  prior-state check, but on the very first apply (when prior state is empty) it would also be
-  suppressed. Mitigation: after apply the state is written from the API value; if Kibana echoes
-  `"ENVIRONMENT_ALL"` back, the state has `null`; the next plan computes a diff and re-sets the
-  value. This is a one-cycle convergence issue. Longer-term, the provider could use a plan
-  modifier (UseStateForUnknown / RequiresReplace on env) — but that is out of scope for this fix
-  and would be a separate change.
+- [Low risk] Import has no prior plan to distinguish an omitted `environment` from an explicitly configured `environment = "ENVIRONMENT_ALL"`. This change chooses to suppress `"ENVIRONMENT_ALL"` to null on import to avoid spurious diffs against configurations that omit `environment`; practitioners who want to pin `"ENVIRONMENT_ALL"` explicitly can run `terraform apply` after import to converge state to the configured value.
 
 ## Open questions
 

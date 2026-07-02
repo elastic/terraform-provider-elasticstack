@@ -1,13 +1,6 @@
 ## 1. Provider: suppress ENVIRONMENT_ALL default on read path
 
-- [ ] 1.1 In `internal/kibana/dashboard/panel/apmservicemap/model.go`, extend
-  `apmServiceMapPreserveNullIntentFromPrior` to suppress `environment` when:
-  - `prior.Environment` is null or unknown (i.e. `!typeutils.IsKnown(prior.Environment)`)
-  - `existing.Environment.ValueString()` equals `"ENVIRONMENT_ALL"`
-  Set `existing.Environment = types.StringNull()` in this case (the function already does this
-  when prior is null/unknown — the new logic adds a value check before the blanket null assignment
-  so the field is nulled regardless of whether it was null-from-prior or default-from-server).
-  Verify existing test coverage still passes after the change.
+- [ ] 1.1 In `internal/kibana/dashboard/panel/apmservicemap/model.go`, confirm the existing read-path null-preservation already keeps `apm_service_map_config.environment` null when the prior state is null/unknown (including when Kibana returns `"ENVIRONMENT_ALL"`). No read-path change should be needed for this issue; focus on import-path suppression (task 2.1) and add/import-focused unit tests.
 
 - [ ] 1.2 Define a package-level constant `const environmentServerDefault = "ENVIRONMENT_ALL"` in
   `model.go` (or a dedicated `defaults.go`) to avoid magic strings in the suppression logic.

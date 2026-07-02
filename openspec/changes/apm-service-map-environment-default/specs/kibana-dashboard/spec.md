@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: APM service-map panel `environment` server-default suppression (REQ-apm-env-default)
+### Requirement: APM service map panel support (REQ-049) — ENVIRONMENT_ALL server-default suppression
 
 The provider SHALL treat `environment = "ENVIRONMENT_ALL"` returned by the Kibana API as a
 server-injected default (equivalent to the field being absent) and suppress it to null in state
@@ -14,12 +14,8 @@ that omits `environment` causes spurious drift on every refresh and import.
 
 #### Read-path suppression
 
-On read (post-create/update refresh and standalone `terraform refresh`), when the prior state for a
-given panel has `apm_service_map_config.environment` as null or unknown AND the API returns
-`environment = "ENVIRONMENT_ALL"`, the provider SHALL set `environment` to null in the new state.
-When the prior state has a known `environment` value (regardless of what it is), the provider SHALL
-leave `environment` as returned by the API — null-intent preservation SHALL NOT override an
-explicit practitioner choice.
+On read (post-create/update refresh and standalone `terraform refresh`), the provider SHALL continue to apply REQ-049/REQ-009 null-preservation semantics for `apm_service_map_config.environment`: when the prior state has `environment` null or unknown, state SHALL keep it null regardless of the API value (including `"ENVIRONMENT_ALL"`).
+When the prior state has a known `environment` value, the provider SHALL leave `environment` as returned by the API.
 
 #### Import-path suppression
 
