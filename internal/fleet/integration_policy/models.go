@@ -242,9 +242,17 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		}
 	}
 
+	// Decode the 'inputs' attribute (including each input's nested 'streams'
+	// map) exactly once: validateConditionSupport and
+	// toAPIInputsFromInputsAttribute below both need it, and the decode is
+	// reflection-based (typeutils.MapTypeAs) over the same structure, so
+	// decoding it independently in each would do the same work twice.
+	decodedInputs := model.decodeInputs(ctx, &diags)
+
 	// Check if any input/stream condition is configured and version supports it
-	if condDiags := model.validateConditionSupport(ctx, feat); condDiags.HasError() {
-		return kbapi.PackagePolicyRequest{}, condDiags
+	if condDiags := model.validateConditionSupport(feat, decodedInputs); condDiags.HasError() {
+		diags.Append(condDiags...)
+		return kbapi.PackagePolicyRequest{}, diags
 	}
 
 	mappedBody := kbapi.PackagePolicyRequestMappedInputs{
@@ -281,7 +289,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		mappedBody.Id = model.ID.ValueStringPointer()
 	}
 
-	mappedBody.Inputs = model.toAPIInputsFromInputsAttribute(ctx, &diags)
+	mappedBody.Inputs = model.toAPIInputsFromInputsAttribute(decodedInputs, &diags)
 	// Note: space_ids is not included in the request body; the Fleet API manages space assignment
 
 	// output_id / policy_id / policy_ids are declared on the simplified create
@@ -313,30 +321,58 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 	return body, diags
 }
 
+// decodedInput is the once-decoded form of a single `inputs` map element,
+// with its nested `streams` map (if any) already decoded too. decodeInputs
+// produces this so that toAPIModel's two downstream consumers
+// (validateConditionSupport, toAPIInputsFromInputsAttribute) don't each
+// independently re-run the reflection-based typeutils.MapTypeAs decode over
+// the same inputs+streams structure.
+type decodedInput struct {
+	model   integrationPolicyInputsModel
+	streams map[string]integrationPolicyInputStreamModel // nil if streams is null/unknown
+}
+
+// decodeInputs decodes the 'inputs' attribute, and each input's nested
+// 'streams' map, exactly once. Returns nil if 'inputs' itself is null/unknown
+// or fails to decode.
+func (model integrationPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedInput {
+	if !typeutils.IsKnown(model.Inputs.MapValue) {
+		return nil
+	}
+
+	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
+	if inputsMap == nil {
+		return nil
+	}
+
+	decoded := make(map[string]decodedInput, len(inputsMap))
+	for inputID, inputModel := range inputsMap {
+		d := decodedInput{model: inputModel}
+		if typeutils.IsKnown(inputModel.Streams) {
+			inputPath := path.Root("inputs").AtMapKey(inputID)
+			d.streams = typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
+		}
+		decoded[inputID] = d
+	}
+	return decoded
+}
+
 // validateConditionSupport returns an attribute-scoped error diagnostic for
 // every input/stream `condition` value that is set when the connected Kibana
 // version does not support the `condition` field on package-policy
 // inputs/streams (added in Kibana 9.5.0; see MinVersionCondition). It is a
 // no-op when the version supports condition or when no inputs are configured.
-func (model integrationPolicyModel) validateConditionSupport(ctx context.Context, feat integrationPolicyFeatures) diag.Diagnostics {
+func (model integrationPolicyModel) validateConditionSupport(feat integrationPolicyFeatures, decoded map[string]decodedInput) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if feat.SupportsCondition {
 		return diags
 	}
-	if !typeutils.IsKnown(model.Inputs.MapValue) {
-		return diags
-	}
 
-	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), &diags)
-	if diags.HasError() || inputsMap == nil {
-		return diags
-	}
-
-	for inputID, inputModel := range inputsMap {
+	for inputID, di := range decoded {
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
-		if typeutils.IsKnown(inputModel.Condition) {
+		if typeutils.IsKnown(di.model.Condition) {
 			diags.AddAttributeError(
 				inputPath.AtName("condition"),
 				"Unsupported Elasticsearch version",
@@ -344,12 +380,7 @@ func (model integrationPolicyModel) validateConditionSupport(ctx context.Context
 			)
 		}
 
-		if !typeutils.IsKnown(inputModel.Streams) {
-			continue
-		}
-
-		streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), &diags)
-		for streamID, streamModel := range streamsMap {
+		for streamID, streamModel := range di.streams {
 			if typeutils.IsKnown(streamModel.Condition) {
 				diags.AddAttributeError(
 					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
@@ -363,43 +394,33 @@ func (model integrationPolicyModel) validateConditionSupport(ctx context.Context
 	return diags
 }
 
-// toAPIInputsFromInputsAttribute converts the 'inputs' attribute to the API model format
-func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(ctx context.Context, diags *diag.Diagnostics) *map[string]kbapi.PackagePolicyRequestMappedInput {
-	result := make(map[string]kbapi.PackagePolicyRequestMappedInput, len(model.Inputs.Elements()))
-	if !typeutils.IsKnown(model.Inputs.MapValue) {
-		return &result
-	}
+// toAPIInputsFromInputsAttribute converts the already-decoded 'inputs' map
+// (see decodeInputs) to the API model format.
+func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(decoded map[string]decodedInput, diags *diag.Diagnostics) *map[string]kbapi.PackagePolicyRequestMappedInput {
+	result := make(map[string]kbapi.PackagePolicyRequestMappedInput, len(decoded))
 
-	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
-	if inputsMap == nil {
-		return &result
-	}
-
-	for inputID, inputModel := range inputsMap {
+	for inputID, di := range decoded {
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
 		apiInput := kbapi.PackagePolicyRequestMappedInput{
-			Enabled:   inputModel.Enabled.ValueBoolPointer(),
-			Condition: inputModel.Condition.ValueStringPointer(),
-			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](inputModel.Vars, inputPath.AtName("vars"), diags)),
+			Enabled:   di.model.Enabled.ValueBoolPointer(),
+			Condition: di.model.Condition.ValueStringPointer(),
+			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](di.model.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
-		if typeutils.IsKnown(inputModel.Streams) && len(inputModel.Streams.Elements()) > 0 {
-			streamsMap := typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
-			if streamsMap != nil {
-				streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(streamsMap))
-				for streamID, streamModel := range streamsMap {
-					streamVarsPath := inputPath.AtName("streams").AtMapKey(streamID).AtName("vars")
-					streamVars := typeutils.NormalizedTypeToMap[any](streamModel.Vars, streamVarsPath, diags)
-					streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{
-						Enabled:   streamModel.Enabled.ValueBoolPointer(),
-						Condition: streamModel.Condition.ValueStringPointer(),
-						Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](streamVars),
-					}
+		if len(di.streams) > 0 {
+			streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(di.streams))
+			for streamID, streamModel := range di.streams {
+				streamVarsPath := inputPath.AtName("streams").AtMapKey(streamID).AtName("vars")
+				streamVars := typeutils.NormalizedTypeToMap[any](streamModel.Vars, streamVarsPath, diags)
+				streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{
+					Enabled:   streamModel.Enabled.ValueBoolPointer(),
+					Condition: streamModel.Condition.ValueStringPointer(),
+					Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties](streamVars),
 				}
-				apiInput.Streams = &streams
 			}
+			apiInput.Streams = &streams
 		}
 
 		result[inputID] = apiInput
