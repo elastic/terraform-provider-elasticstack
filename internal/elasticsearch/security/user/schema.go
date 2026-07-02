@@ -49,7 +49,6 @@ func GetSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
 					security.UsernameValidator(),
 				},
 			},
