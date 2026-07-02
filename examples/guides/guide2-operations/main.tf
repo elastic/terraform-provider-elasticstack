@@ -53,12 +53,14 @@ resource "elasticstack_kibana_dashboard" "operations" {
     {
       type = "options_list_control"
       options_list_control_config = {
-        data_view_id  = local.ecom_data_view_id
-        field_name    = "category.keyword"
-        title         = "Category"
-        single_select = true
-        display_settings = {
-          placeholder = "Select a category..."
+        by_field = {
+          data_view_id  = local.ecom_data_view_id
+          field_name    = "category.keyword"
+          title         = "Category"
+          single_select = true
+          display_settings = {
+            placeholder = "Select a category..."
+          }
         }
       }
     },
