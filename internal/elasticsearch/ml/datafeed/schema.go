@@ -19,7 +19,6 @@ package datafeed
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -128,7 +127,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 150s, 10m, 1h)"),
+					ml.Duration(),
 				},
 			},
 			"query_delay": schema.StringAttribute{
@@ -139,7 +138,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 60s, 2m)"),
+					ml.Duration(),
 				},
 			},
 			"max_empty_searches": schema.Int64Attribute{
@@ -172,7 +171,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringplanmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.String{
-							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 1h, 1d)"),
+							ml.Duration(),
 							validators.AllowedIfDependentPathEquals(path.Root("chunking_config").AtName(attrMode), "manual", validators.AllowedIfOptions{}),
 						},
 					},
@@ -198,7 +197,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringplanmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.String{
-							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid duration (e.g., 2h, 1d)"),
+							ml.Duration(),
 						},
 					},
 				},
