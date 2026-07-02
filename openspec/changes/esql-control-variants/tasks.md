@@ -37,16 +37,16 @@
 
 ## 7. State upgrader (v0 → v1)
 
-- [ ] 7.1 Bump the dashboard resource schema version from 0 to 1 in `internal/kibana/dashboard/resource.go` (or wherever schema version is declared).
-- [ ] 7.2 Implement a `ResourceWithUpgradeState` upgrader for version 0 → 1: for each panel entry whose `type` is `"options_list_control"`, relocate the flat `options_list_control_config` attributes under a `by_field {}` object; do the same for `"range_slider_control"` panels. Pinned-panels entries are included.
-- [ ] 7.3 Write a state upgrade test for each of the two control types verifying that a v0 flat-attribute state is correctly rewritten to v1 branch format.
+- [x] 7.1 Bump the dashboard resource schema version from 0 to 1 in `internal/kibana/dashboard/resource.go` (or wherever schema version is declared). (Version set in `internal/kibana/dashboard/schema.go`'s `getSchema()`.)
+- [x] 7.2 Implement a `ResourceWithUpgradeState` upgrader for version 0 → 1: for each panel entry whose `type` is `"options_list_control"`, relocate the flat `options_list_control_config` attributes under a `by_field {}` object; do the same for `"range_slider_control"` panels. Pinned-panels entries are included. (Also covers `sections[].panels[]`, which share the same panel envelope.)
+- [x] 7.3 Write a state upgrade test for each of the two control types verifying that a v0 flat-attribute state is correctly rewritten to v1 branch format.
 
 ## 8. Tests
 
 - [x] 8.1 Unit tests: options_list Field branch round-trip (model ↔ API), null-preservation, validator reject of missing/both branches.
 - [x] 8.2 Unit tests: options_list ES|QL branch round-trip, `values_source` validator.
 - [x] 8.3 Unit tests: range_slider Field branch and ES|QL branch round-trips.
-- [ ] 8.4 State upgrade tests (task 7.3 above).
+- [x] 8.4 State upgrade tests (task 7.3 above).
 - [ ] 8.5 Acceptance test for `options_list_control` demonstrating `by_field` and (in a separate step) `by_esql` config.
 - [ ] 8.6 Acceptance test for `range_slider_control` demonstrating both branches.
 - [ ] 8.7 Acceptance test verifying that a pre-upgrade (v0 flat) state is successfully migrated on plan/apply.
