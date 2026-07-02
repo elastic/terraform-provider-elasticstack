@@ -21,12 +21,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// RoleWithRawGlobal carries the typed role fields alongside the raw `global`
+// JSON. The `global` field is kept as raw JSON because the go-elasticsearch
+// typed client declares Role.Global as map[string]map[string]map[string][]string,
+// which cannot decode heterogeneous per-category shapes such as the
+// "data_source": [] array introduced in Elasticsearch 9.5.
+// Upstream tracking: elasticsearch-specification#6377.
+type RoleWithRawGlobal struct {
+	Role   *types.Role
+	Global json.RawMessage
+}
 
 func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, role *types.Role) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
@@ -62,26 +76,71 @@ func PutRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 	return nil
 }
 
-func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*types.Role, fwdiag.Diagnostics) {
+// GetRole fetches a role via a raw GET /_security/role/<name> transport call
+// rather than the typed Security.GetRole client. This bypasses the typed
+// client's Role.Global decode, which fails on heterogeneous per-category
+// shapes such as the "data_source": [] array introduced in Elasticsearch 9.5
+// (upstream: elasticsearch-specification#6377). The raw `global` JSON is
+// extracted before the remaining fields are decoded into the typed types.Role,
+// and is carried back to the caller out-of-band via RoleWithRawGlobal.
+func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) (*RoleWithRawGlobal, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Security.GetRole().Name(rolename).Do(ctx)
+	path := fmt.Sprintf("/_security/role/%s", url.PathEscape(rolename))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, nil)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	if role, ok := res[rolename]; ok {
-		return &role, nil
+	httpRes, err := typedClient.Transport.Perform(req)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return nil, fwdiag.Diagnostics{
-		fwdiag.NewErrorDiagnostic(
-			"Unable to find a role in the cluster",
-			fmt.Sprintf(`Unable to find "%s" role in the cluster`, rolename),
-		),
+	defer httpRes.Body.Close()
+
+	if httpRes.StatusCode == http.StatusNotFound {
+		return nil, nil
 	}
+
+	if httpRes.StatusCode >= 400 {
+		body, _ := io.ReadAll(httpRes.Body)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Unable to get a role",
+			fmt.Sprintf("status: %d, body: %s", httpRes.StatusCode, string(body)),
+		)}
+	}
+
+	var roles map[string]json.RawMessage
+	if err := json.NewDecoder(httpRes.Body).Decode(&roles); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	rawRole, ok := roles[rolename]
+	if !ok {
+		return nil, nil
+	}
+
+	// Split the per-role entry into its fields so we can extract `global` as
+	// raw JSON and decode everything else into the typed struct.
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(rawRole, &fields); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	rawGlobal := fields["global"]
+	delete(fields, "global")
+
+	remainder, err := json.Marshal(fields)
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	var role types.Role
+	if err := json.Unmarshal(remainder, &role); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
+	return &RoleWithRawGlobal{Role: &role, Global: rawGlobal}, nil
 }
 
 func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rolename string) fwdiag.Diagnostics {
