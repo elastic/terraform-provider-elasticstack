@@ -44,8 +44,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	}
 
 	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
-		v := float32(cfg.MaxSeriesToPlot.ValueFloat64())
-		apiConfig.MaxSeriesToPlot = &v
+		apiConfig.MaxSeriesToPlot = typeutils.Float32Ptr(cfg.MaxSeriesToPlot.ValueFloat64())
 	}
 	if typeutils.IsKnown(cfg.Title) {
 		apiConfig.Title = cfg.Title.ValueStringPointer()
@@ -111,7 +110,7 @@ func mlAnomalyChartsConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomalyC
 
 	return &models.MlAnomalyChartsConfigModel{
 		JobIDs:            typeutils.StringSliceValue(apiConfig.JobIds),
-		MaxSeriesToPlot:   mlAnomalyChartsMaxSeriesFromAPI(apiConfig.MaxSeriesToPlot),
+		MaxSeriesToPlot:   typeutils.Float32PointerToFloat64Value(apiConfig.MaxSeriesToPlot),
 		SeverityThreshold: severityThreshold,
 		TimeRange:         panelkit.TimeRangeFromAPI(apiConfig.TimeRange, nil),
 		Title:             types.StringPointerValue(apiConfig.Title),
@@ -129,7 +128,9 @@ func mlAnomalyChartsMergeOptionalFromAPI(
 	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
-	existing.MaxSeriesToPlot = panelkit.PreserveFloat64(existing.MaxSeriesToPlot, mlAnomalyChartsMaxSeriesToFloat64Ptr(apiConfig.MaxSeriesToPlot))
+	if typeutils.IsKnown(existing.MaxSeriesToPlot) {
+		existing.MaxSeriesToPlot = typeutils.Float32PointerToFloat64Value(apiConfig.MaxSeriesToPlot)
+	}
 
 	var priorTR *models.TimeRangeModel
 	var priorSeverity []models.MlAnomalyChartsSeverityThresholdModel
@@ -151,21 +152,6 @@ func mlAnomalyChartsMergeOptionalFromAPI(
 		mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing)
 	}
 	return nil
-}
-
-func mlAnomalyChartsMaxSeriesFromAPI(v *float32) types.Float64 {
-	if v == nil {
-		return types.Float64Null()
-	}
-	return types.Float64Value(float64(*v))
-}
-
-func mlAnomalyChartsMaxSeriesToFloat64Ptr(v *float32) *float64 {
-	if v == nil {
-		return nil
-	}
-	out := float64(*v)
-	return &out
 }
 
 func mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing *models.MlAnomalyChartsConfigModel) {

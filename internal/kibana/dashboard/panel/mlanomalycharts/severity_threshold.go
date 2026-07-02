@@ -32,12 +32,7 @@ type severityRange struct {
 	Max *int64 `json:"max,omitempty"`
 }
 
-type canonicalSeverityBand struct {
-	Min int64
-	Max *int64
-}
-
-var canonicalSeverityBands = map[string]canonicalSeverityBand{
+var canonicalSeverityBands = map[string]severityRange{
 	severityLow:      {Min: 0, Max: new(int64(3))},
 	severityWarning:  {Min: 3, Max: new(int64(25))},
 	severityMinor:    {Min: 25, Max: new(int64(50))},
@@ -68,33 +63,22 @@ func canonicalSeverityForRange(minVal int64, maxVal *int64) (string, bool) {
 	return "", false
 }
 
-func expandNamedSeverity(severity string) (severityRange, bool) {
-	band, ok := canonicalSeverityBands[severity]
-	if !ok {
-		return severityRange{}, false
-	}
-	return severityRange(band), true
-}
-
 func buildSeverityThresholdItem(item models.MlAnomalyChartsSeverityThresholdModel) (kbapi.KibanaHTTPAPIsMlAnomalyCharts_SeverityThreshold_Item, diag.Diagnostics) {
 	var out kbapi.KibanaHTTPAPIsMlAnomalyCharts_SeverityThreshold_Item
 	var payload severityRange
 
 	switch {
 	case typeutils.IsKnown(item.Severity):
-		expanded, ok := expandNamedSeverity(item.Severity.ValueString())
+		band, ok := canonicalSeverityBands[item.Severity.ValueString()]
 		if !ok {
 			var diags diag.Diagnostics
 			diags.AddError("Invalid ML anomaly charts configuration", "Unknown severity value.")
 			return out, diags
 		}
-		payload = expanded
+		payload = band
 	case typeutils.IsKnown(item.Min):
 		payload.Min = item.Min.ValueInt64()
-		if typeutils.IsKnown(item.Max) {
-			maxVal := item.Max.ValueInt64()
-			payload.Max = &maxVal
-		}
+		payload.Max = typeutils.Int64Pointer(item.Max)
 	default:
 		var diags diag.Diagnostics
 		diags.AddError("Invalid ML anomaly charts configuration", "Each `severity_threshold` entry must set either `severity` or `min`.")
@@ -161,20 +145,14 @@ func severityThresholdFromAPI(
 		return models.MlAnomalyChartsSeverityThresholdModel{}, diags
 	}
 
-	if priorItem == nil {
+	// Prefer the named form when there is no prior state to preserve, or when the
+	// prior item itself was authored as a named severity.
+	preferNamed := priorItem == nil || (typeutils.IsKnown(priorItem.Severity) && !typeutils.IsKnown(priorItem.Min))
+	if preferNamed {
 		if severity, ok := canonicalSeverityForRange(parsed.Min, parsed.Max); ok {
 			return severityThresholdNamedModel(severity), nil
 		}
-		return severityThresholdRawModel(parsed.Min, parsed.Max), nil
 	}
-
-	if typeutils.IsKnown(priorItem.Severity) && !typeutils.IsKnown(priorItem.Min) {
-		if severity, ok := canonicalSeverityForRange(parsed.Min, parsed.Max); ok {
-			return severityThresholdNamedModel(severity), nil
-		}
-		return severityThresholdRawModel(parsed.Min, parsed.Max), nil
-	}
-
 	return severityThresholdRawModel(parsed.Min, parsed.Max), nil
 }
 
