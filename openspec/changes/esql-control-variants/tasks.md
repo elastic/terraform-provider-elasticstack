@@ -58,6 +58,6 @@
 
 ## 10. Spec sync and validation
 
-- [ ] 10.1 Run `make check-openspec` and resolve any failures.
-- [ ] 10.2 Run `make build` and `go vet ./...`.
-- [ ] 10.3 Run `go test ./internal/kibana/dashboard/...` (non-acceptance unit tests).
+- [x] 10.1 Run `make check-openspec` and resolve any failures. (230 passed, 0 failed.)
+- [x] 10.2 Run `make build` and `go vet ./...`. (Both clean; `make build`'s golangci-lint step reports 0 issues.)
+- [x] 10.3 Run `go test ./internal/kibana/dashboard/...` (non-acceptance unit tests). (All packages pass.)
