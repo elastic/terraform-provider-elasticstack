@@ -276,7 +276,10 @@ func Test_rangeSliderControlValueListSizeValidator(t *testing.T) {
 	rsAttr, ok := panelSchema.Attributes["range_slider_control_config"].(schema.SingleNestedAttribute)
 	require.True(t, ok)
 
-	valueAttr, ok := rsAttr.Attributes["value"].(schema.ListAttribute)
+	byFieldAttr, ok := rsAttr.Attributes["by_field"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+
+	valueAttr, ok := byFieldAttr.Attributes["value"].(schema.ListAttribute)
 	require.True(t, ok)
 	require.NotEmpty(t, valueAttr.Validators)
 

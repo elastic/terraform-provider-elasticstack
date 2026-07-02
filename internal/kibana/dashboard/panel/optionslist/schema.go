@@ -37,6 +37,13 @@ const (
 	optionsListBranchByEsql  = "by_esql"
 )
 
+// esqlValuesSourceUserValue is the only value the Terraform-facing `by_esql.values_source`
+// attribute accepts. It is translated to/from the wire enum's only legal value, "esql" (see
+// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql), in the
+// API converter — "esql_query" reads more clearly next to the `esql_query` attribute and matches
+// the value documented in the originating feature request.
+const esqlValuesSourceUserValue = "esql_query"
+
 // SchemaAttribute returns the dashboard panel options_list_control_config block.
 func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
@@ -194,7 +201,7 @@ func byEsqlAttributes() map[string]schema.Attribute {
 		MarkdownDescription: "The source discriminator for this branch. Must be `esql_query`.",
 		Required:            true,
 		Validators: []validator.String{
-			stringvalidator.OneOf("esql_query"),
+			stringvalidator.OneOf(esqlValuesSourceUserValue),
 		},
 	}
 	return attrs

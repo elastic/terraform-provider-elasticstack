@@ -198,7 +198,7 @@ func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiC
 
 	// Block exists in state — update required fields unconditionally, optional fields only when known.
 	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
-	existing.ValuesSource = types.StringValue(string(apiConfig.ValuesSource))
+	existing.ValuesSource = types.StringValue(esqlValuesSourceUserValue)
 
 	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
 		existing.Title = types.StringValue(*apiConfig.Title)
@@ -275,8 +275,11 @@ func newOptionsListFieldFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbn
 // newOptionsListFieldFromRequiredAndPresent.
 func newOptionsListEsqlFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql) *models.OptionsListControlByEsqlModel {
 	m := &models.OptionsListControlByEsqlModel{
-		EsqlQuery:       types.StringValue(apiConfig.EsqlQuery),
-		ValuesSource:    types.StringValue(string(apiConfig.ValuesSource)),
+		EsqlQuery: types.StringValue(apiConfig.EsqlQuery),
+		// The wire enum only ever legally carries "esql" (see
+		// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql).
+		// The Terraform-facing attribute always reads back as esqlValuesSourceUserValue.
+		ValuesSource:    types.StringValue(esqlValuesSourceUserValue),
 		SelectedOptions: types.ListNull(types.StringType),
 	}
 	if apiConfig.Title != nil {
@@ -451,12 +454,14 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 	return nil
 }
 
-// buildEsqlConfig writes the by_esql branch into the API payload. values_source is taken directly
-// from the model; it is required and schema-validated to be "esql_query".
+// buildEsqlConfig writes the by_esql branch into the API payload. values_source is schema-validated
+// to be esqlValuesSourceUserValue ("esql_query") but the wire enum's only legal value is "esql" (see
+// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql), so the
+// wire constant is always sent regardless of the model value.
 func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql
 	c.EsqlQuery = cfg.EsqlQuery.ValueString()
-	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSource(cfg.ValuesSource.ValueString())
+	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql
 
 	if typeutils.IsKnown(cfg.Title) {
 		c.Title = cfg.Title.ValueStringPointer()

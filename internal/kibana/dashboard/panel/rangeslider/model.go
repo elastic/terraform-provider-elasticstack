@@ -61,6 +61,13 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 		return diags
 	}
 
+	// Reuse the existing config container (seeded from prior state) when one is available, rather
+	// than allocating a new one, so unchanged reads preserve pointer identity.
+	cfg := priorCfg
+	if cfg == nil {
+		cfg = &models.RangeSliderControlConfigModel{}
+	}
+
 	if isEsqlRangeSliderConfig(raw) {
 		esqlCfg, err := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql()
 		if err != nil {
@@ -71,9 +78,9 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 		if priorCfg != nil {
 			priorByEsql = priorCfg.ByEsql
 		}
-		pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
-			ByEsql: populateByEsqlFromAPI(ctx, priorByEsql, &esqlCfg),
-		}
+		cfg.ByField = nil
+		cfg.ByEsql = populateByEsqlFromAPI(ctx, priorByEsql, &esqlCfg)
+		pm.RangeSliderControlConfig = cfg
 		return diags
 	}
 
@@ -86,9 +93,9 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 	if priorCfg != nil {
 		priorByField = priorCfg.ByField
 	}
-	pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
-		ByField: populateByFieldFromAPI(ctx, priorByField, &fieldCfg),
-	}
+	cfg.ByEsql = nil
+	cfg.ByField = populateByFieldFromAPI(ctx, priorByField, &fieldCfg)
+	pm.RangeSliderControlConfig = cfg
 	return diags
 }
 

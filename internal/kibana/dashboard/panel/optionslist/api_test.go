@@ -78,7 +78,7 @@ func TestContract_OptionsListPanel_ByEsql(t *testing.T) {
 			"id": "ol-contract-esql",
 			"config": {
 				"esql_query": "FROM logs | STATS BY host.name",
-				"values_source": "esql_query",
+				"values_source": "esql",
 				"title": "Hosts"
 			}
 		}`,

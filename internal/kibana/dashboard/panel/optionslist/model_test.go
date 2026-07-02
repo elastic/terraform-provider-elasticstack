@@ -583,7 +583,7 @@ func Test_BuildConfig_byEsql_allFields(t *testing.T) {
 
 	cfg := olConfigEsql(t, olPanel)
 	assert.Equal(t, "FROM logs | STATS BY service.name", cfg.EsqlQuery)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSource("esql_query"), cfg.ValuesSource)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql, cfg.ValuesSource)
 	require.NotNil(t, cfg.Title)
 	assert.Equal(t, "My Title", *cfg.Title)
 	require.NotNil(t, cfg.UseGlobalFilters)
