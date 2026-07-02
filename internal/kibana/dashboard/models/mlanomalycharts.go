@@ -23,7 +23,7 @@ import (
 
 type MlAnomalyChartsConfigModel struct {
 	JobIDs            []types.String                          `tfsdk:"job_ids"`
-	MaxSeriesToPlot   types.Float64                           `tfsdk:"max_series_to_plot"`
+	MaxSeriesToPlot   types.Int64                             `tfsdk:"max_series_to_plot"`
 	SeverityThreshold []MlAnomalyChartsSeverityThresholdModel `tfsdk:"severity_threshold"`
 	TimeRange         *TimeRangeModel                         `tfsdk:"time_range"`
 	Title             types.String                            `tfsdk:"title"`

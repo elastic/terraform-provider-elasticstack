@@ -43,9 +43,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		JobIds: typeutils.ValueStringSlice(cfg.JobIDs),
 	}
 
-	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
-		apiConfig.MaxSeriesToPlot = typeutils.Float32Ptr(cfg.MaxSeriesToPlot.ValueFloat64())
-	}
+	apiConfig.MaxSeriesToPlot = typeutils.Int64ToFloat32Ptr(cfg.MaxSeriesToPlot)
 	if typeutils.IsKnown(cfg.Title) {
 		apiConfig.Title = cfg.Title.ValueStringPointer()
 	}
@@ -110,7 +108,7 @@ func mlAnomalyChartsConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomalyC
 
 	return &models.MlAnomalyChartsConfigModel{
 		JobIDs:            typeutils.StringSliceValue(apiConfig.JobIds),
-		MaxSeriesToPlot:   typeutils.Float32PointerToFloat64Value(apiConfig.MaxSeriesToPlot),
+		MaxSeriesToPlot:   types.Int64PointerValue(typeutils.Float32PointerToInt64Pointer(apiConfig.MaxSeriesToPlot)),
 		SeverityThreshold: severityThreshold,
 		TimeRange:         panelkit.TimeRangeFromAPI(apiConfig.TimeRange, nil),
 		Title:             types.StringPointerValue(apiConfig.Title),
@@ -128,9 +126,7 @@ func mlAnomalyChartsMergeOptionalFromAPI(
 	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
 	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
-	if typeutils.IsKnown(existing.MaxSeriesToPlot) {
-		existing.MaxSeriesToPlot = typeutils.Float32PointerToFloat64Value(apiConfig.MaxSeriesToPlot)
-	}
+	existing.MaxSeriesToPlot = panelkit.PreserveInt64(existing.MaxSeriesToPlot, typeutils.Float32PointerToInt64Pointer(apiConfig.MaxSeriesToPlot))
 
 	var priorTR *models.TimeRangeModel
 	var priorSeverity []models.MlAnomalyChartsSeverityThresholdModel
@@ -159,7 +155,7 @@ func mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing *models.MlAnomal
 		return
 	}
 	if !typeutils.IsKnown(prior.MaxSeriesToPlot) {
-		existing.MaxSeriesToPlot = types.Float64Null()
+		existing.MaxSeriesToPlot = types.Int64Null()
 	}
 	if !typeutils.IsKnown(prior.Title) {
 		existing.Title = types.StringNull()

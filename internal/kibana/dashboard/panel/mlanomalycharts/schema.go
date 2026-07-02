@@ -58,7 +58,7 @@ func SchemaAttribute() schema.Attribute {
 			listvalidator.SizeAtLeast(1),
 		},
 	}
-	attrs["max_series_to_plot"] = schema.Float64Attribute{
+	attrs["max_series_to_plot"] = schema.Int64Attribute{
 		MarkdownDescription: "Maximum number of anomaly series to plot.",
 		Optional:            true,
 	}

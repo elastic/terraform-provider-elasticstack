@@ -2582,7 +2582,7 @@ The resource SHALL support `type = "ml_anomaly_charts"` panels through the typed
 The block accepts the following attributes:
 
 - `job_ids` (required `list(string)`, min 1 item): one or more anomaly-detection job IDs or group IDs whose results are shown. The provider treats these as opaque strings and does not validate their existence against Kibana's ML API at plan time; invalid job IDs surface as Kibana API errors during `terraform apply`.
-- `max_series_to_plot` (optional float64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request.
+- `max_series_to_plot` (optional int64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request. The Kibana API represents this field as a JSON number (`*float32` in the generated client); the provider exposes it as an integer since a series count cannot be fractional, converting to/from the API's numeric type at the boundary.
 - `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
   - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
   - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.

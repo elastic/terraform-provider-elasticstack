@@ -213,7 +213,7 @@ func TestNullPreservation_maxSeriesToPlot(t *testing.T) {
 	}
 	prior := panelWithConfig(&models.MlAnomalyChartsConfigModel{
 		JobIDs:          []types.String{types.StringValue("job-a")},
-		MaxSeriesToPlot: types.Float64Null(),
+		MaxSeriesToPlot: types.Int64Null(),
 	})
 
 	readBack := readPanelViaHandlerWithPrior(t, panel, &prior)
