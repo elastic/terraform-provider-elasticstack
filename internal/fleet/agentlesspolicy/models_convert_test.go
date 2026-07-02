@@ -456,6 +456,104 @@ func TestPopulateFromCreateResponse_setsIdentityAndPreservesCreateOnlyFlags(t *t
 	assert.Equal(t, "cspm", m.PolicyTemplate.ValueString())
 }
 
+// TestPopulateFromPackagePolicy_filtersToKnownInputKeys covers the
+// inputsKnownKeySet/populateInputsModel fix for "Provider produced
+// inconsistent result after apply": Fleet's package-policy responses for
+// multi-policy-template packages like cloud_security_posture echo back every
+// input the package declares across ALL of its policy templates, not just
+// the one(s) actually configured (mappedFormatPackagePolicyJSON above
+// includes both "cspm-cloudbeat/cis_aws" and "cspm-cloudbeat/cis_gcp" for
+// exactly this reason). When the model's Inputs map is already Known with a
+// specific key set (the plan's value on Update, or the prior state's value
+// on Read), the decoded response must be filtered down to just those keys.
+// TestPopulateFromPackagePolicy_decodesMappedInputsAndFields above starts
+// m.Inputs at its Go zero value (an untyped, not-Known types.Map), so
+// inputsKnownKeySet always took its nil/no-op path there; this test instead
+// seeds a genuinely Known, single-key Inputs map before decoding a wire
+// response containing two input keys, so the filtering path itself is
+// exercised.
+func TestPopulateFromPackagePolicy_filtersToKnownInputKeys(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	data := mustPackagePolicyFromJSON(t, mappedFormatPackagePolicyJSON)
+
+	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+		"cspm-cloudbeat/cis_aws": {
+			Enabled: types.BoolValue(true),
+			Streams: types.MapNull(policyshape.StreamType()),
+		},
+	})
+	require.False(t, diags.HasError())
+
+	m := agentlessPolicyModel{
+		CloudConnector: types.ObjectNull(cloudConnectorAttrTypes()),
+		Inputs:         knownInputs,
+	}
+
+	popDiags := m.populateFromPackagePolicy(ctx, "default", data)
+	require.False(t, popDiags.HasError(), "%v", popDiags)
+
+	var inputs map[string]agentlessInputModel
+	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
+	assert.Len(t, inputs, 1, "only the previously-known input key should survive")
+	assert.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
+	assert.NotContains(t, inputs, "cspm-cloudbeat/cis_gcp",
+		"cis_gcp is cross-policy-template noise from the wire response and was never in the known key set")
+}
+
+// TestPopulateFromCreateResponse_filtersToKnownInputKeys is the create-response
+// counterpart of TestPopulateFromPackagePolicy_filtersToKnownInputKeys: the
+// same cross-policy-template-noise behavior is present in the bundled
+// POST /api/fleet/agentless_policies response (KibanaHTTPAPIsAgentlessPolicy),
+// not just the package-policies GET/PUT response, and populateFromCreateResponse
+// shares the same inputsKnownKeySet/populateInputsModel filtering path.
+func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := kbapi.KibanaHTTPAPIsAgentlessPolicy{
+		Id:        "policy-2",
+		Name:      "test-policy",
+		CreatedAt: "2024-01-01T00:00:00.000Z",
+		CreatedBy: "elastic",
+		UpdatedAt: "2024-01-01T00:00:00.000Z",
+		UpdatedBy: "elastic",
+		Package: kbapi.KibanaHTTPAPIsAgentlessPolicyPackage{
+			Name:    "cloud_security_posture",
+			Version: "3.4.0",
+			Title:   "Security Posture Management",
+		},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"cspm-cloudbeat/cis_aws": {"enabled": true},
+		"cspm-cloudbeat/cis_gcp": {"enabled": false},
+		"kspm-cloudbeat/cis_k8s": {"enabled": false}
+	}`), &item.Inputs))
+
+	m := baseTestModel(t)
+	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+		"cspm-cloudbeat/cis_aws": {
+			Enabled: types.BoolValue(true),
+			Streams: types.MapNull(policyshape.StreamType()),
+		},
+	})
+	require.False(t, diags.HasError())
+	m.Inputs = knownInputs
+
+	popDiags := m.populateFromCreateResponse(ctx, "default", item)
+	require.False(t, popDiags.HasError(), "%v", popDiags)
+
+	var inputs map[string]agentlessInputModel
+	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
+	assert.Len(t, inputs, 1, "only the previously-known input key should survive")
+	assert.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
+	assert.NotContains(t, inputs, "cspm-cloudbeat/cis_gcp",
+		"cis_gcp is cross-policy-template noise from the wire response and was never in the known key set")
+	assert.NotContains(t, inputs, "kspm-cloudbeat/cis_k8s",
+		"kspm-cloudbeat/cis_k8s is cross-policy-template noise from the wire response and was never in the known key set")
+}
+
 func TestMappedInputKey(t *testing.T) {
 	t.Parallel()
 
