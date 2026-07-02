@@ -85,6 +85,12 @@ func TestDashboardModel_populateFromAPI_descriptionNormalization(t *testing.T) {
 			priorState:     types.StringNull(),
 			want:           types.StringNull(),
 		},
+		{
+			name:           "API nil, prior empty -> empty (9.4 explicit-empty bug)",
+			apiDescription: nil,
+			priorState:     types.StringValue(""),
+			want:           types.StringValue(""),
+		},
 	}
 
 	for _, tc := range tests {
