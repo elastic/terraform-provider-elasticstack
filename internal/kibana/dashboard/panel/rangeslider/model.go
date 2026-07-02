@@ -112,6 +112,80 @@ func isEsqlRangeSliderConfig(raw []byte) bool {
 	return probe.EsqlQuery != nil
 }
 
+// rangeSliderSharedFields points at the by_field/by_esql model attributes shared by both branches
+// (identical types on both the Field and ES|QL API schemas), letting populateByFieldFromAPI and
+// populateByEsqlFromAPI apply the same null-preservation logic through a single implementation.
+type rangeSliderSharedFields struct {
+	Title             *types.String
+	UseGlobalFilters  *types.Bool
+	IgnoreValidations *types.Bool
+	Value             *types.List
+	Step              *types.Float32
+}
+
+// rangeSliderSharedAPIFields mirrors the attributes common to both
+// KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchema{Field,Esql}, which share identical Go
+// types for every shared attribute.
+type rangeSliderSharedAPIFields struct {
+	Title             *string
+	UseGlobalFilters  *bool
+	IgnoreValidations *bool
+	Value             *[]string
+	Step              *float32
+}
+
+// populateRangeSliderSharedFields applies REQ-009 null-preservation semantics to the attributes
+// shared by both by_field and by_esql: on import (prior == nil), every optional field is populated
+// unconditionally, defaulting absent API values to null. Otherwise, only fields previously known in
+// state are updated from the API response; fields that were null in prior state remain null, and
+// fields the API stops returning keep their prior value rather than resetting to null.
+func populateRangeSliderSharedFields(ctx context.Context, prior *rangeSliderSharedFields, m rangeSliderSharedFields, api rangeSliderSharedAPIFields) {
+	if prior == nil {
+		*m.Title = types.StringPointerValue(api.Title)
+		*m.UseGlobalFilters = types.BoolPointerValue(api.UseGlobalFilters)
+		*m.IgnoreValidations = types.BoolPointerValue(api.IgnoreValidations)
+		*m.Value = valueListFromAPI(ctx, api.Value)
+		*m.Step = float32PointerValue(api.Step)
+		return
+	}
+
+	*m.Title = types.StringNull()
+	if typeutils.IsKnown(*prior.Title) {
+		*m.Title = *prior.Title
+		if api.Title != nil {
+			*m.Title = types.StringValue(*api.Title)
+		}
+	}
+	*m.UseGlobalFilters = types.BoolNull()
+	if typeutils.IsKnown(*prior.UseGlobalFilters) {
+		*m.UseGlobalFilters = *prior.UseGlobalFilters
+		if api.UseGlobalFilters != nil {
+			*m.UseGlobalFilters = types.BoolValue(*api.UseGlobalFilters)
+		}
+	}
+	*m.IgnoreValidations = types.BoolNull()
+	if typeutils.IsKnown(*prior.IgnoreValidations) {
+		*m.IgnoreValidations = *prior.IgnoreValidations
+		if api.IgnoreValidations != nil {
+			*m.IgnoreValidations = types.BoolValue(*api.IgnoreValidations)
+		}
+	}
+	*m.Value = types.ListNull(types.StringType)
+	if typeutils.IsKnown(*prior.Value) {
+		*m.Value = *prior.Value
+		if api.Value != nil {
+			*m.Value = valueListFromAPI(ctx, api.Value)
+		}
+	}
+	*m.Step = types.Float32Null()
+	if typeutils.IsKnown(*prior.Step) {
+		*m.Step = *prior.Step
+		if api.Step != nil {
+			*m.Step = types.Float32Value(*api.Step)
+		}
+	}
+}
+
 func populateByFieldFromAPI(
 	ctx context.Context,
 	prior *models.RangeSliderControlByFieldModel,
@@ -121,60 +195,15 @@ func populateByFieldFromAPI(
 		DataViewID: types.StringValue(api.DataViewId),
 		FieldName:  types.StringValue(api.FieldName),
 	}
-
-	// No prior intent for this branch (import, or the prior config used the other branch):
-	// populate every optional field unconditionally, defaulting absent API values to null.
-	if prior == nil {
-		m.Title = types.StringPointerValue(api.Title)
-		m.UseGlobalFilters = types.BoolPointerValue(api.UseGlobalFilters)
-		m.IgnoreValidations = types.BoolPointerValue(api.IgnoreValidations)
-		m.Value = valueListFromAPI(ctx, api.Value)
-		m.Step = float32PointerValue(api.Step)
-		return m
+	var priorFields *rangeSliderSharedFields
+	if prior != nil {
+		priorFields = &rangeSliderSharedFields{&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.Value, &prior.Step}
 	}
-
-	// Prior exists: only update fields that were previously known (REQ-009 null-preservation);
-	// fields that were null in the prior remain null regardless of what the API returns.
-	m.Title = types.StringNull()
-	if typeutils.IsKnown(prior.Title) {
-		if api.Title != nil {
-			m.Title = types.StringValue(*api.Title)
-		} else {
-			m.Title = prior.Title
-		}
-	}
-	m.UseGlobalFilters = types.BoolNull()
-	if typeutils.IsKnown(prior.UseGlobalFilters) {
-		if api.UseGlobalFilters != nil {
-			m.UseGlobalFilters = types.BoolValue(*api.UseGlobalFilters)
-		} else {
-			m.UseGlobalFilters = prior.UseGlobalFilters
-		}
-	}
-	m.IgnoreValidations = types.BoolNull()
-	if typeutils.IsKnown(prior.IgnoreValidations) {
-		if api.IgnoreValidations != nil {
-			m.IgnoreValidations = types.BoolValue(*api.IgnoreValidations)
-		} else {
-			m.IgnoreValidations = prior.IgnoreValidations
-		}
-	}
-	m.Value = types.ListNull(types.StringType)
-	if typeutils.IsKnown(prior.Value) {
-		if api.Value != nil {
-			m.Value = valueListFromAPI(ctx, api.Value)
-		} else {
-			m.Value = prior.Value
-		}
-	}
-	m.Step = types.Float32Null()
-	if typeutils.IsKnown(prior.Step) {
-		if api.Step != nil {
-			m.Step = types.Float32Value(*api.Step)
-		} else {
-			m.Step = prior.Step
-		}
-	}
+	populateRangeSliderSharedFields(
+		ctx, priorFields,
+		rangeSliderSharedFields{&m.Title, &m.UseGlobalFilters, &m.IgnoreValidations, &m.Value, &m.Step},
+		rangeSliderSharedAPIFields{api.Title, api.UseGlobalFilters, api.IgnoreValidations, api.Value, api.Step},
+	)
 	return m
 }
 
@@ -190,56 +219,15 @@ func populateByEsqlFromAPI(
 		// normalize it back to the Terraform-facing constant so plans stay drift-free.
 		ValuesSource: types.StringValue(esqlValuesSourceUserValue),
 	}
-
-	if prior == nil {
-		m.Title = types.StringPointerValue(api.Title)
-		m.UseGlobalFilters = types.BoolPointerValue(api.UseGlobalFilters)
-		m.IgnoreValidations = types.BoolPointerValue(api.IgnoreValidations)
-		m.Value = valueListFromAPI(ctx, api.Value)
-		m.Step = float32PointerValue(api.Step)
-		return m
+	var priorFields *rangeSliderSharedFields
+	if prior != nil {
+		priorFields = &rangeSliderSharedFields{&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.Value, &prior.Step}
 	}
-
-	m.Title = types.StringNull()
-	if typeutils.IsKnown(prior.Title) {
-		if api.Title != nil {
-			m.Title = types.StringValue(*api.Title)
-		} else {
-			m.Title = prior.Title
-		}
-	}
-	m.UseGlobalFilters = types.BoolNull()
-	if typeutils.IsKnown(prior.UseGlobalFilters) {
-		if api.UseGlobalFilters != nil {
-			m.UseGlobalFilters = types.BoolValue(*api.UseGlobalFilters)
-		} else {
-			m.UseGlobalFilters = prior.UseGlobalFilters
-		}
-	}
-	m.IgnoreValidations = types.BoolNull()
-	if typeutils.IsKnown(prior.IgnoreValidations) {
-		if api.IgnoreValidations != nil {
-			m.IgnoreValidations = types.BoolValue(*api.IgnoreValidations)
-		} else {
-			m.IgnoreValidations = prior.IgnoreValidations
-		}
-	}
-	m.Value = types.ListNull(types.StringType)
-	if typeutils.IsKnown(prior.Value) {
-		if api.Value != nil {
-			m.Value = valueListFromAPI(ctx, api.Value)
-		} else {
-			m.Value = prior.Value
-		}
-	}
-	m.Step = types.Float32Null()
-	if typeutils.IsKnown(prior.Step) {
-		if api.Step != nil {
-			m.Step = types.Float32Value(*api.Step)
-		} else {
-			m.Step = prior.Step
-		}
-	}
+	populateRangeSliderSharedFields(
+		ctx, priorFields,
+		rangeSliderSharedFields{&m.Title, &m.UseGlobalFilters, &m.IgnoreValidations, &m.Value, &m.Step},
+		rangeSliderSharedAPIFields{api.Title, api.UseGlobalFilters, api.IgnoreValidations, api.Value, api.Step},
+	)
 	return m
 }
 

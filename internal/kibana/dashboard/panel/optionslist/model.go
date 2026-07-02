@@ -54,18 +54,13 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 	}
 
 	var diags diag.Diagnostics
-	configBytes, err := json.Marshal(ol.Config)
+	raw, err := ol.Config.MarshalJSON()
 	if err != nil {
 		diags.AddError("Failed to decode options list control config", err.Error())
 		return diags
 	}
-	var root map[string]any
-	if err := json.Unmarshal(configBytes, &root); err != nil {
-		diags.AddError("Failed to decode options list control config", err.Error())
-		return diags
-	}
 
-	if isEsqlOptionsListConfig(root) {
+	if isEsqlOptionsListConfig(raw) {
 		apiConfig, err := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql()
 		if err != nil {
 			diags.AddError("Failed to decode options list control config", err.Error())
@@ -84,12 +79,32 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 
 // isEsqlOptionsListConfig reports whether the raw config JSON discriminates to the ES|QL branch
 // (identified by the presence of the `esql_query` key, which only the ES|QL schema defines).
-func isEsqlOptionsListConfig(root map[string]any) bool {
-	if root == nil {
+func isEsqlOptionsListConfig(raw []byte) bool {
+	var probe struct {
+		EsqlQuery *string `json:"esql_query"`
+	}
+	if err := json.Unmarshal(raw, &probe); err != nil {
 		return false
 	}
-	_, ok := root["esql_query"]
-	return ok
+	return probe.EsqlQuery != nil
+}
+
+// preserveKnownBool updates existing from api only when existing is already known (REQ-009
+// null-preservation); an api value of nil, or existing being null/unknown, leaves existing
+// unchanged.
+func preserveKnownBool(existing types.Bool, api *bool) types.Bool {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.BoolValue(*api)
+	}
+	return existing
+}
+
+// preserveKnownString is the string equivalent of preserveKnownBool.
+func preserveKnownString(existing types.String, api *string) types.String {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.StringValue(*api)
+	}
+	return existing
 }
 
 // populateFieldFromAPI populates pm.OptionsListControlConfig.ByField from a Field-branch API
@@ -127,27 +142,13 @@ func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api
 	existing.DataViewID = types.StringValue(apiConfig.DataViewId)
 	existing.FieldName = types.StringValue(apiConfig.FieldName)
 
-	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
-	}
-	if typeutils.IsKnown(existing.UseGlobalFilters) && apiConfig.UseGlobalFilters != nil {
-		existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-	}
-	if typeutils.IsKnown(existing.IgnoreValidations) && apiConfig.IgnoreValidations != nil {
-		existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-	}
-	if typeutils.IsKnown(existing.SingleSelect) && apiConfig.SingleSelect != nil {
-		existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-	}
-	if typeutils.IsKnown(existing.Exclude) && apiConfig.Exclude != nil {
-		existing.Exclude = types.BoolValue(*apiConfig.Exclude)
-	}
-	if typeutils.IsKnown(existing.ExistsSelected) && apiConfig.ExistsSelected != nil {
-		existing.ExistsSelected = types.BoolValue(*apiConfig.ExistsSelected)
-	}
-	if typeutils.IsKnown(existing.RunPastTimeout) && apiConfig.RunPastTimeout != nil {
-		existing.RunPastTimeout = types.BoolValue(*apiConfig.RunPastTimeout)
-	}
+	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
+	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
+	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
+	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
+	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
+	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
+	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
@@ -202,27 +203,13 @@ func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiC
 	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
 	existing.ValuesSource = types.StringValue(esqlValuesSourceUserValue)
 
-	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
-	}
-	if typeutils.IsKnown(existing.UseGlobalFilters) && apiConfig.UseGlobalFilters != nil {
-		existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-	}
-	if typeutils.IsKnown(existing.IgnoreValidations) && apiConfig.IgnoreValidations != nil {
-		existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-	}
-	if typeutils.IsKnown(existing.SingleSelect) && apiConfig.SingleSelect != nil {
-		existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-	}
-	if typeutils.IsKnown(existing.Exclude) && apiConfig.Exclude != nil {
-		existing.Exclude = types.BoolValue(*apiConfig.Exclude)
-	}
-	if typeutils.IsKnown(existing.ExistsSelected) && apiConfig.ExistsSelected != nil {
-		existing.ExistsSelected = types.BoolValue(*apiConfig.ExistsSelected)
-	}
-	if typeutils.IsKnown(existing.RunPastTimeout) && apiConfig.RunPastTimeout != nil {
-		existing.RunPastTimeout = types.BoolValue(*apiConfig.RunPastTimeout)
-	}
+	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
+	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
+	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
+	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
+	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
+	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
+	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
@@ -302,82 +289,97 @@ func newOptionsListEsqlFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbnC
 	return m
 }
 
+// optionsListNullIntentFields points at the by_field/by_esql model attributes subject to
+// REQ-009 null-preservation, letting preserveOptionsListFieldNullIntentFromPrior and
+// preserveOptionsListEsqlNullIntentFromPrior share one implementation despite operating on the two
+// distinct branch model types (both use identical Go types for every field below).
+type optionsListNullIntentFields struct {
+	Title             *types.String
+	UseGlobalFilters  *types.Bool
+	IgnoreValidations *types.Bool
+	SingleSelect      *types.Bool
+	Exclude           *types.Bool
+	ExistsSelected    *types.Bool
+	RunPastTimeout    *types.Bool
+	SearchTechnique   *types.String
+	SelectedOptions   *types.List
+	DisplaySettings   **models.OptionsListControlDisplaySettingsModel
+	Sort              **models.OptionsListControlSortModel
+}
+
+// preserveOptionsListNullIntentFromPrior resets each field on existing to null/nil when the
+// corresponding prior field was null/nil, so fields never explicitly configured by the user stay
+// null instead of drifting to a Kibana-returned value.
+func preserveOptionsListNullIntentFromPrior(prior, existing optionsListNullIntentFields) {
+	if !typeutils.IsKnown(*prior.Title) {
+		*existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(*prior.UseGlobalFilters) {
+		*existing.UseGlobalFilters = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.IgnoreValidations) {
+		*existing.IgnoreValidations = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.SingleSelect) {
+		*existing.SingleSelect = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.Exclude) {
+		*existing.Exclude = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.ExistsSelected) {
+		*existing.ExistsSelected = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.RunPastTimeout) {
+		*existing.RunPastTimeout = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.SearchTechnique) {
+		*existing.SearchTechnique = types.StringNull()
+	}
+	if !typeutils.IsKnown(*prior.SelectedOptions) {
+		*existing.SelectedOptions = types.ListNull(types.StringType)
+	}
+	if *prior.DisplaySettings == nil {
+		*existing.DisplaySettings = nil
+	}
+	if *prior.Sort == nil {
+		*existing.Sort = nil
+	}
+}
+
 func preserveOptionsListFieldNullIntentFromPrior(prior, existing *models.OptionsListControlByFieldModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.UseGlobalFilters) {
-		existing.UseGlobalFilters = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.IgnoreValidations) {
-		existing.IgnoreValidations = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.SingleSelect) {
-		existing.SingleSelect = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.Exclude) {
-		existing.Exclude = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.ExistsSelected) {
-		existing.ExistsSelected = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.RunPastTimeout) {
-		existing.RunPastTimeout = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.SearchTechnique) {
-		existing.SearchTechnique = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SelectedOptions) {
-		existing.SelectedOptions = types.ListNull(types.StringType)
-	}
-	if prior.DisplaySettings == nil {
-		existing.DisplaySettings = nil
-	}
-	if prior.Sort == nil {
-		existing.Sort = nil
-	}
+	preserveOptionsListNullIntentFromPrior(
+		optionsListNullIntentFields{
+			&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.SingleSelect,
+			&prior.Exclude, &prior.ExistsSelected, &prior.RunPastTimeout, &prior.SearchTechnique,
+			&prior.SelectedOptions, &prior.DisplaySettings, &prior.Sort,
+		},
+		optionsListNullIntentFields{
+			&existing.Title, &existing.UseGlobalFilters, &existing.IgnoreValidations, &existing.SingleSelect,
+			&existing.Exclude, &existing.ExistsSelected, &existing.RunPastTimeout, &existing.SearchTechnique,
+			&existing.SelectedOptions, &existing.DisplaySettings, &existing.Sort,
+		},
+	)
 }
 
 func preserveOptionsListEsqlNullIntentFromPrior(prior, existing *models.OptionsListControlByEsqlModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.UseGlobalFilters) {
-		existing.UseGlobalFilters = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.IgnoreValidations) {
-		existing.IgnoreValidations = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.SingleSelect) {
-		existing.SingleSelect = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.Exclude) {
-		existing.Exclude = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.ExistsSelected) {
-		existing.ExistsSelected = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.RunPastTimeout) {
-		existing.RunPastTimeout = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.SearchTechnique) {
-		existing.SearchTechnique = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SelectedOptions) {
-		existing.SelectedOptions = types.ListNull(types.StringType)
-	}
-	if prior.DisplaySettings == nil {
-		existing.DisplaySettings = nil
-	}
-	if prior.Sort == nil {
-		existing.Sort = nil
-	}
+	preserveOptionsListNullIntentFromPrior(
+		optionsListNullIntentFields{
+			&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.SingleSelect,
+			&prior.Exclude, &prior.ExistsSelected, &prior.RunPastTimeout, &prior.SearchTechnique,
+			&prior.SelectedOptions, &prior.DisplaySettings, &prior.Sort,
+		},
+		optionsListNullIntentFields{
+			&existing.Title, &existing.UseGlobalFilters, &existing.IgnoreValidations, &existing.SingleSelect,
+			&existing.Exclude, &existing.ExistsSelected, &existing.RunPastTimeout, &existing.SearchTechnique,
+			&existing.SelectedOptions, &existing.DisplaySettings, &existing.Sort,
+		},
+	)
 }
 
 // BuildConfig writes TF model fields into the API panel payload, dispatching to the by_field or
