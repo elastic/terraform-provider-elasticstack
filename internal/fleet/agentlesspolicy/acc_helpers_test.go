@@ -19,81 +19,37 @@ package agentlesspolicy_test
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentlesspolicy"
 )
 
-// cloudProxyResponseHeaders mirrors topology.go's unexported
-// cloudProxyResponseHeaders var. It cannot be imported directly (this file
-// is in the agentlesspolicy_test external test package, and the production
-// var is unexported), and duplicating a two-string-literal slice is simpler
-// and lower-risk than exporting an internal detail of topology.go purely for
-// test consumption. See isConfirmedCloudOrServerless's doc comment for why
-// this file mirrors, rather than reuses, topology.go's detection logic.
-var cloudProxyResponseHeaders = []string{
-	"X-Found-Handling-Cluster",
-	"X-Found-Handling-Instance",
-}
-
-// isConfirmedCloudOrServerless makes the same GET /api/status call, and
-// checks the same two signals, as topology.go's checkDeploymentTopology
+// isConfirmedCloudOrServerless wraps agentlesspolicy.DetectCloudSignals --
+// the single shared probe for the two cloud/serverless signals
 // (build_flavor == "serverless", and the X-Found-Handling-* cloud-proxy
-// headers) -- but is a deliberately separate, test-only mirror of that
-// logic, not a shared code path. It exists so skipUnlessConfirmedCloud below
-// can invert checkDeploymentTopology's risk tolerance for this call site:
+// headers) -- with a fail-CLOSED policy, the inverse of
+// checkDeploymentTopology's fail-open production policy:
 //
 //   - checkDeploymentTopology (topology.go) is the resource's own production
 //     preflight. It fails OPEN on any ambiguity -- inconclusive probe,
 //     network error, malformed body -- because wrongly blocking a legitimate
 //     Cloud Hosted/Serverless user's apply is the worse outcome.
 //   - isConfirmedCloudOrServerless is the inverse: it returns true ONLY when
-//     one of the two signals is positively observed on a well-formed 200
-//     response. Every other outcome (network error, non-200, missing
-//     signals, malformed body) returns false, i.e. "not confirmed cloud".
-//     This is deliberately fail-CLOSED, because the consumer
-//     (skipUnlessConfirmedCloud) uses false to SKIP a test -- a cheap, safe
-//     outcome -- rather than to block a real user's apply.
+//     the probe succeeds AND one of the two signals is positively observed.
+//     Every other outcome (probe failure, missing signals) returns false,
+//     i.e. "not confirmed cloud". This is deliberately fail-CLOSED, because
+//     the consumer (skipUnlessConfirmedCloud) uses false to SKIP a test -- a
+//     cheap, safe outcome -- rather than to block a real user's apply.
 //
 // These are two different call sites with intentionally opposite
 // conservative defaults for the same underlying signal; see this repo's PR
 // #4034 discussion for why that is correct, not a contradiction.
 func isConfirmedCloudOrServerless(ctx context.Context, client *clients.KibanaScopedClient) bool {
-	oapi := client.GetKibanaOapiClient()
-	if oapi == nil || oapi.API == nil {
-		return false
-	}
-
-	resp, err := oapi.API.GetStatusWithResponse(ctx, &kbapi.GetStatusParams{})
-	if err != nil || resp == nil || resp.HTTPResponse == nil || resp.StatusCode() != http.StatusOK {
-		return false
-	}
-
-	var dto struct {
-		Version struct {
-			BuildFlavor *string `json:"build_flavor"`
-		} `json:"version"`
-	}
-	if jsonErr := json.Unmarshal(resp.Body, &dto); jsonErr != nil {
-		return false
-	}
-
-	if dto.Version.BuildFlavor != nil && *dto.Version.BuildFlavor == "serverless" {
-		return true
-	}
-
-	for _, header := range cloudProxyResponseHeaders {
-		if resp.HTTPResponse.Header.Get(header) != "" {
-			return true
-		}
-	}
-
-	return false
+	serverless, cloudProxied, ok := agentlesspolicy.DetectCloudSignals(ctx, client)
+	return ok && (serverless || cloudProxied)
 }
 
 // skipUnlessConfirmedCloud skips t unless isConfirmedCloudOrServerless

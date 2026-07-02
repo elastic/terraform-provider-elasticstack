@@ -50,16 +50,21 @@ type statusBodyDTO struct {
 	} `json:"version"`
 }
 
-// checkDeploymentTopology implements Task 6.2 of the fleet-agentless-policy
+// DetectCloudSignals implements Task 6.2 of the fleet-agentless-policy
 // OpenSpec change (design.md Decision 7; specs/fleet-agentless-policy/spec.md
-// "Deployment topology preflight check"). It queries Kibana's own status
-// endpoint once and returns error diagnostics ONLY when it can positively
-// confirm the connected Kibana is self-managed (non-cloud). Every other
-// outcome -- confirmed cloud/serverless, or a probe that could not be
-// completed or parsed -- returns nil (fail open), per Decision 7's explicit
-// "fail open when inconclusive" fallback. This function is called from
-// createAgentlessPolicy only (Create-time preflight; Read/Update/Delete are
-// unaffected, per tasks.md section 6).
+// "Deployment topology preflight check"). It makes a single call to Kibana's
+// own `GET /api/status` endpoint and reports the two independent signals
+// that distinguish an Elastic Cloud Hosted or Serverless deployment from a
+// self-managed one, plus whether the probe itself completed successfully.
+//
+// This is the single shared implementation of the cloud/serverless probe in
+// this package: checkDeploymentTopology below wraps it with a fail-open
+// production policy, and acc_helpers_test.go's isConfirmedCloudOrServerless
+// wraps it with the opposite, fail-closed policy for deciding whether to
+// skip acceptance tests. It deliberately duplicates (rather than imports)
+// the response-body shape used by internal/clients/kibanaoapi.GetKibanaStatus,
+// whose DTO type is unexported and whose caching/version-gating machinery
+// is out of scope for this narrowly-scoped preflight probe.
 //
 // Detection approach chosen, and why (see design.md Open Question 5 for the
 // alternatives considered):
@@ -99,40 +104,66 @@ type statusBodyDTO struct {
 // cloud, preflight passes. Against a self-managed docker-compose Kibana
 // 9.4.0, the same call returned "traditional" with neither header present --
 // classified self-managed, preflight fails closed.
-func checkDeploymentTopology(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
+//
+// Returns:
+//   - serverless: true if `version.build_flavor == "serverless"` was observed.
+//   - cloudProxied: true if either X-Found-Handling-* header was observed.
+//   - ok: false if the probe itself did not complete (network error,
+//     non-200, or a malformed response body) -- callers should treat this as
+//     "inconclusive", not as "self-managed", and apply their own fallback
+//     policy. When ok is false, serverless and cloudProxied are always false.
+func DetectCloudSignals(ctx context.Context, client *clients.KibanaScopedClient) (serverless bool, cloudProxied bool, ok bool) {
 	oapi := client.GetKibanaOapiClient()
 	if oapi == nil || oapi.API == nil {
 		// No Kibana OpenAPI client to probe with. This should not happen in
 		// practice (ProviderClientFactory.GetKibanaClient validates endpoint
 		// presence before handing out a scoped client), but if it does, we
-		// have no basis to classify the deployment -- fail open.
-		return nil
+		// have no basis to classify the deployment.
+		return false, false, false
 	}
 
 	resp, err := oapi.API.GetStatusWithResponse(ctx, &kbapi.GetStatusParams{})
 	if err != nil || resp == nil || resp.HTTPResponse == nil || resp.StatusCode() != http.StatusOK {
 		// Inconclusive: the status probe itself failed or did not complete.
-		// Fail open per Decision 7 -- do not block a potentially-legitimate
-		// cloud-hosted setup on a transient or unrelated status-endpoint
-		// error. If the deployment genuinely is unsupported, the subsequent
-		// POST to /api/fleet/agentless_policies will surface its own error.
-		return nil
+		return false, false, false
 	}
 
 	var dto statusBodyDTO
 	if jsonErr := json.Unmarshal(resp.Body, &dto); jsonErr != nil {
-		// Inconclusive: malformed/unrecognized response body. Fail open.
-		return nil
+		// Inconclusive: malformed/unrecognized response body.
+		return false, false, false
 	}
 
-	if dto.Version.BuildFlavor != nil && *dto.Version.BuildFlavor == "serverless" {
-		return nil // Confirmed Serverless.
-	}
+	serverless = dto.Version.BuildFlavor != nil && *dto.Version.BuildFlavor == "serverless"
 
 	for _, header := range cloudProxyResponseHeaders {
 		if resp.HTTPResponse.Header.Get(header) != "" {
-			return nil // Confirmed Elastic Cloud Hosted.
+			cloudProxied = true
+			break
 		}
+	}
+
+	return serverless, cloudProxied, true
+}
+
+// checkDeploymentTopology is the production, fail-open policy wrapper around
+// DetectCloudSignals. It returns error diagnostics ONLY when the probe
+// completed successfully AND positively confirms the connected Kibana is
+// self-managed (non-cloud). Every other outcome -- confirmed
+// cloud/serverless, or a probe that could not be completed or parsed --
+// returns nil (fail open), per Decision 7's explicit "fail open when
+// inconclusive" fallback. This function is called from createAgentlessPolicy
+// only (Create-time preflight; Read/Update/Delete are unaffected, per
+// tasks.md section 6).
+func checkDeploymentTopology(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
+	serverless, cloudProxied, ok := DetectCloudSignals(ctx, client)
+	if !ok || serverless || cloudProxied {
+		// Inconclusive, or confirmed cloud/serverless: fail open per
+		// Decision 7. Do not block a potentially-legitimate cloud-hosted
+		// setup on a transient or unrelated status-endpoint error. If the
+		// deployment genuinely is unsupported, the subsequent POST to
+		// /api/fleet/agentless_policies will surface its own error.
+		return nil
 	}
 
 	// Neither a cloud/serverless flavor nor an Elastic Cloud proxy header was
