@@ -47,7 +47,7 @@ func makeEsqlAPIConfig(t *testing.T, esqlQuery string) *kbapi.KibanaHTTPAPIsKbnD
 	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(olEsqlCfg{
 		EsqlQuery:    esqlQuery,
-		ValuesSource: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSource("esql_query"),
+		ValuesSource: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
 	}))
 	return p
 }
@@ -234,6 +234,57 @@ func Test_PopulateFromAPI_nilDisplaySettings_preservedAsNil(t *testing.T) {
 	require.NotNil(t, pm.OptionsListControlConfig)
 	require.NotNil(t, pm.OptionsListControlConfig.ByField)
 	assert.Nil(t, pm.OptionsListControlConfig.ByField.DisplaySettings)
+}
+
+// Test: if prior state configured by_esql but the API now returns the Field variant (e.g. the
+// control was switched out-of-band in Kibana), PopulateFromAPI must switch state to by_field
+// rather than silently preserving the stale by_esql block.
+func Test_PopulateFromAPI_branchSwitchedRemotely_esqlToField(t *testing.T) {
+	priorCfg := &models.OptionsListControlConfigModel{
+		ByEsql: &models.OptionsListControlByEsqlModel{
+			EsqlQuery:    types.StringValue("FROM logs | STATS BY service.name"),
+			ValuesSource: types.StringValue(esqlValuesSourceUserValue),
+		},
+	}
+	pm := &models.PanelModel{OptionsListControlConfig: priorCfg}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: priorCfg}
+
+	PopulateFromAPI(pm, tfPanel, makeAPIConfig(t, optionsListControlTestDataViewID, "field1"))
+
+	require.NotNil(t, pm.OptionsListControlConfig)
+	require.NotNil(t, pm.OptionsListControlConfig.ByField)
+	assert.Nil(t, pm.OptionsListControlConfig.ByEsql)
+	assert.Equal(t, optionsListControlTestDataViewID, pm.OptionsListControlConfig.ByField.DataViewID.ValueString())
+	assert.Equal(t, "field1", pm.OptionsListControlConfig.ByField.FieldName.ValueString())
+}
+
+// Test: the symmetric case — prior state configured by_field but the API now returns the ES|QL
+// variant.
+func Test_PopulateFromAPI_branchSwitchedRemotely_fieldToEsql(t *testing.T) {
+	priorCfg := &models.OptionsListControlConfigModel{
+		ByField: &models.OptionsListControlByFieldModel{
+			DataViewID: types.StringValue(optionsListControlTestDataViewID),
+			FieldName:  types.StringValue("field1"),
+		},
+	}
+	pm := &models.PanelModel{OptionsListControlConfig: priorCfg}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: priorCfg}
+
+	PopulateFromAPI(pm, tfPanel, makeEsqlAPIConfig(t, "FROM logs | STATS BY service.name"))
+
+	require.NotNil(t, pm.OptionsListControlConfig)
+	require.NotNil(t, pm.OptionsListControlConfig.ByEsql)
+	assert.Nil(t, pm.OptionsListControlConfig.ByField)
+	assert.Equal(t, "FROM logs | STATS BY service.name", pm.OptionsListControlConfig.ByEsql.EsqlQuery.ValueString())
+}
+
+// Test: BuildConfig returns an error when neither branch is set (defensive; schema-level
+// ExactlyOneOfNestedAttrsValidator should normally prevent this at plan time).
+func Test_BuildConfig_neitherBranchSet_errors(t *testing.T) {
+	pm := models.PanelModel{OptionsListControlConfig: &models.OptionsListControlConfigModel{}}
+	olPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{}
+	diags := BuildConfig(pm, &olPanel)
+	assert.True(t, diags.HasError())
 }
 
 // Test: BuildConfig sets all known fields and auto-sets values_source to "field".
@@ -455,7 +506,7 @@ func Test_PopulateFromAPI_esql_import_populatesUserConfigurableFields(t *testing
 	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechniquePrefix
 	c := olEsqlCfg{
 		EsqlQuery:         "FROM logs | STATS BY service.name",
-		ValuesSource:      kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSource("esql_query"),
+		ValuesSource:      kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
 		Title:             new("My ES|QL Control"),
 		UseGlobalFilters:  new(true),
 		IgnoreValidations: new(false),
@@ -511,7 +562,7 @@ func Test_PopulateFromAPI_esql_knownFields_updatedFromAPI(t *testing.T) {
 	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
 	c := olEsqlCfg{
 		EsqlQuery:        "FROM new | STATS BY b",
-		ValuesSource:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSource("esql_query"),
+		ValuesSource:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
 		UseGlobalFilters: new(true),
 	}
 	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
@@ -540,7 +591,7 @@ func Test_PopulateFromAPI_esql_nullFields_preservedAsNull(t *testing.T) {
 	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechniqueExact
 	c := olEsqlCfg{
 		EsqlQuery:        "FROM logs",
-		ValuesSource:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSource("esql_query"),
+		ValuesSource:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
 		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}

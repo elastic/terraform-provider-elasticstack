@@ -34,21 +34,19 @@ var MinDashboardAPISupport = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 // Confirmed by reading the bundled Kibana server source directly:
 //   - 9.4.0: @kbn/controls-schemas's `optionsListDSLControlSchema` and
 //     `rangeSliderControlSchema` are each a single fixed object schema with NO
-//     `values_source` property at all (`unknowns` is not "allow", so sending
-//     `values_source` — which this provider always does for by_field writes,
-//     per REQ-027/REQ-028 — is rejected with "Additional properties are not
-//     allowed ('values_source' was unexpected)"). There is no ES|QL variant of
-//     either schema in 9.4.0.
+//     `values_source` property at all (`unknowns` is not "allow", so a Field
+//     write that included `values_source` would be rejected with "Additional
+//     properties are not allowed ('values_source' was unexpected)"). There is
+//     no ES|QL variant of either schema in 9.4.0.
 //   - 9.5.0-SNAPSHOT: `optionsListDSLControlSchema` became
 //     `schema.discriminatedUnion('values_source', [esql, field])`, matching
 //     the `KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchema{Field,Esql}`
 //     shapes this provider's optionslist/rangeslider packages already convert
 //     to/from.
 //
-// Until the Elastic Stack version under test is >= this version, every
-// options_list_control / range_slider_control acceptance test that reaches a
-// real Kibana (by_field included, since `values_source` is always sent on
-// write) must be skipped rather than run, since the live server genuinely
-// cannot accept the payload — this is not a gap in this provider's
-// implementation, just a stack-version mismatch.
+// by_field writes deliberately omit `values_source` on the wire (see
+// buildFieldConfig in each package) precisely so they remain compatible with
+// every Kibana version this resource supports, including < 9.4.0. Only the
+// by_esql branch is gated on this constant: it is a genuinely new API surface
+// that does not exist on Kibana servers below 9.5.0-SNAPSHOT.
 var MinControlByFieldEsqlUnionSupport = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))

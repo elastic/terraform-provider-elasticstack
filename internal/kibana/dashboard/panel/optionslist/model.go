@@ -111,13 +111,14 @@ func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api
 	}
 
 	if existing == nil {
-		var priorByField *models.OptionsListControlByFieldModel
-		if tfPanel.OptionsListControlConfig != nil {
-			priorByField = tfPanel.OptionsListControlConfig.ByField
-		}
-		if priorByField == nil {
+		if tfPanel.OptionsListControlConfig == nil {
+			// No prior intent to have this control configured at all; preserve nil.
 			return nil
 		}
+		// Either there was no prior by_field state, or the remote control switched branches
+		// out-of-band (e.g. from by_esql to by_field); build a fresh by_field branch from the
+		// API response so state reflects the actual remote configuration instead of silently
+		// keeping a stale by_esql (or empty) block.
 		existing = newOptionsListFieldFromRequiredAndPresent(apiConfig)
 		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{ByField: existing}
 	}
@@ -185,13 +186,14 @@ func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiC
 	}
 
 	if existing == nil {
-		var priorByEsql *models.OptionsListControlByEsqlModel
-		if tfPanel.OptionsListControlConfig != nil {
-			priorByEsql = tfPanel.OptionsListControlConfig.ByEsql
-		}
-		if priorByEsql == nil {
+		if tfPanel.OptionsListControlConfig == nil {
+			// No prior intent to have this control configured at all; preserve nil.
 			return nil
 		}
+		// Either there was no prior by_esql state, or the remote control switched branches
+		// out-of-band (e.g. from by_field to by_esql); build a fresh by_esql branch from the
+		// API response so state reflects the actual remote configuration instead of silently
+		// keeping a stale by_field (or empty) block.
 		existing = newOptionsListEsqlFromRequiredAndPresent(apiConfig)
 		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{ByEsql: existing}
 	}
@@ -393,7 +395,12 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	case cfg.ByEsql != nil:
 		return buildEsqlConfig(cfg.ByEsql, olPanel)
 	default:
-		return nil
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Invalid options_list_control_config",
+			"Exactly one of `by_field` or `by_esql` must be set inside `options_list_control_config`.",
+		)
+		return diags
 	}
 }
 

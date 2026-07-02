@@ -57,8 +57,9 @@ func TestContract_RangeSliderPanel(t *testing.T) {
 			"by_field.value",
 			// Fixture only covers the by_field branch; by_esql has no baseline to compare against.
 			"by_esql",
-			// The provider always sets values_source = "field" on write for by_field (design D2);
-			// the fixture predates this and omits it.
+			// The provider deliberately omits values_source on by_field writes for backward
+			// compatibility with Kibana < 9.5 (see buildFieldConfig); the fixture predates this
+			// and includes it.
 			"config.values_source",
 		},
 	})
