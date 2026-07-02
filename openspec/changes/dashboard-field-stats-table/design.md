@@ -10,9 +10,7 @@ Both branches share:
 - `title` (string, optional)
 - `description` (string, optional)
 - `hide_title` (bool, optional)
-- `hide_border` (bool, optional)
-- `time_range` (object `{ from, to }`, optional)
-
+- `time_range` (object `{ from, to, mode? }`, optional)
 Relevant code locations:
 - `generated/kbapi/kibana.gen.go`: `KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable` (line ~47051), `KibanaHTTPAPIsDataVisualizerFieldStats` (line ~40635).
 - `internal/kibana/dashboard/schema.go` — add `field_stats_table_config`.

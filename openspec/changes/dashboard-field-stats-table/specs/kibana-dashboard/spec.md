@@ -1,17 +1,14 @@
 ## MODIFIED Requirements
 
-### Requirement: config_json unsupported for typed panel types (REQ-007) — partial update
+### Requirement: config_json unsupported for typed panel types (REQ-010) — partial update
 
-Add `field_stats_table` to the list of panel types that must be managed via their typed config block and for which practitioner-authored `config_json` SHALL return an error diagnostic.
+This requirement extends REQ-010 to include the `field_stats_table` panel type.
 
-The existing requirement text SHALL be updated so the example list of unsupported types includes `field_stats_table`:
-
-> using practitioner-authored panel-level `config_json` with any other panel type, including `slo_burn_rate`, `slo_error_budget`, `esql_control`, `image`, `slo_alerts`, `discover_session`, and `field_stats_table`, …
-
+Practitioner-authored panel-level `config_json` SHALL NOT be supported for `field_stats_table` panels; using `config_json` with `type = "field_stats_table"` SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`.
 #### Scenario: config_json rejected for field_stats_table panel type
 
 - GIVEN a panel with `type = "field_stats_table"` configured through `config_json`
-- WHEN Terraform validates the configuration
+- WHEN the provider builds the API request on create or update
 - THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`
 
 ---
@@ -38,8 +35,7 @@ The `by_dataview` sub-block SHALL accept:
 - `title` (optional, string) — panel display title; null-preserved on read.
 - `description` (optional, string) — panel description; null-preserved on read.
 - `hide_title` (optional, bool) — whether to hide the panel title; null-preserved on read.
-- `hide_border` (optional, bool) — whether to hide the panel border; null-preserved on read.
-- `time_range` (optional, object `{ from = required string, to = required string }`) — panel-level time range override; null-preserved on read: when prior state has `time_range` null, the provider keeps it null even if Kibana returns values.
+- `time_range` (optional, object `{ from = required string, to = required string, mode = optional string }`) — panel-level time range override; null-preserved on read: when prior state has `time_range` null, the provider keeps it null even if Kibana returns values.
 
 On write, the provider SHALL set `view_type = "dataview"` internally and map `data_view_id` and optional fields to the API payload. The `view_type` field is not exposed as a user-facing attribute.
 
@@ -52,8 +48,7 @@ The `by_esql` sub-block SHALL accept:
 - `title` (optional, string) — null-preserved on read.
 - `description` (optional, string) — null-preserved on read.
 - `hide_title` (optional, bool) — null-preserved on read.
-- `hide_border` (optional, bool) — null-preserved on read.
-- `time_range` (optional, object `{ from = required string, to = required string }`) — null-preserved on read.
+- `time_range` (optional, object `{ from = required string, to = required string, mode = optional string }`) — null-preserved on read.
 
 On write, the provider SHALL set `view_type = "esql"` internally and map `query` to `query.esql` and optional fields to the API payload.
 
@@ -143,12 +138,7 @@ panels = [
 - WHEN the post-apply read returns a panel where Kibana populated `show_distributions`
 - THEN state SHALL keep `show_distributions` null and a subsequent plan against configuration that omits it SHALL show no changes
 
-#### Scenario: config_json rejected for field_stats_table panel type
-
-- GIVEN a panel with `type = "field_stats_table"` and `config_json` set to any value
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`
-
+This behavior is already covered by the REQ-010 update above.
 #### Scenario: Drift detection — Kibana returns branch data intact
 
 - GIVEN an existing dashboard with a `field_stats_table` panel in state

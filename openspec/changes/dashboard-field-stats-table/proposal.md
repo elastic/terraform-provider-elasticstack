@@ -21,12 +21,12 @@ Branch keys match the API's `view_type` discriminator strings (`"dataview"` and 
 
 ### Modified Capabilities
 
-- `kibana-dashboard` REQ-007 — extend the `config_json` rejection guard to include `field_stats_table` in the list of panel types that must be managed via their typed block, not via `config_json`.
+- `kibana-dashboard` REQ-010 — extend the `config_json` rejection guard to include `field_stats_table` in the list of panel types that must be managed via their typed block, not via `config_json`.
 
 ## Impact
 
 - `internal/kibana/dashboard/panel/fieldstatstable/` — new package with `schema.go`, `model.go`, `api.go`, `fromapi.go`.
 - `internal/kibana/dashboard/registry.go` — register the new handler in `panelHandlers`.
 - `internal/kibana/dashboard/schema.go` — add `field_stats_table_config` attribute to the panel schema.
-- `openspec/changes/dashboard-field-stats-table/specs/kibana-dashboard/spec.md` — delta spec adding REQ-047 and updating REQ-007.
+- `openspec/changes/dashboard-field-stats-table/specs/kibana-dashboard/spec.md` — delta spec adding REQ-047 and updating REQ-010.
 - Acceptance tests in `internal/kibana/dashboard/panel/fieldstatstable/acc_test.go` covering `by_dataview`, `by_esql`, validator rejection, and drift detection.

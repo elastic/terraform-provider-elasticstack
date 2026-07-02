@@ -33,7 +33,7 @@
 ## 6. Registry and config_json guard
 
 - [ ] 6.1 Register the `fieldstatstable` panel handler in `panelHandlers` in `internal/kibana/dashboard/registry.go`
-- [ ] 6.2 Extend the `config_json` rejection guard (REQ-007) to include `field_stats_table` in the error-producing panel type list
+- [ ] 6.2 Extend the `config_json` rejection guard (REQ-010) to include `field_stats_table` in the error-producing panel type list
 
 ## 7. Tests
 
