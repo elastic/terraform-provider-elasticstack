@@ -53,8 +53,8 @@
 
 ## 9. Documentation and CHANGELOG
 
-- [ ] 9.1 Add a **Breaking change** CHANGELOG entry explaining the restructure and the migration path (wrap existing attributes in `by_field { ... }`; run `terraform apply` to let the state upgrader run automatically).
-- [ ] 9.2 Update any provider documentation examples for `options_list_control` and `range_slider_control` to use the new `by_field {}` / `by_esql {}` syntax.
+- [x] 9.1 Add a **Breaking change** CHANGELOG entry explaining the restructure and the migration path (wrap existing attributes in `by_field { ... }`; run `terraform apply` to let the state upgrader run automatically). (This repo's CHANGELOG.md is auto-generated from the PR's `## Changelog` section per `dev-docs/high-level/contributing.md`; the breaking-change note is included in the PR description, not a manual CHANGELOG.md edit.)
+- [x] 9.2 Update any provider documentation examples for `options_list_control` and `range_slider_control` to use the new `by_field {}` / `by_esql {}` syntax. (Updated `examples/guides/guide2-operations/main.tf` and regenerated `docs/` via `make docs-generate`.)
 
 ## 10. Spec sync and validation
 
