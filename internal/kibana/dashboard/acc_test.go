@@ -745,13 +745,16 @@ func TestAccResourceKibanaDashboard_IDChangeTriggersReplace(t *testing.T) {
 
 // TestAccResourceDashboardDescriptionNormalization verifies the intent-preserving
 // null/empty-string normalization for the root-level description attribute
-// (REQ-008 / REQ-009). On Kibana 9.5+ the dashboard API returns description: ""
+// (REQ-008 / REQ-009). On Kibana 9.5 the dashboard API returns description: ""
 // when the field is omitted; without normalization Terraform flags an
 // inconsistent result after apply (null -> ""). This test asserts both:
 //   - an explicitly omitted description round-trips as null in state, and
 //   - an explicit description = "" is preserved as "" in state.
 //
-// with no drift on a follow-up plan-only step.
+// with no drift on a follow-up plan-only step. The test is gated by
+// minDashboardAPISupport (9.4.0-SNAPSHOT) so it runs on both 9.4 and 9.5 CI
+// lanes; the normalization itself is a no-op when the API omits the field
+// (8.x / 9.4 behavior) and only matters once the API echoes back "" (9.5+).
 func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 	dashboardTitle := "Test Dashboard Description Normalization " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
