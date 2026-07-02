@@ -57,7 +57,7 @@ The resource SHALL expose the following schema:
 - `inputs` — Optional+Computed map(object) keyed by input type ID; updatable in-place. Each element:
   - `enabled` — Optional+Computed bool.
   - `condition` — Optional string.
-  - `vars` — Optional sensitive JSON string; input-level variables. (Named `vars`, not `vars_json`, to match the existing `elasticstack_fleet_integration_policy` schema, where input/stream-level vars use the `vars` key. Both map to the API field `vars`.)
+  - `vars` — Optional+Computed sensitive JSON string; input-level variables. (Named `vars`, not `vars_json`, to match the existing `elasticstack_fleet_integration_policy` schema, where input/stream-level vars use the `vars` key. Both map to the API field `vars`.) Computed with `UseStateForUnknown` because some packages (e.g. `cloud_security_posture`/CSPM) inject informational input-level vars server-side (such as CloudFormation quick-create template URLs) that are always present in the API response regardless of what the user's config declares; without `Computed`, those server-populated values would trip "Provider produced inconsistent result after apply".
   - `streams` — Optional map(object) keyed by stream ID. Each element:
     - `enabled` — Optional+Computed bool.
     - `condition` — Optional string (agent condition expression for the stream).
