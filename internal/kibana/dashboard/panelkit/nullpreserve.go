@@ -47,6 +47,14 @@ func PreserveFloat64(existing types.Float64, api *float64) types.Float64 {
 	return types.Float64PointerValue(api)
 }
 
+// PreserveInt64 keeps an existing null/unknown int64 when it is not known; otherwise updates from the API pointer.
+func PreserveInt64(existing types.Int64, api *int64) types.Int64 {
+	if !typeutils.IsKnown(existing) {
+		return existing
+	}
+	return types.Int64PointerValue(api)
+}
+
 // PreserveFloat32 keeps an existing null/unknown float32 when it is not known; otherwise updates from the API pointer.
 // Used for float32 API fields stored as types.Float32 to avoid float32↔float64 round-trip drift.
 func PreserveFloat32(existing types.Float32, api *float32) types.Float32 {

@@ -136,6 +136,7 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.SloAlertsConfig = nil
 	pm.DiscoverSessionConfig = nil
 	pm.MlAnomalySwimlaneConfig = nil
+	pm.MlAnomalyChartsConfig = nil
 	pm.MlSingleMetricViewerConfig = nil
 	pm.ApmServiceMapConfig = nil
 }
