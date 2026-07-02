@@ -28,9 +28,12 @@ resource "elasticstack_kibana_dashboard" "test" {
     }
     range_slider_control_config = {
       by_esql = {
-        esql_query    = "FROM logs-* | STATS min = MIN(bytes), max = MAX(bytes)"
-        values_source = "esql_query"
-        title         = "Bytes Range"
+        esql_query         = "FROM logs-* | STATS min = MIN(bytes), max = MAX(bytes)"
+        values_source      = "esql_query"
+        title              = "Bytes Range"
+        use_global_filters = true
+        ignore_validations = false
+        step               = 10
       }
     }
   }]
