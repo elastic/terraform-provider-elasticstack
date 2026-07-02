@@ -2,9 +2,8 @@
 
 ### Requirement: config_json unsupported for typed panel types (REQ-010) — partial update
 
-This requirement extends REQ-010 to include the `field_stats_table` panel type.
+This requirement extends REQ-010 to include the `field_stats_table` panel type. Practitioner-authored panel-level `config_json` SHALL NOT be supported for `field_stats_table` panels; using `config_json` with `type = "field_stats_table"` SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`.
 
-Practitioner-authored panel-level `config_json` SHALL NOT be supported for `field_stats_table` panels; using `config_json` with `type = "field_stats_table"` SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`.
 #### Scenario: config_json rejected for field_stats_table panel type
 
 - GIVEN a panel with `type = "field_stats_table"` configured through `config_json`
@@ -139,6 +138,7 @@ panels = [
 - THEN state SHALL keep `show_distributions` null and a subsequent plan against configuration that omits it SHALL show no changes
 
 This behavior is already covered by the REQ-010 update above.
+
 #### Scenario: Drift detection — Kibana returns branch data intact
 
 - GIVEN an existing dashboard with a `field_stats_table` panel in state
