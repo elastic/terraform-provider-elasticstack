@@ -381,15 +381,25 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 	return model
 }
 
+// InitLensAttrs guards against a nil attrs map and ensures the "filters" key is present with
+// an empty slice default. Returns false when attrs is nil (callers should return immediately).
+// All ten non-partition lens panel populate functions share this identical prologue.
+func InitLensAttrs(attrs map[string]any) bool {
+	if attrs == nil {
+		return false
+	}
+	if _, exists := attrs["filters"]; !exists {
+		attrs["filters"] = []any{}
+	}
+	return true
+}
+
 // PopulatePartitionLensAttributes populates shared defaults for partition-type Lens charts
 // (treemap, mosaic, and future variants): nil-guard, default empty filters, group_by defaults,
 // and metrics defaults. Returns attrs so callers can chain or return it directly.
 func PopulatePartitionLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	if !InitLensAttrs(attrs) {
 		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
 	}
 	if groupBy, ok := attrs["group_by"].([]any); ok {
 		groupByMaps := make([]map[string]any, 0, len(groupBy))

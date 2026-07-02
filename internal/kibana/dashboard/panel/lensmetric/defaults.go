@@ -20,11 +20,8 @@ package lensmetric
 import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 
 func populateMetricChartLensAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
+	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
-	}
-	if _, exists := attrs["filters"]; !exists {
-		attrs["filters"] = []any{}
 	}
 	if metrics, ok := attrs["metrics"].([]any); ok {
 		for i, m := range metrics {

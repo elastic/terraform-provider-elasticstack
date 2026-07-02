@@ -31,7 +31,7 @@ No mutual-exclusion validators are added between `environment`, `service_name`, 
 None (this change extends the existing `kibana-dashboard` capability).
 
 ### Modified Capabilities
-- `kibana-dashboard`: add REQ-047 defining `apm_service_map_config` panel support.
+- `kibana-dashboard`: add REQ-049 defining `apm_service_map_config` panel support.
 
 ## Impact
 

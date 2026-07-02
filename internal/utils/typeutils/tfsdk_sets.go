@@ -51,6 +51,19 @@ func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p p
 	return collectionValueFrom(ctx, value, elemType, p, diags, types.SetValueFrom)
 }
 
+// SetTypeToSliceStringPtr extracts a *[]string from an optional set attribute,
+// returning nil when the set is null, unknown, or empty.
+func SetTypeToSliceStringPtr(ctx context.Context, s types.Set, p path.Path, diags *diag.Diagnostics) *[]string {
+	if s.IsNull() || s.IsUnknown() || len(s.Elements()) == 0 {
+		return nil
+	}
+	result := SetTypeAs[string](ctx, s, p, diags)
+	if diags.HasError() {
+		return nil
+	}
+	return &result
+}
+
 // StringSetElements extracts the string values from a types.Set of strings
 // without requiring a context.Context. Returns nil for null/unknown sets and
 // appends an error diagnostic for non-string or unknown elements.

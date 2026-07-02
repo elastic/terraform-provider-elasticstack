@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopschangepointchart"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopslograteanalysis"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/aiopspatternanalysis"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/apmservicemap"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
@@ -45,6 +46,7 @@ import (
 
 // panelHandlers is populated as individual panel implementations land.
 var panelHandlers = []iface.Handler{
+	apmservicemap.Handler{},
 	sloburnrate.Handler{},
 	sloerrorbudget.Handler{},
 	slooverview.Handler{},

@@ -30,8 +30,8 @@ None (all changes are additive fields on the existing `kibana-dashboard` capabil
 
 ### Modified Capabilities
 
-- `kibana-dashboard`: add REQ-047 (AIOps log rate analysis panel), REQ-048 (AIOps pattern
-  analysis panel), and REQ-049 (AIOps change point chart panel).
+- `kibana-dashboard`: add REQ-050 (AIOps log rate analysis panel), REQ-051 (AIOps pattern
+  analysis panel), and REQ-052 (AIOps change point chart panel).
 
 ## Implementation Approach
 
@@ -63,4 +63,4 @@ Design decisions (agreed in issue #4005):
 - `internal/kibana/dashboard/panel/aiopslograteanalysis/` — new package.
 - `internal/kibana/dashboard/panel/aiopspatternanalysis/` — new package.
 - `internal/kibana/dashboard/panel/aiopschangepointchart/` — new package.
-- `openspec/changes/dashboard-aiops-panels/specs/kibana-dashboard/spec.md` — delta spec adding REQ-047, REQ-048, REQ-049.
+- `openspec/changes/dashboard-aiops-panels/specs/kibana-dashboard/spec.md` — delta spec adding REQ-050, REQ-051, REQ-052.

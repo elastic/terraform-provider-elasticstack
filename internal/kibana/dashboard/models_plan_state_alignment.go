@@ -117,6 +117,9 @@ func alignPlanTypedPanelConfigsWhenStateNil(plan, state *models.PanelModel) {
 	if plan.MlSingleMetricViewerConfig != nil && state.MlSingleMetricViewerConfig == nil {
 		state.MlSingleMetricViewerConfig = panelkit.ShallowClonePtr(plan.MlSingleMetricViewerConfig)
 	}
+	if plan.ApmServiceMapConfig != nil && state.ApmServiceMapConfig == nil {
+		state.ApmServiceMapConfig = panelkit.ShallowClonePtr(plan.ApmServiceMapConfig)
+	}
 }
 
 func alignPanelStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
