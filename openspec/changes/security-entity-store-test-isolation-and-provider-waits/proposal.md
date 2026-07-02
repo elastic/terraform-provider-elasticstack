@@ -17,12 +17,16 @@ reading or creating entity-link resources while the store is still initializing 
 ## What Changes
 
 - **Provider — Delete** waits for the entity store to reach `not_installed` (polling
-  `GET /api/security/entity_store/status`) before returning, so Terraform state is only removed
-  when the API agrees the store is gone.
-- **Provider — Read** waits for the store's `started`/`running` state (polling status) before
-  reading entity types, preventing the plan from seeing a transient half-initialized state.
-- **Provider — entity-link/entity Create** retries on HTTP 500 with bounded exponential back-off,
-  so transient store-initialization errors do not fail the apply.
+  `GET /api/security/entity_store/status` via `asyncutils.WaitForStateTransition`) before
+  returning, so Terraform state is only removed when the API agrees the store is gone. The wait is
+  bounded by the resource's `timeouts` block (default 20m), not a hardcoded value.
+- **Provider — Read** waits for the store to leave `installing` (polling status via
+  `asyncutils.WaitForStateTransition`, bounded by the `timeouts` block, default 5m) before reading
+  entity types, preventing the plan from seeing a transient half-initialized state. On deadline
+  expiry it degrades to a warning + partial read rather than failing.
+- **Provider — entity-link/entity Create** retries on HTTP 500 via
+  `asyncutils.WaitForStateTransition` (bounded by the Create `timeouts`), so transient
+  store-initialization errors do not fail the apply. Non-500 responses fail fast.
 - **Tests** add a `t.Cleanup` function in every acceptance test that uninstalls the entity store
   and waits for `not_installed` before the next test can proceed, breaking cross-test contamination
   of the singleton.
@@ -33,8 +37,9 @@ reading or creating entity-link resources while the store is still initializing 
 ## Capabilities
 
 ### Modified Capabilities
+
 - `kibana-security-entity-store`: Delete waits for uninstall completion; Read waits for started-state.
-- `kibana-security-entity-store-entity-link`: Create retries on HTTP 500 with back-off.
+- `kibana-security-entity-store-entity-link`: Create retries on HTTP 500 within the Create timeout.
 - `kibana-security-entity-store-entities-datasource`: (test isolation fix)
 
 ### New Capabilities

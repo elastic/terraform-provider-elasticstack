@@ -1,19 +1,17 @@
 ## MODIFIED Requirements
 
-### Requirement: Create retries on HTTP 500 with bounded back-off (REQ-ESL-RETRY-001)
+### Requirement: Create retries on HTTP 500 within the configured timeout (REQ-ESL-RETRY-001)
 
 When `POST /api/security/entity_store/resolution/link` returns HTTP 500, the provider SHALL
-treat this as a transient initialization error and retry with exponential back-off:
-
-- Initial delay: 2 seconds
-- Back-off multiplier: 2× per attempt (2s, 4s, 8s, 16s, capped at 30s per attempt)
-- Maximum attempts: 10
-- Wall-clock budget: 2 minutes (whichever limit is reached first terminates the loop)
+treat this as a transient initialization error and retry at a fixed poll interval until the create
+succeeds or the Create operation deadline is exceeded. The deadline SHALL be derived from the
+resource's `timeouts` block (Create), defaulting to the entitycore Create timeout when unset, and
+SHALL NOT be a separate hardcoded wall-clock budget.
 
 HTTP 500 is the only status that triggers retry. All other non-2xx responses (400, 403, 404, 409,
 etc.) SHALL be treated as fatal and returned immediately as error diagnostics without retrying.
 
-If the retry budget is exhausted with the last attempt still returning HTTP 500, the provider
+If the Create deadline is reached with the last attempt still returning HTTP 500, the provider
 SHALL return an error diagnostic describing the HTTP 500, indicating that the entity store may
 not yet be fully initialized.
 
@@ -31,11 +29,11 @@ not yet be fully initialized.
 - WHEN the provider creates the entity link resource
 - THEN the provider SHALL immediately return an error diagnostic without retrying
 
-#### Scenario: Create fails after exhausting retry budget
+#### Scenario: Create fails after exceeding the Create timeout
 
 - GIVEN `POST /api/security/entity_store/resolution/link` returns HTTP 500 for all attempts
 - WHEN the provider creates the entity link resource
-- THEN the provider SHALL return an error diagnostic after the retry budget is exhausted
+- THEN the provider SHALL return an error diagnostic after the Create timeout is exceeded
 - AND the diagnostic SHALL describe the final HTTP 500 response
 
 ## ADDED Requirements

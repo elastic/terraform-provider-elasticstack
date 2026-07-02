@@ -3,10 +3,12 @@
 ### Requirement: Delete waits for uninstall completion (REQ-WAIT-001)
 
 After calling `POST /api/security/entity_store/uninstall`, the provider SHALL poll
-`GET /api/security/entity_store/status` until the response contains `status == "not_installed"` or
-a configurable timeout (default 5 minutes, 5-second poll interval) is exceeded.
+`GET /api/security/entity_store/status` at a fixed interval (5 seconds) until the response contains
+`status == "not_installed"` or the Delete operation deadline is exceeded. The deadline SHALL be
+derived from the resource's `timeouts` block (Delete), defaulting to the entitycore Delete timeout
+when unset, and SHALL NOT be a separate hardcoded value.
 
-While polling, transient network errors on the status request SHALL be retried. A timeout expiry
+While polling, transient network errors on the status request SHALL be retried. A deadline expiry
 SHALL produce a clear error diagnostic and SHALL NOT silently remove the resource from state.
 
 #### Scenario: Delete waits for not_installed before returning
@@ -20,20 +22,22 @@ SHALL produce a clear error diagnostic and SHALL NOT silently remove the resourc
 #### Scenario: Delete times out if uninstall does not complete
 
 - GIVEN `terraform destroy` runs on an installed entity store
-- WHEN the store status never reaches `"not_installed"` within the 5-minute timeout
+- WHEN the store status never reaches `"not_installed"` within the Delete timeout
 - THEN the provider SHALL return an error diagnostic describing the timeout
 - AND SHALL NOT remove the resource from state
 
 ### Requirement: Read waits for the store to leave installing state before reading engines (REQ-WAIT-002)
 
-The provider SHALL poll `GET /api/security/entity_store/status` when the overall status is
-`"installing"`, retrying every 3 seconds up to a 2-minute timeout until the status is `"running"`,
-`"stopped"`, `"error"`, or `"not_installed"`.
+The provider SHALL first read `GET /api/security/entity_store/status` synchronously; when the
+overall status is `"installing"` it SHALL poll every 3 seconds until the status is `"running"`,
+`"stopped"`, `"error"`, or `"not_installed"`, or the Read operation deadline is exceeded. The
+deadline SHALL be derived from the resource's `timeouts` block (Read), defaulting to the
+entitycore Read timeout when unset, and SHALL NOT be a separate hardcoded value.
 
 When the status transitions to `"not_installed"` during polling, the provider SHALL apply the
 existing "remove from state" path (REQ-001 Scenario: Read removes resource when not installed).
 
-When the timeout is exceeded while the status is still `"installing"`, the provider SHALL emit a
+When the deadline is exceeded while the status is still `"installing"`, the provider SHALL emit a
 warning diagnostic and proceed with the partial data available (degraded-read behavior, not a
 hard error), to avoid breaking `terraform refresh` on a slow stack.
 
@@ -41,12 +45,12 @@ hard error), to avoid breaking `terraform refresh` on a slow stack.
 
 - GIVEN a resource in state and `GET /api/security/entity_store/status` returns `"installing"`
 - WHEN the provider reads the resource
-- THEN the provider SHALL retry the status call until status is no longer `"installing"` or until the 2-minute timeout
+- THEN the provider SHALL retry the status call until status is no longer `"installing"` or until the Read timeout is exceeded
 - AND SHALL NOT return a partial `entity_types` list unless the timeout is exceeded
 
 #### Scenario: Read emits warning after timeout and returns partial data
 
-- GIVEN a resource in state and the store remains in `"installing"` beyond the 2-minute timeout
+- GIVEN a resource in state and the store remains in `"installing"` beyond the Read timeout
 - WHEN the provider reads the resource
 - THEN the provider SHALL emit a warning diagnostic
 - AND SHALL continue reading with whatever engine data is available
