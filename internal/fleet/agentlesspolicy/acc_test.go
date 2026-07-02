@@ -149,6 +149,18 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 					// fix for why the raw API response otherwise includes all
 					// of them.
 					resource.TestCheckResourceAttr(testResourceName, "inputs.%", "1"),
+					// "Extras" and top-level variables coverage: these three
+					// attributes are spec'd as Optional, updatable in-place
+					// (spec.md's "Extras" and "Variables and inputs" sections)
+					// but were previously only ever set in
+					// ImportStateVerifyIgnore lists, never actually configured
+					// or asserted by value.
+					resource.TestCheckResourceAttr(testResourceName, "var_group_selections.deployment", "aws"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.#", "1"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.name", "env"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.value", "test"),
+					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
 				),
 			},
 			{
@@ -185,6 +197,18 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 						"aws.credentials.type": "assume_role",
 						"aws.account_type":     "organization-account",
 					}),
+					// This step also adds a second global_data_tags entry (see
+					// testdata/.../update_vars/main.tf), exercising the
+					// in-place update path for global_data_tags (spec.md:
+					// "updatable in-place"), not just create-time coverage.
+					resource.TestCheckResourceAttr(testResourceName, "var_group_selections.deployment", "aws"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.#", "2"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.name", "env"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.value", "test"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.1.name", "team"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.1.value", "security"),
+					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
 				),
 			},
 			{

@@ -28,6 +28,19 @@ resource "elasticstack_fleet_agentless_policy" "test" {
     deployment = "aws"
   })
 
+  var_group_selections = {
+    deployment = "aws"
+  }
+
+  global_data_tags = [
+    {
+      name  = "env"
+      value = "test"
+    }
+  ]
+
+  additional_datastreams_permissions = ["logs-custom-*"]
+
   inputs = {
     "cspm-cloudbeat/cis_aws" = {
       enabled = true
