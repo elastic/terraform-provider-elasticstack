@@ -254,6 +254,46 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	agg := kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction("avg")
+	vt := kbapi.KibanaHTTPAPIsAiopsChangePointChartViewType("charts")
+	from, to := "now-15m", "now"
+	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
+	api := kbapi.KibanaHTTPAPIsAiopsChangePointChart{
+		DataViewId:          "logs-*",
+		MetricField:         "system.memory.used.pct",
+		AggregationFunction: &agg,
+		ViewType:            &vt,
+		TimeRange:           &tr,
+	}
+
+	// pm has no config (panel type changed away from this type in the plan)
+	// but prior still has the config block with known optional fields.
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
+			DataViewID:          stringVal("old-dv"),
+			MetricField:         stringVal("old.field"),
+			AggregationFunction: stringVal("sum"),
+			ViewType:            stringVal("bar"),
+		},
+	}
+
+	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.AiopsChangePointChartConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	// Required fields always come from the API.
+	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
+	require.Equal(t, "system.memory.used.pct", cfg.MetricField.ValueString())
+	// Optional fields that were known in prior are updated from API.
+	require.Equal(t, "avg", cfg.AggregationFunction.ValueString())
+	require.Equal(t, "charts", cfg.ViewType.ValueString())
+}
+
 func TestPopulateFromAPI_partitionsOrderInsensitive(t *testing.T) {
 	t.Parallel()
 

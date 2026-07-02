@@ -182,27 +182,12 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 			filters == nil {
 			return nil
 		}
-		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
-			Title:       types.StringPointerValue(apiPanel.Config.Title),
-			Description: types.StringPointerValue(apiPanel.Config.Description),
-			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
-			HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
-			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
-			Filters:     filters,
-		}
+		pm.SyntheticsMonitorsConfig = syntheticsMonitorsConfigFromAPIImport(apiPanel)
 		return nil
 	}
 
 	if pm.SyntheticsMonitorsConfig == nil && prior.SyntheticsMonitorsConfig != nil {
-		filters := fromSyntheticsAPIFilters(apiFilters)
-		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
-			Title:       types.StringPointerValue(apiPanel.Config.Title),
-			Description: types.StringPointerValue(apiPanel.Config.Description),
-			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
-			HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
-			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
-			Filters:     filters,
-		}
+		pm.SyntheticsMonitorsConfig = syntheticsMonitorsConfigFromAPIImport(apiPanel)
 	}
 
 	existing := pm.SyntheticsMonitorsConfig
@@ -231,6 +216,17 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	}
 	existing.Filters = filters
 	return nil
+}
+
+func syntheticsMonitorsConfigFromAPIImport(apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) *models.SyntheticsMonitorsConfigModel {
+	return &models.SyntheticsMonitorsConfigModel{
+		Title:       types.StringPointerValue(apiPanel.Config.Title),
+		Description: types.StringPointerValue(apiPanel.Config.Description),
+		HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
+		HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
+		View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
+		Filters:     fromSyntheticsAPIFilters(apiPanel.Config.Filters),
+	}
 }
 
 func fromSyntheticsAPIFilters(apiFilters *struct {

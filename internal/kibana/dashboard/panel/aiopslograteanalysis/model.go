@@ -58,25 +58,12 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsLogRateAnalysis) diag.Diagnostics {
 	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
 	if prior == nil {
-		pm.AiopsLogRateAnalysisConfig = &models.AiopsLogRateAnalysisConfigModel{
-			DataViewID:  types.StringValue(api.DataViewId),
-			Title:       types.StringPointerValue(api.Title),
-			Description: types.StringPointerValue(api.Description),
-			HideTitle:   types.BoolPointerValue(api.HideTitle),
-			HideBorder:  types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsLogRateAnalysisConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+		pm.AiopsLogRateAnalysisConfig = aiopsLogRateAnalysisConfigFromAPIImport(api)
 		return nil
 	}
 
 	if pm.AiopsLogRateAnalysisConfig == nil && prior.AiopsLogRateAnalysisConfig != nil {
-		pm.AiopsLogRateAnalysisConfig = &models.AiopsLogRateAnalysisConfigModel{
-			DataViewID:  types.StringValue(api.DataViewId),
-			Title:       types.StringPointerValue(api.Title),
-			Description: types.StringPointerValue(api.Description),
-			HideTitle:   types.BoolPointerValue(api.HideTitle),
-			HideBorder:  types.BoolPointerValue(api.HideBorder),
-		}
+		pm.AiopsLogRateAnalysisConfig = aiopsLogRateAnalysisConfigFromAPIImport(api)
 	}
 
 	existing := pm.AiopsLogRateAnalysisConfig
@@ -103,6 +90,18 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 		preserveNullIntentFromPrior(prior.AiopsLogRateAnalysisConfig, existing)
 	}
 	return nil
+}
+
+func aiopsLogRateAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsLogRateAnalysis) *models.AiopsLogRateAnalysisConfigModel {
+	cfg := &models.AiopsLogRateAnalysisConfigModel{
+		DataViewID:  types.StringValue(api.DataViewId),
+		Title:       types.StringPointerValue(api.Title),
+		Description: types.StringPointerValue(api.Description),
+		HideTitle:   types.BoolPointerValue(api.HideTitle),
+		HideBorder:  types.BoolPointerValue(api.HideBorder),
+	}
+	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+	return cfg
 }
 
 func preserveNullIntentFromPrior(prior, existing *models.AiopsLogRateAnalysisConfigModel) {

@@ -72,33 +72,12 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) diag.Diagnostics {
 	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
 	if prior == nil {
-		pm.AiopsPatternAnalysisConfig = &models.AiopsPatternAnalysisConfigModel{
-			DataViewID:        types.StringValue(api.DataViewId),
-			FieldName:         types.StringValue(api.FieldName),
-			MinimumTimeRange:  patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange),
-			RandomSamplerMode: patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode),
-			Title:             types.StringPointerValue(api.Title),
-			Description:       types.StringPointerValue(api.Description),
-			HideTitle:         types.BoolPointerValue(api.HideTitle),
-			HideBorder:        types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
-		pm.AiopsPatternAnalysisConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
 		return nil
 	}
 
 	if pm.AiopsPatternAnalysisConfig == nil && prior.AiopsPatternAnalysisConfig != nil {
-		pm.AiopsPatternAnalysisConfig = &models.AiopsPatternAnalysisConfigModel{
-			DataViewID:        types.StringValue(api.DataViewId),
-			FieldName:         types.StringValue(api.FieldName),
-			MinimumTimeRange:  patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange),
-			RandomSamplerMode: patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode),
-			Title:             types.StringPointerValue(api.Title),
-			Description:       types.StringPointerValue(api.Description),
-			HideTitle:         types.BoolPointerValue(api.HideTitle),
-			HideBorder:        types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
+		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
 	}
 
 	existing := pm.AiopsPatternAnalysisConfig
@@ -134,6 +113,22 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 		preserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
 	}
 	return nil
+}
+
+func aiopsPatternAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) *models.AiopsPatternAnalysisConfigModel {
+	cfg := &models.AiopsPatternAnalysisConfigModel{
+		DataViewID:        types.StringValue(api.DataViewId),
+		FieldName:         types.StringValue(api.FieldName),
+		MinimumTimeRange:  patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange),
+		RandomSamplerMode: patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode),
+		Title:             types.StringPointerValue(api.Title),
+		Description:       types.StringPointerValue(api.Description),
+		HideTitle:         types.BoolPointerValue(api.HideTitle),
+		HideBorder:        types.BoolPointerValue(api.HideBorder),
+	}
+	cfg.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
+	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+	return cfg
 }
 
 func preserveNullIntentFromPrior(prior, existing *models.AiopsPatternAnalysisConfigModel) {

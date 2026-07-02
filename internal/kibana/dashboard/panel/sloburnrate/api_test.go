@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit/contracttest"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -122,6 +123,40 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 
 	require.Equal(t, true, drillsFromConfig(cfg1)[1]["encode_url"])
 	require.Equal(t, false, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
+}
+
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	title := "Recovered"
+	apiConfig := kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable{
+		SloId:    "slo-abc",
+		Duration: "1h",
+		Title:    &title,
+	}
+
+	pm := &models.PanelModel{}
+	// Prior has known Title so that null-preservation doesn't wipe it after the
+	// type-change init falls through to the merge path.
+	prior := &models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
+			SloID:    types.StringValue("old-slo"),
+			Duration: types.StringValue("5m"),
+			Title:    types.StringValue("old-title"),
+		},
+	}
+
+	diags := sloburnrate.PopulateFromAPI(pm, prior, apiConfig)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.SloBurnRateConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	// Required fields come from the API.
+	require.Equal(t, "slo-abc", cfg.SloID.ValueString())
+	require.Equal(t, "1h", cfg.Duration.ValueString())
+	// Title was known in prior so null-preservation allows it to be updated from API.
+	require.Equal(t, "Recovered", cfg.Title.ValueString())
+	require.True(t, cfg.SloInstanceID.IsNull())
 }
 
 func jsonPanelMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {

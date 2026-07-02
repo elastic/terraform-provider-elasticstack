@@ -92,41 +92,12 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) diag.Diagnostics {
 	// On import (prior == nil) populate from API unconditionally.
 	if prior == nil {
-		cfg := &models.SloBurnRateConfigModel{
-			SloID:    types.StringValue(apiConfig.SloId),
-			Duration: types.StringValue(apiConfig.Duration),
-		}
-		// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
-		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-		} else {
-			cfg.SloInstanceID = types.StringNull()
-		}
-		cfg.Title = types.StringPointerValue(apiConfig.Title)
-		cfg.Description = types.StringPointerValue(apiConfig.Description)
-		cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-		cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
-		cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
-		pm.SloBurnRateConfig = cfg
+		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
 		return nil
 	}
 
 	if pm.SloBurnRateConfig == nil && prior.SloBurnRateConfig != nil {
-		cfg := &models.SloBurnRateConfigModel{
-			SloID:    types.StringValue(apiConfig.SloId),
-			Duration: types.StringValue(apiConfig.Duration),
-		}
-		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-		} else {
-			cfg.SloInstanceID = types.StringNull()
-		}
-		cfg.Title = types.StringPointerValue(apiConfig.Title)
-		cfg.Description = types.StringPointerValue(apiConfig.Description)
-		cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-		cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
-		cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
-		pm.SloBurnRateConfig = cfg
+		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
 	}
 
 	existing := pm.SloBurnRateConfig
@@ -160,6 +131,25 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	}
 
 	return nil
+}
+
+func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) *models.SloBurnRateConfigModel {
+	cfg := &models.SloBurnRateConfigModel{
+		SloID:    types.StringValue(apiConfig.SloId),
+		Duration: types.StringValue(apiConfig.Duration),
+	}
+	// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
+	if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
+		cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
+	} else {
+		cfg.SloInstanceID = types.StringNull()
+	}
+	cfg.Title = types.StringPointerValue(apiConfig.Title)
+	cfg.Description = types.StringPointerValue(apiConfig.Description)
+	cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+	cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+	cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
+	return cfg
 }
 
 func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateConfigModel) {
