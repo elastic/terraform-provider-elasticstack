@@ -462,6 +462,31 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 - WHEN state is repopulated from the GET response
 - THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
 
+The provider SHALL apply intent-preserving null normalization to the root-level `description` attribute on read. When the Kibana API returns an empty-string `description` (`""`) and the prior Terraform plan/state had `description` as null (i.e., the practitioner did not set `description`), the provider SHALL store `null` in state — not `""`. When the prior Terraform plan/state had `description` as `""` (i.e., the practitioner explicitly set `description = ""`), the provider SHALL preserve `""` in state. When the API returns a non-empty `description`, the provider SHALL store that value unchanged.
+
+This normalization fixes a Kibana 9.5 behavior change: previously the API omitted `description` when none was supplied; from 9.5 onward it returns `""`. Without this fix, practitioners who omit `description` see "Provider produced inconsistent result after apply" with the message `.description: was null, but now cty.StringVal("")`.
+
+#### Scenario: Omitted description normalizes to null on read
+
+- GIVEN a dashboard configured without `description` (null in Terraform state/plan)
+- AND the Kibana API returns `description: ""`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = null`
+
+#### Scenario: Explicit empty description preserved on read
+
+- GIVEN a dashboard configured with `description = ""`
+- AND the Kibana API returns `description: ""`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = ""`
+
+#### Scenario: Non-empty description preserved unchanged
+
+- GIVEN a dashboard configured with `description = "My dashboard"`
+- AND the Kibana API returns `description: "My dashboard"`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = "My dashboard"`
+
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift where the implementation supports that behavior. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API does not supply a usable `access_control.access_mode` value, the resource SHALL clear `access_control` in Terraform state rather than leaving a stale prior value behind. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
@@ -469,6 +494,15 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
+
+The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
+
+#### Scenario: Empty-string description treated as null for null-intent practitioners
+
+- GIVEN a practitioner has never set `description` on a dashboard (prior state: null)
+- AND Kibana 9.5 returns `description: ""` on a subsequent read or post-apply read-back
+- WHEN the provider applies REQ-009 null-preservation to `description`
+- THEN state SHALL contain `description = null` and no drift SHALL be reported on the next plan
 
 #### Scenario: Options omitted in config
 
