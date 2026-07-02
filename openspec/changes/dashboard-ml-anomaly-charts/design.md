@@ -37,14 +37,14 @@ Plan-time validators enforce the "exactly one of `severity` | `min`" constraint.
 
 This guarantees a stable configuration produces no plan diff. Normalization to named form is permitted **only on import**.
 
-Anomaly scores are integers in `[0, 100]`; the five canonical bands are:
+Anomaly scores are integers in `[0, 100]`; the five canonical bands match the generated Kibana OpenAPI const values (`KibanaHTTPAPIsMlAnomalyChartsSeverityThreshold0`–`SeverityThreshold4`):
 
 | `severity` value | API `min` | API `max`   |
 |---|---|---|
-| `low`      | 0  | 2  (inclusive) |
-| `warning`  | 3  | 24 (inclusive) |
-| `minor`    | 25 | 49 (inclusive) |
-| `major`    | 50 | 74 (inclusive) |
+| `low`      | 0  | 3            |
+| `warning`  | 3  | 25           |
+| `minor`    | 25 | 50           |
+| `major`    | 50 | 75           |
 | `critical` | 75 | — (open-ended, no `max`) |
 
 On **write**: named severity → expand to canonical pair; raw range → use as-is.
