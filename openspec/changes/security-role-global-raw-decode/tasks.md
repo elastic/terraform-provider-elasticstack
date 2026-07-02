@@ -2,22 +2,30 @@
 
 - [ ] 1.1 In `internal/clients/elasticsearch/security_role.go`, replace `typedClient.Security.GetRole().Name(rolename).Do(ctx)` with a raw `GET /_security/role/<rolename>` request via `typedClient.Transport.Perform(req)`, following the pattern in `internal/clients/elasticsearch/index.go`
 - [ ] 1.2 Decode the response body as `map[string]json.RawMessage` to locate the per-role entry by name
-- [ ] 1.3 From the per-role raw entry, extract each field independently: decode all fields except `global` using the typed `types.Role` partial struct (or individual field decoders), and decode `global` as `json.RawMessage`
-- [ ] 1.4 Construct the result without decoding `global` into `types.Role.Global` (e.g., return typed role fields plus a separate `global` `json.RawMessage`, or introduce a small provider wrapper struct that carries `*types.Role` and `GlobalRaw`).
+- [ ] 1.3 From the per-role raw entry, extract each field independently: decode all fields except `global` into the typed `types.Role` struct (or individual field decoders), and decode `global` as `json.RawMessage`
+- [ ] 1.4 Change `GetRole`'s return contract to carry the raw `global` JSON **alongside** the typed `*types.Role` (e.g. a result struct holding both). Do **not** assign `global` to `types.Role.Global` — that field is `map[string]map[string]map[string][]string` and cannot represent array-typed categories like `data_source: []`
 - [ ] 1.5 Handle non-2xx HTTP responses (read body, return error diagnostic) and body-read/decode errors
 - [ ] 1.6 Preserve the existing 404 → `(nil, nil)` behavior for not-found roles
 
-## 2. Loosen write-path global decode in models.go
+## 2. Consume raw global in both fromAPIModel variants
 
-- [ ] 2.1 In `internal/elasticsearch/security/role/models.go` at line 122, change `var global map[string]map[string]map[string][]string` to `var global map[string]any`
-- [ ] 2.2 Verify the downstream marshal path (`role.Global = global`) is compatible — the typed PutRole builder already accepts `map[string]json.RawMessage` via the conversion at `security_role.go:46–50`, so `map[string]any` is safe as the intermediate type
+- [ ] 2.1 In `internal/elasticsearch/security/role/models.go` `fromAPIModel`, consume the raw `global` JSON returned by `GetRole` directly into `customtypes.JSONWithDefaultsValue` (via `populateGlobalPrivilegesDefaults`) instead of reading `role.Global` / marshaling it
+- [ ] 2.2 In `internal/elasticsearch/security/role/data_source.go` `fromAPIModel`, apply the same change so the data source read path stays in lockstep with the resource
+- [ ] 2.3 Verify `PutRole` (`internal/clients/elasticsearch/security_role.go`) is unchanged — it marshals `role.Global` to `map[string]json.RawMessage` and is unaffected for the shapes users configure today
 
-## 3. Validation and build
+## 3. Extend default-stripping for data_source
 
-- [ ] 3.1 Run `make build` and confirm compilation succeeds
-- [ ] 3.2 Run `go vet ./internal/clients/elasticsearch/... ./internal/elasticsearch/security/role/...` and resolve any issues
-- [ ] 3.3 Run `go test ./internal/elasticsearch/security/role/...` (unit tests) and confirm they pass
+- [ ] 3.1 In `internal/elasticsearch/security/role/global_defaults.go`, extend `populateGlobalPrivilegesDefaults` to strip `data_source` when it is an empty array (`[]`), mirroring the existing `role: {}` empty-object strip
+- [ ] 3.2 Generalize the strip to "strip server-injected empty `global` defaults" so future empty-array/empty-object categories don't cause perpetual diffs
+- [ ] 3.3 Add a unit test covering `data_source: []` stripping (and a mixed case where `data_source` is non-empty and is preserved)
 
-## 4. Spec sync
+## 4. Validation and build
 
-- [ ] 4.1 Verify `make check-openspec` passes after merging the delta spec into the main spec
+- [ ] 4.1 Run `make build` and confirm compilation succeeds
+- [ ] 4.2 Run `go vet ./internal/clients/elasticsearch/... ./internal/elasticsearch/security/role/...` and resolve any issues
+- [ ] 4.3 Run `go test ./internal/elasticsearch/security/role/...` (unit tests) and confirm they pass
+- [ ] 4.4 Run `TestAccResourceSecurityRole` against a 9.5.0-SNAPSHOT stack and confirm the `global` state assertion holds (no `data_source`, no `role`)
+
+## 5. Spec sync
+
+- [ ] 5.1 Verify `make check-openspec` passes after merging the delta spec into the main spec

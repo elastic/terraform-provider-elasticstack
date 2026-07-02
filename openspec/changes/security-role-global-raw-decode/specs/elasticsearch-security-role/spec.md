@@ -2,7 +2,7 @@
 
 ### Requirement: Role CRUD APIs (REQ-001–REQ-003) — partial update
 
-The `GetRole` implementation SHALL bypass the typed `Security.GetRole` client call and instead fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform`. The PutRole and DeleteRole implementations continue to use the go-elasticsearch Typed API unchanged. The raw response body SHALL be decoded as `map[string]json.RawMessage` to locate the per-role entry. The `global` field SHALL be extracted as `json.RawMessage` and carried through to the model layer without being decoded through the typed `Role.Global` field. All other role fields (applications, cluster, indices, remote_indices, run_as, metadata, description) SHALL continue to be decoded from the API response using the typed `types.Role` struct or equivalent individual field decoders.
+The `GetRole` implementation SHALL bypass the typed `Security.GetRole` client call and instead fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform`. The PutRole and DeleteRole implementations continue to use the go-elasticsearch Typed API unchanged. The raw response body SHALL be decoded as `map[string]json.RawMessage` to locate the per-role entry. The `global` field SHALL be extracted as `json.RawMessage` and carried to the model layer **out-of-band** (not assigned to `types.Role.Global`, which is typed `map[string]map[string]map[string][]string` and cannot represent array-typed categories). All other role fields (applications, cluster, indices, remote_indices, run_as, metadata, description) SHALL continue to be decoded from the API response using the typed `types.Role` struct or equivalent individual field decoders.
 
 This change is required because the go-elasticsearch typed client declares `Role.Global` as `map[string]map[string]map[string][]string`, which cannot decode heterogeneous per-category shapes such as the `"data_source": []` array introduced in Elasticsearch 9.5. Upstream tracking: elasticsearch-specification#6377.
 
@@ -11,7 +11,7 @@ This change is required because the go-elasticsearch typed client declares `Role
 - GIVEN an Elasticsearch 9.5+ role that includes `"global": {"data_source": [], "application": {}, "profile": {...}}`
 - WHEN the provider reads the role
 - THEN the provider SHALL successfully decode the response without an unmarshal error
-- AND the `global` field in Terraform state SHALL contain the API-returned JSON blob
+- AND the `global` field SHALL be carried to the model layer as raw JSON (not via `types.Role.Global`)
 - AND all other role attributes SHALL be populated from the same API response
 
 #### Scenario: GetRole preserves existing behavior for non-global fields
@@ -24,7 +24,7 @@ This change is required because the go-elasticsearch typed client declares `Role
 
 - GIVEN a role name that does not exist in Elasticsearch
 - WHEN the provider calls GetRole
-- THEN the provider SHALL return `(nil, nil)` without error, preserving the existing not-found behavior
+- THEN the provider SHALL return a not-found result (nil role) without error, preserving the existing not-found behavior
 
 #### Scenario: GetRole surfaces HTTP errors
 
@@ -34,20 +34,47 @@ This change is required because the go-elasticsearch typed client declares `Role
 
 ---
 
-## ADDED Requirements
+### Requirement: Typed client implementation for security role — narrowed
 
-### Requirement: Write-path global decode uses map[string]any (REQ-039)
+The `elasticstack_elasticsearch_security_role` resource and data source SHALL manage roles using the go-elasticsearch Typed API for PutRole and DeleteRole (`elasticsearch.TypedClient.Security.PutRole`, `Security.DeleteRole`). **GetRole is narrowed**: because the typed client's `Role.Global` field (`map[string]map[string]map[string][]string`) cannot decode heterogeneous per-category shapes such as the ES 9.5 `"data_source": []` array (upstream: elasticsearch-specification#6377), GetRole SHALL fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform` and decode `global` as `json.RawMessage`, carrying it to the model layer out-of-band. All non-`global` fields continue to use the typed `types.Role` struct. The typed API response SHALL be used directly for PutRole/DeleteRole without manual JSON decoding into an intermediate `models.Role` type.
 
-When the user configures the `global` attribute, the `toAPIModel` conversion SHALL decode the JSON string into `map[string]any` (not `map[string]map[string]map[string][]string`). This accommodates heterogeneous per-category shapes in user-supplied `global` JSON — for example, categories whose values are arrays rather than nested objects. The decoded value SHALL then be marshaled back to JSON for the PutRole API payload using the existing marshal-to-`map[string]json.RawMessage` path in `security_role.go`.
+#### Scenario: Typed API for write/delete
 
-#### Scenario: Global with standard application privileges encodes correctly
+- GIVEN a valid Elasticsearch connection
+- WHEN the resource performs create, update, or delete
+- THEN the provider SHALL call the typed Security PutRole/DeleteRole APIs
+- AND role data for the write payload SHALL be returned as `*types.Role`
 
-- GIVEN `global = jsonencode({"application": {"manage": {"applications": ["myapp"]}}})`
-- WHEN create or update runs
-- THEN the provider SHALL marshal `global` without error and include the correct payload in the Put role API request
+#### Scenario: Raw transport for GetRole global field
 
-#### Scenario: Global with array-typed category encodes without error
+- GIVEN a role that includes `global` privileges (including ES 9.5+ array-typed categories)
+- WHEN the resource or data source reads the role
+- THEN the provider SHALL fetch the role via raw `GET /_security/role/<name>` transport
+- AND SHALL decode `global` as `json.RawMessage` (not through `types.Role.Global`)
+- AND SHALL decode all other fields into the typed `types.Role` struct
 
-- GIVEN `global = jsonencode({"data_source": [], "application": {"manage": {"applications": ["*"]}}})`
-- WHEN create or update runs
-- THEN the provider SHALL marshal `global` without error and include the payload in the Put role API request, forwarding the array as-is to Elasticsearch
+---
+
+## MODIFIED Requirements
+
+### Requirement: Global defaults normalization
+
+`populateGlobalPrivilegesDefaults` SHALL strip server-injected empty `global` defaults from the API-returned `global` blob before it is written to Terraform state, so state matches user intent rather than the raw API response. This SHALL include stripping `role` when it is an empty object (`{}`) and `data_source` when it is an empty array (`[]`), and SHALL be generalized to strip future server-injected empty defaults (empty objects or empty arrays) as they appear.
+
+#### Scenario: Empty role object is stripped
+
+- GIVEN an API-returned `global` of `{"application": {}, "profile": {...}, "role": {}}`
+- WHEN the provider normalizes `global` for state
+- THEN state SHALL contain `{"application": {}, "profile": {...}}` (empty `role` stripped)
+
+#### Scenario: Empty data_source array is stripped
+
+- GIVEN an Elasticsearch 9.5+ API-returned `global` of `{"application": {}, "profile": {...}, "data_source": []}`
+- WHEN the provider normalizes `global` for state
+- THEN state SHALL contain `{"application": {}, "profile": {...}}` (empty `data_source` stripped)
+
+#### Scenario: Non-empty data_source is preserved
+
+- GIVEN an API-returned `global` of `{"application": {}, "data_source": ["foo"]}`
+- WHEN the provider normalizes `global` for state
+- THEN state SHALL contain `{"application": {}, "data_source": ["foo"]}` (non-empty `data_source` preserved)
