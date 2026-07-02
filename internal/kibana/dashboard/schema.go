@@ -74,6 +74,7 @@ func getSchema() schema.Schema {
 		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit."
 
 	return schema.Schema{
+		Version: 1,
 		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). " +
 			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
 			dashboardNotes,
