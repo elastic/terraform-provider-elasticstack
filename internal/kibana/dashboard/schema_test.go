@@ -27,8 +27,8 @@ import (
 
 // expectedPanelConfigs covers the design D9 set of top-level panel-config
 // branches: API panel kinds + universal config_json (plus image, slo_alerts,
-// discover_session, the two ML anomaly panels, apm_service_map, and the three AIOps panels).
-const expectedPanelConfigs = 21
+// discover_session, the three ML anomaly panels, apm_service_map, and the three AIOps panels).
+const expectedPanelConfigs = 22
 
 func Test_panelConfigNames_matchesPanelSchemaAttributes(t *testing.T) {
 	names := panelConfigNames()
