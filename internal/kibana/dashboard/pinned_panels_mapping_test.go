@@ -60,8 +60,10 @@ func pinnedFixtureOptionsList(field string) models.PinnedPanelModel {
 	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeOptionsListControl),
 		OptionsListControlConfig: &models.OptionsListControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue(field),
+			ByField: &models.OptionsListControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue(field),
+			},
 		},
 	}
 }
@@ -70,13 +72,15 @@ func pinnedFixtureRangeSlider(minVal, maxVal string, step float32) models.Pinned
 	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeRangeSlider),
 		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("source.bytes"),
-			Value: types.ListValueMust(types.StringType, []attr.Value{
-				types.StringValue(minVal),
-				types.StringValue(maxVal),
-			}),
-			Step: types.Float32Value(step),
+			ByField: &models.RangeSliderControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("source.bytes"),
+				Value: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue(minVal),
+					types.StringValue(maxVal),
+				}),
+				Step: types.Float32Value(step),
+			},
 		},
 	}
 }
@@ -159,13 +163,15 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 			FieldName:  types.StringValue("status"),
 		}
 		rs := &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("source.bytes"),
-			Value: types.ListValueMust(types.StringType, []attr.Value{
-				types.StringValue("100"),
-				types.StringValue("500"),
-			}),
-			Step: types.Float32Value(10),
+			ByField: &models.RangeSliderControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("source.bytes"),
+				Value: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("100"),
+					types.StringValue("500"),
+				}),
+				Step: types.Float32Value(10),
+			},
 		}
 
 		prior := []models.PinnedPanelModel{

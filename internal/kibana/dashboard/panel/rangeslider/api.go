@@ -30,8 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-const panelConfigAttrsKeyPrefix = panelType + "_config"
-
 type Handler struct{}
 
 func (Handler) PanelType() string                  { return panelType }
@@ -87,7 +85,16 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, nil
 }
 
-// ValidatePanelConfig enforces required range slider identifiers.
-func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	return panelkit.ValidateDataViewFieldName(attrs, panelConfigAttrsKeyPrefix, "Invalid range slider control configuration", attrPath)
+// ValidatePanelConfig is a no-op: all range_slider_control_config validation is enforced by
+// schema-level validators. `by_field.data_view_id` / `by_field.field_name` and
+// `by_esql.esql_query` / `by_esql.values_source` are natively `Required: true` inside their
+// respective nested blocks, and the by_field/by_esql union itself is enforced by
+// ExactlyOneOfNestedAttrsValidator + objectvalidator.ConflictsWith in schema.go.
+//
+// Note: panelkit.ValidateDataViewFieldName (previously used here) assumed data_view_id/field_name
+// lived directly under range_slider_control_config. Post-restructure they live two levels deep
+// under range_slider_control_config.by_field, a shape ResolvePanelAttrsShape does not resolve, so
+// calling it here would spuriously error "data_view_id is required" any time by_field is set.
+func (Handler) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
+	return nil
 }
