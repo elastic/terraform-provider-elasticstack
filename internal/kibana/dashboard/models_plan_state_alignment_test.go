@@ -264,8 +264,10 @@ func Test_alignDashboardStateFromPlanPinnedPanels_seedsNilControlConfigFromPlan(
 	t.Parallel()
 
 	planCfg := &models.OptionsListControlConfigModel{
-		DataViewID: types.StringValue("dv"),
-		FieldName:  types.StringValue("status"),
+		ByField: &models.OptionsListControlByFieldModel{
+			DataViewID: types.StringValue("dv"),
+			FieldName:  types.StringValue("status"),
+		},
 	}
 	planPins := []models.PinnedPanelModel{{
 		Type:                     types.StringValue(panelTypeOptionsListControl),
@@ -278,8 +280,9 @@ func Test_alignDashboardStateFromPlanPinnedPanels_seedsNilControlConfigFromPlan(
 	alignDashboardStateFromPlanPinnedPanels(t.Context(), planPins, statePins)
 
 	require.NotNil(t, statePins[0].OptionsListControlConfig)
-	require.Equal(t, "status", statePins[0].OptionsListControlConfig.FieldName.ValueString())
-	require.Equal(t, "dv", statePins[0].OptionsListControlConfig.DataViewID.ValueString())
+	require.NotNil(t, statePins[0].OptionsListControlConfig.ByField)
+	require.Equal(t, "status", statePins[0].OptionsListControlConfig.ByField.FieldName.ValueString())
+	require.Equal(t, "dv", statePins[0].OptionsListControlConfig.ByField.DataViewID.ValueString())
 }
 
 // Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment verifies XY drift alignment runs through

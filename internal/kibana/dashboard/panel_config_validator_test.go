@@ -394,10 +394,6 @@ func Test_optionsListControlSearchTechniqueValidator(t *testing.T) {
 	olAttr, ok := panelSchema.Attributes["options_list_control_config"].(schema.SingleNestedAttribute)
 	require.True(t, ok)
 
-	searchTechAttr, ok := olAttr.Attributes["search_technique"].(schema.StringAttribute)
-	require.True(t, ok)
-	require.NotEmpty(t, searchTechAttr.Validators)
-
 	testCases := []struct {
 		name      string
 		value     string
@@ -410,25 +406,36 @@ func Test_optionsListControlSearchTechniqueValidator(t *testing.T) {
 		{name: "rejects empty string", value: "", expectErr: true},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			req := validator.StringRequest{
-				Path:           path.Root("search_technique"),
-				PathExpression: path.MatchRoot("search_technique"),
-				ConfigValue:    types.StringValue(tc.value),
-			}
-			resp := validator.StringResponse{}
+	// search_technique is duplicated (identically validated) inside both the by_field and
+	// by_esql branches of options_list_control_config.
+	for _, branch := range []string{"by_field", "by_esql"} {
+		branchAttr, ok := olAttr.Attributes[branch].(schema.SingleNestedAttribute)
+		require.True(t, ok, "branch %q", branch)
 
-			for _, v := range searchTechAttr.Validators {
-				v.ValidateString(context.Background(), req, &resp)
-			}
+		searchTechAttr, ok := branchAttr.Attributes["search_technique"].(schema.StringAttribute)
+		require.True(t, ok, "branch %q", branch)
+		require.NotEmpty(t, searchTechAttr.Validators, "branch %q", branch)
 
-			if tc.expectErr {
-				require.True(t, resp.Diagnostics.HasError())
-			} else {
-				require.False(t, resp.Diagnostics.HasError())
-			}
-		})
+		for _, tc := range testCases {
+			t.Run(branch+"/"+tc.name, func(t *testing.T) {
+				req := validator.StringRequest{
+					Path:           path.Root("search_technique"),
+					PathExpression: path.MatchRoot("search_technique"),
+					ConfigValue:    types.StringValue(tc.value),
+				}
+				resp := validator.StringResponse{}
+
+				for _, v := range searchTechAttr.Validators {
+					v.ValidateString(context.Background(), req, &resp)
+				}
+
+				if tc.expectErr {
+					require.True(t, resp.Diagnostics.HasError())
+				} else {
+					require.False(t, resp.Diagnostics.HasError())
+				}
+			})
+		}
 	}
 }
 
