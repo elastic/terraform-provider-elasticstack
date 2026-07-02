@@ -246,6 +246,45 @@ func applyDefaultsToInput(ctx context.Context, input integrationPolicyInputsMode
 	return result, diags
 }
 
+// serverManagedVarsKeys lists keys that Fleet 9.5+ injects into compiled
+// stream vars for input-type packages. They are server-managed and must not
+// trigger a diff when present in the API response but absent from the plan.
+var serverManagedVarsKeys = []string{
+	"data_stream.type",
+	"data_stream.dataset",
+}
+
+// stripServerManagedVarsKeys removes server-managed keys from a stream vars
+// JSON value before semantic equality comparison. The stripped value is used
+// only for comparison; it is never written back to state or sent to the API.
+// If the input is null or unknown, it is returned unchanged with no diagnostics.
+func stripServerManagedVarsKeys(vars jsontypes.Normalized) (jsontypes.Normalized, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !typeutils.IsKnown(vars) {
+		return vars, diags
+	}
+
+	var varsMap map[string]any
+	d := vars.Unmarshal(&varsMap)
+	diags.Append(d...)
+	if diags.HasError() {
+		return vars, diags
+	}
+
+	for _, key := range serverManagedVarsKeys {
+		delete(varsMap, key)
+	}
+
+	varsBytes, err := json.Marshal(varsMap)
+	if err != nil {
+		diags.AddError("Failed to marshal vars after stripping server-managed keys", err.Error())
+		return vars, diags
+	}
+
+	return jsontypes.NewNormalizedValue(string(varsBytes)), diags
+}
+
 func applyDefaultsToVars(vars jsontypes.Normalized, defaults jsontypes.Normalized) (jsontypes.Normalized, diag.Diagnostics) {
 	if !typeutils.IsKnown(defaults) {
 		return vars, nil
@@ -370,9 +409,24 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 			return false, diags
 		}
 
+		// Strip server-managed keys (data_stream.*) injected by Fleet 9.5+
+		// from both sides before comparing. These keys are synthesised by Fleet
+		// and are not user-configurable; their presence in the API response
+		// must not trigger a diff.
+		oldVarsStripped, stripDiags := stripServerManagedVarsKeys(oldStream.Vars)
+		diags.Append(stripDiags...)
+		if diags.HasError() {
+			return false, diags
+		}
+		newVarsStripped, stripDiags := stripServerManagedVarsKeys(newStream.Vars)
+		diags.Append(stripDiags...)
+		if diags.HasError() {
+			return false, diags
+		}
+
 		// Compare vars using semantic equality if both are known
-		if typeutils.IsKnown(oldStream.Vars) && typeutils.IsKnown(newStream.Vars) {
-			varsEqual, d := oldStream.Vars.StringSemanticEquals(ctx, newStream.Vars)
+		if typeutils.IsKnown(oldVarsStripped) && typeutils.IsKnown(newVarsStripped) {
+			varsEqual, d := oldVarsStripped.StringSemanticEquals(ctx, newVarsStripped)
 			diags.Append(d...)
 			if diags.HasError() {
 				return false, diags
@@ -380,7 +434,7 @@ func compareStreams(ctx context.Context, oldInput, newInput integrationPolicyInp
 			if !varsEqual {
 				return false, diags
 			}
-		} else if !oldStream.Vars.Equal(newStream.Vars) {
+		} else if !oldVarsStripped.Equal(newVarsStripped) {
 			// If one is null/unknown, use regular equality
 			return false, diags
 		}
