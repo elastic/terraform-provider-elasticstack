@@ -172,10 +172,10 @@ The resource SHALL call `GET /api/fleet/package_policies/{policy_id}` (space-awa
 
 #### Scenario: Create-only flags are not round-tripped from the API
 
-- **WHEN** a resource with `force`, `force_delete`, and `create_dataset_templates` set in config is read
-- **THEN** none of `force`, `force_delete`, or `create_dataset_templates` SHALL be sourced from the API response
+- **WHEN** a resource with `force`, `force_delete`, `create_dataset_templates`, and `skip_topology_check` set in config is read
+- **THEN** none of `force`, `force_delete`, `create_dataset_templates`, or `skip_topology_check` SHALL be sourced from the API response
 - **AND** each SHALL retain its config value in state
-- **AND** changing any of them after creation SHALL NOT make any API call; the provider SHALL perform a state-only Update to persist the new values for future operations (e.g., `force_delete` on Delete, create-only flags on the next Create).
+- **AND** changing any of them after creation SHALL NOT make any API call; the provider SHALL perform a state-only Update to persist the new values for future operations (e.g., `force_delete` on Delete, create-only flags on the next Create, `skip_topology_check` on the next Create).
 
 ### Requirement: Update
 

@@ -71,6 +71,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		prior.CreateDatasetTemplates = types.BoolValue(false)
 		prior.Force = types.BoolValue(false)
 		prior.ForceDelete = types.BoolValue(false)
+		prior.SkipTopologyCheck = types.BoolValue(false)
 
 		plan = prior
 		return prior, plan
@@ -112,6 +113,24 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		require.False(t, *called, "no Fleet API call should be made for a force/force_delete-only change")
 		require.True(t, result.Model.Force.ValueBool())
 		require.True(t, result.Model.ForceDelete.ValueBool())
+	})
+
+	t.Run("skip_topology_check alone changing makes no API call", func(t *testing.T) {
+		prior, plan := newPriorAndPlan(t)
+		plan.SkipTopologyCheck = types.BoolValue(true)
+
+		handler, called := fleetPackagePolicyCallRecorder(t)
+		client := newTopologyTestClient(t, handler)
+
+		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			Plan:    plan,
+			Prior:   &prior,
+			SpaceID: "default",
+		})
+
+		require.False(t, diags.HasError(), "%v", diags)
+		require.False(t, *called, "no Fleet API call should be made for a skip_topology_check-only change")
+		require.True(t, result.Model.SkipTopologyCheck.ValueBool())
 	})
 
 	t.Run("a create-only-flag change alongside a real attribute change still calls the API", func(t *testing.T) {
@@ -166,6 +185,7 @@ func TestOnlyCreateOnlyFlagsChanged(t *testing.T) {
 		plan.CreateDatasetTemplates = types.BoolValue(true)
 		plan.Force = types.BoolValue(true)
 		plan.ForceDelete = types.BoolValue(true)
+		plan.SkipTopologyCheck = types.BoolValue(true)
 		require.True(t, onlyCreateOnlyFlagsChanged(base, plan))
 	})
 

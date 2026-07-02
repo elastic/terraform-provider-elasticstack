@@ -67,6 +67,7 @@ func baseTestModel(t *testing.T) agentlessPolicyModel {
 		CreateDatasetTemplates:           types.BoolNull(),
 		Force:                            types.BoolNull(),
 		ForceDelete:                      types.BoolValue(false),
+		SkipTopologyCheck:                types.BoolValue(false),
 		SpaceIDs:                         types.SetNull(types.StringType),
 	}
 }

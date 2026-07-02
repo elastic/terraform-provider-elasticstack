@@ -239,18 +239,21 @@ func mergeVarsInto[V any](dst **V, planVars map[string]any, diags *diag.Diagnost
 }
 
 // onlyCreateOnlyFlagsChanged reports whether prior and plan are identical in
-// every attribute except create_dataset_templates, force, and force_delete.
-// Those three are create/delete-request-only knobs -- never part of the
-// Fleet API's read response, and deliberately not RequiresReplace (see
-// spec.md's "Schema attributes" requirement and this file's
-// updateAgentlessPolicy) -- so a config change confined to them carries no
-// information the API needs to see, and per spec.md's "Create" requirement
-// changing them "SHALL NOT make any API call". Comparing every other field
-// (rather than allowlisting "the fields Update actually sends") is
-// deliberately conservative: if anything else in the model also drifted --
-// including drift entitycore/Terraform itself wouldn't have produced, such
-// as a concurrent out-of-band edit surfaced by a prior Read -- this returns
-// false and the normal GET+PUT path below runs instead.
+// every attribute except create_dataset_templates, force, force_delete, and
+// skip_topology_check. Those four are create/delete-request-only knobs --
+// never part of the Fleet API's read response, and deliberately not
+// RequiresReplace (see spec.md's "Schema attributes" requirement and this
+// file's updateAgentlessPolicy) -- so a config change confined to them
+// carries no information the API needs to see, and per spec.md's "Create"
+// requirement changing them "SHALL NOT make any API call".
+// skip_topology_check in particular is consulted only by Create's preflight
+// check (see create.go) and is never read by updateAgentlessPolicy, so it
+// gets the same treatment. Comparing every other field (rather than
+// allowlisting "the fields Update actually sends") is deliberately
+// conservative: if anything else in the model also drifted -- including
+// drift entitycore/Terraform itself wouldn't have produced, such as a
+// concurrent out-of-band edit surfaced by a prior Read -- this returns false
+// and the normal GET+PUT path below runs instead.
 //
 // kibana_connection (ResourceTimeoutsField) and the Timeouts block are
 // intentionally excluded: they are pure provider-side plumbing that is never
@@ -271,7 +274,6 @@ func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
 		prior.CloudConnector.Equal(plan.CloudConnector) &&
 		prior.GlobalDataTags.Equal(plan.GlobalDataTags) &&
 		prior.AdditionalDatastreamsPermissions.Equal(plan.AdditionalDatastreamsPermissions) &&
-		prior.SkipTopologyCheck.Equal(plan.SkipTopologyCheck) &&
 		prior.CreatedAt.Equal(plan.CreatedAt) &&
 		prior.UpdatedAt.Equal(plan.UpdatedAt)
 }
