@@ -124,6 +124,11 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 		"package_version": config.StringVariable(cspmPackageVersion),
 	}
 
+	// capturedUpdatedAt is populated by the "update_vars" step's Check below
+	// and compared against in the "update_flag_only" step that follows it --
+	// see that step's comment for what this proves.
+	var capturedUpdatedAt string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentlessPolicyDestroy,
@@ -222,13 +227,72 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.1.value", "security"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
+					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
+						capturedUpdatedAt = value
+						return nil
+					}),
+				),
+			},
+			{
+				// Real-world regression proof for the update.go
+				// onlyCreateOnlyFlagsChanged short-circuit (see that function's
+				// doc comment): this config is byte-for-byte identical to the
+				// "update_vars" step's above except for adding
+				// skip_topology_check = true, a create-only flag that
+				// updateAgentlessPolicy never sends to the Fleet API. Terraform
+				// still invokes Update (skip_topology_check is not
+				// RequiresReplace, so this step still shows a plan diff), but
+				// updateAgentlessPolicy itself must recognize the change is
+				// confined to a create-only flag and skip the GET+PUT round
+				// trip entirely.
+				//
+				// onlyCreateOnlyFlagsChanged (update.go) never compares
+				// created_at/updated_at at all -- both are purely
+				// server-Computed, so a naive prior.UpdatedAt.Equal(plan.UpdatedAt)
+				// comparison would be permanently defeated here: updated_at
+				// has no UseStateForUnknown plan modifier (schema.go -- it
+				// legitimately changes on every real Update, so promising it
+				// won't would be wrong) and so is Unknown in this plan
+				// regardless of whether this change is create-only-flags-only.
+				// See update_test.go's TestOnlyCreateOnlyFlagsChanged for the
+				// equivalent unit-level proof.
+				//
+				// Kibana bumps package_policy.updated_at on every real PUT, so
+				// an unchanged updated_at after this apply is direct empirical
+				// evidence against a live deployment that no API call was made
+				// -- not just that the provider's local bookkeeping thinks so.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_flag_only"),
+				ConfigVariables:          baseVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "skip_topology_check", "true"),
+					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
+						if value != capturedUpdatedAt {
+							return fmt.Errorf(
+								"updated_at changed from %q to %q after a create-only-flag-only change; "+
+									"this means updateAgentlessPolicy's onlyCreateOnlyFlagsChanged short-circuit "+
+									"did not fire and a real GET+PUT round trip was made against the Fleet API",
+								capturedUpdatedAt, value,
+							)
+						}
+						return nil
+					}),
 				),
 			},
 			{
 				// Import by composite ID (Task 8.2, default-space case): the
 				// resource's own `id` is already "default/<policy_id>".
+				// ConfigDirectory matches the immediately preceding
+				// "update_flag_only" step (not "update_vars") so this step's
+				// implicit re-apply is a no-op and doesn't reintroduce a real
+				// GET+PUT before the import itself.
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_vars"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_flag_only"),
 				ConfigVariables:          baseVars,
 				ResourceName:             testResourceName,
 				ImportState:              true,

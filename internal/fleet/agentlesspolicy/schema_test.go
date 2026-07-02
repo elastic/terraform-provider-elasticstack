@@ -273,11 +273,26 @@ func TestGetSchema_extrasAndOperationFlags(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, createdAt.Computed)
 	assert.False(t, createdAt.Optional)
+	// created_at carries UseStateForUnknown because it never legitimately
+	// changes after the resource is created (Kibana never updates it), so
+	// there is no risk of the plan promising "unchanged" and apply then
+	// producing a different value -- unlike updated_at just below.
+	assert.True(t, hasStringUseStateForUnknown(createdAt.PlanModifiers), "created_at should have UseStateForUnknown")
 
 	updatedAt, ok := s.Attributes["updated_at"].(schema.StringAttribute)
 	require.True(t, ok)
 	assert.True(t, updatedAt.Computed)
 	assert.False(t, updatedAt.Optional)
+	// updated_at deliberately must NOT carry UseStateForUnknown: it
+	// legitimately changes on every real Update (Kibana bumps it), so a plan
+	// modifier that pre-commits it to "stays equal to prior state" would be
+	// actively wrong and produce a live "Provider produced inconsistent
+	// result after apply" error whenever a real content change actually
+	// happens -- confirmed empirically via the acceptance test step in
+	// acc_test.go. onlyCreateOnlyFlagsChanged (update.go) is instead written
+	// to never depend on updated_at's plan value at all -- see its doc
+	// comment and TestOnlyCreateOnlyFlagsChanged.
+	assert.False(t, hasStringUseStateForUnknown(updatedAt.PlanModifiers), "updated_at must NOT have UseStateForUnknown")
 }
 
 // TestAgentlessPolicyModel_coversAllSchemaAttributes cross-checks that every

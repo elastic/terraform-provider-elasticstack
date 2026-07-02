@@ -123,6 +123,27 @@ func mergeVarsInto[V any](dst **V, planVars map[string]any, diags *diag.Diagnost
 // intentionally excluded: they are pure provider-side plumbing that is never
 // part of the Fleet request body either, so their presence or absence has no
 // bearing on whether an API call is needed.
+//
+// created_at and updated_at are also intentionally excluded, for a different
+// reason than the plumbing fields above: they are purely server-Computed
+// (never Optional -- a user's config can never set or influence them), so
+// they can never actually be *what changed* between prior and plan; comparing
+// them here would only ever be testing an artifact of how the Plugin
+// Framework happened to resolve their plan value, not a real signal of user
+// intent. That distinction used to matter concretely: created_at/updated_at
+// are Computed with no plan modifier that forces them to a known value, so
+// the framework marks them Unknown in the plan for every Update regardless of
+// whether they are "really" changing -- which made a naive
+// prior.CreatedAt.Equal(plan.CreatedAt)-style comparison always false in a
+// real Terraform plan (Unknown never equals a known value), permanently
+// defeating this short-circuit outside of unit tests that hand-built a plan
+// with matching known timestamps. Excluding both fields here fixes that
+// directly, without depending on schema.go's plan modifiers lining up a
+// particular way. (created_at additionally now carries UseStateForUnknown in
+// schema.go, since it never legitimately changes after creation -- but
+// updated_at deliberately does NOT, since it genuinely changes on every real
+// Update; see schema.go's updated_at comment for why forcing it to look
+// unchanged in the plan would be actively wrong.)
 func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
 	return prior.ID.Equal(plan.ID) &&
 		prior.PolicyID.Equal(plan.PolicyID) &&
@@ -137,9 +158,7 @@ func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
 		prior.Inputs.Equal(plan.Inputs) &&
 		prior.CloudConnector.Equal(plan.CloudConnector) &&
 		prior.GlobalDataTags.Equal(plan.GlobalDataTags) &&
-		prior.AdditionalDatastreamsPermissions.Equal(plan.AdditionalDatastreamsPermissions) &&
-		prior.CreatedAt.Equal(plan.CreatedAt) &&
-		prior.UpdatedAt.Equal(plan.UpdatedAt)
+		prior.AdditionalDatastreamsPermissions.Equal(plan.AdditionalDatastreamsPermissions)
 }
 
 // updateAgentlessPolicy implements Task 5.3 of the fleet-agentless-policy

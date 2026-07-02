@@ -274,10 +274,37 @@ func getSchema(_ context.Context) schema.Schema {
 			"created_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The creation timestamp of the agentless policy (ISO 8601).",
+				// UseStateForUnknown is correct (and safe in every Update
+				// scenario, real or short-circuited) because created_at never
+				// changes after the resource is created -- Kibana never
+				// updates it. See update.go's onlyCreateOnlyFlagsChanged doc
+				// comment for why this attribute is nonetheless excluded from
+				// that function's comparison chain: it's a belt-and-suspenders
+				// fix, not a substitute for it.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated_at": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "The last-updated timestamp of the agentless policy (ISO 8601).",
+				// Deliberately NOT UseStateForUnknown, unlike created_at
+				// above: updated_at legitimately changes on every real
+				// Update (Kibana bumps it), so pre-committing the plan to
+				// "this will stay equal to the prior state's value" is
+				// actively wrong whenever a real update happens -- doing so
+				// was verified empirically (via the acceptance test step in
+				// acc_test.go) to produce a live "Provider produced
+				// inconsistent result after apply: unexpected new value:
+				// .updated_at" error on Kibana returning a genuinely new
+				// updated_at after a real content change. Leaving this
+				// Computed-only means it is Unknown ("known after apply") in
+				// every Update plan -- slightly noisier, but always
+				// consistent with whatever Update's read-after-write refresh
+				// actually returns. See update.go's onlyCreateOnlyFlagsChanged
+				// doc comment for how the create-only-flags short-circuit is
+				// made correct without relying on this attribute ever being
+				// Known in the plan.
 			},
 		},
 	}

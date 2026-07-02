@@ -73,8 +73,25 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		prior.Force = types.BoolValue(false)
 		prior.ForceDelete = types.BoolValue(false)
 		prior.SkipTopologyCheck = types.BoolValue(false)
+		// Fixture reflects the actual shape a real Terraform Update plan
+		// produces (schema.go): created_at carries UseStateForUnknown, so it
+		// is known and equal to prior's value; updated_at deliberately has no
+		// such modifier (it legitimately changes on every real Update), so
+		// the framework leaves it Unknown in the plan regardless of whether
+		// this particular change is create-only-flags-only. This is exactly
+		// why onlyCreateOnlyFlagsChanged (update.go) excludes both fields
+		// from its comparison entirely rather than depending on plan.UpdatedAt
+		// happening to equal prior.UpdatedAt: an Unknown updated_at must not
+		// defeat the short-circuit. See TestOnlyCreateOnlyFlagsChanged's
+		// "unknown updated_at does not defeat the short-circuit" subtest for
+		// the direct proof, and the acceptance test step in acc_test.go for
+		// the live-Kibana proof.
+		prior.CreatedAt = types.StringValue("2024-01-01T00:00:00.000Z")
+		prior.UpdatedAt = types.StringValue("2024-01-02T00:00:00.000Z")
 
 		plan = prior
+		plan.CreatedAt = types.StringValue("2024-01-01T00:00:00.000Z") // carried forward via UseStateForUnknown
+		plan.UpdatedAt = types.StringUnknown()                         // no plan modifier: always Unknown in a real Update plan
 		return prior, plan
 	}
 
@@ -174,6 +191,17 @@ func TestOnlyCreateOnlyFlagsChanged(t *testing.T) {
 	base.CreateDatasetTemplates = types.BoolValue(false)
 	base.Force = types.BoolValue(false)
 	base.ForceDelete = types.BoolValue(false)
+	// created_at carries UseStateForUnknown (schema.go), so a real Update plan
+	// carries it forward from prior state as a known value equal to prior's.
+	// updated_at deliberately does NOT (see schema.go's comment: it
+	// legitimately changes on every real Update, so promising it won't would
+	// be wrong), so a real Update plan leaves it Unknown regardless of
+	// whether this is a create-only-flags-only change. onlyCreateOnlyFlagsChanged
+	// must not depend on either field's plan value at all -- see its doc
+	// comment -- which the "unknown updated_at does not defeat the
+	// short-circuit" subtest below proves directly.
+	base.CreatedAt = types.StringValue("2024-01-01T00:00:00.000Z")
+	base.UpdatedAt = types.StringValue("2024-01-02T00:00:00.000Z")
 
 	t.Run("identical models", func(t *testing.T) {
 		t.Parallel()
@@ -196,6 +224,30 @@ func TestOnlyCreateOnlyFlagsChanged(t *testing.T) {
 		plan.CreateDatasetTemplates = types.BoolValue(true)
 		plan.Name = types.StringValue("renamed")
 		require.False(t, onlyCreateOnlyFlagsChanged(base, plan))
+	})
+
+	// Direct regression proof for the real-world bug this function's
+	// exclusion of created_at/updated_at fixes: updated_at has no
+	// UseStateForUnknown plan modifier (schema.go), so a real Terraform
+	// Update plan leaves plan.UpdatedAt Unknown even when only a create-only
+	// flag changed. Before this fix, onlyCreateOnlyFlagsChanged compared
+	// prior.UpdatedAt.Equal(plan.UpdatedAt) directly, which is always false
+	// when plan.UpdatedAt is Unknown -- permanently defeating the
+	// short-circuit outside of unit tests that hand-built a plan with a
+	// matching *known* timestamp (i.e. tests that could never have caught
+	// this in the first place). Since the fix removes created_at/updated_at
+	// from the comparison entirely, an Unknown updated_at here must NOT
+	// defeat the short-circuit. See acc_test.go's "update_flag_only" step for
+	// the live-Kibana proof that this holds end to end.
+	t.Run("unknown updated_at does not defeat the short-circuit", func(t *testing.T) {
+		t.Parallel()
+		plan := base
+		plan.CreateDatasetTemplates = types.BoolValue(true)
+		plan.CreatedAt = types.StringValue("2024-01-01T00:00:00.000Z") // carried forward via UseStateForUnknown
+		plan.UpdatedAt = types.StringUnknown()                         // no plan modifier: realistically Unknown
+		require.True(t, onlyCreateOnlyFlagsChanged(base, plan),
+			"an Unknown updated_at in the plan must not defeat the short-circuit: it is server-Computed and "+
+				"can never be what the user actually changed")
 	})
 }
 
@@ -237,15 +289,17 @@ func TestOnlyCreateOnlyFlagsChanged_FieldCoverage(t *testing.T) {
 		"CloudConnector":                   true,
 		"GlobalDataTags":                   true,
 		"AdditionalDatastreamsPermissions": true,
-		"CreatedAt":                        true,
-		"UpdatedAt":                        true,
 	}
 
 	// Mirrors onlyCreateOnlyFlagsChanged's doc comment: create/delete-only
-	// flags never read back from the API, plus provider-side plumbing that
-	// is never part of the Fleet request body. ResourceTimeoutsField (the
-	// embedded field itself) and Timeouts (its one promoted field) are both
-	// listed since reflect.VisibleFields below includes promoted fields.
+	// flags never read back from the API, provider-side plumbing that is
+	// never part of the Fleet request body, and created_at/updated_at (purely
+	// server-Computed -- never Optional -- so they can never be what a user's
+	// config actually changed; see onlyCreateOnlyFlagsChanged's doc comment
+	// for why comparing them was the original bug this exclusion fixes).
+	// ResourceTimeoutsField (the embedded field itself) and Timeouts (its one
+	// promoted field) are both listed since reflect.VisibleFields below
+	// includes promoted fields.
 	excluded := map[string]bool{
 		"CreateDatasetTemplates": true,
 		"Force":                  true,
@@ -254,6 +308,8 @@ func TestOnlyCreateOnlyFlagsChanged_FieldCoverage(t *testing.T) {
 		"KibanaConnection":       true,
 		"ResourceTimeoutsField":  true, // embedded entitycore.ResourceTimeoutsField
 		"Timeouts":               true, // ResourceTimeoutsField's one promoted field
+		"CreatedAt":              true,
+		"UpdatedAt":              true,
 	}
 
 	for _, field := range reflect.VisibleFields(reflect.TypeFor[agentlessPolicyModel]()) {
