@@ -17,25 +17,15 @@ resource "elasticstack_elasticsearch_index_lifecycle" "test" {
   }
 }
 
-resource "elasticstack_elasticsearch_security_api_key" "test" {
-  name = "${var.policy_name}-api-key"
-  role_descriptors = jsonencode({
-    template_ilm_attachment = {
-      cluster = ["manage_index_templates", "monitor"]
-    }
-  })
-}
-
 resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
   index_template = var.index_template
   lifecycle_name = elasticstack_elasticsearch_index_lifecycle.test.name
 
   elasticsearch_connection {
     endpoints = [var.endpoint]
-    api_key   = elasticstack_elasticsearch_security_api_key.test.encoded
-    insecure  = false
-    headers = {
-      XTerraformTest = "api-key"
-    }
+    username  = var.username
+    password  = var.password
+    ca_file   = var.ca_file
+    insecure  = true
   }
 }
