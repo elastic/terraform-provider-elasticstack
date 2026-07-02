@@ -287,17 +287,5 @@ func mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing *models.MlS
 	if !typeutils.IsKnown(prior.HideBorder) {
 		existing.HideBorder = types.BoolNull()
 	}
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	} else if existing.TimeRange != nil && prior.TimeRange != nil {
-		if !typeutils.IsKnown(prior.TimeRange.From) {
-			existing.TimeRange.From = types.StringNull()
-		}
-		if !typeutils.IsKnown(prior.TimeRange.To) {
-			existing.TimeRange.To = types.StringNull()
-		}
-		if !typeutils.IsKnown(prior.TimeRange.Mode) {
-			existing.TimeRange.Mode = types.StringNull()
-		}
-	}
+	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

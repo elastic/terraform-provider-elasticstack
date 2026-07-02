@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: APM service map panel support (REQ-047)
+### Requirement: APM service map panel support (REQ-049)
 
 The `elasticstack_kibana_dashboard` resource SHALL support `type = "apm_service_map"` panels through a typed `apm_service_map_config` block. The block exposes the full flat configuration surface of `KibanaHTTPAPIsApmServiceMapEmbeddable`.
 
@@ -139,7 +139,7 @@ The `apm_service_map_config` block SHALL be mutually exclusive with all other ty
 
 ## MODIFIED Requirements
 
-### Requirement: Panel type routing and config_json guard (REQ-010 extension)
+### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
 The list of panel types that SHALL NOT accept practitioner-authored `config_json` (REQ-010) is extended to include `apm_service_map`. The `apm_service_map` panel type SHALL be managed exclusively through the `apm_service_map_config` block. This extension follows the same enforcement pattern as existing entries in REQ-044A (the registry-driven simple panel handler architecture).
 #### Scenario: apm_service_map_config routed by type discriminant
