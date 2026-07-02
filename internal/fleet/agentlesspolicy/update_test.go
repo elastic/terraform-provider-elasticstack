@@ -20,6 +20,7 @@ package agentlesspolicy
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -196,4 +197,78 @@ func TestOnlyCreateOnlyFlagsChanged(t *testing.T) {
 		plan.Name = types.StringValue("renamed")
 		require.False(t, onlyCreateOnlyFlagsChanged(base, plan))
 	})
+}
+
+// TestOnlyCreateOnlyFlagsChanged_FieldCoverage guards against
+// onlyCreateOnlyFlagsChanged's allowlist silently going stale as
+// agentlessPolicyModel evolves. That function is a positive allowlist (every
+// field it compares is named explicitly, see its doc comment) rather than a
+// negative denylist, so a new schema field added to the model in the future
+// and never wired into either onlyCreateOnlyFlagsChanged's comparison chain
+// or its doc comment's exclusion list would be silently treated as inert
+// (Update would skip the API call even though the new field changed) instead
+// of failing safe.
+//
+// This test uses reflection purely to enumerate agentlessPolicyModel's field
+// names -- it does not attempt to verify onlyCreateOnlyFlagsChanged's
+// comparison logic is behaviorally correct for each one (see
+// TestOnlyCreateOnlyFlagsChanged above for that) -- and asserts every field
+// appears in exactly one of the two lists below, which mirror
+// onlyCreateOnlyFlagsChanged's `&&` chain and its doc comment's exclusion
+// list respectively. Adding a field to the struct without adding it to one
+// of these two lists (and, in the "compared" case, to the real function)
+// fails this test.
+func TestOnlyCreateOnlyFlagsChanged_FieldCoverage(t *testing.T) {
+	t.Parallel()
+
+	// Mirrors onlyCreateOnlyFlagsChanged's `&&` chain, field for field.
+	compared := map[string]bool{
+		"ID":                               true,
+		"PolicyID":                         true,
+		"Name":                             true,
+		"Description":                      true,
+		"Namespace":                        true,
+		"SpaceIDs":                         true,
+		"Package":                          true,
+		"PolicyTemplate":                   true,
+		"VarsJSON":                         true,
+		"VarGroupSelections":               true,
+		"Inputs":                           true,
+		"CloudConnector":                   true,
+		"GlobalDataTags":                   true,
+		"AdditionalDatastreamsPermissions": true,
+		"CreatedAt":                        true,
+		"UpdatedAt":                        true,
+	}
+
+	// Mirrors onlyCreateOnlyFlagsChanged's doc comment: create/delete-only
+	// flags never read back from the API, plus provider-side plumbing that
+	// is never part of the Fleet request body. ResourceTimeoutsField (the
+	// embedded field itself) and Timeouts (its one promoted field) are both
+	// listed since reflect.VisibleFields below includes promoted fields.
+	excluded := map[string]bool{
+		"CreateDatasetTemplates": true,
+		"Force":                  true,
+		"ForceDelete":            true,
+		"SkipTopologyCheck":      true,
+		"KibanaConnection":       true,
+		"ResourceTimeoutsField":  true, // embedded entitycore.ResourceTimeoutsField
+		"Timeouts":               true, // ResourceTimeoutsField's one promoted field
+	}
+
+	for _, field := range reflect.VisibleFields(reflect.TypeFor[agentlessPolicyModel]()) {
+		name := field.Name
+		inCompared, inExcluded := compared[name], excluded[name]
+		if inCompared == inExcluded { // covers "neither" (false==false) and "both" (true==true)
+			t.Errorf(
+				"agentlessPolicyModel field %q is not accounted for exactly once between "+
+					"onlyCreateOnlyFlagsChanged's comparison chain and its doc comment's exclusion list "+
+					"(in compared list: %v, in excluded list: %v). Add it to onlyCreateOnlyFlagsChanged's "+
+					"comparison chain (and this test's `compared` map) if it should trigger an API call when "+
+					"changed, or to the doc comment's exclusion list (and this test's `excluded` map) if it is "+
+					"client-only/provider-side plumbing that never reaches the Fleet API.",
+				name, inCompared, inExcluded,
+			)
+		}
+	}
 }
