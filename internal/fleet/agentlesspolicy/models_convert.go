@@ -550,6 +550,130 @@ func (m agentlessPolicyModel) applyCreateInputs(ctx context.Context, body *kbapi
 	}
 }
 
+// responseFields captures the response fields that populateFromCreateResponse
+// and populateFromPackagePolicy both apply onto the model -- the two response
+// shapes they read from (KibanaHTTPAPIsAgentlessPolicy and
+// kbapi.PackagePolicy respectively) diverge in pointer-vs-value fields and in
+// how `inputs` is boxed (a plain raw value vs. a union type requiring
+// AsPackagePolicyMappedInputs() first), so each caller extracts its own
+// fields into this common shape and applyResponseFields does the actual
+// state-population work once.
+type responseFields struct {
+	name        string
+	description *string
+	namespace   *string
+	createdAt   string
+	updatedAt   string
+
+	// spaceIDs is the response's own space_ids, if the response shape
+	// carries one (only kbapi.PackagePolicy does). nil (not just empty) means
+	// "this response shape has no such field" -- applyResponseFields falls
+	// through to defaulting m.SpaceIDs from spaceID when unset, exactly as
+	// when the slice is present but empty.
+	spaceIDs *[]string
+
+	// hasPackage mirrors kbapi.PackagePolicy's Package pointer being nil:
+	// KibanaHTTPAPIsAgentlessPolicy's Package is never nil, so
+	// populateFromCreateResponse always passes true. When false, m.Package
+	// and m.VarsJSON are left untouched, matching populateFromPackagePolicy's
+	// original `if data.Package != nil` guard.
+	hasPackage     bool
+	packageName    string
+	packageVersion string
+	packageTitle   types.String
+	varsRaw        any
+
+	varGroupSelections               *map[string]string
+	additionalDatastreamsPermissions *[]string
+	globalDataTagsRaw                any
+	inputsRaw                        any
+
+	// decodeErrContext is appended to the two decode-failure diagnostic
+	// messages below, preserving each caller's original wording ("... from
+	// the create response" vs. no suffix at all).
+	decodeErrContext string
+}
+
+// applyResponseFields is the shared body of populateFromCreateResponse and
+// populateFromPackagePolicy: given the id already extracted by the caller
+// (the two response shapes use different id field types) and a responseFields
+// populated from the caller's own response, it sets every model field the two
+// functions have in common. See responseFields' doc comment for how the two
+// callers' response-shape differences are normalized before calling this.
+func (m *agentlessPolicyModel) applyResponseFields(ctx context.Context, spaceID, resourceID string, f responseFields, diags *diag.Diagnostics) {
+	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
+	m.PolicyID = types.StringValue(resourceID)
+
+	if f.spaceIDs != nil && len(*f.spaceIDs) > 0 {
+		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *f.spaceIDs)
+		diags.Append(d...)
+		m.SpaceIDs = spaceIDs
+	} else if !typeutils.IsKnown(m.SpaceIDs) {
+		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
+		diags.Append(d...)
+		m.SpaceIDs = spaceIDs
+	}
+
+	m.Name = types.StringValue(f.name)
+	// description is Optional but NOT Computed in schema.go, so state must
+	// exactly mirror an unset (null) config value. Empirically, Kibana's
+	// package-policy endpoints return an explicit "" (not an omitted/nil
+	// field) once a description has been cleared via an update -- see
+	// update.go's buildUpdateBody, which sends "" rather than omitting the
+	// field to actively clear it. NonEmptyStringOrNull folds that "" back to
+	// null so a cleared description doesn't show up as a permanent diff
+	// against a config that never set it. namespace gets the same treatment
+	// for consistency, even though it is Computed (so a "" vs null mismatch
+	// there is a milder no-op-diff annoyance, not a hard error).
+	m.Description = typeutils.NonEmptyStringOrNull(f.description)
+	m.Namespace = typeutils.NonEmptyStringOrNull(f.namespace)
+	m.CreatedAt = types.StringValue(f.createdAt)
+	m.UpdatedAt = types.StringValue(f.updatedAt)
+
+	if f.hasPackage {
+		pkgObj, d := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
+			Name:    types.StringValue(f.packageName),
+			Version: types.StringValue(f.packageVersion),
+			Title:   f.packageTitle,
+		})
+		diags.Append(d...)
+		m.Package = pkgObj
+
+		m.VarsJSON = varsJSONFromAny(f.varsRaw, f.packageName, f.packageVersion, diags)
+	}
+
+	if f.varGroupSelections != nil && len(*f.varGroupSelections) > 0 {
+		vgs, d := types.MapValueFrom(ctx, types.StringType, *f.varGroupSelections)
+		diags.Append(d...)
+		m.VarGroupSelections = vgs
+	} else {
+		m.VarGroupSelections = types.MapNull(types.StringType)
+	}
+
+	if f.additionalDatastreamsPermissions != nil && len(*f.additionalDatastreamsPermissions) > 0 {
+		perms, d := types.ListValueFrom(ctx, types.StringType, *f.additionalDatastreamsPermissions)
+		diags.Append(d...)
+		m.AdditionalDatastreamsPermissions = perms
+	} else {
+		m.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
+	}
+
+	tagsWire, err := decodeGlobalDataTags(f.globalDataTagsRaw)
+	if err != nil {
+		diags.AddError("Failed to decode global_data_tags"+f.decodeErrContext, err.Error())
+	} else {
+		m.GlobalDataTags = globalDataTagsToModel(ctx, tagsWire, diags)
+	}
+
+	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
+	inputsWire, err := decodeMappedInputs(f.inputsRaw)
+	if err != nil {
+		diags.AddError("Failed to decode inputs"+f.decodeErrContext, err.Error())
+	} else {
+		m.Inputs = populateInputsModel(ctx, inputsWire, inputsKnownKeys, diags)
+	}
+}
+
 // populateFromCreateResponse implements the "Create" requirement's response
 // decoding (specs/fleet-agentless-policy/spec.md): policy_id and id are set
 // from the response's id field; created_at/updated_at come from the response.
@@ -564,71 +688,23 @@ func (m agentlessPolicyModel) applyCreateInputs(ctx context.Context, body *kbapi
 func (m *agentlessPolicyModel) populateFromCreateResponse(ctx context.Context, spaceID string, item kbapi.KibanaHTTPAPIsAgentlessPolicy) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
-	m.PolicyID = types.StringValue(item.Id)
-
-	if !typeutils.IsKnown(m.SpaceIDs) {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
-		diags.Append(d...)
-		m.SpaceIDs = spaceIDs
-	}
-
-	m.Name = types.StringValue(item.Name)
-	// description is Optional but NOT Computed in schema.go, so state must
-	// exactly mirror an unset (null) config value. Empirically, Kibana's
-	// package-policy endpoints return an explicit "" (not an omitted/nil
-	// field) once a description has been cleared via an update -- see
-	// update.go's buildUpdateBody, which sends "" rather than omitting the
-	// field to actively clear it. NonEmptyStringOrNull folds that "" back to
-	// null so a cleared description doesn't show up as a permanent diff
-	// against a config that never set it. namespace gets the same treatment
-	// for consistency, even though it is Computed (so a "" vs null mismatch
-	// there is a milder no-op-diff annoyance, not a hard error).
-	m.Description = typeutils.NonEmptyStringOrNull(item.Description)
-	m.Namespace = typeutils.NonEmptyStringOrNull(item.Namespace)
-	m.CreatedAt = types.StringValue(item.CreatedAt)
-	m.UpdatedAt = types.StringValue(item.UpdatedAt)
-
-	pkgObj, d := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
-		Name:    types.StringValue(item.Package.Name),
-		Version: types.StringValue(item.Package.Version),
-		Title:   types.StringValue(item.Package.Title),
-	})
-	diags.Append(d...)
-	m.Package = pkgObj
-
-	m.VarsJSON = varsJSONFromAny(item.Vars, item.Package.Name, item.Package.Version, &diags)
-
-	if item.VarGroupSelections != nil && len(*item.VarGroupSelections) > 0 {
-		vgs, d := types.MapValueFrom(ctx, types.StringType, *item.VarGroupSelections)
-		diags.Append(d...)
-		m.VarGroupSelections = vgs
-	} else {
-		m.VarGroupSelections = types.MapNull(types.StringType)
-	}
-
-	if item.AdditionalDatastreamsPermissions != nil && len(*item.AdditionalDatastreamsPermissions) > 0 {
-		perms, d := types.ListValueFrom(ctx, types.StringType, *item.AdditionalDatastreamsPermissions)
-		diags.Append(d...)
-		m.AdditionalDatastreamsPermissions = perms
-	} else {
-		m.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
-	}
-
-	tagsWire, err := decodeGlobalDataTags(item.GlobalDataTags)
-	if err != nil {
-		diags.AddError("Failed to decode global_data_tags from the create response", err.Error())
-	} else {
-		m.GlobalDataTags = globalDataTagsToModel(ctx, tagsWire, &diags)
-	}
-
-	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
-	inputsWire, err := decodeMappedInputs(item.Inputs)
-	if err != nil {
-		diags.AddError("Failed to decode inputs from the create response", err.Error())
-	} else {
-		m.Inputs = populateInputsModel(ctx, inputsWire, inputsKnownKeys, &diags)
-	}
+	m.applyResponseFields(ctx, spaceID, item.Id, responseFields{
+		name:                             item.Name,
+		description:                      item.Description,
+		namespace:                        item.Namespace,
+		createdAt:                        item.CreatedAt,
+		updatedAt:                        item.UpdatedAt,
+		hasPackage:                       true,
+		packageName:                      item.Package.Name,
+		packageVersion:                   item.Package.Version,
+		packageTitle:                     types.StringValue(item.Package.Title),
+		varsRaw:                          item.Vars,
+		varGroupSelections:               item.VarGroupSelections,
+		additionalDatastreamsPermissions: item.AdditionalDatastreamsPermissions,
+		globalDataTagsRaw:                item.GlobalDataTags,
+		inputsRaw:                        item.Inputs,
+		decodeErrContext:                 " from the create response",
+	}, &diags)
 
 	return diags
 }
@@ -649,62 +725,6 @@ func (m *agentlessPolicyModel) populateFromPackagePolicy(ctx context.Context, sp
 		return diags
 	}
 
-	policyID := typeutils.Deref(data.Id)
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: policyID}).String())
-	m.PolicyID = types.StringValue(policyID)
-
-	if data.SpaceIds != nil && len(*data.SpaceIds) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
-		diags.Append(d...)
-		m.SpaceIDs = spaceIDs
-	} else if !typeutils.IsKnown(m.SpaceIDs) {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
-		diags.Append(d...)
-		m.SpaceIDs = spaceIDs
-	}
-
-	m.Name = types.StringValue(data.Name)
-	// See the identical NonEmptyStringOrNull comment in populateFromCreateResponse.
-	m.Description = typeutils.NonEmptyStringOrNull(data.Description)
-	m.Namespace = typeutils.NonEmptyStringOrNull(data.Namespace)
-	m.CreatedAt = types.StringValue(data.CreatedAt)
-	m.UpdatedAt = types.StringValue(data.UpdatedAt)
-
-	if data.Package != nil {
-		pkgObj, d := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
-			Name:    types.StringValue(data.Package.Name),
-			Version: types.StringValue(data.Package.Version),
-			Title:   types.StringPointerValue(data.Package.Title),
-		})
-		diags.Append(d...)
-		m.Package = pkgObj
-
-		m.VarsJSON = varsJSONFromAny(data.Vars, data.Package.Name, data.Package.Version, &diags)
-	}
-
-	if data.VarGroupSelections != nil && len(*data.VarGroupSelections) > 0 {
-		vgs, d := types.MapValueFrom(ctx, types.StringType, *data.VarGroupSelections)
-		diags.Append(d...)
-		m.VarGroupSelections = vgs
-	} else {
-		m.VarGroupSelections = types.MapNull(types.StringType)
-	}
-
-	if data.AdditionalDatastreamsPermissions != nil && len(*data.AdditionalDatastreamsPermissions) > 0 {
-		perms, d := types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)
-		diags.Append(d...)
-		m.AdditionalDatastreamsPermissions = perms
-	} else {
-		m.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
-	}
-
-	tagsWire, err := decodeGlobalDataTags(data.GlobalDataTags)
-	if err != nil {
-		diags.AddError("Failed to decode global_data_tags", err.Error())
-	} else {
-		m.GlobalDataTags = globalDataTagsToModel(ctx, tagsWire, &diags)
-	}
-
 	// Extract mapped inputs from the union Inputs field (Format=Simplified,
 	// set by fleet.GetPackagePolicy/fleet.UpdatePackagePolicy, returns mapped
 	// inputs). An empty/nil union is treated as no inputs rather than an
@@ -713,13 +733,28 @@ func (m *agentlessPolicyModel) populateFromPackagePolicy(ctx context.Context, sp
 	if err != nil {
 		mappedInputs = kbapi.PackagePolicyMappedInputs{}
 	}
-	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
-	inputsWire, err := decodeMappedInputs(mappedInputs)
-	if err != nil {
-		diags.AddError("Failed to decode inputs", err.Error())
-	} else {
-		m.Inputs = populateInputsModel(ctx, inputsWire, inputsKnownKeys, &diags)
+
+	fields := responseFields{
+		name:                             data.Name,
+		description:                      data.Description,
+		namespace:                        data.Namespace,
+		createdAt:                        data.CreatedAt,
+		updatedAt:                        data.UpdatedAt,
+		spaceIDs:                         data.SpaceIds,
+		hasPackage:                       data.Package != nil,
+		varsRaw:                          data.Vars,
+		varGroupSelections:               data.VarGroupSelections,
+		additionalDatastreamsPermissions: data.AdditionalDatastreamsPermissions,
+		globalDataTagsRaw:                data.GlobalDataTags,
+		inputsRaw:                        mappedInputs,
 	}
+	if data.Package != nil {
+		fields.packageName = data.Package.Name
+		fields.packageVersion = data.Package.Version
+		fields.packageTitle = types.StringPointerValue(data.Package.Title)
+	}
+
+	m.applyResponseFields(ctx, spaceID, typeutils.Deref(data.Id), fields, &diags)
 
 	return diags
 }
