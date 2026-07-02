@@ -8,7 +8,7 @@
 ## 2. Fix `defaults` null ⇄ populated-object transition
 
 - [ ] 2.1 In `InputValue.ObjectSemanticEquals` (in `input_value.go`), after extracting `oldInput` and `newInput`, add a check: if either `oldInput.Defaults` or `newInput.Defaults` is null/unknown (i.e. `!typeutils.IsKnown`), treat the `defaults` component as semantically equal (skip the equality check for `defaults` and proceed to compare `vars` and `streams`)
-- [ ] 2.2 Verify that a fully-known `defaults` on both sides is still compared normally (i.e. the check is conditional on at least one side being null/unknown, not a blanket skip)
+- [ ] 2.2 Verify that fully-known `defaults` values on both sides also do not block semantic equality (i.e. `defaults` is treated as semantically equal even when the two sides differ), and that `vars` and `streams` are still compared normally
 - [ ] 2.3 Confirm no schema change is needed (the `defaults` attribute is already `Computed: true` in the schema; no plan modifier or state upgrader required)
 
 ## 3. Unit tests
