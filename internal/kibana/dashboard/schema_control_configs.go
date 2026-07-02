@@ -169,7 +169,8 @@ func pinnedEsqlControlConfigSchema() schema.SingleNestedAttribute {
 func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
-			pinnedPlacementPreface()+"Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set.",
+			pinnedPlacementPreface()+"Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in "+
+				"a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set.",
 			controlBlockOptionsList,
 			pinnedPanelControlConfigNames,
 		),
@@ -184,7 +185,8 @@ func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 func pinnedRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
-			pinnedPlacementPreface()+"Configuration for a range slider control. Provides a min/max range filter sourced from either a data view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set.",
+			pinnedPlacementPreface()+"Configuration for a range slider control. Provides a min/max range filter sourced from either a data "+
+				"view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set.",
 			controlBlockRangeSlider,
 			pinnedPanelControlConfigNames,
 		),

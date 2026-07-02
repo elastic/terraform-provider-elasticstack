@@ -112,7 +112,11 @@ func isEsqlRangeSliderConfig(raw []byte) bool {
 	return probe.EsqlQuery != nil
 }
 
-func populateByFieldFromAPI(ctx context.Context, prior *models.RangeSliderControlByFieldModel, api *kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField) *models.RangeSliderControlByFieldModel {
+func populateByFieldFromAPI(
+	ctx context.Context,
+	prior *models.RangeSliderControlByFieldModel,
+	api *kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField,
+) *models.RangeSliderControlByFieldModel {
 	m := &models.RangeSliderControlByFieldModel{
 		DataViewID: types.StringValue(api.DataViewId),
 		FieldName:  types.StringValue(api.FieldName),
@@ -174,7 +178,11 @@ func populateByFieldFromAPI(ctx context.Context, prior *models.RangeSliderContro
 	return m
 }
 
-func populateByEsqlFromAPI(ctx context.Context, prior *models.RangeSliderControlByEsqlModel, api *kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql) *models.RangeSliderControlByEsqlModel {
+func populateByEsqlFromAPI(
+	ctx context.Context,
+	prior *models.RangeSliderControlByEsqlModel,
+	api *kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql,
+) *models.RangeSliderControlByEsqlModel {
 	m := &models.RangeSliderControlByEsqlModel{
 		EsqlQuery: types.StringValue(api.EsqlQuery),
 		// The wire enum only ever legally carries "esql" (see

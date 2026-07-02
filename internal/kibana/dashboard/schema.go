@@ -197,17 +197,17 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
-			"panels": schema.ListNestedAttribute{
+			attrPanels: schema.ListNestedAttribute{
 				MarkdownDescription: "The panels to display in the dashboard.",
 				Optional:            true,
 				NestedObject:        getPanelSchema(),
 			},
-			"pinned_panels": schema.ListNestedAttribute{
+			attrPinnedPanels: schema.ListNestedAttribute{
 				MarkdownDescription: strings.TrimSpace(pinnedPanelsDescription),
 				Optional:            true,
 				NestedObject:        pinnedPanelsNestedObject(),
 			},
-			"sections": schema.ListNestedAttribute{
+			attrSections: schema.ListNestedAttribute{
 				MarkdownDescription: "Sections organize panels into collapsible groups. This is a technical preview feature.",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
@@ -238,7 +238,7 @@ func getSchema() schema.Schema {
 								},
 							},
 						},
-						"panels": schema.ListNestedAttribute{
+						attrPanels: schema.ListNestedAttribute{
 							MarkdownDescription: "The panels to display in the section.",
 							Optional:            true,
 							NestedObject:        getPanelSchema(),

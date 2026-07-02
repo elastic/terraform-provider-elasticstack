@@ -47,11 +47,12 @@ const esqlValuesSourceUserValue = "esql_query"
 // SchemaAttribute returns the dashboard panel options_list_control_config block.
 func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
-		Description: "Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set.",
-		BlockName:   "options_list_control_config",
-		PanelType:   panelType,
-		Required:    true,
-		Attributes:  NestedAttributes(),
+		Description: "Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in " +
+			"a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set.",
+		BlockName:  "options_list_control_config",
+		PanelType:  panelType,
+		Required:   true,
+		Attributes: NestedAttributes(),
 		ExtraValidators: []validator.Object{
 			ExactlyOneOfBranchValidator(),
 		},

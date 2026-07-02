@@ -34,31 +34,31 @@ const (
 // optionsListV0FlatAttrs are the flat options_list_control_config attributes that
 // existed at schema version 0 and now live nested under `by_field {}`.
 var optionsListV0FlatAttrs = []string{
-	"data_view_id",
-	"field_name",
-	"title",
-	"use_global_filters",
-	"ignore_validations",
-	"single_select",
-	"exclude",
-	"exists_selected",
-	"run_past_timeout",
-	"search_technique",
-	"selected_options",
-	"display_settings",
-	"sort",
+	attrDataViewID,
+	attrFieldName,
+	attrTitle,
+	attrUseGlobalFilters,
+	attrIgnoreValidations,
+	attrSingleSelect,
+	attrExclude,
+	attrExistsSelected,
+	attrRunPastTimeout,
+	attrSearchTechnique,
+	attrSelectedOptions,
+	attrDisplaySettings,
+	attrSort,
 }
 
 // rangeSliderV0FlatAttrs are the flat range_slider_control_config attributes that
 // existed at schema version 0 and now live nested under `by_field {}`.
 var rangeSliderV0FlatAttrs = []string{
-	"data_view_id",
-	"field_name",
-	"title",
-	"use_global_filters",
-	"ignore_validations",
-	"value",
-	"step",
+	attrDataViewID,
+	attrFieldName,
+	attrTitle,
+	attrUseGlobalFilters,
+	attrIgnoreValidations,
+	attrValue,
+	attrStep,
 }
 
 // UpgradeState migrates dashboard resource state from schema version 0 to
@@ -82,20 +82,20 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		return
 	}
 
-	migratePanelList(state["panels"])
-	migratePanelList(state["pinned_panels"])
+	migratePanelList(state[attrPanels])
+	migratePanelList(state[attrPinnedPanels])
 
 	// Panels nested inside dashboard `sections` share the exact same panel
 	// envelope (type + *_config blocks) as top-level panels, so they need the
 	// same relocation to avoid silently dropping control-panel state for
 	// sectioned dashboards.
-	if sections, ok := state["sections"].([]any); ok {
+	if sections, ok := state[attrSections].([]any); ok {
 		for _, raw := range sections {
 			section, ok := raw.(map[string]any)
 			if !ok {
 				continue
 			}
-			migratePanelList(section["panels"])
+			migratePanelList(section[attrPanels])
 		}
 	}
 

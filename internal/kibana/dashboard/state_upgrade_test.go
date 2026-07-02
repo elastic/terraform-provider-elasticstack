@@ -221,7 +221,7 @@ func TestMigrateV0ToV1_RangeSliderControl(t *testing.T) {
 	require.Equal(t, true, byField["use_global_filters"])
 	require.Equal(t, false, byField["ignore_validations"])
 	require.Equal(t, []any{"10", "500"}, byField["value"])
-	require.Equal(t, 5.0, byField["step"])
+	require.InDelta(t, 5.0, byField["step"], 0)
 
 	for _, k := range rangeSliderV0FlatAttrs {
 		_, exists := cfg[k]
