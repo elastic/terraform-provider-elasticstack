@@ -24,9 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func strPtr(s string) *string { return &s }
-func boolPtr(b bool) *bool    { return &b }
-
 func TestApplyPresentationFromAPI_knownFieldsUpdated(t *testing.T) {
 	t.Parallel()
 
@@ -37,7 +34,7 @@ func TestApplyPresentationFromAPI_knownFieldsUpdated(t *testing.T) {
 
 	ApplyPresentationFromAPI(
 		&title, &desc, &hideTitle, &hideBorder,
-		strPtr("new-title"), strPtr("new-desc"), boolPtr(true), boolPtr(true),
+		new("new-title"), new("new-desc"), new(true), new(true),
 	)
 
 	assert.Equal(t, "new-title", title.ValueString())
@@ -56,7 +53,7 @@ func TestApplyPresentationFromAPI_nullFieldsPreserved(t *testing.T) {
 
 	ApplyPresentationFromAPI(
 		&title, &desc, &hideTitle, &hideBorder,
-		strPtr("api-title"), strPtr("api-desc"), boolPtr(true), boolPtr(true),
+		new("api-title"), new("api-desc"), new(true), new(true),
 	)
 
 	assert.True(t, title.IsNull(), "null title should be preserved")
