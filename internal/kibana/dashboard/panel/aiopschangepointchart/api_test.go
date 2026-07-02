@@ -292,7 +292,10 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	// Optional fields that were known in prior are updated from API.
 	require.Equal(t, "avg", cfg.AggregationFunction.ValueString())
 	require.Equal(t, "charts", cfg.ViewType.ValueString())
-}
+	require.NotNil(t, cfg.TimeRange)
+	require.Equal(t, from, cfg.TimeRange.From.ValueString())
+	require.Equal(t, to, cfg.TimeRange.To.ValueString())
+	require.True(t, cfg.TimeRange.Mode.IsNull())
 
 func TestPopulateFromAPI_partitionsOrderInsensitive(t *testing.T) {
 	t.Parallel()
