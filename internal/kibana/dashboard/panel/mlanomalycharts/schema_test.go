@@ -25,8 +25,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -99,8 +102,44 @@ func TestSeverityThresholdItemValidator(t *testing.T) {
 		expectObjectError(t, map[string]attr.Value{
 			"severity": types.StringNull(),
 			"min":      types.Int64Null(),
-			"max":      types.Int64Value(74),
+			"max":      types.Int64Value(75),
 		})
+	})
+
+	t.Run("rejects severity with max", func(t *testing.T) {
+		forbidMax := validators.ForbiddenIfDependentPathExpressionOneOf(
+			path.MatchRelative().AtParent().AtName("severity"),
+			[]string{"low", "warning", "minor", "major", "critical"},
+		)
+
+		itemSchema := schema.Schema{
+			Attributes: map[string]schema.Attribute{
+				"severity": schema.StringAttribute{Optional: true},
+				"min":      schema.Int64Attribute{Optional: true},
+				"max":      schema.Int64Attribute{Optional: true},
+			},
+		}
+		rawConfig := tftypes.NewValue(
+			tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"severity": tftypes.String,
+				"min":      tftypes.Number,
+				"max":      tftypes.Number,
+			}},
+			map[string]tftypes.Value{
+				"severity": tftypes.NewValue(tftypes.String, "major"),
+				"min":      tftypes.NewValue(tftypes.Number, nil),
+				"max":      tftypes.NewValue(tftypes.Number, float64(75)),
+			},
+		)
+		config := tfsdk.Config{Raw: rawConfig, Schema: itemSchema}
+
+		resp := &validator.Int64Response{}
+		forbidMax.ValidateInt64(ctx, validator.Int64Request{
+			Path:        path.Root("max"),
+			ConfigValue: types.Int64Value(75),
+			Config:      config,
+		}, resp)
+		require.True(t, resp.Diagnostics.HasError(), "expected validation error when severity and max are both set")
 	})
 
 	t.Run("rejects neither severity nor min", func(t *testing.T) {

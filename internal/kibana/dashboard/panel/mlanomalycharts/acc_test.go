@@ -45,6 +45,8 @@ func TestAccResourceDashboardMlAnomalyChartsNamedSeverities(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "ml_anomaly_charts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.0", "fake-job-alpha"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.severity", "critical"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.1.severity", "major"),
@@ -78,6 +80,8 @@ func TestAccResourceDashboardMlAnomalyChartsRawRange(t *testing.T) {
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.0", "fake-job-alpha"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.min", "10"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.max", "20"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.severity"),
@@ -111,8 +115,10 @@ func TestAccResourceDashboardMlAnomalyChartsRawRangeCanonicalCoincidence(t *test
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.0", "fake-job-alpha"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.min", "3"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.max", "24"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.max", "25"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.severity"),
 				),
 			},
@@ -160,6 +166,46 @@ func TestAccResourceDashboardMlAnomalyChartsJobIDsUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.0", "job-a"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.1", "job-b"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardMlAnomalyChartsOptionalFields(t *testing.T) {
+	dashboardTitle := "Test Dashboard ML Anomaly Charts Optionals " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, mlanomalycharts.MinKibanaAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optionals"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.0", "fake-job-alpha"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.max_series_to_plot", "12"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.title", "Anomaly Charts"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.description", "ML anomaly charts panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.hide_border", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.time_range.from", "now-7d"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.time_range.to", "now"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.time_range.mode", "relative"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_optionals"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})

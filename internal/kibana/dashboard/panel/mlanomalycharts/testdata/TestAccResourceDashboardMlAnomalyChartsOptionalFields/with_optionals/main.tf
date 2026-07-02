@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with ML anomaly charts panel (raw range matching warning band)"
+  description = "Dashboard with ML anomaly charts panel (optional fields)"
 
   time_range = {
     from = "now-15m"
@@ -27,10 +27,17 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 8
     }
     ml_anomaly_charts_config = {
-      job_ids = ["fake-job-alpha"]
-      severity_threshold = [
-        { min = 3, max = 25 },
-      ]
+      job_ids            = ["fake-job-alpha"]
+      max_series_to_plot = 12
+      title              = "Anomaly Charts"
+      description        = "ML anomaly charts panel"
+      hide_title         = true
+      hide_border        = false
+      time_range = {
+        from = "now-7d"
+        to   = "now"
+        mode = "relative"
+      }
     }
   }]
 }

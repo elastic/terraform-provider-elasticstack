@@ -40,7 +40,7 @@ func TestContract(t *testing.T) {
 			"id": "ml-charts-contract",
 			"config": {
 				"job_ids": ["job-a"],
-				"severity_threshold": [{"min": 75}, {"min": 50, "max": 74}],
+				"severity_threshold": [{"min": 75}, {"min": 50, "max": 75}],
 				"title": "Anomaly Charts"
 			}
 		}`,
@@ -63,7 +63,7 @@ func TestNamedSeverity_roundTrip(t *testing.T) {
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts{}
 	diags := mlanomalycharts.BuildConfig(pm, &panel)
 	require.False(t, diags.HasError(), "%s", diags)
-	require.Equal(t, []map[string]any{{"min": float64(50), "max": float64(74)}}, severityThresholdMaps(t, panel.Config.SeverityThreshold))
+	require.Equal(t, []map[string]any{{"min": float64(50), "max": float64(75)}}, severityThresholdMaps(t, panel.Config.SeverityThreshold))
 
 	readBack := readPanelViaHandlerWithPrior(t, panel, &pm)
 	require.Equal(t, "major", readBack.MlAnomalyChartsConfig.SeverityThreshold[0].Severity.ValueString())
@@ -119,13 +119,13 @@ func TestFormPreservation_priorRawCoincidingWithWarning(t *testing.T) {
 		Type: kbapi.MlAnomalyCharts,
 		Config: kbapi.KibanaHTTPAPIsMlAnomalyCharts{
 			JobIds:            []string{"job-a"},
-			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 3, "max": 24}}),
+			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 3, "max": 25}}),
 		},
 	}
 	prior := panelWithConfig(&models.MlAnomalyChartsConfigModel{
 		JobIDs: []types.String{types.StringValue("job-a")},
 		SeverityThreshold: []models.MlAnomalyChartsSeverityThresholdModel{
-			{Min: types.Int64Value(3), Max: types.Int64Value(24)},
+			{Min: types.Int64Value(3), Max: types.Int64Value(25)},
 		},
 	})
 
@@ -133,7 +133,7 @@ func TestFormPreservation_priorRawCoincidingWithWarning(t *testing.T) {
 	item := readBack.MlAnomalyChartsConfig.SeverityThreshold[0]
 	require.True(t, item.Severity.IsNull())
 	require.Equal(t, int64(3), item.Min.ValueInt64())
-	require.Equal(t, int64(24), item.Max.ValueInt64())
+	require.Equal(t, int64(25), item.Max.ValueInt64())
 }
 
 func TestFormPreservation_priorNamedWarning(t *testing.T) {
@@ -143,7 +143,7 @@ func TestFormPreservation_priorNamedWarning(t *testing.T) {
 		Type: kbapi.MlAnomalyCharts,
 		Config: kbapi.KibanaHTTPAPIsMlAnomalyCharts{
 			JobIds:            []string{"job-a"},
-			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 3, "max": 24}}),
+			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 3, "max": 25}}),
 		},
 	}
 	prior := panelWithConfig(&models.MlAnomalyChartsConfigModel{
@@ -191,7 +191,7 @@ func TestImportDefault_namedForCanonicalBand(t *testing.T) {
 		Type: kbapi.MlAnomalyCharts,
 		Config: kbapi.KibanaHTTPAPIsMlAnomalyCharts{
 			JobIds:            []string{"job-a"},
-			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 3, "max": 24}}),
+			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 3, "max": 25}}),
 		},
 	}
 
@@ -245,6 +245,77 @@ func TestNullPreservation_timeRangeMode(t *testing.T) {
 	readBack := readPanelViaHandlerWithPrior(t, panel, &prior)
 	require.NotNil(t, readBack.MlAnomalyChartsConfig.TimeRange)
 	require.True(t, readBack.MlAnomalyChartsConfig.TimeRange.Mode.IsNull())
+}
+
+func TestFormPreservation_mixedListAcrossRefresh(t *testing.T) {
+	t.Parallel()
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts{
+		Type: kbapi.MlAnomalyCharts,
+		Config: kbapi.KibanaHTTPAPIsMlAnomalyCharts{
+			JobIds: []string{"job-a"},
+			SeverityThreshold: severityThresholdItems(t, []map[string]any{
+				{"min": 50, "max": 75},
+				{"min": 10, "max": 20},
+			}),
+		},
+	}
+	prior := panelWithConfig(&models.MlAnomalyChartsConfigModel{
+		JobIDs: []types.String{types.StringValue("job-a")},
+		SeverityThreshold: []models.MlAnomalyChartsSeverityThresholdModel{
+			{Severity: types.StringValue("major")},
+			{Min: types.Int64Value(10), Max: types.Int64Value(20)},
+		},
+	})
+
+	readBack := readPanelViaHandlerWithPrior(t, panel, &prior)
+	require.Len(t, readBack.MlAnomalyChartsConfig.SeverityThreshold, 2)
+	require.Equal(t, "major", readBack.MlAnomalyChartsConfig.SeverityThreshold[0].Severity.ValueString())
+	require.True(t, readBack.MlAnomalyChartsConfig.SeverityThreshold[0].Min.IsNull())
+	raw := readBack.MlAnomalyChartsConfig.SeverityThreshold[1]
+	require.True(t, raw.Severity.IsNull())
+	require.Equal(t, int64(10), raw.Min.ValueInt64())
+	require.Equal(t, int64(20), raw.Max.ValueInt64())
+}
+
+func TestFormPreservation_priorNamedDriftFallback(t *testing.T) {
+	t.Parallel()
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts{
+		Type: kbapi.MlAnomalyCharts,
+		Config: kbapi.KibanaHTTPAPIsMlAnomalyCharts{
+			JobIds:            []string{"job-a"},
+			SeverityThreshold: severityThresholdItems(t, []map[string]any{{"min": 50, "max": 80}}),
+		},
+	}
+	prior := panelWithConfig(&models.MlAnomalyChartsConfigModel{
+		JobIDs: []types.String{types.StringValue("job-a")},
+		SeverityThreshold: []models.MlAnomalyChartsSeverityThresholdModel{
+			{Severity: types.StringValue("major")},
+		},
+	})
+
+	readBack := readPanelViaHandlerWithPrior(t, panel, &prior)
+	item := readBack.MlAnomalyChartsConfig.SeverityThreshold[0]
+	require.True(t, item.Severity.IsNull())
+	require.Equal(t, int64(50), item.Min.ValueInt64())
+	require.Equal(t, int64(80), item.Max.ValueInt64())
+}
+
+func TestToAPI_rejectsConfigJSON(t *testing.T) {
+	t.Parallel()
+
+	pm := models.PanelModel{
+		Type: stringVal("ml_anomaly_charts"),
+		MlAnomalyChartsConfig: &models.MlAnomalyChartsConfigModel{
+			JobIDs: []types.String{types.StringValue("job-a")},
+		},
+	}
+	pm.ConfigJSON = configJSONSet("{}")
+
+	_, diags := mlanomalycharts.Handler{}.ToAPI(pm, nil)
+	require.True(t, diags.HasError(), "expected config_json conflict error")
+	require.Contains(t, diagSummary(diags), "config_json")
 }
 
 func panelWithConfig(cfg *models.MlAnomalyChartsConfigModel) models.PanelModel {
