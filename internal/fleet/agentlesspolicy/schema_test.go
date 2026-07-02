@@ -159,6 +159,18 @@ func TestGetSchema_varsJSONAndInputs(t *testing.T) {
 	assert.True(t, hasCondition)
 	assert.True(t, hasVars)
 	assert.True(t, hasStreams)
+
+	// Input-level `vars` must be Computed with UseStateForUnknown (not purely
+	// Optional, unlike integration_policy's equivalent attribute): some
+	// packages (e.g. cloud_security_posture/CSPM) populate informational
+	// input-level vars server-side regardless of config, which trips
+	// "Provider produced inconsistent result after apply" without Computed.
+	// See schema.go's getInputsNestedObject doc comment and this change's
+	// review-fix note in spec.md's "Variables and inputs" requirement.
+	inputVars, ok := inputs.NestedObject.Attributes["vars"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, inputVars.Computed, "input-level vars should be Computed to tolerate server-populated informational vars")
+	assert.True(t, hasStringUseStateForUnknown(inputVars.PlanModifiers), "input-level vars should have UseStateForUnknown")
 	_, hasDefaults := inputs.NestedObject.Attributes["defaults"]
 	assert.False(t, hasDefaults, "agentless inputs intentionally omit the package-defaults object modeled by integration_policy")
 
@@ -301,10 +313,20 @@ func collectTFSDKTags(rt reflect.Type, out map[string]bool) {
 }
 
 const requiresReplaceDescription = "If the value of this attribute changes, Terraform will destroy and recreate the resource."
+const useStateForUnknownDescription = "Once set, the value of this attribute in state will not change."
 
 func hasStringRequiresReplace(mods []planmodifier.String) bool {
 	for _, m := range mods {
 		if m.Description(context.Background()) == requiresReplaceDescription {
+			return true
+		}
+	}
+	return false
+}
+
+func hasStringUseStateForUnknown(mods []planmodifier.String) bool {
+	for _, m := range mods {
+		if m.Description(context.Background()) == useStateForUnknownDescription {
 			return true
 		}
 	}
