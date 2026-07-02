@@ -14,8 +14,8 @@
 
 - [ ] 2.1 Add `waitForStarted(ctx, client, spaceID string, timeout, interval time.Duration) (*entityStoreStatus, []byte, diag.Diagnostics)`
       to `internal/kibana/security_entity_store/helpers.go`. Poll `getEntityStoreStatus` until
-      the overall status is `"running"`/`"started"` or `"not_installed"` (no engines), or the
-      timeout (default 2 minutes, 3-second interval) is exceeded.
+      the overall status is no longer `"installing"` (e.g. `"running"`, `"stopped"`, `"error"`) or
+      `"not_installed"` (no engines), or the timeout (default 2 minutes, 3-second interval) is exceeded.
 - [ ] 2.2 Replace the single `getEntityStoreStatus` call in `internal/kibana/security_entity_store/read.go`
       with a `waitForStarted` call, so that `Read` does not return a partial engine list while
       the store is still `installing`.
@@ -32,15 +32,15 @@
       `internal/kibana/security_entity_store/entity/write.go` (the `POST` that creates an
       entity-store entity, which also hits 500 during store initialization).
 - [ ] 3.3 Extract the retry helper to a shared internal utility (e.g.
-      `internal/kibana/security_entity_store/retryutil_test.go` or a common package) so both
+      `internal/kibana/security_entity_store/retryutil.go` or a small `internal/retryutil` package) so both
       callsites use the same implementation.
 - [ ] 3.4 Add unit tests for the retry logic: verify that 500 triggers retry, non-500 errors
       do not retry, and that the budget/attempt ceiling causes a final error.
 
 ## 4. Tests: add `t.Cleanup` with full uninstall wait
 
-- [ ] 4.1 Add a shared `cleanupEntityStore(t *testing.T, spaceID string)` function in a
-      `_test.go` helper file within the `security_entity_store_test` package. The function MUST:
+- [ ] 4.1 Add a shared `cleanupEntityStore(t *testing.T, spaceID string)` function in
+      `internal/acctest` (non-`_test.go`, so it can be reused across packages). The function MUST:
       - Call `POST /api/security/entity_store/uninstall` (all types) via the Kibana API client
         accessible from the test environment.
       - Poll `GET /api/security/entity_store/status` until `status == "not_installed"` or a

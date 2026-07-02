@@ -21,7 +21,7 @@ not yet be fully initialized.
 
 - GIVEN the entity store is in `"installing"` state
 - AND `POST /api/security/entity_store/resolution/link` returns HTTP 500 for the first two attempts
-- AND returns HTTP 201 on the third attempt
+- AND returns HTTP 200 on the third attempt
 - WHEN the provider creates the entity link resource
 - THEN the provider SHALL succeed and populate final state from the successful attempt
 

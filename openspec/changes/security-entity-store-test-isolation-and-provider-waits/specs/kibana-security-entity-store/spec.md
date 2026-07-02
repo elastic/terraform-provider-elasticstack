@@ -24,11 +24,11 @@ SHALL produce a clear error diagnostic and SHALL NOT silently remove the resourc
 - THEN the provider SHALL return an error diagnostic describing the timeout
 - AND SHALL NOT remove the resource from state
 
-### Requirement: Read waits for started-state before reading engines (REQ-WAIT-002)
+### Requirement: Read waits for the store to leave installing state before reading engines (REQ-WAIT-002)
 
 The provider SHALL poll `GET /api/security/entity_store/status` when the overall status is
 `"installing"`, retrying every 3 seconds up to a 2-minute timeout until the status is `"running"`,
-`"started"`, or `"not_installed"`.
+`"stopped"`, `"error"`, or `"not_installed"`.
 
 When the status transitions to `"not_installed"` during polling, the provider SHALL apply the
 existing "remove from state" path (REQ-001 Scenario: Read removes resource when not installed).
@@ -41,8 +41,8 @@ hard error), to avoid breaking `terraform refresh` on a slow stack.
 
 - GIVEN a resource in state and `GET /api/security/entity_store/status` returns `"installing"`
 - WHEN the provider reads the resource
-- THEN the provider SHALL retry the status call until status is `"running"` or until the 2-minute timeout
-- AND SHALL NOT return a partial `entity_types` list that excludes engines still initializing
+- THEN the provider SHALL retry the status call until status is no longer `"installing"` or until the 2-minute timeout
+- AND SHALL NOT return a partial `entity_types` list unless the timeout is exceeded
 
 #### Scenario: Read emits warning after timeout and returns partial data
 
