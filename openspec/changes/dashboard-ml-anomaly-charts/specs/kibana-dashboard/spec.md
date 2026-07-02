@@ -10,7 +10,7 @@ The block accepts the following attributes:
 - `max_series_to_plot` (optional float64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request.
 - `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
   - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
-  - `min` (int64) plus optional `max` (int64): a raw numeric range. When `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time.
+  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` MAY be set only when `min` is set (and `severity` is unset). Setting `severity` together with `min` or `max` on the same item SHALL produce an error diagnostic at plan time.
 - `title` (optional string): panel title. Subject to REQ-009 null-preservation.
 - `description` (optional string): panel description. Subject to REQ-009 null-preservation.
 - `hide_title` (optional bool): when true, hides the panel title. Subject to REQ-009 null-preservation.
@@ -92,7 +92,6 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 #### Scenario: Update job_ids in-place
 
 - GIVEN an existing `ml_anomaly_charts` panel with `job_ids = ["job-a"]`
-- WHEN the configuration changes to `job_ids = ["job-a", "job-b"]`
-- WHEN update runs
+- WHEN the configuration changes to `job_ids = ["job-a", "job-b"]` and update runs
 - THEN the resource SHALL NOT destroy and recreate the dashboard
 - AND state SHALL reflect both job IDs after the update

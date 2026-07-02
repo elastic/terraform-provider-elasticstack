@@ -4,7 +4,7 @@
 - [ ] 1.2 Implement `SchemaAttribute()` in `schema.go`:
   - Compose `panelkit.PanelPresentationAttributes()` with `job_ids` (required `ListAttribute(ElementType: types.StringType)`), `max_series_to_plot` (optional `Float64Attribute`), `severity_threshold` (optional `ListNestedAttribute`), and `time_range` (`panelkit.TimeRangeSchema(...)`).
   - `severity_threshold` list item attributes: `severity` (optional string, enum validator: `low`, `warning`, `minor`, `major`, `critical`), `min` (optional int64), `max` (optional int64).
-  - Plan-time item-level validator: exactly one of `severity` or `min` must be set per item; `max` requires `min` (or `severity` is absent).
+  - Plan-time item-level validator: exactly one of `severity` or `min` must be set per item; `max` MAY be set only when `min` is set (and `severity` is unset).
   - Return `panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{BlockName: "ml_anomaly_charts_config", PanelType: "ml_anomaly_charts", ...})`.
 
 ## 2. Model structs

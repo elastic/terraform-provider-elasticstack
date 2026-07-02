@@ -24,7 +24,7 @@ Each `severity_threshold` list item must set exactly one of:
 - `severity` (string enum: `low`, `warning`, `minor`, `major`, `critical`): expands to canonical `{min, max}` at write time, collapses back to enum name on read.
 - `min` (int64, required when `severity` is absent) plus optional `max` (int64): raw numeric range; written to API verbatim.
 
-Plan-time validators enforce the "exactly one of `severity` | `min`" constraint. If `max` is set without `severity`, `min` must also be set. This is enforced via an `objectvalidator.ExactlyOneOf`-style cross-attribute validator on each list item.
+Plan-time validators enforce the "exactly one of `severity` | `min`" constraint. `max` MAY be set only when `min` is set (and `severity` is unset). This is enforced via an `objectvalidator.ExactlyOneOf`-style cross-attribute validator on each list item.
 
 Anomaly scores are integers in `[0, 100]`; the five canonical bands are:
 
