@@ -2,7 +2,7 @@
 
 ### Requirement: Resource identity and composite ID
 
-The `elasticstack_fleet_agentless_policy` resource SHALL set its `id` to the composite string `"<space_id>/<policy_id>"` after every Create and Update. `policy_id` SHALL be Optional+Computed with `UseStateForUnknown`: when omitted from config, the API-assigned package policy ID SHALL be populated into state; when supplied, it SHALL be sent as the `id` field on the create request. `space_ids` SHALL be Optional+Computed defaulting to `["default"]`. Changing `policy_id`, `space_ids`, `name`, `namespace`, `package.*`, `policy_template`, or `cloud_connector.*` SHALL force resource replacement.
+The `elasticstack_fleet_agentless_policy` resource SHALL set its `id` to the composite string `"<space_id>/<policy_id>"` after every Create and Update. `policy_id` SHALL be Optional+Computed with `UseStateForUnknown`: when omitted from config, the API-assigned package policy ID SHALL be populated into state; when supplied, it SHALL be sent as the `id` field on the create request. `space_ids` SHALL be Optional+Computed defaulting to `["default"]`. Changing `policy_id`, `space_ids`, `name`, `namespace`, `package.name`, `package.version`, `policy_template`, or `cloud_connector.*` SHALL force resource replacement. (`package.title` is the one `package.*` sub-field excluded from this: see the "Schema attributes" requirement, where it is called out as updatable in-place.)
 
 #### Scenario: Create with auto-assigned policy_id
 
