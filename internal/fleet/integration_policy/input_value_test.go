@@ -264,7 +264,7 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
-						Vars: jsontypes.NewNormalizedValue(`{"threshold": 42}`),
+						Vars:    jsontypes.NewNormalizedValue(`{"threshold": 42}`),
 					},
 				}),
 			}),
@@ -275,7 +275,7 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 				Streams: mustNewStreamsMap(ctx, t, map[string]integrationPolicyInputStreamModel{
 					"stream1": {
 						Enabled: types.BoolValue(true),
-						Vars: jsontypes.NewNormalizedValue(`{"threshold": 99}`),
+						Vars:    jsontypes.NewNormalizedValue(`{"threshold": 99}`),
 					},
 				}),
 			}),
@@ -315,8 +315,8 @@ func TestInputValue_ObjectSemanticEquals(t *testing.T) {
 				Streams: types.MapNull(getInputStreamType()),
 			}),
 			value2: mustNewInputValue(ctx, t, integrationPolicyInputsModel{
-				Enabled:  types.BoolValue(true),
-				Vars:     jsontypes.NewNormalizedValue(`{"key": "value"}`),
+				Enabled: types.BoolValue(true),
+				Vars:    jsontypes.NewNormalizedValue(`{"key": "value"}`),
 				// New-side defaults is null.
 				Defaults: types.ObjectNull(getInputDefaultsAttrTypes()),
 				Streams:  types.MapNull(getInputStreamType()),
