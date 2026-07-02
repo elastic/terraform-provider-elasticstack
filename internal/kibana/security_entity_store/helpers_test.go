@@ -285,7 +285,7 @@ func TestWaitForStarted_NotInstalledEarlyExit(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.Empty(t, diags.Warnings())
 	assert.Equal(t, kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled, status.Status)
-	assert.Equal(t, `{"status":"not_installed"}`, string(rawBody))
+	assert.JSONEq(t, `{"status":"not_installed"}`, string(rawBody))
 }
 
 func TestWaitForStarted_InstallingToRunning(t *testing.T) {
@@ -304,7 +304,7 @@ func TestWaitForStarted_InstallingToRunning(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.Empty(t, diags.Warnings())
 	assert.Equal(t, kbapi.SecurityEntityAnalyticsAPIStoreStatusRunning, status.Status)
-	assert.Equal(t, `{"status":"running"}`, string(rawBody))
+	assert.JSONEq(t, `{"status":"running"}`, string(rawBody))
 }
 
 func TestWaitForStarted_DeadlineExpired(t *testing.T) {
@@ -324,5 +324,5 @@ func TestWaitForStarted_DeadlineExpired(t *testing.T) {
 	assert.Equal(t, "Security Entity Store is still installing; returning partial read data", diags[0].Summary())
 	assert.Contains(t, diags[0].Detail(), "context deadline exceeded")
 	assert.Equal(t, kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling, status.Status)
-	assert.Equal(t, `{"status":"installing"}`, string(rawBody))
+	assert.JSONEq(t, `{"status":"installing"}`, string(rawBody))
 }

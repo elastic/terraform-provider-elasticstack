@@ -32,7 +32,7 @@ func TestRetryCreateOnServerError_SucceedsImmediately(t *testing.T) {
 	t.Parallel()
 
 	calls := 0
-	attempt := func(ctx context.Context) (int, []byte, error) {
+	attempt := func(_ context.Context) (int, []byte, error) {
 		calls++
 		return http.StatusOK, nil, nil
 	}
@@ -46,7 +46,7 @@ func TestRetryCreateOnServerError_RetriesThenSucceeds(t *testing.T) {
 	t.Parallel()
 
 	calls := 0
-	attempt := func(ctx context.Context) (int, []byte, error) {
+	attempt := func(_ context.Context) (int, []byte, error) {
 		calls++
 		if calls < 3 {
 			return http.StatusInternalServerError, []byte("still installing"), nil
@@ -65,7 +65,7 @@ func TestRetryCreateOnServerError_FailFastOnNon500(t *testing.T) {
 	t.Parallel()
 
 	calls := 0
-	attempt := func(ctx context.Context) (int, []byte, error) {
+	attempt := func(_ context.Context) (int, []byte, error) {
 		calls++
 		return http.StatusBadRequest, []byte(`{"error":"bad request"}`), nil
 	}
@@ -78,7 +78,7 @@ func TestRetryCreateOnServerError_FailFastOnNon500(t *testing.T) {
 func TestRetryCreateOnServerError_DeadlineWhileStill500(t *testing.T) {
 	t.Parallel()
 
-	attempt := func(ctx context.Context) (int, []byte, error) {
+	attempt := func(_ context.Context) (int, []byte, error) {
 		return http.StatusInternalServerError, []byte("still installing"), nil
 	}
 
@@ -93,7 +93,7 @@ func TestRetryCreateOnServerError_TransportErrorFailsFast(t *testing.T) {
 	t.Parallel()
 
 	calls := 0
-	attempt := func(ctx context.Context) (int, []byte, error) {
+	attempt := func(_ context.Context) (int, []byte, error) {
 		calls++
 		return 0, nil, context.Canceled
 	}

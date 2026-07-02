@@ -1,0 +1,36 @@
+{
+  "runId": "8c291880",
+  "agent": "worker",
+  "task": "You are implementing ONE top-level task of an OpenSpec change in the Go Terraform provider repo at /Users/tobio/Projects/terraform-provider-elasticstack/security-entity-store-test-isolation-and-provider-waits.\n\nChange name: security-entity-store-test-isolation-and-provider-waits\n\nTask 1 is already done (waitForUninstall added to helpers.go). Do NOT redo it.\n\nFIRST read these context files fully before editing:\n- openspec/changes/security-entity-store-test-isolation-and-provider-waits/design.md (Decision 2)\n- openspec/changes/security-entity-store-test-isolation-and-provider-waits/tasks.md (Task 2)\n- openspec/changes/security-entity-store-test-isolation-and-provider-waits/specs/kibana-security-entity-store/spec.md (REQ-WAIT-002)\n- internal/asyncutils/state_waiter.go\n- internal/kibana/security_entity_store/helpers.go (getEntityStoreStatus, entityStoreStatus, waitForUninstall pattern to follow, entityStoreStatusFunc, makeUninstallStateChecker)\n- internal/kibana/security_entity_store/read.go\n- generated/kbapi — find the SecurityEntityAnalyticsAPIStoreStatus constants (grep for SecurityEntityAnalyticsAPIStoreStatus in generated/kbapi to learn the exact constant names for installing/running/stopped/error/not_installed).\n\nSCOPE: Implement ONLY Task 2 (subtasks 2.1, 2.2, 2.3). Do not touch Delete, Create, or tests in other packages.\n\nTask 2.1: Add `waitForStarted(ctx context.Context, client *clients.KibanaScopedClient, spaceID string) (*entityStoreStatus, []byte, diag.Diagnostics)` to internal/kibana/security_entity_store/helpers.go.\n- Perform an initial synchronous getEntityStoreStatus(ctx, client, spaceID, false).\n- If the initial read returns error diagnostics, return them.\n- If overall status is NOT \"installing\", return the status, rawBody, and nil diags immediately (no polling).\n- If status IS \"installing\", poll via asyncutils.WaitForStateTransition(ctx, \"security entity store\", spaceID, checker, asyncutils.WithPollInterval(3*time.Second)) with a StateChecker that re-reads status and returns true once status is no longer \"installing\" (i.e. running, stopped, error, or not_installed). The checker must capture the latest successfully-read status/rawBody so waitForStarted can return the last-observed data.\n- On WaitForStateTransition error (ctx deadline exceeded while still installing): return the LAST-observed status and rawBody together with a WARNING diagnostic (diag.NewWarningDiagnostic) describing that the store is still installing and the read is proceeding with partial data — NOT an error diagnostic. This is the degraded-read path.\n- Use the exact kbapi status constants. Check whether an \"installing\" constant exists (e.g. SecurityEntityAnalyticsAPIStoreStatusInstalling); use it.\n\nTask 2.2: Replace the single getEntityStoreStatus call at the top of readEntityStore in internal/kibana/security_entity_store/read.go with waitForStarted. Preserve the existing not_installed → remove-from-state path (return model, false, nil). Preserve existing flatten logic. Because waitForStarted may return a warning diagnostic (not error), the read must still proceed to flatten/return when only warnings are present — append the warning diags to the returned diagnostics but continue. Only bail early when diags.HasError().\n\nTask 2.3: Add unit tests (extend helpers_test.go or a new file, package security_entity_store) covering:\n- installing→running transition path (checker returns false while installing, true when running)\n- not_installed early-exit path (initial status not_installed returns immediately without polling)\n- deadline-expiry → warning + degraded-read path (expired ctx yields a warning diagnostic and returns last-observed data, no error)\nStructure tests to exercise the StateChecker closure and the warning-diagnostic mapping. If needed for testability, extract small helpers (like makeStartedStateChecker and a diags-from-error mapper) mirroring the Task 1 structure, but keep the waitForStarted public API as specified.\n\nCONVENTIONS:\n- Follow dev-docs/high-level/coding-standards.md.\n- Apache license header on any new file (copy from read.go).\n- Reuse asyncutils; no new packages.\n\nAfter editing:\n- Run `go build ./internal/kibana/security_entity_store/...` and `go test ./internal/kibana/security_entity_store/ -run 'Test.*Start|Test.*Wait|Test.*Read' 2>&1 | tail -30` (unit only, no TF_ACC).\n- Do NOT run acceptance tests, push, or archive.\n- Update tasks.md: mark 2.1, 2.2, 2.3 as [x].\n- Create a focused commit (e.g. \"feat(security_entity_store): wait for started-state in Read\").\n\nReport back: files changed, commit SHA, test output summary, the exact kbapi installing constant name you used, any blockers.",
+  "exitCode": 0,
+  "usage": {
+    "input": 156870,
+    "output": 16565,
+    "cacheRead": 572288,
+    "cacheWrite": 0,
+    "cost": 0,
+    "turns": 31
+  },
+  "model": "openrouter/moonshotai/kimi-k2.7-code:low",
+  "attemptedModels": [
+    "openrouter/moonshotai/kimi-k2.7-code:low"
+  ],
+  "modelAttempts": [
+    {
+      "model": "openrouter/moonshotai/kimi-k2.7-code:low",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 156870,
+        "output": 16565,
+        "cacheRead": 572288,
+        "cacheWrite": 0,
+        "cost": 0,
+        "turns": 31
+      }
+    }
+  ],
+  "durationMs": 1340323,
+  "toolCount": 35,
+  "timestamp": 1782978025361
+}
