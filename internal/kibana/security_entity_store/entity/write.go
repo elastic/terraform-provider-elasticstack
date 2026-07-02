@@ -21,13 +21,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -89,70 +86,15 @@ func writeEntity(
 }
 
 // createEntityWithRetry performs an initial synchronous create and, when the
-// entity store returns HTTP 500 (still initializing), retries at
-// createRetryPollInterval until the create succeeds (HTTP 2xx) or the Create
-// ctx deadline is exceeded. Any non-500 non-2xx response fails fast. The retry
-// is bounded solely by the ctx deadline; no separate wall-clock budget is used.
+// entity store returns HTTP 500 (still initializing), retries until the create
+// succeeds or the Create ctx deadline is exceeded, reusing the shared
+// kibanaoapi retry helper. A fresh body reader is constructed on each attempt
+// because the request consumes it.
 func createEntityWithRetry(ctx context.Context, client *clients.KibanaScopedClient, spaceID, entityType string, bodyBytes []byte) diag.Diagnostics {
 	attempt := func(ctx context.Context) (int, []byte, error) {
 		return kibanaoapi.CreateSecurityEntityStoreEntityStatus(ctx, client.GetKibanaOapiClient(), spaceID, entityType, bytes.NewReader(bodyBytes))
 	}
-	return retryCreateOnServerError(ctx, "security entity store entity", entityType, attempt, createRetryPollInterval)
-}
-
-// createAttemptFunc performs a single create call and reports the raw HTTP
-// status code and body (or a transport error).
-type createAttemptFunc func(ctx context.Context) (statusCode int, body []byte, err error)
-
-// retryCreateOnServerError performs an initial synchronous create attempt and,
-// when the store returns HTTP 500, retries at createRetryPollInterval until the
-// create succeeds (HTTP 2xx) or the Create ctx deadline is exceeded. Any
-// non-500 non-2xx response fails fast.
-func retryCreateOnServerError(ctx context.Context, resourceType, resourceID string, attempt createAttemptFunc, pollInterval time.Duration) diag.Diagnostics {
-	status, respBody, err := attempt(ctx)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	if status >= 200 && status < 300 {
-		return nil
-	}
-	if status != http.StatusInternalServerError {
-		return diagutil.ReportUnknownHTTPError(status, respBody)
-	}
-
-	lastStatus, lastBody := status, respBody
-	checker := func(ctx context.Context) (bool, error) {
-		status, respBody, err := attempt(ctx)
-		if err != nil {
-			return false, err
-		}
-		lastStatus, lastBody = status, respBody
-		if status == http.StatusInternalServerError {
-			return false, nil
-		}
-		if status < 200 || status >= 300 {
-			return false, &fatalCreateError{status: status}
-		}
-		return true, nil
-	}
-
-	if waitErr := asyncutils.WaitForStateTransition(ctx, resourceType, resourceID, checker, asyncutils.WithPollInterval(pollInterval)); waitErr != nil {
-		if lastStatus != 0 && (lastStatus < 200 || lastStatus >= 300) {
-			return diagutil.ReportUnknownHTTPError(lastStatus, lastBody)
-		}
-		return diagutil.FrameworkDiagFromError(waitErr)
-	}
-	return nil
-}
-
-// fatalCreateError signals a non-retriable create failure so the retry loop
-// stops immediately.
-type fatalCreateError struct {
-	status int
-}
-
-func (e *fatalCreateError) Error() string {
-	return http.StatusText(e.status)
+	return kibanaoapi.RetryCreateOnServerError(ctx, "security entity store entity", entityType, attempt, createRetryPollInterval)
 }
 
 // injectEntityIDAndMarshal sets entity.id in bodyMap and marshals it to JSON.

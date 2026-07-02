@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package entity
+package kibanaoapi
 
 import (
 	"context"
@@ -37,7 +37,7 @@ func TestRetryCreateOnServerError_SucceedsImmediately(t *testing.T) {
 		return http.StatusOK, nil, nil
 	}
 
-	diags := retryCreateOnServerError(context.Background(), "entity", "host", attempt, testPollInterval)
+	diags := RetryCreateOnServerError(context.Background(), "test", "id", attempt, testPollInterval)
 	require.False(t, diags.HasError())
 	require.Equal(t, 1, calls, "happy path should not enter the retry loop")
 }
@@ -56,7 +56,7 @@ func TestRetryCreateOnServerError_RetriesThenSucceeds(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	diags := retryCreateOnServerError(ctx, "entity", "host", attempt, testPollInterval)
+	diags := RetryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
 	require.False(t, diags.HasError())
 	require.Equal(t, 3, calls)
 }
@@ -70,9 +70,29 @@ func TestRetryCreateOnServerError_FailFastOnNon500(t *testing.T) {
 		return http.StatusBadRequest, []byte(`{"error":"bad request"}`), nil
 	}
 
-	diags := retryCreateOnServerError(context.Background(), "entity", "host", attempt, testPollInterval)
+	diags := RetryCreateOnServerError(context.Background(), "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Equal(t, 1, calls, "non-500 non-2xx must fail fast without retrying")
+}
+
+func TestRetryCreateOnServerError_FailFastOnNon500AfterInitial500(t *testing.T) {
+	t.Parallel()
+
+	calls := 0
+	attempt := func(_ context.Context) (int, []byte, error) {
+		calls++
+		if calls == 1 {
+			return http.StatusInternalServerError, []byte("still installing"), nil
+		}
+		return http.StatusForbidden, []byte(`{"error":"forbidden"}`), nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	diags := RetryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Detail(), "forbidden", "fatal status body during retry should be surfaced")
+	require.Equal(t, 2, calls)
 }
 
 func TestRetryCreateOnServerError_DeadlineWhileStill500(t *testing.T) {
@@ -84,7 +104,7 @@ func TestRetryCreateOnServerError_DeadlineWhileStill500(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	diags := retryCreateOnServerError(ctx, "entity", "host", attempt, testPollInterval)
+	diags := RetryCreateOnServerError(ctx, "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Contains(t, diags[0].Detail(), "still installing", "final 500 body should be surfaced")
 }
@@ -98,7 +118,7 @@ func TestRetryCreateOnServerError_TransportErrorFailsFast(t *testing.T) {
 		return 0, nil, context.Canceled
 	}
 
-	diags := retryCreateOnServerError(context.Background(), "entity", "host", attempt, testPollInterval)
+	diags := RetryCreateOnServerError(context.Background(), "test", "id", attempt, testPollInterval)
 	require.True(t, diags.HasError())
 	require.Equal(t, 1, calls)
 }

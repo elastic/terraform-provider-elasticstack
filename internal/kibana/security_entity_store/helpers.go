@@ -390,9 +390,20 @@ func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClien
 // installed. It is bounded by the Delete ctx deadline (carried in from the
 // resource timeouts block); no separate timeout is imposed.
 func waitForUninstall(ctx context.Context, client *clients.KibanaScopedClient, spaceID string) diag.Diagnostics {
-	checker := makeUninstallStateChecker(func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
+	getStatus := func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 		return getEntityStoreStatus(ctx, client, spaceID, false)
-	})
+	}
+	checker := makeUninstallStateChecker(getStatus)
+
+	// Immediate first check so an already not_installed store returns without
+	// waiting a full poll interval; only enter the wait loop if it is not yet
+	// gone. Skipped when the context is already done so the wait loop reports
+	// the deadline. Transient read errors fall through to the polling loop.
+	if ctx.Err() == nil {
+		if done, _ := checker(ctx); done {
+			return nil
+		}
+	}
 
 	err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, asyncutils.WithPollInterval(5*time.Second))
 	return uninstallWaitDiagsFromError(err)

@@ -19,6 +19,7 @@ package security_entity_store
 
 import (
 	"context"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -59,7 +60,10 @@ func updateEntityStore(
 		if d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
-		if d := kibanaoapi.InstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body); d.HasError() {
+		install := func(ctx context.Context) (int, []byte, error) {
+			return kibanaoapi.InstallSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, body)
+		}
+		if d := kibanaoapi.RetryCreateOnServerError(ctx, "security entity store", spaceID, install, 5*time.Second); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	}

@@ -47,6 +47,9 @@
       `retryutil` package. If exponential back-off is genuinely required, add it as a
       `WithBackoff` option to `asyncutils` in a separate change rather than forking a utility.
 - [x] 3.4 Add unit tests for the `StateChecker` closures: verify 500 maps to retry
+- [x] 3.5 Extract the shared `kibanaoapi.RetryCreateOnServerError` helper and apply the same 500-retry
+      to the entity-store Install path (Create in `create.go` and merge-on-install in `update.go`),
+      since the isolation cleanup makes back-to-back uninstall/install races more likely (REQ-WAIT-003).
       (`false, nil`), non-500 non-2xx maps to fail-fast (`false, err`), and 2xx maps to done
       (`true, nil`). Verify a deadline-expired `ctx` surfaces `ctx.Err()` as an error diagnostic.
 

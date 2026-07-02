@@ -19,6 +19,7 @@ package security_entity_store
 
 import (
 	"context"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -28,6 +29,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// installRetryPollInterval is the cadence at which the entity store install is
+// retried while the store is still initializing (HTTP 500). The overall retry
+// budget is bounded by the Create ctx deadline (from the resource timeouts
+// block), not by this interval.
+const installRetryPollInterval = 5 * time.Second
 
 func createEntityStore(
 	ctx context.Context,
@@ -41,7 +48,10 @@ func createEntityStore(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	if d := kibanaoapi.InstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body); d.HasError() {
+	install := func(ctx context.Context) (int, []byte, error) {
+		return kibanaoapi.InstallSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, body)
+	}
+	if d := kibanaoapi.RetryCreateOnServerError(ctx, "security entity store", spaceID, install, installRetryPollInterval); d.HasError() {
 		return entitycore.KibanaWriteResult[tfModel]{}, d
 	}
 

@@ -30,11 +30,22 @@ import (
 
 // InstallSecurityEntityStore installs the entity store with the given types and options.
 func InstallSecurityEntityStore(ctx context.Context, client *Client, spaceID string, body kbapi.PostSecurityEntityStoreInstallJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PostSecurityEntityStoreInstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	statusCode, respBody, err := InstallSecurityEntityStoreStatus(ctx, client, spaceID, body)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusCreated)
+	return diagutil.HandleStatusResponse(statusCode, respBody, http.StatusOK, http.StatusCreated)
+}
+
+// InstallSecurityEntityStoreStatus installs the entity store and returns the raw
+// HTTP status code and response body without collapsing them into diagnostics.
+// This lets callers retry on HTTP 500 while the store is still initializing.
+func InstallSecurityEntityStoreStatus(ctx context.Context, client *Client, spaceID string, body kbapi.PostSecurityEntityStoreInstallJSONRequestBody) (int, []byte, error) {
+	resp, err := client.API.PostSecurityEntityStoreInstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return 0, nil, err
+	}
+	return resp.StatusCode(), resp.Body, nil
 }
 
 // UpdateSecurityEntityStore updates the entity store log extraction configuration.

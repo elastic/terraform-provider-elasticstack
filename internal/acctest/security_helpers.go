@@ -56,7 +56,12 @@ const entityStoreCleanupTimeout = 5 * time.Minute
 // already-uninstalled store is treated as success and never fails the test.
 func CleanupEntityStore(t *testing.T, spaceID string) {
 	t.Helper()
-	SkipIfNotAcceptanceTest(t)
+	// Guard on TF_ACC directly rather than SkipIfNotAcceptanceTest: this runs
+	// inside t.Cleanup, where calling t.Skip would re-skip an already-skipped
+	// test and emit confusing duplicate skip logs.
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
