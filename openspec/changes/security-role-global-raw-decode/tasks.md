@@ -24,7 +24,7 @@
 - [x] 4.1 Run `make build` and confirm compilation succeeds
 - [x] 4.2 Run `go vet ./internal/clients/elasticsearch/... ./internal/elasticsearch/security/role/...` and resolve any issues
 - [x] 4.3 Run `go test ./internal/elasticsearch/security/role/...` (unit tests) and confirm they pass
-- [ ] 4.4 Run `TestAccResourceSecurityRole` against a 9.5.0-SNAPSHOT stack and confirm the `global` state assertion holds (no `data_source`, no `role`)
+- [x] 4.4 Run `TestAccResourceSecurityRole` against a 9.5.0-SNAPSHOT stack and confirm the `global` state assertion holds (no `data_source`, no `role`)
 
 ## 5. Spec sync
 
