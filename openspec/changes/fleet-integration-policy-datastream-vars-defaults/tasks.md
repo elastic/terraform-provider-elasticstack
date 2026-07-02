@@ -21,13 +21,13 @@
 
 ## 4. Acceptance test verification
 
-- [ ] 4.1 Run `TestAccResourceIntegrationPolicyGCPPubSub` against a 9.5.0-SNAPSHOT (or latest 9.5) stack and confirm it passes without modifying the test configuration
-- [ ] 4.2 Run `TestAccResourceIntegrationPolicySecrets` (both `single_valued_secrets` and `multi-valued_secrets` subtests) against a 9.5.0-SNAPSHOT stack and confirm both pass
-- [ ] 4.3 If either test fails for a reason other than the two gaps fixed in tasks 1–2, record the additional failure mode and open a follow-up issue or task
+- [x] 4.1 Run `TestAccResourceIntegrationPolicyGCPPubSub` against a 9.5.0-SNAPSHOT (or latest 9.5) stack and confirm it passes without modifying the test configuration
+- [x] 4.2 Run `TestAccResourceIntegrationPolicySecrets` (both `single_valued_secrets` and `multi-valued_secrets` subtests) against a 9.5.0-SNAPSHOT stack and confirm both pass
+- [x] 4.3 If either test fails for a reason other than the two gaps fixed in tasks 1–2, record the additional failure mode and open a follow-up issue or task
 
 ## 5. Validation and build
 
-- [ ] 5.1 Run `make build` — confirm no compilation errors
-- [ ] 5.2 Run `make check-lint` — fix any lint issues
-- [ ] 5.3 Run `make check-openspec` — confirm the change validates cleanly
-- [ ] 5.4 Run the unit test suite for the integration policy package: `go test ./internal/fleet/integration_policy/...` — all existing and new tests SHALL pass
+- [x] 5.1 Run `make build` — confirm no compilation errors
+- [x] 5.2 Run `make check-lint` — fix any lint issues
+- [x] 5.3 Run `make check-openspec` — confirm the change validates cleanly
+- [x] 5.4 Run the unit test suite for the integration policy package: `go test ./internal/fleet/integration_policy/...` — all existing and new tests SHALL pass
