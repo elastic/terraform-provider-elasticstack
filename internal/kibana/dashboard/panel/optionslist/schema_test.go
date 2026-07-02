@@ -43,14 +43,14 @@ var (
 		"values_source": types.StringType,
 	}
 	optionsListConfigTestAttrTypes = map[string]attr.Type{
-		optionsListBranchByField: types.ObjectType{AttrTypes: byFieldTestAttrs},
-		optionsListBranchByEsql:  types.ObjectType{AttrTypes: byEsqlTestAttrs},
+		BranchByField: types.ObjectType{AttrTypes: byFieldTestAttrs},
+		BranchByEsql:  types.ObjectType{AttrTypes: byEsqlTestAttrs},
 	}
 )
 
 func optionsListExactlyOneOfValidator() validator.Object {
 	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{optionsListBranchByField, optionsListBranchByEsql},
+		AttrNames:     []string{BranchByField, BranchByEsql},
 		Summary:       "Invalid options_list_control_config",
 		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`.",
 		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`, not both.",
@@ -74,8 +74,8 @@ func Test_optionsListConfigModeValidator(t *testing.T) {
 	t.Run("accepts by_field only", func(t *testing.T) {
 		t.Parallel()
 		ov := types.ObjectValueMust(optionsListConfigTestAttrTypes, map[string]attr.Value{
-			optionsListBranchByField: byFieldObj,
-			optionsListBranchByEsql:  types.ObjectNull(byEsqlTestAttrs),
+			BranchByField: byFieldObj,
+			BranchByEsql:  types.ObjectNull(byEsqlTestAttrs),
 		})
 		var resp validator.ObjectResponse
 		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("options_list_control_config")}, &resp)
@@ -85,8 +85,8 @@ func Test_optionsListConfigModeValidator(t *testing.T) {
 	t.Run("accepts by_esql only", func(t *testing.T) {
 		t.Parallel()
 		ov := types.ObjectValueMust(optionsListConfigTestAttrTypes, map[string]attr.Value{
-			optionsListBranchByField: types.ObjectNull(byFieldTestAttrs),
-			optionsListBranchByEsql:  byEsqlObj,
+			BranchByField: types.ObjectNull(byFieldTestAttrs),
+			BranchByEsql:  byEsqlObj,
 		})
 		var resp validator.ObjectResponse
 		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("options_list_control_config")}, &resp)
@@ -96,8 +96,8 @@ func Test_optionsListConfigModeValidator(t *testing.T) {
 	t.Run("rejects both", func(t *testing.T) {
 		t.Parallel()
 		ov := types.ObjectValueMust(optionsListConfigTestAttrTypes, map[string]attr.Value{
-			optionsListBranchByField: byFieldObj,
-			optionsListBranchByEsql:  byEsqlObj,
+			BranchByField: byFieldObj,
+			BranchByEsql:  byEsqlObj,
 		})
 		var resp validator.ObjectResponse
 		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("options_list_control_config")}, &resp)
@@ -108,8 +108,8 @@ func Test_optionsListConfigModeValidator(t *testing.T) {
 	t.Run("rejects neither", func(t *testing.T) {
 		t.Parallel()
 		ov := types.ObjectValueMust(optionsListConfigTestAttrTypes, map[string]attr.Value{
-			optionsListBranchByField: types.ObjectNull(byFieldTestAttrs),
-			optionsListBranchByEsql:  types.ObjectNull(byEsqlTestAttrs),
+			BranchByField: types.ObjectNull(byFieldTestAttrs),
+			BranchByEsql:  types.ObjectNull(byEsqlTestAttrs),
 		})
 		var resp validator.ObjectResponse
 		v.ValidateObject(ctx, validator.ObjectRequest{ConfigValue: ov, Path: path.Root("options_list_control_config")}, &resp)

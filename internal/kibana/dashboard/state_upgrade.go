@@ -20,46 +20,11 @@ package dashboard
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
-
-// Branch keys introduced by the v1 schema. Mirrors the (unexported) branch name
-// constants declared in the optionslist/rangeslider packages.
-const (
-	controlBranchByField = "by_field"
-	controlBranchByEsql  = "by_esql"
-)
-
-// optionsListV0FlatAttrs are the flat options_list_control_config attributes that
-// existed at schema version 0 and now live nested under `by_field {}`.
-var optionsListV0FlatAttrs = []string{
-	attrDataViewID,
-	attrFieldName,
-	attrTitle,
-	attrUseGlobalFilters,
-	attrIgnoreValidations,
-	attrSingleSelect,
-	attrExclude,
-	attrExistsSelected,
-	attrRunPastTimeout,
-	attrSearchTechnique,
-	attrSelectedOptions,
-	attrDisplaySettings,
-	attrSort,
-}
-
-// rangeSliderV0FlatAttrs are the flat range_slider_control_config attributes that
-// existed at schema version 0 and now live nested under `by_field {}`.
-var rangeSliderV0FlatAttrs = []string{
-	attrDataViewID,
-	attrFieldName,
-	attrTitle,
-	attrUseGlobalFilters,
-	attrIgnoreValidations,
-	attrValue,
-	attrStep,
-}
 
 // UpgradeState migrates dashboard resource state from schema version 0 to
 // version 1. Version 0 stored options_list_control_config and
@@ -121,9 +86,9 @@ func migratePanelList(raw any) {
 		panelType, _ := panel[attrPanelType].(string)
 		switch panelType {
 		case panelTypeOptionsListControl:
-			relocateToByField(panel, controlBlockOptionsList, optionsListV0FlatAttrs)
+			relocateToByField(panel, controlBlockOptionsList, optionslist.BranchByField, optionslist.BranchByEsql, optionslist.ByFieldAttributeNames())
 		case panelTypeRangeSlider:
-			relocateToByField(panel, controlBlockRangeSlider, rangeSliderV0FlatAttrs)
+			relocateToByField(panel, controlBlockRangeSlider, rangeslider.BranchByField, rangeslider.BranchByEsql, rangeslider.ByFieldAttributeNames())
 		}
 	}
 }
@@ -134,8 +99,10 @@ func migratePanelList(raw any) {
 // moved as-is (no re-encoding), so numeric types (e.g. `step` as float64 post
 // json.Unmarshal) are preserved unchanged. Missing or null configKey blocks
 // (e.g. because the panel is of a different type, or the block was never set)
-// are left untouched.
-func relocateToByField(panel map[string]any, configKey string, flatAttrs []string) {
+// are left untouched. byFieldKey/byEsqlKey and flatAttrs come from the owning
+// panel package (optionslist/rangeslider) so this stays in sync with the
+// schema instead of duplicating its attribute names and branch keys.
+func relocateToByField(panel map[string]any, configKey, byFieldKey, byEsqlKey string, flatAttrs []string) {
 	rawConfig, ok := panel[configKey]
 	if !ok || rawConfig == nil {
 		return
@@ -158,7 +125,7 @@ func relocateToByField(panel map[string]any, configKey string, flatAttrs []strin
 	// crafted or otherwise incomplete v0 state omitted one.
 	stateutil.EnsureMapKeys(byField, flatAttrs...)
 
-	config[controlBranchByField] = byField
-	config[controlBranchByEsql] = nil
+	config[byFieldKey] = byField
+	config[byEsqlKey] = nil
 	panel[configKey] = config
 }

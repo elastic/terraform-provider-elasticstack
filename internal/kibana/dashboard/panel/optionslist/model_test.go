@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -243,7 +244,7 @@ func Test_PopulateFromAPI_branchSwitchedRemotely_esqlToField(t *testing.T) {
 	priorCfg := &models.OptionsListControlConfigModel{
 		ByEsql: &models.OptionsListControlByEsqlModel{
 			EsqlQuery:    types.StringValue("FROM logs | STATS BY service.name"),
-			ValuesSource: types.StringValue(esqlValuesSourceUserValue),
+			ValuesSource: types.StringValue(panelkit.EsqlValuesSourceUserValue),
 		},
 	}
 	pm := &models.PanelModel{OptionsListControlConfig: priorCfg}
@@ -287,7 +288,7 @@ func Test_BuildConfig_neitherBranchSet_errors(t *testing.T) {
 	assert.True(t, diags.HasError())
 }
 
-// Test: BuildConfig sets all known fields and auto-sets values_source to "field".
+// Test: BuildConfig sets all known fields and leaves values_source unset (see buildFieldConfig).
 func Test_BuildConfig_byField_allFields(t *testing.T) {
 	pm := models.PanelModel{
 		OptionsListControlConfig: &models.OptionsListControlConfigModel{

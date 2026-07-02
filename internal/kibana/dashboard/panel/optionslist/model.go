@@ -18,11 +18,11 @@
 package optionslist
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -60,7 +60,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 		return diags
 	}
 
-	if isEsqlOptionsListConfig(raw) {
+	if panelkit.IsEsqlBranch(raw) {
 		apiConfig, err := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql()
 		if err != nil {
 			diags.AddError("Failed to decode options list control config", err.Error())
@@ -75,18 +75,6 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 		return diags
 	}
 	return populateFieldFromAPI(pm, tfPanel, apiConfig)
-}
-
-// isEsqlOptionsListConfig reports whether the raw config JSON discriminates to the ES|QL branch
-// (identified by the presence of the `esql_query` key, which only the ES|QL schema defines).
-func isEsqlOptionsListConfig(raw []byte) bool {
-	var probe struct {
-		EsqlQuery *string `json:"esql_query"`
-	}
-	if err := json.Unmarshal(raw, &probe); err != nil {
-		return false
-	}
-	return probe.EsqlQuery != nil
 }
 
 // preserveKnownBool updates existing from api only when existing is already known (REQ-009
@@ -201,7 +189,7 @@ func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiC
 
 	// Block exists in state — update required fields unconditionally, optional fields only when known.
 	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
-	existing.ValuesSource = types.StringValue(esqlValuesSourceUserValue)
+	existing.ValuesSource = types.StringValue(panelkit.EsqlValuesSourceUserValue)
 
 	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
 	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
@@ -267,8 +255,8 @@ func newOptionsListEsqlFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbnC
 		EsqlQuery: types.StringValue(apiConfig.EsqlQuery),
 		// The wire enum only ever legally carries "esql" (see
 		// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql).
-		// The Terraform-facing attribute always reads back as esqlValuesSourceUserValue.
-		ValuesSource:    types.StringValue(esqlValuesSourceUserValue),
+		// The Terraform-facing attribute always reads back as panelkit.EsqlValuesSourceUserValue.
+		ValuesSource:    types.StringValue(panelkit.EsqlValuesSourceUserValue),
 		SelectedOptions: types.ListNull(types.StringType),
 	}
 	if apiConfig.Title != nil {
@@ -466,7 +454,7 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 }
 
 // buildEsqlConfig writes the by_esql branch into the API payload. values_source is schema-validated
-// to be esqlValuesSourceUserValue ("esql_query") but the wire enum's only legal value is "esql" (see
+// to be panelkit.EsqlValuesSourceUserValue ("esql_query") but the wire enum's only legal value is "esql" (see
 // kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql), so the
 // wire constant is always sent regardless of the model value.
 func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {

@@ -19,10 +19,10 @@ package rangeslider
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -68,7 +68,7 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 		cfg = &models.RangeSliderControlConfigModel{}
 	}
 
-	if isEsqlRangeSliderConfig(raw) {
+	if panelkit.IsEsqlBranch(raw) {
 		esqlCfg, err := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql()
 		if err != nil {
 			diags.AddError("Failed to decode range slider control config", err.Error())
@@ -97,19 +97,6 @@ func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models
 	cfg.ByField = populateByFieldFromAPI(ctx, priorByField, &fieldCfg)
 	pm.RangeSliderControlConfig = cfg
 	return diags
-}
-
-// isEsqlRangeSliderConfig reports whether the raw range slider config JSON is the ES|QL variant.
-// The union has no explicit discriminator field, so presence of `esql_query` is used to distinguish
-// it from the Field variant (`data_view_id` / `field_name`).
-func isEsqlRangeSliderConfig(raw []byte) bool {
-	var probe struct {
-		EsqlQuery *string `json:"esql_query"`
-	}
-	if err := json.Unmarshal(raw, &probe); err != nil {
-		return false
-	}
-	return probe.EsqlQuery != nil
 }
 
 // rangeSliderSharedFields points at the by_field/by_esql model attributes shared by both branches
@@ -217,7 +204,7 @@ func populateByEsqlFromAPI(
 		// The wire enum only ever legally carries "esql" (see
 		// kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql). We
 		// normalize it back to the Terraform-facing constant so plans stay drift-free.
-		ValuesSource: types.StringValue(esqlValuesSourceUserValue),
+		ValuesSource: types.StringValue(panelkit.EsqlValuesSourceUserValue),
 	}
 	var priorFields *rangeSliderSharedFields
 	if prior != nil {
@@ -312,7 +299,7 @@ func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.K
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql
 	c.EsqlQuery = cfg.EsqlQuery.ValueString()
 	// The schema validates the user-facing values_source to a single legal value
-	// (esqlValuesSourceUserValue). The wire enum's only legal value is "esql" (see
+	// (panelkit.EsqlValuesSourceUserValue). The wire enum's only legal value is "esql" (see
 	// kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql), so it is
 	// hardcoded here rather than derived from the (already-validated) model string.
 	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql

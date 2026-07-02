@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -174,7 +176,7 @@ func TestMigrateV0ToV1_OptionsListControl(t *testing.T) {
 
 	// No v0 attribute should remain directly on the config block; every key now
 	// lives either at by_field/by_esql or was never a v0 attribute.
-	for _, k := range optionsListV0FlatAttrs {
+	for _, k := range optionslist.ByFieldAttributeNames() {
 		_, exists := cfg[k]
 		require.False(t, exists, "v0 attribute %q should have been relocated out of the config root", k)
 	}
@@ -223,7 +225,7 @@ func TestMigrateV0ToV1_RangeSliderControl(t *testing.T) {
 	require.Equal(t, []any{"10", "500"}, byField["value"])
 	require.InDelta(t, 5.0, byField["step"], 0)
 
-	for _, k := range rangeSliderV0FlatAttrs {
+	for _, k := range rangeslider.ByFieldAttributeNames() {
 		_, exists := cfg[k]
 		require.False(t, exists, "v0 attribute %q should have been relocated out of the config root", k)
 	}

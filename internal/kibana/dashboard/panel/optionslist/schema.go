@@ -33,16 +33,9 @@ const panelType = "options_list_control"
 // Options list control discriminator branches. These are reused between the schema validators and
 // the API converter, which maps them back to the Field / ES|QL union reported by Kibana.
 const (
-	optionsListBranchByField = "by_field"
-	optionsListBranchByEsql  = "by_esql"
+	BranchByField = "by_field"
+	BranchByEsql  = "by_esql"
 )
-
-// esqlValuesSourceUserValue is the only value the Terraform-facing `by_esql.values_source`
-// attribute accepts. It is translated to/from the wire enum's only legal value, "esql" (see
-// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql), in the
-// API converter — "esql_query" reads more clearly next to the `esql_query` attribute and matches
-// the value documented in the originating feature request.
-const esqlValuesSourceUserValue = "esql_query"
 
 // SchemaAttribute returns the dashboard panel options_list_control_config block.
 func SchemaAttribute() schema.Attribute {
@@ -64,20 +57,20 @@ func SchemaAttribute() schema.Attribute {
 // branches in its own SingleNestedAttribute with pinned-specific sibling validators.
 func NestedAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		optionsListBranchByField: schema.SingleNestedAttribute{
+		BranchByField: schema.SingleNestedAttribute{
 			MarkdownDescription: "Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",
 			Optional:            true,
 			Attributes:          byFieldAttributes(),
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(optionsListBranchByEsql)),
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(BranchByEsql)),
 			},
 		},
-		optionsListBranchByEsql: schema.SingleNestedAttribute{
+		BranchByEsql: schema.SingleNestedAttribute{
 			MarkdownDescription: "Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`.",
 			Optional:            true,
 			Attributes:          byEsqlAttributes(),
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(optionsListBranchByField)),
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(BranchByField)),
 			},
 		},
 	}
@@ -88,7 +81,7 @@ func NestedAttributes() map[string]schema.Attribute {
 // control-bar schema.
 func ExactlyOneOfBranchValidator() validator.Object {
 	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{optionsListBranchByField, optionsListBranchByEsql},
+		AttrNames:     []string{BranchByField, BranchByEsql},
 		Summary:       "Invalid options_list_control_config",
 		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`.",
 		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`, not both.",
@@ -204,6 +197,19 @@ func byFieldAttributes() map[string]schema.Attribute {
 	return attrs
 }
 
+// ByFieldAttributeNames returns the by_field branch's attribute names. Callers that need to
+// enumerate them without depending on the full schema (e.g. the dashboard resource's v0->v1 state
+// upgrader, which relocates these same names from a flat v0 layout into by_field {}) should use
+// this instead of hardcoding a duplicate list that could drift from the schema.
+func ByFieldAttributeNames() []string {
+	attrs := byFieldAttributes()
+	names := make([]string, 0, len(attrs))
+	for name := range attrs {
+		names = append(names, name)
+	}
+	return names
+}
+
 // byEsqlAttributes returns the attributes for the by_esql branch: the shared attribute set plus the
 // required esql_query / values_source discriminating identifiers.
 func byEsqlAttributes() map[string]schema.Attribute {
@@ -216,7 +222,7 @@ func byEsqlAttributes() map[string]schema.Attribute {
 		MarkdownDescription: "The source discriminator for this branch. Must be `esql_query`.",
 		Required:            true,
 		Validators: []validator.String{
-			stringvalidator.OneOf(esqlValuesSourceUserValue),
+			stringvalidator.OneOf(panelkit.EsqlValuesSourceUserValue),
 		},
 	}
 	return attrs

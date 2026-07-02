@@ -49,8 +49,9 @@ func TestContract_OptionsListPanel_ByField(t *testing.T) {
 			// This fixture discriminates to the Field branch; the ES|QL branch is exercised by
 			// TestContract_OptionsListPanel_ByEsql instead.
 			"by_esql",
-			// The provider auto-sets values_source="field" on write (REQ-027); it is intentionally
-			// absent from the read fixture and not a user-facing attribute for by_field.
+			// The provider deliberately omits values_source on by_field writes for backward
+			// compatibility with Kibana < 9.5 (see buildFieldConfig); it is intentionally absent
+			// from the read fixture and not a user-facing attribute for by_field.
 			"config.values_source",
 			// Optional `sort` block has required inner leaves; minimal API fixtures omit it.
 			"by_field.sort",

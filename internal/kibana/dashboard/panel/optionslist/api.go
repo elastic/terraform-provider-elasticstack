@@ -66,6 +66,13 @@ func (Handler) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kba
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	_ = dashboard
+	if pm.OptionsListControlConfig == nil {
+		diags.AddError(
+			"Missing options list control panel configuration",
+			"Options list control panels require `options_list_control_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{

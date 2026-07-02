@@ -31,13 +31,13 @@ import (
 
 const panelType = "range_slider_control"
 
-// esqlValuesSourceUserValue is the only value the Terraform-facing `by_esql.values_source`
-// attribute accepts. It intentionally differs from the Kibana API wire enum value (see
-// kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql, whose wire
-// value is "esql", not "esql_query"). The model layer (api.go) translates between the two so the
-// user-facing attribute stays this stable, descriptive constant while the API payload matches the
-// real wire contract.
-const esqlValuesSourceUserValue = "esql_query"
+// Branch keys for the by_field/by_esql union, exported so callers outside this package (e.g. the
+// dashboard resource's v0->v1 state upgrader) can reference them instead of duplicating the
+// literal strings.
+const (
+	BranchByField = "by_field"
+	BranchByEsql  = "by_esql"
+)
 
 // SchemaAttribute returns the dashboard panel range_slider_control_config block. Exactly one of the
 // `by_field` (data view field) or `by_esql` (ES|QL query) nested blocks must be set.
@@ -60,7 +60,7 @@ func SchemaAttribute() schema.Attribute {
 // control-bar schema.
 func ExactlyOneOfBranchValidator() validator.Object {
 	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{"by_field", "by_esql"},
+		AttrNames:     []string{BranchByField, BranchByEsql},
 		Summary:       "Invalid range_slider_control_config",
 		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`.",
 		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`, not both.",
@@ -72,20 +72,20 @@ func ExactlyOneOfBranchValidator() validator.Object {
 // panel schema (SchemaAttribute) and the pinned-panel control-bar schema.
 func NestedAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"by_field": schema.SingleNestedAttribute{
+		BranchByField: schema.SingleNestedAttribute{
 			MarkdownDescription: "Range slider sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",
 			Optional:            true,
 			Attributes:          byFieldAttributes(),
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_esql")),
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(BranchByEsql)),
 			},
 		},
-		"by_esql": schema.SingleNestedAttribute{
+		BranchByEsql: schema.SingleNestedAttribute{
 			MarkdownDescription: "Range slider sourced from an ES|QL query. Mutually exclusive with `by_field`.",
 			Optional:            true,
 			Attributes:          byEsqlAttributes(),
 			Validators: []validator.Object{
-				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_field")),
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(BranchByField)),
 			},
 		},
 	}
@@ -135,6 +135,19 @@ func byFieldAttributes() map[string]schema.Attribute {
 	return attrs
 }
 
+// ByFieldAttributeNames returns the by_field branch's attribute names. Callers that need to
+// enumerate them without depending on the full schema (e.g. the dashboard resource's v0->v1 state
+// upgrader, which relocates these same names from a flat v0 layout into by_field {}) should use
+// this instead of hardcoding a duplicate list that could drift from the schema.
+func ByFieldAttributeNames() []string {
+	attrs := byFieldAttributes()
+	names := make([]string, 0, len(attrs))
+	for name := range attrs {
+		names = append(names, name)
+	}
+	return names
+}
+
 func byEsqlAttributes() map[string]schema.Attribute {
 	attrs := sharedAttributes()
 	attrs["esql_query"] = schema.StringAttribute{
@@ -145,7 +158,7 @@ func byEsqlAttributes() map[string]schema.Attribute {
 		MarkdownDescription: "The source of the range values. Must be `esql_query`.",
 		Required:            true,
 		Validators: []validator.String{
-			stringvalidator.OneOf(esqlValuesSourceUserValue),
+			stringvalidator.OneOf(panelkit.EsqlValuesSourceUserValue),
 		},
 	}
 	return attrs
