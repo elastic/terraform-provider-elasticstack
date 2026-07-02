@@ -19,6 +19,33 @@ package policyshape
 
 import "encoding/json"
 
+// TypedVarEntry mirrors the `{frozen, type, value}` shape used for `vars`
+// (and, in the elastic_defend_integration_policy resource, `config`)
+// throughout the "typed" package-policy request/response family
+// (KibanaHTTPAPIsUpdatePackagePolicyRequest, PackagePolicyRequestTypedInput,
+// PackagePolicyRequestTypedInputStream, PackagePolicyTypedInput, and
+// PackagePolicyTypedInputStream). oapi-codegen gives each occurrence its own
+// anonymous map[string]struct{Frozen,Type,Value} Go type (structurally
+// identical, but not always assignable/convertible to each other -- see e.g.
+// PackagePolicyTypedInputStream.Release vs
+// PackagePolicyRequestTypedInputStream.Release, which alias the same
+// underlying string type via two distinct named types).
+//
+// This is declared as a type ALIAS (not a defined type) rather than a
+// `type TypedVarEntry struct {...}` declaration: an alias is structurally
+// identical to -- and therefore directly assignable to/from -- every one of
+// those anonymous generated field types (e.g.
+// `input.Config = &map[string]TypedVarEntry{...}` compiles without a
+// conversion), whereas a defined type would not be. Callers that need to
+// merge across several different anonymous field types generically (see
+// agentlesspolicy/update.go's mergeVarsInto) can still do so via a JSON
+// marshal/unmarshal round trip instead of hand-spelling each anonymous type.
+type TypedVarEntry = struct {
+	Frozen *bool   `json:"frozen,omitempty"`
+	Type   *string `json:"type,omitempty"`
+	Value  any     `json:"value,omitempty"`
+}
+
 // The Fleet OpenAPI spec models each `vars` value as a per-value union
 // (string | number | bool | []string | []float | {id,isSecretRef}). oapi-codegen
 // generates a distinct wrapper struct per endpoint
