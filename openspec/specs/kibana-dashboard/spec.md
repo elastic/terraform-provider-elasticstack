@@ -303,9 +303,7 @@ Notes:
 - The resource is marked as technical preview in its schema description; sections are also marked as technical preview.
 - The resource uses only the provider-level Kibana OpenAPI client; there is no resource-local Kibana connection override block.
 - The resource does not declare a schema version, custom state upgrader, or resource-level compatibility gate in CRUD logic.
-
 ## Requirements
-
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
 The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
@@ -901,20 +899,34 @@ For legacy-metric `vis` panels, the resource SHALL require `data_source_json.typ
 
 ### Requirement: Raw `config_json` panel behavior (REQ-025)
 
-When a panel is authored through panel-level `config_json`, the resource SHALL accept only `markdown` and `vis` panel types for write. It SHALL deserialize the raw JSON into the corresponding dashboard panel config and SHALL fail if that JSON cannot be unmarshaled into the supported API config type. For read-back, it SHALL always refresh `config_json` from the API payload using the implementation's default-aware JSON semantics. When a `vis` panel is authored through raw `config_json`, the provider SHALL preserve that raw visualization-config path rather than re-expressing it through a typed panel block, and it SHALL not apply the typed `lensPanelTimeRange()` injection path used by the typed converters.
+The provider SHALL preserve the unknown-panel round-trip behavior specified in REQ-025 on Kibana
+9.5 and later. The acceptance test `TestAccResourceDashboardUnknownPanel_lensDashboardApp` and its
+helper `replaceDashboardPanelWithLensDashboardApp` SHALL be removed from
+`internal/kibana/dashboard/acc_unknown_panels_test.go` because the test fixture type
+(`lens-dashboard-app`) is no longer accepted by the Kibana 9.5+ PUT API.
 
-#### Scenario: Unsupported raw config panel type
+The provider SHALL continue to satisfy the unknown-panel preservation contract. The following unit
+tests in `internal/kibana/dashboard/models_panels_test.go` SHALL remain as the primary test
+coverage and are not modified by this change:
 
-- GIVEN a panel configured with `config_json` and a panel `type` other than `markdown` or `vis`
-- WHEN the provider builds the API request
-- THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
+- `Test_unknownPanelRoundTrip`
+- `Test_mapPanelsFromAPI` / `"unknown panel type preserves id, grid, and config"`
+- `Test_panelsToAPI` / `"unknown panel type replays config_json"`
 
 #### Scenario: config_json preserved for unrecognized panel types at read time
 
-- GIVEN a panel with an unknown or unrecognized `type` value (including a Kibana-internal type such as `lens-dashboard-app`)
-- WHEN the provider reads such a panel back from the Kibana API
-- THEN the provider SHALL use the unknown-panel fallback and SHALL populate `config_json` in state
+- GIVEN a panel with an unknown or unrecognized `type` value (e.g. `custom_unknown_panel`)
+- WHEN the provider reads such a panel back from the Kibana API via `dashboardMapPanelsFromAPI`
+- THEN the provider SHALL use the unknown-panel fallback and SHALL populate `config_json` in state with the verbatim API config
 - AND SHALL NOT return an error diagnostic for the unrecognized panel type
+- AND the round-trip through `dashboardPanelsToAPI` SHALL produce API JSON semantically identical to the original input
+
+#### Scenario: Unknown panel type replays config_json on write
+
+- GIVEN a panel model with an unknown `type` and a non-null `config_json`
+- WHEN the provider serialises the panel to the API payload via `dashboardPanelsToAPI`
+- THEN the API panel `config` SHALL contain the verbatim JSON from `config_json`
+- AND the panel `type`, `id`, and `grid` SHALL be preserved unchanged
 
 ### Requirement: Time slider control panel behavior (REQ-029)
 
@@ -2576,6 +2588,7 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 - WHEN the resource creates and reads state
 - THEN each panel's config block SHALL be non-null only for its own type, and all sibling config blocks SHALL be null
 - AND a plan SHALL show no changes
+
 ## Traceability
 
 | Area | Primary files |
