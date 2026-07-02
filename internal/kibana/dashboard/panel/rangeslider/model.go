@@ -281,9 +281,11 @@ func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi
 	c.DataViewId = cfg.DataViewID.ValueString()
 	c.FieldName = cfg.FieldName.ValueString()
 
-	// values_source is not exposed on `by_field`; the provider sets it automatically.
-	fieldValuesSource := kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaFieldValuesSourceField
-	c.ValuesSource = &fieldValuesSource
+	// values_source is not exposed on `by_field` and is deliberately left unset on the wire: Kibana
+	// treats it as "field" when absent (its default for legacy controls, per design D2), and Kibana
+	// versions below the values_source-discriminated-union schema (see
+	// dashboardacctest.MinControlByFieldEsqlUnionSupport) reject the property entirely if present.
+	// Omitting it keeps by_field writes compatible with every Kibana version this resource supports.
 
 	if typeutils.IsKnown(cfg.Title) {
 		c.Title = cfg.Title.ValueStringPointer()

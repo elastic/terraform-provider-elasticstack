@@ -32,10 +32,7 @@ import (
 func TestAccResourceDashboardOptionsListControl(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Options List Control " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	// by_field writes always include `values_source` on the wire (REQ-027); Kibana only accepts
-	// that property starting with the values_source-discriminated union schema. See
-	// dashboardacctest.MinControlByFieldEsqlUnionSupport.
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinControlByFieldEsqlUnionSupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

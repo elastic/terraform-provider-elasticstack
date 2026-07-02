@@ -363,8 +363,10 @@ func Test_BuildConfig_byField_knownFields(t *testing.T) {
 	cfg := rsConfigField(t, rsPanel)
 	assert.Equal(t, "dv-1", cfg.DataViewId)
 	assert.Equal(t, "bytes", cfg.FieldName)
-	require.NotNil(t, cfg.ValuesSource)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaFieldValuesSourceField, *cfg.ValuesSource)
+	// values_source is deliberately left unset on the wire for by_field (see buildFieldConfig):
+	// Kibana defaults it to "field" when absent, and older Kibana versions reject the property
+	// entirely if present.
+	assert.Nil(t, cfg.ValuesSource)
 	require.NotNil(t, cfg.Title)
 	assert.Equal(t, "My Slider", *cfg.Title)
 	require.NotNil(t, cfg.UseGlobalFilters)

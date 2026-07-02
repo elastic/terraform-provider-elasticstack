@@ -273,8 +273,10 @@ func Test_BuildConfig_byField_allFields(t *testing.T) {
 	cfg := olConfigField(t, olPanel)
 	assert.Equal(t, optionsListControlTestDataViewID, cfg.DataViewId)
 	assert.Equal(t, "field1", cfg.FieldName)
-	require.NotNil(t, cfg.ValuesSource)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldValuesSource("field"), *cfg.ValuesSource)
+	// values_source is deliberately left unset on the wire for by_field (see buildFieldConfig):
+	// Kibana defaults it to "field" when absent, and older Kibana versions reject the property
+	// entirely if present.
+	assert.Nil(t, cfg.ValuesSource)
 	require.NotNil(t, cfg.Title)
 	assert.Equal(t, "My Title", *cfg.Title)
 	require.NotNil(t, cfg.UseGlobalFilters)

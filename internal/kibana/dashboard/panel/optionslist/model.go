@@ -397,14 +397,16 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	}
 }
 
-// buildFieldConfig writes the by_field branch into the API payload. values_source is set to
-// "field" automatically; it is not a user-facing attribute for this branch.
+// buildFieldConfig writes the by_field branch into the API payload. values_source is not exposed as
+// a user-facing attribute for this branch, and is deliberately left unset on the wire: Kibana treats
+// it as "field" when absent (its default for legacy controls, per design D2), and Kibana versions
+// below the values_source-discriminated-union schema (see
+// dashboardacctest.MinControlByFieldEsqlUnionSupport) reject the property entirely if present.
+// Omitting it keeps by_field writes compatible with every Kibana version this resource supports.
 func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField
 	c.DataViewId = cfg.DataViewID.ValueString()
 	c.FieldName = cfg.FieldName.ValueString()
-	valuesSource := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldValuesSource("field")
-	c.ValuesSource = &valuesSource
 
 	if typeutils.IsKnown(cfg.Title) {
 		c.Title = cfg.Title.ValueStringPointer()
