@@ -38,16 +38,11 @@ type canonicalSeverityBand struct {
 }
 
 var canonicalSeverityBands = map[string]canonicalSeverityBand{
-	severityLow:      {Min: 0, Max: new(int64(2))},
-	severityWarning:  {Min: 3, Max: new(int64(24))},
-	severityMinor:    {Min: 25, Max: new(int64(49))},
-	severityMajor:    {Min: 50, Max: new(int64(74))},
+	severityLow:      {Min: 0, Max: new(int64(3))},
+	severityWarning:  {Min: 3, Max: new(int64(25))},
+	severityMinor:    {Min: 25, Max: new(int64(50))},
+	severityMajor:    {Min: 50, Max: new(int64(75))},
 	severityCritical: {Min: 75, Max: nil},
-}
-
-//go:fix inline
-func int64Ptr(v int64) *int64 {
-	return new(v)
 }
 
 func severityRangesEqual(aMin int64, aMax *int64, bMin int64, bMax *int64) bool {

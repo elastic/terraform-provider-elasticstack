@@ -100,8 +100,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	}
 
 	existing.JobIDs = typeutils.StringSliceValue(apiConfig.JobIds)
-	mlAnomalyChartsMergeOptionalFromAPI(existing, prior.MlAnomalyChartsConfig, apiConfig)
-	return nil
+	return mlAnomalyChartsMergeOptionalFromAPI(existing, prior.MlAnomalyChartsConfig, apiConfig)
 }
 
 func mlAnomalyChartsConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomalyCharts) (*models.MlAnomalyChartsConfigModel, diag.Diagnostics) {
@@ -125,7 +124,7 @@ func mlAnomalyChartsConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomalyC
 func mlAnomalyChartsMergeOptionalFromAPI(
 	existing, prior *models.MlAnomalyChartsConfigModel,
 	apiConfig kbapi.KibanaHTTPAPIsMlAnomalyCharts,
-) {
+) diag.Diagnostics {
 	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
 	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
 	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
@@ -141,14 +140,17 @@ func mlAnomalyChartsMergeOptionalFromAPI(
 	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, apiConfig.TimeRange, priorTR)
 
 	if len(priorSeverity) > 0 || len(existing.SeverityThreshold) > 0 {
-		if severityThreshold, diags := readSeverityThresholdFromAPI(apiConfig.SeverityThreshold, priorSeverity); !diags.HasError() {
-			existing.SeverityThreshold = severityThreshold
+		severityThreshold, diags := readSeverityThresholdFromAPI(apiConfig.SeverityThreshold, priorSeverity)
+		if diags.HasError() {
+			return diags
 		}
+		existing.SeverityThreshold = severityThreshold
 	}
 
 	if prior != nil {
 		mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing)
 	}
+	return nil
 }
 
 func mlAnomalyChartsMaxSeriesFromAPI(v *float32) types.Float64 {
