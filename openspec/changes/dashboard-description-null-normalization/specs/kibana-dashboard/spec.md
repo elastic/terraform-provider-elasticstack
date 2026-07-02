@@ -2,7 +2,7 @@
 
 ### Requirement: Read behavior and missing-resource handling (REQ-008) — partial update
 
-The provider SHALL apply intent-preserving null normalization to the root-level `description` attribute on read. When the Kibana API returns an empty-string `description` (`""`) and the prior Terraform state had `description` as null (i.e., the practitioner did not set `description`), the provider SHALL store `null` in state — not `""`. When the prior Terraform state had `description` as `""` (i.e., the practitioner explicitly set `description = ""`), the provider SHALL preserve `""` in state. When the API returns a non-empty `description`, the provider SHALL store that value unchanged.
+The provider SHALL apply intent-preserving null normalization to the root-level `description` attribute on read. When the Kibana API returns an empty-string `description` (`""`) and the prior Terraform plan/state had `description` as null (i.e., the practitioner did not set `description`), the provider SHALL store `null` in state — not `""`. When the prior Terraform plan/state had `description` as `""` (i.e., the practitioner explicitly set `description = ""`), the provider SHALL preserve `""` in state. When the API returns a non-empty `description`, the provider SHALL store that value unchanged.
 
 This normalization fixes a Kibana 9.5 behavior change: previously the API omitted `description` when none was supplied; from 9.5 onward it returns `""`. Without this fix, practitioners who omit `description` see "Provider produced inconsistent result after apply" with the message `.description: was null, but now cty.StringVal("")`.
 
@@ -31,7 +31,7 @@ This normalization fixes a Kibana 9.5 behavior change: previously the API omitte
 
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009) — partial update
 
-The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
+The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
 
 #### Scenario: Empty-string description treated as null for null-intent practitioners
 
