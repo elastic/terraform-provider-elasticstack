@@ -3,7 +3,7 @@
 - [ ] 1.1 In `internal/clients/elasticsearch/security_role.go`, replace `typedClient.Security.GetRole().Name(rolename).Do(ctx)` with a raw `GET /_security/role/<rolename>` request via `typedClient.Transport.Perform(req)`, following the pattern in `internal/clients/elasticsearch/index.go`
 - [ ] 1.2 Decode the response body as `map[string]json.RawMessage` to locate the per-role entry by name
 - [ ] 1.3 From the per-role raw entry, extract each field independently: decode all fields except `global` using the typed `types.Role` partial struct (or individual field decoders), and decode `global` as `json.RawMessage`
-- [ ] 1.4 Construct and return a `*types.Role` with all fields populated, setting `Global` from the raw-decoded blob (re-marshaled into the appropriate type or left as raw JSON passed through to the model layer)
+- [ ] 1.4 Construct the result without decoding `global` into `types.Role.Global` (e.g., return typed role fields plus a separate `global` `json.RawMessage`, or introduce a small provider wrapper struct that carries `*types.Role` and `GlobalRaw`).
 - [ ] 1.5 Handle non-2xx HTTP responses (read body, return error diagnostic) and body-read/decode errors
 - [ ] 1.6 Preserve the existing 404 → `(nil, nil)` behavior for not-found roles
 
