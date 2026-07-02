@@ -18,6 +18,7 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -129,6 +130,12 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	rawGlobal := fields["global"]
 	delete(fields, "global")
+
+	// Treat an explicit JSON null the same as an absent global so state is
+	// stored as null rather than the literal string "null".
+	if bytes.Equal(rawGlobal, []byte("null")) {
+		rawGlobal = nil
+	}
 
 	remainder, err := json.Marshal(fields)
 	if err != nil {
