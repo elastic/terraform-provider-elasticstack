@@ -303,9 +303,7 @@ Notes:
 - The resource is marked as technical preview in its schema description; sections are also marked as technical preview.
 - The resource uses only the provider-level Kibana OpenAPI client; there is no resource-local Kibana connection override block.
 - The resource does not declare a schema version, custom state upgrader, or resource-level compatibility gate in CRUD logic.
-
 ## Requirements
-
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
 The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
@@ -2576,6 +2574,32 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 - WHEN the resource creates and reads state
 - THEN each panel's config block SHALL be non-null only for its own type, and all sibling config blocks SHALL be null
 - AND a plan SHALL show no changes
+
+### Requirement: Dashboard resource schema version upgrade (REQ-040)
+
+The `elasticstack_kibana_dashboard` resource SHALL implement `terraform-plugin-framework`'s `ResourceWithUpgradeState` interface with a single state upgrader for version 0 → 1.
+
+The v0 → v1 upgrader SHALL:
+
+1. Inspect every entry in `panels[]` and every entry in `pinned_panels[]`.
+2. For each entry whose `type` is `"options_list_control"`: move all flat attributes from `options_list_control_config` (i.e. `data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `single_select`, `exclude`, `exists_selected`, `run_past_timeout`, `search_technique`, `selected_options`, `display_settings`, `sort`) into a nested `by_field {}` object within `options_list_control_config`.
+3. For each entry whose `type` is `"range_slider_control"`: move all flat attributes from `range_slider_control_config` (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) into a nested `by_field {}` object within `range_slider_control_config`.
+4. Leave all other panel types unchanged.
+
+The resource schema version SHALL be incremented to 1. No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
+
+#### Scenario: State upgrade preserves all field-branch attributes
+
+- GIVEN a v0 state containing both `options_list_control` and `range_slider_control` panels with all optional attributes set (e.g. `sort`, `display_settings`, `value`, `step`)
+- WHEN the state upgrader runs
+- THEN all attribute values SHALL be present under the `by_field {}` sub-object in v1 state and no attributes SHALL be dropped
+
+#### Scenario: Non-control panels are unaffected by the upgrader
+
+- GIVEN a v0 state containing a mix of `options_list_control`, `range_slider_control`, and `markdown` panels
+- WHEN the state upgrader runs
+- THEN the `markdown` panel entries SHALL be unchanged in v1 state
+
 ## Traceability
 
 | Area | Primary files |
