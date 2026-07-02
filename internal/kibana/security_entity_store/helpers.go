@@ -20,9 +20,12 @@ package security_entity_store
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -32,6 +35,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 const (
@@ -380,4 +384,46 @@ func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClien
 		return nil, nil, diagutil.FrameworkDiagFromError(err)
 	}
 	return &status, resp.Body, nil
+}
+
+// waitForUninstall polls until the entity store reports it is no longer
+// installed. It is bounded by the Delete ctx deadline (carried in from the
+// resource timeouts block); no separate timeout is imposed.
+func waitForUninstall(ctx context.Context, client *clients.KibanaScopedClient, spaceID string) diag.Diagnostics {
+	checker := makeUninstallStateChecker(func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
+		return getEntityStoreStatus(ctx, client, spaceID, false)
+	})
+
+	err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, asyncutils.WithPollInterval(5*time.Second))
+	return uninstallWaitDiagsFromError(err)
+}
+
+// makeUninstallStateChecker builds a StateChecker that returns true once the
+// entity store status reaches "not_installed". Errors reading the status are
+// treated as transient and retried.
+type entityStoreStatusFunc func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics)
+
+func makeUninstallStateChecker(getStatus entityStoreStatusFunc) asyncutils.StateChecker {
+	return func(ctx context.Context) (bool, error) {
+		status, _, diags := getStatus(ctx)
+		if diags.HasError() {
+			tflog.Debug(ctx, fmt.Sprintf("transient error reading entity store status during uninstall wait: %v", diags.Errors()))
+			return false, nil
+		}
+		return status.Status == kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled, nil
+	}
+}
+
+// uninstallWaitDiagsFromError converts a WaitForStateTransition error into a
+// clear error diagnostic. A nil error yields nil diagnostics.
+func uninstallWaitDiagsFromError(err error) diag.Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return diag.Diagnostics{
+		diag.NewErrorDiagnostic(
+			"Security Entity Store uninstall did not complete within the Delete timeout",
+			err.Error(),
+		),
+	}
 }

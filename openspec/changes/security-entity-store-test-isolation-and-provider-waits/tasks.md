@@ -1,6 +1,6 @@
 ## 1. Provider: wait for uninstall completion in Delete
 
-- [ ] 1.1 Add `waitForUninstall(ctx, client, spaceID string) diag.Diagnostics` to
+- [x] 1.1 Add `waitForUninstall(ctx, client, spaceID string) diag.Diagnostics` to
       `internal/kibana/security_entity_store/helpers.go`. Implement it with
       `asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker,
       asyncutils.WithPollInterval(5*time.Second))`, where `checker` calls `getEntityStoreStatus`
@@ -8,9 +8,9 @@
       Delete `ctx` already carries the deadline from the resource `timeouts` block (default 20m via
       `entitycore.DefaultResourceDeleteTimeout`). Convert `ctx.Err()` (deadline exceeded) into a
       clear error diagnostic.
-- [ ] 1.2 Call `waitForUninstall` from `internal/kibana/security_entity_store/delete.go` immediately
+- [x] 1.2 Call `waitForUninstall` from `internal/kibana/security_entity_store/delete.go` immediately
       after `kibanaoapi.UninstallSecurityEntityStore` succeeds, before returning.
-- [ ] 1.3 Add a unit test in `internal/kibana/security_entity_store/` covering the deadline path
+- [x] 1.3 Add a unit test in `internal/kibana/security_entity_store/` covering the deadline path
       (a cancelled/expired `ctx` yields an error diagnostic) and the happy path (status
       transitions to `not_installed` on first or second poll). Test the `StateChecker` closure and
       the diagnostic mapping rather than re-testing `asyncutils.WaitForStateTransition` itself.
