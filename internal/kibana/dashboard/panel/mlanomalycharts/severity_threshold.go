@@ -37,15 +37,11 @@ type canonicalSeverityBand struct {
 	Max *int64
 }
 
-func int64Ptr(v int64) *int64 {
-	return &v
-}
-
 var canonicalSeverityBands = map[string]canonicalSeverityBand{
-	severityLow:      {Min: 0, Max: int64Ptr(3)},
-	severityWarning:  {Min: 3, Max: int64Ptr(25)},
-	severityMinor:    {Min: 25, Max: int64Ptr(50)},
-	severityMajor:    {Min: 50, Max: int64Ptr(75)},
+	severityLow:      {Min: 0, Max: new(int64(3))},
+	severityWarning:  {Min: 3, Max: new(int64(25))},
+	severityMinor:    {Min: 25, Max: new(int64(50))},
+	severityMajor:    {Min: 50, Max: new(int64(75))},
 	severityCritical: {Min: 75, Max: nil},
 }
 
@@ -77,7 +73,7 @@ func expandNamedSeverity(severity string) (severityRange, bool) {
 	if !ok {
 		return severityRange{}, false
 	}
-	return severityRange{Min: band.Min, Max: band.Max}, true
+	return severityRange(band), true
 }
 
 func buildSeverityThresholdItem(item models.MlAnomalyChartsSeverityThresholdModel) (kbapi.KibanaHTTPAPIsMlAnomalyCharts_SeverityThreshold_Item, diag.Diagnostics) {
