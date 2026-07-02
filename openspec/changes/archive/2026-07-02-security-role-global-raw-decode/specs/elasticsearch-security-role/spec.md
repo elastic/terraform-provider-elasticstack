@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: Role CRUD APIs (REQ-001–REQ-003) — partial update
+### Requirement: Role CRUD APIs (REQ-001–REQ-003)
 
 The `GetRole` implementation SHALL bypass the typed `Security.GetRole` client call and instead fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform`. The PutRole and DeleteRole implementations continue to use the go-elasticsearch Typed API unchanged. The raw response body SHALL be decoded as `map[string]json.RawMessage` to locate the per-role entry. The `global` field SHALL be extracted as `json.RawMessage` and carried to the model layer **out-of-band** (not assigned to `types.Role.Global`, which is typed `map[string]map[string]map[string][]string` and cannot represent array-typed categories). All other role fields (applications, cluster, indices, remote_indices, run_as, metadata, description) SHALL continue to be decoded from the API response using the typed `types.Role` struct or equivalent individual field decoders.
 
@@ -34,7 +34,7 @@ This change is required because the go-elasticsearch typed client declares `Role
 
 ---
 
-### Requirement: Typed client implementation for security role — narrowed
+### Requirement: Typed client implementation for security role
 
 The `elasticstack_elasticsearch_security_role` resource and data source SHALL manage roles using the go-elasticsearch Typed API for PutRole and DeleteRole (`elasticsearch.TypedClient.Security.PutRole`, `Security.DeleteRole`). **GetRole is narrowed**: because the typed client's `Role.Global` field (`map[string]map[string]map[string][]string`) cannot decode heterogeneous per-category shapes such as the ES 9.5 `"data_source": []` array (upstream: elasticsearch-specification#6377), GetRole SHALL fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform` and decode `global` as `json.RawMessage`, carrying it to the model layer out-of-band. All non-`global` fields continue to use the typed `types.Role` struct. The typed API response SHALL be used directly for PutRole/DeleteRole without manual JSON decoding into an intermediate `models.Role` type.
 
@@ -55,7 +55,7 @@ The `elasticstack_elasticsearch_security_role` resource and data source SHALL ma
 
 ---
 
-## MODIFIED Requirements
+## NEW Requirements
 
 ### Requirement: Global defaults normalization
 
