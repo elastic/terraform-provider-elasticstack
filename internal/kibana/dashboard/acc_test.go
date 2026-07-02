@@ -741,3 +741,68 @@ func TestAccResourceKibanaDashboard_IDChangeTriggersReplace(t *testing.T) {
 		},
 	})
 }
+
+// TestAccResourceDashboardDescriptionNormalization verifies the intent-preserving
+// null/empty-string normalization for the root-level description attribute
+// (REQ-008 / REQ-009). On Kibana 9.5+ the dashboard API returns description: ""
+// when the field is omitted; without normalization Terraform flags an
+// inconsistent result after apply (null -> ""). This test asserts both:
+//   - an explicitly omitted description round-trips as null in state, and
+//   - an explicit description = "" is preserved as "" in state.
+// with no drift on a follow-up plan-only step.
+func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
+	dashboardTitle := "Test Dashboard Description Normalization " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Omitted description: must round-trip as null in state even
+				// though Kibana 9.5 echoes back description: "".
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "description"),
+				),
+			},
+			{
+				// Same omitted config, plan only — must show no changes.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+			},
+			{
+				// Explicit description = "": must be preserved as "" in state.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle + " (empty)"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle+" (empty)"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "description", ""),
+				),
+			},
+			{
+				// Same empty config, plan only — must show no changes.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle + " (empty)"),
+				},
+				PlanOnly: true,
+			},
+		},
+	})
+}
