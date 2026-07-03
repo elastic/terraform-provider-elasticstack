@@ -2,18 +2,9 @@ variable "dashboard_title" {
   type = string
 }
 
-resource "elasticstack_kibana_data_view" "test" {
-  override = true
-  data_view = {
-    title          = "options-list-control-acc-test-*"
-    name           = "options-list-control-acc-test"
-    allow_no_index = true
-  }
-}
-
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with Options List Control Panel (required fields only)"
+  description = "Dashboard with Options List Control Panel (by_esql)"
 
   time_range = {
     from = "now-15m"
@@ -36,9 +27,12 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 4
     }
     options_list_control_config = {
-      by_field = {
-        data_view_id = elasticstack_kibana_data_view.test.data_view.id
-        field_name   = "status"
+      by_esql = {
+        esql_query       = "FROM logs-* | STATS BY host.name"
+        values_source    = "esql_query"
+        title            = "Host name"
+        search_technique = "prefix"
+        single_select    = true
       }
     }
   }]

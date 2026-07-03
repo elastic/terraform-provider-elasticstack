@@ -27,6 +27,10 @@ const (
 	attrPanelGrid = "grid"
 	attrPanelID   = "id"
 
+	attrPanels       = "panels"
+	attrPinnedPanels = "pinned_panels"
+	attrSections     = "sections"
+
 	attrDashboardID = "dashboard_id"
 )
 
@@ -56,11 +60,6 @@ const (
 	attrHideExclude              = "hide_exclude"
 	attrHideExists               = "hide_exists"
 	attrHideSort                 = "hide_sort"
-	attrDataViewID               = "data_view_id"
-	attrFieldName                = "field_name"
-	attrIgnoreValidations        = "ignore_validations"
-	attrExclude                  = "exclude"
-	attrExistsSelected           = "exists_selected"
 
 	attrTitle                      = "title"
 	attrValue                      = "value"
@@ -69,9 +68,4 @@ const (
 	attrVariableName               = "variable_name"
 	attrVariableType               = "variable_type"
 	attrSingleSelect               = "single_select"
-	attrUseGlobalFilters           = "use_global_filters"
-	attrRunPastTimeout             = "run_past_timeout"
-	attrSearchTechnique            = "search_technique"
-	attrSort                       = "sort"
-	attrStep                       = "step"
 )

@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with range slider using value list with wrong number of elements"
+  description = "Dashboard with Range Slider Control Panel (by_esql)"
 
   time_range = {
     from = "now-15m"
@@ -27,10 +27,13 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 4
     }
     range_slider_control_config = {
-      by_field = {
-        data_view_id = "test-data-view-id"
-        field_name   = "bytes"
-        value        = ["100"]
+      by_esql = {
+        esql_query         = "FROM logs-* | STATS min = MIN(bytes), max = MAX(bytes)"
+        values_source      = "esql_query"
+        title              = "Bytes Range"
+        use_global_filters = true
+        ignore_validations = false
+        step               = 10
       }
     }
   }]

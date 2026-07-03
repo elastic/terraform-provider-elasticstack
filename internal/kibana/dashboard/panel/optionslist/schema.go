@@ -19,7 +19,10 @@ package optionslist
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,108 +30,200 @@ import (
 
 const panelType = "options_list_control"
 
+// Options list control discriminator branches. These are reused between the schema validators and
+// the API converter, which maps them back to the Field / ES|QL union reported by Kibana.
+const (
+	BranchByField = "by_field"
+	BranchByEsql  = "by_esql"
+)
+
 // SchemaAttribute returns the dashboard panel options_list_control_config block.
 func SchemaAttribute() schema.Attribute {
 	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
-		Description: "Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view.",
-		BlockName:   "options_list_control_config",
-		PanelType:   panelType,
-		Required:    true,
-		Attributes: map[string]schema.Attribute{
-			"data_view_id": schema.StringAttribute{
-				MarkdownDescription: "The ID of the data view that the control is tied to.",
-				Required:            true,
+		Description: "Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in " +
+			"a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set.",
+		BlockName:  "options_list_control_config",
+		PanelType:  panelType,
+		Required:   true,
+		Attributes: NestedAttributes(),
+		ExtraValidators: []validator.Object{
+			ExactlyOneOfBranchValidator(),
+		},
+	})
+}
+
+// NestedAttributes returns the `by_field` / `by_esql` branch attribute map shared by the regular
+// panel schema (SchemaAttribute) and the pinned-panel control-bar schema, which wraps the same
+// branches in its own SingleNestedAttribute with pinned-specific sibling validators.
+func NestedAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		BranchByField: schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`.",
+			Optional:            true,
+			Attributes:          byFieldAttributes(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(BranchByEsql)),
 			},
-			"field_name": schema.StringAttribute{
-				MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-				Required:            true,
+		},
+		BranchByEsql: schema.SingleNestedAttribute{
+			MarkdownDescription: "Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`.",
+			Optional:            true,
+			Attributes:          byEsqlAttributes(),
+			Validators: []validator.Object{
+				objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(BranchByField)),
 			},
-			"title": schema.StringAttribute{
-				MarkdownDescription: "Human-readable label displayed above the control.",
-				Optional:            true,
+		},
+	}
+}
+
+// ExactlyOneOfBranchValidator enforces that exactly one of `by_field` / `by_esql` is configured
+// inside a block using NestedAttributes(). Shared by the regular panel schema and the pinned-panel
+// control-bar schema.
+func ExactlyOneOfBranchValidator() validator.Object {
+	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{BranchByField, BranchByEsql},
+		Summary:       "Invalid options_list_control_config",
+		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`.",
+		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`, not both.",
+		Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `options_list_control_config`.",
+	})
+}
+
+// sharedOptionsListAttributes returns the attribute set common to both the by_field and by_esql
+// branches. Each call returns a fresh map so callers can safely add branch-specific attributes.
+func sharedOptionsListAttributes() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"title": schema.StringAttribute{
+			MarkdownDescription: "Human-readable label displayed above the control.",
+			Optional:            true,
+		},
+		"use_global_filters": schema.BoolAttribute{
+			MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
+			Optional:            true,
+		},
+		"ignore_validations": schema.BoolAttribute{
+			MarkdownDescription: "Whether the control skips field-level validation against the data view.",
+			Optional:            true,
+		},
+		"single_select": schema.BoolAttribute{
+			MarkdownDescription: "When true, only one option may be selected at a time.",
+			Optional:            true,
+		},
+		"exclude": schema.BoolAttribute{
+			MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
+			Optional:            true,
+		},
+		"exists_selected": schema.BoolAttribute{
+			MarkdownDescription: "When true, the control filters for documents where the field exists.",
+			Optional:            true,
+		},
+		"run_past_timeout": schema.BoolAttribute{
+			MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
+			Optional:            true,
+		},
+		"search_technique": schema.StringAttribute{
+			MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
+			Optional:            true,
+			Validators: []validator.String{
+				stringvalidator.OneOf("prefix", "wildcard", "exact"),
 			},
-			"use_global_filters": schema.BoolAttribute{
-				MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
-				Optional:            true,
-			},
-			"ignore_validations": schema.BoolAttribute{
-				MarkdownDescription: "Whether the control skips field-level validation against the data view.",
-				Optional:            true,
-			},
-			"single_select": schema.BoolAttribute{
-				MarkdownDescription: "When true, only one option may be selected at a time.",
-				Optional:            true,
-			},
-			"exclude": schema.BoolAttribute{
-				MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
-				Optional:            true,
-			},
-			"exists_selected": schema.BoolAttribute{
-				MarkdownDescription: "When true, the control filters for documents where the field exists.",
-				Optional:            true,
-			},
-			"run_past_timeout": schema.BoolAttribute{
-				MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
-				Optional:            true,
-			},
-			"search_technique": schema.StringAttribute{
-				MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
-				Optional:            true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("prefix", "wildcard", "exact"),
+		},
+		"selected_options": schema.ListAttribute{
+			MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
+			Optional:            true,
+			ElementType:         types.StringType,
+		},
+		"display_settings": schema.SingleNestedAttribute{
+			MarkdownDescription: "Display preferences for the control widget.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"placeholder": schema.StringAttribute{
+					MarkdownDescription: "Placeholder text shown when no option is selected.",
+					Optional:            true,
+				},
+				"hide_action_bar": schema.BoolAttribute{
+					MarkdownDescription: "When true, hides the action bar on the control.",
+					Optional:            true,
+				},
+				"hide_exclude": schema.BoolAttribute{
+					MarkdownDescription: "When true, hides the exclude toggle.",
+					Optional:            true,
+				},
+				"hide_exists": schema.BoolAttribute{
+					MarkdownDescription: "When true, hides the exists filter option.",
+					Optional:            true,
+				},
+				"hide_sort": schema.BoolAttribute{
+					MarkdownDescription: "When true, hides the sort control.",
+					Optional:            true,
 				},
 			},
-			"selected_options": schema.ListAttribute{
-				MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
-				Optional:            true,
-				ElementType:         types.StringType,
-			},
-			"display_settings": schema.SingleNestedAttribute{
-				MarkdownDescription: "Display preferences for the control widget.",
-				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"placeholder": schema.StringAttribute{
-						MarkdownDescription: "Placeholder text shown when no option is selected.",
-						Optional:            true,
-					},
-					"hide_action_bar": schema.BoolAttribute{
-						MarkdownDescription: "When true, hides the action bar on the control.",
-						Optional:            true,
-					},
-					"hide_exclude": schema.BoolAttribute{
-						MarkdownDescription: "When true, hides the exclude toggle.",
-						Optional:            true,
-					},
-					"hide_exists": schema.BoolAttribute{
-						MarkdownDescription: "When true, hides the exists filter option.",
-						Optional:            true,
-					},
-					"hide_sort": schema.BoolAttribute{
-						MarkdownDescription: "When true, hides the sort control.",
-						Optional:            true,
+		},
+		"sort": schema.SingleNestedAttribute{
+			MarkdownDescription: "Default sort configuration for the suggestion list.",
+			Optional:            true,
+			Attributes: map[string]schema.Attribute{
+				"by": schema.StringAttribute{
+					MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
+					Required:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf("_count", "_key"),
 					},
 				},
-			},
-			"sort": schema.SingleNestedAttribute{
-				MarkdownDescription: "Default sort configuration for the suggestion list.",
-				Optional:            true,
-				Attributes: map[string]schema.Attribute{
-					"by": schema.StringAttribute{
-						MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("_count", "_key"),
-						},
-					},
-					"direction": schema.StringAttribute{
-						MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
-						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.OneOf("asc", "desc"),
-						},
+				"direction": schema.StringAttribute{
+					MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
+					Required:            true,
+					Validators: []validator.String{
+						stringvalidator.OneOf("asc", "desc"),
 					},
 				},
 			},
 		},
-	})
+	}
+}
+
+// byFieldAttributes returns the attributes for the by_field branch: the shared attribute set plus
+// the required data_view_id / field_name discriminating identifiers.
+func byFieldAttributes() map[string]schema.Attribute {
+	attrs := sharedOptionsListAttributes()
+	attrs["data_view_id"] = schema.StringAttribute{
+		MarkdownDescription: "The ID of the data view that the control is tied to.",
+		Required:            true,
+	}
+	attrs["field_name"] = schema.StringAttribute{
+		MarkdownDescription: "The name of the field in the data view that the control is tied to.",
+		Required:            true,
+	}
+	return attrs
+}
+
+// ByFieldAttributeNames returns the by_field branch's attribute names. Callers that need to
+// enumerate them without depending on the full schema (e.g. the dashboard resource's v0->v1 state
+// upgrader, which relocates these same names from a flat v0 layout into by_field {}) should use
+// this instead of hardcoding a duplicate list that could drift from the schema.
+func ByFieldAttributeNames() []string {
+	attrs := byFieldAttributes()
+	names := make([]string, 0, len(attrs))
+	for name := range attrs {
+		names = append(names, name)
+	}
+	return names
+}
+
+// byEsqlAttributes returns the attributes for the by_esql branch: the shared attribute set plus the
+// required esql_query / values_source discriminating identifiers.
+func byEsqlAttributes() map[string]schema.Attribute {
+	attrs := sharedOptionsListAttributes()
+	attrs["esql_query"] = schema.StringAttribute{
+		MarkdownDescription: "The ES|QL query that produces the available option values.",
+		Required:            true,
+	}
+	attrs["values_source"] = schema.StringAttribute{
+		MarkdownDescription: "The source discriminator for this branch. Must be `esql_query`.",
+		Required:            true,
+		Validators: []validator.String{
+			stringvalidator.OneOf(panelkit.EsqlValuesSourceUserValue),
+		},
+	}
+	return attrs
 }

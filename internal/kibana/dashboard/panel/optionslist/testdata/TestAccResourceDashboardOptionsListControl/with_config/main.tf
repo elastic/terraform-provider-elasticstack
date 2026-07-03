@@ -36,13 +36,15 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 4
     }
     options_list_control_config = {
-      data_view_id     = elasticstack_kibana_data_view.test.data_view.id
-      field_name       = "status"
-      search_technique = "prefix"
-      single_select    = true
-      display_settings = {
-        placeholder = "Select status..."
-        hide_sort   = true
+      by_field = {
+        data_view_id     = elasticstack_kibana_data_view.test.data_view.id
+        field_name       = "status"
+        search_technique = "prefix"
+        single_select    = true
+        display_settings = {
+          placeholder = "Select status..."
+          hide_sort   = true
+        }
       }
     }
   }]
