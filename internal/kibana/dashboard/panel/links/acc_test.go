@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/links"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -35,7 +35,7 @@ func TestAccKibanaDashboard_LinksPanel_ByValue(t *testing.T) {
 	dashboardTitle := "Acc links by-value " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	bv := "panels.0.links_config.by_value"
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, links.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -95,7 +95,7 @@ func TestAccKibanaDashboard_LinksPanel_ByReference(t *testing.T) {
 	dashboardTitle := "Acc links by-reference " + sdkacctest.RandStringFromCharSet(6, sdkacctest.CharSetAlphaNum)
 	br := "panels.0.links_config.by_reference"
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, links.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
