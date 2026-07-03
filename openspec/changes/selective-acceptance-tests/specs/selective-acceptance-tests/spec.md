@@ -25,6 +25,7 @@ The tool SHALL compute the set of relevant acceptance test packages via two inde
 **Phase 1 — Go reverse-dependency walk:** For each changed Go package, the tool SHALL walk the reverse import graph (non-test imports only) to find all packages that transitively import the changed package. Only packages that contain at least one `func TestAcc` function in a `*_test.go` file SHALL be included.
 
 **Phase 2 — TF entity name grep:** For each changed Go package, the tool SHALL extract Terraform type name suffixes by scanning the package's `.go` files for calls matching:
+
 - `NewResourceBase(entitycore.Component<X>, "<name>")`
 - `NewElasticsearchResource[...]("<name>", ...)`
 - `NewKibanaResource[...](entitycore.Component<X>, "<name>", ...)`
@@ -82,14 +83,18 @@ If the union of phase 1 and phase 2 results exceeds 70% of the total count of ac
 
 ---
 
-### Requirement: Empty diff defaults to full suite
+### Requirement: Unresolvable diff defaults to full suite
 
-When the tool cannot compute a non-empty diff (e.g. on `main`, in a shallow clone where merge-base is unreachable, or when only non-Go/non-testdata files changed), it SHALL emit all acceptance test packages.
+When the tool cannot compute a resolvable diff (e.g. on `main`, in a shallow clone where the merge-base is unreachable, or when the git diff returns no changed files), it SHALL emit all acceptance test packages.
 
 #### Scenario: No changed files produces full suite
 
 - **WHEN** the git diff is empty or returns no changed files
 - **THEN** the tool emits all acceptance test packages
+
+### Requirement: Docs-only diff produces no packages
+
+When every changed file is outside Go source (`*.go`) and testdata (`*/testdata/*`) content (for example, files under `docs/` or `openspec/`), the tool SHALL emit nothing (zero packages selected) and exit 0.
 
 #### Scenario: Only docs files changed produces no packages
 
@@ -134,6 +139,7 @@ The tool SHALL accept `--total-shards` (default 1) and `--shard-index` (default 
 ### Requirement: Git diff baseline
 
 The tool SHALL resolve the diff baseline in order:
+
 1. `--base` flag value (if provided).
 2. `TARGETED_TESTACC_BASE` environment variable (if set).
 3. `git merge-base origin/main HEAD` (if the command succeeds).
