@@ -32,9 +32,10 @@ import (
 )
 
 const (
-	testPackageName    = "system"
-	testPackageVersion = "1.0.0"
-	testSpaceID        = "default"
+	testPackageName          = "system"
+	testPackageVersion       = "1.0.0"
+	testSpaceID              = "default"
+	testPackageUninstallPath = "/api/fleet/epm/packages/system/1.0.0"
 )
 
 func newTestFleetClient(t *testing.T, server *httptest.Server) *fleet.Client {
@@ -44,14 +45,19 @@ func newTestFleetClient(t *testing.T, server *httptest.Server) *fleet.Client {
 	return client
 }
 
-func packageUninstallPath(name, version string) string {
-	return fmt.Sprintf("/api/fleet/epm/packages/%s/%s", name, version)
+func assertDiagnosticsDoNotContainInstallSpaceRejection(t *testing.T, diags diag.Diagnostics) {
+	t.Helper()
+	for _, d := range diags {
+		assert.NotContains(t, normalizeDiagnosticText(d.Detail()), installSpaceDeleteRejectedMsg)
+		assert.NotContains(t, normalizeDiagnosticText(d.Summary()), installSpaceDeleteRejectedMsg)
+	}
 }
 
 func TestDeleteKibanaAssetsWithFallback_installSpace400FallsBackToUninstall(t *testing.T) {
 	t.Parallel()
 
 	var uninstallCalls int
+	var uninstallForceParam string
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -59,8 +65,9 @@ func TestDeleteKibanaAssetsWithFallback_installSpace400FallsBackToUninstall(t *t
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"Impossible to delete kibana assets from the space where the package was installed, you must uninstall the package."}`)
-		case r.Method == http.MethodDelete && r.URL.Path == packageUninstallPath(testPackageName, testPackageVersion):
+		case r.Method == http.MethodDelete && r.URL.Path == testPackageUninstallPath:
 			uninstallCalls++
+			uninstallForceParam = r.URL.Query().Get("force")
 			w.WriteHeader(http.StatusOK)
 		default:
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
@@ -74,6 +81,40 @@ func TestDeleteKibanaAssetsWithFallback_installSpace400FallsBackToUninstall(t *t
 
 	assert.False(t, diags.HasError())
 	assert.Equal(t, 1, uninstallCalls)
+	assert.Equal(t, "true", uninstallForceParam)
+	assertDiagnosticsDoNotContainInstallSpaceRejection(t, diags)
+}
+
+func TestDeleteKibanaAssetsWithFallback_installSpace400UninstallFailureReturnsUninstallError(t *testing.T) {
+	t.Parallel()
+
+	var uninstallCalls int
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/kibana_assets"):
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"Impossible to delete kibana assets from the space where the package was installed, you must uninstall the package."}`)
+		case r.Method == http.MethodDelete && r.URL.Path == testPackageUninstallPath:
+			uninstallCalls++
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, `{"statusCode":500,"error":"Internal Server Error","message":"uninstall failed"}`)
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	client := newTestFleetClient(t, srv)
+	diags := deleteKibanaAssetsWithFallback(context.Background(), client, testPackageName, testPackageVersion, testSpaceID, true)
+
+	require.True(t, diags.HasError())
+	assert.Equal(t, 1, uninstallCalls)
+	assert.Contains(t, diags.Errors()[0].Detail(), "uninstall failed")
+	assertDiagnosticsDoNotContainInstallSpaceRejection(t, diags)
 }
 
 func TestDeleteKibanaAssetsWithFallback_other400DoesNotFallback(t *testing.T) {
@@ -87,7 +128,7 @@ func TestDeleteKibanaAssetsWithFallback_other400DoesNotFallback(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"Some other validation error"}`)
-		case r.Method == http.MethodDelete && r.URL.Path == packageUninstallPath(testPackageName, testPackageVersion):
+		case r.Method == http.MethodDelete && r.URL.Path == testPackageUninstallPath:
 			uninstallCalls++
 			w.WriteHeader(http.StatusOK)
 		default:
@@ -114,7 +155,7 @@ func TestDeleteKibanaAssetsWithFallback_successDoesNotCallUninstall(t *testing.T
 		switch {
 		case r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/kibana_assets"):
 			w.WriteHeader(http.StatusOK)
-		case r.Method == http.MethodDelete && r.URL.Path == packageUninstallPath(testPackageName, testPackageVersion):
+		case r.Method == http.MethodDelete && r.URL.Path == testPackageUninstallPath:
 			uninstallCalls++
 			w.WriteHeader(http.StatusOK)
 		default:
@@ -155,6 +196,16 @@ func TestDiagnosticsContainInstallSpaceDeleteRejection(t *testing.T) {
 				diag.NewErrorDiagnostic(
 					"Unexpected status code from server: got HTTP 400",
 					`{"statusCode":400,"message":"Some other validation error"}`,
+				),
+			},
+			want: false,
+		},
+		{
+			name: "does not match warning severity even with sentinel text",
+			diags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Unexpected status code from server: got HTTP 400",
+					"Impossible to delete kibana assets from the space where the package was installed",
 				),
 			},
 			want: false,

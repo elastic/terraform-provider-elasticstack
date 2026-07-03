@@ -36,6 +36,9 @@ func normalizeDiagnosticText(s string) string {
 
 func diagnosticsContainInstallSpaceDeleteRejection(diags diag.Diagnostics) bool {
 	for _, d := range diags {
+		if d.Severity() != diag.SeverityError {
+			continue
+		}
 		detail := normalizeDiagnosticText(d.Detail())
 		summary := normalizeDiagnosticText(d.Summary())
 		if strings.Contains(detail, installSpaceDeleteRejectedMsg) || strings.Contains(summary, installSpaceDeleteRejectedMsg) {
