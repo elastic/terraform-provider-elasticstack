@@ -36,6 +36,7 @@ func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "field", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "type", "integer"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "description", "converts the content of the id field to an integer"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "target_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvert),
 				),
 			},
@@ -53,6 +54,31 @@ func TestAccDataSourceIngestProcessorConvert(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "ignore_failure", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "tag", "convert-tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", expectedJSONConvertAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("type_string"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "type", "string"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "target_field"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", `{"convert":{"field":"my_field","type":"string","ignore_failure":false,"ignore_missing":false}}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("type_boolean"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "type", "boolean"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", `{"convert":{"field":"my_field","type":"boolean","ignore_failure":false,"ignore_missing":false}}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("type_auto"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_convert.test", "type", "auto"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_convert.test", "json", `{"convert":{"field":"my_field","type":"auto","ignore_failure":false,"ignore_missing":false}}`),
 				),
 			},
 		},
