@@ -70,7 +70,7 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 	case fieldStatsViewTypeEsql:
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
-			return fieldStatsTableDecodeDiagnostics(err, "by_esql")
+			return fieldStatsTableDecodeDiagnostics(err, attrByEsql)
 		}
 		return mergeFieldStatsTableEsqlFromAPI(existing, prior, cfg1)
 	case fieldStatsViewTypeDataview:
@@ -78,7 +78,7 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 	default:
 		cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
-			return fieldStatsTableDecodeDiagnostics(err, "by_dataview")
+			return fieldStatsTableDecodeDiagnostics(err, attrByDataview)
 		}
 		return mergeFieldStatsTableDataviewFromAPI(existing, prior, cfg0)
 	}
@@ -98,13 +98,13 @@ func fieldStatsTableConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsDataVisualize
 	case fieldStatsViewTypeEsql:
 		cfg1, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
-			return nil, fieldStatsTableDecodeDiagnostics(err, "by_esql")
+			return nil, fieldStatsTableDecodeDiagnostics(err, attrByEsql)
 		}
 		return fieldStatsTableEsqlFromAPIImport(cfg1), nil
 	default:
 		cfg0, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
-			return nil, fieldStatsTableDecodeDiagnostics(err, "by_dataview")
+			return nil, fieldStatsTableDecodeDiagnostics(err, attrByDataview)
 		}
 		return fieldStatsTableDataviewFromAPIImport(cfg0), nil
 	}

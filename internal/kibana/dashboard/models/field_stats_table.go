@@ -25,21 +25,21 @@ type FieldStatsTableConfigModel struct {
 }
 
 type FieldStatsTableByDataviewModel struct {
-	DataViewID        types.String     `tfsdk:"data_view_id"`
-	ShowDistributions types.Bool       `tfsdk:"show_distributions"`
-	Title             types.String     `tfsdk:"title"`
-	Description       types.String     `tfsdk:"description"`
-	HideTitle         types.Bool       `tfsdk:"hide_title"`
-	HideBorder        types.Bool       `tfsdk:"hide_border"`
-	TimeRange         *TimeRangeModel  `tfsdk:"time_range"`
+	DataViewID        types.String    `tfsdk:"data_view_id"`
+	ShowDistributions types.Bool      `tfsdk:"show_distributions"`
+	Title             types.String    `tfsdk:"title"`
+	Description       types.String    `tfsdk:"description"`
+	HideTitle         types.Bool      `tfsdk:"hide_title"`
+	HideBorder        types.Bool      `tfsdk:"hide_border"`
+	TimeRange         *TimeRangeModel `tfsdk:"time_range"`
 }
 
 type FieldStatsTableByEsqlModel struct {
-	Query             types.String     `tfsdk:"query"`
-	ShowDistributions types.Bool       `tfsdk:"show_distributions"`
-	Title             types.String     `tfsdk:"title"`
-	Description       types.String     `tfsdk:"description"`
-	HideTitle         types.Bool       `tfsdk:"hide_title"`
-	HideBorder        types.Bool       `tfsdk:"hide_border"`
-	TimeRange         *TimeRangeModel  `tfsdk:"time_range"`
+	Query             types.String    `tfsdk:"query"`
+	ShowDistributions types.Bool      `tfsdk:"show_distributions"`
+	Title             types.String    `tfsdk:"title"`
+	Description       types.String    `tfsdk:"description"`
+	HideTitle         types.Bool      `tfsdk:"hide_title"`
+	HideBorder        types.Bool      `tfsdk:"hide_border"`
+	TimeRange         *TimeRangeModel `tfsdk:"time_range"`
 }

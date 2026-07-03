@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/fieldstatstable"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -32,7 +32,7 @@ import (
 func TestAccResourceDashboardFieldStatsTableByDataview(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Field Stats Table (dataview) " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, fieldstatstable.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -83,7 +83,7 @@ func TestAccResourceDashboardFieldStatsTableByDataview(t *testing.T) {
 func TestAccResourceDashboardFieldStatsTableByEsql(t *testing.T) {
 	dashboardTitle := "Test Dashboard with Field Stats Table (esql) " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, fieldstatstable.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -126,7 +126,7 @@ func TestAccResourceDashboardFieldStatsTableByEsql(t *testing.T) {
 }
 
 func TestAccResourceDashboardFieldStatsTableInvalidConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, fieldstatstable.MinKibanaAPISupport, versionutils.FlavorAny)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

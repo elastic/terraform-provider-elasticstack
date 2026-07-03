@@ -32,6 +32,11 @@ import (
 
 const panelType = "field_stats_table"
 
+const (
+	attrByDataview = "by_dataview"
+	attrByEsql     = "by_esql"
+)
+
 //go:embed descriptions/field_stats_table_config.md
 var fieldStatsTableConfigDescription string
 
@@ -59,8 +64,8 @@ func (fieldStatsTableConfigModeValidator) ValidateObject(_ context.Context, req 
 		return
 	}
 	attrs := req.ConfigValue.Attributes()
-	byDataview := attrs["by_dataview"]
-	byEsql := attrs["by_esql"]
+	byDataview := attrs[attrByDataview]
+	byEsql := attrs[attrByEsql]
 	valueSet := func(av attr.Value) bool {
 		return av != nil && !av.IsNull() && !av.IsUnknown()
 	}
@@ -85,7 +90,8 @@ func fieldStatsTableBranchAttributes() map[string]schema.Attribute {
 		Optional:            true,
 	}
 	attrs["time_range"] = panelkit.TimeRangeSchema(
-		"Optional panel time range override (`from`, `to`, optional `mode`). Null-preserved on read: when omitted in configuration, this attribute stays null in state even if Kibana returns values (REQ-009).",
+		"Optional panel time range override (`from`, `to`, optional `mode`). Null-preserved on read: " +
+			"when omitted in configuration, this attribute stays null in state even if Kibana returns values (REQ-009).",
 	)
 	return attrs
 }
@@ -122,20 +128,20 @@ func SchemaAttribute() schema.Attribute {
 		PanelType:   panelType,
 		Required:    true,
 		Attributes: map[string]schema.Attribute{
-			"by_dataview": schema.SingleNestedAttribute{
+			attrByDataview: schema.SingleNestedAttribute{
 				MarkdownDescription: fieldStatsTableByDataviewDescription,
 				Optional:            true,
 				Attributes:          fieldStatsTableByDataviewAttributes(),
 				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_esql")),
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(attrByEsql)),
 				},
 			},
-			"by_esql": schema.SingleNestedAttribute{
+			attrByEsql: schema.SingleNestedAttribute{
 				MarkdownDescription: fieldStatsTableByEsqlDescription,
 				Optional:            true,
 				Attributes:          fieldStatsTableByEsqlAttributes(),
 				Validators: []validator.Object{
-					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_dataview")),
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(attrByDataview)),
 				},
 			},
 		},

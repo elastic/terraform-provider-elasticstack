@@ -63,9 +63,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
 			return p.Grid, p.Id
 		},
-		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable) diag.Diagnostics {
-			return populateFieldStatsTableFromAPI(pm, prior, p)
-		},
+		populateFieldStatsTableFromAPI,
 	)
 }
 
