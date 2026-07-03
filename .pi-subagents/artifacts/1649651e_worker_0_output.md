@@ -1,1 +1,0 @@
-Detached for intercom coordination.
