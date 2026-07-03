@@ -19,6 +19,10 @@ package role
 
 import "maps"
 
+// globalRoleCategory is the `global` privilege category Elasticsearch injects
+// as an empty object by default.
+const globalRoleCategory = "role"
+
 // populateGlobalPrivilegesDefaults removes server-injected empty `global`
 // defaults that Elasticsearch adds but that are not meaningful for Terraform
 // state, so state matches user intent rather than the raw API blob.
@@ -41,7 +45,7 @@ func populateGlobalPrivilegesDefaults(model map[string]any) map[string]any {
 	for key, val := range out {
 		switch v := val.(type) {
 		case map[string]any:
-			if key == "role" && len(v) == 0 {
+			if key == globalRoleCategory && len(v) == 0 {
 				delete(out, key)
 			}
 		case []any:
