@@ -95,24 +95,3 @@ func aiopsLogRateAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsLogRat
 	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 	return cfg
 }
-
-func preserveNullIntentFromPrior(prior, existing *models.AiopsLogRateAnalysisConfigModel) {
-	if prior == nil || existing == nil {
-		return
-	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	}
-}
