@@ -249,34 +249,49 @@ func mergeFieldStatsTableEsqlFromAPI(
 	return nil
 }
 
+// fieldStatsTableBranchNullIntentFields holds pointers to the shared fields of both branch model
+// types (ByDataview and ByEsql) that require REQ-009 null-intent preservation, allowing
+// preserveFieldStatsTableBranchNullIntent to handle both branches without duplicating logic.
+type fieldStatsTableBranchNullIntentFields struct {
+	ShowDistributions *types.Bool
+	Title             *types.String
+	Description       *types.String
+	HideTitle         *types.Bool
+	HideBorder        *types.Bool
+	TimeRange         **models.TimeRangeModel
+}
+
+// preserveFieldStatsTableBranchNullIntent is the shared implementation for null-intent preservation
+// across the dataview and ES|QL branch models.
+func preserveFieldStatsTableBranchNullIntent(prior, existing fieldStatsTableBranchNullIntentFields) {
+	if !typeutils.IsKnown(*prior.ShowDistributions) {
+		*existing.ShowDistributions = types.BoolNull()
+	}
+	panelkit.NullPreservePresentationFromPrior(*prior.Title, *prior.Description, *prior.HideTitle, *prior.HideBorder,
+		existing.Title, existing.Description, existing.HideTitle, existing.HideBorder)
+	if *prior.TimeRange == nil {
+		*existing.TimeRange = nil
+	} else {
+		*existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(*prior.TimeRange, *existing.TimeRange)
+	}
+}
+
 func preserveFieldStatsTableDataviewNullIntent(prior, existing *models.FieldStatsTableByDataviewModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.ShowDistributions) {
-		existing.ShowDistributions = types.BoolNull()
-	}
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
-		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	} else {
-		existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
-	}
+	preserveFieldStatsTableBranchNullIntent(
+		fieldStatsTableBranchNullIntentFields{&prior.ShowDistributions, &prior.Title, &prior.Description, &prior.HideTitle, &prior.HideBorder, &prior.TimeRange},
+		fieldStatsTableBranchNullIntentFields{&existing.ShowDistributions, &existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder, &existing.TimeRange},
+	)
 }
 
 func preserveFieldStatsTableEsqlNullIntent(prior, existing *models.FieldStatsTableByEsqlModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.ShowDistributions) {
-		existing.ShowDistributions = types.BoolNull()
-	}
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
-		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	} else {
-		existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
-	}
+	preserveFieldStatsTableBranchNullIntent(
+		fieldStatsTableBranchNullIntentFields{&prior.ShowDistributions, &prior.Title, &prior.Description, &prior.HideTitle, &prior.HideBorder, &prior.TimeRange},
+		fieldStatsTableBranchNullIntentFields{&existing.ShowDistributions, &existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder, &existing.TimeRange},
+	)
 }
