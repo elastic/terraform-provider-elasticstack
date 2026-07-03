@@ -34,8 +34,8 @@ func TestSelectPackages_RunAllThreshold(t *testing.T) {
 		},
 		{
 			name:   "exceeds threshold selects all",
-			phase1: []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"},
-			phase2: []string{"p9"},
+			phase1: []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"},
+			phase2: []string{},
 			want:   all,
 		},
 	}
