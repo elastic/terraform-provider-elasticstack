@@ -111,20 +111,22 @@ func extractFromFile(filename string, data []byte) ([]EntityRef, error) {
 		return nil, nil
 	}
 
-	intervals := commentIntervals(f.Comments)
+	intervals := commentIntervals(fset, f.Comments)
 	return extractFromSource(src, intervals), nil
 }
 
 // commentIntervals converts comment groups into [start, end) byte intervals.
-func commentIntervals(groups []*ast.CommentGroup) [][2]int {
+// It uses the FileSet so that offsets are 0-based byte positions matching
+// the regex locations used by extractFromSource.
+func commentIntervals(fset *token.FileSet, groups []*ast.CommentGroup) [][2]int {
 	intervals := make([][2]int, 0, len(groups))
 	for _, g := range groups {
 		if len(g.List) == 0 {
 			continue
 		}
-		start := g.Pos()
-		end := g.End()
-		intervals = append(intervals, [2]int{int(start), int(end)})
+		start := fset.Position(g.Pos()).Offset
+		end := fset.Position(g.End()).Offset
+		intervals = append(intervals, [2]int{start, end})
 	}
 	return intervals
 }
