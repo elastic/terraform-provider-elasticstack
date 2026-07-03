@@ -1,0 +1,36 @@
+{
+  "runId": "dbfa8103",
+  "agent": "reviewer",
+  "task": "Critical code review of the new Go tool scaffold in `scripts/targeted-testacc/` (files: main.go, classifier.go, depgraph.go, entityname.go, testconsumers.go, acctestpackages.go, selector.go, gitdiff.go).\nFocus on:\n- Coding standards and idiomatic Go\n- Likely logic bugs, especially in classifier, depgraph, entity regex, and shard selection\n- Error handling gaps\n- Risks for CI usage (stdout/stderr, exit codes, shelling out to git/go)\nRead the context spec at `openspec/changes/selective-acceptance-tests/specs/selective-acceptance-tests/spec.md` first.\nReturn up to 10 prioritized findings with severity (high/medium/low), concise description, evidence (file:line if possible), and recommended fix. Do not edit files.",
+  "exitCode": 0,
+  "usage": {
+    "input": 113291,
+    "output": 12062,
+    "cacheRead": 55040,
+    "cacheWrite": 0,
+    "cost": 0.15145383,
+    "turns": 10
+  },
+  "model": "openrouter/z-ai/glm-5.2:high",
+  "attemptedModels": [
+    "openrouter/z-ai/glm-5.2:high"
+  ],
+  "modelAttempts": [
+    {
+      "model": "openrouter/z-ai/glm-5.2:high",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 113291,
+        "output": 12062,
+        "cacheRead": 55040,
+        "cacheWrite": 0,
+        "cost": 0.15145383,
+        "turns": 10
+      }
+    }
+  ],
+  "durationMs": 322405,
+  "toolCount": 19,
+  "timestamp": 1783046031072
+}

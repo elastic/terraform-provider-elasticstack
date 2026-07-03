@@ -9,7 +9,8 @@ Delta spec for the `test` job in `.github/workflows/provider.yml`.
 Each matrix test job SHALL include a `compute-packages` step that runs before the fleet image pull, stack startup, and all other expensive steps. The step SHALL set a `has_packages` output (`true` or `false`). All subsequent expensive steps — fleet image pull, stack start, stack readiness wait, API key creation, fleet setup, forced synthetics installation, and the acceptance test run — SHALL be conditioned on `steps.targeted.outputs.has_packages == 'true'`.
 
 The `compute-packages` step SHALL:
-- For non-PR events (`github.event_name != 'pull_request'`): set `has_packages=true` and `targeted_pkgs=` (empty string) unconditionally.
+
+- For non-PR events (`github.event_name != 'pull_request'`, including `push`, `workflow_dispatch`, and `merge_group`): set `has_packages=true` and `targeted_pkgs=` (empty string) unconditionally.
 - For PR events: run `git fetch origin main --depth=1`, then invoke `go run ./scripts/targeted-testacc/... --total-shards=2 --shard-index=${{ matrix.shard }}`. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
 
 #### Scenario: PR with targeted packages — stack starts and targeted tests run
@@ -43,11 +44,18 @@ The `compute-packages` step SHALL:
 - **THEN** `has_packages=true` is set unconditionally
 - **AND** the test step runs `make testacc`
 
+#### Scenario: merge_group — full suite runs
+
+- **WHEN** a `merge_group` event triggers the workflow
+- **THEN** `has_packages=true` is set unconditionally by the compute-packages step
+- **AND** stack startup proceeds normally
+- **AND** the test step runs `make testacc` (full suite)
+
 ---
 
 ### Requirement: Test step routes between targeted and full suite
 
-The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be conditioned on `has_packages == 'true'`. When `targeted_pkgs` is non-empty (PR event with packages), the step SHALL run `make targeted-testacc` passing `ACCTEST_TOTAL_SHARDS=2`, `ACCTEST_SHARD_INDEX=${{ matrix.shard }}`, and `TARGETED_PKGS=${{ steps.targeted.outputs.targeted_pkgs }}`. When `targeted_pkgs` is empty (non-PR event), the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` (existing full-suite behaviour, unchanged).
+The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be conditioned on `has_packages == 'true'`. When `targeted_pkgs` is non-empty (PR event with packages), the step SHALL run `make targeted-testacc` passing `ACCTEST_TOTAL_SHARDS=2`, `ACCTEST_SHARD_INDEX=${{ matrix.shard }}`, and `TARGETED_PKGS=${{ steps.targeted.outputs.targeted_pkgs }}`. When `targeted_pkgs` is empty (non-PR event, including `push`, `workflow_dispatch`, and `merge_group`), the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` (existing full-suite behaviour, unchanged).
 
 #### Scenario: Non-PR test step is identical to pre-change behaviour
 
@@ -80,7 +88,7 @@ The stack teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL
 
 The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the preflight gate outputs `should_run=true` and the change-classification job reports `provider_changes=true`.
 
-For each matrix entry, the job SHALL free disk space, set up Go and Terraform, and run `make vendor`. It SHALL then run a `compute-packages` step to determine whether this shard has acceptance test packages to run. Fleet image pull, stack startup via Docker Compose, Elasticsearch and Kibana readiness waits, API key creation, fleet setup, and forced synthetics installation SHALL run only when `compute-packages` outputs `has_packages=true`. For PR events with packages, acceptance tests SHALL run via `make targeted-testacc`; for all other events, acceptance tests SHALL run via `make testacc`. Snapshot versions are allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
+For each matrix entry, the job SHALL free disk space, set up Go and Terraform, and run `make vendor`. It SHALL then run a `compute-packages` step to determine whether this shard has acceptance test packages to run. Fleet image pull, stack startup via Docker Compose, Elasticsearch and Kibana readiness waits, API key creation, fleet setup, and forced synthetics installation SHALL run only when `compute-packages` outputs `has_packages=true`. For PR events with packages, acceptance tests SHALL run via `make targeted-testacc`; for all other events (push, workflow_dispatch, merge_group), acceptance tests SHALL run via `make testacc`. Snapshot versions are allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
 
 The stack-start step SHALL have a step-level timeout so that a hung container image pull fails fast instead of consuming the full job timeout.
 
@@ -104,6 +112,13 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 #### Scenario: Push to main always runs full suite
 
 - **GIVEN** a push event to the `main` branch
+- **WHEN** a matrix test job executes
+- **THEN** `compute-packages` sets `has_packages=true` unconditionally
+- **AND** `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=<shard>` runs
+
+#### Scenario: merge_group runs full suite
+
+- **GIVEN** a `merge_group` event (merge queue)
 - **WHEN** a matrix test job executes
 - **THEN** `compute-packages` sets `has_packages=true` unconditionally
 - **AND** `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=<shard>` runs

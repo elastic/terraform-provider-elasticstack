@@ -26,6 +26,7 @@
 
 ## 4. CI workflow update (`provider.yml`)
 
+- [ ] 4.0 Add `merge_group:` trigger to the `on:` section of `provider.yml` (enables future merge-queue support)
 - [ ] 4.1 Add `compute-packages` step to the `test` job, positioned after `make vendor` and before `Pre-pull fleet image`; implement non-PR fast-path (`has_packages=true`, `targeted_pkgs=`) and PR path (git fetch + tool invocation + output setting)
 - [ ] 4.2 Add `if: matrix.fleetImage && steps.targeted.outputs.has_packages == 'true'` to the `Pre-pull fleet image` step
 - [ ] 4.3 Add `if: steps.targeted.outputs.has_packages == 'true'` to the `Start stack with docker compose` step

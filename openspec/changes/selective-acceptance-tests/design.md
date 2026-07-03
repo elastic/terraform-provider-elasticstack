@@ -7,14 +7,16 @@ The provider codebase has a consistent, greppable structure: every resource and 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - A `make targeted-testacc` target that runs only the acceptance test packages relevant to the current branch diff.
 - A `make targeted-testacc-dry-run` target that prints the selection rationale without running tests.
-- CI on PRs uses `targeted-testacc`; pushes to `main` and `workflow_dispatch` always use the full `testacc` suite.
+- CI on PRs uses `targeted-testacc`; pushes to `main`, merge queue (`merge_group`), and `workflow_dispatch` always use the full `testacc` suite.
 - Shard count is dynamic: small targeted sets run on a single shard; larger sets split across the static `shard: [0, 1]` CI matrix.
 - The static CI matrix (versions, runner assignments, include entries) is preserved unchanged.
 - Stack startup is skipped entirely for matrix jobs where a shard has no packages to test.
 
 **Non-Goals:**
+
 - Changing how `make testacc` works.
 - Dynamically altering the number of CI matrix shards via `fromJSON` — the static `shard: [0, 1]` matrix stays as-is.
 - Covering non-Go file changes (docs, openspec) with acceptance tests — these correctly result in 0 selected packages.
@@ -72,9 +74,9 @@ Empty diff (on main, or when only non-code files changed) → tool emits all acc
 
 ### Decision: CI event routing
 
-**Choice:** The `compute-packages` step in each test matrix job checks `github.event_name`. For non-PR events (push to main, workflow_dispatch), it sets `has_packages=true` and `targeted_pkgs=` (empty) unconditionally. The test step then runs `make testacc` (full suite) instead of `make targeted-testacc`. For PR events, the step runs the tool and sets `has_packages` and `targeted_pkgs` from its output.
+**Choice:** The `compute-packages` step in each test matrix job checks `github.event_name`. For non-PR events (push to main, `workflow_dispatch`, `merge_group`), it sets `has_packages=true` and `targeted_pkgs=` (empty) unconditionally. The test step then runs `make testacc` (full suite) instead of `make targeted-testacc`. For PR events (opened, synchronize, reopened), the step runs the tool and sets `has_packages` and `targeted_pkgs` from its output.
 
-**Rationale:** This keeps the event-type logic in a single step. All downstream `if:` conditions use only `steps.targeted.outputs.has_packages == 'true'` — they don't need to re-check event type. The test step distinguishes targeted vs full by whether `targeted_pkgs` is non-empty.
+**Rationale:** This keeps the event-type logic in a single step. All downstream `if:` conditions use only `steps.targeted.outputs.has_packages == 'true'` — they don't need to re-check event type. The test step distinguishes targeted vs full by whether `targeted_pkgs` is non-empty. Merge queue runs are treated as non-PR events because they validate the final merged state, which requires the full suite as the authoritative gate.
 
 ## Risks / Trade-offs
 

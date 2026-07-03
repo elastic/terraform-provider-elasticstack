@@ -112,7 +112,7 @@ targeted-testacc: ## Run acceptance tests relevant to the current branch diff
 	@if [ -z "$(TARGETED_PKGS)" ]; then \
 		echo "No acceptance test packages selected for this diff/shard; skipping."; \
 		exit 0; \
-	fi
+	fi; \
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$(TARGETED_PKGS)" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: targeted-testacc-dry-run

@@ -1,0 +1,36 @@
+{
+  "runId": "6864e7ce",
+  "agent": "worker",
+  "task": "Run final local validation for the `selective-acceptance-tests` implementation in `/Users/tobio/Projects/terraform-provider-elasticstack/selective-acceptance-tests`.\nCommands:\n1. `go vet ./scripts/targeted-testacc/...`\n2. `go test ./scripts/targeted-testacc/...`\n3. `go build ./scripts/targeted-testacc/...`\n4. `go build ./...`\n5. `make targeted-testacc-dry-run ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=0 TARGETED_TESTACC_BASE=HEAD~3` (just print the dry-run summary tail)\n6. `make targeted-testacc-dry-run ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=1 TARGETED_TESTACC_BASE=HEAD` (should report all packages split or empty for shard 1 depending on threshold; just report result)\n7. `npx openspec validate --specs`\nReturn a concise summary of pass/fail for each and the final line counts / selected package counts.",
+  "exitCode": 0,
+  "usage": {
+    "input": 14998,
+    "output": 1516,
+    "cacheRead": 40288,
+    "cacheWrite": 0,
+    "cost": 0.02244772,
+    "turns": 7
+  },
+  "model": "openrouter/moonshotai/kimi-k2.7-code:low",
+  "attemptedModels": [
+    "openrouter/moonshotai/kimi-k2.7-code:low"
+  ],
+  "modelAttempts": [
+    {
+      "model": "openrouter/moonshotai/kimi-k2.7-code:low",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 14998,
+        "output": 1516,
+        "cacheRead": 40288,
+        "cacheWrite": 0,
+        "cost": 0.02244772,
+        "turns": 7
+      }
+    }
+  ],
+  "durationMs": 56949,
+  "toolCount": 11,
+  "timestamp": 1783048776585
+}
