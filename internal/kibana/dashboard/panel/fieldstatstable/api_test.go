@@ -54,6 +54,36 @@ func configJSONSet(s string) customtypes.JSONWithDefaultsValue[map[string]any] {
 	return customtypes.NewJSONWithDefaultsValue(s, func(m map[string]any) map[string]any { return m })
 }
 
+// deepCopyFieldStatsTableConfig clones a FieldStatsTableConfigModel so that a test's "prior" and
+// "pm" models don't alias the same nested pointers. FromAPI mutates the target model's nested
+// structs in place; if prior and pm share those pointers, null-preservation logic ends up
+// comparing a mutated value against itself instead of the true prior state.
+func deepCopyFieldStatsTableConfig(cfg *models.FieldStatsTableConfigModel) *models.FieldStatsTableConfigModel {
+	if cfg == nil {
+		return nil
+	}
+	out := &models.FieldStatsTableConfigModel{}
+	if cfg.ByDataview != nil {
+		dv := *cfg.ByDataview
+		dv.TimeRange = deepCopyTimeRange(cfg.ByDataview.TimeRange)
+		out.ByDataview = &dv
+	}
+	if cfg.ByEsql != nil {
+		esql := *cfg.ByEsql
+		esql.TimeRange = deepCopyTimeRange(cfg.ByEsql.TimeRange)
+		out.ByEsql = &esql
+	}
+	return out
+}
+
+func deepCopyTimeRange(tr *models.TimeRangeModel) *models.TimeRangeModel {
+	if tr == nil {
+		return nil
+	}
+	out := *tr
+	return &out
+}
+
 func configMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {
 	t.Helper()
 	raw, err := json.Marshal(item)
@@ -91,12 +121,13 @@ func TestHandler_roundTrip_byDataview(t *testing.T) {
 			DataViewID:        stringVal("logs-view"),
 			ShowDistributions: boolVal(true),
 			Title:             stringVal("Field statistics — logs view"),
+			Description:       stringVal("Field stats table panel (dataview)"),
 			HideTitle:         boolVal(false),
-			HideBorder:        boolVal(false),
+			HideBorder:        boolVal(true),
 			TimeRange: &models.TimeRangeModel{
 				From: stringVal("now-24h"),
 				To:   stringVal("now"),
-				Mode: stringNull(),
+				Mode: stringVal("relative"),
 			},
 		},
 	}
@@ -108,8 +139,12 @@ func TestHandler_roundTrip_byDataview(t *testing.T) {
 	require.Equal(t, "dataview", cfg["view_type"])
 	require.Equal(t, "logs-view", cfg["data_view_id"])
 	require.Equal(t, true, cfg["show_distributions"])
+	require.Equal(t, "Field stats table panel (dataview)", cfg["description"])
+	require.Equal(t, false, cfg["hide_title"])
+	require.Equal(t, true, cfg["hide_border"])
 
 	next := pm
+	next.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(pm.FieldStatsTableConfig)
 	d2 := fieldstatstable.Handler{}.FromAPI(ctx, &next, &pm, item)
 	require.False(t, d2.HasError(), "%s", d2)
 
@@ -119,9 +154,13 @@ func TestHandler_roundTrip_byDataview(t *testing.T) {
 	assert.Equal(t, "logs-view", dv.DataViewID.ValueString())
 	assert.True(t, dv.ShowDistributions.ValueBool())
 	assert.Equal(t, "Field statistics — logs view", dv.Title.ValueString())
+	assert.Equal(t, "Field stats table panel (dataview)", dv.Description.ValueString())
+	assert.False(t, dv.HideTitle.ValueBool())
+	assert.True(t, dv.HideBorder.ValueBool())
 	require.NotNil(t, dv.TimeRange)
 	assert.Equal(t, "now-24h", dv.TimeRange.From.ValueString())
 	assert.Equal(t, "now", dv.TimeRange.To.ValueString())
+	assert.Equal(t, "relative", dv.TimeRange.Mode.ValueString())
 }
 
 func TestHandler_roundTrip_byEsql(t *testing.T) {
@@ -134,10 +173,13 @@ func TestHandler_roundTrip_byEsql(t *testing.T) {
 			Query:             stringVal("FROM logs | STATS count = COUNT(*) BY service.name"),
 			ShowDistributions: boolVal(false),
 			Title:             stringVal("Field statistics — logs by service"),
+			Description:       stringVal("Field stats table panel (esql)"),
+			HideTitle:         boolVal(true),
+			HideBorder:        boolVal(false),
 			TimeRange: &models.TimeRangeModel{
 				From: stringVal("now-24h"),
 				To:   stringVal("now"),
-				Mode: stringNull(),
+				Mode: stringVal("relative"),
 			},
 		},
 	}
@@ -151,8 +193,12 @@ func TestHandler_roundTrip_byEsql(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "FROM logs | STATS count = COUNT(*) BY service.name", query["esql"])
 	assert.Equal(t, false, cfg["show_distributions"])
+	require.Equal(t, "Field stats table panel (esql)", cfg["description"])
+	require.Equal(t, true, cfg["hide_title"])
+	require.Equal(t, false, cfg["hide_border"])
 
 	next := pm
+	next.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(pm.FieldStatsTableConfig)
 	d2 := fieldstatstable.Handler{}.FromAPI(ctx, &next, &pm, item)
 	require.False(t, d2.HasError(), "%s", d2)
 
@@ -161,6 +207,11 @@ func TestHandler_roundTrip_byEsql(t *testing.T) {
 	esql := next.FieldStatsTableConfig.ByEsql
 	assert.Equal(t, "FROM logs | STATS count = COUNT(*) BY service.name", esql.Query.ValueString())
 	assert.False(t, esql.ShowDistributions.ValueBool())
+	assert.Equal(t, "Field stats table panel (esql)", esql.Description.ValueString())
+	assert.True(t, esql.HideTitle.ValueBool())
+	assert.False(t, esql.HideBorder.ValueBool())
+	require.NotNil(t, esql.TimeRange)
+	assert.Equal(t, "relative", esql.TimeRange.Mode.ValueString())
 }
 
 func TestHandler_toAPI_omitsNullOptionalFields(t *testing.T) {
@@ -187,6 +238,12 @@ func TestHandler_toAPI_omitsNullOptionalFields(t *testing.T) {
 	assert.False(t, hasShow)
 	_, hasTitle := cfg["title"]
 	assert.False(t, hasTitle)
+	_, hasDescription := cfg["description"]
+	assert.False(t, hasDescription)
+	_, hasHideTitle := cfg["hide_title"]
+	assert.False(t, hasHideTitle)
+	_, hasHideBorder := cfg["hide_border"]
+	assert.False(t, hasHideBorder)
 	_, hasTR := cfg["time_range"]
 	assert.False(t, hasTR)
 }
@@ -223,6 +280,7 @@ func TestHandler_fromAPI_nullPreservation_timeRange(t *testing.T) {
 	}
 
 	pm := prior
+	pm.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(prior.FieldStatsTableConfig)
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.Nil(t, pm.FieldStatsTableConfig.ByDataview.TimeRange)
@@ -255,6 +313,7 @@ func TestHandler_fromAPI_branchMismatch_priorDataviewAPIEsql(t *testing.T) {
 	}
 
 	pm := prior
+	pm.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(prior.FieldStatsTableConfig)
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.Nil(t, pm.FieldStatsTableConfig.ByDataview)
@@ -289,6 +348,7 @@ func TestHandler_fromAPI_branchMismatch_priorEsqlAPIDataview(t *testing.T) {
 	}
 
 	pm := prior
+	pm.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(prior.FieldStatsTableConfig)
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.Nil(t, pm.FieldStatsTableConfig.ByEsql)
@@ -314,6 +374,112 @@ func TestHandler_fromAPI_invalidViewType(t *testing.T) {
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, nil, item)
 	require.True(t, diags.HasError())
 	require.Contains(t, diagSummary(diags), "view_type")
+}
+
+func TestHandler_fromAPI_import_byDataview(t *testing.T) {
+	t.Parallel()
+
+	show := true
+	title := "Field statistics — logs view"
+	description := "Field stats table panel (dataview)"
+	hideTitle := false
+	hideBorder := true
+	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
+	apiCfg := kbapi.KibanaHTTPAPIsDataVisualizerFieldStats0{
+		DataViewId:        "logs-view",
+		ViewType:          kbapi.Dataview,
+		ShowDistributions: &show,
+		Title:             &title,
+		Description:       &description,
+		HideTitle:         &hideTitle,
+		HideBorder:        &hideBorder,
+		TimeRange: &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+			From: "now-24h",
+			To:   "now",
+			Mode: &mode,
+		},
+	}
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, cfg.FromKibanaHTTPAPIsDataVisualizerFieldStats0(apiCfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	pm := panelModelBase()
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, nil, item)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	require.NotNil(t, pm.FieldStatsTableConfig)
+	require.Nil(t, pm.FieldStatsTableConfig.ByEsql)
+	dv := pm.FieldStatsTableConfig.ByDataview
+	require.NotNil(t, dv)
+	assert.Equal(t, "logs-view", dv.DataViewID.ValueString())
+	assert.True(t, dv.ShowDistributions.ValueBool())
+	assert.Equal(t, title, dv.Title.ValueString())
+	assert.Equal(t, description, dv.Description.ValueString())
+	assert.False(t, dv.HideTitle.ValueBool())
+	assert.True(t, dv.HideBorder.ValueBool())
+	require.NotNil(t, dv.TimeRange)
+	assert.Equal(t, "now-24h", dv.TimeRange.From.ValueString())
+	assert.Equal(t, "now", dv.TimeRange.To.ValueString())
+	assert.Equal(t, "relative", dv.TimeRange.Mode.ValueString())
+}
+
+func TestHandler_fromAPI_import_byEsql(t *testing.T) {
+	t.Parallel()
+
+	show := false
+	title := "Field statistics — logs by service"
+	description := "Field stats table panel (esql)"
+	hideTitle := true
+	hideBorder := false
+	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
+	apiCfg := kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1{
+		ViewType:          kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1ViewTypeEsql,
+		ShowDistributions: &show,
+		Title:             &title,
+		Description:       &description,
+		HideTitle:         &hideTitle,
+		HideBorder:        &hideBorder,
+		TimeRange: &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+			From: "now-24h",
+			To:   "now",
+			Mode: &mode,
+		},
+	}
+	apiCfg.Query.Esql = "FROM logs-* | STATS count = COUNT(*) BY service.name"
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, cfg.FromKibanaHTTPAPIsDataVisualizerFieldStats1(apiCfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	pm := panelModelBase()
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, nil, item)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	require.NotNil(t, pm.FieldStatsTableConfig)
+	require.Nil(t, pm.FieldStatsTableConfig.ByDataview)
+	esql := pm.FieldStatsTableConfig.ByEsql
+	require.NotNil(t, esql)
+	assert.Equal(t, "FROM logs-* | STATS count = COUNT(*) BY service.name", esql.Query.ValueString())
+	assert.False(t, esql.ShowDistributions.ValueBool())
+	assert.Equal(t, title, esql.Title.ValueString())
+	assert.Equal(t, description, esql.Description.ValueString())
+	assert.True(t, esql.HideTitle.ValueBool())
+	assert.False(t, esql.HideBorder.ValueBool())
+	require.NotNil(t, esql.TimeRange)
+	assert.Equal(t, "now-24h", esql.TimeRange.From.ValueString())
+	assert.Equal(t, "now", esql.TimeRange.To.ValueString())
+	assert.Equal(t, "relative", esql.TimeRange.Mode.ValueString())
 }
 
 func TestHandler_fromAPI_nullPreservation_esqlTimeRange(t *testing.T) {
@@ -348,6 +514,7 @@ func TestHandler_fromAPI_nullPreservation_esqlTimeRange(t *testing.T) {
 	}
 
 	pm := prior
+	pm.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(prior.FieldStatsTableConfig)
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	require.Nil(t, pm.FieldStatsTableConfig.ByEsql.TimeRange)
@@ -381,6 +548,7 @@ func TestHandler_fromAPI_nullPreservation_showDistributions(t *testing.T) {
 	}
 
 	pm := prior
+	pm.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(prior.FieldStatsTableConfig)
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	assert.True(t, pm.FieldStatsTableConfig.ByEsql.ShowDistributions.IsNull())
@@ -414,6 +582,7 @@ func TestHandler_fromAPI_nullPreservation_dataviewShowDistributions(t *testing.T
 	}
 
 	pm := prior
+	pm.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(prior.FieldStatsTableConfig)
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	assert.True(t, pm.FieldStatsTableConfig.ByDataview.ShowDistributions.IsNull())
@@ -451,6 +620,7 @@ func TestHandler_roundTrip_jsonStable(t *testing.T) {
 	require.False(t, diags.HasError(), "%s", diags)
 
 	next := pm
+	next.FieldStatsTableConfig = deepCopyFieldStatsTableConfig(pm.FieldStatsTableConfig)
 	require.False(t, fieldstatstable.Handler{}.FromAPI(ctx, &next, &pm, item1).HasError())
 
 	item2, diags2 := fieldstatstable.Handler{}.ToAPI(next, nil)

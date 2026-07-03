@@ -86,6 +86,15 @@ func TestAccResourceDashboardFieldStatsTableByDataview(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.field_stats_table_config.by_esql"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_dataview_empty_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
 		},
 	})
 }
@@ -143,6 +152,15 @@ func TestAccResourceDashboardFieldStatsTableByEsql(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.field_stats_table_config.by_esql.time_range"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.field_stats_table_config.by_dataview"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("by_esql_empty_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
