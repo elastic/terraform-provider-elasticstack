@@ -40,18 +40,8 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 		return
 	}
 
-	if typeutils.IsKnown(cfg.Title) {
-		panel.Config.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		panel.Config.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		panel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 
 	img := &panel.Config.ImageConfig
 	if typeutils.IsKnown(cfg.AltText) {
@@ -168,18 +158,8 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 		return
 	}
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(apiCfg.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(apiCfg.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(apiCfg.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(apiCfg.HideBorder)
-	}
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		apiCfg.Title, apiCfg.Description, apiCfg.HideTitle, apiCfg.HideBorder)
 
 	if typeutils.IsKnown(existing.AltText) {
 		existing.AltText = types.StringPointerValue(apiCfg.ImageConfig.AltText)
