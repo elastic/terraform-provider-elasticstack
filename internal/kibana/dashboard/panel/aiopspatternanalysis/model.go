@@ -102,7 +102,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
 
 	if prior.AiopsPatternAnalysisConfig != nil {
-		preserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
+		aiopsPatternAnalysisPreserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
 	}
 	return nil
 }
@@ -123,7 +123,7 @@ func aiopsPatternAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsPatter
 	return cfg
 }
 
-func preserveNullIntentFromPrior(prior, existing *models.AiopsPatternAnalysisConfigModel) {
+func aiopsPatternAnalysisPreserveNullIntentFromPrior(prior, existing *models.AiopsPatternAnalysisConfigModel) {
 	if prior == nil || existing == nil {
 		return
 	}
