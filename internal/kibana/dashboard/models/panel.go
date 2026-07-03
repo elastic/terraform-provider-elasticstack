@@ -40,6 +40,7 @@ type PanelModel struct {
 	ImageConfig                   *ImagePanelConfigModel                            `tfsdk:"image_config"`
 	SloAlertsConfig               *SloAlertsPanelConfigModel                        `tfsdk:"slo_alerts_config"`
 	DiscoverSessionConfig         *DiscoverSessionPanelConfigModel                  `tfsdk:"discover_session_config"`
+	FieldStatsTableConfig         *FieldStatsTableConfigModel                       `tfsdk:"field_stats_table_config"`
 	LinksConfig                   *LinksPanelConfigModel                            `tfsdk:"links_config"`
 	MlAnomalySwimlaneConfig       *MlAnomalySwimlaneConfigModel                     `tfsdk:"ml_anomaly_swimlane_config"`
 	MlAnomalyChartsConfig         *MlAnomalyChartsConfigModel                       `tfsdk:"ml_anomaly_charts_config"`
