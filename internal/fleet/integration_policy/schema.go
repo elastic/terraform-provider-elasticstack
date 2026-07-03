@@ -22,6 +22,7 @@ import (
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -117,12 +118,10 @@ func getSchemaV3() schema.Schema {
 			},
 			attrVarsJSON: schema.StringAttribute{
 				Description: customtypes.DescriptionWithContextWarning("Integration-level variables as JSON. Variables vary depending on the integration package."),
-				CustomType: VarsJSONType{
-					JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(populateVarsJSONDefaults),
-				},
-				Computed:  true,
-				Optional:  true,
-				Sensitive: varsAreSensitive,
+				CustomType:  policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				Computed:    true,
+				Optional:    true,
+				Sensitive:   varsAreSensitive,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -162,6 +161,10 @@ func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 				Computed:    true,
 				Optional:    true,
 				Default:     booldefault.StaticBool(true),
+			},
+			attrCondition: schema.StringAttribute{
+				Description: "Agent condition expression to evaluate whether to apply this input.",
+				Optional:    true,
 			},
 			attrVars: schema.StringAttribute{
 				Description: "Input-level variables as JSON.",
@@ -218,6 +221,10 @@ func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObj
 				Optional:    true,
 				Default:     booldefault.StaticBool(true),
 			},
+			attrCondition: schema.StringAttribute{
+				Description: "Agent condition expression to evaluate whether to apply this stream.",
+				Optional:    true,
+			},
 			attrVars: schema.StringAttribute{
 				Description: "Stream-level variables as JSON.",
 				CustomType:  jsontypes.NormalizedType{},
@@ -228,46 +235,25 @@ func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObj
 	}
 }
 
+// getInputsElementType, getInputsAttributeTypes, getInputStreamType, and
+// getInputDefaultsAttrTypes delegate to the shared policyshape package,
+// which owns the canonical inputs/streams/defaults attribute-type structure
+// (see internal/fleet/policyshape/attribute_types.go). They are kept here
+// under their original names so schema.go, models.go, and this package's
+// tests don't need a mechanical rename.
+
 func getInputsElementType() InputType {
-	return getInputsNestedObject(false).CustomType.(InputType)
+	return policyshape.InputElementType()
 }
 
 func getInputsAttributeTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrEnabled: types.BoolType,
-		attrVars:    jsontypes.NormalizedType{},
-		attrDefaults: types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				attrVars: jsontypes.NormalizedType{},
-				attrStreams: types.MapType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							attrEnabled: types.BoolType,
-							attrVars:    jsontypes.NormalizedType{},
-						},
-					},
-				},
-			},
-		},
-		attrStreams: types.MapType{
-			ElemType: types.ObjectType{
-				AttrTypes: map[string]attr.Type{
-					attrEnabled: types.BoolType,
-					attrVars:    jsontypes.NormalizedType{},
-				},
-			},
-		},
-	}
+	return policyshape.InputAttributeTypes()
 }
 
 func getInputStreamType() attr.Type {
-	return getInputStreamNestedObject(false).Type()
-}
-
-func getInputDefaultsType() attr.Type {
-	return getInputsAttributeTypes()[attrDefaults]
+	return policyshape.StreamType()
 }
 
 func getInputDefaultsAttrTypes() map[string]attr.Type {
-	return getInputDefaultsType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	return policyshape.InputDefaultsAttributeTypes()
 }
