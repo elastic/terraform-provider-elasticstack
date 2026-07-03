@@ -204,24 +204,37 @@ On delete, when `skip_destroy` is true, the resource SHALL skip calling the unin
 
 ### Requirement: Delete — space-aware uninstall (REQ-015)
 
-On delete, when `space_id` is a known value in state, the resource SHALL determine whether the package is installed in multiple spaces. When the Kibana server version is at least 9.1.0 and the package is installed in multiple spaces, the resource SHALL call the Fleet `DELETE /api/fleet/epm/packages/{pkg}/{version}/kibana_assets` API scoped to the target space to remove Kibana assets from that space only. When the package is installed in only the target space, or when the Kibana server version is below 9.1.0, the resource SHALL pass `space_id` as the space context to the Fleet uninstall API. The `force` flag from state SHALL be passed to whichever API is called.
+This requirement modifies REQ-015 (space-aware uninstall). When the Fleet API returns HTTP 400 with a message containing the substring "Impossible to delete kibana assets from the space where the package was installed" in response to `DELETE /api/fleet/epm/packages/{pkg}/{version}/kibana_assets`, the resource SHALL NOT surface this as a Terraform error and SHALL instead call `fleet.Uninstall` (`DELETE /api/fleet/epm/packages/{name}/{version}`) with the `force` flag from state (which uninstalls the package globally, since install-space asset-only deletion is not supported). The resource SHALL emit a DEBUG log entry before the fallback recording the package name, version, and space ID. All other non-success responses from `DeleteKibanaAssets` SHALL still be surfaced as Terraform diagnostics without triggering the fallback.
 
-#### Scenario: Delete with space context — single space installation
+#### Scenario: DeleteKibanaAssets returns install-space 400
 
-- GIVEN `space_id` is set to a known string in state
-- AND the package is installed in only that space (or the Kibana server is below 9.1.0)
-- WHEN destroy runs
-- THEN the Fleet uninstall API SHALL be called with that space ID and the `force` flag from state
+- **GIVEN** `space_id` is set to a known string in state
+- **AND** the package is installed in multiple spaces
+- **AND** `DeleteKibanaAssets` returns HTTP 400 with message containing `"Impossible to delete kibana assets from the space where the package was installed"`
+- **WHEN** destroy runs
+- **THEN** the resource SHALL NOT surface the 400 as a Terraform error
+- **AND** the resource SHALL call `fleet.Uninstall` with the package name, version, space ID, and `force` flag from state
+- **AND** diagnostics from `fleet.Uninstall` SHALL be returned to the caller
+- **AND** a DEBUG log entry SHALL be emitted before the fallback indicating the package name, version, and space ID
 
-#### Scenario: Delete with space context — multi-space installation
+#### Scenario: DeleteKibanaAssets returns a different 400
 
-- GIVEN `space_id` is set to a known string in state
-- AND the Kibana server version is at least 9.1.0
-- AND the package is installed in multiple spaces
-- WHEN destroy runs
-- THEN the Fleet delete kibana_assets API SHALL be called scoped to the target space
-- AND the global package installation SHALL remain intact
-- AND the `force` flag from state SHALL be passed to the API
+- **GIVEN** `space_id` is set to a known string in state
+- **AND** the package is installed in multiple spaces
+- **AND** `DeleteKibanaAssets` returns HTTP 400 with a message NOT containing the install-space substring
+- **WHEN** destroy runs
+- **THEN** the resource SHALL surface the 400 as a Terraform error
+- **AND** `fleet.Uninstall` SHALL NOT be called
+
+#### Scenario: DeleteKibanaAssets succeeds (HTTP 200)
+
+- **GIVEN** `space_id` is set to a known string in state
+- **AND** the package is installed in multiple spaces
+- **AND** `DeleteKibanaAssets` returns HTTP 200
+- **WHEN** destroy runs
+- **THEN** no fallback is triggered
+- **AND** `fleet.Uninstall` SHALL NOT be called as a fallback
+- **AND** no error diagnostic is returned
 
 ### Requirement: State upgrade — v0 to v1 (REQ-016–REQ-017)
 
