@@ -608,37 +608,16 @@ func readDiscoverSessionDrilldownsFromConfig0(
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	out := make([]models.DiscoverSessionPanelDrilldown, len(*api))
+	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
 	for i, d := range *api {
-		out[i].URL = types.StringValue(d.Url)
-		out[i].Label = types.StringValue(d.Label)
-		var p *models.DiscoverSessionPanelDrilldown
-		if i < len(prior) {
-			p = &prior[i]
-		}
-		if p == nil {
-			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
-			continue
-		}
-		switch {
-		case p.EncodeURL.IsNull():
-			out[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			out[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			out[i].EncodeURL = types.BoolNull()
-		}
-		switch {
-		case p.OpenInNewTab.IsNull():
-			out[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			out[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			out[i].OpenInNewTab = types.BoolNull()
+		items[i] = panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-	return out
+	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 
 func readDiscoverSessionDrilldownsFromConfig1(
@@ -655,37 +634,16 @@ func readDiscoverSessionDrilldownsFromConfig1(
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	out := make([]models.DiscoverSessionPanelDrilldown, len(*api))
+	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
 	for i, d := range *api {
-		out[i].URL = types.StringValue(d.Url)
-		out[i].Label = types.StringValue(d.Label)
-		var p *models.DiscoverSessionPanelDrilldown
-		if i < len(prior) {
-			p = &prior[i]
-		}
-		if p == nil {
-			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
-			continue
-		}
-		switch {
-		case p.EncodeURL.IsNull():
-			out[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			out[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			out[i].EncodeURL = types.BoolNull()
-		}
-		switch {
-		case p.OpenInNewTab.IsNull():
-			out[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			out[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			out[i].OpenInNewTab = types.BoolNull()
+		items[i] = panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-	return out
+	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 
 func discoverSessionMergeConfig0FromAPI(

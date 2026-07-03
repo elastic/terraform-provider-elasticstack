@@ -168,40 +168,14 @@ func readSloBurnRateDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
-		}
-
-		// Determine prior state for this drilldown (if it exists at this index).
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		// encode_url: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		// open_in_new_tab: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
+		items[i] = panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-
-	return result
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
