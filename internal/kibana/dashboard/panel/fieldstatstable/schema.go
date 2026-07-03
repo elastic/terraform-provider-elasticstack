@@ -1,0 +1,146 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package fieldstatstable
+
+import (
+	"context"
+	_ "embed"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+)
+
+const panelType = "field_stats_table"
+
+//go:embed descriptions/field_stats_table_config.md
+var fieldStatsTableConfigDescription string
+
+//go:embed descriptions/by_dataview.md
+var fieldStatsTableByDataviewDescription string
+
+//go:embed descriptions/by_esql.md
+var fieldStatsTableByEsqlDescription string
+
+var _ validator.Object = fieldStatsTableConfigModeValidator{}
+
+// fieldStatsTableConfigModeValidator ensures exactly one of by_dataview or by_esql is set.
+type fieldStatsTableConfigModeValidator struct{}
+
+func (fieldStatsTableConfigModeValidator) Description(_ context.Context) string {
+	return "Ensures exactly one of `by_dataview` or `by_esql` is set inside `field_stats_table_config`."
+}
+
+func (v fieldStatsTableConfigModeValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (fieldStatsTableConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	attrs := req.ConfigValue.Attributes()
+	byDataview := attrs["by_dataview"]
+	byEsql := attrs["by_esql"]
+	valueSet := func(av attr.Value) bool {
+		return av != nil && !av.IsNull() && !av.IsUnknown()
+	}
+	byDataviewSet := valueSet(byDataview)
+	byEsqlSet := valueSet(byEsql)
+	if byDataviewSet && byEsqlSet {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid field_stats_table_config", "Exactly one of `by_dataview` or `by_esql` must be set inside `field_stats_table_config`, not both.")
+		return
+	}
+	if !byDataviewSet && !byEsqlSet {
+		if byDataview != nil && byDataview.IsUnknown() || byEsql != nil && byEsql.IsUnknown() {
+			return
+		}
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid field_stats_table_config", "Exactly one of `by_dataview` or `by_esql` must be set inside `field_stats_table_config`.")
+	}
+}
+
+func fieldStatsTableBranchAttributes() map[string]schema.Attribute {
+	attrs := panelkit.PanelPresentationAttributes()
+	attrs["show_distributions"] = schema.BoolAttribute{
+		MarkdownDescription: "When true, shows distribution mini-charts in the field statistics table. Null-preserved on read (REQ-009).",
+		Optional:            true,
+	}
+	attrs["time_range"] = panelkit.TimeRangeSchema(
+		"Optional panel time range override (`from`, `to`, optional `mode`). Null-preserved on read: when omitted in configuration, this attribute stays null in state even if Kibana returns values (REQ-009).",
+	)
+	return attrs
+}
+
+func fieldStatsTableByDataviewAttributes() map[string]schema.Attribute {
+	attrs := fieldStatsTableBranchAttributes()
+	attrs["data_view_id"] = schema.StringAttribute{
+		MarkdownDescription: "The identifier of the source data view.",
+		Required:            true,
+		Validators: []validator.String{
+			stringvalidator.LengthAtLeast(1),
+		},
+	}
+	return attrs
+}
+
+func fieldStatsTableByEsqlAttributes() map[string]schema.Attribute {
+	attrs := fieldStatsTableBranchAttributes()
+	attrs["query"] = schema.StringAttribute{
+		MarkdownDescription: "The ES|QL query string (mapped to `query.esql` in the API).",
+		Required:            true,
+		Validators: []validator.String{
+			stringvalidator.LengthAtLeast(1),
+		},
+	}
+	return attrs
+}
+
+// SchemaAttribute returns the Terraform schema for `field_stats_table_config`.
+func SchemaAttribute() schema.Attribute {
+	return panelkit.PanelConfigBlock(panelkit.PanelConfigBlockOpts{
+		Description: fieldStatsTableConfigDescription,
+		BlockName:   "field_stats_table_config",
+		PanelType:   panelType,
+		Required:    true,
+		Attributes: map[string]schema.Attribute{
+			"by_dataview": schema.SingleNestedAttribute{
+				MarkdownDescription: fieldStatsTableByDataviewDescription,
+				Optional:            true,
+				Attributes:          fieldStatsTableByDataviewAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_esql")),
+				},
+			},
+			"by_esql": schema.SingleNestedAttribute{
+				MarkdownDescription: fieldStatsTableByEsqlDescription,
+				Optional:            true,
+				Attributes:          fieldStatsTableByEsqlAttributes(),
+				Validators: []validator.Object{
+					objectvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName("by_dataview")),
+				},
+			},
+		},
+		ExtraValidators: []validator.Object{
+			fieldStatsTableConfigModeValidator{},
+		},
+	})
+}
