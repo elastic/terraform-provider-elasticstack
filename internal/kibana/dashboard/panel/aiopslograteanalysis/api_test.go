@@ -219,6 +219,7 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	require.Equal(t, from, cfg.TimeRange.From.ValueString())
 	require.Equal(t, to, cfg.TimeRange.To.ValueString())
 	require.True(t, cfg.TimeRange.Mode.IsNull())
+}
 
 // TestToAPI_rejectsConfigJSON verifies simultaneous typed config and config_json is rejected.
 func TestToAPI_rejectsConfigJSON(t *testing.T) {

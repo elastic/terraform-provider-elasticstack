@@ -296,6 +296,7 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	require.Equal(t, from, cfg.TimeRange.From.ValueString())
 	require.Equal(t, to, cfg.TimeRange.To.ValueString())
 	require.True(t, cfg.TimeRange.Mode.IsNull())
+}
 
 func TestPopulateFromAPI_partitionsOrderInsensitive(t *testing.T) {
 	t.Parallel()
