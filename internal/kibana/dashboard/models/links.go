@@ -23,13 +23,13 @@ import (
 )
 
 const (
+	linksAttrLayout       = "layout"
+	linksAttrLinks        = "links"
+	linksAttrRefID        = "ref_id"
 	linksAttrTitle        = "title"
 	linksAttrDescription  = "description"
 	linksAttrHideTitle    = "hide_title"
 	linksAttrHideBorder   = "hide_border"
-	linksAttrLayout       = "layout"
-	linksAttrLinks        = "links"
-	linksAttrRefID        = "ref_id"
 	linksAttrType         = "type"
 	linksAttrDestination  = "destination"
 	linksAttrLabel        = "label"
@@ -40,12 +40,19 @@ const (
 )
 
 type LinksPanelConfigModel struct {
-	Title       types.String                `tfsdk:"title"`
-	Description types.String                `tfsdk:"description"`
-	HideTitle   types.Bool                  `tfsdk:"hide_title"`
-	HideBorder  types.Bool                  `tfsdk:"hide_border"`
 	ByValue     *LinksPanelByValueModel     `tfsdk:"by_value"`
 	ByReference *LinksPanelByReferenceModel `tfsdk:"by_reference"`
+}
+
+func (m LinksPanelConfigModel) AttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"by_value": types.ObjectType{
+			AttrTypes: LinksPanelByValueModel{}.AttrTypes(),
+		},
+		"by_reference": types.ObjectType{
+			AttrTypes: LinksPanelByReferenceModel{}.AttrTypes(),
+		},
+	}
 }
 
 type LinksPanelByValueModel struct {
@@ -55,39 +62,6 @@ type LinksPanelByValueModel struct {
 	HideTitle   types.Bool      `tfsdk:"hide_title"`
 	HideBorder  types.Bool      `tfsdk:"hide_border"`
 	Links       []LinkItemModel `tfsdk:"links"`
-}
-
-type LinksPanelByReferenceModel struct {
-	RefID       types.String `tfsdk:"ref_id"`
-	Title       types.String `tfsdk:"title"`
-	Description types.String `tfsdk:"description"`
-	HideTitle   types.Bool   `tfsdk:"hide_title"`
-	HideBorder  types.Bool   `tfsdk:"hide_border"`
-}
-
-type LinkItemModel struct {
-	Type         types.String `tfsdk:"type"`
-	Destination  types.String `tfsdk:"destination"`
-	Label        types.String `tfsdk:"label"`
-	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
-	UseFilters   types.Bool   `tfsdk:"use_filters"`
-	UseTimeRange types.Bool   `tfsdk:"use_time_range"`
-	EncodeURL    types.Bool   `tfsdk:"encode_url"`
-}
-
-func (m LinksPanelConfigModel) AttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		linksAttrTitle:       types.StringType,
-		linksAttrDescription: types.StringType,
-		linksAttrHideTitle:   types.BoolType,
-		linksAttrHideBorder:  types.BoolType,
-		"by_value": types.ObjectType{
-			AttrTypes: LinksPanelByValueModel{}.AttrTypes(),
-		},
-		"by_reference": types.ObjectType{
-			AttrTypes: LinksPanelByReferenceModel{}.AttrTypes(),
-		},
-	}
 }
 
 func (m LinksPanelByValueModel) AttrTypes() map[string]attr.Type {
@@ -105,6 +79,14 @@ func (m LinksPanelByValueModel) AttrTypes() map[string]attr.Type {
 	}
 }
 
+type LinksPanelByReferenceModel struct {
+	RefID       types.String `tfsdk:"ref_id"`
+	Title       types.String `tfsdk:"title"`
+	Description types.String `tfsdk:"description"`
+	HideTitle   types.Bool   `tfsdk:"hide_title"`
+	HideBorder  types.Bool   `tfsdk:"hide_border"`
+}
+
 func (m LinksPanelByReferenceModel) AttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		linksAttrRefID:       types.StringType,
@@ -113,6 +95,16 @@ func (m LinksPanelByReferenceModel) AttrTypes() map[string]attr.Type {
 		linksAttrHideTitle:   types.BoolType,
 		linksAttrHideBorder:  types.BoolType,
 	}
+}
+
+type LinkItemModel struct {
+	Type         types.String `tfsdk:"type"`
+	Destination  types.String `tfsdk:"destination"`
+	Label        types.String `tfsdk:"label"`
+	OpenInNewTab types.Bool   `tfsdk:"open_in_new_tab"`
+	UseFilters   types.Bool   `tfsdk:"use_filters"`
+	UseTimeRange types.Bool   `tfsdk:"use_time_range"`
+	EncodeURL    types.Bool   `tfsdk:"encode_url"`
 }
 
 func (m LinkItemModel) AttrTypes() map[string]attr.Type {

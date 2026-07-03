@@ -148,11 +148,7 @@ func linksConfig0FromAPIImport(cfg0 kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLin
 	}
 
 	return &models.LinksPanelConfigModel{
-		Title:       types.StringNull(),
-		Description: types.StringNull(),
-		HideTitle:   types.BoolNull(),
-		HideBorder:  types.BoolNull(),
-		ByValue:     byValue,
+		ByValue: byValue,
 	}
 }
 
@@ -166,10 +162,6 @@ func linksConfig1FromAPIImport(cfg1 kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLin
 	}
 
 	return &models.LinksPanelConfigModel{
-		Title:       types.StringNull(),
-		Description: types.StringNull(),
-		HideTitle:   types.BoolNull(),
-		HideBorder:  types.BoolNull(),
 		ByReference: byReference,
 	}
 }
@@ -205,7 +197,6 @@ func linksPanelMergeConfig0FromAPI(
 		existing.ByValue.Links[i] = linkItemFromAPI(apiItem, priorItem)
 	}
 
-	preserveEnvelopeNullIntent(existing, prior.LinksConfig)
 	return diags
 }
 
@@ -230,42 +221,31 @@ func linksPanelMergeConfig1FromAPI(
 		existing.ByReference.RefID = types.StringValue(cfg1.RefId)
 	}
 
-	preserveEnvelopeNullIntent(existing, prior.LinksConfig)
 	return diags
 }
 
-func preserveEnvelopeNullIntent(existing, prior *models.LinksPanelConfigModel) {
-	if prior == nil || existing == nil {
+func mergeDisplayString(existing *types.String, prior types.String, api *string) {
+	if !typeutils.IsKnown(prior) {
+		*existing = prior
 		return
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = prior.Title
+	if api != nil {
+		*existing = types.StringValue(*api)
+		return
 	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = prior.Description
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = prior.HideTitle
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = prior.HideBorder
-	}
-}
-
-func mergeDisplayString(existing *types.String, prior types.String, api *string) {
-	if typeutils.IsKnown(prior) {
-		*existing = types.StringPointerValue(api)
-	} else {
-		*existing = prior
-	}
+	*existing = prior
 }
 
 func mergeDisplayBool(existing *types.Bool, prior types.Bool, api *bool) {
-	if typeutils.IsKnown(prior) {
-		*existing = types.BoolPointerValue(api)
-	} else {
+	if !typeutils.IsKnown(prior) {
 		*existing = prior
+		return
 	}
+	if api != nil {
+		*existing = types.BoolValue(*api)
+		return
+	}
+	*existing = prior
 }
 
 func linkItemFromAPI(
@@ -307,10 +287,19 @@ func dashboardLinkFromAPI(
 	}
 
 	m.Label = linkStringFromAPI(prior.Label, api.Label)
+	m.OpenInNewTab = prior.OpenInNewTab
+	m.UseFilters = prior.UseFilters
+	m.UseTimeRange = prior.UseTimeRange
 	if api.Options != nil {
-		m.OpenInNewTab = linkBoolFromAPI(prior.OpenInNewTab, api.Options.OpenInNewTab)
-		m.UseFilters = linkBoolFromAPI(prior.UseFilters, api.Options.UseFilters)
-		m.UseTimeRange = linkBoolFromAPI(prior.UseTimeRange, api.Options.UseTimeRange)
+		if api.Options.OpenInNewTab != nil {
+			m.OpenInNewTab = types.BoolValue(*api.Options.OpenInNewTab)
+		}
+		if api.Options.UseFilters != nil {
+			m.UseFilters = types.BoolValue(*api.Options.UseFilters)
+		}
+		if api.Options.UseTimeRange != nil {
+			m.UseTimeRange = types.BoolValue(*api.Options.UseTimeRange)
+		}
 	}
 
 	return m
@@ -335,24 +324,23 @@ func externalLinkFromAPI(
 	}
 
 	m.Label = linkStringFromAPI(prior.Label, api.Label)
+	m.OpenInNewTab = prior.OpenInNewTab
+	m.EncodeURL = prior.EncodeURL
 	if api.Options != nil {
-		m.OpenInNewTab = linkBoolFromAPI(prior.OpenInNewTab, api.Options.OpenInNewTab)
-		m.EncodeURL = linkBoolFromAPI(prior.EncodeURL, api.Options.EncodeUrl)
+		if api.Options.OpenInNewTab != nil {
+			m.OpenInNewTab = types.BoolValue(*api.Options.OpenInNewTab)
+		}
+		if api.Options.EncodeUrl != nil {
+			m.EncodeURL = types.BoolValue(*api.Options.EncodeUrl)
+		}
 	}
 
 	return m
 }
 
 func linkStringFromAPI(prior types.String, api *string) types.String {
-	if typeutils.IsKnown(prior) {
-		return types.StringPointerValue(api)
-	}
-	return prior
-}
-
-func linkBoolFromAPI(prior types.Bool, api *bool) types.Bool {
-	if typeutils.IsKnown(prior) {
-		return types.BoolPointerValue(api)
+	if api != nil {
+		return types.StringValue(*api)
 	}
 	return prior
 }

@@ -81,10 +81,6 @@ func newByReferenceObject(refID string) types.Object {
 
 func newLinksConfigObject(byValue, byReference attr.Value) types.Object {
 	return types.ObjectValueMust(linksConfigAttrTypes(), map[string]attr.Value{
-		"title":        types.StringNull(),
-		"description":  types.StringNull(),
-		"hide_title":   types.BoolNull(),
-		"hide_border":  types.BoolNull(),
 		"by_value":     byValue,
 		"by_reference": byReference,
 	})

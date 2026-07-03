@@ -226,7 +226,6 @@ func TestLinksByValueNullPreservation(t *testing.T) {
 	require.False(t, diags.HasError(), "%s", diags)
 
 	require.NotNil(t, pm.LinksConfig.ByValue)
-	assert.True(t, pm.LinksConfig.Title.IsNull())
 	assert.True(t, pm.LinksConfig.ByValue.Title.IsNull())
 	assert.True(t, pm.LinksConfig.ByValue.HideBorder.IsNull())
 	assert.True(t, pm.LinksConfig.ByValue.Description.Equal(types.StringValue("API description")))
