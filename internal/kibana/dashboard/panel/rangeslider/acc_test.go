@@ -53,15 +53,15 @@ func TestAccResourceDashboardRangeSliderControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "24"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "4"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.data_view_id", "test-data-view-id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.field_name", "bytes"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.title", "Bytes Range"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.use_global_filters", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.ignore_validations", "false"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value.0", "100"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value.1", "500"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.step", "10"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.data_view_id", "test-data-view-id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.field_name", "bytes"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.title", "Bytes Range"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.use_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.ignore_validations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.value.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.value.0", "100"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.value.1", "500"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.step", "10"),
 				),
 			},
 			// Refresh/plan: ensure no perpetual drift
@@ -94,11 +94,67 @@ func TestAccResourceDashboardRangeSliderControl(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "range_slider_control"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.data_view_id", "test-data-view-id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.field_name", "bytes"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.title"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.value"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.data_view_id", "test-data-view-id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.field_name", "bytes"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.title"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field.value"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardRangeSliderControlByEsql(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Range Slider Control ByEsql " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	// The by_esql branch only exists on Kibana servers that register range_slider_control's config
+	// as a values_source-discriminated union. See dashboardacctest.MinControlByFieldEsqlUnionSupport.
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinControlByFieldEsqlUnionSupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with by_esql config
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "range_slider_control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_esql.esql_query", "FROM logs-* | STATS min = MIN(bytes), max = MAX(bytes)"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_esql.values_source", "esql_query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_esql.title", "Bytes Range"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_esql.use_global_filters", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_esql.ignore_validations", "false"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_esql.step", "10"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.range_slider_control_config.by_field"),
+				),
+			},
+			// Refresh/plan: ensure no perpetual drift
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			// Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -126,7 +182,7 @@ func TestAccResourceDashboardRangeSliderControlInvalidConfig(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable("unused"),
 				},
-				ExpectError: regexp.MustCompile(`(?s)value.*list must contain at[\s]+least 2 elements`),
+				ExpectError: regexp.MustCompile(`(?s)value\s+list\s+must\s+contain\s+at\s+least\s+2\s+elements`),
 			},
 			// range_slider_control_config is required when type = "range_slider_control"; omitting it must be rejected.
 			{

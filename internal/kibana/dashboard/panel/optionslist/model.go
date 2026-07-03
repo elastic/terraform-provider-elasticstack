@@ -22,206 +22,385 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// PopulateFromAPI reads back an options list control config from the API
-// response and updates the panel model. Null-preservation semantics apply: if a field is
-// null in the existing TF state (pm.OptionsListControlConfig), we do not overwrite it with
-// a Kibana-returned value. If there is no existing config block, and Kibana returns an
-// empty/absent config, we leave OptionsListControlConfig as nil.
+// displaySettingsAPI mirrors the identical anonymous display_settings struct shape shared by both
+// the Field and ES|QL options list control API schemas (same field names, types, and JSON tags),
+// letting both branches reuse the same conversion helpers.
+type displaySettingsAPI = struct {
+	HideActionBar *bool   `json:"hide_action_bar,omitempty"`
+	HideExclude   *bool   `json:"hide_exclude,omitempty"`
+	HideExists    *bool   `json:"hide_exists,omitempty"`
+	HideSort      *bool   `json:"hide_sort,omitempty"`
+	Placeholder   *string `json:"placeholder,omitempty"`
+}
+
+// PopulateFromAPI reads back an options list control config from the API response and updates the
+// panel model. The control config is a discriminated union (Field vs ES|QL branch); the branch is
+// detected by inspecting the raw API JSON for the `esql_query` key, which is only present on the
+// ES|QL branch. Null-preservation semantics (REQ-009) apply to optional booleans within both
+// branches: if a field is null in the existing TF state, it is not overwritten with a
+// Kibana-returned value.
 //
 // tfPanel is the prior TF state/plan panel, or nil on import.
 func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	if ol == nil {
 		return nil
 	}
-	// The control config is a discriminated union (field-based vs ES|QL).
-	// The TF model only describes the field-based variant; a valid ES|QL config
-	// is left unchanged. If the config matches neither variant it is malformed
-	// and surfaced as an error.
-	apiConfig, err := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField()
+
+	var diags diag.Diagnostics
+	raw, err := ol.Config.MarshalJSON()
 	if err != nil {
-		if _, esqlErr := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(); esqlErr != nil {
-			var diags diag.Diagnostics
+		diags.AddError("Failed to decode options list control config", err.Error())
+		return diags
+	}
+
+	if panelkit.IsEsqlBranch(raw) {
+		apiConfig, err := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql()
+		if err != nil {
 			diags.AddError("Failed to decode options list control config", err.Error())
 			return diags
 		}
-		return nil
+		return populateEsqlFromAPI(pm, tfPanel, apiConfig)
 	}
-	existing := pm.OptionsListControlConfig
+
+	apiConfig, err := ol.Config.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField()
+	if err != nil {
+		diags.AddError("Failed to decode options list control config", err.Error())
+		return diags
+	}
+	return populateFieldFromAPI(pm, tfPanel, apiConfig)
+}
+
+// preserveKnownBool updates existing from api only when existing is already known (REQ-009
+// null-preservation); an api value of nil, or existing being null/unknown, leaves existing
+// unchanged.
+func preserveKnownBool(existing types.Bool, api *bool) types.Bool {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.BoolValue(*api)
+	}
+	return existing
+}
+
+// preserveKnownString is the string equivalent of preserveKnownBool.
+func preserveKnownString(existing types.String, api *string) types.String {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.StringValue(*api)
+	}
+	return existing
+}
+
+// populateFieldFromAPI populates pm.OptionsListControlConfig.ByField from a Field-branch API
+// response, applying the same null-preservation semantics as the pre-union implementation.
+func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField) diag.Diagnostics {
+	var existing *models.OptionsListControlByFieldModel
+	if pm.OptionsListControlConfig != nil {
+		existing = pm.OptionsListControlConfig.ByField
+	}
 
 	if tfPanel == nil {
-		// On import: populate from API. Required fields are always set; optional fields are
-		// set only if present in the API response. Fields that Kibana returns as server-side
-		// defaults (e.g. use_global_filters, exclude, sort) are treated as optional and left
-		// null when absent from the user's configuration — matching the null-preservation
-		// behaviour used during normal apply reads.
+		// Import: required fields and user-configurable optional fields are populated; optional
+		// booleans and sort are left null since Kibana returns server-side defaults for them that
+		// would otherwise cause post-import drift.
 		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{
-			DataViewID:      types.StringValue(apiConfig.DataViewId),
-			FieldName:       types.StringValue(apiConfig.FieldName),
-			SelectedOptions: types.ListNull(types.StringType),
-		}
-		existing = pm.OptionsListControlConfig
-		if apiConfig.Title != nil {
-			existing.Title = types.StringValue(*apiConfig.Title)
-		}
-		if apiConfig.SingleSelect != nil {
-			existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-		}
-		if apiConfig.SearchTechnique != nil {
-			existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
-		}
-		if apiConfig.SelectedOptions != nil {
-			existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
-		}
-		if apiConfig.DisplaySettings != nil {
-			existing.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
+			ByField: newOptionsListFieldFromRequiredAndPresent(apiConfig),
 		}
 		return nil
 	}
 
 	if existing == nil {
-		if tfPanel == nil || tfPanel.OptionsListControlConfig == nil {
+		if tfPanel.OptionsListControlConfig == nil {
+			// No prior intent to have this control configured at all; preserve nil.
 			return nil
 		}
-		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{
-			DataViewID:      types.StringValue(apiConfig.DataViewId),
-			FieldName:       types.StringValue(apiConfig.FieldName),
-			SelectedOptions: types.ListNull(types.StringType),
-		}
-		existing = pm.OptionsListControlConfig
-		if apiConfig.Title != nil {
-			existing.Title = types.StringValue(*apiConfig.Title)
-		}
-		if apiConfig.SingleSelect != nil {
-			existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-		}
-		if apiConfig.SearchTechnique != nil {
-			existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
-		}
-		if apiConfig.SelectedOptions != nil {
-			existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
-		}
-		if apiConfig.DisplaySettings != nil {
-			existing.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
-		}
+		// Either there was no prior by_field state, or the remote control switched branches
+		// out-of-band (e.g. from by_esql to by_field); build a fresh by_field branch from the
+		// API response so state reflects the actual remote configuration instead of silently
+		// keeping a stale by_esql (or empty) block.
+		existing = newOptionsListFieldFromRequiredAndPresent(apiConfig)
+		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{ByField: existing}
 	}
 
 	// Block exists in state — update required fields unconditionally, optional fields only when known.
 	existing.DataViewID = types.StringValue(apiConfig.DataViewId)
 	existing.FieldName = types.StringValue(apiConfig.FieldName)
 
-	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
-	}
-	if typeutils.IsKnown(existing.UseGlobalFilters) && apiConfig.UseGlobalFilters != nil {
-		existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-	}
-	if typeutils.IsKnown(existing.IgnoreValidations) && apiConfig.IgnoreValidations != nil {
-		existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-	}
-	if typeutils.IsKnown(existing.SingleSelect) && apiConfig.SingleSelect != nil {
-		existing.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
-	}
-	if typeutils.IsKnown(existing.Exclude) && apiConfig.Exclude != nil {
-		existing.Exclude = types.BoolValue(*apiConfig.Exclude)
-	}
-	if typeutils.IsKnown(existing.ExistsSelected) && apiConfig.ExistsSelected != nil {
-		existing.ExistsSelected = types.BoolValue(*apiConfig.ExistsSelected)
-	}
-	if typeutils.IsKnown(existing.RunPastTimeout) && apiConfig.RunPastTimeout != nil {
-		existing.RunPastTimeout = types.BoolValue(*apiConfig.RunPastTimeout)
-	}
+	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
+	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
+	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
+	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
+	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
+	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
+	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
 	if !existing.SelectedOptions.IsNull() && !existing.SelectedOptions.IsUnknown() && apiConfig.SelectedOptions != nil {
-		existing.SelectedOptions = selectedOptionsToList(*apiConfig.SelectedOptions)
+		existing.SelectedOptions = selectedOptionsFieldToList(*apiConfig.SelectedOptions)
 	}
 
-	// Display settings: nil or empty API response => treat as omitted block.
 	if existing.DisplaySettings != nil && apiConfig.DisplaySettings != nil {
-		ds := existing.DisplaySettings
-		api := apiConfig.DisplaySettings
-		if typeutils.IsKnown(ds.Placeholder) && api.Placeholder != nil {
-			ds.Placeholder = types.StringValue(*api.Placeholder)
-		}
-		if typeutils.IsKnown(ds.HideActionBar) && api.HideActionBar != nil {
-			ds.HideActionBar = types.BoolValue(*api.HideActionBar)
-		}
-		if typeutils.IsKnown(ds.HideExclude) && api.HideExclude != nil {
-			ds.HideExclude = types.BoolValue(*api.HideExclude)
-		}
-		if typeutils.IsKnown(ds.HideExists) && api.HideExists != nil {
-			ds.HideExists = types.BoolValue(*api.HideExists)
-		}
-		if typeutils.IsKnown(ds.HideSort) && api.HideSort != nil {
-			ds.HideSort = types.BoolValue(*api.HideSort)
-		}
+		updateDisplaySettingsFromAPI(existing.DisplaySettings, apiConfig.DisplaySettings)
 	}
 
-	// Sort: update only when both state and API have a sort block.
 	if existing.Sort != nil && apiConfig.Sort != nil {
 		existing.Sort.By = types.StringValue(string(apiConfig.Sort.By))
 		existing.Sort.Direction = types.StringValue(string(apiConfig.Sort.Direction))
 	}
 
-	if tfPanel != nil && tfPanel.OptionsListControlConfig != nil {
-		optionsListPreserveNullIntentFromPrior(tfPanel.OptionsListControlConfig, existing)
+	if tfPanel.OptionsListControlConfig != nil {
+		preserveOptionsListFieldNullIntentFromPrior(tfPanel.OptionsListControlConfig.ByField, existing)
 	}
 	return nil
 }
 
-func optionsListPreserveNullIntentFromPrior(prior, existing *models.OptionsListControlConfigModel) {
-	if prior == nil || existing == nil {
-		return
+// populateEsqlFromAPI populates pm.OptionsListControlConfig.ByEsql from an ES|QL-branch API
+// response, mirroring the null-preservation semantics used for the Field branch (REQ-009 /D5).
+func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql) diag.Diagnostics {
+	var existing *models.OptionsListControlByEsqlModel
+	if pm.OptionsListControlConfig != nil {
+		existing = pm.OptionsListControlConfig.ByEsql
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
+
+	if tfPanel == nil {
+		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{
+			ByEsql: newOptionsListEsqlFromRequiredAndPresent(apiConfig),
+		}
+		return nil
 	}
-	if !typeutils.IsKnown(prior.UseGlobalFilters) {
-		existing.UseGlobalFilters = types.BoolNull()
+
+	if existing == nil {
+		if tfPanel.OptionsListControlConfig == nil {
+			// No prior intent to have this control configured at all; preserve nil.
+			return nil
+		}
+		// Either there was no prior by_esql state, or the remote control switched branches
+		// out-of-band (e.g. from by_field to by_esql); build a fresh by_esql branch from the
+		// API response so state reflects the actual remote configuration instead of silently
+		// keeping a stale by_field (or empty) block.
+		existing = newOptionsListEsqlFromRequiredAndPresent(apiConfig)
+		pm.OptionsListControlConfig = &models.OptionsListControlConfigModel{ByEsql: existing}
 	}
-	if !typeutils.IsKnown(prior.IgnoreValidations) {
-		existing.IgnoreValidations = types.BoolNull()
+
+	// Block exists in state — update required fields unconditionally, optional fields only when known.
+	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
+	existing.ValuesSource = types.StringValue(panelkit.EsqlValuesSourceUserValue)
+
+	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
+	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
+	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
+	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
+	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
+	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
+	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
+	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
+		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
-	if !typeutils.IsKnown(prior.SingleSelect) {
-		existing.SingleSelect = types.BoolNull()
+	if !existing.SelectedOptions.IsNull() && !existing.SelectedOptions.IsUnknown() && apiConfig.SelectedOptions != nil {
+		existing.SelectedOptions = selectedOptionsEsqlToList(*apiConfig.SelectedOptions)
 	}
-	if !typeutils.IsKnown(prior.Exclude) {
-		existing.Exclude = types.BoolNull()
+
+	if existing.DisplaySettings != nil && apiConfig.DisplaySettings != nil {
+		updateDisplaySettingsFromAPI(existing.DisplaySettings, apiConfig.DisplaySettings)
 	}
-	if !typeutils.IsKnown(prior.ExistsSelected) {
-		existing.ExistsSelected = types.BoolNull()
+
+	if existing.Sort != nil && apiConfig.Sort != nil {
+		existing.Sort.By = types.StringValue(string(apiConfig.Sort.By))
+		existing.Sort.Direction = types.StringValue(string(apiConfig.Sort.Direction))
 	}
-	if !typeutils.IsKnown(prior.RunPastTimeout) {
-		existing.RunPastTimeout = types.BoolNull()
+
+	if tfPanel.OptionsListControlConfig != nil {
+		preserveOptionsListEsqlNullIntentFromPrior(tfPanel.OptionsListControlConfig.ByEsql, existing)
 	}
-	if !typeutils.IsKnown(prior.SearchTechnique) {
-		existing.SearchTechnique = types.StringNull()
+	return nil
+}
+
+// newOptionsListFieldFromRequiredAndPresent builds a fresh by_field model populating required
+// fields unconditionally and optional user-configurable fields (title, single_select,
+// search_technique, selected_options, display_settings) only when present in the API response.
+// Optional booleans and sort are intentionally left null (see populateFieldFromAPI).
+func newOptionsListFieldFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField) *models.OptionsListControlByFieldModel {
+	m := &models.OptionsListControlByFieldModel{
+		DataViewID:      types.StringValue(apiConfig.DataViewId),
+		FieldName:       types.StringValue(apiConfig.FieldName),
+		SelectedOptions: types.ListNull(types.StringType),
 	}
-	if !typeutils.IsKnown(prior.SelectedOptions) {
-		existing.SelectedOptions = types.ListNull(types.StringType)
+	if apiConfig.Title != nil {
+		m.Title = types.StringValue(*apiConfig.Title)
 	}
-	if prior.DisplaySettings == nil {
-		existing.DisplaySettings = nil
+	if apiConfig.SingleSelect != nil {
+		m.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
 	}
-	if prior.Sort == nil {
-		existing.Sort = nil
+	if apiConfig.SearchTechnique != nil {
+		m.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
+	}
+	if apiConfig.SelectedOptions != nil {
+		m.SelectedOptions = selectedOptionsFieldToList(*apiConfig.SelectedOptions)
+	}
+	if apiConfig.DisplaySettings != nil {
+		m.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
+	}
+	return m
+}
+
+// newOptionsListEsqlFromRequiredAndPresent is the ES|QL-branch analog of
+// newOptionsListFieldFromRequiredAndPresent.
+func newOptionsListEsqlFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql) *models.OptionsListControlByEsqlModel {
+	m := &models.OptionsListControlByEsqlModel{
+		EsqlQuery: types.StringValue(apiConfig.EsqlQuery),
+		// The wire enum only ever legally carries "esql" (see
+		// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql).
+		// The Terraform-facing attribute always reads back as panelkit.EsqlValuesSourceUserValue.
+		ValuesSource:    types.StringValue(panelkit.EsqlValuesSourceUserValue),
+		SelectedOptions: types.ListNull(types.StringType),
+	}
+	if apiConfig.Title != nil {
+		m.Title = types.StringValue(*apiConfig.Title)
+	}
+	if apiConfig.SingleSelect != nil {
+		m.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
+	}
+	if apiConfig.SearchTechnique != nil {
+		m.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
+	}
+	if apiConfig.SelectedOptions != nil {
+		m.SelectedOptions = selectedOptionsEsqlToList(*apiConfig.SelectedOptions)
+	}
+	if apiConfig.DisplaySettings != nil {
+		m.DisplaySettings = displaySettingsFromAPI(apiConfig.DisplaySettings)
+	}
+	return m
+}
+
+// optionsListNullIntentFields points at the by_field/by_esql model attributes subject to
+// REQ-009 null-preservation, letting preserveOptionsListFieldNullIntentFromPrior and
+// preserveOptionsListEsqlNullIntentFromPrior share one implementation despite operating on the two
+// distinct branch model types (both use identical Go types for every field below).
+type optionsListNullIntentFields struct {
+	Title             *types.String
+	UseGlobalFilters  *types.Bool
+	IgnoreValidations *types.Bool
+	SingleSelect      *types.Bool
+	Exclude           *types.Bool
+	ExistsSelected    *types.Bool
+	RunPastTimeout    *types.Bool
+	SearchTechnique   *types.String
+	SelectedOptions   *types.List
+	DisplaySettings   **models.OptionsListControlDisplaySettingsModel
+	Sort              **models.OptionsListControlSortModel
+}
+
+// preserveOptionsListNullIntentFromPrior resets each field on existing to null/nil when the
+// corresponding prior field was null/nil, so fields never explicitly configured by the user stay
+// null instead of drifting to a Kibana-returned value.
+func preserveOptionsListNullIntentFromPrior(prior, existing optionsListNullIntentFields) {
+	if !typeutils.IsKnown(*prior.Title) {
+		*existing.Title = types.StringNull()
+	}
+	if !typeutils.IsKnown(*prior.UseGlobalFilters) {
+		*existing.UseGlobalFilters = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.IgnoreValidations) {
+		*existing.IgnoreValidations = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.SingleSelect) {
+		*existing.SingleSelect = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.Exclude) {
+		*existing.Exclude = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.ExistsSelected) {
+		*existing.ExistsSelected = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.RunPastTimeout) {
+		*existing.RunPastTimeout = types.BoolNull()
+	}
+	if !typeutils.IsKnown(*prior.SearchTechnique) {
+		*existing.SearchTechnique = types.StringNull()
+	}
+	if !typeutils.IsKnown(*prior.SelectedOptions) {
+		*existing.SelectedOptions = types.ListNull(types.StringType)
+	}
+	if *prior.DisplaySettings == nil {
+		*existing.DisplaySettings = nil
+	}
+	if *prior.Sort == nil {
+		*existing.Sort = nil
 	}
 }
 
-// BuildConfig writes TF model fields into the API panel payload.
+func preserveOptionsListFieldNullIntentFromPrior(prior, existing *models.OptionsListControlByFieldModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	preserveOptionsListNullIntentFromPrior(
+		optionsListNullIntentFields{
+			&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.SingleSelect,
+			&prior.Exclude, &prior.ExistsSelected, &prior.RunPastTimeout, &prior.SearchTechnique,
+			&prior.SelectedOptions, &prior.DisplaySettings, &prior.Sort,
+		},
+		optionsListNullIntentFields{
+			&existing.Title, &existing.UseGlobalFilters, &existing.IgnoreValidations, &existing.SingleSelect,
+			&existing.Exclude, &existing.ExistsSelected, &existing.RunPastTimeout, &existing.SearchTechnique,
+			&existing.SelectedOptions, &existing.DisplaySettings, &existing.Sort,
+		},
+	)
+}
+
+func preserveOptionsListEsqlNullIntentFromPrior(prior, existing *models.OptionsListControlByEsqlModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	preserveOptionsListNullIntentFromPrior(
+		optionsListNullIntentFields{
+			&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.SingleSelect,
+			&prior.Exclude, &prior.ExistsSelected, &prior.RunPastTimeout, &prior.SearchTechnique,
+			&prior.SelectedOptions, &prior.DisplaySettings, &prior.Sort,
+		},
+		optionsListNullIntentFields{
+			&existing.Title, &existing.UseGlobalFilters, &existing.IgnoreValidations, &existing.SingleSelect,
+			&existing.Exclude, &existing.ExistsSelected, &existing.RunPastTimeout, &existing.SearchTechnique,
+			&existing.SelectedOptions, &existing.DisplaySettings, &existing.Sort,
+		},
+	)
+}
+
+// BuildConfig writes TF model fields into the API panel payload, dispatching to the by_field or
+// by_esql branch builder depending on which is set on the model (exactly one is guaranteed by the
+// schema-level ExactlyOneOf validator).
 func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	cfg := pm.OptionsListControlConfig
 	if cfg == nil {
 		return nil
 	}
 
+	switch {
+	case cfg.ByField != nil:
+		return buildFieldConfig(cfg.ByField, olPanel)
+	case cfg.ByEsql != nil:
+		return buildEsqlConfig(cfg.ByEsql, olPanel)
+	default:
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Invalid options_list_control_config",
+			"Exactly one of `by_field` or `by_esql` must be set inside `options_list_control_config`.",
+		)
+		return diags
+	}
+}
+
+// buildFieldConfig writes the by_field branch into the API payload. values_source is not exposed as
+// a user-facing attribute for this branch, and is deliberately left unset on the wire: Kibana treats
+// it as "field" when absent (its default for legacy controls, per design D2), and Kibana versions
+// below the values_source-discriminated-union schema (see
+// dashboardacctest.MinControlByFieldEsqlUnionSupport) reject the property entirely if present.
+// Omitting it keeps by_field writes compatible with every Kibana version this resource supports.
+func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField
 	c.DataViewId = cfg.DataViewID.ValueString()
 	c.FieldName = cfg.FieldName.ValueString()
@@ -252,42 +431,10 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 		c.SearchTechnique = &st
 	}
 	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
-		elems := cfg.SelectedOptions.Elements()
-		items := make([]kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item, 0, len(elems))
-		for _, e := range elems {
-			s := e.(types.String).ValueString()
-			var item kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item
-			if err := item.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSelectedOptions0(s); err == nil {
-				items = append(items, item)
-			}
-		}
-		c.SelectedOptions = &items
+		c.SelectedOptions = buildSelectedOptionsField(cfg.SelectedOptions)
 	}
 	if cfg.DisplaySettings != nil {
-		ds := cfg.DisplaySettings
-		apiDS := &struct {
-			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-			HideExclude   *bool   `json:"hide_exclude,omitempty"`
-			HideExists    *bool   `json:"hide_exists,omitempty"`
-			HideSort      *bool   `json:"hide_sort,omitempty"`
-			Placeholder   *string `json:"placeholder,omitempty"`
-		}{}
-		if typeutils.IsKnown(ds.Placeholder) {
-			apiDS.Placeholder = ds.Placeholder.ValueStringPointer()
-		}
-		if typeutils.IsKnown(ds.HideActionBar) {
-			apiDS.HideActionBar = ds.HideActionBar.ValueBoolPointer()
-		}
-		if typeutils.IsKnown(ds.HideExclude) {
-			apiDS.HideExclude = ds.HideExclude.ValueBoolPointer()
-		}
-		if typeutils.IsKnown(ds.HideExists) {
-			apiDS.HideExists = ds.HideExists.ValueBoolPointer()
-		}
-		if typeutils.IsKnown(ds.HideSort) {
-			apiDS.HideSort = ds.HideSort.ValueBoolPointer()
-		}
-		c.DisplaySettings = apiDS
+		c.DisplaySettings = buildDisplaySettingsAPI(cfg.DisplaySettings)
 	}
 	if cfg.Sort != nil {
 		c.Sort = &struct {
@@ -306,7 +453,64 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	return nil
 }
 
-func selectedOptionsToList(items []kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item) types.List {
+// buildEsqlConfig writes the by_esql branch into the API payload. values_source is schema-validated
+// to be panelkit.EsqlValuesSourceUserValue ("esql_query") but the wire enum's only legal value is "esql" (see
+// kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql), so the
+// wire constant is always sent regardless of the model value.
+func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
+	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql
+	c.EsqlQuery = cfg.EsqlQuery.ValueString()
+	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql
+
+	if typeutils.IsKnown(cfg.Title) {
+		c.Title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.UseGlobalFilters) {
+		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.IgnoreValidations) {
+		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.SingleSelect) {
+		c.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.Exclude) {
+		c.Exclude = cfg.Exclude.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.ExistsSelected) {
+		c.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.RunPastTimeout) {
+		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.SearchTechnique) {
+		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique(cfg.SearchTechnique.ValueString())
+		c.SearchTechnique = &st
+	}
+	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
+		c.SelectedOptions = buildSelectedOptionsEsql(cfg.SelectedOptions)
+	}
+	if cfg.DisplaySettings != nil {
+		c.DisplaySettings = buildDisplaySettingsAPI(cfg.DisplaySettings)
+	}
+	if cfg.Sort != nil {
+		c.Sort = &struct {
+			By        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortBy        `json:"by"`
+			Direction kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortDirection `json:"direction"`
+		}{
+			By:        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortBy(cfg.Sort.By.ValueString()),
+			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortDirection(cfg.Sort.Direction.ValueString()),
+		}
+	}
+	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(c); err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build options list control config", err.Error())
+		return diags
+	}
+	return nil
+}
+
+func selectedOptionsFieldToList(items []kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item) types.List {
 	values := make([]attr.Value, 0, len(items))
 	for _, item := range items {
 		if s, err := item.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSelectedOptions0(); err == nil {
@@ -320,13 +524,47 @@ func selectedOptionsToList(items []kbapi.KibanaHTTPAPIsKbnControlsSchemasOptions
 	return types.ListValueMust(types.StringType, values)
 }
 
-func displaySettingsFromAPI(api *struct {
-	HideActionBar *bool   `json:"hide_action_bar,omitempty"`
-	HideExclude   *bool   `json:"hide_exclude,omitempty"`
-	HideExists    *bool   `json:"hide_exists,omitempty"`
-	HideSort      *bool   `json:"hide_sort,omitempty"`
-	Placeholder   *string `json:"placeholder,omitempty"`
-}) *models.OptionsListControlDisplaySettingsModel {
+func selectedOptionsEsqlToList(items []kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql_SelectedOptions_Item) types.List {
+	values := make([]attr.Value, 0, len(items))
+	for _, item := range items {
+		if s, err := item.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSelectedOptions0(); err == nil {
+			values = append(values, types.StringValue(s))
+			continue
+		}
+		if n, err := item.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSelectedOptions1(); err == nil {
+			values = append(values, types.StringValue(strconv.FormatFloat(float64(n), 'f', -1, 32)))
+		}
+	}
+	return types.ListValueMust(types.StringType, values)
+}
+
+func buildSelectedOptionsField(list types.List) *[]kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item {
+	elems := list.Elements()
+	items := make([]kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item, 0, len(elems))
+	for _, e := range elems {
+		s := e.(types.String).ValueString()
+		var item kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SelectedOptions_Item
+		if err := item.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSelectedOptions0(s); err == nil {
+			items = append(items, item)
+		}
+	}
+	return &items
+}
+
+func buildSelectedOptionsEsql(list types.List) *[]kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql_SelectedOptions_Item {
+	elems := list.Elements()
+	items := make([]kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql_SelectedOptions_Item, 0, len(elems))
+	for _, e := range elems {
+		s := e.(types.String).ValueString()
+		var item kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql_SelectedOptions_Item
+		if err := item.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSelectedOptions0(s); err == nil {
+			items = append(items, item)
+		}
+	}
+	return &items
+}
+
+func displaySettingsFromAPI(api *displaySettingsAPI) *models.OptionsListControlDisplaySettingsModel {
 	if api == nil {
 		return nil
 	}
@@ -347,4 +585,45 @@ func displaySettingsFromAPI(api *struct {
 		ds.HideSort = types.BoolValue(*api.HideSort)
 	}
 	return ds
+}
+
+func updateDisplaySettingsFromAPI(ds *models.OptionsListControlDisplaySettingsModel, api *displaySettingsAPI) {
+	if ds == nil || api == nil {
+		return
+	}
+	if typeutils.IsKnown(ds.Placeholder) && api.Placeholder != nil {
+		ds.Placeholder = types.StringValue(*api.Placeholder)
+	}
+	if typeutils.IsKnown(ds.HideActionBar) && api.HideActionBar != nil {
+		ds.HideActionBar = types.BoolValue(*api.HideActionBar)
+	}
+	if typeutils.IsKnown(ds.HideExclude) && api.HideExclude != nil {
+		ds.HideExclude = types.BoolValue(*api.HideExclude)
+	}
+	if typeutils.IsKnown(ds.HideExists) && api.HideExists != nil {
+		ds.HideExists = types.BoolValue(*api.HideExists)
+	}
+	if typeutils.IsKnown(ds.HideSort) && api.HideSort != nil {
+		ds.HideSort = types.BoolValue(*api.HideSort)
+	}
+}
+
+func buildDisplaySettingsAPI(ds *models.OptionsListControlDisplaySettingsModel) *displaySettingsAPI {
+	apiDS := &displaySettingsAPI{}
+	if typeutils.IsKnown(ds.Placeholder) {
+		apiDS.Placeholder = ds.Placeholder.ValueStringPointer()
+	}
+	if typeutils.IsKnown(ds.HideActionBar) {
+		apiDS.HideActionBar = ds.HideActionBar.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(ds.HideExclude) {
+		apiDS.HideExclude = ds.HideExclude.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(ds.HideExists) {
+		apiDS.HideExists = ds.HideExists.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(ds.HideSort) {
+		apiDS.HideSort = ds.HideSort.ValueBoolPointer()
+	}
+	return apiDS
 }

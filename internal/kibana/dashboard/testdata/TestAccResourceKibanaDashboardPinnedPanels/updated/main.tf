@@ -32,26 +32,30 @@ resource "elasticstack_kibana_dashboard" "test" {
     {
       type = "options_list_control"
       options_list_control_config = {
-        data_view_id     = elasticstack_kibana_data_view.test.data_view.id
-        field_name       = "host.name"
-        search_technique = "wildcard"
-        single_select    = false
-        display_settings = {
-          placeholder = "Pick a host..."
-          hide_sort   = false
+        by_field = {
+          data_view_id     = elasticstack_kibana_data_view.test.data_view.id
+          field_name       = "host.name"
+          search_technique = "wildcard"
+          single_select    = false
+          display_settings = {
+            placeholder = "Pick a host..."
+            hide_sort   = false
+          }
         }
       }
     },
     {
       type = "range_slider_control"
       range_slider_control_config = {
-        data_view_id       = elasticstack_kibana_data_view.test.data_view.id
-        field_name         = "source.bytes"
-        title              = "Bytes Range Updated"
-        use_global_filters = false
-        ignore_validations = true
-        value              = ["50", "400"]
-        step               = 5
+        by_field = {
+          data_view_id       = elasticstack_kibana_data_view.test.data_view.id
+          field_name         = "source.bytes"
+          title              = "Bytes Range Updated"
+          use_global_filters = false
+          ignore_validations = true
+          value              = ["50", "400"]
+          step               = 5
+        }
       }
     },
   ]

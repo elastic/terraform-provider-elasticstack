@@ -25,6 +25,7 @@ import (
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/indexprivilege"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -81,9 +82,9 @@ type FieldSecurityData struct {
 }
 
 // toAPIModel converts the Terraform model to the API model
-func (data *Data) toAPIModel(ctx context.Context) (*estypes.Role, diag.Diagnostics) {
+func (data *Data) toAPIModel(ctx context.Context) (*elasticsearch.Role, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var role estypes.Role
+	var role elasticsearch.Role
 
 	// Description
 	if typeutils.IsKnown(data.Description) {
@@ -119,12 +120,13 @@ func (data *Data) toAPIModel(ctx context.Context) (*estypes.Role, diag.Diagnosti
 
 	// Global
 	if typeutils.IsKnown(data.Global) {
-		var global map[string]map[string]map[string][]string
-		if err := json.Unmarshal([]byte(data.Global.ValueString()), &global); err != nil {
+		raw := []byte(data.Global.ValueString())
+		var probe any
+		if err := json.Unmarshal(raw, &probe); err != nil {
 			diags.AddError("Invalid JSON", fmt.Sprintf("Error parsing global JSON: %s", err))
 			return nil, diags
 		}
-		role.Global = global
+		role.Global = raw
 	}
 
 	// Cluster
@@ -287,8 +289,8 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*estypes.F
 	return &fieldSecurity, diags
 }
 
-// fromAPIModel converts the API model to the Terraform model
-func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Diagnostics {
+// fromAPIModel converts the API model to the Terraform model.
+func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 	// Preserve original null values for optional attributes to distinguish between:
 	// - User doesn't set attribute (null) - should remain null even if API returns empty array
@@ -363,13 +365,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *estypes.Role) diag.Dia
 	}
 
 	// Global
-	if role.Global != nil {
-		global, err := json.Marshal(role.Global)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
-			return diags
-		}
-		data.Global = customtypes.NewJSONWithDefaultsValue(string(global), populateGlobalPrivilegesDefaults)
+	if len(role.Global) > 0 {
+		data.Global = customtypes.NewJSONWithDefaultsValue(string(role.Global), populateGlobalPrivilegesDefaults)
 	} else {
 		data.Global = customtypes.NewJSONWithDefaultsNull(populateGlobalPrivilegesDefaults)
 	}

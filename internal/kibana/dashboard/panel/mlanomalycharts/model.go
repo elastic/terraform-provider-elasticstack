@@ -44,18 +44,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	}
 
 	apiConfig.MaxSeriesToPlot = typeutils.Int64ToFloat32Ptr(cfg.MaxSeriesToPlot)
-	if typeutils.IsKnown(cfg.Title) {
-		apiConfig.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		apiConfig.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		apiConfig.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		apiConfig.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&apiConfig.Title, &apiConfig.Description, &apiConfig.HideTitle, &apiConfig.HideBorder)
 	if cfg.TimeRange != nil {
 		apiConfig.TimeRange = lenscommon.TimeRangeModelToAPI(cfg.TimeRange)
 	}
@@ -122,10 +112,8 @@ func mlAnomalyChartsMergeOptionalFromAPI(
 	existing, prior *models.MlAnomalyChartsConfigModel,
 	apiConfig kbapi.KibanaHTTPAPIsMlAnomalyCharts,
 ) diag.Diagnostics {
-	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
 	existing.MaxSeriesToPlot = panelkit.PreserveInt64(existing.MaxSeriesToPlot, typeutils.Float32PointerToInt64Pointer(apiConfig.MaxSeriesToPlot))
 
 	var priorTR *models.TimeRangeModel
@@ -157,18 +145,8 @@ func mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing *models.MlAnomal
 	if !typeutils.IsKnown(prior.MaxSeriesToPlot) {
 		existing.MaxSeriesToPlot = types.Int64Null()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.SeverityThreshold) == 0 {
 		existing.SeverityThreshold = nil
 	}

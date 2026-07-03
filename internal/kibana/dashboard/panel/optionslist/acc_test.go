@@ -53,12 +53,12 @@ func TestAccResourceDashboardOptionsListControl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.y", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.w", "12"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.grid.h", "4"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.data_view_id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.field_name", "status"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.search_technique", "prefix"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.single_select", "true"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.display_settings.placeholder", "Select status..."),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.display_settings.hide_sort", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.data_view_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.field_name", "status"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.search_technique", "prefix"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.single_select", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.display_settings.placeholder", "Select status..."),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.display_settings.hide_sort", "true"),
 				),
 			},
 			// Refresh/plan: ensure read-back does not induce perpetual drift
@@ -91,11 +91,66 @@ func TestAccResourceDashboardOptionsListControl(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "options_list_control"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.data_view_id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.field_name", "status"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.search_technique"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.single_select"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.data_view_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.field_name", "status"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.search_technique"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field.single_select"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardOptionsListControlByEsql(t *testing.T) {
+	dashboardTitle := "Test Dashboard with Options List Control ByEsql " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	// The by_esql branch only exists on Kibana servers that register options_list_control's config
+	// as a values_source-discriminated union. See dashboardacctest.MinControlByFieldEsqlUnionSupport.
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinControlByFieldEsqlUnionSupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Create with by_esql config
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "options_list_control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.esql_query", "FROM logs-* | STATS BY host.name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.values_source", "esql_query"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.title", "Host name"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.search_technique", "prefix"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_esql.single_select", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.options_list_control_config.by_field"),
+				),
+			},
+			// Refresh/plan: ensure read-back does not induce perpetual drift
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			// Import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_config"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName:      "elasticstack_kibana_dashboard.test",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

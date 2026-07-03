@@ -302,8 +302,8 @@ Set exactly one of `by_dataview` or `by_esql`. The active branch determines the 
 - `ml_anomaly_charts_config` (Attributes) Configuration for an ML anomaly charts panel (`kbn-dashboard-panel-type-ml_anomaly_charts`). Required when `type` is `ml_anomaly_charts`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--ml_anomaly_charts_config))
 - `ml_anomaly_swimlane_config` (Attributes) Configuration for an ML anomaly swim lane panel (`kbn-dashboard-panel-type-ml_anomaly_swimlane`). Required when `type` is `ml_anomaly_swimlane`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--ml_anomaly_swimlane_config))
 - `ml_single_metric_viewer_config` (Attributes) Configuration for an ML single metric viewer panel (`kbn-dashboard-panel-type-ml_single_metric_viewer`). Required when `type` is `ml_single_metric_viewer`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--ml_single_metric_viewer_config))
-- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--options_list_control_config))
-- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config))
+- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--options_list_control_config))
+- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter sourced from either a data view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config))
 - `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--slo_alerts_config))
 - `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--slo_burn_rate_config))
 - `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--panels--slo_error_budget_config))
@@ -1033,14 +1033,22 @@ Optional:
 <a id="nestedatt--panels--options_list_control_config"></a>
 ### Nested Schema for `panels.options_list_control_config`
 
+Optional:
+
+- `by_esql` (Attributes) Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`. (see [below for nested schema](#nestedatt--panels--options_list_control_config--by_esql))
+- `by_field` (Attributes) Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`. (see [below for nested schema](#nestedatt--panels--options_list_control_config--by_field))
+
+<a id="nestedatt--panels--options_list_control_config--by_esql"></a>
+### Nested Schema for `panels.options_list_control_config.by_esql`
+
 Required:
 
-- `data_view_id` (String) The ID of the data view that the control is tied to.
-- `field_name` (String) The name of the field in the data view that the control is tied to.
+- `esql_query` (String) The ES|QL query that produces the available option values.
+- `values_source` (String) The source discriminator for this branch. Must be `esql_query`.
 
 Optional:
 
-- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--panels--options_list_control_config--display_settings))
+- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--panels--options_list_control_config--by_esql--display_settings))
 - `exclude` (Boolean) When true, selected options are used as an exclusion filter rather than an inclusion filter.
 - `exists_selected` (Boolean) When true, the control filters for documents where the field exists.
 - `ignore_validations` (Boolean) Whether the control skips field-level validation against the data view.
@@ -1048,12 +1056,12 @@ Optional:
 - `search_technique` (String) The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.
 - `selected_options` (List of String) The initially or persistently selected option values. All values are represented as strings.
 - `single_select` (Boolean) When true, only one option may be selected at a time.
-- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--panels--options_list_control_config--sort))
+- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--panels--options_list_control_config--by_esql--sort))
 - `title` (String) Human-readable label displayed above the control.
 - `use_global_filters` (Boolean) Whether the control applies the dashboard's global filters to its own query.
 
-<a id="nestedatt--panels--options_list_control_config--display_settings"></a>
-### Nested Schema for `panels.options_list_control_config.display_settings`
+<a id="nestedatt--panels--options_list_control_config--by_esql--display_settings"></a>
+### Nested Schema for `panels.options_list_control_config.by_esql.display_settings`
 
 Optional:
 
@@ -1064,8 +1072,8 @@ Optional:
 - `placeholder` (String) Placeholder text shown when no option is selected.
 
 
-<a id="nestedatt--panels--options_list_control_config--sort"></a>
-### Nested Schema for `panels.options_list_control_config.sort`
+<a id="nestedatt--panels--options_list_control_config--by_esql--sort"></a>
+### Nested Schema for `panels.options_list_control_config.by_esql.sort`
 
 Required:
 
@@ -1074,8 +1082,78 @@ Required:
 
 
 
+<a id="nestedatt--panels--options_list_control_config--by_field"></a>
+### Nested Schema for `panels.options_list_control_config.by_field`
+
+Required:
+
+- `data_view_id` (String) The ID of the data view that the control is tied to.
+- `field_name` (String) The name of the field in the data view that the control is tied to.
+
+Optional:
+
+- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--panels--options_list_control_config--by_field--display_settings))
+- `exclude` (Boolean) When true, selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (Boolean) When true, the control filters for documents where the field exists.
+- `ignore_validations` (Boolean) Whether the control skips field-level validation against the data view.
+- `run_past_timeout` (Boolean) When true, the control continues to show results even when the underlying query times out.
+- `search_technique` (String) The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (List of String) The initially or persistently selected option values. All values are represented as strings.
+- `single_select` (Boolean) When true, only one option may be selected at a time.
+- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--panels--options_list_control_config--by_field--sort))
+- `title` (String) Human-readable label displayed above the control.
+- `use_global_filters` (Boolean) Whether the control applies the dashboard's global filters to its own query.
+
+<a id="nestedatt--panels--options_list_control_config--by_field--display_settings"></a>
+### Nested Schema for `panels.options_list_control_config.by_field.display_settings`
+
+Optional:
+
+- `hide_action_bar` (Boolean) When true, hides the action bar on the control.
+- `hide_exclude` (Boolean) When true, hides the exclude toggle.
+- `hide_exists` (Boolean) When true, hides the exists filter option.
+- `hide_sort` (Boolean) When true, hides the sort control.
+- `placeholder` (String) Placeholder text shown when no option is selected.
+
+
+<a id="nestedatt--panels--options_list_control_config--by_field--sort"></a>
+### Nested Schema for `panels.options_list_control_config.by_field.sort`
+
+Required:
+
+- `by` (String) The field or criterion to sort by. Must be one of `_count` or `_key`.
+- `direction` (String) The sort direction. Must be one of `asc` or `desc`.
+
+
+
+
 <a id="nestedatt--panels--range_slider_control_config"></a>
 ### Nested Schema for `panels.range_slider_control_config`
+
+Optional:
+
+- `by_esql` (Attributes) Range slider sourced from an ES|QL query. Mutually exclusive with `by_field`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config--by_esql))
+- `by_field` (Attributes) Range slider sourced from a Kibana data view field. Mutually exclusive with `by_esql`. (see [below for nested schema](#nestedatt--panels--range_slider_control_config--by_field))
+
+<a id="nestedatt--panels--range_slider_control_config--by_esql"></a>
+### Nested Schema for `panels.range_slider_control_config.by_esql`
+
+Required:
+
+- `esql_query` (String) The ES|QL query that produces the min/max range values.
+- `values_source` (String) The source of the range values. Must be `esql_query`.
+
+Optional:
+
+- `ignore_validations` (Boolean) Whether to suppress validation errors during intermediate states.
+- `step` (Number) The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.
+- `title` (String) A human-readable title for the control.
+- `use_global_filters` (Boolean) Whether the control respects dashboard-level filters.
+- `value` (List of String) Initial range as a list of exactly 2 strings: [min, max].
+
+
+<a id="nestedatt--panels--range_slider_control_config--by_field"></a>
+### Nested Schema for `panels.range_slider_control_config.by_field`
 
 Required:
 
@@ -1089,6 +1167,7 @@ Optional:
 - `title` (String) A human-readable title for the control.
 - `use_global_filters` (Boolean) Whether the control respects dashboard-level filters.
 - `value` (List of String) Initial range as a list of exactly 2 strings: [min, max].
+
 
 
 <a id="nestedatt--panels--slo_alerts_config"></a>
@@ -3901,10 +3980,10 @@ Optional:
 Configuration for an ES|QL control. Binds ES|QL variables for the dashboard. Mutually exclusive with `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--esql_control_config))
 - `options_list_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
-Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `time_slider_control_config`, `esql_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config))
+Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set. Mutually exclusive with `time_slider_control_config`, `esql_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config))
 - `range_slider_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
-Configuration for a range slider control. Provides a min/max range filter tied to a data view field. Mutually exclusive with `time_slider_control_config`, `esql_control_config`, `options_list_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--range_slider_control_config))
+Configuration for a range slider control. Provides a min/max range filter sourced from either a data view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set. Mutually exclusive with `time_slider_control_config`, `esql_control_config`, `options_list_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--range_slider_control_config))
 - `time_slider_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for a time slider control. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `esql_control_config`, `options_list_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--time_slider_control_config))
@@ -3943,14 +4022,22 @@ Optional:
 <a id="nestedatt--pinned_panels--options_list_control_config"></a>
 ### Nested Schema for `pinned_panels.options_list_control_config`
 
+Optional:
+
+- `by_esql` (Attributes) Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--by_esql))
+- `by_field` (Attributes) Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--by_field))
+
+<a id="nestedatt--pinned_panels--options_list_control_config--by_esql"></a>
+### Nested Schema for `pinned_panels.options_list_control_config.by_esql`
+
 Required:
 
-- `data_view_id` (String) The ID of the data view that the control is tied to.
-- `field_name` (String) The name of the field in the data view that the control is tied to.
+- `esql_query` (String) The ES|QL query that produces the available option values.
+- `values_source` (String) The source discriminator for this branch. Must be `esql_query`.
 
 Optional:
 
-- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--display_settings))
+- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--by_esql--display_settings))
 - `exclude` (Boolean) When true, selected options are used as an exclusion filter rather than an inclusion filter.
 - `exists_selected` (Boolean) When true, the control filters for documents where the field exists.
 - `ignore_validations` (Boolean) Whether the control skips field-level validation against the data view.
@@ -3958,12 +4045,12 @@ Optional:
 - `search_technique` (String) The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.
 - `selected_options` (List of String) The initially or persistently selected option values. All values are represented as strings.
 - `single_select` (Boolean) When true, only one option may be selected at a time.
-- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--sort))
+- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--by_esql--sort))
 - `title` (String) Human-readable label displayed above the control.
 - `use_global_filters` (Boolean) Whether the control applies the dashboard's global filters to its own query.
 
-<a id="nestedatt--pinned_panels--options_list_control_config--display_settings"></a>
-### Nested Schema for `pinned_panels.options_list_control_config.display_settings`
+<a id="nestedatt--pinned_panels--options_list_control_config--by_esql--display_settings"></a>
+### Nested Schema for `pinned_panels.options_list_control_config.by_esql.display_settings`
 
 Optional:
 
@@ -3974,8 +4061,8 @@ Optional:
 - `placeholder` (String) Placeholder text shown when no option is selected.
 
 
-<a id="nestedatt--pinned_panels--options_list_control_config--sort"></a>
-### Nested Schema for `pinned_panels.options_list_control_config.sort`
+<a id="nestedatt--pinned_panels--options_list_control_config--by_esql--sort"></a>
+### Nested Schema for `pinned_panels.options_list_control_config.by_esql.sort`
 
 Required:
 
@@ -3984,8 +4071,78 @@ Required:
 
 
 
+<a id="nestedatt--pinned_panels--options_list_control_config--by_field"></a>
+### Nested Schema for `pinned_panels.options_list_control_config.by_field`
+
+Required:
+
+- `data_view_id` (String) The ID of the data view that the control is tied to.
+- `field_name` (String) The name of the field in the data view that the control is tied to.
+
+Optional:
+
+- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--by_field--display_settings))
+- `exclude` (Boolean) When true, selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (Boolean) When true, the control filters for documents where the field exists.
+- `ignore_validations` (Boolean) Whether the control skips field-level validation against the data view.
+- `run_past_timeout` (Boolean) When true, the control continues to show results even when the underlying query times out.
+- `search_technique` (String) The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (List of String) The initially or persistently selected option values. All values are represented as strings.
+- `single_select` (Boolean) When true, only one option may be selected at a time.
+- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config--by_field--sort))
+- `title` (String) Human-readable label displayed above the control.
+- `use_global_filters` (Boolean) Whether the control applies the dashboard's global filters to its own query.
+
+<a id="nestedatt--pinned_panels--options_list_control_config--by_field--display_settings"></a>
+### Nested Schema for `pinned_panels.options_list_control_config.by_field.display_settings`
+
+Optional:
+
+- `hide_action_bar` (Boolean) When true, hides the action bar on the control.
+- `hide_exclude` (Boolean) When true, hides the exclude toggle.
+- `hide_exists` (Boolean) When true, hides the exists filter option.
+- `hide_sort` (Boolean) When true, hides the sort control.
+- `placeholder` (String) Placeholder text shown when no option is selected.
+
+
+<a id="nestedatt--pinned_panels--options_list_control_config--by_field--sort"></a>
+### Nested Schema for `pinned_panels.options_list_control_config.by_field.sort`
+
+Required:
+
+- `by` (String) The field or criterion to sort by. Must be one of `_count` or `_key`.
+- `direction` (String) The sort direction. Must be one of `asc` or `desc`.
+
+
+
+
 <a id="nestedatt--pinned_panels--range_slider_control_config"></a>
 ### Nested Schema for `pinned_panels.range_slider_control_config`
+
+Optional:
+
+- `by_esql` (Attributes) Range slider sourced from an ES|QL query. Mutually exclusive with `by_field`. (see [below for nested schema](#nestedatt--pinned_panels--range_slider_control_config--by_esql))
+- `by_field` (Attributes) Range slider sourced from a Kibana data view field. Mutually exclusive with `by_esql`. (see [below for nested schema](#nestedatt--pinned_panels--range_slider_control_config--by_field))
+
+<a id="nestedatt--pinned_panels--range_slider_control_config--by_esql"></a>
+### Nested Schema for `pinned_panels.range_slider_control_config.by_esql`
+
+Required:
+
+- `esql_query` (String) The ES|QL query that produces the min/max range values.
+- `values_source` (String) The source of the range values. Must be `esql_query`.
+
+Optional:
+
+- `ignore_validations` (Boolean) Whether to suppress validation errors during intermediate states.
+- `step` (Number) The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.
+- `title` (String) A human-readable title for the control.
+- `use_global_filters` (Boolean) Whether the control respects dashboard-level filters.
+- `value` (List of String) Initial range as a list of exactly 2 strings: [min, max].
+
+
+<a id="nestedatt--pinned_panels--range_slider_control_config--by_field"></a>
+### Nested Schema for `pinned_panels.range_slider_control_config.by_field`
 
 Required:
 
@@ -3999,6 +4156,7 @@ Optional:
 - `title` (String) A human-readable title for the control.
 - `use_global_filters` (Boolean) Whether the control respects dashboard-level filters.
 - `value` (List of String) Initial range as a list of exactly 2 strings: [min, max].
+
 
 
 <a id="nestedatt--pinned_panels--time_slider_control_config"></a>
@@ -4061,8 +4219,8 @@ Set exactly one of `by_dataview` or `by_esql`. The active branch determines the 
 - `ml_anomaly_charts_config` (Attributes) Configuration for an ML anomaly charts panel (`kbn-dashboard-panel-type-ml_anomaly_charts`). Required when `type` is `ml_anomaly_charts`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--ml_anomaly_charts_config))
 - `ml_anomaly_swimlane_config` (Attributes) Configuration for an ML anomaly swim lane panel (`kbn-dashboard-panel-type-ml_anomaly_swimlane`). Required when `type` is `ml_anomaly_swimlane`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--ml_anomaly_swimlane_config))
 - `ml_single_metric_viewer_config` (Attributes) Configuration for an ML single metric viewer panel (`kbn-dashboard-panel-type-ml_single_metric_viewer`). Required when `type` is `ml_single_metric_viewer`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--ml_single_metric_viewer_config))
-- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config))
-- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter tied to a data view field. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config))
+- `options_list_control_config` (Attributes) Configuration for an options list control panel. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config))
+- `range_slider_control_config` (Attributes) Configuration for a range slider control panel. Provides a min/max range filter sourced from either a data view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config))
 - `slo_alerts_config` (Attributes) Configuration for an `slo_alerts` panel (`kbn-dashboard-panel-type-slo_alerts`). Required when `type` is `slo_alerts`. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_alerts_config))
 - `slo_burn_rate_config` (Attributes) Configuration for an SLO burn rate panel. Use this for panels that visualize the burn rate of an SLO over a configurable look-back window. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_error_budget_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_burn_rate_config))
 - `slo_error_budget_config` (Attributes) Configuration for an SLO error budget panel. Displays the burn chart of remaining error budget for a specific SLO. Mutually exclusive with `config_json`, `apm_service_map_config`, `slo_burn_rate_config`, `slo_overview_config`, `synthetics_monitors_config`, `synthetics_stats_overview_config`, `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`, `esql_control_config`, `markdown_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`, `image_config`, `slo_alerts_config`, `vis_config`, `discover_session_config`, `field_stats_table_config`, `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, `aiops_change_point_chart_config`. (see [below for nested schema](#nestedatt--sections--panels--slo_error_budget_config))
@@ -4792,14 +4950,22 @@ Optional:
 <a id="nestedatt--sections--panels--options_list_control_config"></a>
 ### Nested Schema for `sections.panels.options_list_control_config`
 
+Optional:
+
+- `by_esql` (Attributes) Configuration for an options list control sourced from an ES|QL query. Mutually exclusive with `by_field`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--by_esql))
+- `by_field` (Attributes) Configuration for an options list control sourced from a Kibana data view field. Mutually exclusive with `by_esql`. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--by_field))
+
+<a id="nestedatt--sections--panels--options_list_control_config--by_esql"></a>
+### Nested Schema for `sections.panels.options_list_control_config.by_esql`
+
 Required:
 
-- `data_view_id` (String) The ID of the data view that the control is tied to.
-- `field_name` (String) The name of the field in the data view that the control is tied to.
+- `esql_query` (String) The ES|QL query that produces the available option values.
+- `values_source` (String) The source discriminator for this branch. Must be `esql_query`.
 
 Optional:
 
-- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--display_settings))
+- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--by_esql--display_settings))
 - `exclude` (Boolean) When true, selected options are used as an exclusion filter rather than an inclusion filter.
 - `exists_selected` (Boolean) When true, the control filters for documents where the field exists.
 - `ignore_validations` (Boolean) Whether the control skips field-level validation against the data view.
@@ -4807,12 +4973,12 @@ Optional:
 - `search_technique` (String) The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.
 - `selected_options` (List of String) The initially or persistently selected option values. All values are represented as strings.
 - `single_select` (Boolean) When true, only one option may be selected at a time.
-- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--sort))
+- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--by_esql--sort))
 - `title` (String) Human-readable label displayed above the control.
 - `use_global_filters` (Boolean) Whether the control applies the dashboard's global filters to its own query.
 
-<a id="nestedatt--sections--panels--options_list_control_config--display_settings"></a>
-### Nested Schema for `sections.panels.options_list_control_config.display_settings`
+<a id="nestedatt--sections--panels--options_list_control_config--by_esql--display_settings"></a>
+### Nested Schema for `sections.panels.options_list_control_config.by_esql.display_settings`
 
 Optional:
 
@@ -4823,8 +4989,8 @@ Optional:
 - `placeholder` (String) Placeholder text shown when no option is selected.
 
 
-<a id="nestedatt--sections--panels--options_list_control_config--sort"></a>
-### Nested Schema for `sections.panels.options_list_control_config.sort`
+<a id="nestedatt--sections--panels--options_list_control_config--by_esql--sort"></a>
+### Nested Schema for `sections.panels.options_list_control_config.by_esql.sort`
 
 Required:
 
@@ -4833,8 +4999,78 @@ Required:
 
 
 
+<a id="nestedatt--sections--panels--options_list_control_config--by_field"></a>
+### Nested Schema for `sections.panels.options_list_control_config.by_field`
+
+Required:
+
+- `data_view_id` (String) The ID of the data view that the control is tied to.
+- `field_name` (String) The name of the field in the data view that the control is tied to.
+
+Optional:
+
+- `display_settings` (Attributes) Display preferences for the control widget. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--by_field--display_settings))
+- `exclude` (Boolean) When true, selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (Boolean) When true, the control filters for documents where the field exists.
+- `ignore_validations` (Boolean) Whether the control skips field-level validation against the data view.
+- `run_past_timeout` (Boolean) When true, the control continues to show results even when the underlying query times out.
+- `search_technique` (String) The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (List of String) The initially or persistently selected option values. All values are represented as strings.
+- `single_select` (Boolean) When true, only one option may be selected at a time.
+- `sort` (Attributes) Default sort configuration for the suggestion list. (see [below for nested schema](#nestedatt--sections--panels--options_list_control_config--by_field--sort))
+- `title` (String) Human-readable label displayed above the control.
+- `use_global_filters` (Boolean) Whether the control applies the dashboard's global filters to its own query.
+
+<a id="nestedatt--sections--panels--options_list_control_config--by_field--display_settings"></a>
+### Nested Schema for `sections.panels.options_list_control_config.by_field.display_settings`
+
+Optional:
+
+- `hide_action_bar` (Boolean) When true, hides the action bar on the control.
+- `hide_exclude` (Boolean) When true, hides the exclude toggle.
+- `hide_exists` (Boolean) When true, hides the exists filter option.
+- `hide_sort` (Boolean) When true, hides the sort control.
+- `placeholder` (String) Placeholder text shown when no option is selected.
+
+
+<a id="nestedatt--sections--panels--options_list_control_config--by_field--sort"></a>
+### Nested Schema for `sections.panels.options_list_control_config.by_field.sort`
+
+Required:
+
+- `by` (String) The field or criterion to sort by. Must be one of `_count` or `_key`.
+- `direction` (String) The sort direction. Must be one of `asc` or `desc`.
+
+
+
+
 <a id="nestedatt--sections--panels--range_slider_control_config"></a>
 ### Nested Schema for `sections.panels.range_slider_control_config`
+
+Optional:
+
+- `by_esql` (Attributes) Range slider sourced from an ES|QL query. Mutually exclusive with `by_field`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config--by_esql))
+- `by_field` (Attributes) Range slider sourced from a Kibana data view field. Mutually exclusive with `by_esql`. (see [below for nested schema](#nestedatt--sections--panels--range_slider_control_config--by_field))
+
+<a id="nestedatt--sections--panels--range_slider_control_config--by_esql"></a>
+### Nested Schema for `sections.panels.range_slider_control_config.by_esql`
+
+Required:
+
+- `esql_query` (String) The ES|QL query that produces the min/max range values.
+- `values_source` (String) The source of the range values. Must be `esql_query`.
+
+Optional:
+
+- `ignore_validations` (Boolean) Whether to suppress validation errors during intermediate states.
+- `step` (Number) The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.
+- `title` (String) A human-readable title for the control.
+- `use_global_filters` (Boolean) Whether the control respects dashboard-level filters.
+- `value` (List of String) Initial range as a list of exactly 2 strings: [min, max].
+
+
+<a id="nestedatt--sections--panels--range_slider_control_config--by_field"></a>
+### Nested Schema for `sections.panels.range_slider_control_config.by_field`
 
 Required:
 
@@ -4848,6 +5084,7 @@ Optional:
 - `title` (String) A human-readable title for the control.
 - `use_global_filters` (Boolean) Whether the control respects dashboard-level filters.
 - `value` (List of String) Initial range as a list of exactly 2 strings: [min, max].
+
 
 
 <a id="nestedatt--sections--panels--slo_alerts_config"></a>

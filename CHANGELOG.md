@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Fix `elasticstack_elasticsearch_security_role` (and data source) read failure on Elasticsearch 9.5+ by fetching the role via raw transport and decoding `global` as opaque JSON, and strip the server-injected empty `data_source: []` default from state. ([#4059](https://github.com/elastic/terraform-provider-elasticstack/pull/4059))
 - Fix Fleet agent policy create when policy_id is omitted and add plan-time validation for explicit policy_id values ([#3937](https://github.com/elastic/terraform-provider-elasticstack/pull/3937))
 - Add `elasticstack_kibana_tag` resource and `elasticstack_kibana_tags` data source for managing Kibana tags and listing tags in a space. ([#3921](https://github.com/elastic/terraform-provider-elasticstack/pull/3921))
 - Fix component and index template state upgrade when SDK stored empty strings for mappings, settings, or metadata. ([#3914](https://github.com/elastic/terraform-provider-elasticstack/pull/3914))
@@ -76,7 +77,6 @@
 
 - The `lens-dashboard-app` panel type is no longer supported in `elasticstack_kibana_dashboard`. Use `type = "vis"` instead.
 
-
 `elasticstack_kibana_security_detection_rule` `actions.alerts_filter` is now a structured nested attribute with `query` (`kql`, `filters_json`) and optional `timeframe` (`days`, `timezone`, `hours_start`, `hours_end`), replacing the broken `map(string)` shape.
 
 ### Changes
@@ -137,10 +137,9 @@ Removed top-level `enabled` from `elasticstack_fleet_integration_policy`. In pra
 
 The documented minimum supported Elastic Stack version is now 8.0. 7.x is no longer included in the acceptance test matrix or officially supported. Compatibility branches and version gates for pre-8.0 Elasticsearch behavior have been removed from the transform and ILM resources.
 
-
 #### `elasticstack_kibana_security_detection_rule` action `params` format change
 
-Previously `elasticstack_kibana_security_detection_rule` used a map of strings for action parameters. This caused issues with actions requiring non-string based parameters (see https://github.com/elastic/terraform-provider-elasticstack/issues/2339 for an example). This has been changed to a single JSON string value which supports arbitrary param values. 
+Previously `elasticstack_kibana_security_detection_rule` used a map of strings for action parameters. This caused issues with actions requiring non-string based parameters (see <https://github.com/elastic/terraform-provider-elasticstack/issues/2339> for an example). This has been changed to a single JSON string value which supports arbitrary param values.
 
 Previously
 
@@ -159,7 +158,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 }
 ```
 
-becomes 
+becomes
 
 ```hcl
 resource "elasticstack_kibana_security_detection_rule" "test" {
@@ -262,7 +261,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 - Fix perpetual `id` "known after apply" diff in `elasticstack_elasticsearch_security_role` by adding `UseStateForUnknown` plan modifier to the computed `id` attribute. ([#2160](https://github.com/elastic/terraform-provider-elasticstack/pull/2160))
 - Add `elasticstack_fleet_elastic_defend_integration_policy` resource ([#2147](https://github.com/elastic/terraform-provider-elasticstack/pull/2147))
 
-
 ## [0.14.3] - 2026-03-02
 
 ### Changes
@@ -281,14 +279,16 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 ## [0.14.2] - 2026-02-19
 
 ### Changes
-* Add parameter validation and default normalization for `elasticstack_kibana_alerting_rule` to prevent inconsistent state errors caused by API-injected defaults. ([#1648](https://github.com/elastic/terraform-provider-elasticstack/pull/1648))
-* Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
+
+- Add parameter validation and default normalization for `elasticstack_kibana_alerting_rule` to prevent inconsistent state errors caused by API-injected defaults. ([#1648](https://github.com/elastic/terraform-provider-elasticstack/pull/1648))
+- Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
 
 ## [0.14.1] - 2026-02-18
 
 ### Changes
-* Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
-* Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
+
+- Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
+- Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
 
 ## [0.14.0] - 2026-02-16
 
@@ -296,9 +296,9 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 #### `elasticstack_fleet_integration` `space_ids` attribute has been reduced to a single `space_id`
 
-The provider was only considering the first entry in the `space_ids` set ([#1642](https://github.com/elastic/terraform-provider-elasticstack/issues/1642)). Extending the resource to correctly handle multiple spaces would not make sense as a single Terraform resource. Instead this attribute is being reduced to a single string, with practitioners able to manage the installation of an integration across multiple spaces through multiple instances of this resource. 
+The provider was only considering the first entry in the `space_ids` set ([#1642](https://github.com/elastic/terraform-provider-elasticstack/issues/1642)). Extending the resource to correctly handle multiple spaces would not make sense as a single Terraform resource. Instead this attribute is being reduced to a single string, with practitioners able to manage the installation of an integration across multiple spaces through multiple instances of this resource.
 
-Existing usage of the `space_ids` attribute must be migrated to `space_id`: 
+Existing usage of the `space_ids` attribute must be migrated to `space_id`:
 
 ```hcl
 resource "elasticstack_fleet_integration" "tcp" {
@@ -324,14 +324,15 @@ resource "elasticstack_fleet_integration" "tcp-o11y" {
 }
 ```
 
-#### `elasticstack_fleet_integration_policy` input block has changed to a map attribute. 
+#### `elasticstack_fleet_integration_policy` input block has changed to a map attribute
 
-The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute. 
+The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute.
 This transition:
-* Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
-  * Prevents several state consistency errors experienced whilst using this resource
-  * Allow practitioners to only define configuration for the inputs, streams, and variables that differ from the package defined defaults.
-* Reduces the scope of the large `streams_json` string. Instead allowing each stream to be defined as it's own object for Terraform drift checking. 
+
+- Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
+  - Prevents several state consistency errors experienced whilst using this resource
+  - Allow practitioners to only define configuration for the inputs, streams, and variables that differ from the package defined defaults.
+- Reduces the scope of the large `streams_json` string. Instead allowing each stream to be defined as it's own object for Terraform drift checking.
 
 Existing usage of the `input` block must be migrated to the attribute syntax. Some [examples of this migration](https://github.com/elastic/terraform-provider-elasticstack/pull/1482/files) can be seen in the changes to the provider automated tests. As a step-by-step guide however:
 
@@ -391,7 +392,7 @@ inputs = {
 - Add import support for `elasticstack_elasticsearch_script` resource ([#1637](https://github.com/elastic/terraform-provider-elasticstack/pull/1637))
 - Migrate `elasticstack_kibana_alerting_rule` to use plugin framework ([#1664](https://github.com/elastic/terraform-provider-elasticstack/pull/1664))
 - Migrate `elasticstack_kibana_slo` resource to the Terraform plugin framework ([#1647](https://github.com/elastic/terraform-provider-elasticstack/pull/1647))
-- Prevent a provider error with `elasticstack_fleet_integration_policy` when moving between a single `policy_id` and multiple `policy_ids` ([#1644](https://github.com/elastic/terraform-provider-elasticstack/pull/1644)) 
+- Prevent a provider error with `elasticstack_fleet_integration_policy` when moving between a single `policy_id` and multiple `policy_ids` ([#1644](https://github.com/elastic/terraform-provider-elasticstack/pull/1644))
 - Fix concurrent map write errors with `elasticstack_fleet_integration_policy` ([#1629](https://github.com/elastic/terraform-provider-elasticstack/pull/1629))
 - Add support for Fleet API installation parameters to `elasticstack_fleet_integration` resource: `prerelease`, `ignore_mapping_update_errors` (8.11.0+), `skip_data_stream_rollover` (8.11.0+), and `ignore_constraints`. These parameters provide full control over package installation behavior and enable installation of prerelease (beta, non-GA) packages.
 - Correctly handle 404 responses when reading `elasticstack_fleet_integration` resources ([#1608](https://github.com/elastic/terraform-provider-elasticstack/pull/1608))
@@ -405,7 +406,7 @@ inputs = {
 - Fix `elasticstack_elasticsearch_ml_anomaly_detection_job` import to be resilient to sparse state values
 - Fix a state consistency issue when an `elasticstack_elasticsearch_ml_datafeed_state` resource without `start` configured is started after being stopped. ([#1563](https://github.com/elastic/terraform-provider-elasticstack/pull/1563))
 - Fix a state consistency issue when `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times are specified in a timezone that is not the server timezone `elasticstack_elasticsearch_ml_datafeed_state` resource without `start` configured is started after being stopped. ([#1563](https://github.com/elastic/terraform-provider-elasticstack/pull/1563))
-- Fix an issue where `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times where treated by the provider as unix seconds, but by the API as unix milliseconds. 
+- Fix an issue where `elasticstack_elasticsearch_ml_datafeed_state` `start` and `end` times where treated by the provider as unix seconds, but by the API as unix milliseconds.
 - Only require input parameters in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1558](https://github.com/elastic/terraform-provider-elasticstack/pull/1558))
 - Only require vars in `elasticstack_fleet_integration_policy` to be specified if they differ from integration defaults ([#1593](https://github.com/elastic/terraform-provider-elasticstack/pull/1593))
 - Allow space restricted roles to manage `elasticstack_fleet_agent_policy` resources. ([#1597](https://github.com/elastic/terraform-provider-elasticstack/pull/1597))
@@ -422,10 +423,10 @@ inputs = {
 
 ### Breaking changes
 
-#### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute. 
+#### `elasticstack_elasticsearch_index.alias` block has changed to a set attribute
 
-The `alias` block in the `elasticstack_elasticsearch_index` resource has been moved to an attribute. 
-This transition provides better support for future changes in both the provider and the underlying Terraform framework. 
+The `alias` block in the `elasticstack_elasticsearch_index` resource has been moved to an attribute.
+This transition provides better support for future changes in both the provider and the underlying Terraform framework.
 
 Existing usage of the `alias` block must be migrated to the attribute syntax. For example:
 
@@ -442,7 +443,7 @@ alias {
 }
 ```
 
-becomes 
+becomes
 
 ```hcl
 alias = [
@@ -468,7 +469,7 @@ alias = [
 - Fix an issue where the `elasticstack_fleet_output` resource would error due to inconsistent state after an ouptut was edited in the Kibana UI ([#1506](https://github.com/elastic/terraform-provider-elasticstack/pull/1506))
 - Allow `index` and `data_view_id` values to both be unknown during planning in `elasticstack_kibana_security_detection_rule` ([#1499](https://github.com/elastic/terraform-provider-elasticstack/pull/1499))
 - Support `.bedrock` and `.gen-ai` connectors ([#1467](https://github.com/elastic/terraform-provider-elasticstack/pull/1467))
-- Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486)) 
+- Support the `solution` attribute in `elasticstack_kibana_space` from 8.16 ([#1486](https://github.com/elastic/terraform-provider-elasticstack/pull/1486))
 - Add `elasticstack_elasticsearch_alias` resource ([#1343](https://github.com/elastic/terraform-provider-elasticstack/pull/1343))
 - Add `mapping_total_fields_limit` to `elasticstack_elasticsearch_index` ([#1494](https://github.com/elastic/terraform-provider-elasticstack/pull/1494))
 - Add `elasticstack_kibana_default_data_view` resource ([#1379](https://github.com/elastic/terraform-provider-elasticstack/pull/1379))
@@ -480,6 +481,7 @@ alias = [
   - Add `elasticstack_kibana_security_list_data_streams` resource ([#1525](https://github.com/elastic/terraform-provider-elasticstack/pull/1525))
 
 ## [0.12.2] - 2025-11-19
+
 - Fix `elasticstack_elasticsearch_snapshot_lifecycle` metadata type conversion causing terraform apply to fail ([#1409](https://github.com/elastic/terraform-provider-elasticstack/issues/1409))
 - Add new `elasticstack_elasticsearch_ml_anomaly_detection_job` resource ([#1329](https://github.com/elastic/terraform-provider-elasticstack/pull/1329))
 - Add new `elasticstack_elasticsearch_ml_datafeed` resource ([#1340](https://github.com/elastic/terraform-provider-elasticstack/pull/1340))
@@ -488,10 +490,11 @@ alias = [
 - Add new `elasticstack_elasticsearch_ml_job_state` resource ([#1337](https://github.com/elastic/terraform-provider-elasticstack/pull/1337))
 - Add new `elasticstack_elasticsearch_ml_datafeed_state` resource ([#1422](https://github.com/elastic/terraform-provider-elasticstack/pull/1422))
 - Add `output_id` to `elasticstack_fleet_integration_policy` resource ([#1445](https://github.com/elastic/terraform-provider-elasticstack/pull/1445))
-- Make `hosts` attribute required in `elasticstack_fleet_output` resource ([#1450](https://github.com/elastic/terraform-provider-elasticstack/pull/1450/files)) 
+- Make `hosts` attribute required in `elasticstack_fleet_output` resource ([#1450](https://github.com/elastic/terraform-provider-elasticstack/pull/1450/files))
 - Fix `elasticstack_kibana_security_detection_rule` to properly respect `space_id`
 
 ## [0.12.1] - 2025-10-22
+
 - Fix regression restricting the characters in an `elasticstack_elasticsearch_role_mapping` `name`. ([#1373](https://github.com/elastic/terraform-provider-elasticstack/pull/1373))
 - Add schema validations to require either (but not both) `index` and `data_view_id` is set for relevant Security Detection Rules ([#1381](https://github.com/elastic/terraform-provider-elasticstack/pull/1381))
 
@@ -531,9 +534,9 @@ Version 0.11.19 is equivalent to 0.12.1. It is being released to help mitigate i
 
 ### Breaking changes
 
-The `ssl` field on the `elasticstack_fleet_output` resource has been changes from a block to an attribute. This change ensures ongoing consistency within the resource schema for this resource, and aligns with Terraform best practices. 
+The `ssl` field on the `elasticstack_fleet_output` resource has been changes from a block to an attribute. This change ensures ongoing consistency within the resource schema for this resource, and aligns with Terraform best practices.
 
-Existing `elasticstack_fleet_output` resources defining `ssl` will have to update the declaration to an attribute style. For example: 
+Existing `elasticstack_fleet_output` resources defining `ssl` will have to update the declaration to an attribute style. For example:
 
 ```hcl
 resource "elasticstack_fleet_output" "output" {
@@ -544,7 +547,7 @@ resource "elasticstack_fleet_output" "output" {
 }
 ```
 
-becomes 
+becomes
 
 ```hcl
 resource "elasticstack_fleet_output" "output" {
@@ -684,13 +687,13 @@ resource "elasticstack_fleet_output" "output" {
 - Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
 - Add support for data_stream `lifecycle` template settings ([#724](https://github.com/elastic/terraform-provider-elasticstack/pull/724))
 - Fix a provider panic when `elasticstack_kibana_action_connector` reads a non-existant connector ([#729](https://github.com/elastic/terraform-provider-elasticstack/pull/729))
-- Add support for `remote_indicies` to `elasticstack_elasticsearch_security_role` & `elasticstack_kibana_security_role` (#723)[https://github.com/elastic/terraform-provider-elasticstack/pull/723]
+- Add support for `remote_indicies` to `elasticstack_elasticsearch_security_role` & `elasticstack_kibana_security_role` [#723](https://github.com/elastic/terraform-provider-elasticstack/pull/723)
 - Fix error handling in `elasticstack_kibana_import_saved_objects` ([#738](https://github.com/elastic/terraform-provider-elasticstack/pull/738))
 - Remove `space_id` parameter from private locations to fix inconsistent state for `elasticstack_kibana_synthetics_private_location` `space_id` ([#733](https://github.com/elastic/terraform-provider-elasticstack/pull/733))
 - Add the `Frequency` field to the Create Rule API ([#753](https://github.com/elastic/terraform-provider-elasticstack/pull/753))
 - Prevent a provider panic when the repository referenced in an `elasticstack_elasticsearch_snapshot_repository` does not exist ([#758](https://github.com/elastic/terraform-provider-elasticstack/pull/758))
-- Add support for `remote_indicies` to `elasticstack_elasticsearch_security_api_key` (#766)[https://github.com/elastic/terraform-provider-elasticstack/pull/766]
-- Add support for `icmp` and `browser` monitor types to `elasticstack_kibana_synthetics_monitor` resource (#772)[https://github.com/elastic/terraform-provider-elasticstack/pull/772]
+- Add support for `remote_indicies` to `elasticstack_elasticsearch_security_api_key` [#766](https://github.com/elastic/terraform-provider-elasticstack/pull/766)
+- Add support for `icmp` and `browser` monitor types to `elasticstack_kibana_synthetics_monitor` resource [#772](https://github.com/elastic/terraform-provider-elasticstack/pull/772)
 - Migrate `elasticstack_fleet_enrollment_tokens` to terraform-plugin-framework ([#778](https://github.com/elastic/terraform-provider-elasticstack/pull/778))
 
 ## [0.11.6] - 2024-08-20

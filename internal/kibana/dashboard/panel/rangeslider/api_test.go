@@ -33,6 +33,10 @@ func TestContract_RangeSliderPanel(t *testing.T) {
 	t.Parallel()
 
 	contracttest.Run(t, rangeslider.Handler{}, contracttest.Config{
+		// The API's config JSON layout is the same flat Field-branch shape regardless of the
+		// restructure (only the Terraform side nests it under `by_field`); required-leaf-presence
+		// navigation can't resolve the `by_field` nesting against the flat fixture, so it's omitted
+		// here (same rationale as the slo_overview contract test's single/groups branches).
 		FullAPIResponse: `{
 			"type": "range_slider_control",
 			"grid": {"x": 0, "y": 1, "w": 8, "h": 4},
@@ -45,11 +49,18 @@ func TestContract_RangeSliderPanel(t *testing.T) {
 				"step": 5
 			}
 		}`,
+		OmitRequiredLeafPresence: true,
 		SkipFields: []string{
 			// Optional server flags and value list: API omissions do not reset practitioner-known state.
-			"use_global_filters",
-			"ignore_validations",
-			"value",
+			"by_field.use_global_filters",
+			"by_field.ignore_validations",
+			"by_field.value",
+			// Fixture only covers the by_field branch; by_esql has no baseline to compare against.
+			"by_esql",
+			// The provider deliberately omits values_source on by_field writes for backward
+			// compatibility with Kibana < 9.5 (see buildFieldConfig); the fixture predates this
+			// and includes it.
+			"config.values_source",
 		},
 	})
 }
@@ -62,13 +73,15 @@ func TestPinned_RangeSliderPinnedRoundtrip(t *testing.T) {
 	in := models.PinnedPanelModel{
 		Type: types.StringValue("range_slider_control"),
 		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("source.bytes"),
-			Value: types.ListValueMust(types.StringType, []attr.Value{
-				types.StringValue("100"),
-				types.StringValue("500"),
-			}),
-			Step: types.Float32Value(12),
+			ByField: &models.RangeSliderControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("source.bytes"),
+				Value: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("100"),
+					types.StringValue("500"),
+				}),
+				Step: types.Float32Value(12),
+			},
 		},
 	}
 
@@ -79,6 +92,34 @@ func TestPinned_RangeSliderPinnedRoundtrip(t *testing.T) {
 	require.False(t, d2.HasError(), "%v", d2)
 	require.True(t, out.Type.Equal(types.StringValue("range_slider_control")))
 	require.NotNil(t, out.RangeSliderControlConfig)
-	require.Equal(t, "dv", out.RangeSliderControlConfig.DataViewID.ValueString())
-	require.Equal(t, "source.bytes", out.RangeSliderControlConfig.FieldName.ValueString())
+	require.NotNil(t, out.RangeSliderControlConfig.ByField)
+	require.Equal(t, "dv", out.RangeSliderControlConfig.ByField.DataViewID.ValueString())
+	require.Equal(t, "source.bytes", out.RangeSliderControlConfig.ByField.FieldName.ValueString())
+}
+
+func TestPinned_RangeSliderPinnedRoundtrip_byEsql(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	ph := rangeslider.Handler{}.PinnedHandler()
+
+	in := models.PinnedPanelModel{
+		Type: types.StringValue("range_slider_control"),
+		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
+			ByEsql: &models.RangeSliderControlByEsqlModel{
+				EsqlQuery:    types.StringValue("FROM orders | STATS min = MIN(price), max = MAX(price)"),
+				ValuesSource: types.StringValue("esql_query"),
+			},
+		},
+	}
+
+	raw, d1 := ph.ToAPI(in)
+	require.False(t, d1.HasError(), "%v", d1)
+
+	out, d2 := ph.FromAPI(ctx, nil, raw)
+	require.False(t, d2.HasError(), "%v", d2)
+	require.True(t, out.Type.Equal(types.StringValue("range_slider_control")))
+	require.NotNil(t, out.RangeSliderControlConfig)
+	require.NotNil(t, out.RangeSliderControlConfig.ByEsql)
+	require.Equal(t, "FROM orders | STATS min = MIN(price), max = MAX(price)", out.RangeSliderControlConfig.ByEsql.EsqlQuery.ValueString())
+	require.Equal(t, "esql_query", out.RangeSliderControlConfig.ByEsql.ValuesSource.ValueString())
 }

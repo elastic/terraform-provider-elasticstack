@@ -200,13 +200,37 @@ The data source SHALL map the Get Role API response into the following computed 
 
 ### Requirement: Role CRUD APIs (REQ-001–REQ-003)
 
-The resource SHALL use the Elasticsearch Create or update roles API to create and update roles ([Put role API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-put-role.html)). The resource SHALL use the Elasticsearch Get roles API to read roles ([Get role API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role.html)). The resource SHALL use the Elasticsearch Delete roles API to delete roles ([Delete role API docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-delete-role.html)).
+The `GetRole` implementation SHALL bypass the typed `Security.GetRole` client call and instead fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform`. The PutRole and DeleteRole implementations continue to use the go-elasticsearch Typed API unchanged. The raw response body SHALL be decoded as `map[string]json.RawMessage` to locate the per-role entry. The `global` field SHALL be extracted as `json.RawMessage` and carried to the model layer **out-of-band** (not assigned to `types.Role.Global`, which is typed `map[string]map[string]map[string][]string` and cannot represent array-typed categories). All other role fields (applications, cluster, indices, remote_indices, run_as, metadata, description) SHALL continue to be decoded from the API response using the typed `types.Role` struct or equivalent individual field decoders.
 
-#### Scenario: Lifecycle uses documented APIs
+This change is required because the go-elasticsearch typed client declares `Role.Global` as `map[string]map[string]map[string][]string`, which cannot decode heterogeneous per-category shapes such as the `"data_source": []` array introduced in Elasticsearch 9.5. Upstream tracking: elasticsearch-specification#6377.
 
-- GIVEN a role managed by this resource
-- WHEN create, update, read, or delete runs
-- THEN the provider SHALL use the Put, Get, and Delete role APIs as documented
+#### Scenario: GetRole decodes global as raw JSON
+
+- GIVEN an Elasticsearch 9.5+ role that includes `"global": {"data_source": [], "application": {}, "profile": {...}}`
+- WHEN the provider reads the role
+- THEN the provider SHALL successfully decode the response without an unmarshal error
+- AND the `global` field SHALL be carried to the model layer as raw JSON (not via `types.Role.Global`)
+- AND all other role attributes SHALL be populated from the same API response
+
+#### Scenario: GetRole preserves existing behavior for non-global fields
+
+- GIVEN a role that has indices, cluster, applications, and run_as configured
+- WHEN the provider reads the role via the raw transport path
+- THEN the provider SHALL populate all non-global fields correctly, matching the behavior of the prior typed-client read path
+
+#### Scenario: GetRole returns not-found for absent role
+
+- GIVEN a role name that does not exist in Elasticsearch
+- WHEN the provider calls GetRole
+- THEN the provider SHALL return a not-found result (nil role) without error, preserving the existing not-found behavior
+
+#### Scenario: GetRole surfaces HTTP errors
+
+- GIVEN Elasticsearch returns a non-200, non-404 status code for the role read request
+- WHEN the provider calls GetRole
+- THEN the provider SHALL return an error diagnostic with the HTTP status and response body
+
+---
 
 ### Requirement: API error surfacing (REQ-004)
 
@@ -411,19 +435,25 @@ When `remote_indices.allow_restricted_indices` is known on the resource, the pro
 - THEN state SHALL store `allow_restricted_indices = false` for that entry
 
 ### Requirement: Typed client implementation for security role
-The `elasticstack_elasticsearch_security_role` resource and data source SHALL retrieve and manage roles using the go-elasticsearch Typed API (`elasticsearch.TypedClient.Security.PutRole`, `Security.GetRole`, `Security.DeleteRole`) instead of the raw `esapi` client. The typed API response SHALL be used directly without manual JSON decoding into an intermediate `models.Role` type.
 
-#### Scenario: Typed API success for role resource
-- **GIVEN** a valid Elasticsearch connection
-- **WHEN** the resource performs create, read, update, or delete
-- **THEN** the provider SHALL call the typed Security role APIs
-- **AND** role data SHALL be returned as `*types.Role`
+The `elasticstack_elasticsearch_security_role` resource and data source SHALL manage roles using the go-elasticsearch Typed API for PutRole and DeleteRole (`elasticsearch.TypedClient.Security.PutRole`, `Security.DeleteRole`). **GetRole is narrowed**: because the typed client's `Role.Global` field (`map[string]map[string]map[string][]string`) cannot decode heterogeneous per-category shapes such as the ES 9.5 `"data_source": []` array (upstream: elasticsearch-specification#6377), GetRole SHALL fetch `GET /_security/role/<name>` via `typedClient.Transport.Perform` and decode `global` as `json.RawMessage`, carrying it to the model layer out-of-band. All non-`global` fields continue to use the typed `types.Role` struct. The typed API response SHALL be used directly for PutRole/DeleteRole without manual JSON decoding into an intermediate `models.Role` type.
 
-#### Scenario: Typed API success for role data source
-- **GIVEN** a valid Elasticsearch connection
-- **WHEN** the data source reads a role
-- **THEN** the provider SHALL call `Security.GetRole` on the typed client
-- **AND** the response SHALL be used as `getrole.Response`
+#### Scenario: Typed API for write/delete
+
+- GIVEN a valid Elasticsearch connection
+- WHEN the resource performs create, update, or delete
+- THEN the provider SHALL call the typed Security PutRole/DeleteRole APIs
+- AND role data for the write payload SHALL be returned as `*types.Role`
+
+#### Scenario: Raw transport for GetRole global field
+
+- GIVEN a role that includes `global` privileges (including ES 9.5+ array-typed categories)
+- WHEN the resource or data source reads the role
+- THEN the provider SHALL fetch the role via raw `GET /_security/role/<name>` transport
+- AND SHALL decode `global` as `json.RawMessage` (not through `types.Role.Global`)
+- AND SHALL decode all other fields into the typed `types.Role` struct
+
+---
 
 ### Requirement: Data source uses Plugin Framework and entitycore envelope
 
