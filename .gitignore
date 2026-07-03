@@ -68,5 +68,4 @@ coverage.out
 /task*-*.md
 /progress.md
 ci-deadcode-removal-rotation
-
 .pi-subagents/

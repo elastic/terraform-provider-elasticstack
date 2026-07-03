@@ -11,7 +11,7 @@ Each matrix test job SHALL include a `compute-packages` step that runs before th
 The `compute-packages` step SHALL:
 
 - For non-PR events (`github.event_name != 'pull_request'`, including `push`, `workflow_dispatch`, and `merge_group`): set `has_packages=true` and `targeted_pkgs=` (empty string) unconditionally.
-- For PR events: run `git fetch origin main --depth=1`, then invoke `go run ./scripts/targeted-testacc/... --total-shards=2 --shard-index=${{ matrix.shard }}`. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
+- For PR events: fetch the PR base commit (`github.event.pull_request.base.sha`) into a local ref, then invoke `go run ./scripts/targeted-testacc/... --base="<local-ref>" --total-shards=2 --shard-index=${{ matrix.shard }}`. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
 
 #### Scenario: PR with targeted packages — stack starts and targeted tests run
 
