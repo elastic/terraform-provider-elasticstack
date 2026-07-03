@@ -1,14 +1,20 @@
-// Package main implements a targeted acceptance test package selector.
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// The tool inspects the current branch's git diff and emits the minimal set of
-// acceptance test packages that should run, using a two-phase algorithm:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//  1. Walk the reverse import graph to find packages that import changed code.
-//  2. Grep test fixtures and test files for Terraform entity names declared
-//     in the changed packages.
-//
-// Results are unioned, optionally collapsed to the full suite for broad changes,
-// and finally sharded.
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -88,11 +94,7 @@ func run() error {
 			fmt.Println("\nNo resolvable diff; selecting all acceptance test packages.")
 		}
 	} else {
-		var classifyErr error
-		classified, classifyErr = classifier.Classify(changedFiles)
-		if classifyErr != nil {
-			return fmt.Errorf("classify changed files: %w", classifyErr)
-		}
+		classified = classifier.Classify(changedFiles)
 
 		if classified.ForceAll {
 			if dryRun {

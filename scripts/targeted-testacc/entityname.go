@@ -1,4 +1,20 @@
-// Package main implements a targeted acceptance test package selector.
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -40,18 +56,25 @@ var (
 	newKibanaDataSourceRE = regexp.MustCompile(`(?:entitycore\.)?NewKibanaDataSource\[[^\]]*\]\s*\(\s*(?:entitycore\.)?Component(\w+)\s*,\s*"([^"]+)"`)
 )
 
+const (
+	componentElasticsearch = "elasticsearch"
+	componentKibana        = "kibana"
+	componentFleet         = "fleet"
+	componentAPM           = "apm"
+)
+
 // componentName maps the Go identifier suffix (e.g. "Kibana", "APM") to the
 // string value used in Terraform type names.
 func componentName(suffix string) (string, bool) {
 	switch suffix {
 	case "Elasticsearch":
-		return "elasticsearch", true
+		return componentElasticsearch, true
 	case "Kibana":
-		return "kibana", true
+		return componentKibana, true
 	case "Fleet":
-		return "fleet", true
+		return componentFleet, true
 	case "APM":
-		return "apm", true
+		return componentAPM, true
 	}
 	return "", false
 }
@@ -80,10 +103,7 @@ func ExtractEntities(dir string) ([]EntityRef, error) {
 			return nil, fmt.Errorf("read file %s: %w", path, err)
 		}
 
-		ents, err := extractFromFile(path, data)
-		if err != nil {
-			return nil, err
-		}
+		ents := extractFromFile(path, data)
 		for _, ent := range ents {
 			entities[ent.FullName()] = ent
 		}
@@ -101,18 +121,18 @@ func ExtractEntities(dir string) ([]EntityRef, error) {
 
 // extractFromFile parses a single Go source file and returns all entity
 // references found, ignoring matches inside comments.
-func extractFromFile(filename string, data []byte) ([]EntityRef, error) {
+func extractFromFile(filename string, data []byte) []EntityRef {
 	src := string(data)
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments|parser.AllErrors)
 	if err != nil {
 		// Skip files that cannot be parsed; they cannot contribute valid entity declarations.
-		return nil, nil
+		return nil
 	}
 
 	intervals := commentIntervals(fset, f.Comments)
-	return extractFromSource(src, intervals), nil
+	return extractFromSource(src, intervals)
 }
 
 // commentIntervals converts comment groups into [start, end) byte intervals.
