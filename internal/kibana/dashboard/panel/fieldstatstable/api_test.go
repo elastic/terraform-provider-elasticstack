@@ -228,6 +228,131 @@ func TestHandler_fromAPI_nullPreservation_timeRange(t *testing.T) {
 	require.Nil(t, pm.FieldStatsTableConfig.ByDataview.TimeRange)
 }
 
+func TestHandler_fromAPI_branchMismatch_priorDataviewAPIEsql(t *testing.T) {
+	t.Parallel()
+
+	show := true
+	apiCfg := kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1{
+		ViewType:          kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1ViewTypeEsql,
+		ShowDistributions: &show,
+	}
+	apiCfg.Query.Esql = "FROM logs"
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, cfg.FromKibanaHTTPAPIsDataVisualizerFieldStats1(apiCfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	prior := panelModelBase()
+	prior.FieldStatsTableConfig = &models.FieldStatsTableConfigModel{
+		ByDataview: &models.FieldStatsTableByDataviewModel{
+			DataViewID: stringVal("logs-view"),
+		},
+	}
+
+	pm := prior
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.Nil(t, pm.FieldStatsTableConfig.ByDataview)
+	require.NotNil(t, pm.FieldStatsTableConfig.ByEsql)
+	assert.Equal(t, "FROM logs", pm.FieldStatsTableConfig.ByEsql.Query.ValueString())
+}
+
+func TestHandler_fromAPI_branchMismatch_priorEsqlAPIDataview(t *testing.T) {
+	t.Parallel()
+
+	show := true
+	apiCfg := kbapi.KibanaHTTPAPIsDataVisualizerFieldStats0{
+		DataViewId:        "logs-view",
+		ViewType:          kbapi.Dataview,
+		ShowDistributions: &show,
+	}
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, cfg.FromKibanaHTTPAPIsDataVisualizerFieldStats0(apiCfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	prior := panelModelBase()
+	prior.FieldStatsTableConfig = &models.FieldStatsTableConfigModel{
+		ByEsql: &models.FieldStatsTableByEsqlModel{
+			Query: stringVal("FROM logs"),
+		},
+	}
+
+	pm := prior
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.Nil(t, pm.FieldStatsTableConfig.ByEsql)
+	require.NotNil(t, pm.FieldStatsTableConfig.ByDataview)
+	assert.Equal(t, "logs-view", pm.FieldStatsTableConfig.ByDataview.DataViewID.ValueString())
+}
+
+func TestHandler_fromAPI_invalidViewType(t *testing.T) {
+	t.Parallel()
+
+	raw := []byte(`{"view_type":"unknown","data_view_id":"logs-view"}`)
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, json.Unmarshal(raw, &cfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	pm := panelModelBase()
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, nil, item)
+	require.True(t, diags.HasError())
+	require.Contains(t, diagSummary(diags), "view_type")
+}
+
+func TestHandler_fromAPI_nullPreservation_esqlTimeRange(t *testing.T) {
+	t.Parallel()
+
+	apiCfg := kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1{
+		ViewType: kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1ViewTypeEsql,
+	}
+	apiCfg.Query.Esql = "FROM logs"
+	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
+	apiCfg.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+		From: "now-24h",
+		To:   "now",
+		Mode: &mode,
+	}
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, cfg.FromKibanaHTTPAPIsDataVisualizerFieldStats1(apiCfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	prior := panelModelBase()
+	prior.FieldStatsTableConfig = &models.FieldStatsTableConfigModel{
+		ByEsql: &models.FieldStatsTableByEsqlModel{
+			Query:     stringVal("FROM logs"),
+			TimeRange: nil,
+		},
+	}
+
+	pm := prior
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
+	require.False(t, diags.HasError(), "%s", diags)
+	require.Nil(t, pm.FieldStatsTableConfig.ByEsql.TimeRange)
+}
+
 func TestHandler_fromAPI_nullPreservation_showDistributions(t *testing.T) {
 	t.Parallel()
 
@@ -259,6 +384,39 @@ func TestHandler_fromAPI_nullPreservation_showDistributions(t *testing.T) {
 	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
 	require.False(t, diags.HasError(), "%s", diags)
 	assert.True(t, pm.FieldStatsTableConfig.ByEsql.ShowDistributions.IsNull())
+}
+
+func TestHandler_fromAPI_nullPreservation_dataviewShowDistributions(t *testing.T) {
+	t.Parallel()
+
+	show := true
+	apiCfg := kbapi.KibanaHTTPAPIsDataVisualizerFieldStats0{
+		DataViewId:        "logs-view",
+		ViewType:          kbapi.Dataview,
+		ShowDistributions: &show,
+	}
+	var cfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats
+	require.NoError(t, cfg.FromKibanaHTTPAPIsDataVisualizerFieldStats0(apiCfg))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable{
+		Type:   kbapi.FieldStatsTable,
+		Config: cfg,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel))
+
+	prior := panelModelBase()
+	prior.FieldStatsTableConfig = &models.FieldStatsTableConfigModel{
+		ByDataview: &models.FieldStatsTableByDataviewModel{
+			DataViewID:        stringVal("logs-view"),
+			ShowDistributions: boolNull(),
+		},
+	}
+
+	pm := prior
+	diags := fieldstatstable.Handler{}.FromAPI(context.Background(), &pm, &prior, item)
+	require.False(t, diags.HasError(), "%s", diags)
+	assert.True(t, pm.FieldStatsTableConfig.ByDataview.ShowDistributions.IsNull())
 }
 
 func TestHandler_toAPI_rejectsConfigJSON(t *testing.T) {

@@ -91,4 +91,34 @@ func TestFieldStatsTableConfigModeValidator(t *testing.T) {
 		}, &resp)
 		require.False(t, resp.Diagnostics.HasError())
 	})
+
+	t.Run("exactly one branch set by_esql", func(t *testing.T) {
+		t.Parallel()
+		ov := types.ObjectValueMust(configAttrTypes, map[string]attr.Value{
+			"by_dataview": types.ObjectNull(byDataviewAttrs),
+			"by_esql": types.ObjectValueMust(byEsqlAttrs, map[string]attr.Value{
+				"query": types.StringValue("FROM logs"),
+			}),
+		})
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{
+			Path:        path.Root("field_stats_table_config"),
+			ConfigValue: ov,
+		}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
+
+	t.Run("unknown branch defers validation", func(t *testing.T) {
+		t.Parallel()
+		ov := types.ObjectValueMust(configAttrTypes, map[string]attr.Value{
+			"by_dataview": types.ObjectUnknown(byDataviewAttrs),
+			"by_esql":     types.ObjectNull(byEsqlAttrs),
+		})
+		var resp validator.ObjectResponse
+		v.ValidateObject(ctx, validator.ObjectRequest{
+			Path:        path.Root("field_stats_table_config"),
+			ConfigValue: ov,
+		}, &resp)
+		require.False(t, resp.Diagnostics.HasError())
+	})
 }
