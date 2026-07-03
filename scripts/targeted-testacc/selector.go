@@ -36,7 +36,7 @@ func SelectPackages(forceAll bool, phase1, phase2, accTestPackages []string, run
 	}
 	sort.Strings(union)
 
-	thresholdCount := int(math.Floor(runAllThresholdPct/100.0*float64(len(all))))
+	thresholdCount := int(math.Floor(runAllThresholdPct / 100.0 * float64(len(all))))
 	if len(union) > thresholdCount {
 		return all
 	}

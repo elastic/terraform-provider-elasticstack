@@ -31,10 +31,10 @@ func (realGitDiffRunner) DiffNameOnly(base string) ([]string, error) {
 }
 
 // ResolveBaseline selects the diff baseline using the documented precedence:
-//   1. explicit flag value
-//   2. TARGETED_TESTACC_BASE environment variable
-//   3. git merge-base origin/main HEAD
-//   4. HEAD~1 fallback
+//  1. explicit flag value
+//  2. TARGETED_TESTACC_BASE environment variable
+//  3. git merge-base origin/main HEAD
+//  4. HEAD~1 fallback
 func ResolveBaseline(flagBase string) string {
 	if flagBase != "" {
 		return flagBase
