@@ -26,7 +26,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/role"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
@@ -441,16 +440,13 @@ func checkResourceSecurityRoleDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		typedClient := client.GetESClient()
-		_, err = typedClient.Security.GetRole().Name(compID.ResourceID).Do(context.Background())
+		exists, err := client.GetESClient().Security.GetRole().Name(compID.ResourceID).IsSuccess(context.Background())
 		if err != nil {
-			if esclient.IsNotFoundElasticsearchError(err) {
-				continue
-			}
 			return err
 		}
-
-		return fmt.Errorf("role (%s) still exists", compID.ResourceID)
+		if exists {
+			return fmt.Errorf("role (%s) still exists", compID.ResourceID)
+		}
 	}
 	return nil
 }

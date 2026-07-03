@@ -460,6 +460,31 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 - WHEN state is repopulated from the GET response
 - THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
 
+The provider SHALL apply intent-preserving null normalization to the root-level `description` attribute on read. When the Kibana API returns an empty-string `description` (`""`) and the prior Terraform plan/state had `description` as null (i.e., the practitioner did not set `description`), the provider SHALL store `null` in state — not `""`. When the prior Terraform plan/state had `description` as `""` (i.e., the practitioner explicitly set `description = ""`), the provider SHALL preserve `""` in state. When the API returns a non-empty `description`, the provider SHALL store that value unchanged.
+
+This normalization fixes a Kibana 9.5 behavior change: previously the API omitted `description` when none was supplied; from 9.5 onward it returns `""`. Without this fix, practitioners who omit `description` see "Provider produced inconsistent result after apply" with the message `.description: was null, but now cty.StringVal("")`.
+
+#### Scenario: Omitted description normalizes to null on read
+
+- GIVEN a dashboard configured without `description` (null in Terraform state/plan)
+- AND the Kibana API returns `description: ""`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = null`
+
+#### Scenario: Explicit empty description preserved on read
+
+- GIVEN a dashboard configured with `description = ""`
+- AND the Kibana API returns `description: ""`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = ""`
+
+#### Scenario: Non-empty description preserved unchanged
+
+- GIVEN a dashboard configured with `description = "My dashboard"`
+- AND the Kibana API returns `description: "My dashboard"`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = "My dashboard"`
+
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift where the implementation supports that behavior. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API does not supply a usable `access_control.access_mode` value, the resource SHALL clear `access_control` in Terraform state rather than leaving a stale prior value behind. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
@@ -467,6 +492,15 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
+
+The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
+
+#### Scenario: Empty-string description treated as null for null-intent practitioners
+
+- GIVEN a practitioner has never set `description` on a dashboard (prior state: null)
+- AND Kibana 9.5 returns `description: ""` on a subsequent read or post-apply read-back
+- WHEN the provider applies REQ-009 null-preservation to `description`
+- THEN state SHALL contain `description = null` and no drift SHALL be reported on the next plan
 
 #### Scenario: Options omitted in config
 
@@ -1123,44 +1157,76 @@ The `esql_control` panel type is a standalone control panel, not a `vis` visuali
 
 ### Requirement: Range slider control panel behavior (REQ-028)
 
-For `type = "range_slider_control"` panels, the resource SHALL accept `range_slider_control_config` with the following attributes:
+When a panel entry sets `type = "range_slider_control"`, the resource SHALL accept a `range_slider_control_config` block with the following structure. The block MUST contain exactly one of two mutually exclusive nested blocks: `by_field` or `by_esql`. Having both or neither SHALL produce an error diagnostic at plan time.
 
-- **`data_view_id`** (required, string): the ID of the Kibana data view that the slider filter targets.
-- **`field_name`** (required, string): the numeric field within the data view that the slider operates on.
-- **`title`** (optional, string): a human-readable label displayed above the slider in the dashboard.
-- **`use_global_filters`** (optional, bool): when set, controls whether the panel respects dashboard-level global filters.
-- **`ignore_validations`** (optional, bool): when set, suppresses validation errors from the control during intermediate states.
-- **`value`** (optional, list(string)): the initial min/max range pre-populated on the slider, expressed as a 2-element list `[min, max]`. When set, the list MUST contain exactly 2 elements. The values are strings matching the API representation.
-- **`step`** (optional, number): the step size for each increment of the slider.
+#### `by_field` block (Field variant)
 
-On write, the resource SHALL send `data_view_id` and `field_name` unconditionally and SHALL include each optional field only when it is set to a known, non-null value. On read, the resource SHALL populate `range_slider_control_config` from the API response for panels with `type = "range_slider_control"` and SHALL leave optional fields null in state when the API does not return them.
+The `by_field` nested block represents a range slider sourced from a Kibana data view field:
 
-The `range_slider_control_config` block is valid only when `type = "range_slider_control"` and MUST NOT appear with any other typed panel config block or with `config_json`.
+- `data_view_id` (required, string) — the ID of the data view the slider targets.
+- `field_name` (required, string) — the numeric field within the data view.
+- `title` (optional, string) — human-readable label displayed above the slider.
+- `use_global_filters` (optional, bool) — whether the panel respects dashboard-level global filters.
+- `ignore_validations` (optional, bool) — suppresses validation errors from the control during intermediate states.
+- `value` (optional, list of string) — the initial min/max range as a 2-element list `[min, max]`; the list MUST contain exactly 2 elements when set.
+- `step` (optional, number) — the step size for each increment of the slider (stored as float32 to match the API).
 
-#### Scenario: Required fields only
+On write, the provider SHALL set `values_source = "field"` automatically; this field SHALL NOT be exposed.
 
-- GIVEN a `range_slider_control` panel configured with only `data_view_id` and `field_name`
-- WHEN create or update runs
-- THEN the API request SHALL include `data_view_id` and `field_name` in the panel config and SHALL omit all unset optional fields
+#### `by_esql` block (ES|QL variant)
 
-#### Scenario: Optional range pre-selection
+The `by_esql` nested block represents a range slider sourced from an ES|QL query:
 
-- GIVEN a `range_slider_control` panel configured with `value = ["10", "500"]`
-- WHEN create or update runs
-- THEN the API request SHALL include `value` as a 2-element array matching the configured strings
-- AND when read-back occurs, state SHALL reflect `value = ["10", "500"]`
+- `esql_query` (required, string) — the ES|QL query that produces the min/max range values.
+- `values_source` (required, string) — must be `"esql_query"`. Any other value SHALL produce an error diagnostic at plan time.
+- `title` (optional, string) — same as `by_field`.
+- `use_global_filters` (optional, bool) — same as `by_field`.
+- `ignore_validations` (optional, bool) — same as `by_field`.
+- `value` (optional, list of string) — same as `by_field` (2-element list constraint applies).
+- `step` (optional, number) — same as `by_field`.
 
-#### Scenario: Invalid value list length
+Null-preservation semantics (REQ-009) apply to optional boolean attributes (`use_global_filters`, `ignore_validations`) within both branches. On import, the provider SHALL populate the branch-specific required identifiers from the API response: for `by_field`, `data_view_id` and `field_name`; for `by_esql`, `esql_query` and `values_source`. Optional booleans SHALL be left null.
 
-- GIVEN a `range_slider_control_config` block with `value` set to a list with fewer or more than 2 elements
-- WHEN Terraform validates the configuration
+#### Mutual exclusion and conflict guards
+
+- Exactly one of `by_field` or `by_esql` MUST be set in `range_slider_control_config`.
+- `range_slider_control_config` remains mutually exclusive with all other typed panel config blocks and with `config_json`.
+
+#### State migration (v0 → v1)
+
+The same `ResourceWithUpgradeState` upgrader (described in REQ-027 above) SHALL also rewrite existing v0 `range_slider_control_config` flat attributes (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) under a `by_field {}` object.
+
+#### Scenarios
+
+##### Scenario: Field variant round-trip
+
+- GIVEN a `range_slider_control` panel with `by_field = { data_view_id = "orders-view", field_name = "price" }`
+- WHEN the provider creates the dashboard and reads it back
+- THEN `data_view_id` and `field_name` SHALL be present under `range_slider_control_config.by_field` and a subsequent plan SHALL show no changes
+
+##### Scenario: ES|QL variant round-trip
+
+- GIVEN a `range_slider_control` panel with `by_esql = { esql_query = "FROM orders | STATS ...", values_source = "esql_query" }`
+- WHEN the provider creates the dashboard and reads it back
+- THEN `esql_query` and `values_source` SHALL be present under `range_slider_control_config.by_esql` and a subsequent plan SHALL show no changes
+
+##### Scenario: Invalid value list length
+
+- GIVEN a `range_slider_control_config` block with `by_field = { ..., value = ["10"] }`
+- WHEN Terraform validates the resource configuration
 - THEN the provider SHALL return a validation diagnostic stating that `value` must contain exactly 2 elements
 
-#### Scenario: config_json rejected for range_slider_control
+##### Scenario: State upgrade from v0 flat to v1 by_field
 
-- GIVEN a panel with `type = "range_slider_control"` configured with `config_json` instead of `range_slider_control_config`
-- WHEN the provider builds the API request
-- THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
+- GIVEN a Terraform state containing `range_slider_control_config` with flat attributes (v0 schema: `data_view_id`, `field_name`, etc. at the config root)
+- WHEN the provider with the updated schema is applied
+- THEN the state upgrader SHALL rewrite the flat attributes under `by_field` and the resulting v1 state SHALL be equivalent to configuring `by_field { data_view_id = ..., field_name = ..., ... }`
+
+##### Scenario: Both branches rejected
+
+- GIVEN a `range_slider_control_config` block that sets both `by_field` and `by_esql`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the two branches are mutually exclusive
 
 ### Requirement: SLO overview panel behavior (REQ-030)
 
@@ -1235,62 +1301,111 @@ On read, the provider SHALL reconstruct the `single` or `groups` sub-block from 
 
 ### Requirement: Options list control panel behavior (REQ-027)
 
-When a panel entry sets `type = "options_list_control"`, the resource SHALL accept an `options_list_control_config` block and SHALL require that block to be present. The block SHALL require `data_view_id` (string) and `field_name` (string). All other attributes in the block SHALL be optional:
+When a panel entry sets `type = "options_list_control"`, the resource SHALL accept an `options_list_control_config` block with the following structure. The block MUST contain exactly one of two mutually exclusive nested blocks: `by_field` or `by_esql`. Having both or neither SHALL produce an error diagnostic at plan time.
 
-- `title` (string) — human-readable label displayed above the control.
-- `use_global_filters` (bool) — whether the control applies the dashboard's global filters to its own query.
-- `ignore_validations` (bool) — whether the control skips field-level validation against the data view.
-- `single_select` (bool) — when true, only one option may be selected at a time.
-- `exclude` (bool) — when true, the selected options are used as an exclusion filter rather than an inclusion filter.
-- `exists_selected` (bool) — when true, the control filters for documents where the field exists.
-- `run_past_timeout` (bool) — when true, the control continues to show results even when the underlying query times out.
-- `search_technique` (string) — the technique used to match suggestions; MUST be one of `prefix`, `wildcard`, or `exact` when set.
-- `selected_options` (list of string) — the initially or persistently selected option values; the provider SHALL represent all selected options as strings regardless of whether the API stores them as numbers.
-- `display_settings` (nested block, optional) — display preferences for the control widget, containing:
+#### `by_field` block (Field variant)
+
+The `by_field` nested block represents a control sourced from a Kibana data view field:
+
+- `data_view_id` (required, string) — the ID of the Kibana data view the control is tied to.
+- `field_name` (required, string) — the name of the field within the data view.
+- `title` (optional, string) — human-readable label displayed above the control.
+- `use_global_filters` (optional, bool) — whether the control applies the dashboard's global filters to its own query.
+- `ignore_validations` (optional, bool) — whether the control skips field-level validation against the data view.
+- `single_select` (optional, bool) — when true, only one option may be selected at a time.
+- `exclude` (optional, bool) — when true, selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (optional, bool) — when true, the control filters for documents where the field exists.
+- `run_past_timeout` (optional, bool) — when true, the control continues to show results even when the underlying query times out.
+- `search_technique` (optional, string) — must be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (optional, list of string) — the initially or persistently selected option values; all values are represented as strings.
+- `display_settings` (optional, nested block) — display preferences for the control widget, containing:
   - `placeholder` (string) — placeholder text shown when no option is selected.
   - `hide_action_bar` (bool) — when true, hides the action bar on the control.
   - `hide_exclude` (bool) — when true, hides the exclude toggle.
   - `hide_exists` (bool) — when true, hides the exists filter option.
   - `hide_sort` (bool) — when true, hides the sort control.
-- `sort` (nested block, optional) — default sort configuration for the suggestion list, containing:
-  - `by` (string) — the field or criterion to sort by.
-  - `direction` (string) — the sort direction.
+- `sort` (optional, nested block) — default sort configuration for the suggestion list, containing:
+  - `by` (required, string) — must be one of `_count` or `_key`.
+  - `direction` (required, string) — must be one of `asc` or `desc`.
 
-The `options_list_control_config` block SHALL conflict with all other typed panel config blocks (`markdown_config`, `xy_chart_config`, `treemap_config`, `mosaic_config`, `datatable_config`, `tagcloud_config`, `heatmap_config`, `waffle_config`, `region_map_config`, `gauge_config`, `metric_chart_config`, `pie_chart_config`, `legacy_metric_config`) and with `config_json`. When `type` is `options_list_control`, no other typed config block or `config_json` SHALL be present on the same panel entry.
+On write, the provider SHALL set `values_source = "field"` automatically on the API payload for the Field branch; this field SHALL NOT be exposed as a Terraform attribute.
 
-For API mapping, the provider SHALL write the `options_list_control_config` attributes into the panel's `config` object as defined by the `kbn-dashboard-panel-options_list_control` API schema. On read-back, the provider SHALL use null-preservation semantics: optional boolean attributes (`use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`) and the `sort` block SHALL remain null in state when the prior state value was null, even if Kibana returns a server-side default for that attribute. Only attributes that were explicitly set by the user (non-null in prior state) SHALL be updated from the API response. During import (no prior state), only `data_view_id`, `field_name`, `title`, `single_select`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated; the remaining optional boolean attributes and `sort` SHALL be left null to avoid forcing users to manage Kibana server-side defaults in their configuration. The provider SHALL treat a nil or empty `display_settings` API object as equivalent to an omitted `display_settings` block in state.
+#### `by_esql` block (ES|QL variant)
 
-#### Scenario: Options list control panel requires data_view_id and field_name
+The `by_esql` nested block represents a control sourced from an ES|QL query:
 
-- GIVEN a panel entry with `type = "options_list_control"` and an `options_list_control_config` block that omits `data_view_id` or `field_name`
-- WHEN Terraform validates the resource configuration
-- THEN the provider SHALL return an error diagnostic indicating that `data_view_id` and `field_name` are required
+- `esql_query` (required, string) — the ES|QL query that produces the available option values.
+- `values_source` (required, string) — the source discriminator; MUST be `"esql_query"`. Any other value SHALL produce an error diagnostic at plan time.
+- `title` (optional, string) — same as `by_field`.
+- `use_global_filters` (optional, bool) — same as `by_field`.
+- `ignore_validations` (optional, bool) — same as `by_field`.
+- `single_select` (optional, bool) — same as `by_field`.
+- `exclude` (optional, bool) — same as `by_field`.
+- `exists_selected` (optional, bool) — same as `by_field`.
+- `run_past_timeout` (optional, bool) — same as `by_field`.
+- `search_technique` (optional, string) — same as `by_field` (must be one of `prefix`, `wildcard`, or `exact` when set).
+- `selected_options` (optional, list of string) — same as `by_field`.
+- `display_settings` (optional, nested block) — same structure as `by_field`.
+- `sort` (optional, nested block) — same structure as `by_field`.
 
-#### Scenario: Options list control panel with invalid search_technique
+#### Null-preservation and import semantics
 
-- GIVEN a panel entry with `type = "options_list_control"` and `options_list_control_config.search_technique` set to a value other than `prefix`, `wildcard`, or `exact`
-- WHEN Terraform validates the resource configuration
-- THEN the provider SHALL return an error diagnostic indicating the value is not one of the accepted enum values
+During import (no prior state), the provider SHALL populate the branch-specific required identifiers from the API response: for `by_field`, populate `data_view_id` and `field_name`; for `by_esql`, populate `esql_query` and `values_source`. In both branches, `title`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated where present in the API response; optional booleans and `sort` SHALL be left null.
 
-#### Scenario: Options list control panel round-trips through Kibana
+#### Mutual exclusion and conflict guards
 
-- GIVEN a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
+- Exactly one of `by_field` or `by_esql` MUST be set in `options_list_control_config`.
+- `options_list_control_config` SHALL remain mutually exclusive with all other typed panel config blocks and with `config_json` (unchanged from existing REQ-027).
+
+#### State migration (v0 → v1)
+
+The change from a flat `options_list_control_config` schema to the two-branch nested schema constitutes a schema version increment. The resource SHALL implement a Plugin Framework `ResourceWithUpgradeState` upgrader that rewrites existing v0 state by moving all flat `options_list_control_config` attributes under a `by_field {}` object. The upgrader SHALL handle both in-grid `panels[]` entries and `pinned_panels` entries.
+
+#### Scenarios
+
+##### Scenario: Field variant round-trip
+
+- GIVEN a panel with `type = "options_list_control"` whose `options_list_control_config` sets `by_field = { data_view_id = "logs-view", field_name = "service.name", search_technique = "prefix", single_select = true }`
 - WHEN the provider creates the dashboard and reads it back
-- THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+- THEN all configured attributes SHALL be present in state under `options_list_control_config.by_field` and a subsequent plan SHALL show no changes
 
-#### Scenario: Options list control panel import leaves server-default booleans null
+##### Scenario: ES|QL variant round-trip
 
-- GIVEN an existing dashboard with an `options_list_control` panel where Kibana stores server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
+- GIVEN a panel with `type = "options_list_control"` whose `options_list_control_config` sets `by_esql = { esql_query = "FROM logs | STATS ...", values_source = "esql_query", title = "Service" }`
+- WHEN the provider creates the dashboard and reads it back
+- THEN `options_list_control_config.by_esql.esql_query` and `values_source` SHALL be present in state and a subsequent plan SHALL show no changes
+
+##### Scenario: Field variant null-preservation on import
+
+- GIVEN an existing dashboard whose options-list control is a field-backed control with Kibana server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
 - WHEN the provider imports the dashboard resource
-- THEN `data_view_id` and `field_name` SHALL be populated in state
-- AND `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort` SHALL remain null in state
-- AND a subsequent plan against a configuration that omits those attributes SHALL show no changes
+- THEN `data_view_id` and `field_name` SHALL be populated under `by_field` in state
+- AND optional booleans and `sort` SHALL remain null in state
+- AND a subsequent plan against a configuration that omits them SHALL show no changes
 
-#### Scenario: Options list control config conflicts with other typed blocks
+##### Scenario: Both branches rejected
 
-- GIVEN a panel entry with `type = "options_list_control"` that sets both `options_list_control_config` and any other typed config block (e.g. `markdown_config`)
+- GIVEN an `options_list_control_config` block that sets both `by_field` and `by_esql`
 - WHEN Terraform validates the resource configuration
-- THEN the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive
+- THEN the provider SHALL return an error diagnostic indicating the two branches are mutually exclusive
+
+##### Scenario: Neither branch rejected
+
+- GIVEN an `options_list_control_config` block with neither `by_field` nor `by_esql` set
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating exactly one branch must be configured
+
+##### Scenario: Invalid values_source on by_esql
+
+- GIVEN `by_esql = { esql_query = "...", values_source = "field" }`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating `values_source` must be `"esql_query"`
+
+##### Scenario: State upgrade from v0 flat to v1 by_field
+
+- GIVEN a Terraform state that contains `options_list_control_config` with flat attributes (v0 schema: `data_view_id`, `field_name`, etc. at the config root)
+- WHEN the provider with the updated schema is applied
+- THEN the state upgrader SHALL rewrite the flat attributes under `by_field` and the resulting v1 state SHALL be equivalent to configuring `by_field { data_view_id = ..., field_name = ..., ... }`
 
 ### Requirement: Synthetics stats overview panel behavior (REQ-033)
 
@@ -2717,6 +2832,33 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 - WHEN the configuration changes to `job_ids = ["job-a", "job-b"]` and update runs
 - THEN the resource SHALL NOT destroy and recreate the dashboard
 - AND state SHALL reflect both job IDs after the update
+
+---
+
+### Requirement: Dashboard resource schema version upgrade (REQ-040)
+
+The `elasticstack_kibana_dashboard` resource SHALL implement `terraform-plugin-framework`'s `ResourceWithUpgradeState` interface with a single state upgrader for version 0 → 1.
+
+The v0 → v1 upgrader SHALL:
+
+1. Inspect every entry in `panels[]` and every entry in `pinned_panels[]`.
+2. For each entry whose `type` is `"options_list_control"`: move all flat attributes from `options_list_control_config` (i.e. `data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `single_select`, `exclude`, `exists_selected`, `run_past_timeout`, `search_technique`, `selected_options`, `display_settings`, `sort`) into a nested `by_field {}` object within `options_list_control_config`.
+3. For each entry whose `type` is `"range_slider_control"`: move all flat attributes from `range_slider_control_config` (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) into a nested `by_field {}` object within `range_slider_control_config`.
+4. Leave all other panel types unchanged.
+
+The resource schema version SHALL be incremented to 1. No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
+
+#### Scenario: State upgrade preserves all field-branch attributes
+
+- GIVEN a v0 state containing both `options_list_control` and `range_slider_control` panels with all optional attributes set (e.g. `sort`, `display_settings`, `value`, `step`)
+- WHEN the state upgrader runs
+- THEN all attribute values SHALL be present under the `by_field {}` sub-object in v1 state and no attributes SHALL be dropped
+
+#### Scenario: Non-control panels are unaffected by the upgrader
+
+- GIVEN a v0 state containing a mix of `options_list_control`, `range_slider_control`, and `markdown` panels
+- WHEN the state upgrader runs
+- THEN the `markdown` panel entries SHALL be unchanged in v1 state
 
 ## Traceability
 

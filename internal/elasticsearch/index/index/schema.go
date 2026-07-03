@@ -19,10 +19,10 @@ package index
 
 import (
 	"context"
-	"regexp"
 
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -106,13 +106,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthBetween(1, 255),
 					stringvalidator.NoneOf(".", ".."),
 					stringvalidator.Any(
-						stringvalidator.All(
-							stringvalidator.RegexMatches(regexp.MustCompile(`^[^-_+]`), "cannot start with -, _, +"),
-							stringvalidator.RegexMatches(
-								regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`),
-								index.IndexNameAllowedCharsMessage,
-							),
-						),
+						stringvalidator.All(indexname.NameValidators()...),
 						stringvalidator.RegexMatches(
 							esclient.DateMathIndexNameRe,
 							dateMathIndexNameMessage,

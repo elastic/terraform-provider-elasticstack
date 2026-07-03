@@ -27,9 +27,11 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 4
     }
     range_slider_control_config = {
-      data_view_id = "test-data-view-id"
-      field_name   = "bytes"
-      value        = ["100"]
+      by_field = {
+        data_view_id = "test-data-view-id"
+        field_name   = "bytes"
+        value        = ["100"]
+      }
     }
   }]
 }

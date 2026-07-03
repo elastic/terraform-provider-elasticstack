@@ -51,18 +51,8 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 	}
 	embeddable.Slos = &slos
 
-	if typeutils.IsKnown(cfg.Title) {
-		embeddable.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		embeddable.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		embeddable.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		embeddable.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
@@ -114,10 +104,8 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 
 	existing.Slos = readSlosFromAPI(*apiCfg.Slos, existing.Slos)
 
-	existing.Title = panelkit.PreserveString(existing.Title, apiCfg.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, apiCfg.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiCfg.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiCfg.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		apiCfg.Title, apiCfg.Description, apiCfg.HideTitle, apiCfg.HideBorder)
 
 	var priorDrilldowns []models.URLDrilldownModel
 	if tfPanel.SloAlertsConfig != nil {

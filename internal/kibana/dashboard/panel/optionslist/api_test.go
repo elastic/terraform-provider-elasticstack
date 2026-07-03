@@ -28,10 +28,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestContract_OptionsListPanel(t *testing.T) {
+func TestContract_OptionsListPanel_ByField(t *testing.T) {
 	t.Parallel()
 
 	contracttest.Run(t, optionslist.Handler{}, contracttest.Config{
+		// The FullAPIResponse fixture uses Kibana's flat wire format (unaffected by the TF
+		// schema restructure), while the TF schema now nests these attributes under `by_field`.
 		OmitRequiredLeafPresence: true,
 		FullAPIResponse: `{
 			"type": "options_list_control",
@@ -44,17 +46,57 @@ func TestContract_OptionsListPanel(t *testing.T) {
 			}
 		}`,
 		SkipFields: []string{
+			// This fixture discriminates to the Field branch; the ES|QL branch is exercised by
+			// TestContract_OptionsListPanel_ByEsql instead.
+			"by_esql",
+			// The provider deliberately omits values_source on by_field writes for backward
+			// compatibility with Kibana < 9.5 (see buildFieldConfig); it is intentionally absent
+			// from the read fixture and not a user-facing attribute for by_field.
+			"config.values_source",
 			// Optional `sort` block has required inner leaves; minimal API fixtures omit it.
-			"sort",
-			"display_settings",
-			"use_global_filters",
-			"ignore_validations",
-			"single_select",
-			"exclude",
-			"exists_selected",
-			"run_past_timeout",
-			"search_technique",
-			"selected_options",
+			"by_field.sort",
+			"by_field.display_settings",
+			"by_field.use_global_filters",
+			"by_field.ignore_validations",
+			"by_field.single_select",
+			"by_field.exclude",
+			"by_field.exists_selected",
+			"by_field.run_past_timeout",
+			"by_field.search_technique",
+			"by_field.selected_options",
+		},
+	})
+}
+
+func TestContract_OptionsListPanel_ByEsql(t *testing.T) {
+	t.Parallel()
+
+	contracttest.Run(t, optionslist.Handler{}, contracttest.Config{
+		OmitRequiredLeafPresence: true,
+		FullAPIResponse: `{
+			"type": "options_list_control",
+			"grid": {"x": 2, "y": 0, "w": 10, "h": 5},
+			"id": "ol-contract-esql",
+			"config": {
+				"esql_query": "FROM logs | STATS BY host.name",
+				"values_source": "esql",
+				"title": "Hosts"
+			}
+		}`,
+		SkipFields: []string{
+			// This fixture discriminates to the ES|QL branch; the Field branch is exercised by
+			// TestContract_OptionsListPanel_ByField instead.
+			"by_field",
+			"by_esql.sort",
+			"by_esql.display_settings",
+			"by_esql.use_global_filters",
+			"by_esql.ignore_validations",
+			"by_esql.single_select",
+			"by_esql.exclude",
+			"by_esql.exists_selected",
+			"by_esql.run_past_timeout",
+			"by_esql.search_technique",
+			"by_esql.selected_options",
 		},
 	})
 }
@@ -67,8 +109,10 @@ func TestPinned_OptionsListPinnedRoundtrip(t *testing.T) {
 	in := models.PinnedPanelModel{
 		Type: types.StringValue("options_list_control"),
 		OptionsListControlConfig: &models.OptionsListControlConfigModel{
-			DataViewID: types.StringValue("pinned-dv"),
-			FieldName:  types.StringValue("svc"),
+			ByField: &models.OptionsListControlByFieldModel{
+				DataViewID: types.StringValue("pinned-dv"),
+				FieldName:  types.StringValue("svc"),
+			},
 		},
 	}
 	raw, d1 := ph.ToAPI(in)
@@ -78,6 +122,7 @@ func TestPinned_OptionsListPinnedRoundtrip(t *testing.T) {
 	require.False(t, d2.HasError(), "%v", d2)
 	require.True(t, out.Type.Equal(types.StringValue("options_list_control")))
 	require.NotNil(t, out.OptionsListControlConfig)
-	require.Equal(t, "pinned-dv", out.OptionsListControlConfig.DataViewID.ValueString())
-	require.Equal(t, "svc", out.OptionsListControlConfig.FieldName.ValueString())
+	require.NotNil(t, out.OptionsListControlConfig.ByField)
+	require.Equal(t, "pinned-dv", out.OptionsListControlConfig.ByField.DataViewID.ValueString())
+	require.Equal(t, "svc", out.OptionsListControlConfig.ByField.FieldName.ValueString())
 }

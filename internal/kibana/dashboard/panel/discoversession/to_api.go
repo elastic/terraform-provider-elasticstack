@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -147,18 +148,8 @@ func discoverSessionByReferenceToAPI(
 }
 
 func discoverSessionApplyEnvelopeToConfig0(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0) {
-	if typeutils.IsKnown(cfg.Title) {
-		api.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		api.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		api.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		api.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 	if len(cfg.Drilldowns) > 0 {
 		dd := make([]struct {
 			EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
@@ -185,18 +176,8 @@ func discoverSessionApplyEnvelopeToConfig0(cfg *models.DiscoverSessionPanelConfi
 }
 
 func discoverSessionApplyEnvelopeToConfig1(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1) {
-	if typeutils.IsKnown(cfg.Title) {
-		api.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		api.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		api.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		api.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 	if len(cfg.Drilldowns) > 0 {
 		dd := make([]struct {
 			EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive

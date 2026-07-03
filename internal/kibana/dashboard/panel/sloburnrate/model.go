@@ -46,18 +46,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	if typeutils.IsKnown(cfg.SloInstanceID) {
 		embeddable.SloInstanceId = cfg.SloInstanceID.ValueStringPointer()
 	}
-	if typeutils.IsKnown(cfg.Title) {
-		embeddable.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		embeddable.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		embeddable.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		embeddable.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
@@ -115,10 +105,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	existing.SloInstanceID = panelkit.PreserveString(existing.SloInstanceID, apiConfig.SloInstanceId)
 
 	// Optional fields: only update from API when they were already known in state.
-	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
 
 	var priorDrilldowns []models.URLDrilldownModel
 	if prior != nil && prior.SloBurnRateConfig != nil {
@@ -159,18 +147,8 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	if !typeutils.IsKnown(prior.SloInstanceID) {
 		existing.SloInstanceID = types.StringNull()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
 		existing.Drilldowns = nil
 	}

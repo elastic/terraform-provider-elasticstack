@@ -22,148 +22,253 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// PopulateFromAPI reads back a range slider control config from the API
-// response and updates the panel model. Null-preservation semantics apply: if a field is
-// null in the existing TF state, we do not overwrite it with a Kibana-returned value. If
-// there is no existing config block, and Kibana returns an empty/absent config, we leave
-// RangeSliderControlConfig as nil.
+// PopulateFromAPI reads back a range slider control config from the API response and updates the
+// panel model. The config is a discriminated union (Field vs ES|QL) with no explicit discriminator
+// field on the wire; the variant is detected by probing for the `esql_query` key.
 //
-// tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function
-// populates all API-returned fields unconditionally (no prior intent to preserve).
+// Null-preservation semantics apply per branch: if an optional field is null in the existing TF
+// state, it is not overwritten with a Kibana-returned value. If there is no existing config block,
+// and Kibana returns an empty/absent config, RangeSliderControlConfig is left nil.
+//
+// tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function populates all
+// API-returned fields unconditionally (no prior intent to preserve).
 func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
 	if rs == nil {
 		return nil
 	}
-	// The control config is a discriminated union (field-based vs ES|QL).
-	// The TF model only describes the field-based variant; a valid ES|QL config
-	// is left unchanged. If the config matches neither variant it is malformed
-	// and surfaced as an error.
-	apiConfig, err := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField()
+
+	var diags diag.Diagnostics
+
+	isImport := tfPanel == nil
+	var priorCfg *models.RangeSliderControlConfigModel
+	if !isImport {
+		priorCfg = tfPanel.RangeSliderControlConfig
+		if priorCfg == nil {
+			// No prior intent to have this block configured; preserve nil.
+			return nil
+		}
+	}
+
+	raw, err := rs.Config.MarshalJSON()
 	if err != nil {
-		if _, esqlErr := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(); esqlErr != nil {
-			var diags diag.Diagnostics
+		diags.AddError("Failed to decode range slider control config", err.Error())
+		return diags
+	}
+
+	// Reuse the existing config container (seeded from prior state) when one is available, rather
+	// than allocating a new one, so unchanged reads preserve pointer identity.
+	cfg := priorCfg
+	if cfg == nil {
+		cfg = &models.RangeSliderControlConfigModel{}
+	}
+
+	if panelkit.IsEsqlBranch(raw) {
+		esqlCfg, err := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql()
+		if err != nil {
 			diags.AddError("Failed to decode range slider control config", err.Error())
 			return diags
 		}
-		return nil
-	}
-	existing := pm.RangeSliderControlConfig
-
-	// On import (tfPanel == nil) there is no prior intent. Populate from API unconditionally.
-	if tfPanel == nil {
-		pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue(apiConfig.DataViewId),
-			FieldName:  types.StringValue(apiConfig.FieldName),
+		var priorByEsql *models.RangeSliderControlByEsqlModel
+		if priorCfg != nil {
+			priorByEsql = priorCfg.ByEsql
 		}
-		existing = pm.RangeSliderControlConfig
-		if apiConfig.Title != nil {
-			existing.Title = types.StringValue(*apiConfig.Title)
-		}
-		if apiConfig.UseGlobalFilters != nil {
-			existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-		}
-		if apiConfig.IgnoreValidations != nil {
-			existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-		}
-		if apiConfig.Value != nil {
-			v, _ := types.ListValueFrom(ctx, types.StringType, *apiConfig.Value)
-			existing.Value = v
-		}
-		if apiConfig.Step != nil {
-			existing.Step = types.Float32Value(*apiConfig.Step)
-		}
-		return nil
+		cfg.ByField = nil
+		cfg.ByEsql = populateByEsqlFromAPI(ctx, priorByEsql, &esqlCfg)
+		pm.RangeSliderControlConfig = cfg
+		return diags
 	}
 
-	if existing == nil {
-		if tfPanel == nil || tfPanel.RangeSliderControlConfig == nil {
-			return nil
-		}
-		pm.RangeSliderControlConfig = &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue(apiConfig.DataViewId),
-			FieldName:  types.StringValue(apiConfig.FieldName),
-		}
-		existing = pm.RangeSliderControlConfig
-		if apiConfig.Title != nil {
-			existing.Title = types.StringValue(*apiConfig.Title)
-		}
-		if apiConfig.UseGlobalFilters != nil {
-			existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-		}
-		if apiConfig.IgnoreValidations != nil {
-			existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-		}
-		if apiConfig.Value != nil {
-			v, _ := types.ListValueFrom(ctx, types.StringType, *apiConfig.Value)
-			existing.Value = v
-		}
-		if apiConfig.Step != nil {
-			existing.Step = types.Float32Value(*apiConfig.Step)
-		}
+	fieldCfg, err := rs.Config.AsKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField()
+	if err != nil {
+		diags.AddError("Failed to decode range slider control config", err.Error())
+		return diags
 	}
-
-	// Block exists in state — always update required fields, update optional only when non-null.
-	existing.DataViewID = types.StringValue(apiConfig.DataViewId)
-	existing.FieldName = types.StringValue(apiConfig.FieldName)
-
-	if typeutils.IsKnown(existing.Title) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
+	var priorByField *models.RangeSliderControlByFieldModel
+	if priorCfg != nil {
+		priorByField = priorCfg.ByField
 	}
-	if typeutils.IsKnown(existing.UseGlobalFilters) && apiConfig.UseGlobalFilters != nil {
-		existing.UseGlobalFilters = types.BoolValue(*apiConfig.UseGlobalFilters)
-	}
-	if typeutils.IsKnown(existing.IgnoreValidations) && apiConfig.IgnoreValidations != nil {
-		existing.IgnoreValidations = types.BoolValue(*apiConfig.IgnoreValidations)
-	}
-	if typeutils.IsKnown(existing.Value) && apiConfig.Value != nil {
-		v, _ := types.ListValueFrom(ctx, types.StringType, *apiConfig.Value)
-		existing.Value = v
-	}
-	if typeutils.IsKnown(existing.Step) && apiConfig.Step != nil {
-		existing.Step = types.Float32Value(*apiConfig.Step)
-	}
-
-	if tfPanel != nil && tfPanel.RangeSliderControlConfig != nil {
-		rangeSliderPreserveNullIntentFromPrior(tfPanel.RangeSliderControlConfig, existing)
-	}
-	return nil
+	cfg.ByEsql = nil
+	cfg.ByField = populateByFieldFromAPI(ctx, priorByField, &fieldCfg)
+	pm.RangeSliderControlConfig = cfg
+	return diags
 }
 
-func rangeSliderPreserveNullIntentFromPrior(prior, existing *models.RangeSliderControlConfigModel) {
-	if prior == nil || existing == nil {
+// rangeSliderSharedFields points at the by_field/by_esql model attributes shared by both branches
+// (identical types on both the Field and ES|QL API schemas), letting populateByFieldFromAPI and
+// populateByEsqlFromAPI apply the same null-preservation logic through a single implementation.
+type rangeSliderSharedFields struct {
+	Title             *types.String
+	UseGlobalFilters  *types.Bool
+	IgnoreValidations *types.Bool
+	Value             *types.List
+	Step              *types.Float32
+}
+
+// rangeSliderSharedAPIFields mirrors the attributes common to both
+// KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchema{Field,Esql}, which share identical Go
+// types for every shared attribute.
+type rangeSliderSharedAPIFields struct {
+	Title             *string
+	UseGlobalFilters  *bool
+	IgnoreValidations *bool
+	Value             *[]string
+	Step              *float32
+}
+
+// populateRangeSliderSharedFields applies REQ-009 null-preservation semantics to the attributes
+// shared by both by_field and by_esql: on import (prior == nil), every optional field is populated
+// unconditionally, defaulting absent API values to null. Otherwise, only fields previously known in
+// state are updated from the API response; fields that were null in prior state remain null, and
+// fields the API stops returning keep their prior value rather than resetting to null.
+func populateRangeSliderSharedFields(ctx context.Context, prior *rangeSliderSharedFields, m rangeSliderSharedFields, api rangeSliderSharedAPIFields) {
+	if prior == nil {
+		*m.Title = types.StringPointerValue(api.Title)
+		*m.UseGlobalFilters = types.BoolPointerValue(api.UseGlobalFilters)
+		*m.IgnoreValidations = types.BoolPointerValue(api.IgnoreValidations)
+		*m.Value = valueListFromAPI(ctx, api.Value)
+		*m.Step = float32PointerValue(api.Step)
 		return
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
+
+	*m.Title = types.StringNull()
+	if typeutils.IsKnown(*prior.Title) {
+		*m.Title = *prior.Title
+		if api.Title != nil {
+			*m.Title = types.StringValue(*api.Title)
+		}
 	}
-	if !typeutils.IsKnown(prior.UseGlobalFilters) {
-		existing.UseGlobalFilters = types.BoolNull()
+	*m.UseGlobalFilters = types.BoolNull()
+	if typeutils.IsKnown(*prior.UseGlobalFilters) {
+		*m.UseGlobalFilters = *prior.UseGlobalFilters
+		if api.UseGlobalFilters != nil {
+			*m.UseGlobalFilters = types.BoolValue(*api.UseGlobalFilters)
+		}
 	}
-	if !typeutils.IsKnown(prior.IgnoreValidations) {
-		existing.IgnoreValidations = types.BoolNull()
+	*m.IgnoreValidations = types.BoolNull()
+	if typeutils.IsKnown(*prior.IgnoreValidations) {
+		*m.IgnoreValidations = *prior.IgnoreValidations
+		if api.IgnoreValidations != nil {
+			*m.IgnoreValidations = types.BoolValue(*api.IgnoreValidations)
+		}
 	}
-	if !typeutils.IsKnown(prior.Value) {
-		existing.Value = types.ListNull(types.StringType)
+	*m.Value = types.ListNull(types.StringType)
+	if typeutils.IsKnown(*prior.Value) {
+		*m.Value = *prior.Value
+		if api.Value != nil {
+			*m.Value = valueListFromAPI(ctx, api.Value)
+		}
 	}
-	if !typeutils.IsKnown(prior.Step) {
-		existing.Step = types.Float32Null()
+	*m.Step = types.Float32Null()
+	if typeutils.IsKnown(*prior.Step) {
+		*m.Step = *prior.Step
+		if api.Step != nil {
+			*m.Step = types.Float32Value(*api.Step)
+		}
 	}
 }
 
-// BuildConfig writes TF model fields into the API panel payload.
+func populateByFieldFromAPI(
+	ctx context.Context,
+	prior *models.RangeSliderControlByFieldModel,
+	api *kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField,
+) *models.RangeSliderControlByFieldModel {
+	m := &models.RangeSliderControlByFieldModel{
+		DataViewID: types.StringValue(api.DataViewId),
+		FieldName:  types.StringValue(api.FieldName),
+	}
+	var priorFields *rangeSliderSharedFields
+	if prior != nil {
+		priorFields = &rangeSliderSharedFields{&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.Value, &prior.Step}
+	}
+	populateRangeSliderSharedFields(
+		ctx, priorFields,
+		rangeSliderSharedFields{&m.Title, &m.UseGlobalFilters, &m.IgnoreValidations, &m.Value, &m.Step},
+		rangeSliderSharedAPIFields{api.Title, api.UseGlobalFilters, api.IgnoreValidations, api.Value, api.Step},
+	)
+	return m
+}
+
+func populateByEsqlFromAPI(
+	ctx context.Context,
+	prior *models.RangeSliderControlByEsqlModel,
+	api *kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql,
+) *models.RangeSliderControlByEsqlModel {
+	m := &models.RangeSliderControlByEsqlModel{
+		EsqlQuery: types.StringValue(api.EsqlQuery),
+		// The wire enum only ever legally carries "esql" (see
+		// kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql). We
+		// normalize it back to the Terraform-facing constant so plans stay drift-free.
+		ValuesSource: types.StringValue(panelkit.EsqlValuesSourceUserValue),
+	}
+	var priorFields *rangeSliderSharedFields
+	if prior != nil {
+		priorFields = &rangeSliderSharedFields{&prior.Title, &prior.UseGlobalFilters, &prior.IgnoreValidations, &prior.Value, &prior.Step}
+	}
+	populateRangeSliderSharedFields(
+		ctx, priorFields,
+		rangeSliderSharedFields{&m.Title, &m.UseGlobalFilters, &m.IgnoreValidations, &m.Value, &m.Step},
+		rangeSliderSharedAPIFields{api.Title, api.UseGlobalFilters, api.IgnoreValidations, api.Value, api.Step},
+	)
+	return m
+}
+
+func valueListFromAPI(ctx context.Context, v *[]string) types.List {
+	if v == nil {
+		return types.ListNull(types.StringType)
+	}
+	l, diags := types.ListValueFrom(ctx, types.StringType, *v)
+	if diags.HasError() {
+		return types.ListNull(types.StringType)
+	}
+	return l
+}
+
+func float32PointerValue(v *float32) types.Float32 {
+	if v == nil {
+		return types.Float32Null()
+	}
+	return types.Float32Value(*v)
+}
+
+// BuildConfig writes TF model fields into the API panel payload, dispatching on whichever branch
+// (ByField or ByEsql) is set on the panel's range_slider_control_config.
 func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
 	cfg := pm.RangeSliderControlConfig
 	if cfg == nil {
 		return nil
 	}
+
+	switch {
+	case cfg.ByField != nil:
+		return buildFieldConfig(cfg.ByField, rsPanel)
+	case cfg.ByEsql != nil:
+		return buildEsqlConfig(cfg.ByEsql, rsPanel)
+	default:
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Invalid range_slider_control_config",
+			"Exactly one of `by_field` or `by_esql` must be set inside `range_slider_control_config`.",
+		)
+		return diags
+	}
+}
+
+func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
 	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField
 	c.DataViewId = cfg.DataViewID.ValueString()
 	c.FieldName = cfg.FieldName.ValueString()
+
+	// values_source is not exposed on `by_field` and is deliberately left unset on the wire: Kibana
+	// treats it as "field" when absent (its default for legacy controls, per design D2), and Kibana
+	// versions below the values_source-discriminated-union schema (see
+	// dashboardacctest.MinControlByFieldEsqlUnionSupport) reject the property entirely if present.
+	// Omitting it keeps by_field writes compatible with every Kibana version this resource supports.
 
 	if typeutils.IsKnown(cfg.Title) {
 		c.Title = cfg.Title.ValueStringPointer()
@@ -175,21 +280,60 @@ func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.Value) {
-		raw := cfg.Value.Elements()
-		elems := make([]string, len(raw))
-		for i, e := range raw {
-			elems[i] = e.(types.String).ValueString()
-		}
-		c.Value = &elems
+		c.Value = stringListToAPI(cfg.Value)
 	}
 	if typeutils.IsKnown(cfg.Step) {
 		v := cfg.Step.ValueFloat32()
 		c.Step = &v
 	}
+
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build range slider control config", err.Error())
 		return diags
 	}
 	return nil
+}
+
+func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
+	var c kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql
+	c.EsqlQuery = cfg.EsqlQuery.ValueString()
+	// The schema validates the user-facing values_source to a single legal value
+	// (panelkit.EsqlValuesSourceUserValue). The wire enum's only legal value is "esql" (see
+	// kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql), so it is
+	// hardcoded here rather than derived from the (already-validated) model string.
+	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql
+
+	if typeutils.IsKnown(cfg.Title) {
+		c.Title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(cfg.UseGlobalFilters) {
+		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.IgnoreValidations) {
+		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(cfg.Value) {
+		c.Value = stringListToAPI(cfg.Value)
+	}
+	if typeutils.IsKnown(cfg.Step) {
+		v := cfg.Step.ValueFloat32()
+		c.Step = &v
+	}
+
+	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(c); err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build range slider control config", err.Error())
+		return diags
+	}
+	return nil
+}
+
+func stringListToAPI(l types.List) *[]string {
+	raw := l.Elements()
+	elems := make([]string, len(raw))
+	for i, e := range raw {
+		elems[i] = e.(types.String).ValueString()
+	}
+	return &elems
 }

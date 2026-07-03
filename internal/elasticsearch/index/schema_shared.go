@@ -16,8 +16,3 @@
 // under the License.
 
 package index
-
-// IndexNameAllowedCharsMessage is the validation error message for index names
-// that contain disallowed characters.
-const IndexNameAllowedCharsMessage = "must contain lower case alphanumeric characters and selected punctuation, see: " +
-	"https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params"

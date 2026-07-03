@@ -34,18 +34,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		return nil
 	}
 
-	if typeutils.IsKnown(cfg.Title) {
-		panel.Config.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		panel.Config.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		panel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
@@ -157,10 +147,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	existing.Title = panelkit.PreserveString(existing.Title, cfg.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, cfg.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, cfg.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, cfg.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder)
 
 	var priorDrilldowns []models.URLDrilldownModel
 	if prior.SyntheticsStatsOverviewConfig != nil {
