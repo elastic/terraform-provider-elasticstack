@@ -101,6 +101,9 @@ func ReadDiscoverSessionDrilldownsFromAPI(
 		priorURL[i] = models.URLDrilldownModel(p)
 	}
 	result := ReadURLDrilldownsFromAPI(apiItems, priorURL)
+	if result == nil {
+		return nil
+	}
 	out := make([]models.DiscoverSessionPanelDrilldown, len(result))
 	for i, r := range result {
 		out[i] = models.DiscoverSessionPanelDrilldown(r)
