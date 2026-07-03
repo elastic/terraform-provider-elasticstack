@@ -18,13 +18,12 @@
 package fieldstatstable
 
 import (
-	"context"
 	_ "embed"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -46,42 +45,15 @@ var fieldStatsTableByDataviewDescription string
 //go:embed descriptions/by_esql.md
 var fieldStatsTableByEsqlDescription string
 
-var _ validator.Object = fieldStatsTableConfigModeValidator{}
-
-// fieldStatsTableConfigModeValidator ensures exactly one of by_dataview or by_esql is set.
-type fieldStatsTableConfigModeValidator struct{}
-
-func (fieldStatsTableConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures exactly one of `by_dataview` or `by_esql` is set inside `field_stats_table_config`."
-}
-
-func (v fieldStatsTableConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (fieldStatsTableConfigModeValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-	attrs := req.ConfigValue.Attributes()
-	byDataview := attrs[attrByDataview]
-	byEsql := attrs[attrByEsql]
-	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
-	}
-	byDataviewSet := valueSet(byDataview)
-	byEsqlSet := valueSet(byEsql)
-	if byDataviewSet && byEsqlSet {
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid field_stats_table_config", "Exactly one of `by_dataview` or `by_esql` must be set inside `field_stats_table_config`, not both.")
-		return
-	}
-	if !byDataviewSet && !byEsqlSet {
-		if byDataview != nil && byDataview.IsUnknown() || byEsql != nil && byEsql.IsUnknown() {
-			return
-		}
-		resp.Diagnostics.AddAttributeError(req.Path, "Invalid field_stats_table_config", "Exactly one of `by_dataview` or `by_esql` must be set inside `field_stats_table_config`.")
-	}
-}
+// fieldStatsTableConfigModeValidator enforces exactly one of `by_dataview` or `by_esql` inside
+// `field_stats_table_config`, deferring validation while either branch value is still unknown.
+var fieldStatsTableConfigModeValidator = validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+	AttrNames:     []string{attrByDataview, attrByEsql},
+	Summary:       "Invalid field_stats_table_config",
+	MissingDetail: "Exactly one of `by_dataview` or `by_esql` must be set inside `field_stats_table_config`.",
+	TooManyDetail: "Exactly one of `by_dataview` or `by_esql` must be set inside `field_stats_table_config`, not both.",
+	Description:   "Ensures exactly one of `by_dataview` or `by_esql` is set inside `field_stats_table_config`.",
+})
 
 func fieldStatsTableBranchAttributes() map[string]schema.Attribute {
 	attrs := panelkit.PanelPresentationAttributes()
@@ -146,7 +118,7 @@ func SchemaAttribute() schema.Attribute {
 			},
 		},
 		ExtraValidators: []validator.Object{
-			fieldStatsTableConfigModeValidator{},
+			fieldStatsTableConfigModeValidator,
 		},
 	})
 }

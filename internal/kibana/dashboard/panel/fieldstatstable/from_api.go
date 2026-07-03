@@ -32,18 +32,22 @@ import (
 const fieldStatsViewTypeDataview = "dataview"
 const fieldStatsViewTypeEsql = "esql"
 
-func fieldStatsTableAPIConfigViewType(apiCfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats) string {
+// fieldStatsTableAPIConfigViewType extracts the `view_type` discriminator from the kbapi union
+// type. kbapi's Config union unmarshals successfully into both generated branch structs, so we
+// probe the raw JSON for the discriminator field instead. err is non-nil only if the union itself
+// fails to (un)marshal, which is distinct from a missing/unexpected view_type value.
+func fieldStatsTableAPIConfigViewType(apiCfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats) (string, error) {
 	raw, err := apiCfg.MarshalJSON()
 	if err != nil {
-		return ""
+		return "", err
 	}
 	var probe struct {
 		ViewType string `json:"view_type"`
 	}
 	if err := json.Unmarshal(raw, &probe); err != nil {
-		return ""
+		return "", err
 	}
-	return probe.ViewType
+	return probe.ViewType, nil
 }
 
 // fieldStatsTablePriorTFBranchMismatchesAPI reports out-of-band branch changes (e.g. Kibana flipped
@@ -77,35 +81,30 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 		}
 		pm.FieldStatsTableConfig = cfg
 	}
-
 	existing := pm.FieldStatsTableConfig
-	if existing == nil {
-		return nil
+
+	viewType, err := fieldStatsTableAPIConfigViewType(apiPanel.Config)
+	if err != nil {
+		return fieldStatsTableProbeDiagnostics(err)
 	}
 
-	viewType := fieldStatsTableAPIConfigViewType(apiPanel.Config)
+	if fieldStatsTablePriorTFBranchMismatchesAPI(viewType, prior.FieldStatsTableConfig) {
+		// Drift import: replace typed config from API so the next plan surfaces the branch change.
+		imported, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
+		if imported != nil {
+			*existing = *imported
+		}
+		return diags
+	}
+
 	switch viewType {
 	case fieldStatsViewTypeEsql:
-		if fieldStatsTablePriorTFBranchMismatchesAPI(viewType, prior.FieldStatsTableConfig) {
-			imported, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
-			if imported != nil {
-				*existing = *imported
-			}
-			return diags
-		}
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
 			return fieldStatsTableDecodeDiagnostics(err, attrByEsql)
 		}
 		return mergeFieldStatsTableEsqlFromAPI(existing, prior, cfg1)
 	case fieldStatsViewTypeDataview:
-		if fieldStatsTablePriorTFBranchMismatchesAPI(viewType, prior.FieldStatsTableConfig) {
-			imported, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
-			if imported != nil {
-				*existing = *imported
-			}
-			return diags
-		}
 		cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
 			return fieldStatsTableDecodeDiagnostics(err, attrByDataview)
@@ -125,6 +124,17 @@ func fieldStatsTableDecodeDiagnostics(err error, branch string) diag.Diagnostics
 	return diags
 }
 
+// fieldStatsTableProbeDiagnostics reports a failure to (un)marshal the kbapi union itself while
+// probing for the view_type discriminator, distinct from a missing/unexpected view_type value.
+func fieldStatsTableProbeDiagnostics(err error) diag.Diagnostics {
+	var diags diag.Diagnostics
+	diags.AddError(
+		"Failed to decode field_stats_table API config",
+		fmt.Sprintf("Could not determine the field_stats_table view_type: %s.", err.Error()),
+	)
+	return diags
+}
+
 func fieldStatsTableInvalidViewTypeDiagnostics(viewType string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	detail := "view_type is missing or invalid"
@@ -139,33 +149,25 @@ func fieldStatsTableInvalidViewTypeDiagnostics(viewType string) diag.Diagnostics
 }
 
 func fieldStatsTableConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats) (*models.FieldStatsTableConfigModel, diag.Diagnostics) {
-	switch fieldStatsTableAPIConfigViewType(apiCfg) {
+	viewType, err := fieldStatsTableAPIConfigViewType(apiCfg)
+	if err != nil {
+		return nil, fieldStatsTableProbeDiagnostics(err)
+	}
+	switch viewType {
 	case fieldStatsViewTypeEsql:
 		cfg1, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
 			return nil, fieldStatsTableDecodeDiagnostics(err, attrByEsql)
 		}
-		return fieldStatsTableEsqlFromAPIImport(cfg1), nil
+		return &models.FieldStatsTableConfigModel{ByEsql: fieldStatsTableByEsqlFromAPI(cfg1)}, nil
 	case fieldStatsViewTypeDataview:
 		cfg0, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
 			return nil, fieldStatsTableDecodeDiagnostics(err, attrByDataview)
 		}
-		return fieldStatsTableDataviewFromAPIImport(cfg0), nil
+		return &models.FieldStatsTableConfigModel{ByDataview: fieldStatsTableByDataviewFromAPI(cfg0)}, nil
 	default:
-		return nil, fieldStatsTableInvalidViewTypeDiagnostics(fieldStatsTableAPIConfigViewType(apiCfg))
-	}
-}
-
-func fieldStatsTableDataviewFromAPIImport(api kbapi.KibanaHTTPAPIsDataVisualizerFieldStats0) *models.FieldStatsTableConfigModel {
-	return &models.FieldStatsTableConfigModel{
-		ByDataview: fieldStatsTableByDataviewFromAPI(api),
-	}
-}
-
-func fieldStatsTableEsqlFromAPIImport(api kbapi.KibanaHTTPAPIsDataVisualizerFieldStats1) *models.FieldStatsTableConfigModel {
-	return &models.FieldStatsTableConfigModel{
-		ByEsql: fieldStatsTableByEsqlFromAPI(api),
+		return nil, fieldStatsTableInvalidViewTypeDiagnostics(viewType)
 	}
 }
 
@@ -211,10 +213,8 @@ func mergeFieldStatsTableDataviewFromAPI(
 
 	branch.DataViewID = types.StringValue(api.DataViewId)
 	branch.ShowDistributions = panelkit.PreserveBool(branch.ShowDistributions, api.ShowDistributions)
-	branch.Title = panelkit.PreserveString(branch.Title, api.Title)
-	branch.Description = panelkit.PreserveString(branch.Description, api.Description)
-	branch.HideTitle = panelkit.PreserveBool(branch.HideTitle, api.HideTitle)
-	branch.HideBorder = panelkit.PreserveBool(branch.HideBorder, api.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&branch.Title, &branch.Description, &branch.HideTitle, &branch.HideBorder,
+		api.Title, api.Description, api.HideTitle, api.HideBorder)
 	branch.TimeRange = panelkit.MergeTimeRange(branch.TimeRange, api.TimeRange, priorBranch.TimeRange)
 
 	preserveFieldStatsTableDataviewNullIntent(priorBranch, branch)
@@ -240,10 +240,8 @@ func mergeFieldStatsTableEsqlFromAPI(
 
 	branch.Query = types.StringValue(api.Query.Esql)
 	branch.ShowDistributions = panelkit.PreserveBool(branch.ShowDistributions, api.ShowDistributions)
-	branch.Title = panelkit.PreserveString(branch.Title, api.Title)
-	branch.Description = panelkit.PreserveString(branch.Description, api.Description)
-	branch.HideTitle = panelkit.PreserveBool(branch.HideTitle, api.HideTitle)
-	branch.HideBorder = panelkit.PreserveBool(branch.HideBorder, api.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&branch.Title, &branch.Description, &branch.HideTitle, &branch.HideBorder,
+		api.Title, api.Description, api.HideTitle, api.HideBorder)
 	branch.TimeRange = panelkit.MergeTimeRange(branch.TimeRange, api.TimeRange, priorBranch.TimeRange)
 
 	preserveFieldStatsTableEsqlNullIntent(priorBranch, branch)
@@ -258,18 +256,8 @@ func preserveFieldStatsTableDataviewNullIntent(prior, existing *models.FieldStat
 	if !typeutils.IsKnown(prior.ShowDistributions) {
 		existing.ShowDistributions = types.BoolNull()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {
 		existing.TimeRange = nil
 	} else {
@@ -284,18 +272,8 @@ func preserveFieldStatsTableEsqlNullIntent(prior, existing *models.FieldStatsTab
 	if !typeutils.IsKnown(prior.ShowDistributions) {
 		existing.ShowDistributions = types.BoolNull()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {
 		existing.TimeRange = nil
 	} else {

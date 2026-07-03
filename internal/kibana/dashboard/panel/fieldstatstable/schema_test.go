@@ -31,7 +31,7 @@ import (
 func TestFieldStatsTableConfigModeValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	v := fieldStatsTableConfigModeValidator{}
+	v := fieldStatsTableConfigModeValidator
 
 	byDataviewAttrs := map[string]attr.Type{
 		"data_view_id": types.StringType,

@@ -21,6 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -62,18 +63,8 @@ func applyFieldStatsTableBranchToAPI0(m *models.FieldStatsTableByDataviewModel, 
 	if typeutils.IsKnown(m.ShowDistributions) {
 		api.ShowDistributions = m.ShowDistributions.ValueBoolPointer()
 	}
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.HideTitle) {
-		api.HideTitle = m.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.HideBorder) {
-		api.HideBorder = m.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(m.Title, m.Description, m.HideTitle, m.HideBorder,
+		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 	api.TimeRange = lenscommon.TimeRangeModelToAPI(m.TimeRange)
 }
 
@@ -81,17 +72,7 @@ func applyFieldStatsTableBranchToAPI1(m *models.FieldStatsTableByEsqlModel, api 
 	if typeutils.IsKnown(m.ShowDistributions) {
 		api.ShowDistributions = m.ShowDistributions.ValueBoolPointer()
 	}
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.HideTitle) {
-		api.HideTitle = m.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.HideBorder) {
-		api.HideBorder = m.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(m.Title, m.Description, m.HideTitle, m.HideBorder,
+		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 	api.TimeRange = lenscommon.TimeRangeModelToAPI(m.TimeRange)
 }
