@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -38,20 +39,14 @@ import (
 )
 
 const (
-	destinationIndexAllowedCharsError = "must contain lower case alphanumeric characters and selected punctuation, see the " +
-		"[indices create API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html" +
-		"#indices-create-api-path-params) for more details"
-
 	// currentSchemaVersion is the resource schema version. Bump when the on-disk
 	// state shape changes; add a corresponding entry in resource.UpgradeState.
 	currentSchemaVersion int64 = 1
 )
 
 var (
-	transformNameAllowedCharsRegexp   = regexp.MustCompile(`^[a-z0-9_-]+$`)
-	transformNameStartEndRegexp       = regexp.MustCompile(`^[a-z0-9].*[a-z0-9]$`)
-	destinationIndexLeadingCharRegexp = regexp.MustCompile(`^[^-_+]`)
-	destinationIndexAllowedRegexp     = regexp.MustCompile(`^[a-z0-9!$%&'()+.;=@[\]^{}~_-]+$`)
+	transformNameAllowedCharsRegexp = regexp.MustCompile(`^[a-z0-9_-]+$`)
+	transformNameStartEndRegexp     = regexp.MustCompile(`^[a-z0-9].*[a-z0-9]$`)
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -223,18 +218,13 @@ func getSchema(_ context.Context) schema.Schema {
 					attrIndex: schema.StringAttribute{
 						MarkdownDescription: "The destination index for the transform.",
 						Required:            true,
-						Validators: []validator.String{
-							stringvalidator.LengthBetween(1, 255),
-							stringvalidator.NoneOf(".", ".."),
-							stringvalidator.RegexMatches(
-								destinationIndexLeadingCharRegexp,
-								"cannot start with -, _, +",
-							),
-							stringvalidator.RegexMatches(
-								destinationIndexAllowedRegexp,
-								destinationIndexAllowedCharsError,
-							),
-						},
+						Validators: append(
+							[]validator.String{
+								stringvalidator.LengthBetween(1, 255),
+								stringvalidator.NoneOf(".", ".."),
+							},
+							indexname.NameValidators()...,
+						),
 					},
 					"pipeline": schema.StringAttribute{
 						MarkdownDescription: "The unique identifier for an ingest pipeline.",

@@ -57,18 +57,8 @@ func BuildConfig(ctx context.Context, pm models.PanelModel, panel *kbapi.KibanaH
 		JobIds: typeutils.ValueStringSlice(cfg.JobIDs),
 	}
 
-	if typeutils.IsKnown(cfg.Title) {
-		apiCfg.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		apiCfg.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		apiCfg.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		apiCfg.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&apiCfg.Title, &apiCfg.Description, &apiCfg.HideTitle, &apiCfg.HideBorder)
 	if typeutils.IsKnown(cfg.SelectedDetectorIndex) {
 		v := cfg.SelectedDetectorIndex.ValueFloat32()
 		apiCfg.SelectedDetectorIndex = &v
@@ -148,10 +138,8 @@ func mlSingleMetricViewerMergeFromAPI(
 	existing.SelectedDetectorIndex = panelkit.PreserveFloat32(existing.SelectedDetectorIndex, apiConfig.SelectedDetectorIndex)
 	existing.ForecastID = panelkit.PreserveString(existing.ForecastID, apiConfig.ForecastId)
 	existing.FunctionDescription = panelkit.PreserveString(existing.FunctionDescription, apiConfig.FunctionDescription)
-	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, apiConfig.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, apiConfig.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, apiConfig.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
 
 	var priorTR *models.TimeRangeModel
 	if prior != nil {
@@ -275,17 +263,7 @@ func mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing *models.MlS
 	if !typeutils.IsKnown(prior.SelectedEntities) {
 		existing.SelectedEntities = prior.SelectedEntities
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

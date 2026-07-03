@@ -20,9 +20,10 @@ package dashboard
 import (
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/optionslist"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/rangeslider"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -165,151 +166,18 @@ func pinnedEsqlControlConfigSchema() schema.SingleNestedAttribute {
 	}
 }
 
-func optionsListControlConfigInnerAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		attrDataViewID: schema.StringAttribute{
-			MarkdownDescription: "The ID of the data view that the control is tied to.",
-			Required:            true,
-		},
-		attrFieldName: schema.StringAttribute{
-			MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-			Required:            true,
-		},
-		attrTitle: schema.StringAttribute{
-			MarkdownDescription: "Human-readable label displayed above the control.",
-			Optional:            true,
-		},
-		attrUseGlobalFilters: schema.BoolAttribute{
-			MarkdownDescription: "Whether the control applies the dashboard's global filters to its own query.",
-			Optional:            true,
-		},
-		attrIgnoreValidations: schema.BoolAttribute{
-			MarkdownDescription: "Whether the control skips field-level validation against the data view.",
-			Optional:            true,
-		},
-		attrSingleSelect: schema.BoolAttribute{
-			MarkdownDescription: "When true, only one option may be selected at a time.",
-			Optional:            true,
-		},
-		attrExclude: schema.BoolAttribute{
-			MarkdownDescription: "When true, selected options are used as an exclusion filter rather than an inclusion filter.",
-			Optional:            true,
-		},
-		attrExistsSelected: schema.BoolAttribute{
-			MarkdownDescription: "When true, the control filters for documents where the field exists.",
-			Optional:            true,
-		},
-		attrRunPastTimeout: schema.BoolAttribute{
-			MarkdownDescription: "When true, the control continues to show results even when the underlying query times out.",
-			Optional:            true,
-		},
-		attrSearchTechnique: schema.StringAttribute{
-			MarkdownDescription: "The technique used to match suggestions. Must be one of `prefix`, `wildcard`, or `exact` when set.",
-			Optional:            true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("prefix", "wildcard", "exact"),
-			},
-		},
-		attrSelectedOptions: schema.ListAttribute{
-			MarkdownDescription: "The initially or persistently selected option values. All values are represented as strings.",
-			Optional:            true,
-			ElementType:         types.StringType,
-		},
-		attrDisplaySettings: schema.SingleNestedAttribute{
-			MarkdownDescription: "Display preferences for the control widget.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				attrPlaceholder: schema.StringAttribute{
-					MarkdownDescription: "Placeholder text shown when no option is selected.",
-					Optional:            true,
-				},
-				attrHideActionBar: schema.BoolAttribute{
-					MarkdownDescription: "When true, hides the action bar on the control.",
-					Optional:            true,
-				},
-				attrHideExclude: schema.BoolAttribute{
-					MarkdownDescription: "When true, hides the exclude toggle.",
-					Optional:            true,
-				},
-				attrHideExists: schema.BoolAttribute{
-					MarkdownDescription: "When true, hides the exists filter option.",
-					Optional:            true,
-				},
-				attrHideSort: schema.BoolAttribute{
-					MarkdownDescription: "When true, hides the sort control.",
-					Optional:            true,
-				},
-			},
-		},
-		attrSort: schema.SingleNestedAttribute{
-			MarkdownDescription: "Default sort configuration for the suggestion list.",
-			Optional:            true,
-			Attributes: map[string]schema.Attribute{
-				"by": schema.StringAttribute{
-					MarkdownDescription: "The field or criterion to sort by. Must be one of `_count` or `_key`.",
-					Required:            true,
-					Validators: []validator.String{
-						stringvalidator.OneOf("_count", "_key"),
-					},
-				},
-				"direction": schema.StringAttribute{
-					MarkdownDescription: "The sort direction. Must be one of `asc` or `desc`.",
-					Required:            true,
-					Validators: []validator.String{
-						stringvalidator.OneOf("asc", "desc"),
-					},
-				},
-			},
-		},
-	}
-}
-
 func pinnedOptionsListControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
-			pinnedPlacementPreface()+"Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view.",
+			pinnedPlacementPreface()+"Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in "+
+				"a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set.",
 			controlBlockOptionsList,
 			pinnedPanelControlConfigNames,
 		),
 		Optional:   true,
-		Attributes: optionsListControlConfigInnerAttributes(),
-	}
-}
-
-func rangeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		attrTitle: schema.StringAttribute{
-			MarkdownDescription: "A human-readable title for the control.",
-			Optional:            true,
-		},
-		attrDataViewID: schema.StringAttribute{
-			MarkdownDescription: "The ID of the data view that the control is tied to.",
-			Required:            true,
-		},
-		attrFieldName: schema.StringAttribute{
-			MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-			Required:            true,
-		},
-		attrUseGlobalFilters: schema.BoolAttribute{
-			MarkdownDescription: "Whether the control respects dashboard-level filters.",
-			Optional:            true,
-		},
-		attrIgnoreValidations: schema.BoolAttribute{
-			MarkdownDescription: "Whether to suppress validation errors during intermediate states.",
-			Optional:            true,
-		},
-		attrValue: schema.ListAttribute{
-			MarkdownDescription: "Initial range as a list of exactly 2 strings: [min, max].",
-			ElementType:         types.StringType,
-			Optional:            true,
-			Validators: []validator.List{
-				listvalidator.SizeAtLeast(2),
-				listvalidator.SizeAtMost(2),
-			},
-		},
-		attrStep: schema.Float32Attribute{
-			MarkdownDescription: "The step size for the range slider. Stored as float32 to match the Kibana API type and avoid refresh drift.",
-			Optional:            true,
+		Attributes: optionslist.NestedAttributes(),
+		Validators: []validator.Object{
+			optionslist.ExactlyOneOfBranchValidator(),
 		},
 	}
 }
@@ -317,12 +185,16 @@ func rangeSliderControlConfigInnerAttributes() map[string]schema.Attribute {
 func pinnedRangeSliderControlConfigSchema() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: panelkit.PanelConfigDescription(
-			pinnedPlacementPreface()+"Configuration for a range slider control. Provides a min/max range filter tied to a data view field.",
+			pinnedPlacementPreface()+"Configuration for a range slider control. Provides a min/max range filter sourced from either a data "+
+				"view field (`by_field`) or an ES|QL query (`by_esql`). Exactly one of the two must be set.",
 			controlBlockRangeSlider,
 			pinnedPanelControlConfigNames,
 		),
 		Optional:   true,
-		Attributes: rangeSliderControlConfigInnerAttributes(),
+		Attributes: rangeslider.NestedAttributes(),
+		Validators: []validator.Object{
+			rangeslider.ExactlyOneOfBranchValidator(),
+		},
 	}
 }
 

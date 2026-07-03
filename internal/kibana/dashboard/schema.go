@@ -74,6 +74,7 @@ func getSchema() schema.Schema {
 		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit."
 
 	return schema.Schema{
+		Version: 1,
 		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). " +
 			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
 			dashboardNotes,
@@ -196,17 +197,17 @@ func getSchema() schema.Schema {
 					},
 				},
 			},
-			"panels": schema.ListNestedAttribute{
+			attrPanels: schema.ListNestedAttribute{
 				MarkdownDescription: "The panels to display in the dashboard.",
 				Optional:            true,
 				NestedObject:        getPanelSchema(),
 			},
-			"pinned_panels": schema.ListNestedAttribute{
+			attrPinnedPanels: schema.ListNestedAttribute{
 				MarkdownDescription: strings.TrimSpace(pinnedPanelsDescription),
 				Optional:            true,
 				NestedObject:        pinnedPanelsNestedObject(),
 			},
-			"sections": schema.ListNestedAttribute{
+			attrSections: schema.ListNestedAttribute{
 				MarkdownDescription: "Sections organize panels into collapsible groups. This is a technical preview feature.",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{
@@ -237,7 +238,7 @@ func getSchema() schema.Schema {
 								},
 							},
 						},
-						"panels": schema.ListNestedAttribute{
+						attrPanels: schema.ListNestedAttribute{
 							MarkdownDescription: "The panels to display in the section.",
 							Optional:            true,
 							NestedObject:        getPanelSchema(),
@@ -313,8 +314,8 @@ func getPanelSchema() schema.NestedAttributeObject {
 		MarkdownDescription: panelkit.PanelConfigDescription(
 			"The configuration of the panel as a JSON string. "+
 				"Practitioner-authored panel-level `config_json` is valid only when `type` is `markdown` or `vis`. "+
-				"Typed panel kinds such as `image`, `slo_alerts`, `discover_session`, `ml_anomaly_swimlane`, and `ml_single_metric_viewer` use their dedicated blocks "+
-				"(`image_config`, `slo_alerts_config`, `discover_session_config`, `ml_anomaly_swimlane_config`, `ml_single_metric_viewer_config`), not panel-level `config_json`.",
+				"Typed panel kinds such as `image`, `slo_alerts`, `discover_session`, `ml_anomaly_swimlane`, `ml_anomaly_charts`, and `ml_single_metric_viewer` use their dedicated blocks "+
+				"(`image_config`, `slo_alerts_config`, `discover_session_config`, `ml_anomaly_swimlane_config`, `ml_anomaly_charts_config`, `ml_single_metric_viewer_config`), not panel-level `config_json`.",
 			"config_json",
 			names,
 		),

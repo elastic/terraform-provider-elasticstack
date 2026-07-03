@@ -58,6 +58,7 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 
 	savedQueryID := "tf-osquery-" + uuid.New().String()
 	spaceID := clients.DefaultSpaceID
+	var initialSavedObjectID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -75,6 +76,14 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
 					resource.TestCheckResourceAttr(resourceName, "id", fmt.Sprintf("%s/%s", spaceID, savedQueryID)),
 					resource.TestCheckResourceAttrSet(resourceName, "saved_object_id"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceName]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceName)
+						}
+						initialSavedObjectID = rs.Primary.Attributes["saved_object_id"]
+						return nil
+					},
 					resource.TestCheckResourceAttr(resourceName, "query", "SELECT pid, name FROM processes LIMIT 5;"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance create"),
 					resource.TestCheckResourceAttr(resourceName, "interval", "3600"),
@@ -113,6 +122,47 @@ func TestAccResourceOsquerySavedQuery(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "query", "SELECT pid, name FROM processes LIMIT 10;"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Terraform acceptance update"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_interval_version"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable(savedQueryID),
+					"space_id":       config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "interval", "7200"),
+					resource.TestCheckResourceAttr(resourceName, "version", "2.0.0"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceName]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceName)
+						}
+						got := rs.Primary.Attributes["saved_object_id"]
+						if got == "" {
+							return fmt.Errorf("saved_object_id is empty after update")
+						}
+						if initialSavedObjectID == "" {
+							return fmt.Errorf("initial saved_object_id was not captured")
+						}
+						if got != initialSavedObjectID {
+							return fmt.Errorf("saved_object_id changed unexpectedly: was %q, now %q", initialSavedObjectID, got)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_snapshot_removed"),
+				ConfigVariables: config.Variables{
+					"saved_query_id": config.StringVariable(savedQueryID),
+					"space_id":       config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "snapshot", "true"),
+					resource.TestCheckResourceAttr(resourceName, "removed", "true"),
 				),
 			},
 			{

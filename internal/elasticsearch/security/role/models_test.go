@@ -21,7 +21,7 @@ import (
 	"context"
 	"testing"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -151,7 +151,7 @@ func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T)
 		Description: types.StringValue(""),
 	}
 
-	diags := d.fromAPIModel(ctx, &estypes.Role{
+	diags := d.fromAPIModel(ctx, &elasticsearch.Role{
 		Description: nil,
 	})
 	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)

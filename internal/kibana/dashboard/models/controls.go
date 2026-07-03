@@ -40,7 +40,16 @@ type OptionsListControlSortModel struct {
 	Direction types.String `tfsdk:"direction"`
 }
 
+// OptionsListControlConfigModel is a two-branch union: exactly one of ByField or ByEsql is set.
+// This is enforced at plan time by validators.ExactlyOneOfNestedAttrsValidator on the schema.
 type OptionsListControlConfigModel struct {
+	ByField *OptionsListControlByFieldModel `tfsdk:"by_field"`
+	ByEsql  *OptionsListControlByEsqlModel  `tfsdk:"by_esql"`
+}
+
+// OptionsListControlByFieldModel is the Field-sourced variant of options_list_control_config.
+// values_source is not exposed here; the provider sets it to "field" automatically on write.
+type OptionsListControlByFieldModel struct {
 	DataViewID        types.String                            `tfsdk:"data_view_id"`
 	FieldName         types.String                            `tfsdk:"field_name"`
 	Title             types.String                            `tfsdk:"title"`
@@ -56,10 +65,49 @@ type OptionsListControlConfigModel struct {
 	Sort              *OptionsListControlSortModel            `tfsdk:"sort"`
 }
 
+// OptionsListControlByEsqlModel is the ES|QL-sourced variant of options_list_control_config.
+// ValuesSource is required and must be "esql_query" (enforced by a schema-level OneOf validator).
+type OptionsListControlByEsqlModel struct {
+	EsqlQuery         types.String                            `tfsdk:"esql_query"`
+	ValuesSource      types.String                            `tfsdk:"values_source"`
+	Title             types.String                            `tfsdk:"title"`
+	UseGlobalFilters  types.Bool                              `tfsdk:"use_global_filters"`
+	IgnoreValidations types.Bool                              `tfsdk:"ignore_validations"`
+	SingleSelect      types.Bool                              `tfsdk:"single_select"`
+	Exclude           types.Bool                              `tfsdk:"exclude"`
+	ExistsSelected    types.Bool                              `tfsdk:"exists_selected"`
+	RunPastTimeout    types.Bool                              `tfsdk:"run_past_timeout"`
+	SearchTechnique   types.String                            `tfsdk:"search_technique"`
+	SelectedOptions   types.List                              `tfsdk:"selected_options"`
+	DisplaySettings   *OptionsListControlDisplaySettingsModel `tfsdk:"display_settings"`
+	Sort              *OptionsListControlSortModel            `tfsdk:"sort"`
+}
+
+// RangeSliderControlConfigModel is a two-branch union: exactly one of ByField or ByEsql is set.
+// This is enforced at plan time by validators.ExactlyOneOfNestedAttrsValidator on the schema.
 type RangeSliderControlConfigModel struct {
-	Title             types.String  `tfsdk:"title"`
+	ByField *RangeSliderControlByFieldModel `tfsdk:"by_field"`
+	ByEsql  *RangeSliderControlByEsqlModel  `tfsdk:"by_esql"`
+}
+
+// RangeSliderControlByFieldModel is the Field-sourced variant of range_slider_control_config.
+// values_source is not exposed here; the provider sets it to "field" automatically on write.
+type RangeSliderControlByFieldModel struct {
 	DataViewID        types.String  `tfsdk:"data_view_id"`
 	FieldName         types.String  `tfsdk:"field_name"`
+	Title             types.String  `tfsdk:"title"`
+	UseGlobalFilters  types.Bool    `tfsdk:"use_global_filters"`
+	IgnoreValidations types.Bool    `tfsdk:"ignore_validations"`
+	Value             types.List    `tfsdk:"value"`
+	Step              types.Float32 `tfsdk:"step"`
+}
+
+// RangeSliderControlByEsqlModel is the ES|QL-sourced variant of range_slider_control_config.
+// ValuesSource is required and must be "esql_query" (enforced by a schema-level OneOf validator).
+type RangeSliderControlByEsqlModel struct {
+	EsqlQuery         types.String  `tfsdk:"esql_query"`
+	ValuesSource      types.String  `tfsdk:"values_source"`
+	Title             types.String  `tfsdk:"title"`
 	UseGlobalFilters  types.Bool    `tfsdk:"use_global_filters"`
 	IgnoreValidations types.Bool    `tfsdk:"ignore_validations"`
 	Value             types.List    `tfsdk:"value"`

@@ -80,18 +80,8 @@ func mlAnomalySwimlaneApplyOptionalFields(
 	title **string,
 	cfg *models.MlAnomalySwimlaneConfigModel,
 ) {
-	if typeutils.IsKnown(cfg.Title) {
-		*title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		*description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		*hideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		*hideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		title, description, hideTitle, hideBorder)
 	if typeutils.IsKnown(cfg.PerPage) {
 		v := cfg.PerPage.ValueFloat32()
 		*perPage = &v
@@ -205,10 +195,8 @@ func mlAnomalySwimlaneMergeOptionalFromAPI(
 	perPage *float32,
 	timeRange *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
 ) {
-	existing.Title = panelkit.PreserveString(existing.Title, title)
-	existing.Description = panelkit.PreserveString(existing.Description, description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, hideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, hideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		title, description, hideTitle, hideBorder)
 	existing.PerPage = panelkit.PreserveFloat32(existing.PerPage, perPage)
 
 	var priorTR *models.TimeRangeModel
@@ -237,17 +225,7 @@ func mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing *models.MlAnom
 	if !typeutils.IsKnown(prior.PerPage) {
 		existing.PerPage = types.Float32Null()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

@@ -98,6 +98,16 @@ func Float32PointerToFloat64Value(v *float32) types.Float64 {
 	return types.Float64Value(float64(*v))
 }
 
+// Float32PointerToInt64Pointer converts a *float32 to a *int64, truncating any fractional part.
+// Intended for numeric API fields that represent whole-number counts (e.g. a maximum series/points-to-plot value).
+func Float32PointerToInt64Pointer(v *float32) *int64 {
+	if v == nil {
+		return nil
+	}
+	val := int64(*v)
+	return &val
+}
+
 // NonEmptyStringOrNull returns types.StringValue(*s) when s is non-nil and non-empty,
 // and types.StringNull() otherwise. Use for API fields that use an empty string to signal absence.
 func NonEmptyStringOrNull(s *string) types.String {

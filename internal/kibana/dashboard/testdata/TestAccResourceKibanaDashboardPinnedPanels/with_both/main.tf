@@ -32,26 +32,30 @@ resource "elasticstack_kibana_dashboard" "test" {
     {
       type = "options_list_control"
       options_list_control_config = {
-        data_view_id     = elasticstack_kibana_data_view.test.data_view.id
-        field_name       = "status"
-        search_technique = "prefix"
-        single_select    = true
-        display_settings = {
-          placeholder = "Select status..."
-          hide_sort   = true
+        by_field = {
+          data_view_id     = elasticstack_kibana_data_view.test.data_view.id
+          field_name       = "status"
+          search_technique = "prefix"
+          single_select    = true
+          display_settings = {
+            placeholder = "Select status..."
+            hide_sort   = true
+          }
         }
       }
     },
     {
       type = "range_slider_control"
       range_slider_control_config = {
-        data_view_id       = elasticstack_kibana_data_view.test.data_view.id
-        field_name         = "source.bytes"
-        title              = "Bytes Range"
-        use_global_filters = true
-        ignore_validations = false
-        value              = ["100", "500"]
-        step               = 10
+        by_field = {
+          data_view_id       = elasticstack_kibana_data_view.test.data_view.id
+          field_name         = "source.bytes"
+          title              = "Bytes Range"
+          use_global_filters = true
+          ignore_validations = false
+          value              = ["100", "500"]
+          step               = 10
+        }
       }
     },
   ]

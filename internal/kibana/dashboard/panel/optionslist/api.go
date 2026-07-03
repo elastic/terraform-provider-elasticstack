@@ -32,8 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-const panelConfigAttrsKeyPrefix = panelType + "_config"
-
 type Handler struct{}
 
 func (Handler) PanelType() string                  { return panelType }
@@ -68,6 +66,13 @@ func (Handler) FromAPI(_ context.Context, pm, prior *models.PanelModel, item kba
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	_ = dashboard
+	if pm.OptionsListControlConfig == nil {
+		diags.AddError(
+			"Missing options list control panel configuration",
+			"Options list control panels require `options_list_control_config`.",
+		)
+		return kbapi.DashboardPanelItem{}, diags
+	}
 	grid := panelkit.GridToAPI(pm.Grid)
 	id := panelkit.IDToAPI(pm.ID)
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
@@ -86,7 +91,12 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 	return panelItem, diags
 }
 
-// ValidatePanelConfig enforces presence of DataViewID and FieldName for options_list panels.
-func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	return panelkit.ValidateDataViewFieldName(attrs, panelConfigAttrsKeyPrefix, "Invalid options list control configuration", attrPath)
+// ValidatePanelConfig is a no-op for options_list panels. Historically this enforced presence of
+// data_view_id/field_name via panelkit.ValidateDataViewFieldName, but now that those attributes
+// live under the required `by_field` nested block (schema.Attribute.Required), Terraform enforces
+// their presence natively whenever `by_field` is configured. Branch selection itself (exactly one
+// of `by_field`/`by_esql`) is enforced by the ExactlyOneOfNestedAttrsValidator on the
+// options_list_control_config schema attribute (see SchemaAttribute in schema.go).
+func (Handler) ValidatePanelConfig(_ context.Context, _ map[string]attr.Value, _ path.Path) diag.Diagnostics {
+	return nil
 }

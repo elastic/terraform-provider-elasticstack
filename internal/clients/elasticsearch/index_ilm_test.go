@@ -31,9 +31,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newMockElasticsearchServerForILM returns an httptest.Server that responds to
-// the index settings APIs used by GetIndicesWithILMPolicy and ClearILMPolicyFromIndices.
-func newMockElasticsearchServerForILM(t *testing.T, handler http.HandlerFunc) *httptest.Server {
+// newMockElasticsearchServer returns an httptest.Server that always advertises
+// the Elasticsearch product header and answers the transport product-check on
+// `/`, delegating everything else to handler.
+func newMockElasticsearchServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Elastic-Product", "Elasticsearch")
@@ -145,7 +146,7 @@ func TestGetIndicesWithILMPolicy(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			srv := newMockElasticsearchServerForILM(t, tc.handler)
+			srv := newMockElasticsearchServer(t, tc.handler)
 			defer srv.Close()
 
 			apiClient := newMockScopedClient(t, srv)
@@ -172,7 +173,7 @@ func TestClearILMPolicyFromIndices(t *testing.T) {
 	t.Run("empty indices slice is a no-op", func(t *testing.T) {
 		t.Parallel()
 		callCount := 0
-		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, _ *http.Request) {
+		srv := newMockElasticsearchServer(t, func(w http.ResponseWriter, _ *http.Request) {
 			callCount++
 			w.WriteHeader(http.StatusOK)
 		})
@@ -188,7 +189,7 @@ func TestClearILMPolicyFromIndices(t *testing.T) {
 		t.Parallel()
 		var capturedPath string
 		var capturedBody string
-		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+		srv := newMockElasticsearchServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_settings") {
 				capturedPath = r.URL.Path
 				body, _ := io.ReadAll(r.Body)
@@ -208,7 +209,7 @@ func TestClearILMPolicyFromIndices(t *testing.T) {
 
 	t.Run("http 500 returns error", func(t *testing.T) {
 		t.Parallel()
-		srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+		srv := newMockElasticsearchServer(t, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "_settings") {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)

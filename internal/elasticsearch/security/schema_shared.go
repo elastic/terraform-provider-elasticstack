@@ -17,7 +17,25 @@
 
 package security
 
-// UsernameAllowedCharsError is the validation error message for usernames
+import (
+	"regexp"
+
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+)
+
+// usernameAllowedCharsError is the validation error message for usernames
 // that contain disallowed characters.
-const UsernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
+const usernameAllowedCharsError = "must contain alphanumeric characters (a-z, A-Z, 0-9), spaces, punctuation, and printable symbols " +
 	"in the Basic Latin (ASCII) block. Leading or trailing whitespace is not allowed"
+
+var usernameRegexp = regexp.MustCompile(`^[[:graph:]]+$`)
+
+// UsernameValidator returns a composite string validator that enforces the
+// username length and character-class rules.
+func UsernameValidator() validator.String {
+	return stringvalidator.All(
+		stringvalidator.LengthBetween(1, 1024),
+		stringvalidator.RegexMatches(usernameRegexp, usernameAllowedCharsError),
+	)
+}

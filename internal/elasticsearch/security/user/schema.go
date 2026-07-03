@@ -19,7 +19,6 @@ package securityuser
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -50,11 +49,7 @@ func GetSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 1024),
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[[:graph:]]+$`),
-						security.UsernameAllowedCharsError,
-					),
+					security.UsernameValidator(),
 				},
 			},
 			"password": schema.StringAttribute{
