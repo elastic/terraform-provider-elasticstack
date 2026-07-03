@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/apmservicemap"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/esqlcontrol"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/fieldstatstable"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
@@ -65,6 +66,7 @@ var panelHandlers = []iface.Handler{
 	sloalerts.Handler{},
 	visconfig.Handler{},
 	discoversession.Handler{},
+	fieldstatstable.Handler{},
 	aiopslograteanalysis.Handler{},
 	aiopspatternanalysis.Handler{},
 	aiopschangepointchart.Handler{},
