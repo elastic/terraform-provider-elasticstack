@@ -19,6 +19,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -48,6 +49,14 @@ func diagnosticsContainInstallSpaceDeleteRejection(diags diag.Diagnostics) bool 
 	return false
 }
 
+// deleteKibanaAssetsWithFallback deletes the Kibana assets for name/version in
+// spaceID. When Fleet rejects the call because spaceID is the package's
+// install space and the package is also installed in other spaces, the only
+// remaining way to clear spaceID is a full package uninstall — but that
+// uninstalls the package from EVERY space, not just spaceID. That is only
+// acceptable when the caller has explicitly opted in via force; otherwise an
+// actionable error is returned instead of silently affecting other,
+// independently managed spaces.
 func deleteKibanaAssetsWithFallback(
 	ctx context.Context,
 	fleetClient *fleet.Client,
@@ -58,11 +67,32 @@ func deleteKibanaAssetsWithFallback(
 	if !deleteDiags.HasError() {
 		return deleteDiags
 	}
-	if diagnosticsContainInstallSpaceDeleteRejection(deleteDiags) {
-		tflog.Debug(ctx, "DeleteKibanaAssets rejected by Fleet (install space); falling back to Uninstall", map[string]any{attrName: name, attrVersion: version, "space_id": spaceID})
-		return fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
+	if !diagnosticsContainInstallSpaceDeleteRejection(deleteDiags) {
+		return deleteDiags
 	}
-	return deleteDiags
+
+	if !force {
+		return diag.Diagnostics{diag.NewErrorDiagnostic(
+			"Cannot remove Kibana assets from the package's install space",
+			fmt.Sprintf(
+				"Fleet rejected removing Kibana assets for package %q version %q from space %q "+
+					"because that space is the package's install space (the space where it was "+
+					"originally installed), and the package is also installed in one or more other "+
+					"spaces. Fleet does not support removing Kibana assets from only the install "+
+					"space while the package remains installed elsewhere; the only way to clear "+
+					"this space is to fully uninstall the package, which would also remove it from "+
+					"every other space where it is installed. To destroy this resource without "+
+					"affecting other spaces, first destroy the elasticstack_fleet_integration "+
+					"resource(s) managing those other space(s). Alternatively, set force = true on "+
+					"this resource to acknowledge that destroying it will uninstall the package "+
+					"from ALL spaces where it is installed.",
+				name, version, spaceID,
+			),
+		)}
+	}
+
+	tflog.Debug(ctx, "DeleteKibanaAssets rejected by Fleet (install space); force=true, falling back to global Uninstall", map[string]any{attrName: name, attrVersion: version, "space_id": spaceID})
+	return fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
 }
 
 func deleteIntegration(

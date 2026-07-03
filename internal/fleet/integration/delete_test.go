@@ -85,6 +85,39 @@ func TestDeleteKibanaAssetsWithFallback_installSpace400FallsBackToUninstall(t *t
 	assertDiagnosticsDoNotContainInstallSpaceRejection(t, diags)
 }
 
+func TestDeleteKibanaAssetsWithFallback_installSpace400WithoutForceReturnsActionableError(t *testing.T) {
+	t.Parallel()
+
+	var uninstallCalls int
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodDelete && strings.HasSuffix(r.URL.Path, "/kibana_assets"):
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"Impossible to delete kibana assets from the space where the package was installed, you must uninstall the package."}`)
+		case r.Method == http.MethodDelete && r.URL.Path == testPackageUninstallPath:
+			uninstallCalls++
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	client := newTestFleetClient(t, srv)
+	diags := deleteKibanaAssetsWithFallback(context.Background(), client, testPackageName, testPackageVersion, testSpaceID, false)
+
+	require.True(t, diags.HasError())
+	assert.Equal(t, 0, uninstallCalls, "Uninstall must not be called without force, since it would affect other spaces")
+	require.Len(t, diags.Errors(), 1)
+	errDetail := diags.Errors()[0].Detail()
+	assert.Contains(t, errDetail, "install space")
+	assert.Contains(t, errDetail, "force")
+	assert.NotContains(t, errDetail, `"statusCode":400`, "the raw Fleet 400 body must not be leaked verbatim")
+}
+
 func TestDeleteKibanaAssetsWithFallback_installSpace400UninstallFailureReturnsUninstallError(t *testing.T) {
 	t.Parallel()
 
