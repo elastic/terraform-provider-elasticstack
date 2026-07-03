@@ -20,7 +20,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -28,26 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
-
-const installSpaceDeleteRejectedMsg = "space where the package was installed"
-
-func normalizeDiagnosticText(s string) string {
-	return strings.Join(strings.Fields(s), " ")
-}
-
-func diagnosticsContainInstallSpaceDeleteRejection(diags diag.Diagnostics) bool {
-	for _, d := range diags {
-		if d.Severity() != diag.SeverityError {
-			continue
-		}
-		detail := normalizeDiagnosticText(d.Detail())
-		summary := normalizeDiagnosticText(d.Summary())
-		if strings.Contains(detail, installSpaceDeleteRejectedMsg) || strings.Contains(summary, installSpaceDeleteRejectedMsg) {
-			return true
-		}
-	}
-	return false
-}
 
 // deleteKibanaAssetsWithFallback deletes the Kibana assets for name/version in
 // spaceID. When Fleet rejects the call because spaceID is the package's
@@ -67,7 +46,7 @@ func deleteKibanaAssetsWithFallback(
 	if !deleteDiags.HasError() {
 		return deleteDiags
 	}
-	if !diagnosticsContainInstallSpaceDeleteRejection(deleteDiags) {
+	if !fleet.ContainsInstallSpaceDeleteRejection(deleteDiags) {
 		return deleteDiags
 	}
 
