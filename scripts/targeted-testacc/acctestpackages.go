@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var testAccFuncRE = regexp.MustCompile(`func\s+TestAcc`)
+var testAccFuncRE = regexp.MustCompile(`func\s+TestAcc[A-Z]`)
 
 // FindAccTestPackages walks root (typically "internal") and returns the import
 // paths of all Go packages that define at least one func TestAcc in a

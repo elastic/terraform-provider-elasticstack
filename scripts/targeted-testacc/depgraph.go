@@ -115,15 +115,17 @@ func WalkReverseDeps(reverse map[string][]string, start []string) []string {
 }
 
 func stringsSorted(s []string) []string {
-	sort.Strings(s)
-	return uniqStrings(s)
+	cpy := append([]string(nil), s...)
+	sort.Strings(cpy)
+	return uniqStrings(cpy)
 }
 
 func uniqStrings(sorted []string) []string {
 	if len(sorted) == 0 {
 		return sorted
 	}
-	uniq := sorted[:1]
+	uniq := make([]string, 1, len(sorted))
+	uniq[0] = sorted[0]
 	for _, s := range sorted[1:] {
 		if s == uniq[len(uniq)-1] {
 			continue

@@ -107,7 +107,8 @@ func extractFromFile(filename string, data []byte) ([]EntityRef, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments|parser.AllErrors)
 	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", filename, err)
+		// Skip files that cannot be parsed; they cannot contribute valid entity declarations.
+		return nil, nil
 	}
 
 	intervals := commentIntervals(f.Comments)
