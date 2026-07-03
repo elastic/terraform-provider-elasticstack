@@ -55,12 +55,12 @@ func TestGetRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "absent role key returns nil without error",
+			name: "absent role key returns error diagnostic",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprintf(w, `{"some-other-role":{"cluster":["all"]}}`)
 			},
-			wantNil: true,
+			wantErr: true,
 		},
 		{
 			name: "global with array-typed category decodes as raw JSON",

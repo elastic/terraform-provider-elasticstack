@@ -20,8 +20,10 @@ package elasticsearch
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
@@ -113,7 +115,10 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	if httpRes.StatusCode >= 400 {
 		body, _ := io.ReadAll(httpRes.Body)
-		return nil, diagutil.ReportUnknownHTTPError(httpRes.StatusCode, body)
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			fmt.Sprintf("Unable to get role %q: unexpected status code from server: got HTTP %d", rolename, httpRes.StatusCode),
+			string(body),
+		)}
 	}
 
 	var roles map[string]json.RawMessage
@@ -123,7 +128,10 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	rawRole, ok := roles[rolename]
 	if !ok {
-		return nil, nil
+		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
+			"Unable to find a role in the cluster",
+			fmt.Sprintf(`Unable to find "%s" role in the cluster`, rolename),
+		)}
 	}
 
 	var role Role
@@ -133,7 +141,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	// Treat an explicit JSON null the same as an absent global so state is
 	// stored as null rather than the literal string "null".
-	if string(role.Global) == "null" {
+	if strings.TrimSpace(string(role.Global)) == "null" {
 		role.Global = nil
 	}
 
