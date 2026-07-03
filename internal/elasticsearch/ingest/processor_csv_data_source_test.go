@@ -42,6 +42,7 @@ func TestAccDataSourceIngestProcessorCSV(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "quote", `"`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "trim", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "empty_value"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "json", expectedJSONCSV),
 				),
 			},
@@ -99,6 +100,25 @@ func TestAccDataSourceIngestProcessorCSV(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "on_failure.#", "1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "on_failure.0", `{"set":{"field":"error.message","value":"csv failed"}}`),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "json", expectedJSONCSVOnFailure),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("target_fields_single"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_csv.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "target_fields.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "target_fields.0", "single_field"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "json", expectedJSONCSVTargetFieldsSingle),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_value_null"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_csv.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_csv.test", "empty_value", "NULL"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_csv.test", "json", expectedJSONCSVEmptyValueNull),
 				),
 			},
 		},
@@ -186,5 +206,30 @@ const expectedJSONCSVOnFailure = `{
 			}
 		],
 		"ignore_missing": false
+	}
+}`
+
+const expectedJSONCSVTargetFieldsSingle = `{
+	"csv": {
+		"field": "csv_payload",
+		"target_fields": ["single_field"],
+		"separator": ",",
+		"trim": false,
+		"quote": "\"",
+		"ignore_failure": false,
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONCSVEmptyValueNull = `{
+	"csv": {
+		"field": "csv_payload",
+		"target_fields": ["col1", "col2"],
+		"separator": ",",
+		"trim": false,
+		"quote": "\"",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"empty_value": "NULL"
 	}
 }`
