@@ -77,24 +77,6 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 	return populateFieldFromAPI(pm, tfPanel, apiConfig)
 }
 
-// preserveKnownBool updates existing from api only when existing is already known (REQ-009
-// null-preservation); an api value of nil, or existing being null/unknown, leaves existing
-// unchanged.
-func preserveKnownBool(existing types.Bool, api *bool) types.Bool {
-	if typeutils.IsKnown(existing) && api != nil {
-		return types.BoolValue(*api)
-	}
-	return existing
-}
-
-// preserveKnownString is the string equivalent of preserveKnownBool.
-func preserveKnownString(existing types.String, api *string) types.String {
-	if typeutils.IsKnown(existing) && api != nil {
-		return types.StringValue(*api)
-	}
-	return existing
-}
-
 // populateFieldFromAPI populates pm.OptionsListControlConfig.ByField from a Field-branch API
 // response, applying the same null-preservation semantics as the pre-union implementation.
 func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField) diag.Diagnostics {
@@ -130,13 +112,13 @@ func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api
 	existing.DataViewID = types.StringValue(apiConfig.DataViewId)
 	existing.FieldName = types.StringValue(apiConfig.FieldName)
 
-	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
-	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
-	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
-	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
-	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
-	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
-	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
+	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
+	existing.UseGlobalFilters = panelkit.PreserveBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
+	existing.IgnoreValidations = panelkit.PreserveBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
+	existing.SingleSelect = panelkit.PreserveBool(existing.SingleSelect, apiConfig.SingleSelect)
+	existing.Exclude = panelkit.PreserveBool(existing.Exclude, apiConfig.Exclude)
+	existing.ExistsSelected = panelkit.PreserveBool(existing.ExistsSelected, apiConfig.ExistsSelected)
+	existing.RunPastTimeout = panelkit.PreserveBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
@@ -191,13 +173,13 @@ func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiC
 	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
 	existing.ValuesSource = types.StringValue(panelkit.EsqlValuesSourceUserValue)
 
-	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
-	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
-	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
-	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
-	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
-	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
-	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
+	existing.Title = panelkit.PreserveString(existing.Title, apiConfig.Title)
+	existing.UseGlobalFilters = panelkit.PreserveBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
+	existing.IgnoreValidations = panelkit.PreserveBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
+	existing.SingleSelect = panelkit.PreserveBool(existing.SingleSelect, apiConfig.SingleSelect)
+	existing.Exclude = panelkit.PreserveBool(existing.Exclude, apiConfig.Exclude)
+	existing.ExistsSelected = panelkit.PreserveBool(existing.ExistsSelected, apiConfig.ExistsSelected)
+	existing.RunPastTimeout = panelkit.PreserveBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
 	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
 		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
 	}
