@@ -3,9 +3,9 @@
 // The tool inspects the current branch's git diff and emits the minimal set of
 // acceptance test packages that should run, using a two-phase algorithm:
 //
-//   1. Walk the reverse import graph to find packages that import changed code.
-//   2. Grep test fixtures and test files for Terraform entity names declared
-//      in the changed packages.
+//  1. Walk the reverse import graph to find packages that import changed code.
+//  2. Grep test fixtures and test files for Terraform entity names declared
+//     in the changed packages.
 //
 // Results are unioned, optionally collapsed to the full suite for broad changes,
 // and finally sharded.
@@ -63,7 +63,10 @@ func run() error {
 
 	changedFiles, err := GitDiff(baseline)
 	if err != nil {
-		return fmt.Errorf("git diff: %w", err)
+		if verbose {
+			fmt.Fprintf(os.Stderr, "git diff failed: %v\n", err)
+		}
+		changedFiles = nil
 	}
 
 	if dryRun {
@@ -77,28 +80,30 @@ func run() error {
 		}
 	}
 
-	if len(changedFiles) == 0 {
-		if dryRun {
-			fmt.Println("\nNo changed files; zero packages selected.")
-		}
-		return nil
-	}
-
 	classifier := NewClassifier(modulePath)
-	classified, err := classifier.Classify(changedFiles)
-	if err != nil {
-		return fmt.Errorf("classify changed files: %w", err)
-	}
+	var classified *ClassifyResult
+	if len(changedFiles) == 0 {
+		classified = &ClassifyResult{ForceAll: true}
+		if dryRun {
+			fmt.Println("\nNo resolvable diff; selecting all acceptance test packages.")
+		}
+	} else {
+		var classifyErr error
+		classified, classifyErr = classifier.Classify(changedFiles)
+		if classifyErr != nil {
+			return fmt.Errorf("classify changed files: %w", classifyErr)
+		}
 
-	if classified.ForceAll {
-		if dryRun {
-			fmt.Println("\nForce-all prefix matched; selecting all acceptance test packages.")
+		if classified.ForceAll {
+			if dryRun {
+				fmt.Println("\nForce-all prefix matched; selecting all acceptance test packages.")
+			}
+		} else if !classified.HasCode {
+			if dryRun {
+				fmt.Println("\nNo changed Go or testdata files; zero packages selected.")
+			}
+			return nil
 		}
-	} else if !classified.HasCode {
-		if dryRun {
-			fmt.Println("\nNo changed Go or testdata files; zero packages selected.")
-		}
-		return nil
 	}
 
 	allAccPackages, err := FindAccTestPackages("internal", modulePath)
@@ -113,6 +118,11 @@ func run() error {
 	phase2Packages := []string{}
 	phaseReasons := make(map[string][]string)
 
+	accSet := make(map[string]struct{}, len(allAccPackages))
+	for _, p := range allAccPackages {
+		accSet[p] = struct{}{}
+	}
+
 	if !classified.ForceAll {
 		graph, err := BuildImportGraph()
 		if err != nil {
@@ -120,11 +130,6 @@ func run() error {
 		}
 
 		// Phase 1: reverse dependency walk intersected with acc-test packages.
-		accSet := make(map[string]struct{}, len(allAccPackages))
-		for _, p := range allAccPackages {
-			accSet[p] = struct{}{}
-		}
-
 		transitive := WalkReverseDeps(graph.Reverse, classified.Packages)
 		for _, p := range transitive {
 			if _, ok := accSet[p]; ok {
@@ -150,9 +155,12 @@ func run() error {
 					return fmt.Errorf("find consumers for %s: %w", ent.FullName(), err)
 				}
 				for _, consumer := range consumers {
+					if _, ok := accSet[consumer]; !ok {
+						continue
+					}
 					phaseReasons[consumer] = append(phaseReasons[consumer], fmt.Sprintf("phase-2 consumer of %s", ent.FullName()))
+					phase2Packages = append(phase2Packages, consumer)
 				}
-				phase2Packages = append(phase2Packages, consumers...)
 			}
 		}
 		phase2Packages = stringsSorted(phase2Packages)
