@@ -29,6 +29,7 @@ import (
 
 func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -62,6 +63,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -93,6 +95,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -115,6 +118,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 
 func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -130,6 +134,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonConflict(t *testin
 
 func TestAccResourceKibanaSecurityEntityStoreEntity_entityIdMismatch(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -145,6 +150,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_entityIdMismatch(t *testing.
 
 func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonIdMismatch(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -162,6 +168,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonIdMismatch(t *test
 // with a typed host block, asserting host.name and host.ip are populated.
 func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -192,6 +199,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
 // with a typed user block, asserting user.name and user.email are populated.
 func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -221,6 +229,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
 // with a typed service block, asserting service.name is populated.
 func TestAccResourceKibanaSecurityEntityStoreEntity_serviceType(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -250,6 +259,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_serviceType(t *testing.T) {
 // JSON fallback attribute instead of the typed host block.
 func TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonFallback(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -275,6 +285,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonFallback(t *testing.
 // both host and host_json produces a validation error.
 func TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonConflict(t *testing.T) {
 	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

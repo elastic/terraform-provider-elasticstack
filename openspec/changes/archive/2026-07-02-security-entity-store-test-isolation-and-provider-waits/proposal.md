@@ -27,6 +27,10 @@ reading or creating entity-link resources while the store is still initializing 
 - **Provider — entity-link/entity Create** retries on HTTP 500 via
   `asyncutils.WaitForStateTransition` (bounded by the Create `timeouts`), so transient
   store-initialization errors do not fail the apply. Non-500 responses fail fast.
+- **Provider — entity-store Install (Create/Update)** retries on HTTP 500 with the same shared
+  `kibanaoapi.RetryCreateOnServerError` helper, because the test-isolation cleanup uninstalls the
+  singleton store between tests and a subsequent install can race the store's background teardown.
+  Non-500 responses fail fast.
 - **Tests** add a `t.Cleanup` function in every acceptance test that uninstalls the entity store
   and waits for `not_installed` before the next test can proceed, breaking cross-test contamination
   of the singleton.
@@ -38,7 +42,7 @@ reading or creating entity-link resources while the store is still initializing 
 
 ### Modified Capabilities
 
-- `kibana-security-entity-store`: Delete waits for uninstall completion; Read waits for started-state.
+- `kibana-security-entity-store`: Delete waits for uninstall completion; Read waits for started-state; Install (Create/Update) retries on HTTP 500.
 - `kibana-security-entity-store-entity-link`: Create retries on HTTP 500 within the Create timeout.
 - `kibana-security-entity-store-entities-datasource`: (test isolation fix)
 

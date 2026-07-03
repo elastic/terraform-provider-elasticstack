@@ -21,12 +21,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// createRetryPollInterval is the cadence at which the entity create call is
+// retried while the entity store is still initializing (HTTP 500). The overall
+// retry budget is bounded by the Create ctx deadline (from the resource
+// timeouts block), not by this interval.
+const createRetryPollInterval = 5 * time.Second
 
 func writeEntity(
 	ctx context.Context,
@@ -61,7 +68,7 @@ func writeEntity(
 	}
 
 	if req.Prior == nil {
-		if d := kibanaoapi.CreateSecurityEntityStoreEntity(ctx, client.GetKibanaOapiClient(), spaceID, entityType, bytes.NewReader(bodyBytes)); d.HasError() {
+		if d := createEntityWithRetry(ctx, client, spaceID, entityType, bodyBytes); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	} else {
@@ -76,6 +83,18 @@ func writeEntity(
 	}
 
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
+}
+
+// createEntityWithRetry performs an initial synchronous create and, when the
+// entity store returns HTTP 500 (still initializing), retries until the create
+// succeeds or the Create ctx deadline is exceeded, reusing the shared
+// kibanaoapi retry helper. A fresh body reader is constructed on each attempt
+// because the request consumes it.
+func createEntityWithRetry(ctx context.Context, client *clients.KibanaScopedClient, spaceID, entityType string, bodyBytes []byte) diag.Diagnostics {
+	attempt := func(ctx context.Context) (int, []byte, error) {
+		return kibanaoapi.CreateSecurityEntityStoreEntityStatus(ctx, client.GetKibanaOapiClient(), spaceID, entityType, bytes.NewReader(bodyBytes))
+	}
+	return kibanaoapi.RetryCreateOnServerError(ctx, "security entity store entity", entityType, attempt, createRetryPollInterval)
 }
 
 // injectEntityIDAndMarshal sets entity.id in bodyMap and marshals it to JSON.

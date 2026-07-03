@@ -20,52 +20,58 @@ package entity
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInjectEntityIDAndMarshal(t *testing.T) {
-	tests := []struct {
-		name     string
-		bodyMap  map[string]any
-		entityID string
-		wantID   string
-	}{
-		{
-			name:     "injects id when entity key absent",
-			bodyMap:  map[string]any{"other": "value"},
-			entityID: "abc",
-			wantID:   "abc",
-		},
-		{
-			name:     "merges id into existing entity map",
-			bodyMap:  map[string]any{"entity": map[string]any{"name": "test"}},
-			entityID: "xyz",
-			wantID:   "xyz",
-		},
-		{
-			name:     "overwrites existing id in entity map",
-			bodyMap:  map[string]any{"entity": map[string]any{"id": "old", "name": "test"}},
-			entityID: "new",
-			wantID:   "new",
-		},
-	}
+	t.Parallel()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b, diags := injectEntityIDAndMarshal(tt.bodyMap, tt.entityID)
-			if diags.HasError() {
-				t.Fatalf("unexpected error: %v", diags)
-			}
-			var result map[string]any
-			if err := json.Unmarshal(b, &result); err != nil {
-				t.Fatalf("unmarshal: %v", err)
-			}
-			entityMap, ok := result["entity"].(map[string]any)
-			if !ok {
-				t.Fatalf("entity key not a map: %T", result["entity"])
-			}
-			if got := entityMap["id"]; got != tt.wantID {
-				t.Errorf("entity.id = %v, want %v", got, tt.wantID)
-			}
-		})
-	}
+	t.Run("adds entity map when absent", func(t *testing.T) {
+		t.Parallel()
+		body, diags := injectEntityIDAndMarshal(map[string]any{"tags": []string{"a"}}, "host-1")
+		require.False(t, diags.HasError())
+
+		var got map[string]any
+		require.NoError(t, json.Unmarshal(body, &got))
+		entity, ok := got["entity"].(map[string]any)
+		require.True(t, ok, "entity object should be present")
+		assert.Equal(t, "host-1", entity["id"])
+		assert.Contains(t, got, "tags")
+	})
+
+	t.Run("sets id on existing entity map without dropping fields", func(t *testing.T) {
+		t.Parallel()
+		body, diags := injectEntityIDAndMarshal(map[string]any{
+			"entity": map[string]any{"name": "web01"},
+		}, "host-2")
+		require.False(t, diags.HasError())
+
+		var got map[string]any
+		require.NoError(t, json.Unmarshal(body, &got))
+		entity := got["entity"].(map[string]any)
+		assert.Equal(t, "host-2", entity["id"])
+		assert.Equal(t, "web01", entity["name"], "existing entity fields must be preserved")
+	})
+
+	t.Run("overwrites an existing id", func(t *testing.T) {
+		t.Parallel()
+		body, diags := injectEntityIDAndMarshal(map[string]any{
+			"entity": map[string]any{"id": "old"},
+		}, "new")
+		require.False(t, diags.HasError())
+
+		var got map[string]any
+		require.NoError(t, json.Unmarshal(body, &got))
+		assert.Equal(t, "new", got["entity"].(map[string]any)["id"])
+	})
+
+	t.Run("returns diagnostics on unmarshalable payload", func(t *testing.T) {
+		t.Parallel()
+		// A channel cannot be JSON-marshaled, exercising the error path.
+		_, diags := injectEntityIDAndMarshal(map[string]any{"bad": make(chan int)}, "host-3")
+		require.True(t, diags.HasError())
+		assert.Equal(t, "JSON marshal error", diags.Errors()[0].Summary())
+	})
 }
