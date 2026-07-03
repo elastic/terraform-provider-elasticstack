@@ -440,9 +440,24 @@ func compareStreams(ctx context.Context, oldInput, newInput InputModel) (bool, d
 			return false, diags
 		}
 
+		// Strip server-managed keys (data_stream.*) injected by Fleet 9.5+
+		// from both sides before comparing. These keys are synthesised by Fleet
+		// and are not user-configurable; their presence in the API response
+		// must not trigger a diff.
+		oldVarsStripped, stripDiags := stripServerManagedVarsKeys(oldStream.Vars)
+		diags.Append(stripDiags...)
+		if diags.HasError() {
+			return false, diags
+		}
+		newVarsStripped, stripDiags := stripServerManagedVarsKeys(newStream.Vars)
+		diags.Append(stripDiags...)
+		if diags.HasError() {
+			return false, diags
+		}
+
 		// Compare vars using semantic equality if both are known
-		if typeutils.IsKnown(oldStream.Vars) && typeutils.IsKnown(newStream.Vars) {
-			varsEqual, d := oldStream.Vars.StringSemanticEquals(ctx, newStream.Vars)
+		if typeutils.IsKnown(oldVarsStripped) && typeutils.IsKnown(newVarsStripped) {
+			varsEqual, d := oldVarsStripped.StringSemanticEquals(ctx, newVarsStripped)
 			diags.Append(d...)
 			if diags.HasError() {
 				return false, diags
@@ -450,11 +465,44 @@ func compareStreams(ctx context.Context, oldInput, newInput InputModel) (bool, d
 			if !varsEqual {
 				return false, diags
 			}
-		} else if !oldStream.Vars.Equal(newStream.Vars) {
+		} else if !oldVarsStripped.Equal(newVarsStripped) {
 			// If one is null/unknown, use regular equality
 			return false, diags
 		}
 	}
 
 	return true, diags
+}
+
+var serverManagedVarsKeys = []string{"data_stream.dataset", "data_stream.type"}
+
+// stripServerManagedVarsKeys removes Fleet-injected keys from a vars map.
+func stripServerManagedVarsKeys(input jsontypes.Normalized) (jsontypes.Normalized, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if input.IsNull() || input.IsUnknown() {
+		return input, diags
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(input.ValueString()), &raw); err != nil {
+		diags.AddError("Failed to parse vars JSON", err.Error())
+		return input, diags
+	}
+
+	for _, key := range serverManagedVarsKeys {
+		delete(raw, key)
+	}
+
+	if len(raw) == 0 {
+		return jsontypes.NewNormalizedValue("{}"), diags
+	}
+
+	out, err := json.Marshal(raw)
+	if err != nil {
+		diags.AddError("Failed to re-marshal vars JSON", err.Error())
+		return input, diags
+	}
+
+	return jsontypes.NewNormalizedValue(string(out)), diags
 }
