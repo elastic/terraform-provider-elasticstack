@@ -15,11 +15,11 @@
 - [x] 3.1 Add a unit test in `internal/fleet/integration/` (or `internal/clients/fleet/`) that mocks the Fleet API to return the 400 install-space response and verifies that the fallback logic falls back to `Uninstall` when `force = true` (i.e. `Uninstall` is called exactly once and the returned diagnostics are clean).
 - [x] 3.2 Add a unit test that verifies a generic 400 (different message) is still surfaced as an error and does NOT call `Uninstall`, regardless of `force`.
 - [x] 3.3 Add a unit test that verifies the happy path (HTTP 200 from `DeleteKibanaAssets`) still returns no diagnostics and does NOT call `Uninstall`.
-- [ ] 3.4 **(added after review)** Add a unit test that verifies: install-space 400 + `force = false` → `Uninstall` is NOT called, and the returned diagnostics contain an actionable error (distinct from the raw Fleet 400 body) directing the caller to destroy the other space's resource(s) or set `force = true`.
+- [x] 3.4 **(added after review)** Add a unit test that verifies: install-space 400 + `force = false` → `Uninstall` is NOT called, and the returned diagnostics contain an actionable error (distinct from the raw Fleet 400 body) directing the caller to destroy the other space's resource(s) or set `force = true`.
 
 ## 4. Validation and cleanup
 
-- [ ] 4.1 Run `make build` — confirm it compiles cleanly.
-- [ ] 4.2 Run `make check-lint` — fix any linting issues.
-- [ ] 4.3 Run `make check-openspec` — confirm this change validates cleanly.
-- [ ] 4.4 Run unit tests for the affected packages: `go test ./internal/fleet/integration/... ./internal/clients/fleet/...`.
+- [x] 4.1 Run `make build` — confirm it compiles cleanly.
+- [x] 4.2 Run `make check-lint` — fix any linting issues.
+- [x] 4.3 Run `make check-openspec` — confirm this change validates cleanly.
+- [x] 4.4 Run unit tests for the affected packages: `go test ./internal/fleet/integration/... ./internal/clients/fleet/...`.

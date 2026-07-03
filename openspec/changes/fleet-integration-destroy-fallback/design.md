@@ -50,6 +50,7 @@ Direct API testing confirmed:
 - Modifying the install path or read path.
 - Addressing other multi-space destroy scenarios not triggered by this specific 400.
 - Implementing a version-check guard on the fallback (the 400 detection is message-based, making it version-agnostic and forward-compatible).
+- Adding acceptance-test coverage for the install-space-400 branch itself: this worktree only has a Fleet 9.4.0 stack available, which cannot reproduce the 9.5 rejection, so `deleteKibanaAssetsWithFallback` is covered by mocked-HTTP unit tests only (matching the original design's approach, which was likewise validated via direct manual API testing against a 9.5 stack rather than an automated acceptance test). The existing `TestAccResourceIntegrationSkipDestroy` acceptance test exercises the fallback indirectly on the CI 9.5.0-SNAPSHOT matrix.
 
 ## Decisions
 
