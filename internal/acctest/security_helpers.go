@@ -39,10 +39,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 )
 
-// entityStoreNotInstalledStatus is the overall status value the Security Entity
-// Store reports once it has been fully uninstalled.
-const entityStoreNotInstalledStatus = "not_installed"
-
 // entityStoreCleanupTimeout bounds how long CleanupEntityStore waits for the
 // store to reach not_installed. Test code has no resource ctx/timeouts block,
 // so it uses a local timeout matching the provider Delete default cadence.
@@ -93,14 +89,14 @@ func CleanupEntityStore(t *testing.T, spaceID string) {
 			t.Logf("CleanupEntityStore: transient error decoding status, retrying: %v", err)
 			return false, nil
 		}
-		return status.Status == entityStoreNotInstalledStatus, nil
+		return status.Status == string(kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled), nil
 	}
 
 	if err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, asyncutils.WithPollInterval(5*time.Second)); err != nil {
-		t.Logf("CleanupEntityStore: store did not reach %s within %s: %v", entityStoreNotInstalledStatus, entityStoreCleanupTimeout, err)
+		t.Logf("CleanupEntityStore: store did not reach not_installed within %s: %v", entityStoreCleanupTimeout, err)
 		return
 	}
-	t.Logf("CleanupEntityStore: entity store in space %q reached %s", spaceID, entityStoreNotInstalledStatus)
+	t.Logf("CleanupEntityStore: entity store in space %q reached not_installed", spaceID)
 }
 
 type TLSMaterial struct {

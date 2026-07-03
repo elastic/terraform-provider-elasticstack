@@ -397,9 +397,8 @@ func waitForUninstall(ctx context.Context, client *clients.KibanaScopedClient, s
 	checker := makeUninstallStateChecker(getStatus)
 
 	// Immediate first check so an already not_installed store returns without
-	// waiting a full poll interval; only enter the wait loop if it is not yet
-	// gone. Skipped when the context is already done so the wait loop reports
-	// the deadline. Transient read errors fall through to the polling loop.
+	// waiting a poll interval. Skipped when ctx is already done so the wait
+	// loop reports the deadline.
 	if ctx.Err() == nil {
 		if done, _ := checker(ctx); done {
 			return nil

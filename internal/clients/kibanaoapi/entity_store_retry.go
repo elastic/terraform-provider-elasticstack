@@ -70,7 +70,6 @@ func RetryCreateOnServerError(ctx context.Context, resourceType, resourceID stri
 			return false, nil
 		}
 		if status < 200 || status >= 300 {
-			// Non-500 non-2xx: fatal, carry the status and body out of the loop.
 			return false, &fatalCreateError{status: status, body: respBody}
 		}
 		return true, nil
