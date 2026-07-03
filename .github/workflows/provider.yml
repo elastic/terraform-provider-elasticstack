@@ -208,8 +208,16 @@ jobs:
             echo "targeted_pkgs=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git fetch origin main --depth=1
-          targeted=$(go run ./scripts/targeted-testacc/... --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+          # The actions/checkout step gives us a shallow merge commit only, so
+          # merge-base / HEAD~1 resolution fails and the tool falls back to the
+          # full suite. Fetch the PR base commit and pass it explicitly so the
+          # tool can compute the real diff for this PR.
+          base_ref="refs/remotes/origin/pr-base"
+          if git fetch origin +${{ github.event.pull_request.base.sha }}:"${base_ref}" --depth=1; then
+            targeted=$(go run ./scripts/targeted-testacc/... --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+          else
+            targeted=$(go run ./scripts/targeted-testacc/... --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+          fi
           targeted=$(echo "$targeted" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           if [[ -n "$targeted" ]]; then
             echo "has_packages=true" >> "$GITHUB_OUTPUT"
