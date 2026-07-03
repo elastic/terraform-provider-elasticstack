@@ -21,11 +21,14 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -37,6 +40,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// integrationPolicyInputsModelV2 and integrationPolicyInputStreamModelV2 are
+// frozen snapshots of the pre-condition input/stream models (see
+// getInputsAttributeTypesV2). They exist solely so upgradeV2ToV3 can decode
+// prior V2 `inputs` values, which have no `condition` key.
+type integrationPolicyInputsModelV2 struct {
+	Enabled  types.Bool           `tfsdk:"enabled"`
+	Vars     jsontypes.Normalized `tfsdk:"vars"`
+	Defaults types.Object         `tfsdk:"defaults"`
+	Streams  types.Map            `tfsdk:"streams"`
+}
+
+type integrationPolicyInputStreamModelV2 struct {
+	Enabled types.Bool           `tfsdk:"enabled"`
+	Vars    jsontypes.Normalized `tfsdk:"vars"`
+}
 
 // integrationPolicyModelV2 is a snapshot of the V2 model. It is retained so the
 // V2→V3 state upgrader can decode prior state. It differs from the live model
@@ -110,12 +129,10 @@ func getSchemaV2() schema.Schema {
 			attrIntegrationVersion: schema.StringAttribute{Required: true},
 			attrOutputID:           schema.StringAttribute{Optional: true},
 			attrVarsJSON: schema.StringAttribute{
-				CustomType: VarsJSONType{
-					JSONWithContextualDefaultsType: customtypes.NewJSONWithContextualDefaultsType(populateVarsJSONDefaults),
-				},
-				Computed:  true,
-				Optional:  true,
-				Sensitive: varsAreSensitive,
+				CustomType: policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				Computed:   true,
+				Optional:   true,
+				Sensitive:  varsAreSensitive,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -129,14 +146,14 @@ func getSchemaV2() schema.Schema {
 				},
 			},
 			"inputs": schema.MapNestedAttribute{
-				CustomType: NewInputsType(NewInputType(getInputsAttributeTypes())),
+				CustomType: NewInputsType(NewInputType(getInputsAttributeTypesV2())),
 				Computed:   true,
 				Optional:   true,
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.UseStateForUnknown(),
 				},
 				NestedObject: schema.NestedAttributeObject{
-					CustomType: NewInputType(getInputsAttributeTypes()),
+					CustomType: NewInputType(getInputsAttributeTypesV2()),
 					Attributes: map[string]schema.Attribute{
 						attrEnabled: schema.BoolAttribute{
 							Computed: true,
@@ -196,14 +213,57 @@ func getSchemaV2() schema.Schema {
 	}
 }
 
+// getInputsAttributeTypesV2 is a frozen snapshot of the pre-condition
+// inputs-map attribute types (i.e. what getInputsAttributeTypes() returned
+// before the Phase 1 `condition` addition). It MUST NOT be changed: it is
+// used as PriorSchema to decode raw V2 state written before `condition`
+// existed, and that raw state has no `condition` key. Delegating to the live
+// (shared, condition-including) policyshape types here would make the
+// PriorSchema's expected object shape not match the historical wire format,
+// breaking the V2->V3 state upgrade for any resource still on schema V2.
+func getInputsAttributeTypesV2() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrEnabled: types.BoolType,
+		attrVars:    jsontypes.NormalizedType{},
+		attrDefaults: types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				attrVars: jsontypes.NormalizedType{},
+				attrStreams: types.MapType{
+					ElemType: types.ObjectType{
+						AttrTypes: map[string]attr.Type{
+							attrEnabled: types.BoolType,
+							attrVars:    jsontypes.NormalizedType{},
+						},
+					},
+				},
+			},
+		},
+		attrStreams: types.MapType{
+			ElemType: types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					attrEnabled: types.BoolType,
+					attrVars:    jsontypes.NormalizedType{},
+				},
+			},
+		},
+	}
+}
+
 // upgradeV2ToV3 drops the now-removed top-level `enabled` attribute when
-// migrating prior V2 state to the live V3 schema. Every other field is carried
-// over verbatim. No Fleet API calls are made.
+// migrating prior V2 state to the live V3 schema, and rebuilds `inputs` to
+// match the live (condition-including) element type. Every other field is
+// carried over verbatim. No Fleet API calls are made.
 func upgradeV2ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	var prior integrationPolicyModelV2
 
 	diags := req.State.Get(ctx, &prior)
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	inputs, d := convertInputsV2ToV3(ctx, prior.Inputs)
+	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -221,7 +281,7 @@ func upgradeV2ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *
 		IntegrationName:    prior.IntegrationName,
 		IntegrationVersion: prior.IntegrationVersion,
 		OutputID:           prior.OutputID,
-		Inputs:             prior.Inputs,
+		Inputs:             inputs,
 		VarsJSON:           prior.VarsJSON,
 		SpaceIDs:           prior.SpaceIDs,
 	}
@@ -232,4 +292,68 @@ func upgradeV2ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *
 
 	diags = resp.State.Set(ctx, next)
 	resp.Diagnostics.Append(diags...)
+}
+
+// convertInputsV2ToV3 rebuilds a V2 (frozen, pre-`condition`) InputsValue
+// into an InputsValue compatible with the live V3 element type, filling
+// `condition` as null on every input and stream (V2 state never had it).
+func convertInputsV2ToV3(ctx context.Context, prior InputsValue) (InputsValue, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if prior.IsUnknown() {
+		return InputsValue{MapValue: types.MapUnknown(getInputsElementType())}, diags
+	}
+	if !typeutils.IsKnown(prior) || prior.IsNull() {
+		return NewInputsNull(getInputsElementType()), diags
+	}
+
+	priorMap := typeutils.MapTypeAs[integrationPolicyInputsModelV2](ctx, prior.MapValue, path.Root("inputs"), &diags)
+	if diags.HasError() {
+		return NewInputsNull(getInputsElementType()), diags
+	}
+
+	next := make(map[string]integrationPolicyInputsModel, len(priorMap))
+	for id, in := range priorMap {
+		streams, d := convertStreamsV2ToV3(ctx, in.Streams)
+		diags.Append(d...)
+		if diags.HasError() {
+			return NewInputsNull(getInputsElementType()), diags
+		}
+
+		next[id] = integrationPolicyInputsModel{
+			Enabled:   in.Enabled,
+			Condition: types.StringNull(),
+			Vars:      in.Vars,
+			Defaults:  in.Defaults,
+			Streams:   streams,
+		}
+	}
+
+	return NewInputsValueFrom(ctx, getInputsElementType(), next)
+}
+
+// convertStreamsV2ToV3 is the per-input-streams-map counterpart of
+// convertInputsV2ToV3.
+func convertStreamsV2ToV3(ctx context.Context, streams types.Map) (types.Map, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !typeutils.IsKnown(streams) || streams.IsNull() {
+		return types.MapNull(getInputStreamType()), diags
+	}
+
+	priorStreams := typeutils.MapTypeAs[integrationPolicyInputStreamModelV2](ctx, streams, path.Root("streams"), &diags)
+	if diags.HasError() {
+		return types.MapNull(getInputStreamType()), diags
+	}
+
+	next := make(map[string]integrationPolicyInputStreamModel, len(priorStreams))
+	for id, s := range priorStreams {
+		next[id] = integrationPolicyInputStreamModel{
+			Enabled:   s.Enabled,
+			Condition: types.StringNull(),
+			Vars:      s.Vars,
+		}
+	}
+
+	return types.MapValueFrom(ctx, getInputStreamType(), next)
 }

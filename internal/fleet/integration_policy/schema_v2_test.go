@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -63,9 +64,13 @@ func TestUpgradeV2ToV3_DropsEnabled(t *testing.T) {
 				IntegrationName:    types.StringValue("tcp"),
 				IntegrationVersion: types.StringValue("1.16.0"),
 				OutputID:           types.StringNull(),
-				Inputs:             NewInputsNull(getInputsElementType()),
-				VarsJSON:           NewVarsJSONNull(),
-				SpaceIDs:           types.SetNull(types.StringType),
+				// V2's frozen inputs element type predates the `condition`
+				// attribute added to the live schema; use the frozen V2 type
+				// here so this fixture matches what real V2 state looked
+				// like on the wire.
+				Inputs:   NewInputsNull(NewInputType(getInputsAttributeTypesV2())),
+				VarsJSON: NewVarsJSONNull(),
+				SpaceIDs: types.SetNull(types.StringType),
 			}
 
 			rawState := tfsdk.State{Schema: priorSchema}
@@ -119,4 +124,110 @@ func TestUpgradeV2ToV3_DropsEnabled(t *testing.T) {
 	require.True(t, ok)
 	_, hadEnabled := priorObj.AttributeTypes["enabled"]
 	require.True(t, hadEnabled, "prior V2 schema is expected to retain `enabled` as the field being dropped")
+}
+
+// TestUpgradeV2ToV3_PreservesPopulatedInputs exercises the actual conversion
+// logic in convertInputsV2ToV3/convertStreamsV2ToV3 against a populated
+// `inputs` map (including a nested `streams` map and vars) decoded against
+// the frozen V2 element type and rebuilt against the live V3 element type.
+// TestUpgradeV2ToV3_DropsEnabled only ever passes NewInputsNull(...), so it
+// never touches this path; a bug in rebuilding a populated map here would
+// corrupt `terraform apply` for every pre-existing V2 resource with
+// configured inputs.
+func TestUpgradeV2ToV3_PreservesPopulatedInputs(t *testing.T) {
+	ctx := context.Background()
+
+	v2Types := getInputsAttributeTypesV2()
+	streamMapType, ok := v2Types[attrStreams].(types.MapType)
+	require.True(t, ok, "V2 inputs `streams` attribute must be a map type")
+	streamObjType, ok := streamMapType.ElemType.(types.ObjectType)
+	require.True(t, ok, "V2 `streams` element type must be an object type")
+	defaultsObjType, ok := v2Types[attrDefaults].(types.ObjectType)
+	require.True(t, ok, "V2 inputs `defaults` attribute must be an object type")
+
+	streamsV2 := map[string]integrationPolicyInputStreamModelV2{
+		"test.stream": {
+			Enabled: types.BoolValue(true),
+			Vars:    jsontypes.NewNormalizedValue(`{"stream_var":"value"}`),
+		},
+	}
+	streams, diags := types.MapValueFrom(ctx, streamObjType, streamsV2)
+	require.False(t, diags.HasError(), "build V2 streams map: %v", diags)
+
+	inputsV2 := map[string]integrationPolicyInputsModelV2{
+		"test-input": {
+			Enabled:  types.BoolValue(true),
+			Vars:     jsontypes.NewNormalizedValue(`{"input_var":"value"}`),
+			Defaults: types.ObjectNull(defaultsObjType.AttrTypes),
+			Streams:  streams,
+		},
+	}
+	priorInputs, diags := NewInputsValueFrom(ctx, NewInputType(v2Types), inputsV2)
+	require.False(t, diags.HasError(), "build V2 inputs map: %v", diags)
+
+	priorSchema := getSchemaV2()
+	liveSchema := getSchemaV3()
+
+	prior := integrationPolicyModelV2{
+		ID:                 types.StringValue("policy-id-1"),
+		KibanaConnection:   providerschema.KibanaConnectionNullList(),
+		PolicyID:           types.StringValue("policy-id-1"),
+		Name:               types.StringValue("test-policy"),
+		Namespace:          types.StringValue("default"),
+		AgentPolicyID:      types.StringValue("agent-1"),
+		AgentPolicyIDs:     types.ListNull(types.StringType),
+		Description:        types.StringValue("a description"),
+		Enabled:            types.BoolValue(true),
+		Force:              types.BoolValue(false),
+		IntegrationName:    types.StringValue("tcp"),
+		IntegrationVersion: types.StringValue("1.16.0"),
+		OutputID:           types.StringNull(),
+		Inputs:             priorInputs,
+		VarsJSON:           NewVarsJSONNull(),
+		SpaceIDs:           types.SetNull(types.StringType),
+	}
+
+	rawState := tfsdk.State{Schema: priorSchema}
+	diags = rawState.Set(ctx, &prior)
+	require.False(t, diags.HasError(), "set prior state: %v", diags)
+
+	req := resource.UpgradeStateRequest{State: &rawState}
+	resp := resource.UpgradeStateResponse{
+		State: tfsdk.State{
+			Schema: liveSchema,
+			Raw:    tftypes.NewValue(liveSchema.Type().TerraformType(ctx), nil),
+		},
+	}
+
+	upgradeV2ToV3(ctx, req, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "upgrade diagnostics: %v", resp.Diagnostics)
+
+	var got integrationPolicyModel
+	diags = resp.State.Get(ctx, &got)
+	require.False(t, diags.HasError(), "decode upgraded state: %v", diags)
+
+	require.False(t, got.Inputs.IsNull(), "upgraded inputs must not be null")
+
+	var gotInputs map[string]integrationPolicyInputsModel
+	diags = got.Inputs.ElementsAs(ctx, &gotInputs, false)
+	require.False(t, diags.HasError(), "decode upgraded inputs: %v", diags)
+	require.Len(t, gotInputs, 1)
+	require.Contains(t, gotInputs, "test-input")
+
+	input := gotInputs["test-input"]
+	assert.Equal(t, types.BoolValue(true), input.Enabled)
+	assert.True(t, input.Condition.IsNull(), "condition must be present-and-null on an input upgraded from V2")
+	assert.JSONEq(t, `{"input_var":"value"}`, input.Vars.ValueString())
+	require.False(t, input.Streams.IsNull(), "streams must be preserved through the upgrade")
+
+	var gotStreams map[string]integrationPolicyInputStreamModel
+	diags = input.Streams.ElementsAs(ctx, &gotStreams, false)
+	require.False(t, diags.HasError(), "decode upgraded streams: %v", diags)
+	require.Len(t, gotStreams, 1)
+	require.Contains(t, gotStreams, "test.stream")
+
+	stream := gotStreams["test.stream"]
+	assert.Equal(t, types.BoolValue(true), stream.Enabled)
+	assert.True(t, stream.Condition.IsNull(), "condition must be present-and-null on a stream upgraded from V2")
+	assert.JSONEq(t, `{"stream_var":"value"}`, stream.Vars.ValueString())
 }

@@ -60,6 +60,8 @@ certs
 
 # Local env file (template is .env.template)
 .env
+.env.cloud
+.env.snapshot95
 coverage.out
 
 # Agent task artifacts
