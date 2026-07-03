@@ -91,7 +91,7 @@ func TestIsAccTestFile(t *testing.T) {
 		{
 			name:    "acc-in-comment",
 			content: "package foo\n\n// func TestAccSomething(t *testing.T) {}\n",
-			want:    true, // plain grep matches the text
+			want:    false,
 		},
 	}
 

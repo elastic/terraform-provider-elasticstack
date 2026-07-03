@@ -3,14 +3,14 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
-
-var testAccFuncRE = regexp.MustCompile(`func\s+TestAcc[A-Z]`)
 
 // FindAccTestPackages walks root (typically "internal") and returns the import
 // paths of all Go packages that define at least one func TestAcc in a
@@ -58,11 +58,25 @@ func FindAccTestPackages(root, modulePath string) ([]string, error) {
 	return stringsSorted(result), nil
 }
 
-// isAccTestFile reports whether path contains at least one func TestAcc.
+// isAccTestFile reports whether path declares at least one func TestAcc.
 func isAccTestFile(path string) (bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return false, err
 	}
-	return testAccFuncRE.Match(data), nil
+
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, path, data, parser.AllErrors)
+	if err != nil {
+		// Files that cannot be parsed cannot declare valid acceptance tests.
+		return false, nil
+	}
+
+	for _, d := range f.Decls {
+		fn, ok := d.(*ast.FuncDecl)
+		if ok && strings.HasPrefix(fn.Name.Name, "TestAcc") {
+			return true, nil
+		}
+	}
+	return false, nil
 }
