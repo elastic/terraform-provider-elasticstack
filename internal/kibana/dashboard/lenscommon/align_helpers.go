@@ -22,47 +22,46 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// PreserveKnownTfValueIfStateNull copies plan into *state when plan is known but
+// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
+func PreserveKnownTfValueIfStateNull[T attr.Value](plan T, state *T) {
+	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
+		*state = plan
+	}
+}
 
 // PreserveKnownTfBoolIfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
-	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
-		*state = plan
-	}
+	PreserveKnownTfValueIfStateNull(plan, state)
 }
 
 // PreserveKnownTfFloat64IfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
-	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
-		*state = plan
-	}
+	PreserveKnownTfValueIfStateNull(plan, state)
 }
 
 // PreserveKnownTfStringIfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfStringIfStateNull(plan types.String, state *types.String) {
-	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
-		*state = plan
-	}
+	PreserveKnownTfValueIfStateNull(plan, state)
 }
 
 // PreserveKnownTfInt64IfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfInt64IfStateNull(plan types.Int64, state *types.Int64) {
-	if typeutils.IsKnown(plan) && !typeutils.IsKnown(*state) {
-		*state = plan
-	}
+	PreserveKnownTfValueIfStateNull(plan, state)
 }
 
 // PreserveKnownTfListIfStateNull copies plan into *state when plan is known but
 // state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
 func PreserveKnownTfListIfStateNull(plan types.List, state *types.List) {
-	if typeutils.IsKnown(plan) && (state.IsNull() || state.IsUnknown()) {
-		*state = plan
-	}
+	PreserveKnownTfValueIfStateNull(plan, state)
 }
 
 // PreserveKnownStringIfStateBlank copies plan into *state when plan is known and state is null,
