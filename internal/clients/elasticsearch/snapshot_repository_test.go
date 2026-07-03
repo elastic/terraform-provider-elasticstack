@@ -43,7 +43,7 @@ func TestPutSnapshotRepository_S3RawBody(t *testing.T) {
 
 	var capturedBody string
 	var captureErr error
-	srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+	srv := newMockElasticsearchServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/_snapshot/my-repo") {
 			var body []byte
 			body, captureErr = io.ReadAll(r.Body)
@@ -84,7 +84,7 @@ func TestPutSnapshotRepository_S3RawBodyWithoutEndpoint(t *testing.T) {
 
 	var capturedBody string
 	var captureErr error
-	srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+	srv := newMockElasticsearchServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/_snapshot/my-repo") {
 			var body []byte
 			body, captureErr = io.ReadAll(r.Body)
@@ -122,7 +122,7 @@ func TestPutSnapshotRepository_HDFSRawBody(t *testing.T) {
 
 	var capturedBody string
 	var captureErr error
-	srv := newMockElasticsearchServerForILM(t, func(w http.ResponseWriter, r *http.Request) {
+	srv := newMockElasticsearchServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/_snapshot/hdfs-repo") {
 			var body []byte
 			body, captureErr = io.ReadAll(r.Body)

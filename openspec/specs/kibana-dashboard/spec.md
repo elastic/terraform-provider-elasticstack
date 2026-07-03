@@ -303,9 +303,7 @@ Notes:
 - The resource is marked as technical preview in its schema description; sections are also marked as technical preview.
 - The resource uses only the provider-level Kibana OpenAPI client; there is no resource-local Kibana connection override block.
 - The resource does not declare a schema version, custom state upgrader, or resource-level compatibility gate in CRUD logic.
-
 ## Requirements
-
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
 The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
@@ -462,6 +460,31 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 - WHEN state is repopulated from the GET response
 - THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
 
+The provider SHALL apply intent-preserving null normalization to the root-level `description` attribute on read. When the Kibana API returns an empty-string `description` (`""`) and the prior Terraform plan/state had `description` as null (i.e., the practitioner did not set `description`), the provider SHALL store `null` in state — not `""`. When the prior Terraform plan/state had `description` as `""` (i.e., the practitioner explicitly set `description = ""`), the provider SHALL preserve `""` in state. When the API returns a non-empty `description`, the provider SHALL store that value unchanged.
+
+This normalization fixes a Kibana 9.5 behavior change: previously the API omitted `description` when none was supplied; from 9.5 onward it returns `""`. Without this fix, practitioners who omit `description` see "Provider produced inconsistent result after apply" with the message `.description: was null, but now cty.StringVal("")`.
+
+#### Scenario: Omitted description normalizes to null on read
+
+- GIVEN a dashboard configured without `description` (null in Terraform state/plan)
+- AND the Kibana API returns `description: ""`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = null`
+
+#### Scenario: Explicit empty description preserved on read
+
+- GIVEN a dashboard configured with `description = ""`
+- AND the Kibana API returns `description: ""`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = ""`
+
+#### Scenario: Non-empty description preserved unchanged
+
+- GIVEN a dashboard configured with `description = "My dashboard"`
+- AND the Kibana API returns `description: "My dashboard"`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `description = "My dashboard"`
+
 ### Requirement: State preservation for fields Kibana omits or defaults (REQ-009)
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift where the implementation supports that behavior. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API does not supply a usable `access_control.access_mode` value, the resource SHALL clear `access_control` in Terraform state rather than leaving a stale prior value behind. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
@@ -469,6 +492,15 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
+
+The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
+
+#### Scenario: Empty-string description treated as null for null-intent practitioners
+
+- GIVEN a practitioner has never set `description` on a dashboard (prior state: null)
+- AND Kibana 9.5 returns `description: ""` on a subsequent read or post-apply read-back
+- WHEN the provider applies REQ-009 null-preservation to `description`
+- THEN state SHALL contain `description = null` and no drift SHALL be reported on the next plan
 
 #### Scenario: Options omitted in config
 
@@ -901,20 +933,34 @@ For legacy-metric `vis` panels, the resource SHALL require `data_source_json.typ
 
 ### Requirement: Raw `config_json` panel behavior (REQ-025)
 
-When a panel is authored through panel-level `config_json`, the resource SHALL accept only `markdown` and `vis` panel types for write. It SHALL deserialize the raw JSON into the corresponding dashboard panel config and SHALL fail if that JSON cannot be unmarshaled into the supported API config type. For read-back, it SHALL always refresh `config_json` from the API payload using the implementation's default-aware JSON semantics. When a `vis` panel is authored through raw `config_json`, the provider SHALL preserve that raw visualization-config path rather than re-expressing it through a typed panel block, and it SHALL not apply the typed `lensPanelTimeRange()` injection path used by the typed converters.
+The provider SHALL preserve the unknown-panel round-trip behavior specified in REQ-025 on Kibana
+9.5 and later. The acceptance test `TestAccResourceDashboardUnknownPanel_lensDashboardApp` and its
+helper `replaceDashboardPanelWithLensDashboardApp` SHALL be removed from
+`internal/kibana/dashboard/acc_unknown_panels_test.go` because the test fixture type
+(`lens-dashboard-app`) is no longer accepted by the Kibana 9.5+ PUT API.
 
-#### Scenario: Unsupported raw config panel type
+The provider SHALL continue to satisfy the unknown-panel preservation contract. The following unit
+tests in `internal/kibana/dashboard/models_panels_test.go` SHALL remain as the primary test
+coverage and are not modified by this change:
 
-- GIVEN a panel configured with `config_json` and a panel `type` other than `markdown` or `vis`
-- WHEN the provider builds the API request
-- THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
+- `Test_unknownPanelRoundTrip`
+- `Test_mapPanelsFromAPI` / `"unknown panel type preserves id, grid, and config"`
+- `Test_panelsToAPI` / `"unknown panel type replays config_json"`
 
 #### Scenario: config_json preserved for unrecognized panel types at read time
 
-- GIVEN a panel with an unknown or unrecognized `type` value (including a Kibana-internal type such as `lens-dashboard-app`)
-- WHEN the provider reads such a panel back from the Kibana API
-- THEN the provider SHALL use the unknown-panel fallback and SHALL populate `config_json` in state
+- GIVEN a panel with an unknown or unrecognized `type` value (e.g. `custom_unknown_panel`)
+- WHEN the provider reads such a panel back from the Kibana API via `dashboardMapPanelsFromAPI`
+- THEN the provider SHALL use the unknown-panel fallback and SHALL populate `config_json` in state with the verbatim API config
 - AND SHALL NOT return an error diagnostic for the unrecognized panel type
+- AND the round-trip through `dashboardPanelsToAPI` SHALL produce API JSON semantically identical to the original input
+
+#### Scenario: Unknown panel type replays config_json on write
+
+- GIVEN a panel model with an unknown `type` and a non-null `config_json`
+- WHEN the provider serialises the panel to the API payload via `dashboardPanelsToAPI`
+- THEN the API panel `config` SHALL contain the verbatim JSON from `config_json`
+- AND the panel `type`, `id`, and `grid` SHALL be preserved unchanged
 
 ### Requirement: Time slider control panel behavior (REQ-029)
 
@@ -1111,44 +1157,76 @@ The `esql_control` panel type is a standalone control panel, not a `vis` visuali
 
 ### Requirement: Range slider control panel behavior (REQ-028)
 
-For `type = "range_slider_control"` panels, the resource SHALL accept `range_slider_control_config` with the following attributes:
+When a panel entry sets `type = "range_slider_control"`, the resource SHALL accept a `range_slider_control_config` block with the following structure. The block MUST contain exactly one of two mutually exclusive nested blocks: `by_field` or `by_esql`. Having both or neither SHALL produce an error diagnostic at plan time.
 
-- **`data_view_id`** (required, string): the ID of the Kibana data view that the slider filter targets.
-- **`field_name`** (required, string): the numeric field within the data view that the slider operates on.
-- **`title`** (optional, string): a human-readable label displayed above the slider in the dashboard.
-- **`use_global_filters`** (optional, bool): when set, controls whether the panel respects dashboard-level global filters.
-- **`ignore_validations`** (optional, bool): when set, suppresses validation errors from the control during intermediate states.
-- **`value`** (optional, list(string)): the initial min/max range pre-populated on the slider, expressed as a 2-element list `[min, max]`. When set, the list MUST contain exactly 2 elements. The values are strings matching the API representation.
-- **`step`** (optional, number): the step size for each increment of the slider.
+#### `by_field` block (Field variant)
 
-On write, the resource SHALL send `data_view_id` and `field_name` unconditionally and SHALL include each optional field only when it is set to a known, non-null value. On read, the resource SHALL populate `range_slider_control_config` from the API response for panels with `type = "range_slider_control"` and SHALL leave optional fields null in state when the API does not return them.
+The `by_field` nested block represents a range slider sourced from a Kibana data view field:
 
-The `range_slider_control_config` block is valid only when `type = "range_slider_control"` and MUST NOT appear with any other typed panel config block or with `config_json`.
+- `data_view_id` (required, string) — the ID of the data view the slider targets.
+- `field_name` (required, string) — the numeric field within the data view.
+- `title` (optional, string) — human-readable label displayed above the slider.
+- `use_global_filters` (optional, bool) — whether the panel respects dashboard-level global filters.
+- `ignore_validations` (optional, bool) — suppresses validation errors from the control during intermediate states.
+- `value` (optional, list of string) — the initial min/max range as a 2-element list `[min, max]`; the list MUST contain exactly 2 elements when set.
+- `step` (optional, number) — the step size for each increment of the slider (stored as float32 to match the API).
 
-#### Scenario: Required fields only
+On write, the provider SHALL set `values_source = "field"` automatically; this field SHALL NOT be exposed.
 
-- GIVEN a `range_slider_control` panel configured with only `data_view_id` and `field_name`
-- WHEN create or update runs
-- THEN the API request SHALL include `data_view_id` and `field_name` in the panel config and SHALL omit all unset optional fields
+#### `by_esql` block (ES|QL variant)
 
-#### Scenario: Optional range pre-selection
+The `by_esql` nested block represents a range slider sourced from an ES|QL query:
 
-- GIVEN a `range_slider_control` panel configured with `value = ["10", "500"]`
-- WHEN create or update runs
-- THEN the API request SHALL include `value` as a 2-element array matching the configured strings
-- AND when read-back occurs, state SHALL reflect `value = ["10", "500"]`
+- `esql_query` (required, string) — the ES|QL query that produces the min/max range values.
+- `values_source` (required, string) — must be `"esql_query"`. Any other value SHALL produce an error diagnostic at plan time.
+- `title` (optional, string) — same as `by_field`.
+- `use_global_filters` (optional, bool) — same as `by_field`.
+- `ignore_validations` (optional, bool) — same as `by_field`.
+- `value` (optional, list of string) — same as `by_field` (2-element list constraint applies).
+- `step` (optional, number) — same as `by_field`.
 
-#### Scenario: Invalid value list length
+Null-preservation semantics (REQ-009) apply to optional boolean attributes (`use_global_filters`, `ignore_validations`) within both branches. On import, the provider SHALL populate the branch-specific required identifiers from the API response: for `by_field`, `data_view_id` and `field_name`; for `by_esql`, `esql_query` and `values_source`. Optional booleans SHALL be left null.
 
-- GIVEN a `range_slider_control_config` block with `value` set to a list with fewer or more than 2 elements
-- WHEN Terraform validates the configuration
+#### Mutual exclusion and conflict guards
+
+- Exactly one of `by_field` or `by_esql` MUST be set in `range_slider_control_config`.
+- `range_slider_control_config` remains mutually exclusive with all other typed panel config blocks and with `config_json`.
+
+#### State migration (v0 → v1)
+
+The same `ResourceWithUpgradeState` upgrader (described in REQ-027 above) SHALL also rewrite existing v0 `range_slider_control_config` flat attributes (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) under a `by_field {}` object.
+
+#### Scenarios
+
+##### Scenario: Field variant round-trip
+
+- GIVEN a `range_slider_control` panel with `by_field = { data_view_id = "orders-view", field_name = "price" }`
+- WHEN the provider creates the dashboard and reads it back
+- THEN `data_view_id` and `field_name` SHALL be present under `range_slider_control_config.by_field` and a subsequent plan SHALL show no changes
+
+##### Scenario: ES|QL variant round-trip
+
+- GIVEN a `range_slider_control` panel with `by_esql = { esql_query = "FROM orders | STATS ...", values_source = "esql_query" }`
+- WHEN the provider creates the dashboard and reads it back
+- THEN `esql_query` and `values_source` SHALL be present under `range_slider_control_config.by_esql` and a subsequent plan SHALL show no changes
+
+##### Scenario: Invalid value list length
+
+- GIVEN a `range_slider_control_config` block with `by_field = { ..., value = ["10"] }`
+- WHEN Terraform validates the resource configuration
 - THEN the provider SHALL return a validation diagnostic stating that `value` must contain exactly 2 elements
 
-#### Scenario: config_json rejected for range_slider_control
+##### Scenario: State upgrade from v0 flat to v1 by_field
 
-- GIVEN a panel with `type = "range_slider_control"` configured with `config_json` instead of `range_slider_control_config`
-- WHEN the provider builds the API request
-- THEN it SHALL return an error diagnostic for unsupported `config_json` panel type
+- GIVEN a Terraform state containing `range_slider_control_config` with flat attributes (v0 schema: `data_view_id`, `field_name`, etc. at the config root)
+- WHEN the provider with the updated schema is applied
+- THEN the state upgrader SHALL rewrite the flat attributes under `by_field` and the resulting v1 state SHALL be equivalent to configuring `by_field { data_view_id = ..., field_name = ..., ... }`
+
+##### Scenario: Both branches rejected
+
+- GIVEN a `range_slider_control_config` block that sets both `by_field` and `by_esql`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating the two branches are mutually exclusive
 
 ### Requirement: SLO overview panel behavior (REQ-030)
 
@@ -1223,62 +1301,111 @@ On read, the provider SHALL reconstruct the `single` or `groups` sub-block from 
 
 ### Requirement: Options list control panel behavior (REQ-027)
 
-When a panel entry sets `type = "options_list_control"`, the resource SHALL accept an `options_list_control_config` block and SHALL require that block to be present. The block SHALL require `data_view_id` (string) and `field_name` (string). All other attributes in the block SHALL be optional:
+When a panel entry sets `type = "options_list_control"`, the resource SHALL accept an `options_list_control_config` block with the following structure. The block MUST contain exactly one of two mutually exclusive nested blocks: `by_field` or `by_esql`. Having both or neither SHALL produce an error diagnostic at plan time.
 
-- `title` (string) — human-readable label displayed above the control.
-- `use_global_filters` (bool) — whether the control applies the dashboard's global filters to its own query.
-- `ignore_validations` (bool) — whether the control skips field-level validation against the data view.
-- `single_select` (bool) — when true, only one option may be selected at a time.
-- `exclude` (bool) — when true, the selected options are used as an exclusion filter rather than an inclusion filter.
-- `exists_selected` (bool) — when true, the control filters for documents where the field exists.
-- `run_past_timeout` (bool) — when true, the control continues to show results even when the underlying query times out.
-- `search_technique` (string) — the technique used to match suggestions; MUST be one of `prefix`, `wildcard`, or `exact` when set.
-- `selected_options` (list of string) — the initially or persistently selected option values; the provider SHALL represent all selected options as strings regardless of whether the API stores them as numbers.
-- `display_settings` (nested block, optional) — display preferences for the control widget, containing:
+#### `by_field` block (Field variant)
+
+The `by_field` nested block represents a control sourced from a Kibana data view field:
+
+- `data_view_id` (required, string) — the ID of the Kibana data view the control is tied to.
+- `field_name` (required, string) — the name of the field within the data view.
+- `title` (optional, string) — human-readable label displayed above the control.
+- `use_global_filters` (optional, bool) — whether the control applies the dashboard's global filters to its own query.
+- `ignore_validations` (optional, bool) — whether the control skips field-level validation against the data view.
+- `single_select` (optional, bool) — when true, only one option may be selected at a time.
+- `exclude` (optional, bool) — when true, selected options are used as an exclusion filter rather than an inclusion filter.
+- `exists_selected` (optional, bool) — when true, the control filters for documents where the field exists.
+- `run_past_timeout` (optional, bool) — when true, the control continues to show results even when the underlying query times out.
+- `search_technique` (optional, string) — must be one of `prefix`, `wildcard`, or `exact` when set.
+- `selected_options` (optional, list of string) — the initially or persistently selected option values; all values are represented as strings.
+- `display_settings` (optional, nested block) — display preferences for the control widget, containing:
   - `placeholder` (string) — placeholder text shown when no option is selected.
   - `hide_action_bar` (bool) — when true, hides the action bar on the control.
   - `hide_exclude` (bool) — when true, hides the exclude toggle.
   - `hide_exists` (bool) — when true, hides the exists filter option.
   - `hide_sort` (bool) — when true, hides the sort control.
-- `sort` (nested block, optional) — default sort configuration for the suggestion list, containing:
-  - `by` (string) — the field or criterion to sort by.
-  - `direction` (string) — the sort direction.
+- `sort` (optional, nested block) — default sort configuration for the suggestion list, containing:
+  - `by` (required, string) — must be one of `_count` or `_key`.
+  - `direction` (required, string) — must be one of `asc` or `desc`.
 
-The `options_list_control_config` block SHALL conflict with all other typed panel config blocks (`markdown_config`, `xy_chart_config`, `treemap_config`, `mosaic_config`, `datatable_config`, `tagcloud_config`, `heatmap_config`, `waffle_config`, `region_map_config`, `gauge_config`, `metric_chart_config`, `pie_chart_config`, `legacy_metric_config`) and with `config_json`. When `type` is `options_list_control`, no other typed config block or `config_json` SHALL be present on the same panel entry.
+On write, the provider SHALL set `values_source = "field"` automatically on the API payload for the Field branch; this field SHALL NOT be exposed as a Terraform attribute.
 
-For API mapping, the provider SHALL write the `options_list_control_config` attributes into the panel's `config` object as defined by the `kbn-dashboard-panel-options_list_control` API schema. On read-back, the provider SHALL use null-preservation semantics: optional boolean attributes (`use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`) and the `sort` block SHALL remain null in state when the prior state value was null, even if Kibana returns a server-side default for that attribute. Only attributes that were explicitly set by the user (non-null in prior state) SHALL be updated from the API response. During import (no prior state), only `data_view_id`, `field_name`, `title`, `single_select`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated; the remaining optional boolean attributes and `sort` SHALL be left null to avoid forcing users to manage Kibana server-side defaults in their configuration. The provider SHALL treat a nil or empty `display_settings` API object as equivalent to an omitted `display_settings` block in state.
+#### `by_esql` block (ES|QL variant)
 
-#### Scenario: Options list control panel requires data_view_id and field_name
+The `by_esql` nested block represents a control sourced from an ES|QL query:
 
-- GIVEN a panel entry with `type = "options_list_control"` and an `options_list_control_config` block that omits `data_view_id` or `field_name`
-- WHEN Terraform validates the resource configuration
-- THEN the provider SHALL return an error diagnostic indicating that `data_view_id` and `field_name` are required
+- `esql_query` (required, string) — the ES|QL query that produces the available option values.
+- `values_source` (required, string) — the source discriminator; MUST be `"esql_query"`. Any other value SHALL produce an error diagnostic at plan time.
+- `title` (optional, string) — same as `by_field`.
+- `use_global_filters` (optional, bool) — same as `by_field`.
+- `ignore_validations` (optional, bool) — same as `by_field`.
+- `single_select` (optional, bool) — same as `by_field`.
+- `exclude` (optional, bool) — same as `by_field`.
+- `exists_selected` (optional, bool) — same as `by_field`.
+- `run_past_timeout` (optional, bool) — same as `by_field`.
+- `search_technique` (optional, string) — same as `by_field` (must be one of `prefix`, `wildcard`, or `exact` when set).
+- `selected_options` (optional, list of string) — same as `by_field`.
+- `display_settings` (optional, nested block) — same structure as `by_field`.
+- `sort` (optional, nested block) — same structure as `by_field`.
 
-#### Scenario: Options list control panel with invalid search_technique
+#### Null-preservation and import semantics
 
-- GIVEN a panel entry with `type = "options_list_control"` and `options_list_control_config.search_technique` set to a value other than `prefix`, `wildcard`, or `exact`
-- WHEN Terraform validates the resource configuration
-- THEN the provider SHALL return an error diagnostic indicating the value is not one of the accepted enum values
+During import (no prior state), the provider SHALL populate the branch-specific required identifiers from the API response: for `by_field`, populate `data_view_id` and `field_name`; for `by_esql`, populate `esql_query` and `values_source`. In both branches, `title`, `search_technique`, `selected_options`, and `display_settings` SHALL be populated where present in the API response; optional booleans and `sort` SHALL be left null.
 
-#### Scenario: Options list control panel round-trips through Kibana
+#### Mutual exclusion and conflict guards
 
-- GIVEN a dashboard with an `options_list_control` panel that sets `data_view_id`, `field_name`, `search_technique = "prefix"`, `single_select = true`, and a `display_settings` block
+- Exactly one of `by_field` or `by_esql` MUST be set in `options_list_control_config`.
+- `options_list_control_config` SHALL remain mutually exclusive with all other typed panel config blocks and with `config_json` (unchanged from existing REQ-027).
+
+#### State migration (v0 → v1)
+
+The change from a flat `options_list_control_config` schema to the two-branch nested schema constitutes a schema version increment. The resource SHALL implement a Plugin Framework `ResourceWithUpgradeState` upgrader that rewrites existing v0 state by moving all flat `options_list_control_config` attributes under a `by_field {}` object. The upgrader SHALL handle both in-grid `panels[]` entries and `pinned_panels` entries.
+
+#### Scenarios
+
+##### Scenario: Field variant round-trip
+
+- GIVEN a panel with `type = "options_list_control"` whose `options_list_control_config` sets `by_field = { data_view_id = "logs-view", field_name = "service.name", search_technique = "prefix", single_select = true }`
 - WHEN the provider creates the dashboard and reads it back
-- THEN all configured attributes SHALL be present in state and a subsequent plan SHALL show no changes
+- THEN all configured attributes SHALL be present in state under `options_list_control_config.by_field` and a subsequent plan SHALL show no changes
 
-#### Scenario: Options list control panel import leaves server-default booleans null
+##### Scenario: ES|QL variant round-trip
 
-- GIVEN an existing dashboard with an `options_list_control` panel where Kibana stores server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
+- GIVEN a panel with `type = "options_list_control"` whose `options_list_control_config` sets `by_esql = { esql_query = "FROM logs | STATS ...", values_source = "esql_query", title = "Service" }`
+- WHEN the provider creates the dashboard and reads it back
+- THEN `options_list_control_config.by_esql.esql_query` and `values_source` SHALL be present in state and a subsequent plan SHALL show no changes
+
+##### Scenario: Field variant null-preservation on import
+
+- GIVEN an existing dashboard whose options-list control is a field-backed control with Kibana server-side defaults for `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort`
 - WHEN the provider imports the dashboard resource
-- THEN `data_view_id` and `field_name` SHALL be populated in state
-- AND `use_global_filters`, `ignore_validations`, `exclude`, `exists_selected`, `run_past_timeout`, and `sort` SHALL remain null in state
-- AND a subsequent plan against a configuration that omits those attributes SHALL show no changes
+- THEN `data_view_id` and `field_name` SHALL be populated under `by_field` in state
+- AND optional booleans and `sort` SHALL remain null in state
+- AND a subsequent plan against a configuration that omits them SHALL show no changes
 
-#### Scenario: Options list control config conflicts with other typed blocks
+##### Scenario: Both branches rejected
 
-- GIVEN a panel entry with `type = "options_list_control"` that sets both `options_list_control_config` and any other typed config block (e.g. `markdown_config`)
+- GIVEN an `options_list_control_config` block that sets both `by_field` and `by_esql`
 - WHEN Terraform validates the resource configuration
-- THEN the provider SHALL return an error diagnostic indicating the conflicting blocks are mutually exclusive
+- THEN the provider SHALL return an error diagnostic indicating the two branches are mutually exclusive
+
+##### Scenario: Neither branch rejected
+
+- GIVEN an `options_list_control_config` block with neither `by_field` nor `by_esql` set
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating exactly one branch must be configured
+
+##### Scenario: Invalid values_source on by_esql
+
+- GIVEN `by_esql = { esql_query = "...", values_source = "field" }`
+- WHEN Terraform validates the resource configuration
+- THEN the provider SHALL return an error diagnostic indicating `values_source` must be `"esql_query"`
+
+##### Scenario: State upgrade from v0 flat to v1 by_field
+
+- GIVEN a Terraform state that contains `options_list_control_config` with flat attributes (v0 schema: `data_view_id`, `field_name`, etc. at the config root)
+- WHEN the provider with the updated schema is applied
+- THEN the state upgrader SHALL rewrite the flat attributes under `by_field` and the resulting v1 state SHALL be equivalent to configuring `by_field { data_view_id = ..., field_name = ..., ... }`
 
 ### Requirement: Synthetics stats overview panel behavior (REQ-033)
 
@@ -2576,6 +2703,254 @@ The resource SHALL reject simultaneous `aiops_change_point_chart_config` and `co
 - WHEN the resource creates and reads state
 - THEN each panel's config block SHALL be non-null only for its own type, and all sibling config blocks SHALL be null
 - AND a plan SHALL show no changes
+
+### Requirement: ML anomaly charts panel behavior (REQ-053)
+
+The resource SHALL support `type = "ml_anomaly_charts"` panels through the typed `ml_anomaly_charts_config` block. When a panel entry sets `type = "ml_anomaly_charts"`, the resource SHALL require the `ml_anomaly_charts_config` block and SHALL return an error diagnostic when it is absent.
+
+The block accepts the following attributes:
+
+- `job_ids` (required `list(string)`, min 1 item): one or more anomaly-detection job IDs or group IDs whose results are shown. The provider treats these as opaque strings and does not validate their existence against Kibana's ML API at plan time; invalid job IDs surface as Kibana API errors during `terraform apply`.
+- `max_series_to_plot` (optional int64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request. The Kibana API represents this field as a JSON number (`*float32` in the generated client); the provider exposes it as an integer since a series count cannot be fractional, converting to/from the API's numeric type at the boundary.
+- `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
+  - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
+  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
+- `title` (optional string): panel title. Subject to REQ-009 null-preservation.
+- `description` (optional string): panel description. Subject to REQ-009 null-preservation.
+- `hide_title` (optional bool): when true, hides the panel title. Subject to REQ-009 null-preservation.
+- `hide_border` (optional bool): when true, hides the panel border. Subject to REQ-009 null-preservation.
+- `time_range` (optional object: `from` string required, `to` string required, `mode` string optional): a panel-level time range override, identical in shape to the dashboard root `time_range`. Reuses `panelkit.TimeRangeSchema`. Subject to REQ-009 null-preservation: when prior state has `time_range` null, the provider SHALL keep it null even if the API returns a default; when `mode` is null in prior state, the provider SHALL keep `mode` null.
+
+The model layer SHALL expand named severity values to the following canonical `{min, max}` API pairs (matching the generated Kibana OpenAPI const values in `KibanaHTTPAPIsMlAnomalyChartsSeverityThreshold0`–`SeverityThreshold4`):
+
+| `severity` | API `min` | API `max`    |
+|---|---|---|
+| `low`       | 0         | 3            |
+| `warning`   | 3         | 25           |
+| `minor`     | 25        | 50           |
+| `major`     | 50        | 75           |
+| `critical`  | 75        | (omitted — open-ended upper bound) |
+
+On write, the provider SHALL map `ml_anomaly_charts_config` to the `config` object in the `KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts` API schema. Optional fields SHALL be included only when set in state; absent optional fields SHALL NOT be sent to the API.
+
+On read, the provider SHALL repopulate `ml_anomaly_charts_config` from the API response using REQ-009 null-preservation, extended to the **representation form** of `severity_threshold` items. The API encodes `severity_threshold` as `{min, max}` pairs only; it conveys no information about whether the practitioner authored a named `severity` or a raw numeric range. Therefore the chosen form is recovered from prior state, not inferred by normalizing:
+
+- When the prior item holds a named `severity` (and `min`/`max` are null), the provider SHALL store the named form, deriving the label from the API `{min, max}` pair via the canonical-band table. The `critical` band (API: `{min: 75}`, no `max` field) SHALL map to `severity = "critical"`. If the API value no longer matches any canonical band, the provider SHALL fall back to the raw `min`/`max` form (surfacing as drift).
+- When the prior item holds raw `min`/`max` (and `severity` is null), the provider SHALL store the raw `min`/`max` verbatim from the API, even when the pair coincidentally equals a canonical band.
+- On import (no prior state), the provider SHALL default to the named form when the API `{min, max}` matches a canonical band, and to the raw form otherwise.
+
+The provider SHALL NOT normalize a practitioner-authored raw range into a named `severity` on read. While the configured values match current state, a subsequent plan SHALL show no changes.
+
+`config_json` SHALL NOT be supported for `ml_anomaly_charts` panels; using `config_json` with `type = "ml_anomaly_charts"` SHALL return an error diagnostic (per REQ-010 policy).
+
+Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` with `schema.go`, `model.go`, and `api.go`; new model file `internal/kibana/dashboard/models/mlanomalycharts.go`; registration in `internal/kibana/dashboard/schema.go` and `internal/kibana/dashboard/registry.go`.
+
+#### Scenario: Creation of ml_anomaly_charts panel with named severities
+
+- GIVEN a panel with `type = "ml_anomaly_charts"` and `ml_anomaly_charts_config` containing `job_ids = ["my-job"]` and `severity_threshold = [{ severity = "critical" }, { severity = "major" }]`
+- WHEN create runs
+- THEN the provider SHALL send `job_ids = ["my-job"]` and `severity_threshold = [{min: 75}, {min: 50, max: 75}]` in the API request
+- AND after the post-apply read, state SHALL represent both items as named severities
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Round-trip stability for critical (open-ended) severity
+
+- GIVEN a panel with `severity_threshold = [{ severity = "critical" }]` applied and read back
+- WHEN the API returns `severity_threshold = [{min: 75}]` (no `max` field)
+- THEN the provider SHALL map this to `severity = "critical"` in state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Raw range escape hatch
+
+- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]`
+- WHEN create runs and the post-apply read returns `{min: 10, max: 20}`
+- THEN state SHALL contain `min = 10` and `max = 20` (not coerced to a named severity)
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Raw range coinciding with a canonical band is preserved (no diff)
+
+- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 3, max = 25 }]` (coincides with the `warning` canonical band)
+- WHEN create runs and the post-apply read returns `{min: 3, max: 25}`
+- THEN the provider SHALL store `min = 3` and `max = 25` in state (NOT coerced to `severity = "warning"`)
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: severity_threshold form is preserved across refresh
+
+- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 10, max = 20 }]`
+- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 10, max: 20}]`
+- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 10, max = 20`
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: critical severity preserved in raw form when authored raw
+
+- GIVEN a panel where the practitioner set `severity_threshold = [{ min = 75 }]` (raw form, coincides with the `critical` canonical band)
+- WHEN create runs and the post-apply read returns `{min: 75}` (no `max` field)
+- THEN the provider SHALL store `min = 75` with `max` null in state (NOT coerced to `severity = "critical"`)
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Switching severity form is a configuration change
+
+- GIVEN state holds `severity_threshold = [{ severity = "warning" }]`
+- WHEN the configuration changes to `{ min = 3, max = 25 }` (same band, raw form)
+- THEN the plan SHALL report a change for that item
+- AND after apply the state SHALL settle to `{ min = 3, max = 25 }` with a subsequent plan showing no changes
+
+#### Scenario: Import defaults to named form for canonical bands
+
+- GIVEN an existing panel whose API `severity_threshold` is `[{min: 3, max: 25}]` and no prior Terraform state
+- WHEN the panel is imported
+- THEN state SHALL store `severity = "warning"` (named form preferred only on import, where no practitioner form exists to preserve)
+
+#### Scenario: Plan-time validation — both severity and min set
+
+- GIVEN a `severity_threshold` item with both `severity = "major"` and `min = 50`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating that exactly one of `severity` or `min` must be set
+
+#### Scenario: Plan-time validation — max without min
+
+- GIVEN a `severity_threshold` item with `max = 75` but neither `severity` nor `min` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic
+
+#### Scenario: config_json rejected for ml_anomaly_charts
+
+- GIVEN a panel with `type = "ml_anomaly_charts"` and `config_json = "{}"`
+- WHEN Terraform validates or applies the configuration
+- THEN the resource SHALL return an error diagnostic indicating that `config_json` is not supported for `ml_anomaly_charts` panels
+
+#### Scenario: Optional fields follow null-preservation
+
+- GIVEN an `ml_anomaly_charts_config` that does not set `max_series_to_plot` or `time_range`
+- WHEN apply runs and the post-apply read returns server-side defaults for those fields
+- THEN state SHALL keep `max_series_to_plot` and `time_range` as null
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Update job_ids in-place
+
+- GIVEN an existing `ml_anomaly_charts` panel with `job_ids = ["job-a"]`
+- WHEN the configuration changes to `job_ids = ["job-a", "job-b"]` and update runs
+- THEN the resource SHALL NOT destroy and recreate the dashboard
+- AND a subsequent plan SHALL show no changes
+
+### Requirement: Field statistics table panel behavior (REQ-054)
+
+When a panel entry sets `type = "field_stats_table"`, the resource SHALL accept a `field_stats_table_config` block and SHALL require that block to be present when the panel type is `field_stats_table`. The block SHALL expose two mutually exclusive sub-blocks mirroring the API's `view_type` discriminated union:
+
+- `by_dataview` — backed by a Kibana data view (API `view_type = "dataview"`).
+- `by_esql` — backed by an ES|QL query (API `view_type = "esql"`).
+
+Exactly one of `by_dataview` or `by_esql` SHALL be set; setting both or neither SHALL produce an error diagnostic at plan time.
+
+The `field_stats_table_config` block SHALL conflict with all other typed panel config blocks and with panel-level `config_json`. When `type = "field_stats_table"`, `config_json` SHALL NOT be set on the same panel entry; if it is, the resource SHALL return an error diagnostic indicating `config_json` is not supported for `field_stats_table`.
+
+#### The `by_dataview` sub-block
+
+The `by_dataview` sub-block SHALL accept:
+
+- `data_view_id` (required, string) — the identifier of the source data view.
+- `show_distributions` (optional, bool) — whether to show distribution mini-charts in the table; null-preserved on read per REQ-009: when prior state has it null, the provider keeps it null even if Kibana returns a server-side default.
+- `title` (optional, string) — panel display title; null-preserved on read.
+- `description` (optional, string) — panel description; null-preserved on read.
+- `hide_title` (optional, bool) — whether to hide the panel title; null-preserved on read.
+- `hide_border` (optional, bool) — whether to hide the panel border; null-preserved on read.
+- `time_range` (optional, object `{ from = required string, to = required string, mode = optional string }`) — panel-level time range override; null-preserved on read: when prior state has `time_range` null, the provider keeps it null even if Kibana returns values.
+
+On write, the provider SHALL set `view_type = "dataview"` internally and map `data_view_id` and optional fields to the API payload. The `view_type` field is not exposed as a user-facing attribute.
+
+#### The `by_esql` sub-block
+
+The `by_esql` sub-block SHALL accept:
+
+- `query` (required, string) — the ES|QL query string; mapped to `query.esql` in the API payload.
+- `show_distributions` (optional, bool) — null-preserved on read per REQ-009.
+- `title` (optional, string) — null-preserved on read.
+- `description` (optional, string) — null-preserved on read.
+- `hide_title` (optional, bool) — null-preserved on read.
+- `hide_border` (optional, bool) — null-preserved on read.
+- `time_range` (optional, object `{ from = required string, to = required string, mode = optional string }`) — null-preserved on read.
+
+On write, the provider SHALL set `view_type = "esql"` internally and map `query` to `query.esql` and optional fields to the API payload.
+
+#### Read behavior
+
+On read, the resource SHALL detect the `view_type` field in the API response and populate the matching sub-block (`by_dataview` or `by_esql`), leaving the other sub-block null. For each optional attribute, the resource SHALL apply REQ-009 null-preservation: if prior state had the attribute null, the provider SHALL keep it null even if the API response contains a value for it.
+
+#### Scenario: by_dataview branch create/read round-trip
+
+- GIVEN a panel with `type = "field_stats_table"` and `field_stats_table_config.by_dataview = { data_view_id = "logs-view", show_distributions = true, time_range = { from = "now-24h", to = "now" } }`
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL contain `by_dataview` populated with the same values, `by_esql` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: by_esql branch create/read round-trip
+
+- GIVEN a panel with `type = "field_stats_table"` and `field_stats_table_config.by_esql = { query = "FROM logs | STATS count = COUNT(*) BY service.name", show_distributions = false }`
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL contain `by_esql` populated with the same values, `by_dataview` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: Exactly one of by_dataview or by_esql
+
+- GIVEN a panel with both `field_stats_table_config.by_dataview` and `field_stats_table_config.by_esql` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `by_dataview` or `by_esql` must be set
+
+#### Scenario: Neither branch set
+
+- GIVEN a panel with `field_stats_table_config = {}` (neither `by_dataview` nor `by_esql` set)
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `by_dataview` or `by_esql` must be set
+
+#### Scenario: time_range null-preservation
+
+- GIVEN a `field_stats_table_config.by_dataview` panel whose prior state has `time_range = null`
+- WHEN the post-apply read returns a panel where Kibana populated `time_range` with values
+- THEN state SHALL keep `time_range` null and a subsequent plan against configuration that omits `time_range` SHALL show no changes
+
+#### Scenario: show_distributions null-preservation
+
+- GIVEN a `field_stats_table_config.by_esql` panel whose prior state has `show_distributions = null`
+- WHEN the post-apply read returns a panel where Kibana populated `show_distributions`
+- THEN state SHALL keep `show_distributions` null and a subsequent plan against configuration that omits it SHALL show no changes
+
+#### Scenario: config_json rejected for field_stats_table panel type
+
+- GIVEN a panel with `type = "field_stats_table"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`
+
+#### Scenario: Drift detection — Kibana returns branch data intact
+
+- GIVEN an existing dashboard with a `field_stats_table` panel in state
+- WHEN Kibana returns the same panel configuration on a subsequent read
+- THEN a plan SHALL show no changes
+
+---
+
+### Requirement: Dashboard resource schema version upgrade (REQ-040)
+
+The `elasticstack_kibana_dashboard` resource SHALL implement `terraform-plugin-framework`'s `ResourceWithUpgradeState` interface with a single state upgrader for version 0 → 1.
+
+The v0 → v1 upgrader SHALL:
+
+1. Inspect every entry in `panels[]` and every entry in `pinned_panels[]`.
+2. For each entry whose `type` is `"options_list_control"`: move all flat attributes from `options_list_control_config` (i.e. `data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `single_select`, `exclude`, `exists_selected`, `run_past_timeout`, `search_technique`, `selected_options`, `display_settings`, `sort`) into a nested `by_field {}` object within `options_list_control_config`.
+3. For each entry whose `type` is `"range_slider_control"`: move all flat attributes from `range_slider_control_config` (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) into a nested `by_field {}` object within `range_slider_control_config`.
+4. Leave all other panel types unchanged.
+
+The resource schema version SHALL be incremented to 1. No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
+
+#### Scenario: State upgrade preserves all field-branch attributes
+
+- GIVEN a v0 state containing both `options_list_control` and `range_slider_control` panels with all optional attributes set (e.g. `sort`, `display_settings`, `value`, `step`)
+- WHEN the state upgrader runs
+- THEN all attribute values SHALL be present under the `by_field {}` sub-object in v1 state and no attributes SHALL be dropped
+
+#### Scenario: Non-control panels are unaffected by the upgrader
+
+- GIVEN a v0 state containing a mix of `options_list_control`, `range_slider_control`, and `markdown` panels
+- WHEN the state upgrader runs
+- THEN the `markdown` panel entries SHALL be unchanged in v1 state
+
 ## Traceability
 
 | Area | Primary files |

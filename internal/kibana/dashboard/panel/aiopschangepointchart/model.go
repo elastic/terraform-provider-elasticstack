@@ -62,18 +62,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		panel.Config.ViewType = &v
 	}
 
-	if typeutils.IsKnown(cfg.Title) {
-		panel.Config.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		panel.Config.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		panel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 	panel.Config.TimeRange = lenscommon.TimeRangeModelToAPI(cfg.TimeRange)
 
 	return nil
@@ -84,37 +74,16 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsChangePointChart) diag.Diagnostics {
 	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
 	if prior == nil {
-		pm.AiopsChangePointChartConfig = &models.AiopsChangePointChartConfigModel{
-			DataViewID:          types.StringValue(api.DataViewId),
-			MetricField:         types.StringValue(api.MetricField),
-			AggregationFunction: changePointAggregationFunctionValue(api.AggregationFunction),
-			SplitField:          types.StringPointerValue(api.SplitField),
-			Partitions:          changePointPartitionsFromAPI(api.Partitions),
-			ViewType:            changePointViewTypeValue(api.ViewType),
-			Title:               types.StringPointerValue(api.Title),
-			Description:         types.StringPointerValue(api.Description),
-			HideTitle:           types.BoolPointerValue(api.HideTitle),
-			HideBorder:          types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
-		pm.AiopsChangePointChartConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+		pm.AiopsChangePointChartConfig = aiopsChangePointChartConfigFromAPIImport(api)
 		return nil
 	}
 
+	// Type-change recovery: the plan dropped this config block but prior still has it.
+	// Rebuild entirely from the API and skip null-preservation, since there is no
+	// current-plan null intent to honor.
 	if pm.AiopsChangePointChartConfig == nil && prior.AiopsChangePointChartConfig != nil {
-		pm.AiopsChangePointChartConfig = &models.AiopsChangePointChartConfigModel{
-			DataViewID:          types.StringValue(api.DataViewId),
-			MetricField:         types.StringValue(api.MetricField),
-			AggregationFunction: changePointAggregationFunctionValue(api.AggregationFunction),
-			SplitField:          types.StringPointerValue(api.SplitField),
-			Partitions:          changePointPartitionsFromAPI(api.Partitions),
-			ViewType:            changePointViewTypeValue(api.ViewType),
-			Title:               types.StringPointerValue(api.Title),
-			Description:         types.StringPointerValue(api.Description),
-			HideTitle:           types.BoolPointerValue(api.HideTitle),
-			HideBorder:          types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
+		pm.AiopsChangePointChartConfig = aiopsChangePointChartConfigFromAPIImport(api)
+		return nil
 	}
 
 	existing := pm.AiopsChangePointChartConfig
@@ -142,10 +111,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 		existing.Partitions = changePointPartitionsFromAPI(api.Partitions)
 	}
 
-	existing.Title = panelkit.PreserveString(existing.Title, api.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, api.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, api.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, api.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		api.Title, api.Description, api.HideTitle, api.HideBorder)
 
 	var priorTR *models.TimeRangeModel
 	if prior.AiopsChangePointChartConfig != nil {
@@ -157,6 +124,24 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 		preserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
 	}
 	return nil
+}
+
+func aiopsChangePointChartConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsChangePointChart) *models.AiopsChangePointChartConfigModel {
+	cfg := &models.AiopsChangePointChartConfigModel{
+		DataViewID:          types.StringValue(api.DataViewId),
+		MetricField:         types.StringValue(api.MetricField),
+		AggregationFunction: changePointAggregationFunctionValue(api.AggregationFunction),
+		SplitField:          types.StringPointerValue(api.SplitField),
+		Partitions:          changePointPartitionsFromAPI(api.Partitions),
+		ViewType:            changePointViewTypeValue(api.ViewType),
+		Title:               types.StringPointerValue(api.Title),
+		Description:         types.StringPointerValue(api.Description),
+		HideTitle:           types.BoolPointerValue(api.HideTitle),
+		HideBorder:          types.BoolPointerValue(api.HideBorder),
+	}
+	cfg.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
+	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+	return cfg
 }
 
 func preserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
@@ -178,18 +163,8 @@ func preserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartCo
 	if !typeutils.IsKnown(prior.ViewType) {
 		existing.ViewType = types.StringNull()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {
 		existing.TimeRange = nil
 	}

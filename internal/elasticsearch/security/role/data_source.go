@@ -261,7 +261,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	return config, diags
 }
 
-func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTypes.Role) diag.Diagnostics {
+func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Description
@@ -288,13 +288,8 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *esTyp
 	config.RunAs = runAsSet
 
 	// Global
-	if role.Global != nil {
-		globalBytes, err := json.Marshal(role.Global)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling global JSON: %s", err))
-			return diags
-		}
-		config.Global = jsontypes.NewNormalizedValue(string(globalBytes))
+	if len(role.Global) > 0 {
+		config.Global = jsontypes.NewNormalizedValue(string(role.Global))
 	} else {
 		config.Global = jsontypes.NewNormalizedNull()
 	}

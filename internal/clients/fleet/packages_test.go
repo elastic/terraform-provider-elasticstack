@@ -19,6 +19,8 @@ package fleet
 
 import (
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func TestIsManifestYAML(t *testing.T) {
@@ -102,6 +104,63 @@ func TestExtractPackageNameVersion(t *testing.T) {
 			}
 			if gotVersion != tc.wantVersion {
 				t.Errorf("version = %q, want %q", gotVersion, tc.wantVersion)
+			}
+		})
+	}
+}
+
+func TestContainsInstallSpaceDeleteRejection(t *testing.T) {
+	tests := []struct {
+		name  string
+		diags diag.Diagnostics
+		want  bool
+	}{
+		{
+			name: "matches detail with normalized whitespace",
+			diags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Unexpected status code from server: got HTTP 400",
+					"{\"statusCode\":400,\"message\":\"Impossible to delete kibana assets from the space\nwhere the package was installed\"}",
+				),
+			},
+			want: true,
+		},
+		{
+			name: "matches summary",
+			diags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Impossible to delete kibana assets from the space where the package was installed",
+					"{\"statusCode\":400}",
+				),
+			},
+			want: true,
+		},
+		{
+			name: "does not match unrelated error",
+			diags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Unexpected status code from server: got HTTP 400",
+					`{"statusCode":400,"message":"Some other validation error"}`,
+				),
+			},
+			want: false,
+		},
+		{
+			name: "does not match warning severity even with sentinel text",
+			diags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Unexpected status code from server: got HTTP 400",
+					"Impossible to delete kibana assets from the space where the package was installed",
+				),
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := ContainsInstallSpaceDeleteRejection(tc.diags); got != tc.want {
+				t.Errorf("ContainsInstallSpaceDeleteRejection() = %v, want %v", got, tc.want)
 			}
 		})
 	}

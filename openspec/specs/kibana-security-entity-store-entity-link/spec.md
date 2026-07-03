@@ -204,3 +204,18 @@ All API calls (link, unlink, get resolution group) SHALL apply `kibanautil.Space
 - WHEN link is called
 - THEN the HTTP request path SHALL be `/api/security/entity_store/resolution/link`
 
+### Requirement: Acceptance tests for entity-link enforce entity store isolation (REQ-ESL-TEST-ISOLATION-001)
+
+Every acceptance test in the entity-link package that manages the entity store resource SHALL
+register a `t.Cleanup` function that uninstalls the entity store and waits for `not_installed`
+state (using the same shared helper as the entity store package, as specified in
+`kibana-security-entity-store` delta REQ-TEST-ISOLATION-001). This ensures that entity-link
+tests do not leave residual entity types in the singleton store that contaminate subsequent tests.
+
+#### Scenario: Entity-link test cleanup leaves store in not_installed state
+
+- GIVEN `TestAccResourceSecurityEntityStoreEntityLink` registers `t.Cleanup(cleanupEntityStore)`
+- WHEN the test body completes (success or failure)
+- THEN `cleanupEntityStore` SHALL run and poll until the entity store reports `not_installed`
+- AND the next test in the suite SHALL find the store in a clean state
+

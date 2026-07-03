@@ -59,7 +59,10 @@ func updateEntityStore(
 		if d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
-		if d := kibanaoapi.InstallSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, body); d.HasError() {
+		install := func(ctx context.Context) (int, []byte, error) {
+			return kibanaoapi.InstallSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, body)
+		}
+		if d := kibanaoapi.RetryCreateOnServerError(ctx, "security entity store", spaceID, install, installRetryPollInterval); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}
 	}

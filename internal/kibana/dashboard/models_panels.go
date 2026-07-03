@@ -136,8 +136,10 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.SloAlertsConfig = nil
 	pm.DiscoverSessionConfig = nil
 	pm.MlAnomalySwimlaneConfig = nil
+	pm.MlAnomalyChartsConfig = nil
 	pm.MlSingleMetricViewerConfig = nil
 	pm.ApmServiceMapConfig = nil
+	pm.FieldStatsTableConfig = nil
 }
 
 func dashboardMapPanelFromAPI(ctx context.Context, _ *models.DashboardModel, tfPanel *models.PanelModel, panelItem kbapi.DashboardPanelItem) (models.PanelModel, diag.Diagnostics) {

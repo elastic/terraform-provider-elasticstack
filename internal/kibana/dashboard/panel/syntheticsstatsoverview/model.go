@@ -34,18 +34,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		return nil
 	}
 
-	if typeutils.IsKnown(cfg.Title) {
-		panel.Config.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		panel.Config.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		panel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 
 	if len(cfg.Drilldowns) > 0 {
 		drilldowns := make([]struct {
@@ -138,26 +128,12 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 			(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && !syntheticsFiltersHasAnyEntry(cfg.Filters) {
 			return nil
 		}
-		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
-			Title:       types.StringPointerValue(cfg.Title),
-			Description: types.StringPointerValue(cfg.Description),
-			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
-			HideBorder:  types.BoolPointerValue(cfg.HideBorder),
-			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
-			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
-		}
+		pm.SyntheticsStatsOverviewConfig = syntheticsStatsOverviewConfigFromAPIImport(apiPanel)
 		return nil
 	}
 
 	if pm.SyntheticsStatsOverviewConfig == nil && prior.SyntheticsStatsOverviewConfig != nil {
-		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
-			Title:       types.StringPointerValue(cfg.Title),
-			Description: types.StringPointerValue(cfg.Description),
-			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
-			HideBorder:  types.BoolPointerValue(cfg.HideBorder),
-			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
-			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
-		}
+		pm.SyntheticsStatsOverviewConfig = syntheticsStatsOverviewConfigFromAPIImport(apiPanel)
 	}
 
 	existing := pm.SyntheticsStatsOverviewConfig
@@ -171,10 +147,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	existing.Title = panelkit.PreserveString(existing.Title, cfg.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, cfg.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, cfg.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, cfg.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder)
 
 	var priorDrilldowns []models.URLDrilldownModel
 	if prior.SyntheticsStatsOverviewConfig != nil {
@@ -183,6 +157,18 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, priorDrilldowns)
 	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
 	return nil
+}
+
+func syntheticsStatsOverviewConfigFromAPIImport(apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview) *models.SyntheticsStatsOverviewConfigModel {
+	cfg := apiPanel.Config
+	return &models.SyntheticsStatsOverviewConfigModel{
+		Title:       types.StringPointerValue(cfg.Title),
+		Description: types.StringPointerValue(cfg.Description),
+		HideTitle:   types.BoolPointerValue(cfg.HideTitle),
+		HideBorder:  types.BoolPointerValue(cfg.HideBorder),
+		Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
+		Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
+	}
 }
 
 func syntheticsFiltersHasAnyEntry(f *struct {

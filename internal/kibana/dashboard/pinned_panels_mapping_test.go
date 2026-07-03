@@ -60,8 +60,10 @@ func pinnedFixtureOptionsList(field string) models.PinnedPanelModel {
 	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeOptionsListControl),
 		OptionsListControlConfig: &models.OptionsListControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue(field),
+			ByField: &models.OptionsListControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue(field),
+			},
 		},
 	}
 }
@@ -70,13 +72,15 @@ func pinnedFixtureRangeSlider(minVal, maxVal string, step float32) models.Pinned
 	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeRangeSlider),
 		RangeSliderControlConfig: &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("source.bytes"),
-			Value: types.ListValueMust(types.StringType, []attr.Value{
-				types.StringValue(minVal),
-				types.StringValue(maxVal),
-			}),
-			Step: types.Float32Value(step),
+			ByField: &models.RangeSliderControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("source.bytes"),
+				Value: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue(minVal),
+					types.StringValue(maxVal),
+				}),
+				Step: types.Float32Value(step),
+			},
 		},
 	}
 }
@@ -148,24 +152,29 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		require.Equal(t, panelTypeOptionsListControl, out[0].Type.ValueString())
 		require.Nil(t, out[0].RangeSliderControlConfig)
 		require.NotNil(t, out[0].OptionsListControlConfig)
-		require.Equal(t, "status", out[0].OptionsListControlConfig.FieldName.ValueString())
+		require.NotNil(t, out[0].OptionsListControlConfig.ByField)
+		require.Equal(t, "status", out[0].OptionsListControlConfig.ByField.FieldName.ValueString())
 	})
 
 	t.Run("prior populated + API populated same indices and types reuses prior pointers", func(t *testing.T) {
 		t.Parallel()
 
 		ol := &models.OptionsListControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("status"),
+			ByField: &models.OptionsListControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("status"),
+			},
 		}
 		rs := &models.RangeSliderControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("source.bytes"),
-			Value: types.ListValueMust(types.StringType, []attr.Value{
-				types.StringValue("100"),
-				types.StringValue("500"),
-			}),
-			Step: types.Float32Value(10),
+			ByField: &models.RangeSliderControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("source.bytes"),
+				Value: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("100"),
+					types.StringValue("500"),
+				}),
+				Step: types.Float32Value(10),
+			},
 		}
 
 		prior := []models.PinnedPanelModel{
@@ -187,8 +196,10 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 		t.Parallel()
 
 		priorOL := &models.OptionsListControlConfigModel{
-			DataViewID: types.StringValue("dv"),
-			FieldName:  types.StringValue("status"),
+			ByField: &models.OptionsListControlByFieldModel{
+				DataViewID: types.StringValue("dv"),
+				FieldName:  types.StringValue("status"),
+			},
 		}
 		prior := []models.PinnedPanelModel{
 			{Type: types.StringValue(panelTypeOptionsListControl), OptionsListControlConfig: priorOL},

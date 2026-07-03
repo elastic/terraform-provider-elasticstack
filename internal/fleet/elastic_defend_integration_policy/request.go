@@ -20,21 +20,12 @@ package elasticdefendintegrationpolicy
 import (
 	"context"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
-
-// configEntry mirrors kbapi.PackagePolicyRequestTypedInput.Config entries.
-// The generated Config field is an anonymous struct (map[string]struct{Frozen, Type, Value})
-// because the upstream spec boxes each config entry in a {value, type, frozen} wrapper;
-// this alias lets consuming code build the typed map directly without a JSON round-trip.
-type configEntry = struct {
-	Frozen *bool   `json:"frozen,omitempty"`
-	Type   *string `json:"type,omitempty"`
-	Value  any     `json:"value,omitempty"`
-}
 
 const (
 	endpointInputType          = "endpoint"
@@ -72,9 +63,9 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	}
 
 	// Build bootstrap input config: _config.value.endpointConfig.preset
-	config := map[string]configEntry{}
+	config := map[string]policyshape.TypedVarEntry{}
 	if !model.Preset.IsNull() && !model.Preset.IsUnknown() && model.Preset.ValueString() != "" {
-		config["_config"] = configEntry{Value: map[string]any{
+		config["_config"] = policyshape.TypedVarEntry{Value: map[string]any{
 			"type": endpointPackageName,
 			"endpointConfig": map[string]any{
 				attrPreset: model.Preset.ValueString(),
@@ -161,10 +152,15 @@ func buildFinalizeRequest(
 // buildFinalizeInputConfig builds the typed config map for the finalize/update
 // input. It includes integration_config (with preset), artifact_manifest (from
 // private state), and the typed policy payload. Each entry wraps its payload in
-// the {value, type, frozen} config-entry envelope the Defend API expects.
-func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrationPolicyModel, priorAdvanced map[string]string, ps defendPrivateState) (map[string]configEntry, diag.Diagnostics) {
+// the {value, type, frozen} policyshape.TypedVarEntry envelope the Defend API expects.
+func buildFinalizeInputConfig(
+	ctx context.Context,
+	model *elasticDefendIntegrationPolicyModel,
+	priorAdvanced map[string]string,
+	ps defendPrivateState,
+) (map[string]policyshape.TypedVarEntry, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	config := map[string]configEntry{}
+	config := map[string]policyshape.TypedVarEntry{}
 
 	// integration_config with preset — only include when preset is set
 	preset := ""
@@ -172,7 +168,7 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 		preset = model.Preset.ValueString()
 	}
 	if preset != "" {
-		config["integration_config"] = configEntry{Value: map[string]any{
+		config["integration_config"] = policyshape.TypedVarEntry{Value: map[string]any{
 			"endpointConfig": map[string]any{
 				attrPreset: preset,
 			},
@@ -182,7 +178,7 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 	// Kibana requires callers to echo back the opaque artifact_manifest on
 	// update/finalize requests. Persist it in private state and round-trip it.
 	if ps.ArtifactManifest != nil {
-		config["artifact_manifest"] = configEntry{Value: ps.ArtifactManifest}
+		config["artifact_manifest"] = policyshape.TypedVarEntry{Value: ps.ArtifactManifest}
 	}
 
 	// Build the typed policy payload from the Terraform model.
@@ -191,7 +187,7 @@ func buildFinalizeInputConfig(ctx context.Context, model *elasticDefendIntegrati
 	policyData, d := buildPolicyPayload(ctx, model, priorAdvanced)
 	diags.Append(d...)
 	if policyData != nil {
-		config["policy"] = configEntry{Value: policyData}
+		config["policy"] = policyshape.TypedVarEntry{Value: policyData}
 	}
 
 	return config, diags

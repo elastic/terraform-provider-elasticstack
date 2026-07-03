@@ -19,7 +19,6 @@ package anomalydetectionjob
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -87,7 +86,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:            true,
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[nsumdh]$`), "must be a valid time interval (e.g., 15m, 1h)"),
+							ml.Duration(),
 						},
 					},
 					"categorization_field_name": schema.StringAttribute{

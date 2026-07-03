@@ -36,6 +36,13 @@ func TestAccDataSourceIngestProcessorCommunityID(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "0"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "source_ip"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "source_port"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "destination_ip"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "destination_port"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "iana_number"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "transport"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "target_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityID),
 				),
 			},
@@ -180,6 +187,104 @@ const expectedJSONCommunityIDOnFailure = `{
 				"set": {
 					"field": "error.message",
 					"value": "community id failed"
+				}
+			}
+		],
+		"seed": 0,
+		"ignore_missing": false
+	}
+}`
+
+func TestAccDataSourceIngestProcessorCommunityIDIANA(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "iana_number", "6"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "transport"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityIDIANA),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCommunityIDSeedBoundary(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "seed", "65535"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test", "json", expectedJSONCommunityIDSeedBoundary),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIngestProcessorCommunityIDMultiOnFailure(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "on_failure.0", `{"set":{"field":"error.message","value":"community id failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "on_failure.1", `{"set":{"field":"error.type","value":"community_id_error"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_community_id.test_on_failure", "json", expectedJSONCommunityIDMultiOnFailure),
+				),
+			},
+		},
+	})
+}
+
+const expectedJSONCommunityIDIANA = `{
+	"community_id": {
+		"iana_number": 6,
+		"seed": 0,
+		"ignore_failure": false,
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONCommunityIDSeedBoundary = `{
+	"community_id": {
+		"seed": 65535,
+		"ignore_failure": false,
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONCommunityIDMultiOnFailure = `{
+	"community_id": {
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "community id failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "community_id_error"
 				}
 			}
 		],

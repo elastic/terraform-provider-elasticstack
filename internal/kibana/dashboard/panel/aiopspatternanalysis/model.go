@@ -50,18 +50,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		panel.Config.RandomSamplerProbability = &v
 	}
 
-	if typeutils.IsKnown(cfg.Title) {
-		panel.Config.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.Description) {
-		panel.Config.Description = cfg.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.HideTitle) {
-		panel.Config.HideTitle = cfg.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.HideBorder) {
-		panel.Config.HideBorder = cfg.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
+		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 	panel.Config.TimeRange = lenscommon.TimeRangeModelToAPI(cfg.TimeRange)
 
 	return nil
@@ -72,33 +62,16 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) diag.Diagnostics {
 	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
 	if prior == nil {
-		pm.AiopsPatternAnalysisConfig = &models.AiopsPatternAnalysisConfigModel{
-			DataViewID:        types.StringValue(api.DataViewId),
-			FieldName:         types.StringValue(api.FieldName),
-			MinimumTimeRange:  patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange),
-			RandomSamplerMode: patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode),
-			Title:             types.StringPointerValue(api.Title),
-			Description:       types.StringPointerValue(api.Description),
-			HideTitle:         types.BoolPointerValue(api.HideTitle),
-			HideBorder:        types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
-		pm.AiopsPatternAnalysisConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
 		return nil
 	}
 
+	// Type-change recovery: the plan dropped this config block but prior still has it.
+	// Rebuild entirely from the API and skip null-preservation, since there is no
+	// current-plan null intent to honor.
 	if pm.AiopsPatternAnalysisConfig == nil && prior.AiopsPatternAnalysisConfig != nil {
-		pm.AiopsPatternAnalysisConfig = &models.AiopsPatternAnalysisConfigModel{
-			DataViewID:        types.StringValue(api.DataViewId),
-			FieldName:         types.StringValue(api.FieldName),
-			MinimumTimeRange:  patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange),
-			RandomSamplerMode: patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode),
-			Title:             types.StringPointerValue(api.Title),
-			Description:       types.StringPointerValue(api.Description),
-			HideTitle:         types.BoolPointerValue(api.HideTitle),
-			HideBorder:        types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsPatternAnalysisConfig.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
+		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
+		return nil
 	}
 
 	existing := pm.AiopsPatternAnalysisConfig
@@ -119,10 +92,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	}
 	existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, api.RandomSamplerProbability)
 
-	existing.Title = panelkit.PreserveString(existing.Title, api.Title)
-	existing.Description = panelkit.PreserveString(existing.Description, api.Description)
-	existing.HideTitle = panelkit.PreserveBool(existing.HideTitle, api.HideTitle)
-	existing.HideBorder = panelkit.PreserveBool(existing.HideBorder, api.HideBorder)
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		api.Title, api.Description, api.HideTitle, api.HideBorder)
 
 	var priorTR *models.TimeRangeModel
 	if prior.AiopsPatternAnalysisConfig != nil {
@@ -134,6 +105,22 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 		preserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
 	}
 	return nil
+}
+
+func aiopsPatternAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) *models.AiopsPatternAnalysisConfigModel {
+	cfg := &models.AiopsPatternAnalysisConfigModel{
+		DataViewID:        types.StringValue(api.DataViewId),
+		FieldName:         types.StringValue(api.FieldName),
+		MinimumTimeRange:  patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange),
+		RandomSamplerMode: patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode),
+		Title:             types.StringPointerValue(api.Title),
+		Description:       types.StringPointerValue(api.Description),
+		HideTitle:         types.BoolPointerValue(api.HideTitle),
+		HideBorder:        types.BoolPointerValue(api.HideBorder),
+	}
+	cfg.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
+	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+	return cfg
 }
 
 func preserveNullIntentFromPrior(prior, existing *models.AiopsPatternAnalysisConfigModel) {
@@ -149,18 +136,8 @@ func preserveNullIntentFromPrior(prior, existing *models.AiopsPatternAnalysisCon
 	if !typeutils.IsKnown(prior.RandomSamplerProbability) {
 		existing.RandomSamplerProbability = types.Float32Null()
 	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = types.BoolNull()
-	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {
 		existing.TimeRange = nil
 	}

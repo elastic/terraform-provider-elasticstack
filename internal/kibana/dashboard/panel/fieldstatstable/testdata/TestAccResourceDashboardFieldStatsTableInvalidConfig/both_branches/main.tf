@@ -1,0 +1,47 @@
+variable "dashboard_title" {
+  type = string
+}
+
+resource "elasticstack_kibana_data_view" "test" {
+  override = true
+  data_view = {
+    title          = "field-stats-table-invalid-*"
+    name           = "field-stats-table-invalid"
+    allow_no_index = true
+  }
+}
+
+resource "elasticstack_kibana_dashboard" "test" {
+  title = var.dashboard_title
+
+  time_range = {
+    from = "now-15m"
+    to   = "now"
+  }
+  refresh_interval = {
+    pause = true
+    value = 0
+  }
+  query = {
+    language = "kql"
+    text     = ""
+  }
+
+  panels = [{
+    type = "field_stats_table"
+    grid = {
+      x = 0
+      y = 0
+      w = 24
+      h = 15
+    }
+    field_stats_table_config = {
+      by_dataview = {
+        data_view_id = elasticstack_kibana_data_view.test.data_view.id
+      }
+      by_esql = {
+        query = "FROM logs-* | LIMIT 10"
+      }
+    }
+  }]
+}
