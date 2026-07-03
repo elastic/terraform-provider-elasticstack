@@ -41,6 +41,9 @@ resource "elasticstack_kibana_dashboard" "test" {
         data_view_id       = elasticstack_kibana_data_view.test.data_view.id
         show_distributions = true
         title              = "Field statistics — logs view"
+        description        = "Field stats table panel (dataview)"
+        hide_title         = false
+        hide_border        = true
         time_range = {
           from = "now-24h"
           to   = "now"

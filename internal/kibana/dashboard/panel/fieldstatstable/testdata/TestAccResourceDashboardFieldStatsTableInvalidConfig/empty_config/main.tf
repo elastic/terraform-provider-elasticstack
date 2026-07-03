@@ -27,18 +27,6 @@ resource "elasticstack_kibana_dashboard" "test" {
       h = 15
     }
     field_stats_table_config = {
-      by_esql = {
-        query              = "FROM logs-* | LIMIT 100"
-        show_distributions = false
-        title              = "Field statistics — logs by service"
-        description        = "Field stats table panel (esql)"
-        hide_title         = true
-        hide_border        = false
-        time_range = {
-          from = "now-24h"
-          to   = "now"
-        }
-      }
     }
   }]
 }
