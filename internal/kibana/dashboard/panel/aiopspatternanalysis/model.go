@@ -66,8 +66,12 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 		return nil
 	}
 
+	// Type-change recovery: the plan dropped this config block but prior still has it.
+	// Rebuild entirely from the API and skip null-preservation, since there is no
+	// current-plan null intent to honor.
 	if pm.AiopsPatternAnalysisConfig == nil && prior.AiopsPatternAnalysisConfig != nil {
 		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
+		return nil
 	}
 
 	existing := pm.AiopsPatternAnalysisConfig
