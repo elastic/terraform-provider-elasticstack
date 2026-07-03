@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Delete waits for uninstall completion (REQ-WAIT-001)
 
@@ -56,7 +56,29 @@ hard error), to avoid breaking `terraform refresh` on a slow stack.
 - AND SHALL continue reading with whatever engine data is available
 - AND SHALL NOT fail the read with a hard error
 
-## ADDED Requirements
+### Requirement: Install retries on HTTP 500 within the configured timeout (REQ-WAIT-003)
+
+The provider SHALL retry `POST /api/security/entity_store/install` (issued during Create, and during Update when new entity types are added) when it returns HTTP 500, treating this as a transient initialization error and retrying at a fixed poll interval (5 seconds) until the install succeeds or the operation deadline is exceeded. The deadline SHALL be derived from the resource's `timeouts` block (Create/Update), defaulting to the entitycore timeout when unset, and SHALL NOT be a separate hardcoded wall-clock budget.
+
+HTTP 500 is the only status that triggers retry. All other non-2xx responses SHALL be treated as
+fatal and returned immediately as error diagnostics without retrying. This mirrors the entity-link
+Create retry behavior (`kibana-security-entity-store-entity-link` REQ-ESL-RETRY-001) and is
+especially important because the test-isolation cleanup uninstalls the singleton store between
+tests, so a subsequent install can race the store's background teardown.
+
+#### Scenario: Install succeeds after retrying a transient 500
+
+- GIVEN the entity store was recently uninstalled and background teardown is still in progress
+- AND `POST /api/security/entity_store/install` returns HTTP 500 for the first attempts
+- AND returns HTTP 200 on a later attempt
+- WHEN the provider creates (or updates) the entity store resource
+- THEN the provider SHALL succeed once the install returns 2xx
+
+#### Scenario: Install does not retry on non-500 errors
+
+- GIVEN `POST /api/security/entity_store/install` returns HTTP 400
+- WHEN the provider creates the entity store resource
+- THEN the provider SHALL immediately return an error diagnostic without retrying
 
 ### Requirement: Acceptance tests enforce isolation between entity store tests (REQ-TEST-ISOLATION-001)
 

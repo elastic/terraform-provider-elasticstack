@@ -34,13 +34,13 @@ func readEntityStore(
 	spaceID string,
 	model tfModel,
 ) (tfModel, bool, diag.Diagnostics) {
-	status, rawBody, diags := getEntityStoreStatus(ctx, client, spaceID, false)
+	status, rawBody, diags := waitForStarted(ctx, client, spaceID)
 	if diags.HasError() {
 		return model, true, diags
 	}
 
 	if status.Status == kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled {
-		return model, false, nil
+		return model, false, diags
 	}
 
 	entityTypes, started, logExtraction, flattenDiags := flattenStatus(ctx, status.Engines)
@@ -54,5 +54,5 @@ func readEntityStore(
 	model.Started = types.BoolValue(started)
 	model.LogExtraction = logExtraction
 	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
-	return model, true, nil
+	return model, true, append(diags, flattenDiags...)
 }

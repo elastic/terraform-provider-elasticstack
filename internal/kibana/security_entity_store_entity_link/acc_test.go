@@ -34,6 +34,7 @@ var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 
 func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -82,6 +83,7 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 
 func TestAccResourceSecurityEntityStoreEntityLink_SingleElement(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

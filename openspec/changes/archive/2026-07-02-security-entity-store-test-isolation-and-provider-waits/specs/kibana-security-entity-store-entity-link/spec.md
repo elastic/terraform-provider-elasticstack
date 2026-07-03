@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Create retries on HTTP 500 within the configured timeout (REQ-ESL-RETRY-001)
 

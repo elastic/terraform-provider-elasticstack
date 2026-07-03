@@ -19,17 +19,23 @@ package security_entity_store_entity_link
 
 import (
 	"context"
-	"net/http"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
+
+// createRetryPollInterval is the cadence at which the entity-link create call
+// is retried while the entity store is still initializing (HTTP 500). The
+// overall retry budget is bounded by the Create ctx deadline (from the resource
+// timeouts block), not by this interval.
+const createRetryPollInterval = 5 * time.Second
 
 func createEntityLink(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[entityLinkModel]) (entitycore.KibanaWriteResult[entityLinkModel], diag.Diagnostics) {
 	plan := req.Plan
@@ -45,14 +51,16 @@ func createEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 		EntityIds: entityIDs,
 	}
 
-	resp, err := client.GetKibanaOapiClient().API.PostSecurityEntityStoreResolutionLinkWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(req.SpaceID))
-	if err != nil {
-		diags.AddError("Failed to link entities", err.Error())
-		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
+	attempt := func(ctx context.Context) (int, []byte, error) {
+		resp, err := client.GetKibanaOapiClient().API.PostSecurityEntityStoreResolutionLinkWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(req.SpaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
 	}
-	if resp.StatusCode() != http.StatusOK {
-		diags.Append(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)...)
-		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
+
+	if d := kibanaoapi.RetryCreateOnServerError(ctx, "security entity store entity link", plan.TargetID.ValueString(), attempt, createRetryPollInterval); d.HasError() {
+		return entitycore.KibanaWriteResult[entityLinkModel]{}, d
 	}
 
 	return entitycore.KibanaWriteResult[entityLinkModel]{Model: plan}, diags
