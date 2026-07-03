@@ -19,6 +19,7 @@ package fieldstatstable
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
@@ -45,6 +46,23 @@ func fieldStatsTableAPIConfigViewType(apiCfg kbapi.KibanaHTTPAPIsDataVisualizerF
 	return probe.ViewType
 }
 
+// fieldStatsTablePriorTFBranchMismatchesAPI reports out-of-band branch changes (e.g. Kibana flipped
+// dataview vs ES|QL). Prior Terraform state used exclusively one branch while the API payload uses the other.
+func fieldStatsTablePriorTFBranchMismatchesAPI(viewType string, priorCfg *models.FieldStatsTableConfigModel) bool {
+	if priorCfg == nil {
+		return false
+	}
+	hasDataview := priorCfg.ByDataview != nil
+	hasEsql := priorCfg.ByEsql != nil
+	if viewType == fieldStatsViewTypeEsql && hasDataview && !hasEsql {
+		return true
+	}
+	if viewType == fieldStatsViewTypeDataview && hasEsql && !hasDataview {
+		return true
+	}
+	return false
+}
+
 func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable) diag.Diagnostics {
 	if prior == nil {
 		cfg, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
@@ -54,10 +72,10 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 
 	if pm.FieldStatsTableConfig == nil {
 		cfg, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
-		pm.FieldStatsTableConfig = cfg
-		if prior == nil {
+		if diags.HasError() {
 			return diags
 		}
+		pm.FieldStatsTableConfig = cfg
 	}
 
 	existing := pm.FieldStatsTableConfig
@@ -68,19 +86,33 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 	viewType := fieldStatsTableAPIConfigViewType(apiPanel.Config)
 	switch viewType {
 	case fieldStatsViewTypeEsql:
+		if fieldStatsTablePriorTFBranchMismatchesAPI(viewType, prior.FieldStatsTableConfig) {
+			imported, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
+			if imported != nil {
+				*existing = *imported
+			}
+			return diags
+		}
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
 			return fieldStatsTableDecodeDiagnostics(err, attrByEsql)
 		}
 		return mergeFieldStatsTableEsqlFromAPI(existing, prior, cfg1)
 	case fieldStatsViewTypeDataview:
-		fallthrough
-	default:
+		if fieldStatsTablePriorTFBranchMismatchesAPI(viewType, prior.FieldStatsTableConfig) {
+			imported, diags := fieldStatsTableConfigFromAPIImport(apiPanel.Config)
+			if imported != nil {
+				*existing = *imported
+			}
+			return diags
+		}
 		cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
 			return fieldStatsTableDecodeDiagnostics(err, attrByDataview)
 		}
 		return mergeFieldStatsTableDataviewFromAPI(existing, prior, cfg0)
+	default:
+		return fieldStatsTableInvalidViewTypeDiagnostics(viewType)
 	}
 }
 
@@ -93,6 +125,19 @@ func fieldStatsTableDecodeDiagnostics(err error, branch string) diag.Diagnostics
 	return diags
 }
 
+func fieldStatsTableInvalidViewTypeDiagnostics(viewType string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	detail := "view_type is missing or invalid"
+	if viewType != "" {
+		detail = fmt.Sprintf("view_type has unexpected value %q", viewType)
+	}
+	diags.AddError(
+		"Failed to decode field_stats_table API config",
+		fmt.Sprintf("Could not decode the API field_stats_table config: %s; expected %q or %q.", detail, fieldStatsViewTypeDataview, fieldStatsViewTypeEsql),
+	)
+	return diags
+}
+
 func fieldStatsTableConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsDataVisualizerFieldStats) (*models.FieldStatsTableConfigModel, diag.Diagnostics) {
 	switch fieldStatsTableAPIConfigViewType(apiCfg) {
 	case fieldStatsViewTypeEsql:
@@ -101,12 +146,14 @@ func fieldStatsTableConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsDataVisualize
 			return nil, fieldStatsTableDecodeDiagnostics(err, attrByEsql)
 		}
 		return fieldStatsTableEsqlFromAPIImport(cfg1), nil
-	default:
+	case fieldStatsViewTypeDataview:
 		cfg0, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
 			return nil, fieldStatsTableDecodeDiagnostics(err, attrByDataview)
 		}
 		return fieldStatsTableDataviewFromAPIImport(cfg0), nil
+	default:
+		return nil, fieldStatsTableInvalidViewTypeDiagnostics(fieldStatsTableAPIConfigViewType(apiCfg))
 	}
 }
 
