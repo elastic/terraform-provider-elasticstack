@@ -19,6 +19,7 @@ package integration
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -26,6 +27,40 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+const installSpaceDeleteRejectedMsg = "space where the package was installed"
+
+func normalizeDiagnosticText(s string) string {
+	return strings.Join(strings.Fields(s), " ")
+}
+
+func diagnosticsContainInstallSpaceDeleteRejection(diags diag.Diagnostics) bool {
+	for _, d := range diags {
+		detail := normalizeDiagnosticText(d.Detail())
+		summary := normalizeDiagnosticText(d.Summary())
+		if strings.Contains(detail, installSpaceDeleteRejectedMsg) || strings.Contains(summary, installSpaceDeleteRejectedMsg) {
+			return true
+		}
+	}
+	return false
+}
+
+func deleteKibanaAssetsWithFallback(
+	ctx context.Context,
+	fleetClient *fleet.Client,
+	name, version, spaceID string,
+	force bool,
+) diag.Diagnostics {
+	deleteDiags := fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
+	if !deleteDiags.HasError() {
+		return deleteDiags
+	}
+	if diagnosticsContainInstallSpaceDeleteRejection(deleteDiags) {
+		tflog.Debug(ctx, "DeleteKibanaAssets rejected by Fleet (install space); falling back to Uninstall", map[string]any{attrName: name, attrVersion: version, "space_id": spaceID})
+		return fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
+	}
+	return deleteDiags
+}
 
 func deleteIntegration(
 	ctx context.Context,
@@ -59,9 +94,7 @@ func deleteIntegration(
 		}
 
 		if isInstalledInMultipleSpaces(pkg, spaceID) {
-			deleteDiags := fleet.DeleteKibanaAssets(ctx, fleetClient, name, version, spaceID, force)
-			diags.Append(deleteDiags...)
-			return diags
+			return deleteKibanaAssetsWithFallback(ctx, fleetClient, name, version, spaceID, force)
 		}
 	}
 
