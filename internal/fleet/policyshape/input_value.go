@@ -506,4 +506,3 @@ func stripServerManagedVarsKeys(input jsontypes.Normalized) (jsontypes.Normalize
 
 	return jsontypes.NewNormalizedValue(string(out)), diags
 }
-
