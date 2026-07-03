@@ -184,6 +184,43 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies the type-change path (pm has no config but
+// prior does) initialises config from the API including TimeRange.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	from, to := "now-30m", "now"
+	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
+	api := kbapi.KibanaHTTPAPIsAiopsLogRateAnalysis{
+		DataViewId: "logs-*",
+		Title:      new("Recovered title"),
+		TimeRange:  &tr,
+	}
+
+	pm := &models.PanelModel{}
+	// Prior has known Title so that null-preservation doesn't wipe it out after
+	// the type-change init falls through to the merge path.
+	prior := &models.PanelModel{
+		AiopsLogRateAnalysisConfig: &models.AiopsLogRateAnalysisConfigModel{
+			DataViewID: stringVal("old-dv"),
+			Title:      stringVal("old-title"),
+		},
+	}
+
+	diags := aiopslograteanalysis.PopulateFromAPI(pm, prior, api)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.AiopsLogRateAnalysisConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
+	// Title was known in prior so it gets updated from the API.
+	require.Equal(t, "Recovered title", cfg.Title.ValueString())
+	require.NotNil(t, cfg.TimeRange)
+	require.Equal(t, from, cfg.TimeRange.From.ValueString())
+	require.Equal(t, to, cfg.TimeRange.To.ValueString())
+	require.True(t, cfg.TimeRange.Mode.IsNull())
+}
+
 // TestToAPI_rejectsConfigJSON verifies simultaneous typed config and config_json is rejected.
 func TestToAPI_rejectsConfigJSON(t *testing.T) {
 	t.Parallel()

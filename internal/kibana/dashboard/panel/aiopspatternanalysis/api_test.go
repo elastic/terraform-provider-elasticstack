@@ -228,6 +228,45 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies the type-change path (pm has no config but
+// prior does) rebuilds config entirely from the API, including TimeRange.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("1_week")
+	from, to := "now-30m", "now"
+	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
+	api := kbapi.KibanaHTTPAPIsAiopsPatternAnalysis{
+		DataViewId:       "logs-*",
+		FieldName:        "message",
+		MinimumTimeRange: &mtr,
+		TimeRange:        &tr,
+	}
+
+	// pm has no config (panel type changed away from this type in the plan)
+	// but prior still has the config block.
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		AiopsPatternAnalysisConfig: &models.AiopsPatternAnalysisConfigModel{
+			DataViewID: stringVal("old-dv"),
+			FieldName:  stringVal("old.field"),
+		},
+	}
+
+	diags := aiopspatternanalysis.PopulateFromAPI(pm, prior, api)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.AiopsPatternAnalysisConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
+	require.Equal(t, "message", cfg.FieldName.ValueString())
+	require.Equal(t, "1_week", cfg.MinimumTimeRange.ValueString())
+	require.NotNil(t, cfg.TimeRange, "type-change path must initialise TimeRange from API")
+	require.Equal(t, from, cfg.TimeRange.From.ValueString())
+	require.Equal(t, to, cfg.TimeRange.To.ValueString())
+	require.True(t, cfg.TimeRange.Mode.IsNull())
+}
+
 func TestToAPI_rejectsConfigJSON(t *testing.T) {
 	t.Parallel()
 

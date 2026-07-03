@@ -128,26 +128,12 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 			(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && !syntheticsFiltersHasAnyEntry(cfg.Filters) {
 			return nil
 		}
-		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
-			Title:       types.StringPointerValue(cfg.Title),
-			Description: types.StringPointerValue(cfg.Description),
-			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
-			HideBorder:  types.BoolPointerValue(cfg.HideBorder),
-			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
-			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
-		}
+		pm.SyntheticsStatsOverviewConfig = syntheticsStatsOverviewConfigFromAPIImport(apiPanel)
 		return nil
 	}
 
 	if pm.SyntheticsStatsOverviewConfig == nil && prior.SyntheticsStatsOverviewConfig != nil {
-		pm.SyntheticsStatsOverviewConfig = &models.SyntheticsStatsOverviewConfigModel{
-			Title:       types.StringPointerValue(cfg.Title),
-			Description: types.StringPointerValue(cfg.Description),
-			HideTitle:   types.BoolPointerValue(cfg.HideTitle),
-			HideBorder:  types.BoolPointerValue(cfg.HideBorder),
-			Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
-			Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
-		}
+		pm.SyntheticsStatsOverviewConfig = syntheticsStatsOverviewConfigFromAPIImport(apiPanel)
 	}
 
 	existing := pm.SyntheticsStatsOverviewConfig
@@ -171,6 +157,18 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, priorDrilldowns)
 	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
 	return nil
+}
+
+func syntheticsStatsOverviewConfigFromAPIImport(apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview) *models.SyntheticsStatsOverviewConfigModel {
+	cfg := apiPanel.Config
+	return &models.SyntheticsStatsOverviewConfigModel{
+		Title:       types.StringPointerValue(cfg.Title),
+		Description: types.StringPointerValue(cfg.Description),
+		HideTitle:   types.BoolPointerValue(cfg.HideTitle),
+		HideBorder:  types.BoolPointerValue(cfg.HideBorder),
+		Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
+		Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
+	}
 }
 
 func syntheticsFiltersHasAnyEntry(f *struct {
