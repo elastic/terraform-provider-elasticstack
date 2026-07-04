@@ -71,3 +71,55 @@ func PreserveList(existing, next attr.Value) attr.Value {
 	}
 	return next
 }
+
+// NullPreserveStringFromPrior sets *existing to null when prior is null or unknown.
+func NullPreserveStringFromPrior(prior types.String, existing *types.String) {
+	if !typeutils.IsKnown(prior) {
+		*existing = types.StringNull()
+	}
+}
+
+// NullPreserveBoolFromPrior sets *existing to null when prior is null or unknown.
+func NullPreserveBoolFromPrior(prior types.Bool, existing *types.Bool) {
+	if !typeutils.IsKnown(prior) {
+		*existing = types.BoolNull()
+	}
+}
+
+// NullPreserveFloat32FromPrior sets *existing to null when prior is null or unknown.
+func NullPreserveFloat32FromPrior(prior types.Float32, existing *types.Float32) {
+	if !typeutils.IsKnown(prior) {
+		*existing = types.Float32Null()
+	}
+}
+
+// NullPreserveInt64FromPrior sets *existing to null when prior is null or unknown.
+func NullPreserveInt64FromPrior(prior types.Int64, existing *types.Int64) {
+	if !typeutils.IsKnown(prior) {
+		*existing = types.Int64Null()
+	}
+}
+
+// NullPreserveSetFromPrior sets *existing to the null/unknown prior when prior is not known.
+// The element type is preserved from the prior value itself.
+func NullPreserveSetFromPrior(prior types.Set, existing *types.Set) {
+	if !typeutils.IsKnown(prior) {
+		*existing = prior
+	}
+}
+
+// NullPreserveListFromPrior sets *existing to the null/unknown prior when prior is not known.
+// The element type is preserved from the prior value itself.
+func NullPreserveListFromPrior(prior types.List, existing *types.List) {
+	if !typeutils.IsKnown(prior) {
+		*existing = prior
+	}
+}
+
+// NullPreserveMapFromPrior sets *existing to the null/unknown prior when prior is not known.
+// The element type is preserved from the prior value itself.
+func NullPreserveMapFromPrior(prior types.Map, existing *types.Map) {
+	if !typeutils.IsKnown(prior) {
+		*existing = prior
+	}
+}

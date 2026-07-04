@@ -250,35 +250,15 @@ func apmServiceMapPreserveNullIntentFromPrior(prior, existing *models.ApmService
 	}
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	if !typeutils.IsKnown(prior.Environment) {
-		existing.Environment = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.ServiceName) {
-		existing.ServiceName = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.ServiceGroupID) {
-		existing.ServiceGroupID = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Kuery) {
-		existing.Kuery = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.MapOrientation) {
-		existing.MapOrientation = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SyncWithDashboardFilters) {
-		existing.SyncWithDashboardFilters = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.AlertStatusFilter) {
-		existing.AlertStatusFilter = types.SetNull(types.StringType)
-	}
-	if !typeutils.IsKnown(prior.AnomalySeverityFilter) {
-		existing.AnomalySeverityFilter = types.SetNull(types.StringType)
-	}
-	if !typeutils.IsKnown(prior.ConnectionFilter) {
-		existing.ConnectionFilter = types.SetNull(types.StringType)
-	}
-	if !typeutils.IsKnown(prior.SloStatusFilter) {
-		existing.SloStatusFilter = types.SetNull(types.StringType)
-	}
+	panelkit.NullPreserveStringFromPrior(prior.Environment, &existing.Environment)
+	panelkit.NullPreserveStringFromPrior(prior.ServiceName, &existing.ServiceName)
+	panelkit.NullPreserveStringFromPrior(prior.ServiceGroupID, &existing.ServiceGroupID)
+	panelkit.NullPreserveStringFromPrior(prior.Kuery, &existing.Kuery)
+	panelkit.NullPreserveStringFromPrior(prior.MapOrientation, &existing.MapOrientation)
+	panelkit.NullPreserveBoolFromPrior(prior.SyncWithDashboardFilters, &existing.SyncWithDashboardFilters)
+	panelkit.NullPreserveSetFromPrior(prior.AlertStatusFilter, &existing.AlertStatusFilter)
+	panelkit.NullPreserveSetFromPrior(prior.AnomalySeverityFilter, &existing.AnomalySeverityFilter)
+	panelkit.NullPreserveSetFromPrior(prior.ConnectionFilter, &existing.ConnectionFilter)
+	panelkit.NullPreserveSetFromPrior(prior.SloStatusFilter, &existing.SloStatusFilter)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

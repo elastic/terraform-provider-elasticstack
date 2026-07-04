@@ -148,21 +148,11 @@ func aiopsChangePointChartPreserveNullIntentFromPrior(prior, existing *models.Ai
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.AggregationFunction) {
-		existing.AggregationFunction = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SplitField) {
-		existing.SplitField = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Partitions) {
-		existing.Partitions = types.SetNull(types.StringType)
-	}
-	if !typeutils.IsKnown(prior.MaxSeriesToPlot) {
-		existing.MaxSeriesToPlot = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.ViewType) {
-		existing.ViewType = types.StringNull()
-	}
+	panelkit.NullPreserveStringFromPrior(prior.AggregationFunction, &existing.AggregationFunction)
+	panelkit.NullPreserveStringFromPrior(prior.SplitField, &existing.SplitField)
+	panelkit.NullPreserveSetFromPrior(prior.Partitions, &existing.Partitions)
+	panelkit.NullPreserveFloat32FromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
+	panelkit.NullPreserveStringFromPrior(prior.ViewType, &existing.ViewType)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {

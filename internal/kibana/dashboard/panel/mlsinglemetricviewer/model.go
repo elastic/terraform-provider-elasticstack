@@ -251,18 +251,10 @@ func mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing *models.MlS
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SelectedDetectorIndex) {
-		existing.SelectedDetectorIndex = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.ForecastID) {
-		existing.ForecastID = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.FunctionDescription) {
-		existing.FunctionDescription = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SelectedEntities) {
-		existing.SelectedEntities = prior.SelectedEntities
-	}
+	panelkit.NullPreserveFloat32FromPrior(prior.SelectedDetectorIndex, &existing.SelectedDetectorIndex)
+	panelkit.NullPreserveStringFromPrior(prior.ForecastID, &existing.ForecastID)
+	panelkit.NullPreserveStringFromPrior(prior.FunctionDescription, &existing.FunctionDescription)
+	panelkit.NullPreserveMapFromPrior(prior.SelectedEntities, &existing.SelectedEntities)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)

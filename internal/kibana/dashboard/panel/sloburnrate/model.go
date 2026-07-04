@@ -144,9 +144,7 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SloInstanceID) {
-		existing.SloInstanceID = types.StringNull()
-	}
+	panelkit.NullPreserveStringFromPrior(prior.SloInstanceID, &existing.SloInstanceID)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
