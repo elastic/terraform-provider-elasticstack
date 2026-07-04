@@ -121,7 +121,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
 
 	if prior.AiopsChangePointChartConfig != nil {
-		preserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
+		aiopsChangePointChartPreserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
 	}
 	return nil
 }
@@ -144,7 +144,7 @@ func aiopsChangePointChartConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsChang
 	return cfg
 }
 
-func preserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
+func aiopsChangePointChartPreserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
 	if prior == nil || existing == nil {
 		return
 	}
