@@ -95,6 +95,104 @@ func preserveKnownString(existing types.String, api *string) types.String {
 	return existing
 }
 
+// sharedOptionsListAPIFields holds optional field values extracted from either the Field or ES|QL
+// API config variant into a branch-neutral form, so populateSharedOptionsListFieldsFromAPI can
+// apply them without knowing which branch produced them.
+type sharedOptionsListAPIFields struct {
+	Title             *string
+	UseGlobalFilters  *bool
+	IgnoreValidations *bool
+	SingleSelect      *bool
+	Exclude           *bool
+	ExistsSelected    *bool
+	RunPastTimeout    *bool
+	SearchTechnique   *string     // pre-converted from the branch-specific named enum type
+	SelectedOptions   *types.List // pre-converted via the branch-specific selectedOptions helper
+	DisplaySettings   *displaySettingsAPI
+	SortBy            *string // both nil when Sort is absent in the API response
+	SortDirection     *string
+}
+
+func sharedAPIFieldsFromField(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField) sharedOptionsListAPIFields {
+	f := sharedOptionsListAPIFields{
+		Title:             apiConfig.Title,
+		UseGlobalFilters:  apiConfig.UseGlobalFilters,
+		IgnoreValidations: apiConfig.IgnoreValidations,
+		SingleSelect:      apiConfig.SingleSelect,
+		Exclude:           apiConfig.Exclude,
+		ExistsSelected:    apiConfig.ExistsSelected,
+		RunPastTimeout:    apiConfig.RunPastTimeout,
+		DisplaySettings:   apiConfig.DisplaySettings,
+	}
+	if apiConfig.SearchTechnique != nil {
+		st := string(*apiConfig.SearchTechnique)
+		f.SearchTechnique = &st
+	}
+	if apiConfig.SelectedOptions != nil {
+		list := selectedOptionsFieldToList(*apiConfig.SelectedOptions)
+		f.SelectedOptions = &list
+	}
+	if apiConfig.Sort != nil {
+		by := string(apiConfig.Sort.By)
+		dir := string(apiConfig.Sort.Direction)
+		f.SortBy, f.SortDirection = &by, &dir
+	}
+	return f
+}
+
+func sharedAPIFieldsFromEsql(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql) sharedOptionsListAPIFields {
+	f := sharedOptionsListAPIFields{
+		Title:             apiConfig.Title,
+		UseGlobalFilters:  apiConfig.UseGlobalFilters,
+		IgnoreValidations: apiConfig.IgnoreValidations,
+		SingleSelect:      apiConfig.SingleSelect,
+		Exclude:           apiConfig.Exclude,
+		ExistsSelected:    apiConfig.ExistsSelected,
+		RunPastTimeout:    apiConfig.RunPastTimeout,
+		DisplaySettings:   apiConfig.DisplaySettings,
+	}
+	if apiConfig.SearchTechnique != nil {
+		st := string(*apiConfig.SearchTechnique)
+		f.SearchTechnique = &st
+	}
+	if apiConfig.SelectedOptions != nil {
+		list := selectedOptionsEsqlToList(*apiConfig.SelectedOptions)
+		f.SelectedOptions = &list
+	}
+	if apiConfig.Sort != nil {
+		by := string(apiConfig.Sort.By)
+		dir := string(apiConfig.Sort.Direction)
+		f.SortBy, f.SortDirection = &by, &dir
+	}
+	return f
+}
+
+// populateSharedOptionsListFieldsFromAPI applies the optional field updates that are identical
+// across the Field and ES|QL populate functions. model points into the branch-specific struct and
+// api carries pre-processed values from the matching sharedAPIFieldsFromX adapter.
+func populateSharedOptionsListFieldsFromAPI(model optionsListNullIntentFields, api sharedOptionsListAPIFields) {
+	*model.Title = preserveKnownString(*model.Title, api.Title)
+	*model.UseGlobalFilters = preserveKnownBool(*model.UseGlobalFilters, api.UseGlobalFilters)
+	*model.IgnoreValidations = preserveKnownBool(*model.IgnoreValidations, api.IgnoreValidations)
+	*model.SingleSelect = preserveKnownBool(*model.SingleSelect, api.SingleSelect)
+	*model.Exclude = preserveKnownBool(*model.Exclude, api.Exclude)
+	*model.ExistsSelected = preserveKnownBool(*model.ExistsSelected, api.ExistsSelected)
+	*model.RunPastTimeout = preserveKnownBool(*model.RunPastTimeout, api.RunPastTimeout)
+	if typeutils.IsKnown(*model.SearchTechnique) && api.SearchTechnique != nil {
+		*model.SearchTechnique = types.StringValue(*api.SearchTechnique)
+	}
+	if typeutils.IsKnown(*model.SelectedOptions) && api.SelectedOptions != nil {
+		*model.SelectedOptions = *api.SelectedOptions
+	}
+	if *model.DisplaySettings != nil && api.DisplaySettings != nil {
+		updateDisplaySettingsFromAPI(*model.DisplaySettings, api.DisplaySettings)
+	}
+	if *model.Sort != nil && api.SortBy != nil {
+		(*model.Sort).By = types.StringValue(*api.SortBy)
+		(*model.Sort).Direction = types.StringValue(*api.SortDirection)
+	}
+}
+
 // populateFieldFromAPI populates pm.OptionsListControlConfig.ByField from a Field-branch API
 // response, applying the same null-preservation semantics as the pre-union implementation.
 func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField) diag.Diagnostics {
@@ -129,29 +227,17 @@ func populateFieldFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api
 	// Block exists in state — update required fields unconditionally, optional fields only when known.
 	existing.DataViewID = types.StringValue(apiConfig.DataViewId)
 	existing.FieldName = types.StringValue(apiConfig.FieldName)
-
-	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
-	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
-	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
-	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
-	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
-	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
-	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
-	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
-		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
-	}
-	if !existing.SelectedOptions.IsNull() && !existing.SelectedOptions.IsUnknown() && apiConfig.SelectedOptions != nil {
-		existing.SelectedOptions = selectedOptionsFieldToList(*apiConfig.SelectedOptions)
-	}
-
-	if existing.DisplaySettings != nil && apiConfig.DisplaySettings != nil {
-		updateDisplaySettingsFromAPI(existing.DisplaySettings, apiConfig.DisplaySettings)
-	}
-
-	if existing.Sort != nil && apiConfig.Sort != nil {
-		existing.Sort.By = types.StringValue(string(apiConfig.Sort.By))
-		existing.Sort.Direction = types.StringValue(string(apiConfig.Sort.Direction))
-	}
+	populateSharedOptionsListFieldsFromAPI(
+		optionsListNullIntentFields{
+			Title: &existing.Title, UseGlobalFilters: &existing.UseGlobalFilters,
+			IgnoreValidations: &existing.IgnoreValidations, SingleSelect: &existing.SingleSelect,
+			Exclude: &existing.Exclude, ExistsSelected: &existing.ExistsSelected,
+			RunPastTimeout: &existing.RunPastTimeout, SearchTechnique: &existing.SearchTechnique,
+			SelectedOptions: &existing.SelectedOptions, DisplaySettings: &existing.DisplaySettings,
+			Sort: &existing.Sort,
+		},
+		sharedAPIFieldsFromField(apiConfig),
+	)
 
 	if tfPanel.OptionsListControlConfig != nil {
 		preserveOptionsListFieldNullIntentFromPrior(tfPanel.OptionsListControlConfig.ByField, existing)
@@ -190,29 +276,17 @@ func populateEsqlFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiC
 	// Block exists in state — update required fields unconditionally, optional fields only when known.
 	existing.EsqlQuery = types.StringValue(apiConfig.EsqlQuery)
 	existing.ValuesSource = types.StringValue(panelkit.EsqlValuesSourceUserValue)
-
-	existing.Title = preserveKnownString(existing.Title, apiConfig.Title)
-	existing.UseGlobalFilters = preserveKnownBool(existing.UseGlobalFilters, apiConfig.UseGlobalFilters)
-	existing.IgnoreValidations = preserveKnownBool(existing.IgnoreValidations, apiConfig.IgnoreValidations)
-	existing.SingleSelect = preserveKnownBool(existing.SingleSelect, apiConfig.SingleSelect)
-	existing.Exclude = preserveKnownBool(existing.Exclude, apiConfig.Exclude)
-	existing.ExistsSelected = preserveKnownBool(existing.ExistsSelected, apiConfig.ExistsSelected)
-	existing.RunPastTimeout = preserveKnownBool(existing.RunPastTimeout, apiConfig.RunPastTimeout)
-	if typeutils.IsKnown(existing.SearchTechnique) && apiConfig.SearchTechnique != nil {
-		existing.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
-	}
-	if !existing.SelectedOptions.IsNull() && !existing.SelectedOptions.IsUnknown() && apiConfig.SelectedOptions != nil {
-		existing.SelectedOptions = selectedOptionsEsqlToList(*apiConfig.SelectedOptions)
-	}
-
-	if existing.DisplaySettings != nil && apiConfig.DisplaySettings != nil {
-		updateDisplaySettingsFromAPI(existing.DisplaySettings, apiConfig.DisplaySettings)
-	}
-
-	if existing.Sort != nil && apiConfig.Sort != nil {
-		existing.Sort.By = types.StringValue(string(apiConfig.Sort.By))
-		existing.Sort.Direction = types.StringValue(string(apiConfig.Sort.Direction))
-	}
+	populateSharedOptionsListFieldsFromAPI(
+		optionsListNullIntentFields{
+			Title: &existing.Title, UseGlobalFilters: &existing.UseGlobalFilters,
+			IgnoreValidations: &existing.IgnoreValidations, SingleSelect: &existing.SingleSelect,
+			Exclude: &existing.Exclude, ExistsSelected: &existing.ExistsSelected,
+			RunPastTimeout: &existing.RunPastTimeout, SearchTechnique: &existing.SearchTechnique,
+			SelectedOptions: &existing.SelectedOptions, DisplaySettings: &existing.DisplaySettings,
+			Sort: &existing.Sort,
+		},
+		sharedAPIFieldsFromEsql(apiConfig),
+	)
 
 	if tfPanel.OptionsListControlConfig != nil {
 		preserveOptionsListEsqlNullIntentFromPrior(tfPanel.OptionsListControlConfig.ByEsql, existing)
