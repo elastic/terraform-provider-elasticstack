@@ -937,6 +937,34 @@ func TestAccDataSourceEnrichPolicyConnectionCertData(t *testing.T) {
 	})
 }
 
+func TestAccDataSourceEnrichPolicyConnectionCAFingerprint(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoint := primaryESEndpoint()
+	fingerprint := "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable(name),
+					"endpoint":       config.StringVariable(endpoint),
+					"ca_fingerprint": config.StringVariable(fingerprint),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_fingerprint", fingerprint),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_data"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccDataSourceEnrichPolicyConnectionValidation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
@@ -944,6 +972,16 @@ func TestAccDataSourceEnrichPolicyConnectionValidation(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("ca_conflict"),
 				ExpectError:              regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_file.*ca_data|ca_data.*ca_file)`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ca_fingerprint_ca_file"),
+				ExpectError:              regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_fingerprint.*ca_file|ca_file.*ca_fingerprint)`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ca_fingerprint_ca_data"),
+				ExpectError:              regexp.MustCompile(`(?s)(Invalid Attribute Combination|ca_fingerprint.*ca_data|ca_data.*ca_fingerprint)`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
