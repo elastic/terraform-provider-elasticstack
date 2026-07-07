@@ -433,6 +433,9 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "A text string that affects the name of the machine learning results index. Do not start the value with `custom-`; Elasticsearch automatically adds this prefix.",
 				Optional:            true,
 				Computed:            true,
+				Validators: []validator.String{
+					resultsIndexNameWithoutCustomPrefix(),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
