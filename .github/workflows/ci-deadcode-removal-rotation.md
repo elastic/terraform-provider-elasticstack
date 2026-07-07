@@ -98,6 +98,16 @@ engine:
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+models:
+  providers:
+    anthropic:
+      models:
+        "llm-gateway/DeepSeek-V4-Flash": 
+          "cost": 
+            "input": "1.4e-7"
+            "output": "2.8e-7"
+            "cache_read": "8e-08"
+            "cache_write": "1e-06"
 permissions:
   contents: read
   issues: read
