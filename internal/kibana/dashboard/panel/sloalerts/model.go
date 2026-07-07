@@ -111,7 +111,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 	if tfPanel.SloAlertsConfig != nil {
 		priorDrilldowns = tfPanel.SloAlertsConfig.Drilldowns
 	}
-	existing.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, priorDrilldowns)
+	existing.Drilldowns = sloAlertsAPIEntries(apiCfg.Drilldowns, priorDrilldowns)
 }
 
 func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsSloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {
@@ -124,7 +124,7 @@ func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsSloAlertsEmbed
 	if apiCfg.Slos != nil {
 		cfg.Slos = readSlosFromAPI(*apiCfg.Slos, nil)
 	}
-	cfg.Drilldowns = readDrilldownsFromAPI(apiCfg.Drilldowns, nil)
+	cfg.Drilldowns = sloAlertsAPIEntries(apiCfg.Drilldowns, nil)
 	return cfg
 }
 
@@ -160,7 +160,7 @@ func readSlosFromAPI(
 	return out
 }
 
-func readDrilldownsFromAPI(
+func sloAlertsAPIEntries(
 	apiDrilldowns *[]struct {
 		EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
 		Label        string                                                   `json:"label"`
@@ -174,40 +174,14 @@ func readDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	out := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	entries := make([]panelkit.URLDrilldownAPIEntry, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		out[i].URL = types.StringValue(d.Url)
-		out[i].Label = types.StringValue(d.Label)
-
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		if prior == nil {
-			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
-			continue
-		}
-
-		switch {
-		case prior.EncodeURL.IsNull():
-			out[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			out[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			out[i].EncodeURL = types.BoolNull()
-		}
-
-		switch {
-		case prior.OpenInNewTab.IsNull():
-			out[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			out[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			out[i].OpenInNewTab = types.BoolNull()
+		entries[i] = panelkit.URLDrilldownAPIEntry{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeURL:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-	return out
+	return panelkit.ReadURLDrilldownsFromAPI(entries, priorDrilldowns, drilldownURLEncodeURLDefault, drilldownURLOpenInNewTabDefault)
 }

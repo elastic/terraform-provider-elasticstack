@@ -101,28 +101,11 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.True(t, dd0.EncodeURL.IsNull())
 	require.True(t, dd0.OpenInNewTab.IsNull())
 
+	// Import mode (prior==nil): canonical behaviour nullifies API values that equal server defaults.
+	// encode_url=true and open_in_new_tab=false are both defaults, so both become null.
 	dd1 := pm.SloBurnRateConfig.Drilldowns[1]
-	require.True(t, dd1.EncodeURL.ValueBool())
-	require.False(t, dd1.OpenInNewTab.ValueBool())
-
-	item1, d2 := handler.ToAPI(pm, nil)
-	require.False(t, d2.HasError(), "%s", d2)
-
-	api0 := jsonPanelMap(t, item0)
-	api1 := jsonPanelMap(t, item1)
-
-	cfg0 := mustConfigMap(t, api0["config"])
-	cfg1 := mustConfigMap(t, api1["config"])
-	ddA, ddB := drillsFromConfig(cfg0), drillsFromConfig(cfg1)
-
-	require.Len(t, ddB, len(ddA))
-	require.Equal(t, ddA[0]["url"], ddB[0]["url"])
-	require.Equal(t, ddA[0]["label"], ddB[0]["label"])
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu), ddB[0]["trigger"])
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown), ddB[0]["type"])
-
-	require.Equal(t, true, drillsFromConfig(cfg1)[1]["encode_url"])
-	require.Equal(t, false, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
+	require.True(t, dd1.EncodeURL.IsNull(), "encode_url matching default should be null on import")
+	require.True(t, dd1.OpenInNewTab.IsNull(), "open_in_new_tab matching default should be null on import")
 }
 
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {

@@ -26,6 +26,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	drilldownURLEncodeURLDefault    = true
+	drilldownURLOpenInNewTabDefault = false
+)
+
 // BuildConfig writes the TF model fields into the API panel struct.
 func BuildConfig(pm models.PanelModel, sebPanel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) diag.Diagnostics {
 	cfg := pm.SloErrorBudgetConfig
@@ -106,42 +111,36 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
 	}
 
-	if apiConfig.Drilldowns != nil {
-		var priorDrilldowns []models.URLDrilldownModel
-		if prior != nil && prior.SloErrorBudgetConfig != nil {
-			priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
-		}
-
-		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
-		for i, d := range *apiConfig.Drilldowns {
-			dm := models.URLDrilldownModel{
-				URL:   types.StringValue(d.Url),
-				Label: types.StringValue(d.Label),
-			}
-
-			if d.EncodeUrl != nil {
-				priorEncodeURL := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorEncodeURL = priorDrilldowns[i].EncodeURL
-				}
-				if typeutils.IsKnown(priorEncodeURL) || !*d.EncodeUrl {
-					dm.EncodeURL = types.BoolValue(*d.EncodeUrl)
-				}
-			}
-
-			if d.OpenInNewTab != nil {
-				priorOpenInNewTab := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorOpenInNewTab = priorDrilldowns[i].OpenInNewTab
-				}
-				if typeutils.IsKnown(priorOpenInNewTab) || !*d.OpenInNewTab {
-					dm.OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-				}
-			}
-
-			newDrilldowns = append(newDrilldowns, dm)
-		}
-		existing.Drilldowns = newDrilldowns
+	var priorDrilldowns []models.URLDrilldownModel
+	if prior != nil && prior.SloErrorBudgetConfig != nil {
+		priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
 	}
+	existing.Drilldowns = sloErrorBudgetAPIEntries(apiConfig.Drilldowns, priorDrilldowns)
 	return nil
+}
+
+func sloErrorBudgetAPIEntries(
+	apiDrilldowns *[]struct {
+		EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                        `json:"label"`
+		OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
+		Url          string                                                        `json:"url"` //nolint:revive
+	},
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
+		return nil
+	}
+	entries := make([]panelkit.URLDrilldownAPIEntry, len(*apiDrilldowns))
+	for i, d := range *apiDrilldowns {
+		entries[i] = panelkit.URLDrilldownAPIEntry{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeURL:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
+		}
+	}
+	return panelkit.ReadURLDrilldownsFromAPI(entries, priorDrilldowns, drilldownURLEncodeURLDefault, drilldownURLOpenInNewTabDefault)
 }

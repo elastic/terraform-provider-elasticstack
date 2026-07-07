@@ -26,6 +26,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	drilldownURLEncodeURLDefault    = true
+	drilldownURLOpenInNewTabDefault = false
+)
+
 // BuildConfig writes the TF model into the API panel struct.
 // When the config block is nil or entirely null, an empty config object is sent (valid: shows all monitors).
 func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
@@ -154,7 +159,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	if prior.SyntheticsStatsOverviewConfig != nil {
 		priorDrilldowns = prior.SyntheticsStatsOverviewConfig.Drilldowns
 	}
-	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, priorDrilldowns)
+	existing.Drilldowns = syntheticsStatsOverviewAPIEntries(apiPanel, priorDrilldowns)
 	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
 	return nil
 }
@@ -166,7 +171,7 @@ func syntheticsStatsOverviewConfigFromAPIImport(apiPanel kbapi.KibanaHTTPAPIsKbn
 		Description: types.StringPointerValue(cfg.Description),
 		HideTitle:   types.BoolPointerValue(cfg.HideTitle),
 		HideBorder:  types.BoolPointerValue(cfg.HideBorder),
-		Drilldowns:  readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, nil),
+		Drilldowns:  syntheticsStatsOverviewAPIEntries(apiPanel, nil),
 		Filters:     readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, nil),
 	}
 }
@@ -203,7 +208,7 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 		(f.MonitorTypes != nil && len(*f.MonitorTypes) > 0)
 }
 
-func readSyntheticsStatsOverviewDrilldownsFromAPI(
+func syntheticsStatsOverviewAPIEntries(
 	apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
@@ -211,38 +216,16 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	entries := make([]panelkit.URLDrilldownAPIEntry, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
-		}
-
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
+		entries[i] = panelkit.URLDrilldownAPIEntry{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeURL:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-	return result
+	return panelkit.ReadURLDrilldownsFromAPI(entries, priorDrilldowns, drilldownURLEncodeURLDefault, drilldownURLOpenInNewTabDefault)
 }
 
 func readSyntheticsStatsOverviewFiltersFromAPI(
