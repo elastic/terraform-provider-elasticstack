@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 )
 
 const (
