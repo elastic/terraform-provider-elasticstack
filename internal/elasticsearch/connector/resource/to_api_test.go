@@ -23,9 +23,9 @@ import (
 	"math/big"
 	"testing"
 
-	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
+	getconnector "github.com/elastic/go-elasticsearch/v9/typedapi/connector/get"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/connectorfieldtype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"

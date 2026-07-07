@@ -20,9 +20,9 @@ package elasticsearch
 import (
 	"context"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/queryrules/getruleset"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/queryrules/putruleset"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/queryrules/getruleset"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/queryrules/putruleset"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"

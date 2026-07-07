@@ -21,7 +21,7 @@ import (
 	"context"
 	"testing"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

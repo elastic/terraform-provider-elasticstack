@@ -25,7 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v8"
+	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security/apikey"
 	"github.com/hashicorp/terraform-plugin-framework/diag"

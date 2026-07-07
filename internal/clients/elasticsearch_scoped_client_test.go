@@ -27,7 +27,7 @@ import (
 	"os"
 	"testing"
 
-	elasticsearch "github.com/elastic/go-elasticsearch/v8"
+	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"

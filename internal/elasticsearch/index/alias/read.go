@@ -20,7 +20,7 @@ package alias
 import (
 	"context"
 
-	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	esTypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"

@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/syncjobget"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtriggermethod"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncjobtype"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/connector/syncjobget"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/syncjobtriggermethod"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/syncjobtype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"

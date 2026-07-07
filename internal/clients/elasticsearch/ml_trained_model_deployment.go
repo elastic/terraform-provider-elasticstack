@@ -23,11 +23,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/starttrainedmodeldeployment"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/updatetrainedmodeldeployment"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/deploymentallocationstate"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/trainingpriority"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ml/starttrainedmodeldeployment"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ml/updatetrainedmodeldeployment"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/deploymentallocationstate"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/trainingpriority"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )

@@ -24,7 +24,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v9"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 

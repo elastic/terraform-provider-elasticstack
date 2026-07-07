@@ -18,7 +18,7 @@
 package clients
 
 import (
-	elasticsearch "github.com/elastic/go-elasticsearch/v8"
+	elasticsearch "github.com/elastic/go-elasticsearch/v9"
 )
 
 // NewElasticsearchScopedClientForTest creates an ElasticsearchScopedClient

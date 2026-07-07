@@ -3,7 +3,7 @@ module github.com/elastic/terraform-provider-elasticstack
 go 1.26.1
 
 require (
-	github.com/elastic/go-elasticsearch/v8 v8.19.6
+	github.com/elastic/go-elasticsearch/v9 v9.4.2
 	github.com/google/go-github/v88 v88.0.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0

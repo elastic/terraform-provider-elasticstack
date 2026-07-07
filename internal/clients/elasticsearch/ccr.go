@@ -20,10 +20,10 @@ package elasticsearch
 import (
 	"context"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ccr/follow"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ccr/putautofollowpattern"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ccr/resumefollow"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"

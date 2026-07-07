@@ -23,9 +23,9 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ccr/follow"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ccr/resumefollow"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"

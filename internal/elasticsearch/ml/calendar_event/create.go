@@ -26,8 +26,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/postcalendarevents"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ml/postcalendarevents"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 )
 
 // DateMathIndexNameRe matches plain Elasticsearch date math index name expressions.

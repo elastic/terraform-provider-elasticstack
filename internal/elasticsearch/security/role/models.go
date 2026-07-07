@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/clusterprivilege"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/indexprivilege"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/clusterprivilege"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/indexprivilege"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"

@@ -21,7 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
-	esapiTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	esapiTypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"

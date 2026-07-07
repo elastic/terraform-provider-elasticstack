@@ -31,8 +31,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/gettoken"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/accesstokengranttype"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/security/gettoken"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/accesstokengranttype"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"

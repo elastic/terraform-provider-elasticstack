@@ -22,9 +22,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/puttrainedmodel"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/trainedmodeltype"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ml/puttrainedmodel"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/trainedmodeltype"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 )

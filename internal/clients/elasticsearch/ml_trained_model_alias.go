@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/gettrainedmodels"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/ml/gettrainedmodels"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )

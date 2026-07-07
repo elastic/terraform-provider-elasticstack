@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"reflect"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"

@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"reflect"
 
-	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncstatus"
+	getconnector "github.com/elastic/go-elasticsearch/v9/typedapi/connector/get"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types/enums/syncstatus"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"

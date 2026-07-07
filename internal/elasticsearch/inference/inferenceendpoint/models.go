@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"

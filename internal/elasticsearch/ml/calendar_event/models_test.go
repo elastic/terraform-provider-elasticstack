@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	estypes "github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

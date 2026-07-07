@@ -21,12 +21,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/invalidateapikey"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/security/createapikey"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/security/createcrossclusterapikey"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/security/invalidateapikey"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/security/updateapikey"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/security/updatecrossclusterapikey"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
