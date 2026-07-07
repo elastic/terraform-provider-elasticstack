@@ -42,28 +42,7 @@ func BuildConfig(pm models.PanelModel, sebPanel *kbapi.KibanaHTTPAPIsKbnDashboar
 		&sebPanel.Config.Title, &sebPanel.Config.Description, &sebPanel.Config.HideTitle, &sebPanel.Config.HideBorder)
 
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                        `json:"label"`
-			OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                        `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		sebPanel.Config.Drilldowns = &drilldowns
+		panelkit.InjectDrilldownsJSON(&sebPanel.Config, cfg.Drilldowns)
 	}
 	return nil
 }

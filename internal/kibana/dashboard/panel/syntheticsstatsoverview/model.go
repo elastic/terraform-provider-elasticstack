@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -38,28 +37,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                                                   `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                                  `json:"label"`
-			OpenInNewTab *bool                                                                                   `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-			Url          string                                                                                  `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		panel.Config.Drilldowns = &drilldowns
+		panelkit.InjectDrilldownsJSON(&panel.Config, cfg.Drilldowns)
 	}
 
 	if cfg.Filters != nil {
