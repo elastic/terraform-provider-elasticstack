@@ -36,8 +36,9 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		panelkit.InjectDrilldownsJSON(&panel.Config, cfg.Drilldowns)
+		diags.Append(panelkit.InjectDrilldownsJSON(&panel.Config, cfg.Drilldowns)...)
 	}
 
 	if cfg.Filters != nil {
@@ -94,7 +95,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 			}
 		}
 	}
-	return nil
+	return diags
 }
 
 // PopulateFromAPI reads back a synthetics stats overview panel from the API response.

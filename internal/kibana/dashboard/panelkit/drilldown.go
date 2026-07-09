@@ -29,12 +29,12 @@ import (
 // URLDrilldownWire is the canonical JSON shape for a URL drilldown entry sent to the Kibana API.
 // Trigger and Type are always the same string constants across all panel types.
 type URLDrilldownWire struct {
-	EncodeURL    *bool  `json:"encode_url,omitempty"` //nolint:revive
+	EncodeURL    *bool  `json:"encode_url,omitempty"`
 	Label        string `json:"label"`
 	OpenInNewTab *bool  `json:"open_in_new_tab,omitempty"`
 	Trigger      string `json:"trigger"`
 	Type         string `json:"type"`
-	URL          string `json:"url"` //nolint:revive
+	URL          string `json:"url"`
 }
 
 // BuildURLDrilldownsWire converts Terraform URLDrilldownModel entries into a wire slice ready
@@ -46,7 +46,7 @@ func BuildURLDrilldownsWire(drilldowns []models.URLDrilldownModel) []URLDrilldow
 			URL:     dd.URL.ValueString(),
 			Label:   dd.Label.ValueString(),
 			Trigger: "on_open_panel_menu",
-			Type:    "url_drilldown",
+			Type:    attrURLDrilldown,
 		}
 		if typeutils.IsKnown(dd.EncodeURL) {
 			result[i].EncodeURL = dd.EncodeURL.ValueBoolPointer()

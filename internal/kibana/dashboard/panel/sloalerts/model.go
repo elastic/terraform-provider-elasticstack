@@ -22,6 +22,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -31,10 +32,10 @@ const (
 )
 
 // BuildConfig fills panel.Config from Terraform state.
-func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
+func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) diag.Diagnostics {
 	cfg := pm.SloAlertsConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	embeddable := kbapi.KibanaHTTPAPIsSloAlertsEmbeddable{}
@@ -54,11 +55,13 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		panelkit.InjectDrilldownsJSON(&embeddable, cfg.Drilldowns)
+		diags.Append(panelkit.InjectDrilldownsJSON(&embeddable, cfg.Drilldowns)...)
 	}
 
 	panel.Config = embeddable
+	return diags
 }
 
 // PopulateFromAPI merges API config into practitioner state seeded from tfPanel.

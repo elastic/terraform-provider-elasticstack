@@ -41,10 +41,11 @@ func BuildConfig(pm models.PanelModel, sebPanel *kbapi.KibanaHTTPAPIsKbnDashboar
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&sebPanel.Config.Title, &sebPanel.Config.Description, &sebPanel.Config.HideTitle, &sebPanel.Config.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		panelkit.InjectDrilldownsJSON(&sebPanel.Config, cfg.Drilldowns)
+		diags.Append(panelkit.InjectDrilldownsJSON(&sebPanel.Config, cfg.Drilldowns)...)
 	}
-	return nil
+	return diags
 }
 
 // PopulateFromAPI reads back an SLO error budget config from the API response.
