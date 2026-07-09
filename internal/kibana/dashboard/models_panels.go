@@ -135,6 +135,8 @@ func clearPanelConfigBlocks(pm *models.PanelModel) {
 	pm.ImageConfig = nil
 	pm.SloAlertsConfig = nil
 	pm.DiscoverSessionConfig = nil
+	pm.LinksConfig = nil
+	pm.FieldStatsTableConfig = nil
 	pm.MlAnomalySwimlaneConfig = nil
 	pm.MlAnomalyChartsConfig = nil
 	pm.MlSingleMetricViewerConfig = nil

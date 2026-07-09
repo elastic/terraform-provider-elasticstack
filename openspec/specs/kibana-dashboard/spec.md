@@ -76,6 +76,32 @@ resource "elasticstack_kibana_dashboard" "example" {
       })>
     })> # only with type = "markdown"; exactly one of by_value or by_reference (REQ-012); conflicts with all other config blocks
 
+    links_config = <optional, object({
+      by_value = <optional, object({
+        layout      = <required, string> # "horizontal" | "vertical"
+        title       = <optional, string>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        hide_border = <optional, bool>
+        links       = <required, list(object({
+          type            = <required, string> # "dashboard" | "external"
+          destination     = <required, string>
+          label           = <optional, string>
+          open_in_new_tab = <optional, bool>
+          use_filters     = <optional, bool>   # only with type = "dashboard"
+          use_time_range  = <optional, bool>   # only with type = "dashboard"
+          encode_url      = <optional, bool>   # only with type = "external"
+        }))> # at least 1
+      })>
+      by_reference = <optional, object({
+        ref_id      = <required, string>
+        title       = <optional, string>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        hide_border = <optional, bool>
+      })>
+    })> # only with type = "links"; exactly one of by_value or by_reference (REQ-054); conflicts with all other config blocks
+
     xy_chart_config = <optional, object({
       title       = <optional, string>
       description = <optional, string>
@@ -2951,6 +2977,144 @@ The resource schema version SHALL be incremented to 1. No data SHALL be lost dur
 - WHEN the state upgrader runs
 - THEN the `markdown` panel entries SHALL be unchanged in v1 state
 
+### Requirement: `links_config` panel block (REQ-054)
+
+For `type = "links"` panels, the resource SHALL accept a `links_config` block whose shape mirrors the API's by-value/by-reference union: `links_config = object({ by_value = object({ layout, title, description, hide_title, hide_border, links[] }), by_reference = object({ ref_id, title, description, hide_title, hide_border }) })`. Exactly one of `by_value` or `by_reference` SHALL be set; setting both or neither SHALL produce an error diagnostic at plan time. The block SHALL conflict with all other typed panel config blocks and with practitioner-authored `config_json`. See the delta spec REQ-LINKS-001 for full behavioral scenarios, scenarios for link item type-specific field isolation, and null-preservation requirements for optional display fields and link item fields.
+
+The `by_value` block SHALL require `layout` (string enum `"horizontal"` | `"vertical"`) and `links` (non-empty list). Each link item SHALL require `type` (string enum `"dashboard"` | `"external"`) and `destination` (string), and SHALL accept optional `label` (string) and `open_in_new_tab` (bool). `use_filters` and `use_time_range` SHALL only be valid when `type = "dashboard"`; `encode_url` SHALL only be valid when `type = "external"`.
+
+The `"dashboard"` type SHALL map to the API discriminator `"dashboardLink"`; the `"external"` type SHALL map to the API discriminator `"externalLink"`. On write, the provider SHALL build either the by-value or by-reference API payload according to which sub-block is set. On read, it SHALL detect the returned API branch and populate the matching sub-block.
+
+`by_reference` SHALL require `ref_id` (string) as the identifier of an existing Kibana Links library saved object, and SHALL accept the same optional display fields as `by_value`.
+
+Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on both branches and optional link item fields SHALL follow null-preservation on refresh/read after a user-managed apply: they remain null in state when omitted by the user, even if Kibana echoes server-side defaults.
+
+#### Scenario: By-value links panel round-trip
+
+- GIVEN a panel with `type = "links"` and `links_config.by_value` containing one `"dashboard"` link and one `"external"` link
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_value` shape, `by_reference` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: By-reference links panel round-trip
+
+- GIVEN a panel with `type = "links"` and `links_config.by_reference` carrying a `ref_id` and optional `title`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_reference` shape, `by_value` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: `links_config` required for `type = "links"`
+
+- GIVEN a panel with `type = "links"` and no `links_config` block
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `links_config` is required
+
+### Requirement: `links_config` panel block (REQ-LINKS-001)
+
+The `panels` list in `elasticstack_kibana_dashboard` SHALL accept entries with `type = "links"` by providing a `links_config` block. The block SHALL follow the same mutual-exclusion, `AllowedIf`/`RequiredIf`, and sibling `ConflictsWith` patterns as all other typed panel blocks. When a panel carries `type = "links"`, the `links_config` block SHALL be required; omitting it SHALL produce a plan-time error.
+
+The block accepts exactly one of two branches:
+
+**`by_value`** — inline link configuration:
+- `layout` (required string, enum `"horizontal"` | `"vertical"`)
+- `links` (required list, at least 1 item)
+- `title`, `description`, `hide_title`, `hide_border` (all optional)
+
+**`by_reference`** — references a Kibana Links library saved object:
+- `ref_id` (required string, non-empty)
+- `title`, `description`, `hide_title`, `hide_border` (all optional)
+
+Setting both `by_value` and `by_reference`, or neither, SHALL produce a plan-time error.
+
+Each item in `by_value.links[]` is a flat object with:
+- `type` (required string, enum `"dashboard"` | `"external"`)
+- `destination` (required string — dashboard saved-object id or URL)
+- `label` (optional string)
+- `open_in_new_tab` (optional bool — all types)
+- `use_filters` (optional bool — `type = "dashboard"` only)
+- `use_time_range` (optional bool — `type = "dashboard"` only)
+- `encode_url` (optional bool — `type = "external"` only)
+
+The `"dashboard"` type maps to the API discriminator `"dashboardLink"`; `"external"` maps to `"externalLink"`.
+
+Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on both branches and optional link item fields SHALL follow REQ-009 null-preservation on refresh/read after a user-managed apply: they remain null in state when omitted by the user, even if Kibana echoes server-side defaults. On import, these fields SHALL be left null in state when Kibana returns only server-side defaults, so practitioners are not forced to manage those defaults in HCL.
+
+#### Scenario: `by_value` panel with dashboard and external links
+
+- GIVEN a `links` panel with `links_config.by_value` containing a `"dashboard"` link (`destination`, `label`, `open_in_new_tab`, `use_filters`, `use_time_range`) and an `"external"` link (`destination`, `label`, `open_in_new_tab`, `encode_url`)
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL reflect all configured fields and a subsequent plan SHALL show no changes
+
+#### Scenario: `by_reference` panel referencing a library saved object
+
+- GIVEN a `links` panel with `links_config.by_reference` carrying a `ref_id` and optional `title`
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL contain `ref_id` and `title` and a subsequent plan SHALL show no changes
+
+#### Scenario: Mutual exclusion — both branches set
+
+- GIVEN a `links_config` block with both `by_value` and `by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one must be set
+
+#### Scenario: Mutual exclusion — neither branch set
+
+- GIVEN a `links_config` block with neither `by_value` nor `by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one must be set
+
+#### Scenario: `links_config` required for `type = "links"`
+
+- GIVEN a panel with `type = "links"` and no `links_config` block
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `links_config` is required
+
+#### Scenario: `layout` validation
+
+- GIVEN a `by_value` block with `layout = "diagonal"`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating the value must be `horizontal` or `vertical`
+
+#### Scenario: `links` minimum length
+
+- GIVEN a `by_value` block with an empty `links = []`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating at least one item is required
+
+#### Scenario: Link item type-specific field isolation — `encode_url` on `dashboard` link
+
+- GIVEN a link item with `type = "dashboard"` and `encode_url` set to a concrete value
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `encode_url` is not valid for `type = "dashboard"`
+
+#### Scenario: Link item type-specific field isolation — `use_filters` on `external` link
+
+- GIVEN a link item with `type = "external"` and `use_filters` set to a concrete value
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `use_filters` is not valid for `type = "external"`
+
+#### Scenario: Null-preservation of optional display fields
+
+- GIVEN a `by_value` links panel whose `title` and `hide_border` are not set in configuration
+- WHEN Kibana returns `title = "Links"` and `hide_border = false` in the API response
+- THEN state SHALL keep `title` and `hide_border` null and a subsequent plan SHALL show no changes
+
+#### Scenario: Import — `by_value` panel
+
+- GIVEN an existing Kibana dashboard with a `links` panel in `by_value` configuration
+- WHEN the resource imports the dashboard
+- THEN the `links_config.by_value` block SHALL be populated from the API response — including `layout`, all `links[]` items, and any optional display fields returned by Kibana — and a subsequent plan against a matching configuration SHALL show no changes
+
+#### Scenario: Import — `by_reference` panel
+
+- GIVEN an existing Kibana dashboard with a `links` panel in `by_reference` configuration
+- WHEN the resource imports the dashboard
+- THEN the `links_config.by_reference` block SHALL be populated from the API response — including `ref_id` and any optional display fields returned by Kibana — and a subsequent plan against a matching configuration SHALL show no changes
+
+#### Scenario: Optional display fields null on import
+
+- GIVEN an existing Kibana dashboard whose `links` panel has server-side defaults for `hide_title` (`false`) and `hide_border` (`false`)
+- WHEN the resource imports the dashboard and the user's configuration omits those attributes
+- THEN `hide_title` and `hide_border` SHALL remain null in state and a subsequent plan against a matching configuration SHALL show no changes
+
 ## Traceability
 
 | Area | Primary files |
@@ -2963,6 +3127,7 @@ The resource schema version SHALL be incremented to 1. No data SHALL be lost dur
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
 | `viz` panel / `vis_config` / REQ-042 | `internal/kibana/dashboard/models_panels.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/schema.go` |
+| `links` panel / REQ-054 / REQ-LINKS-001 | `internal/kibana/dashboard/panel/links/schema.go`, `internal/kibana/dashboard/panel/links/api.go`, `internal/kibana/dashboard/panel/links/populate.go`, `internal/kibana/dashboard/models/links.go`, `internal/kibana/dashboard/registry.go` |
 | Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |
 | Dashboard API status handling | `internal/clients/kibanaoapi/dashboards.go` |
