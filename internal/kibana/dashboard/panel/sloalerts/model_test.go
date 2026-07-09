@@ -131,7 +131,7 @@ func Test_populateSloAlertsPanelFromAPI_sloInstanceID_nullPreserved_refreshAndIm
 	})
 }
 
-func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing.T) {
+func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refresh(t *testing.T) {
 	pm := sloAlertsPanelModel(&models.SloAlertsPanelConfigModel{
 		Slos: []models.SloAlertsPanelSloModel{{SloID: types.StringValue("slo-1")}},
 		Drilldowns: []models.URLDrilldownModel{
@@ -154,21 +154,12 @@ func Test_sloAlerts_drilldown_roundTrip_defaultsNull_refreshAndImport(t *testing
 			`"trigger":"on_open_panel_menu","type":"url_drilldown",`+
 			`"encode_url":true,"open_in_new_tab":false}]}`)
 
-	t.Run("refresh", func(t *testing.T) {
-		next := pm
-		PopulateFromAPI(&next, &pm, apiPanel)
-		d := next.SloAlertsConfig.Drilldowns[0]
-		assert.True(t, d.EncodeURL.IsNull())
-		assert.True(t, d.OpenInNewTab.IsNull())
-	})
-
-	t.Run("import", func(t *testing.T) {
-		pmImport := models.PanelModel{}
-		PopulateFromAPI(&pmImport, nil, apiPanel)
-		d := pmImport.SloAlertsConfig.Drilldowns[0]
-		assert.True(t, d.EncodeURL.IsNull())
-		assert.True(t, d.OpenInNewTab.IsNull())
-	})
+	// On refresh, prior state had null booleans — null-preservation keeps them null.
+	next := pm
+	PopulateFromAPI(&next, &pm, apiPanel)
+	d := next.SloAlertsConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull())
+	assert.True(t, d.OpenInNewTab.IsNull())
 }
 
 func Test_sloAlertsPanelToAPI_drilldownWritesTrigger(t *testing.T) {
@@ -230,7 +221,9 @@ func Test_sloAlerts_slos_nonempty_accepted(t *testing.T) {
 	require.False(t, resp.Diagnostics.HasError())
 }
 
-func Test_populateSloAlertsPanelFromAPI_import_preservesDrilldownDefaults(t *testing.T) {
+func Test_populateSloAlertsPanelFromAPI_import_drilldownsReflectAPIValues(t *testing.T) {
+	// On import (prior == nil), drilldown booleans are set from the API response directly
+	// (no default normalization). Null-preservation only applies on refresh when prior state exists.
 	raw := `{"slos":[{"slo_id":"slo-1"}],"drilldowns":[{"url":"https://example.com","label":"open","trigger":"on_open_panel_menu","type":"url_drilldown","encode_url":true,"open_in_new_tab":false}]}`
 
 	pm := models.PanelModel{}
@@ -240,6 +233,8 @@ func Test_populateSloAlertsPanelFromAPI_import_preservesDrilldownDefaults(t *tes
 	require.NotNil(t, pm.SloAlertsConfig)
 	assert.True(t, pm.SloAlertsConfig.Slos[0].SloInstanceID.IsNull())
 	d := pm.SloAlertsConfig.Drilldowns[0]
-	assert.True(t, d.EncodeURL.IsNull())
-	assert.True(t, d.OpenInNewTab.IsNull())
+	assert.False(t, d.EncodeURL.IsNull())
+	assert.True(t, d.EncodeURL.ValueBool())
+	assert.False(t, d.OpenInNewTab.IsNull())
+	assert.False(t, d.OpenInNewTab.ValueBool())
 }

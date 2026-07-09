@@ -311,7 +311,7 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 	if api.Drilldowns != nil {
 		dds, err := json.Marshal(*api.Drilldowns)
 		if err == nil {
-			m.Drilldowns = drilldownsFromWireJSON(dds)
+			m.Drilldowns = panelkit.ReadDrilldownsFromWireJSON(dds, nil)
 		}
 	}
 
@@ -356,7 +356,7 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 	if api.Drilldowns != nil {
 		dds, err := json.Marshal(*api.Drilldowns)
 		if err == nil {
-			m.Drilldowns = drilldownsFromWireJSON(dds)
+			m.Drilldowns = panelkit.ReadDrilldownsFromWireJSON(dds, nil)
 		}
 	}
 
@@ -403,23 +403,6 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 
 	pm.SloOverviewConfig = &models.SloOverviewConfigModel{Groups: m}
 	return diags
-}
-
-func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
-	var wire []panelkit.URLDrilldownWire
-	if err := json.Unmarshal(b, &wire); err != nil {
-		return nil
-	}
-	result := make([]models.URLDrilldownModel, len(wire))
-	for i, dd := range wire {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(dd.URL),
-			Label: types.StringValue(dd.Label),
-		}
-		result[i].EncodeURL = types.BoolPointerValue(dd.EncodeURL)
-		result[i].OpenInNewTab = types.BoolPointerValue(dd.OpenInNewTab)
-	}
-	return result
 }
 
 func populateFiltersJSONFromAPI(filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item, out *jsontypes.Normalized) diag.Diagnostics {

@@ -96,3 +96,45 @@ func DrilldownBoolImportPreserving(api *bool, serverDefault bool) types.Bool {
 	}
 	return types.BoolValue(*api)
 }
+
+// ReadDrilldownsFromWireJSON unmarshals a JSON-encoded array of drilldown wire objects and maps
+// them into URLDrilldownModel entries, null-preserving encode_url and open_in_new_tab against
+// priorDrilldowns. If priorDrilldowns is nil (e.g. on import), API values are used directly.
+// Returns nil when b cannot be unmarshaled or the resulting slice is empty.
+func ReadDrilldownsFromWireJSON(b []byte, priorDrilldowns []models.URLDrilldownModel) []models.URLDrilldownModel {
+	var wire []URLDrilldownWire
+	if err := json.Unmarshal(b, &wire); err != nil || len(wire) == 0 {
+		return nil
+	}
+	result := make([]models.URLDrilldownModel, len(wire))
+	for i, dd := range wire {
+		result[i] = models.URLDrilldownModel{
+			URL:   types.StringValue(dd.URL),
+			Label: types.StringValue(dd.Label),
+		}
+
+		var prior *models.URLDrilldownModel
+		if i < len(priorDrilldowns) {
+			prior = &priorDrilldowns[i]
+		}
+
+		switch {
+		case prior != nil && prior.EncodeURL.IsNull():
+			result[i].EncodeURL = types.BoolNull()
+		case dd.EncodeURL != nil:
+			result[i].EncodeURL = types.BoolValue(*dd.EncodeURL)
+		default:
+			result[i].EncodeURL = types.BoolNull()
+		}
+
+		switch {
+		case prior != nil && prior.OpenInNewTab.IsNull():
+			result[i].OpenInNewTab = types.BoolNull()
+		case dd.OpenInNewTab != nil:
+			result[i].OpenInNewTab = types.BoolValue(*dd.OpenInNewTab)
+		default:
+			result[i].OpenInNewTab = types.BoolNull()
+		}
+	}
+	return result
+}

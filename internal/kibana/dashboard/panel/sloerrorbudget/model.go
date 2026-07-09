@@ -18,6 +18,8 @@
 package sloerrorbudget
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -91,37 +93,28 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		if prior != nil && prior.SloErrorBudgetConfig != nil {
 			priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
 		}
-
-		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
-		for i, d := range *apiConfig.Drilldowns {
-			dm := models.URLDrilldownModel{
-				URL:   types.StringValue(d.Url),
-				Label: types.StringValue(d.Label),
-			}
-
-			if d.EncodeUrl != nil {
-				priorEncodeURL := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorEncodeURL = priorDrilldowns[i].EncodeURL
-				}
-				if typeutils.IsKnown(priorEncodeURL) || !*d.EncodeUrl {
-					dm.EncodeURL = types.BoolValue(*d.EncodeUrl)
-				}
-			}
-
-			if d.OpenInNewTab != nil {
-				priorOpenInNewTab := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorOpenInNewTab = priorDrilldowns[i].OpenInNewTab
-				}
-				if typeutils.IsKnown(priorOpenInNewTab) || !*d.OpenInNewTab {
-					dm.OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-				}
-			}
-
-			newDrilldowns = append(newDrilldowns, dm)
-		}
-		existing.Drilldowns = newDrilldowns
+		existing.Drilldowns = sloErrorBudgetDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
 	}
 	return nil
+}
+
+func sloErrorBudgetDrilldownsFromAPI(
+	apiDrilldowns *[]struct {
+		EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                        `json:"label"`
+		OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
+		Url          string                                                        `json:"url"` //nolint:revive
+	},
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
+		return nil
+	}
+	b, err := json.Marshal(*apiDrilldowns)
+	if err != nil {
+		return nil
+	}
+	return panelkit.ReadDrilldownsFromWireJSON(b, priorDrilldowns)
 }

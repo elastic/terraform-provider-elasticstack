@@ -18,6 +18,8 @@
 package syntheticsstatsoverview
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -190,38 +192,11 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
-		}
-
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
-		}
+	b, err := json.Marshal(*apiDrilldowns)
+	if err != nil {
+		return nil
 	}
-	return result
+	return panelkit.ReadDrilldownsFromWireJSON(b, priorDrilldowns)
 }
 
 func readSyntheticsStatsOverviewFiltersFromAPI(

@@ -347,8 +347,9 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null (API default normalization)")
 }
 
-func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.T) {
-	// If API returns false for encode_url/open_in_new_tab (non-default), it should be written.
+func Test_populateSloErrorBudgetFromAPI_drilldowns_nullPreservedWhenPriorNull(t *testing.T) {
+	// When prior state has null booleans, they are null-preserved regardless of the API value.
+	// This is the harmonized behavior shared across all panel types.
 	pm := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
@@ -375,18 +376,15 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 			},
 		},
 	}
-	// API returns false for both (non-default)
+	// API returns false for both — but prior state is null, so null-preservation applies.
 	apiCfg := makeSloErrorBudgetAPIConfig(
 		withSloDrilldown("https://example.com", "Go", new(false), new(false)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
-	// false is non-default, so it should be written even when prior state was null
-	assert.False(t, d.EncodeURL.IsNull(), "encode_url false should be written")
-	assert.False(t, d.EncodeURL.ValueBool())
-	assert.False(t, d.OpenInNewTab.IsNull(), "open_in_new_tab false should be written")
-	assert.False(t, d.OpenInNewTab.ValueBool())
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url should remain null when prior state was null")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null when prior state was null")
 }
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *testing.T) {

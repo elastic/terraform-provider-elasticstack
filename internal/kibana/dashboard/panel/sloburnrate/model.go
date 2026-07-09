@@ -18,6 +18,8 @@
 package sloburnrate
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -92,7 +94,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	if prior != nil && prior.SloBurnRateConfig != nil {
 		priorDrilldowns = prior.SloBurnRateConfig.Drilldowns
 	}
-	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
+	existing.Drilldowns = sloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
 
 	if prior != nil && prior.SloBurnRateConfig != nil {
 		sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
@@ -116,7 +118,7 @@ func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmb
 	cfg.Description = types.StringPointerValue(apiConfig.Description)
 	cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
 	cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
-	cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
+	cfg.Drilldowns = sloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
 	return cfg
 }
 
@@ -134,7 +136,7 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	}
 }
 
-func readSloBurnRateDrilldownsFromAPI(
+func sloBurnRateDrilldownsFromAPI(
 	apiDrilldowns *[]struct {
 		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
 		Label        string                                                     `json:"label"`
@@ -148,40 +150,9 @@ func readSloBurnRateDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
-		}
-
-		// Determine prior state for this drilldown (if it exists at this index).
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		// encode_url: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		// open_in_new_tab: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
-		}
+	b, err := json.Marshal(*apiDrilldowns)
+	if err != nil {
+		return nil
 	}
-
-	return result
+	return panelkit.ReadDrilldownsFromWireJSON(b, priorDrilldowns)
 }
