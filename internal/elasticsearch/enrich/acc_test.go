@@ -953,8 +953,7 @@ func TestAccDataSourceEnrichPolicyConnectionCAFingerprint(t *testing.T) {
 					"ca_fingerprint": config.StringVariable(fingerprint),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_enrich_policy.test", "id"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "name", name),
+					checkEnrichPolicyDataSourceState(name),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_fingerprint", fingerprint),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_enrich_policy.test", "elasticsearch_connection.0.ca_file"),
