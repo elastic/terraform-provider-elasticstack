@@ -101,6 +101,26 @@ func TestEvaluate(t *testing.T) {
 			wantReason:  "all gates passed",
 		},
 		{
+			name: "approves renovate without copilot-only gates",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.User = &github.User{Login: new("elastic-renovate-prod[bot]")}
+				in.Commits = []*github.RepositoryCommit{makeCommit("elastic-renovate-prod[bot]")}
+				in.Files = []*github.CommitFile{makeFile("NOTICE"), makeFile("go.mod")}
+				in.PullRequest.Additions = new(34187)
+				in.PullRequest.Deletions = new(14784)
+			},
+			wantApprove: true,
+			wantReason:  "all gates passed",
+		},
+		{
+			name: "generic renovate[bot] does not match renovate category",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.User = &github.User{Login: new("renovate[bot]")}
+			},
+			wantApprove: false,
+			wantReason:  "did not match any auto-approve category",
+		},
+		{
 			name: "rejects non copilot commit author",
 			mutate: func(in *EvaluationInput) {
 				in.Commits[1] = makeCommit("octocat")

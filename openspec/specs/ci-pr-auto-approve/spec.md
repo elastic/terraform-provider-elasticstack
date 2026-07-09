@@ -5,7 +5,9 @@ Script implementation: `scripts/auto-approve/`
 ## Purpose
 
 Define behavior for the pull request auto-approve script: category routing, approval rules, idempotency, observability, and test expectations.
+
 ## Requirements
+
 ### Requirement: Category routing (REQ-001)
 
 The script SHALL evaluate pull requests against named auto-approve categories; a pull request is eligible only when it matches at least one category selector.
@@ -116,6 +118,38 @@ A pull request that matches the `dependabot` category SHALL be auto-approved whe
 - WHEN global gates pass
 - THEN the script SHALL approve
 
+### Requirement: Renovate selector
+
+The `renovate` category selector SHALL match pull requests opened by `elastic-renovate-prod[bot]` (the Elastic-managed Renovate GitHub App). The selector SHALL NOT match the generic `renovate[bot]` account or any other login.
+
+#### Scenario: Renovate PR
+
+- GIVEN a PR opened by `elastic-renovate-prod[bot]`
+- WHEN categories are evaluated
+- THEN the `renovate` selector SHALL match
+
+#### Scenario: Generic renovate bot does not match
+
+- GIVEN a PR opened by `renovate[bot]`
+- WHEN categories are evaluated
+- THEN the `renovate` selector SHALL NOT match
+
+### Requirement: Renovate approval policy
+
+A pull request that matches the `renovate` category SHALL be auto-approved when global approval gates pass. The `renovate` category SHALL NOT impose category-specific commit-author, file-path, or diff-threshold gates, mirroring the `dependabot` category. Renovate pull requests SHALL NOT receive a CI bypass; they SHALL run the full build, lint, and matrix acceptance test path before reaching auto-approval.
+
+#### Scenario: Renovate with passing global gates
+
+- GIVEN a Renovate PR matching the category
+- WHEN global gates pass
+- THEN the script SHALL approve
+
+#### Scenario: Large Renovate PR is not blocked by diff threshold
+
+- GIVEN a Renovate PR whose additions plus deletions exceed the Copilot diff threshold (e.g. a `NOTICE` regeneration)
+- WHEN the `renovate` category is considered
+- THEN the diff-threshold gate SHALL NOT apply and approval SHALL proceed when global gates pass
+
 ### Requirement: Category extensibility (REQ-012)
 
 Category selectors and category-specific gates SHALL be structured so that new categories can be added without modifying existing category behavior.
@@ -137,36 +171,43 @@ Category routing and gate evaluation logic SHALL be unit tested with table-drive
 - THEN category routing and gates SHALL have table-driven coverage as specified
 
 ### Requirement: Generated changelog selector
+
 The auto-approve script SHALL include a `generated-changelog` category selector that matches only same-repository pull requests whose head branch name is exactly `generated-changelog`.
 
 #### Scenario: Generated changelog branch matches the category
+
 - **GIVEN** a same-repository pull request whose head branch name is `generated-changelog`
 - **WHEN** category matching runs
 - **THEN** the `generated-changelog` selector SHALL match
 
 #### Scenario: Other branches do not match the category
+
 - **GIVEN** a pull request whose head branch name is not `generated-changelog`
 - **WHEN** category matching runs
 - **THEN** the `generated-changelog` selector SHALL NOT match
 
 ### Requirement: Generated changelog commit authors
+
 Every commit in a `generated-changelog` category pull request SHALL be authored by `github-actions[bot]`.
 
 #### Scenario: Foreign commit on generated changelog PR
+
 - **GIVEN** a pull request matched as `generated-changelog` but a commit author is not `github-actions[bot]`
 - **WHEN** gates run
 - **THEN** the pull request SHALL NOT be approved via that category
 
 ### Requirement: Generated changelog file allowlist
+
 Every changed file path in a `generated-changelog` category pull request SHALL be exactly `CHANGELOG.md`.
 
 #### Scenario: Only changelog file is allowed
+
 - **GIVEN** a `generated-changelog` pull request changes only `CHANGELOG.md`
 - **WHEN** gates run
 - **THEN** the file-path gate for that category SHALL pass
 
 #### Scenario: Additional file blocks approval
+
 - **GIVEN** a `generated-changelog` pull request changes `CHANGELOG.md` and any other file
 - **WHEN** gates run
 - **THEN** approval SHALL NOT proceed for that category
-
