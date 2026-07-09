@@ -68,9 +68,9 @@ func alignXYFittingStateFromPlan(plan, state *models.XYFittingModel) {
 	}
 
 	// Kibana omits fitting for some XY chart kinds (e.g. bar_horizontal with terms).
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Type, &state.Type)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Dotted, &state.Dotted)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.EndValue, &state.EndValue)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Type, &state.Type)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Dotted, &state.Dotted)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.EndValue, &state.EndValue)
 }
 
 func alignXYAxisStateFromPlan(plan, state *models.XYAxisModel) {
@@ -102,10 +102,10 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
 	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
 	lenscommon.PreserveNullStringIfStateEquals(plan.Scale, &state.Scale, string(kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleOrdinal))
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Grid, &state.Grid)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Ticks, &state.Ticks)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Scale, &state.Scale)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Grid, &state.Grid)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Ticks, &state.Ticks)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Scale, &state.Scale)
 	// When axis.title is omitted from config, suppress any server-filled defaults.
 	if plan.Title == nil {
 		state.Title = nil
@@ -123,10 +123,10 @@ func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
 	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Grid, &state.Grid)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Ticks, &state.Ticks)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Scale, &state.Scale)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Grid, &state.Grid)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Ticks, &state.Ticks)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Scale, &state.Scale)
 	// When axis.title is omitted from config, suppress any server-filled defaults.
 	if plan.Title == nil {
 		state.Title = nil
@@ -143,10 +143,10 @@ func alignXYY2AxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
 	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Grid, &state.Grid)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Ticks, &state.Ticks)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Scale, &state.Scale)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Grid, &state.Grid)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Ticks, &state.Ticks)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Scale, &state.Scale)
 	// When axis.title is omitted from config, suppress any server-filled defaults.
 	if plan.Title == nil {
 		state.Title = nil
@@ -170,13 +170,13 @@ func alignXYDecorationsStateFromPlan(plan, state *models.XYDecorationsModel) {
 	// matches and no spurious drift appears on subsequent plans.
 	lenscommon.PreserveNullBoolIfStateEquals(plan.ShowValueLabels, &state.ShowValueLabels, false)
 	lenscommon.PreserveNullInt64IfStateEquals(plan.MinimumBarHeight, &state.MinimumBarHeight, 1)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowEndZones, &state.ShowEndZones)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.PointVisibility, &state.PointVisibility)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.LineInterpolation, &state.LineInterpolation)
-	lenscommon.PreserveKnownTfInt64IfStateNull(plan.MinimumBarHeight, &state.MinimumBarHeight)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.ShowValueLabels, &state.ShowValueLabels)
-	lenscommon.PreserveKnownTfFloat64IfStateNull(plan.FillOpacity, &state.FillOpacity)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.ShowEndZones, &state.ShowEndZones)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.ShowCurrentTimeMarker, &state.ShowCurrentTimeMarker)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.PointVisibility, &state.PointVisibility)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.LineInterpolation, &state.LineInterpolation)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.MinimumBarHeight, &state.MinimumBarHeight)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.ShowValueLabels, &state.ShowValueLabels)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.FillOpacity, &state.FillOpacity)
 }
 
 func alignXYLegendStateFromPlan(plan, state *models.XYLegendModel) {
@@ -185,12 +185,12 @@ func alignXYLegendStateFromPlan(plan, state *models.XYLegendModel) {
 	}
 
 	lenscommon.PreserveNullInt64IfStateEquals(plan.TruncateAfterLines, &state.TruncateAfterLines, 1)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Visibility, &state.Visibility)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Inside, &state.Inside)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Position, &state.Position)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Size, &state.Size)
-	lenscommon.PreserveKnownTfInt64IfStateNull(plan.Columns, &state.Columns)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Alignment, &state.Alignment)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Visibility, &state.Visibility)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Inside, &state.Inside)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Position, &state.Position)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Size, &state.Size)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Columns, &state.Columns)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Alignment, &state.Alignment)
 }
 
 func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
@@ -233,7 +233,7 @@ func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **mod
 	}
 
 	lenscommon.PreserveKnownStringIfStateBlank(plan.Value, &(*state).Value)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.Visible, &(*state).Visible)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Visible, &(*state).Visible)
 }
 
 func cloneAxisTitleModel(model *models.AxisTitleModel) *models.AxisTitleModel {
