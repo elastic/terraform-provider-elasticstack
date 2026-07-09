@@ -68,15 +68,13 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 			return p.Grid, p.Id
 		},
 		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) diag.Diagnostics {
-			return populateLinksPanelFromAPI(ctx, pm, prior, p)
+			return populateLinksPanelFromAPI(pm, prior, p)
 		},
 	)
 }
 
 // ToAPI serializes Terraform links panel state into kbapi.
-func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
-	_ = dashboard
-
+func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	diags.Append(panelkit.RejectConfigJSON(pm, panelType)...)
@@ -110,32 +108,40 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 }
 
 func linksConfigToAPI(cfg models.LinksPanelConfigModel) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config, diag.Diagnostics) {
-	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config
+	var (
+		config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config
+		diags diag.Diagnostics
+	)
 
 	switch {
 	case cfg.ByValue != nil:
-		c0 := linksByValueConfigToAPI(*cfg.ByValue)
+		c0, d := linksByValueConfigToAPI(*cfg.ByValue)
+		diags.Append(d...)
 		if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig0(c0); err != nil {
-			return config, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to build links by-value config", err.Error())}
+			diags.AddError("Failed to build links by-value config", err.Error())
+			return config, diags
 		}
 
 	case cfg.ByReference != nil:
 		c1 := linksByReferenceConfigToAPI(*cfg.ByReference)
 		if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig1(c1); err != nil {
-			return config, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to build links by-reference config", err.Error())}
+			diags.AddError("Failed to build links by-reference config", err.Error())
+			return config, diags
 		}
 
 	default:
-		return config, diag.Diagnostics{diag.NewErrorDiagnostic(
+		diags.AddError(
 			"Invalid links_config",
 			"Exactly one of `by_value` or `by_reference` must be set inside `links_config`.",
-		)}
+		)
+		return config, diags
 	}
 
-	return config, nil
+	return config, diags
 }
 
-func linksByValueConfigToAPI(bv models.LinksPanelByValueModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig0 {
+func linksByValueConfigToAPI(bv models.LinksPanelByValueModel) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig0, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	config := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig0{}
 
 	if typeutils.IsKnown(bv.Layout) {
@@ -150,10 +156,12 @@ func linksByValueConfigToAPI(bv models.LinksPanelByValueModel) kbapi.KibanaHTTPA
 
 	config.Links = make([]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config_0_Links_Item, len(bv.Links))
 	for i, link := range bv.Links {
-		config.Links[i] = linkItemToAPI(link)
+		item, d := linkItemToAPI(link)
+		diags.Append(d...)
+		config.Links[i] = item
 	}
 
-	return config
+	return config, diags
 }
 
 func linksByReferenceConfigToAPI(br models.LinksPanelByReferenceModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig1 {
@@ -169,11 +177,14 @@ func linksByReferenceConfigToAPI(br models.LinksPanelByReferenceModel) kbapi.Kib
 	return config
 }
 
-func linkItemToAPI(item models.LinkItemModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config_0_Links_Item {
-	var out kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config_0_Links_Item
+func linkItemToAPI(item models.LinkItemModel) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config_0_Links_Item, diag.Diagnostics) {
+	var (
+		out   kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config_0_Links_Item
+		diags diag.Diagnostics
+	)
 
 	switch item.Type.ValueString() {
-	case "dashboard":
+	case linkTypeDashboard:
 		link := kbapi.KibanaHTTPAPIsKbnLinkPanelTypeDashboardLink{
 			Destination: item.Destination.ValueString(),
 			Label:       typeutils.OptionalString(item.Label),
@@ -193,9 +204,11 @@ func linkItemToAPI(item models.LinkItemModel) kbapi.KibanaHTTPAPIsKbnDashboardPa
 			link.Options = opts
 		}
 
-		_ = out.FromKibanaHTTPAPIsKbnLinkPanelTypeDashboardLink(link)
+		if err := out.FromKibanaHTTPAPIsKbnLinkPanelTypeDashboardLink(link); err != nil {
+			diags.AddError("Invalid dashboard link", err.Error())
+		}
 
-	case "external":
+	case linkTypeExternal:
 		link := kbapi.KibanaHTTPAPIsKbnLinkTypeExternalLink{
 			Destination: item.Destination.ValueString(),
 			Label:       typeutils.OptionalString(item.Label),
@@ -214,8 +227,10 @@ func linkItemToAPI(item models.LinkItemModel) kbapi.KibanaHTTPAPIsKbnDashboardPa
 			link.Options = opts
 		}
 
-		_ = out.FromKibanaHTTPAPIsKbnLinkTypeExternalLink(link)
+		if err := out.FromKibanaHTTPAPIsKbnLinkTypeExternalLink(link); err != nil {
+			diags.AddError("Invalid external link", err.Error())
+		}
 	}
 
-	return out
+	return out, diags
 }

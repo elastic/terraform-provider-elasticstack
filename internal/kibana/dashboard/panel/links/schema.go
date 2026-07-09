@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,6 +33,8 @@ import (
 // Terraform schema attribute keys reused across the links panel schema and validators.
 const (
 	panelType        = "links"
+	linkTypeDashboard = "dashboard"
+	linkTypeExternal  = "external"
 	attrType         = "type"
 	attrDestination  = "destination"
 	attrLabel        = "label"
@@ -62,15 +63,8 @@ func (linksConfigModeValidator) ValidateObject(_ context.Context, req validator.
 	}
 
 	attrs := req.ConfigValue.Attributes()
-	byValue := attrs["by_value"]
-	byRef := attrs["by_reference"]
-
-	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
-	}
-
-	byValueSet := valueSet(byValue)
-	byRefSet := valueSet(byRef)
+	byValueSet := panelkit.AttrConcreteSet(attrs["by_value"])
+	byRefSet := panelkit.AttrConcreteSet(attrs["by_reference"])
 
 	if byValueSet && byRefSet {
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid links_config", "Exactly one of `by_value` or `by_reference` must be set inside `links_config`, not both.")
@@ -78,7 +72,10 @@ func (linksConfigModeValidator) ValidateObject(_ context.Context, req validator.
 	}
 
 	if !byValueSet && !byRefSet {
-		if byValue != nil && byValue.IsUnknown() || byRef != nil && byRef.IsUnknown() {
+		if byValueAttr := attrs["by_value"]; byValueAttr != nil && byValueAttr.IsUnknown() {
+			return
+		}
+		if byRefAttr := attrs["by_reference"]; byRefAttr != nil && byRefAttr.IsUnknown() {
 			return
 		}
 		resp.Diagnostics.AddAttributeError(req.Path, "Invalid links_config", "Exactly one of `by_value` or `by_reference` must be set inside `links_config`.")
@@ -114,31 +111,24 @@ func (linksItemTypeValidator) ValidateObject(_ context.Context, req validator.Ob
 		return
 	}
 
-	valueIsConcrete := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
-	}
-
 	switch typ.ValueString() {
-	case "dashboard":
-		encodeURL := attrs[attrEncodeURL]
-		if valueIsConcrete(encodeURL) {
+	case linkTypeDashboard:
+		if panelkit.AttrConcreteSet(attrs[attrEncodeURL]) {
 			resp.Diagnostics.AddAttributeError(
 				req.Path.AtName(attrEncodeURL),
 				"Invalid link item",
 				"`encode_url` is not valid for `type = \"dashboard\"`; it is only valid for `type = \"external\"`.",
 			)
 		}
-	case "external":
-		useFilters := attrs[attrUseFilters]
-		useTimeRange := attrs[attrUseTimeRange]
-		if valueIsConcrete(useFilters) {
+	case linkTypeExternal:
+		if panelkit.AttrConcreteSet(attrs[attrUseFilters]) {
 			resp.Diagnostics.AddAttributeError(
 				req.Path.AtName(attrUseFilters),
 				"Invalid link item",
 				"`use_filters` is not valid for `type = \"external\"`; it is only valid for `type = \"dashboard\"`.",
 			)
 		}
-		if valueIsConcrete(useTimeRange) {
+		if panelkit.AttrConcreteSet(attrs[attrUseTimeRange]) {
 			resp.Diagnostics.AddAttributeError(
 				req.Path.AtName(attrUseTimeRange),
 				"Invalid link item",
@@ -223,7 +213,7 @@ func linksItemAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Type of link: `dashboard` for an internal Kibana dashboard link, or `external` for an arbitrary URL.",
 			Required:            true,
 			Validators: []validator.String{
-				stringvalidator.OneOf("dashboard", "external"),
+				stringvalidator.OneOf(linkTypeDashboard, linkTypeExternal),
 			},
 		},
 		attrDestination: schema.StringAttribute{

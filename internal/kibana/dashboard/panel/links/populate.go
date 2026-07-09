@@ -18,7 +18,6 @@
 package links
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 
@@ -63,11 +62,13 @@ func linksPanelPriorTFBranchMismatchesAPI(apiLooksByRef bool, prior *models.Link
 	return false
 }
 
-func populateLinksPanelFromAPI(ctx context.Context, pm, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) diag.Diagnostics {
+func populateLinksPanelFromAPI(pm, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	apiByRef := linksPanelAPIConfigLooksByReference(apiPanel.Config)
+
 	if pm.LinksConfig == nil {
-		cfg, d := linksPanelConfigFromAPIImport(ctx, apiPanel, prior)
+		cfg, d := linksPanelConfigFromAPIImport(apiPanel, apiByRef)
 		diags.Append(d...)
 		pm.LinksConfig = cfg
 		if prior == nil {
@@ -80,10 +81,8 @@ func populateLinksPanelFromAPI(ctx context.Context, pm, prior *models.PanelModel
 		return diags
 	}
 
-	apiByRef := linksPanelAPIConfigLooksByReference(apiPanel.Config)
-
 	if prior != nil && linksPanelPriorTFBranchMismatchesAPI(apiByRef, prior.LinksConfig) {
-		cfg, d := linksPanelConfigFromAPIImport(ctx, apiPanel, prior)
+		cfg, d := linksPanelConfigFromAPIImport(apiPanel, apiByRef)
 		diags.Append(d...)
 		if cfg != nil {
 			*existing = *cfg
@@ -109,13 +108,10 @@ func populateLinksPanelFromAPI(ctx context.Context, pm, prior *models.PanelModel
 }
 
 func linksPanelConfigFromAPIImport(
-	_ context.Context,
 	apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks,
-	tfPanel *models.PanelModel,
+	apiByRef bool,
 ) (*models.LinksPanelConfigModel, diag.Diagnostics) {
-	_ = tfPanel
-
-	if linksPanelAPIConfigLooksByReference(apiPanel.Config) {
+	if apiByRef {
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeLinksConfig1()
 		if err != nil {
 			return nil, diag.Diagnostics{diag.NewErrorDiagnostic("Failed to decode links by-reference config", err.Error())}
@@ -224,6 +220,10 @@ func linksPanelMergeConfig1FromAPI(
 	return diags
 }
 
+// mergeDisplayString merges an optional display string from the API into state. Unlike
+// panelkit.ApplyPresentationFromAPI (which resets to null when the API omits the field),
+// this keeps the prior known value when the API elides the field, so server-side omission
+// of optional presentation fields does not surface as drift against user-authored config.
 func mergeDisplayString(existing *types.String, prior types.String, api *string) {
 	if !typeutils.IsKnown(prior) {
 		*existing = prior
@@ -236,6 +236,7 @@ func mergeDisplayString(existing *types.String, prior types.String, api *string)
 	*existing = prior
 }
 
+// mergeDisplayBool is the bool analogue of mergeDisplayString; see its rationale.
 func mergeDisplayBool(existing *types.Bool, prior types.Bool, api *bool) {
 	if !typeutils.IsKnown(prior) {
 		*existing = prior
@@ -255,11 +256,11 @@ func linkItemFromAPI(
 	// The generated AsXxx methods unmarshal without checking the discriminator,
 	// and both branches have identical JSON shapes, so classify by the wire type.
 	switch discriminator, _ := apiItem.Discriminator(); discriminator {
-	case "dashboardLink":
+	case string(kbapi.DashboardLink):
 		if dashboardLink, err := apiItem.AsKibanaHTTPAPIsKbnLinkPanelTypeDashboardLink(); err == nil {
 			return dashboardLinkFromAPI(dashboardLink, priorItem)
 		}
-	case "externalLink":
+	case string(kbapi.ExternalLink):
 		if externalLink, err := apiItem.AsKibanaHTTPAPIsKbnLinkTypeExternalLink(); err == nil {
 			return externalLinkFromAPI(externalLink, priorItem)
 		}
@@ -272,7 +273,7 @@ func dashboardLinkFromAPI(
 	prior *models.LinkItemModel,
 ) models.LinkItemModel {
 	m := models.LinkItemModel{
-		Type:        types.StringValue("dashboard"),
+		Type:        types.StringValue(linkTypeDashboard),
 		Destination: types.StringValue(api.Destination),
 	}
 
@@ -310,7 +311,7 @@ func externalLinkFromAPI(
 	prior *models.LinkItemModel,
 ) models.LinkItemModel {
 	m := models.LinkItemModel{
-		Type:        types.StringValue("external"),
+		Type:        types.StringValue(linkTypeExternal),
 		Destination: types.StringValue(api.Destination),
 	}
 
