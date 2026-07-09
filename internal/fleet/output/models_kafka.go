@@ -360,8 +360,8 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 			return &comp
 		}(),
 		CompressionLevel: kafkaCompressionLevel(kafkaModel.Compression, kafkaModel.CompressionLevel),
-		ConnectionType: connectionType,
-		Topic:          kafkaModel.Topic.ValueStringPointer(),
+		ConnectionType:   connectionType,
+		Topic:            kafkaModel.Topic.ValueStringPointer(),
 		Partition: func() *kbapi.KibanaHTTPAPIsNewOutputKafkaPartition {
 			if !typeutils.IsKnown(kafkaModel.Partition) {
 				return nil
@@ -473,8 +473,8 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 			return &comp
 		}(),
 		CompressionLevel: kafkaCompressionLevel(kafkaModel.Compression, kafkaModel.CompressionLevel),
-		ConnectionType: connectionType,
-		Topic:          kafkaModel.Topic.ValueStringPointer(),
+		ConnectionType:   connectionType,
+		Topic:            kafkaModel.Topic.ValueStringPointer(),
 		Partition: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaPartition {
 			if !typeutils.IsKnown(kafkaModel.Partition) {
 				return nil
