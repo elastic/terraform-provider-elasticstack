@@ -19,7 +19,6 @@ package sloburnrate_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -140,32 +139,4 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	// Title was known in prior so null-preservation allows it to be updated from API.
 	require.Equal(t, "Recovered", cfg.Title.ValueString())
 	require.True(t, cfg.SloInstanceID.IsNull())
-}
-
-func jsonPanelMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {
-	t.Helper()
-	raw, err := json.Marshal(item)
-	require.NoError(t, err)
-	var m map[string]any
-	require.NoError(t, json.Unmarshal(raw, &m))
-	return m
-}
-
-func mustConfigMap(t *testing.T, v any) map[string]any {
-	t.Helper()
-	cfg, ok := v.(map[string]any)
-	require.True(t, ok, "config should be object")
-	return cfg
-}
-
-func drillsFromConfig(cfg map[string]any) []map[string]any {
-	raw, ok := cfg["drilldowns"].([]any)
-	if !ok || len(raw) == 0 {
-		return nil
-	}
-	out := make([]map[string]any, len(raw))
-	for i, e := range raw {
-		out[i], _ = e.(map[string]any)
-	}
-	return out
 }

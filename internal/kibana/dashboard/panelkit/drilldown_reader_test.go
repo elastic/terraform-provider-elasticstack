@@ -26,8 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func boolPtr(b bool) *bool { return &b }
-
 func TestReadURLDrilldownsFromAPI_nilEntries_returnsNil(t *testing.T) {
 	t.Parallel()
 	result := ReadURLDrilldownsFromAPI(nil, nil, true, false)
@@ -45,7 +43,7 @@ func TestReadURLDrilldownsFromAPI_importMode_defaultValues_produceNull(t *testin
 	// When prior==nil (import) and API values equal the server defaults, both fields should be null
 	// so practitioners can omit them in their config.
 	entries := []URLDrilldownAPIEntry{
-		{URL: "https://example.com", Label: "open", EncodeURL: boolPtr(true), OpenInNewTab: boolPtr(false)},
+		{URL: "https://example.com", Label: "open", EncodeURL: new(true), OpenInNewTab: new(false)},
 	}
 	result := ReadURLDrilldownsFromAPI(entries, nil, true, false)
 	require.Len(t, result, 1)
@@ -59,14 +57,14 @@ func TestReadURLDrilldownsFromAPI_importMode_nonDefaultValues_stored(t *testing.
 	t.Parallel()
 	// When prior==nil (import) and API values differ from defaults, they should be stored.
 	entries := []URLDrilldownAPIEntry{
-		{URL: "https://example.com", Label: "open", EncodeURL: boolPtr(false), OpenInNewTab: boolPtr(true)},
+		{URL: "https://example.com", Label: "open", EncodeURL: new(false), OpenInNewTab: new(true)},
 	}
 	result := ReadURLDrilldownsFromAPI(entries, nil, true, false)
 	require.Len(t, result, 1)
 	assert.False(t, result[0].EncodeURL.IsNull())
-	assert.Equal(t, false, result[0].EncodeURL.ValueBool())
+	assert.False(t, result[0].EncodeURL.ValueBool())
 	assert.False(t, result[0].OpenInNewTab.IsNull())
-	assert.Equal(t, true, result[0].OpenInNewTab.ValueBool())
+	assert.True(t, result[0].OpenInNewTab.ValueBool())
 }
 
 func TestReadURLDrilldownsFromAPI_importMode_nilAPIBools_produceNull(t *testing.T) {
@@ -92,7 +90,7 @@ func TestReadURLDrilldownsFromAPI_refreshMode_priorNullPreserved(t *testing.T) {
 		},
 	}
 	entries := []URLDrilldownAPIEntry{
-		{URL: "https://example.com", Label: "open", EncodeURL: boolPtr(true), OpenInNewTab: boolPtr(false)},
+		{URL: "https://example.com", Label: "open", EncodeURL: new(true), OpenInNewTab: new(false)},
 	}
 	result := ReadURLDrilldownsFromAPI(entries, prior, true, false)
 	require.Len(t, result, 1)
@@ -112,12 +110,12 @@ func TestReadURLDrilldownsFromAPI_refreshMode_knownPriorUpdatedFromAPI(t *testin
 		},
 	}
 	entries := []URLDrilldownAPIEntry{
-		{URL: "https://example.com", Label: "open", EncodeURL: boolPtr(true), OpenInNewTab: boolPtr(false)},
+		{URL: "https://example.com", Label: "open", EncodeURL: new(true), OpenInNewTab: new(false)},
 	}
 	result := ReadURLDrilldownsFromAPI(entries, prior, true, false)
 	require.Len(t, result, 1)
-	assert.Equal(t, true, result[0].EncodeURL.ValueBool())
-	assert.Equal(t, false, result[0].OpenInNewTab.ValueBool())
+	assert.True(t, result[0].EncodeURL.ValueBool())
+	assert.False(t, result[0].OpenInNewTab.ValueBool())
 }
 
 func TestReadURLDrilldownsFromAPI_refreshMode_knownPriorAPIReturnsNil_goesNull(t *testing.T) {
@@ -151,8 +149,8 @@ func TestReadURLDrilldownsFromAPI_moreEntriesThanPrior_newItemsUseImportMode(t *
 		},
 	}
 	entries := []URLDrilldownAPIEntry{
-		{URL: "https://a.com", Label: "a", EncodeURL: boolPtr(true), OpenInNewTab: boolPtr(false)},
-		{URL: "https://b.com", Label: "b", EncodeURL: boolPtr(false), OpenInNewTab: boolPtr(true)},
+		{URL: "https://a.com", Label: "a", EncodeURL: new(true), OpenInNewTab: new(false)},
+		{URL: "https://b.com", Label: "b", EncodeURL: new(false), OpenInNewTab: new(true)},
 	}
 	result := ReadURLDrilldownsFromAPI(entries, prior, true, false)
 	require.Len(t, result, 2)
@@ -161,7 +159,7 @@ func TestReadURLDrilldownsFromAPI_moreEntriesThanPrior_newItemsUseImportMode(t *
 	assert.True(t, result[0].OpenInNewTab.IsNull())
 	// Second entry: no prior → import mode; non-default values stored
 	assert.False(t, result[1].EncodeURL.IsNull())
-	assert.Equal(t, false, result[1].EncodeURL.ValueBool())
+	assert.False(t, result[1].EncodeURL.ValueBool())
 	assert.False(t, result[1].OpenInNewTab.IsNull())
-	assert.Equal(t, true, result[1].OpenInNewTab.ValueBool())
+	assert.True(t, result[1].OpenInNewTab.ValueBool())
 }
