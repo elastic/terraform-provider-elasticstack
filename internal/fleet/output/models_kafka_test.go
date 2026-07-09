@@ -29,30 +29,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func mustKafkaObject(ctx context.Context, t *testing.T, model outputKafkaModel) types.Object {
+	t.Helper()
+
+	obj, diags := types.ObjectValueFrom(ctx, getKafkaAttrTypes(ctx), model)
+	require.False(t, diags.HasError())
+
+	return obj
+}
+
+func baseTestKafkaModel(ctx context.Context) outputKafkaModel {
+	return outputKafkaModel{
+		AuthType:         types.StringValue("user_pass"),
+		BrokerTimeout:    types.Float32Null(),
+		ClientID:         types.StringNull(),
+		Compression:      types.StringNull(),
+		CompressionLevel: types.Int64Null(),
+		ConnectionType:   types.StringNull(),
+		Topic:            types.StringValue("elastic-beats"),
+		Partition:        types.StringNull(),
+		RequiredAcks:     types.Int64Null(),
+		Timeout:          types.Float32Null(),
+		Version:          types.StringNull(),
+		Username:         types.StringValue("kafka_user"),
+		Password:         types.StringValue("kafka_password"),
+		Key:              types.StringNull(),
+		Headers:          types.ListNull(getHeadersAttrTypes(ctx)),
+		Hash:             types.ObjectNull(getHashAttrTypes(ctx)),
+		Random:           types.ObjectNull(getRandomAttrTypes(ctx)),
+		RoundRobin:       types.ObjectNull(getRoundRobinAttrTypes(ctx)),
+		Sasl:             types.ObjectNull(getSaslAttrTypes(ctx)),
+	}
+}
+
 func Test_fromAPIKafkaModel_preservesNullSasl(t *testing.T) {
 	ctx := context.Background()
 
-	kafkaObj := types.ObjectValueMust(getKafkaAttrTypes(ctx), map[string]attr.Value{
-		"auth_type":         types.StringValue("user_pass"),
-		"broker_timeout":    types.Float32Null(),
-		"client_id":         types.StringNull(),
-		"compression":       types.StringNull(),
-		"compression_level": types.Int64Null(),
-		"connection_type":   types.StringNull(),
-		"topic":             types.StringValue("elastic-beats"),
-		"partition":         types.StringNull(),
-		"required_acks":     types.Int64Null(),
-		"timeout":           types.Float32Null(),
-		"version":           types.StringNull(),
-		"username":          types.StringValue("kafka_user"),
-		"password":          types.StringValue("kafka_password"),
-		"key":               types.StringNull(),
-		"headers":           types.ListNull(getHeadersAttrTypes(ctx)),
-		"hash":              types.ObjectNull(getHashAttrTypes(ctx)),
-		"random":            types.ObjectNull(getRandomAttrTypes(ctx)),
-		"round_robin":       types.ObjectNull(getRoundRobinAttrTypes(ctx)),
-		"sasl":              types.ObjectNull(getSaslAttrTypes(ctx)),
-	})
+	kafkaObj := mustKafkaObject(ctx, t, baseTestKafkaModel(ctx))
 
 	model := outputModel{
 		Type:  types.StringValue("kafka"),
@@ -81,29 +94,14 @@ func Test_fromAPIKafkaModel_preservesNullSasl(t *testing.T) {
 func Test_fromAPIKafkaModel_readsConfiguredSasl(t *testing.T) {
 	ctx := context.Background()
 
-	kafkaObj := types.ObjectValueMust(getKafkaAttrTypes(ctx), map[string]attr.Value{
-		"auth_type":         types.StringValue("user_pass"),
-		"broker_timeout":    types.Float32Null(),
-		"client_id":         types.StringNull(),
-		"compression":       types.StringNull(),
-		"compression_level": types.Int64Null(),
-		"connection_type":   types.StringNull(),
-		"topic":             types.StringValue("elastic-beats"),
-		"partition":         types.StringNull(),
-		"required_acks":     types.Int64Null(),
-		"timeout":           types.Float32Null(),
-		"version":           types.StringNull(),
-		"username":          types.StringValue("kafka_user"),
-		"password":          types.StringValue("kafka_password"),
-		"key":               types.StringNull(),
-		"headers":           types.ListNull(getHeadersAttrTypes(ctx)),
-		"hash":              types.ObjectNull(getHashAttrTypes(ctx)),
-		"random":            types.ObjectNull(getRandomAttrTypes(ctx)),
-		"round_robin":       types.ObjectNull(getRoundRobinAttrTypes(ctx)),
-		"sasl": types.ObjectValueMust(getSaslAttrTypes(ctx), map[string]attr.Value{
-			"mechanism": types.StringValue("SCRAM-SHA-256"),
-		}),
+	kafkaModel := baseTestKafkaModel(ctx)
+	saslObj, diags := types.ObjectValueFrom(ctx, getSaslAttrTypes(ctx), outputSaslModel{
+		Mechanism: types.StringValue("SCRAM-SHA-256"),
 	})
+	require.False(t, diags.HasError())
+	kafkaModel.Sasl = saslObj
+
+	kafkaObj := mustKafkaObject(ctx, t, kafkaModel)
 
 	model := outputModel{
 		Type:  types.StringValue("kafka"),
@@ -111,7 +109,7 @@ func Test_fromAPIKafkaModel_readsConfiguredSasl(t *testing.T) {
 	}
 
 	mechanism := kbapi.KibanaHTTPAPIsOutputKafkaSaslMechanismSCRAMSHA256
-	diags := model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputKafka{
+	diags = model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputKafka{
 		Type:     kbapi.KibanaHTTPAPIsOutputKafkaTypeKafka,
 		Name:     "Kafka Output",
 		Hosts:    []string{"kafka:9092"},
