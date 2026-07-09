@@ -50984,10 +50984,10 @@ limitations under the License.
 --------------------------------------------------------------------------------
 
 Dependency : github.com/oapi-codegen/oapi-codegen/v2
-Version: v2.7.1
+Version: v2.7.2
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/oapi-codegen/v2@v2.7.1/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/oapi-codegen/v2@v2.7.2/LICENSE:
 
                                  Apache License
                            Version 2.0, January 2004
