@@ -49,33 +49,13 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                     `json:"label"`
-			OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                     `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		embeddable.Drilldowns = &drilldowns
+		diags.Append(panelkit.InjectDrilldownsJSON(&embeddable, cfg.Drilldowns)...)
 	}
 
 	panel.Config = embeddable
-	return nil
+	return diags
 }
 
 // PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while preserving prior null intent.
