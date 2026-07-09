@@ -83,9 +83,9 @@ func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **mo
 	// Kibana renders the legend by default; preserve the null plan when the
 	// API read-back returns the default "visible" value.
 	lenscommon.PreserveNullStringIfStateEquals(plan.Visibility, &(*state).Visibility, "visible")
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Visibility, &(*state).Visibility)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Size, &(*state).Size)
-	lenscommon.PreserveKnownTfInt64IfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Visibility, &(*state).Visibility)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Size, &(*state).Size)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)
 }
 
 func heatmapLegendEffectivelyUnset(m *models.HeatmapLegendModel) bool {

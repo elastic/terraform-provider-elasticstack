@@ -34,36 +34,6 @@ func PreserveKnownTfValueIfStateNull[T attr.Value](plan T, state *T) {
 	}
 }
 
-// PreserveKnownTfBoolIfStateNull copies plan into *state when plan is known but
-// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
-func PreserveKnownTfBoolIfStateNull(plan types.Bool, state *types.Bool) {
-	PreserveKnownTfValueIfStateNull(plan, state)
-}
-
-// PreserveKnownTfFloat64IfStateNull copies plan into *state when plan is known but
-// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
-func PreserveKnownTfFloat64IfStateNull(plan types.Float64, state *types.Float64) {
-	PreserveKnownTfValueIfStateNull(plan, state)
-}
-
-// PreserveKnownTfStringIfStateNull copies plan into *state when plan is known but
-// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
-func PreserveKnownTfStringIfStateNull(plan types.String, state *types.String) {
-	PreserveKnownTfValueIfStateNull(plan, state)
-}
-
-// PreserveKnownTfInt64IfStateNull copies plan into *state when plan is known but
-// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
-func PreserveKnownTfInt64IfStateNull(plan types.Int64, state *types.Int64) {
-	PreserveKnownTfValueIfStateNull(plan, state)
-}
-
-// PreserveKnownTfListIfStateNull copies plan into *state when plan is known but
-// state is null or unknown. Used to preserve practitioner intent across chart config round-trips.
-func PreserveKnownTfListIfStateNull(plan types.List, state *types.List) {
-	PreserveKnownTfValueIfStateNull(plan, state)
-}
-
 // PreserveKnownStringIfStateBlank copies plan into *state when plan is known and state is null,
 // unknown, or empty. Used to preserve practitioner intent for chart titles and descriptions
 // that the API normalizes to empty values.

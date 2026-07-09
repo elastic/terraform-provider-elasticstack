@@ -180,7 +180,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	}
 	lenscommon.PreserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
 	lenscommon.PreserveKnownStringIfStateBlank(prevTitle, &existing.Title)
-	lenscommon.PreserveKnownTfListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
+	lenscommon.PreserveKnownTfValueIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
 
 	// display_settings: if block is present in state, update from API; otherwise preserve nil.
 	if existing.DisplaySettings != nil && api.DisplaySettings != nil {
@@ -319,5 +319,5 @@ func alignEsql(plan, state *models.EsqlControlConfigModel) {
 	}
 	lenscommon.PreserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
 	lenscommon.PreserveKnownStringIfStateBlank(plan.Title, &state.Title)
-	lenscommon.PreserveKnownTfListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
 }
