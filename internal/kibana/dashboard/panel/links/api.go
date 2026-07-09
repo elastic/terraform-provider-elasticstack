@@ -67,9 +67,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
 			return p.Grid, p.Id
 		},
-		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) diag.Diagnostics {
-			return populateLinksPanelFromAPI(pm, prior, p)
-		},
+		populateLinksPanelFromAPI,
 	)
 }
 
@@ -110,7 +108,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 func linksConfigToAPI(cfg models.LinksPanelConfigModel) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config, diag.Diagnostics) {
 	var (
 		config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks_Config
-		diags diag.Diagnostics
+		diags  diag.Diagnostics
 	)
 
 	switch {

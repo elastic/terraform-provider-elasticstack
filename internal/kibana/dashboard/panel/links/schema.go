@@ -32,16 +32,16 @@ import (
 // Registry panel type key (`links` + `_config` => `links_config` on PanelModel).
 // Terraform schema attribute keys reused across the links panel schema and validators.
 const (
-	panelType        = "links"
+	panelType         = "links"
 	linkTypeDashboard = "dashboard"
 	linkTypeExternal  = "external"
-	attrType         = "type"
-	attrDestination  = "destination"
-	attrLabel        = "label"
-	attrOpenInNewTab = "open_in_new_tab"
-	attrUseFilters   = "use_filters"
-	attrUseTimeRange = "use_time_range"
-	attrEncodeURL    = "encode_url"
+	attrType          = "type"
+	attrDestination   = "destination"
+	attrLabel         = "label"
+	attrOpenInNewTab  = "open_in_new_tab"
+	attrUseFilters    = "use_filters"
+	attrUseTimeRange  = "use_time_range"
+	attrEncodeURL     = "encode_url"
 )
 
 var _ validator.Object = linksConfigModeValidator{}
