@@ -57,7 +57,7 @@ func sebWithHideBorder(v bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddabl
 	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
 }
 
-func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+func withSloDrilldown(encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
 	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
 		d := struct {
 			EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
@@ -67,8 +67,8 @@ func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kb
 			Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
 			Url          string                                                        `json:"url"` //nolint:revive
 		}{
-			Url:          url,
-			Label:        label,
+			Url:          "https://example.com",
+			Label:        "Go",
 			Trigger:      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu,
 			Type:         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown,
 			EncodeUrl:    encodeURL,
@@ -332,7 +332,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	}
 	// Kibana returns default true for encode_url and open_in_new_tab
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+		withSloDrilldown(new(true), new(true)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
@@ -378,13 +378,29 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_nullPreservedWhenPriorNull(t 
 	}
 	// API returns false for both — but prior state is null, so null-preservation applies.
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(false), new(false)),
+		withSloDrilldown(new(false), new(false)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
 	assert.True(t, d.EncodeURL.IsNull(), "encode_url should remain null when prior state was null")
 	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null when prior state was null")
+}
+
+func Test_populateSloErrorBudgetFromAPI_drilldowns_import_normalizesDefaults(t *testing.T) {
+	// On import (prior == nil), API defaults (encode_url=true, open_in_new_tab=true) are
+	// normalized to null so that import round-trips don't create drift for configs that omit them.
+	pm := &models.PanelModel{}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		withSloDrilldown(new(true), new(true)),
+	)
+	diag := PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	require.NotNil(t, pm.SloErrorBudgetConfig)
+	require.Len(t, pm.SloErrorBudgetConfig.Drilldowns, 1)
+	d := pm.SloErrorBudgetConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url=true (default) should be normalized to null on import")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab=true (default) should be normalized to null on import")
 }
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *testing.T) {
@@ -416,7 +432,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 		},
 	}
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+		withSloDrilldown(new(true), new(true)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)

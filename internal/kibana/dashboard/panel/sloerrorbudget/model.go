@@ -93,10 +93,19 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		if prior != nil && prior.SloErrorBudgetConfig != nil {
 			priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
 		}
-		existing.Drilldowns = sloErrorBudgetDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
+		existing.Drilldowns = sloErrorBudgetDrilldownsFromAPI(apiConfig.Drilldowns, prior == nil, priorDrilldowns)
 	}
 	return nil
 }
+
+// sloErrorBudgetEncodeURLDefault and sloErrorBudgetOpenInNewTabDefault are the values Kibana
+// echoes back when these fields are not explicitly set on an SLO error budget drilldown.
+// On import (no prior state), values matching these defaults are normalized to null so that
+// a round-trip import does not create spurious drift for configs that omit the fields.
+const (
+	sloErrorBudgetEncodeURLDefault    = true
+	sloErrorBudgetOpenInNewTabDefault = true
+)
 
 func sloErrorBudgetDrilldownsFromAPI(
 	apiDrilldowns *[]struct {
@@ -107,14 +116,32 @@ func sloErrorBudgetDrilldownsFromAPI(
 		Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
 		Url          string                                                        `json:"url"` //nolint:revive
 	},
+	isImport bool,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-	b, err := json.Marshal(*apiDrilldowns)
-	if err != nil {
-		return nil
+	if !isImport {
+		// Refresh path: JSON-marshal and use the shared null-preserving reader.
+		b, err := json.Marshal(*apiDrilldowns)
+		if err != nil {
+			return nil
+		}
+		return panelkit.ReadDrilldownsFromWireJSON(b, priorDrilldowns)
 	}
-	return panelkit.ReadDrilldownsFromWireJSON(b, priorDrilldowns)
+	// Import path (no prior state): normalize API defaults to null so that an import
+	// round-trip does not create drift for configs that omit optional bool fields.
+	// Kibana echoes encode_url=true and open_in_new_tab=true for SLO error budget
+	// drilldowns even when not explicitly configured.
+	out := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	for i, d := range *apiDrilldowns {
+		out[i] = models.URLDrilldownModel{
+			URL:          types.StringValue(d.Url),
+			Label:        types.StringValue(d.Label),
+			EncodeURL:    panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, sloErrorBudgetEncodeURLDefault),
+			OpenInNewTab: panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, sloErrorBudgetOpenInNewTabDefault),
+		}
+	}
+	return out
 }
