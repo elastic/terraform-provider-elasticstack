@@ -37,8 +37,8 @@ func alignMosaicConfigStateFromPlan(ctx context.Context, plan, state *models.Mos
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
-	lenscommon.PreserveKnownTfFloat64IfStateNull(plan.Sampling, &state.Sampling)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Sampling, &state.Sampling)
 	// Partition group_by/metrics JSON gets re-emitted by Kibana with default keys
 	// (color, rank_by, format defaults). Treat them as semantically equal.
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy, &state.GroupBy)

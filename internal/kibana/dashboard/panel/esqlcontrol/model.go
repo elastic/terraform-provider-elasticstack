@@ -21,6 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -180,7 +181,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	}
 	lenscommon.PreserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
 	lenscommon.PreserveKnownStringIfStateBlank(prevTitle, &existing.Title)
-	lenscommon.PreserveKnownTfListIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
+	lenscommon.PreserveKnownTfValueIfStateNull(prevAvailableOptions, &existing.AvailableOptions)
 
 	// display_settings: if block is present in state, update from API; otherwise preserve nil.
 	if existing.DisplaySettings != nil && api.DisplaySettings != nil {
@@ -212,15 +213,9 @@ func esqlControlPreserveNullIntentFromPrior(prior, existing *models.EsqlControlC
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SingleSelect) {
-		existing.SingleSelect = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.AvailableOptions) {
-		existing.AvailableOptions = types.ListNull(types.StringType)
-	}
+	panelkit.NullPreserveBoolFromPrior(prior.SingleSelect, &existing.SingleSelect)
+	panelkit.NullPreserveStringFromPrior(prior.Title, &existing.Title)
+	panelkit.NullPreserveListFromPrior(prior.AvailableOptions, &existing.AvailableOptions)
 	if prior.DisplaySettings == nil {
 		existing.DisplaySettings = nil
 	}
@@ -319,5 +314,5 @@ func alignEsql(plan, state *models.EsqlControlConfigModel) {
 	}
 	lenscommon.PreserveKnownStringIfStateBlank(plan.EsqlQuery, &state.EsqlQuery)
 	lenscommon.PreserveKnownStringIfStateBlank(plan.Title, &state.Title)
-	lenscommon.PreserveKnownTfListIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.AvailableOptions, &state.AvailableOptions)
 }

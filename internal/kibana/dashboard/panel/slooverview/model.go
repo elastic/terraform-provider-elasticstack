@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,18 +31,6 @@ import (
 )
 
 // Exactly one of Single or Groups must be set.
-//
-// trigger and type are always hardcoded to "on_open_panel_menu" / "url_drilldown" — they
-// are not exposed to users (matching the slo_burn_rate_config drilldowns approach).
-
-type sloDrilldownWireJSON struct {
-	EncodeURL    *bool  `json:"encode_url,omitempty"`
-	Label        string `json:"label"`
-	OpenInNewTab *bool  `json:"open_in_new_tab,omitempty"`
-	Trigger      string `json:"trigger"`
-	Type         string `json:"type"`
-	URL          string `json:"url"`
-}
 
 // BuildConfig writes Terraform panel state into the typed API panel's config union (Grid/Id are set separately).
 func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview) diag.Diagnostics {
@@ -124,7 +113,7 @@ func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.KibanaHTTPAPIsSloSingl
 }
 
 func setDrilldownsOnSingle(api *kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
-	return injectDrilldownsJSON(api, drilldowns)
+	return panelkit.InjectDrilldownsJSON(api, drilldowns)
 }
 
 func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, diag.Diagnostics) {
@@ -163,50 +152,7 @@ func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroup
 }
 
 func setDrilldownsOnGroups(api *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
-	return injectDrilldownsJSON(api, drilldowns)
-}
-
-func injectDrilldownsJSON(api any, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
-	ddsJSON, err := json.Marshal(buildDrilldownsWire(drilldowns))
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal drilldowns", err.Error())}
-	}
-	base, err := json.Marshal(api)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal SLO config", err.Error())}
-	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal(base, &m); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal SLO config", err.Error())}
-	}
-	m["drilldowns"] = ddsJSON
-	merged, err := json.Marshal(m)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to re-marshal SLO config", err.Error())}
-	}
-	if err := json.Unmarshal(merged, api); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to apply drilldowns to SLO config", err.Error())}
-	}
-	return nil
-}
-
-func buildDrilldownsWire(drilldowns []models.URLDrilldownModel) []sloDrilldownWireJSON {
-	result := make([]sloDrilldownWireJSON, len(drilldowns))
-	for i, dd := range drilldowns {
-		result[i] = sloDrilldownWireJSON{
-			URL:     dd.URL.ValueString(),
-			Label:   dd.Label.ValueString(),
-			Trigger: "on_open_panel_menu",
-			Type:    "url_drilldown",
-		}
-		if typeutils.IsKnown(dd.EncodeURL) {
-			result[i].EncodeURL = dd.EncodeURL.ValueBoolPointer()
-		}
-		if typeutils.IsKnown(dd.OpenInNewTab) {
-			result[i].OpenInNewTab = dd.OpenInNewTab.ValueBoolPointer()
-		}
-	}
-	return result
+	return panelkit.InjectDrilldownsJSON(api, drilldowns)
 }
 
 func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
@@ -460,7 +406,7 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 }
 
 func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
-	var wire []sloDrilldownWireJSON
+	var wire []panelkit.URLDrilldownWire
 	if err := json.Unmarshal(b, &wire); err != nil {
 		return nil
 	}

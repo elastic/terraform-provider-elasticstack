@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.19.6
-	github.com/google/go-github/v88 v88.0.0
+	github.com/google/go-github/v89 v89.0.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-uuid v1.0.3
@@ -309,7 +309,7 @@ require (
 	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
-	github.com/oapi-codegen/oapi-codegen/v2 v2.7.1 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.7.2 // indirect
 	github.com/oasdiff/yaml v0.0.9 // indirect
 	github.com/oasdiff/yaml3 v0.0.9 // indirect
 	github.com/oklog/run v1.2.0 // indirect

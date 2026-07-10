@@ -22,19 +22,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const (
-	drilldownURLEncodeURLDefault    = true
-	drilldownURLOpenInNewTabDefault = false
-)
-
 // BuildConfig fills panel.Config from Terraform state.
-func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) {
+func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) diag.Diagnostics {
 	cfg := pm.SloAlertsConfig
 	if cfg == nil {
-		return
+		return nil
 	}
 
 	embeddable := kbapi.KibanaHTTPAPIsSloAlertsEmbeddable{}
@@ -54,31 +50,13 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                   `json:"label"`
-			OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                   `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		embeddable.Drilldowns = &drilldowns
+		diags.Append(panelkit.InjectDrilldownsJSON(&embeddable, cfg.Drilldowns)...)
 	}
 
 	panel.Config = embeddable
+	return diags
 }
 
 // PopulateFromAPI merges API config into practitioner state seeded from tfPanel.
@@ -174,40 +152,14 @@ func readDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	out := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		out[i].URL = types.StringValue(d.Url)
-		out[i].Label = types.StringValue(d.Label)
-
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		if prior == nil {
-			out[i].EncodeURL = panelkit.DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = panelkit.DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
-			continue
-		}
-
-		switch {
-		case prior.EncodeURL.IsNull():
-			out[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			out[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			out[i].EncodeURL = types.BoolNull()
-		}
-
-		switch {
-		case prior.OpenInNewTab.IsNull():
-			out[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			out[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			out[i].OpenInNewTab = types.BoolNull()
+		items[i] = panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-	return out
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }

@@ -62,8 +62,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 				return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{}, diags
 			}
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts{Grid: grid, Id: id, Type: kbapi.SloAlerts}
-			BuildConfig(&pm, &panel)
-			return panel, nil
+			return panel, BuildConfig(&pm, &panel)
 		},
 		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts) error {
 			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts(panel)

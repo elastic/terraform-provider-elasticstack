@@ -195,6 +195,36 @@ func fieldStatsTableByEsqlFromAPI(api kbapi.KibanaHTTPAPIsDataVisualizerFieldSta
 	}
 }
 
+// fieldStatsTableBranchMergeSharedFields holds the shared API fields common to both the dataview
+// and ES|QL branch variants, used by mergeFieldStatsTableBranchFromAPI.
+type fieldStatsTableBranchMergeSharedFields struct {
+	ShowDistributions *bool
+	TimeRange         *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
+	Title             *string
+	Description       *string
+	HideTitle         *bool
+	HideBorder        *bool
+}
+
+// mergeFieldStatsTableBranchFromAPI applies the shared merge logic for both branch variants:
+// ShowDistributions, presentation fields, TimeRange, and null-intent preservation. The
+// setRequiredField callback assigns the branch-specific required field (DataViewID or Query), and
+// preserveNullIntent applies the branch-specific null-intent preservation.
+func mergeFieldStatsTableBranchFromAPI(
+	branch fieldStatsTableBranchNullIntentFields,
+	priorBranch fieldStatsTableBranchNullIntentFields,
+	shared fieldStatsTableBranchMergeSharedFields,
+	setRequiredField func(),
+	preserveNullIntent func(),
+) {
+	setRequiredField()
+	*branch.ShowDistributions = panelkit.PreserveBool(*branch.ShowDistributions, shared.ShowDistributions)
+	panelkit.ApplyPresentationFromAPI(branch.Title, branch.Description, branch.HideTitle, branch.HideBorder,
+		shared.Title, shared.Description, shared.HideTitle, shared.HideBorder)
+	*branch.TimeRange = panelkit.MergeTimeRange(*branch.TimeRange, shared.TimeRange, *priorBranch.TimeRange)
+	preserveNullIntent()
+}
+
 func mergeFieldStatsTableDataviewFromAPI(
 	existing *models.FieldStatsTableConfigModel,
 	prior *models.PanelModel,
@@ -211,13 +241,13 @@ func mergeFieldStatsTableDataviewFromAPI(
 	branch := existing.ByDataview
 	priorBranch := priorCfg.ByDataview
 
-	branch.DataViewID = types.StringValue(api.DataViewId)
-	branch.ShowDistributions = panelkit.PreserveBool(branch.ShowDistributions, api.ShowDistributions)
-	panelkit.ApplyPresentationFromAPI(&branch.Title, &branch.Description, &branch.HideTitle, &branch.HideBorder,
-		api.Title, api.Description, api.HideTitle, api.HideBorder)
-	branch.TimeRange = panelkit.MergeTimeRange(branch.TimeRange, api.TimeRange, priorBranch.TimeRange)
-
-	preserveFieldStatsTableDataviewNullIntent(priorBranch, branch)
+	mergeFieldStatsTableBranchFromAPI(
+		fieldStatsTableBranchNullIntentFields{&branch.ShowDistributions, &branch.Title, &branch.Description, &branch.HideTitle, &branch.HideBorder, &branch.TimeRange},
+		fieldStatsTableBranchNullIntentFields{&priorBranch.ShowDistributions, &priorBranch.Title, &priorBranch.Description, &priorBranch.HideTitle, &priorBranch.HideBorder, &priorBranch.TimeRange},
+		fieldStatsTableBranchMergeSharedFields{api.ShowDistributions, api.TimeRange, api.Title, api.Description, api.HideTitle, api.HideBorder},
+		func() { branch.DataViewID = types.StringValue(api.DataViewId) },
+		func() { preserveFieldStatsTableDataviewNullIntent(priorBranch, branch) },
+	)
 	existing.ByEsql = nil
 	return nil
 }
@@ -238,45 +268,60 @@ func mergeFieldStatsTableEsqlFromAPI(
 	branch := existing.ByEsql
 	priorBranch := priorCfg.ByEsql
 
-	branch.Query = types.StringValue(api.Query.Esql)
-	branch.ShowDistributions = panelkit.PreserveBool(branch.ShowDistributions, api.ShowDistributions)
-	panelkit.ApplyPresentationFromAPI(&branch.Title, &branch.Description, &branch.HideTitle, &branch.HideBorder,
-		api.Title, api.Description, api.HideTitle, api.HideBorder)
-	branch.TimeRange = panelkit.MergeTimeRange(branch.TimeRange, api.TimeRange, priorBranch.TimeRange)
-
-	preserveFieldStatsTableEsqlNullIntent(priorBranch, branch)
+	mergeFieldStatsTableBranchFromAPI(
+		fieldStatsTableBranchNullIntentFields{&branch.ShowDistributions, &branch.Title, &branch.Description, &branch.HideTitle, &branch.HideBorder, &branch.TimeRange},
+		fieldStatsTableBranchNullIntentFields{&priorBranch.ShowDistributions, &priorBranch.Title, &priorBranch.Description, &priorBranch.HideTitle, &priorBranch.HideBorder, &priorBranch.TimeRange},
+		fieldStatsTableBranchMergeSharedFields{api.ShowDistributions, api.TimeRange, api.Title, api.Description, api.HideTitle, api.HideBorder},
+		func() { branch.Query = types.StringValue(api.Query.Esql) },
+		func() { preserveFieldStatsTableEsqlNullIntent(priorBranch, branch) },
+	)
 	existing.ByDataview = nil
 	return nil
+}
+
+// fieldStatsTableBranchNullIntentFields holds pointers to the shared fields of both branch model
+// types (ByDataview and ByEsql) that require REQ-009 null-intent preservation, allowing
+// preserveFieldStatsTableBranchNullIntent to handle both branches without duplicating logic.
+type fieldStatsTableBranchNullIntentFields struct {
+	ShowDistributions *types.Bool
+	Title             *types.String
+	Description       *types.String
+	HideTitle         *types.Bool
+	HideBorder        *types.Bool
+	TimeRange         **models.TimeRangeModel
+}
+
+// preserveFieldStatsTableBranchNullIntent is the shared implementation for null-intent preservation
+// across the dataview and ES|QL branch models.
+func preserveFieldStatsTableBranchNullIntent(prior, existing fieldStatsTableBranchNullIntentFields) {
+	if !typeutils.IsKnown(*prior.ShowDistributions) {
+		*existing.ShowDistributions = types.BoolNull()
+	}
+	panelkit.NullPreservePresentationFromPrior(*prior.Title, *prior.Description, *prior.HideTitle, *prior.HideBorder,
+		existing.Title, existing.Description, existing.HideTitle, existing.HideBorder)
+	if *prior.TimeRange == nil {
+		*existing.TimeRange = nil
+	} else {
+		*existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(*prior.TimeRange, *existing.TimeRange)
+	}
 }
 
 func preserveFieldStatsTableDataviewNullIntent(prior, existing *models.FieldStatsTableByDataviewModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.ShowDistributions) {
-		existing.ShowDistributions = types.BoolNull()
-	}
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
-		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	} else {
-		existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
-	}
+	preserveFieldStatsTableBranchNullIntent(
+		fieldStatsTableBranchNullIntentFields{&prior.ShowDistributions, &prior.Title, &prior.Description, &prior.HideTitle, &prior.HideBorder, &prior.TimeRange},
+		fieldStatsTableBranchNullIntentFields{&existing.ShowDistributions, &existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder, &existing.TimeRange},
+	)
 }
 
 func preserveFieldStatsTableEsqlNullIntent(prior, existing *models.FieldStatsTableByEsqlModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.ShowDistributions) {
-		existing.ShowDistributions = types.BoolNull()
-	}
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
-		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	if prior.TimeRange == nil {
-		existing.TimeRange = nil
-	} else {
-		existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
-	}
+	preserveFieldStatsTableBranchNullIntent(
+		fieldStatsTableBranchNullIntentFields{&prior.ShowDistributions, &prior.Title, &prior.Description, &prior.HideTitle, &prior.HideBorder, &prior.TimeRange},
+		fieldStatsTableBranchNullIntentFields{&existing.ShowDistributions, &existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder, &existing.TimeRange},
+	)
 }

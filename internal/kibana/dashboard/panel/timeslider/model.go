@@ -20,6 +20,7 @@ package timeslider
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -93,15 +94,9 @@ func timeSliderPreserveNullIntentFromPrior(prior, existing *models.TimeSliderCon
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.StartPercentageOfTimeRange) {
-		existing.StartPercentageOfTimeRange = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.EndPercentageOfTimeRange) {
-		existing.EndPercentageOfTimeRange = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.IsAnchored) {
-		existing.IsAnchored = types.BoolNull()
-	}
+	panelkit.NullPreserveFloat32FromPrior(prior.StartPercentageOfTimeRange, &existing.StartPercentageOfTimeRange)
+	panelkit.NullPreserveFloat32FromPrior(prior.EndPercentageOfTimeRange, &existing.EndPercentageOfTimeRange)
+	panelkit.NullPreserveBoolFromPrior(prior.IsAnchored, &existing.IsAnchored)
 }
 
 // BuildConfig writes TF fields into tsPanel.Config.

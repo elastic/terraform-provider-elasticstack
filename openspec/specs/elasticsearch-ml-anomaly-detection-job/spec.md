@@ -257,6 +257,16 @@ The `job_id` attribute SHALL be validated to be between 1 and 64 characters, con
 - WHEN the configuration is applied
 - THEN the provider SHALL return a validation error and SHALL not call the API
 
+### Requirement: results_index_name validation (REQ-023a)
+
+The `results_index_name` attribute SHALL reject configuration values that start with the `custom-` prefix. Elasticsearch adds this prefix to user-defined results index names, and the provider strips it when reading job configuration; including the prefix in configuration causes plan/apply drift.
+
+#### Scenario: results_index_name with custom- prefix rejected
+
+- GIVEN `results_index_name = "custom-ml-logs-error-count"`
+- WHEN the configuration is validated at plan time
+- THEN the provider SHALL return a validation error and SHALL not call the API
+
 ### Requirement: analysis_config.detectors validation (REQ-024)
 
 The `analysis_config.detectors` list SHALL contain at least one element. Each detector `function` SHALL be one of the enumerated values. Each detector `exclude_frequent` SHALL be one of: `all`, `none`, `by`, `over`. Each detector `custom_rules[*].actions` value SHALL be one of: `skip_result`, `skip_model_update`. Each detector `custom_rules[*].conditions[*].applies_to` SHALL be one of: `actual`, `typical`, `diff_from_typical`, `time`. Each detector `custom_rules[*].conditions[*].operator` SHALL be one of: `gt`, `gte`, `lt`, `lte`. Each detector `custom_rules[*].scope` entry SHALL have a `filter_id` that is at least 1 character. Each detector `custom_rules[*].scope[*].filter_type` SHALL be one of: `include`, `exclude`. Each detector `custom_rules` entry SHALL have either a non-empty `scope` or at least one `conditions` entry; both may be set simultaneously. When both `scope` and `conditions` are unknown at plan time, the validation SHALL be skipped (to avoid false positives).

@@ -49,33 +49,13 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                     `json:"label"`
-			OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                     `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		embeddable.Drilldowns = &drilldowns
+		diags.Append(panelkit.InjectDrilldownsJSON(&embeddable, cfg.Drilldowns)...)
 	}
 
 	panel.Config = embeddable
-	return nil
+	return diags
 }
 
 // PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while preserving prior null intent.
@@ -144,9 +124,7 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SloInstanceID) {
-		existing.SloInstanceID = types.StringNull()
-	}
+	panelkit.NullPreserveStringFromPrior(prior.SloInstanceID, &existing.SloInstanceID)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
@@ -168,40 +146,14 @@ func readSloBurnRateDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
-		}
-
-		// Determine prior state for this drilldown (if it exists at this index).
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		// encode_url: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		// open_in_new_tab: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
+		items[i] = panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-
-	return result
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }

@@ -24,11 +24,6 @@ import (
 
 const valueAuto = "auto"
 
-const (
-	drilldownURLEncodeURLDefault    = true
-	drilldownURLOpenInNewTabDefault = false
-)
-
 func columnSettingObjectType() types.ObjectType {
 	return types.ObjectType{
 		AttrTypes: map[string]attr.Type{

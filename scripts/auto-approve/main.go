@@ -25,7 +25,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 )
 
 // jsonKeyPullRequest is the JSON/log key used for pull request payload entries.

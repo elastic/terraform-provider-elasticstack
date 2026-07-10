@@ -101,9 +101,11 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.True(t, dd0.EncodeURL.IsNull())
 	require.True(t, dd0.OpenInNewTab.IsNull())
 
+	// encode_url=true and open_in_new_tab=false both equal the Kibana server defaults,
+	// so import-mode null-preservation returns null for both (aligned with sloalerts behavior).
 	dd1 := pm.SloBurnRateConfig.Drilldowns[1]
-	require.True(t, dd1.EncodeURL.ValueBool())
-	require.False(t, dd1.OpenInNewTab.ValueBool())
+	require.True(t, dd1.EncodeURL.IsNull())
+	require.True(t, dd1.OpenInNewTab.IsNull())
 
 	item1, d2 := handler.ToAPI(pm, nil)
 	require.False(t, d2.HasError(), "%s", d2)
@@ -121,8 +123,9 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu), ddB[0]["trigger"])
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown), ddB[0]["type"])
 
-	require.Equal(t, true, drillsFromConfig(cfg1)[1]["encode_url"])
-	require.Equal(t, false, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
+	// null state → omit from API payload (no encode_url or open_in_new_tab keys in output).
+	require.Nil(t, drillsFromConfig(cfg1)[1]["encode_url"])
+	require.Nil(t, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
 }
 
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {

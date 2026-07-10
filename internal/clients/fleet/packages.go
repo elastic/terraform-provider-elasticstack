@@ -136,6 +136,35 @@ func InstallKibanaAssets(ctx context.Context, client *Client, name, version stri
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
+// installSpaceDeleteRejectedMsg is the stable substring of the Fleet 9.5+
+// error returned when DELETE .../kibana_assets targets the package's install
+// space while the package is still installed in other spaces. It must be kept
+// in sync with the upstream Fleet wording.
+const installSpaceDeleteRejectedMsg = "space where the package was installed"
+
+func normalizeDiagnosticText(s string) string {
+	return strings.Join(strings.Fields(s), " ")
+}
+
+// ContainsInstallSpaceDeleteRejection reports whether diags contains an error
+// diagnostic whose Detail or Summary contains the Fleet install-space
+// rejection message. The comparison normalises whitespace so embedded newlines
+// in JSON-serialised response bodies do not prevent matching.
+func ContainsInstallSpaceDeleteRejection(diags diag.Diagnostics) bool {
+	for _, d := range diags {
+		if d.Severity() != diag.SeverityError {
+			continue
+		}
+		if strings.Contains(normalizeDiagnosticText(d.Detail()), installSpaceDeleteRejectedMsg) {
+			return true
+		}
+		if strings.Contains(normalizeDiagnosticText(d.Summary()), installSpaceDeleteRejectedMsg) {
+			return true
+		}
+	}
+	return false
+}
+
 // forceQueryParamEditor returns a RequestEditorFn that appends ?force=<bool> to
 // the request URL. Used for generated endpoints that do not expose a typed force
 // parameter (e.g. the kibana_assets DELETE endpoint).

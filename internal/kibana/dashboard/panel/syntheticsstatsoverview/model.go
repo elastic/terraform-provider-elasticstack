@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -37,29 +36,9 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                                                   `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                                  `json:"label"`
-			OpenInNewTab *bool                                                                                   `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-			Url          string                                                                                  `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		panel.Config.Drilldowns = &drilldowns
+		diags.Append(panelkit.InjectDrilldownsJSON(&panel.Config, cfg.Drilldowns)...)
 	}
 
 	if cfg.Filters != nil {
@@ -116,7 +95,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 			}
 		}
 	}
-	return nil
+	return diags
 }
 
 // PopulateFromAPI reads back a synthetics stats overview panel from the API response.
@@ -211,38 +190,16 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
 		return nil
 	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
+	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
-		}
-
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
+		items[i] = panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
 	}
-	return result
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
 
 func readSyntheticsStatsOverviewFiltersFromAPI(

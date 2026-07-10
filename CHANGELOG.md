@@ -1,9 +1,27 @@
 ## [Unreleased]
 
+### Breaking changes
+
+`options_list_control_config` and `range_slider_control_config` are restructured from flat attribute blocks into a two-branch union: `by_field {}` (the existing data-view-field variant) and `by_esql {}` (new: ES|QL query variant). Exactly one of the two must be set. Existing configurations must wrap their current attributes in `by_field { ... }`. A Plugin Framework state upgrader (schema v0 -> v1) automatically migrates existing state on the next `terraform apply`; no manual state surgery is required, but `.tf` files must be updated to the new nested shape afterwards.
+
 ### Changes
 
-- Fix `elasticstack_elasticsearch_security_role` (and data source) read failure on Elasticsearch 9.5+ by fetching the role via raw transport and decoding `global` as opaque JSON, and strip the server-injected empty `data_source: []` default from state. ([#4059](https://github.com/elastic/terraform-provider-elasticstack/pull/4059))
-- Fix `elasticstack_kibana_security_entity_store` flakiness: Delete waits for uninstall completion, Read tolerates the `installing` state, and install/entity/entity-link create retry on transient HTTP 500 within the configured `timeouts`. ([#4062](https://github.com/elastic/terraform-provider-elasticstack/pull/4062))
+- add links panel support to Kibana dashboard resource ([#4078](https://github.com/elastic/terraform-provider-elasticstack/pull/4078))
+- Reject ML anomaly detection job `results_index_name` values starting with `custom-` to prevent plan/apply drift. ([#4107](https://github.com/elastic/terraform-provider-elasticstack/pull/4107))
+- Fall back to full package uninstall when Fleet 9.5 rejects DeleteKibanaAssets in the install space during integration destroy. ([#4073](https://github.com/elastic/terraform-provider-elasticstack/pull/4073))
+- Add `field_stats_table_config` typed panel block to `elasticstack_kibana_dashboard` ([#4074](https://github.com/elastic/terraform-provider-elasticstack/pull/4074))
+- Fix `elasticstack_fleet_integration_policy` post-apply inconsistency errors on Elastic Stack 9.5 caused by Fleet injecting server-managed `data_stream.*` keys into stream vars and populating the `defaults` block. ([#4055](https://github.com/elastic/terraform-provider-elasticstack/pull/4055))
+- Fix Security Entity Store flakiness — wait for uninstall/started state, retry transient HTTP 500s on install/link/entity create, and isolate acceptance tests. ([#4062](https://github.com/elastic/terraform-provider-elasticstack/pull/4062))
+- Add `elasticstack_fleet_agentless_policy` resource for managing Fleet agentless policies (Elastic Cloud Hosted / Serverless, Kibana 9.3.0+). ([#4034](https://github.com/elastic/terraform-provider-elasticstack/pull/4034))
+- Fix elasticstack_elasticsearch_security_role read failure on Elasticsearch 9.5+ by fetching the role via raw transport and decoding the global privilege object as opaque JSON, and strip the server-injected empty data_source array from state. ([#4059](https://github.com/elastic/terraform-provider-elasticstack/pull/4059))
+- Add ES|QL-sourced variant support for `options_list_control` and `range_slider_control` dashboard panels via new `by_field`/`by_esql` branches. ([#4039](https://github.com/elastic/terraform-provider-elasticstack/pull/4039))
+- Fixes "Provider produced inconsistent result after apply" for `elasticstack_kibana_dashboard` on Kibana 9.5+ when the `description` attribute is omitted. The Kibana 9.5 dashboard API now echoes back `description: ""` instead of omitting the field; the provider now preserves `null` in state when the practitioner omitted `description`, while still preserving an explicit `description = ""`. No action required for existing configurations. ([#4057](https://github.com/elastic/terraform-provider-elasticstack/pull/4057))
+- Add `ml_anomaly_charts_config` panel type support to `elasticstack_kibana_dashboard`. ([#4037](https://github.com/elastic/terraform-provider-elasticstack/pull/4037))
+- Added `aiops_log_rate_analysis_config`, `aiops_pattern_analysis_config`, and `aiops_change_point_chart_config` typed panel blocks to `elasticstack_kibana_dashboard`, enabling AIOps panels with typed validation and drift-safe planning instead of raw `config_json`. ([#4026](https://github.com/elastic/terraform-provider-elasticstack/pull/4026))
+- Add typed `apm_service_map_config` block to `elasticstack_kibana_dashboard` resource ([#4025](https://github.com/elastic/terraform-provider-elasticstack/pull/4025))
+- Add `ml_anomaly_swimlane_config` and `ml_single_metric_viewer_config` typed panel blocks to `elasticstack_kibana_dashboard`. ([#4017](https://github.com/elastic/terraform-provider-elasticstack/pull/4017))
+- Fix perpetual diff and apply crash for component template settings and alias routing drift ([#3998](https://github.com/elastic/terraform-provider-elasticstack/pull/3998))
+- Prevent "Provider produced inconsistent result after apply" errors when optional string attributes (chunk_size, max_snapshot_bytes_per_sec, max_restore_bytes_per_sec) are set to empty string in the snapshot repository resource. ([#3832](https://github.com/elastic/terraform-provider-elasticstack/pull/3832))
 - Fix Fleet agent policy create when policy_id is omitted and add plan-time validation for explicit policy_id values ([#3937](https://github.com/elastic/terraform-provider-elasticstack/pull/3937))
 - Add `elasticstack_kibana_tag` resource and `elasticstack_kibana_tags` data source for managing Kibana tags and listing tags in a space. ([#3921](https://github.com/elastic/terraform-provider-elasticstack/pull/3921))
 - Fix component and index template state upgrade when SDK stored empty strings for mappings, settings, or metadata. ([#3914](https://github.com/elastic/terraform-provider-elasticstack/pull/3914))

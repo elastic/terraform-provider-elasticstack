@@ -121,7 +121,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
 
 	if prior.AiopsChangePointChartConfig != nil {
-		preserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
+		aiopsChangePointChartPreserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
 	}
 	return nil
 }
@@ -144,25 +144,15 @@ func aiopsChangePointChartConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsChang
 	return cfg
 }
 
-func preserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
+func aiopsChangePointChartPreserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.AggregationFunction) {
-		existing.AggregationFunction = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SplitField) {
-		existing.SplitField = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Partitions) {
-		existing.Partitions = types.SetNull(types.StringType)
-	}
-	if !typeutils.IsKnown(prior.MaxSeriesToPlot) {
-		existing.MaxSeriesToPlot = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.ViewType) {
-		existing.ViewType = types.StringNull()
-	}
+	panelkit.NullPreserveStringFromPrior(prior.AggregationFunction, &existing.AggregationFunction)
+	panelkit.NullPreserveStringFromPrior(prior.SplitField, &existing.SplitField)
+	panelkit.NullPreserveSetFromPrior(prior.Partitions, &existing.Partitions)
+	panelkit.NullPreserveFloat32FromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
+	panelkit.NullPreserveStringFromPrior(prior.ViewType, &existing.ViewType)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {
