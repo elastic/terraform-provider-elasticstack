@@ -18,10 +18,18 @@
 package clients
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// versionFetcher is a function that retrieves the server's raw version string
+// and build flavor. It is used by the shared enforceMinVersion and
+// enforceVersionCheck helpers to decouple the fetch mechanism from the
+// version-constraint logic.
+type versionFetcher func(ctx context.Context) (rawVersion, flavor string, diags fwdiag.Diagnostics)
 
 // applyVersionConstraint evaluates check against rawVersion, short-circuiting
 // to true for serverless clusters. It is the shared core of EnforceMinVersion
@@ -38,4 +46,32 @@ func applyVersionConstraint(
 		return false, diagutil.FrameworkDiagFromError(err)
 	}
 	return check(sv), nil
+}
+
+// enforceMinVersion implements the shared body of EnforceMinVersion for both
+// scoped client types. It short-circuits to true when minVersion is nil, then
+// delegates to the provided fetch function to obtain the server version, and
+// finally applies the GreaterThanOrEqual constraint via applyVersionConstraint.
+func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch versionFetcher) (bool, fwdiag.Diagnostics) {
+	if minVersion == nil {
+		return true, nil
+	}
+	rawVersion, flavor, diags := fetch(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+	return applyVersionConstraint(flavor, rawVersion, func(sv *version.Version) bool {
+		return sv.GreaterThanOrEqual(minVersion)
+	})
+}
+
+// enforceVersionCheck implements the shared body of EnforceVersionCheck for both
+// scoped client types. It delegates to the provided fetch function to obtain the
+// server version and then applies the caller-supplied check via applyVersionConstraint.
+func enforceVersionCheck(ctx context.Context, check func(*version.Version) bool, fetch versionFetcher) (bool, fwdiag.Diagnostics) {
+	rawVersion, flavor, diags := fetch(ctx)
+	if diags.HasError() {
+		return false, diags
+	}
+	return applyVersionConstraint(flavor, rawVersion, check)
 }
