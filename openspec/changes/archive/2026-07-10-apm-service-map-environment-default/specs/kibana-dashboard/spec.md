@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: APM service map panel support (REQ-049) — ENVIRONMENT_ALL server-default suppression
+### Requirement: APM service map panel support (REQ-049)
 
 The provider SHALL treat `environment = "ENVIRONMENT_ALL"` returned by the Kibana API as a
 server-injected default (equivalent to the field being absent) and suppress it to null in state

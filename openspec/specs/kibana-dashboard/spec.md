@@ -2442,139 +2442,68 @@ The `ml_single_metric_viewer_config` block SHALL conflict with all other typed p
 
 ### Requirement: APM service map panel support (REQ-049)
 
-The `elasticstack_kibana_dashboard` resource SHALL support `type = "apm_service_map"` panels through a typed `apm_service_map_config` block. The block exposes the full flat configuration surface of `KibanaHTTPAPIsApmServiceMapEmbeddable`.
+The provider SHALL treat `environment = "ENVIRONMENT_ALL"` returned by the Kibana API as a
+server-injected default (equivalent to the field being absent) and suppress it to null in state
+when the practitioner's configuration does not explicitly set `environment`. This suppression
+applies on both the normal read path and the import path.
 
-#### Schema attributes
+Background: Kibana 9.5+ injects `environment = "ENVIRONMENT_ALL"` into APM service-map panel
+configs when the practitioner omits the field. Because `"ENVIRONMENT_ALL"` means "no environment
+filter" — identical in effect to the field being absent — storing it in state against a config
+that omits `environment` causes spurious drift on every refresh and import.
 
-All attributes within `apm_service_map_config` are optional unless stated otherwise.
+#### Read-path suppression
 
-**Service selectors** (all optional strings — freely combinable, no mutual exclusion):
-- `environment` — APM service environment (e.g. `"production"`).
-- `service_name` — Focus the map on a specific service.
-- `service_group_id` — Reference to a saved APM service group (opaque string; no foreign-key validation by the provider).
+On read (post-create/update refresh and standalone `terraform refresh`), the provider SHALL continue to apply REQ-049/REQ-009 null-preservation semantics for `apm_service_map_config.environment`: when the prior state has `environment` null or unknown, state SHALL keep it null regardless of the API value (including `"ENVIRONMENT_ALL"`).
+When the prior state has a known `environment` value, the provider SHALL leave `environment` as returned by the API.
 
-**Query**:
-- `kuery` — KQL query string (plain `StringAttribute`; always KQL, not an object).
+#### Import-path suppression
 
-**Layout**:
-- `map_orientation` — String enum: `horizontal` or `vertical`. The resource SHALL return an error diagnostic at plan time when a value outside this set is supplied.
-- `sync_with_dashboard_filters` — Boolean; when null, the attribute is omitted from the API payload.
+On import (no prior state), when the API returns `environment = "ENVIRONMENT_ALL"`, the provider
+SHALL set `environment` to null in the imported state. Any other `environment` value SHALL be
+imported verbatim.
 
-**Filter lists** (each a set of validated strings; order does not affect plan stability):
-- `alert_status_filter` — Set of strings; allowed values: `active`, `delayed`, `recovered`, `untracked`.
-- `anomaly_severity_filter` — Set of strings; allowed values: `low`, `warning`, `minor`, `major`, `critical`, `unknown`.
-- `connection_filter` — Set of strings; allowed values: `connected`, `orphaned`.
-- `slo_status_filter` — Set of strings; allowed values: `degrading`, `healthy`, `noData`, `violated`.
+The rationale is that `"ENVIRONMENT_ALL"` is not a meaningful configuration choice — it is the
+server's representation of "unfiltered". Importing it would produce an immediate diff against any
+configuration that omits `environment`, breaking `ImportStateVerify` and forcing practitioners to
+add a redundant `environment = "ENVIRONMENT_ALL"` to their configs.
 
-Invalid values for any filter set attribute SHALL produce an error diagnostic at plan time.
+#### Explicit `environment = "ENVIRONMENT_ALL"` is preserved
 
-**Presentation passthroughs** (reuse `panelkit.PanelPresentationAttributes()`):
-- `title`, `description`, `hide_title`, `hide_border`
+When a practitioner explicitly sets `environment = "ENVIRONMENT_ALL"` in their configuration, the
+prior state SHALL have a known value for `environment`. The suppression condition (prior
+`environment` is null or unknown) SHALL NOT fire, so the value SHALL be preserved in state without
+modification. A subsequent plan against that configuration SHALL show no changes.
 
-**Time range**:
-- `time_range` — Optional sub-block `{ from: string, to: string, mode: optional string ("absolute" | "relative") }`.
+#### Scenario: Server default suppressed when environment not configured
 
-#### Write (ToAPI) behaviour
+- GIVEN a panel with `type = "apm_service_map"` and `apm_service_map_config` that does not set
+  `environment`
+- WHEN Kibana 9.5+ returns `environment = "ENVIRONMENT_ALL"` in the API response
+- THEN the provider SHALL set `environment` to null in state
+- AND a subsequent plan against a configuration that omits `environment` SHALL show no changes
 
-When `apm_service_map_config` is set, the provider SHALL:
-- Set `type` to `"apm_service_map"` in the API panel payload.
-- Map each set attribute that is non-null and non-empty to the corresponding slice in the `config` object; omit null/empty sets from the payload.
-- Map scalar optional attributes (strings, bools) only when non-null.
-- Map `time_range` only when the block is non-null.
+#### Scenario: Import with server-injected ENVIRONMENT_ALL
 
-`config_json` SHALL NOT be accepted for `apm_service_map` panels; the registry guard (REQ-044A) SHALL return an error diagnostic if `config_json` is set on a panel with `type = "apm_service_map"`. The `apm_service_map` panel type SHALL be managed exclusively through the typed `apm_service_map_config` block.
+- GIVEN an APM service-map dashboard panel whose Terraform config does not set `environment`
+- WHEN the panel is imported from Kibana 9.5+ (which returns `environment = "ENVIRONMENT_ALL"`)
+- THEN the imported state SHALL have `environment = null`
+- AND `ImportStateVerify` SHALL pass against a configuration that omits `environment`
 
-#### Read (FromAPI) behaviour and null-preservation
+#### Scenario: Explicit ENVIRONMENT_ALL is preserved
 
-On read, the provider SHALL apply REQ-009 null-preservation for every optional field:
-- When prior state had a field null, the provider SHALL keep it null in state even if the API returns a value.
-- When prior state had a field set, the provider SHALL update it from the API response.
-- For filter set attributes: when prior state had the attribute null, the provider SHALL keep it null regardless of the API response. When prior state had the attribute set (including empty set), the provider SHALL reconstruct the `types.Set` from the API slice; the set implementation guarantees that element order is ignored for plan comparison, so re-ordered API responses SHALL produce no plan diff.
-- `time_range` — when prior state had it null and the API echoes a value (e.g. the dashboard-level time range), state SHALL remain null.
-- On import (no prior state): when the API returns a non-empty config object, populate all non-null API fields into state; when the API returns a nil or empty config, leave `apm_service_map_config` null in state.
-
-The `apm_service_map_config` block SHALL be mutually exclusive with all other typed panel config blocks and with `config_json`. The registry-driven mutual-exclusion guard (REQ-044A) enforces this.
-
-#### Scenarios
-
-##### Scenario: Create apm_service_map panel with environment selector
-
-- GIVEN a dashboard configuration with a panel of `type = "apm_service_map"` and `apm_service_map_config = { environment = "production" }`
-- WHEN the resource creates the dashboard
-- THEN the API payload SHALL include `"config": { "environment": "production" }` in the panel body
+- GIVEN a panel with `apm_service_map_config.environment = "ENVIRONMENT_ALL"` explicitly set in
+  the configuration
+- WHEN apply runs and Kibana returns `environment = "ENVIRONMENT_ALL"` in the API response
+- THEN the provider SHALL keep `environment = "ENVIRONMENT_ALL"` in state (suppression SHALL NOT
+  apply)
 - AND a subsequent plan SHALL show no changes
 
-##### Scenario: Create apm_service_map panel with service_name selector
+#### Scenario: Non-default environment values are preserved
 
-- GIVEN a dashboard configuration with `apm_service_map_config = { service_name = "checkout" }`
-- WHEN the resource creates the dashboard
-- THEN the API payload SHALL include `"config": { "service_name": "checkout" }` in the panel body
-- AND a subsequent plan SHALL show no changes
-
-##### Scenario: Create apm_service_map panel with service_group_id selector
-
-- GIVEN a dashboard configuration with `apm_service_map_config = { service_group_id = "group-abc" }`
-- WHEN the resource creates the dashboard
-- THEN the API payload SHALL include `"config": { "service_group_id": "group-abc" }` in the panel body
-
-##### Scenario: Create apm_service_map panel with all three service selectors combined
-
-- GIVEN a dashboard configuration with `apm_service_map_config = { environment = "staging", service_name = "checkout", service_group_id = "group-abc" }`
-- WHEN the resource creates the dashboard
-- THEN all three fields SHALL appear in the API payload
-- AND no mutual-exclusion error SHALL be returned
-
-##### Scenario: Filter sets with multiple values and order independence
-
-- GIVEN a dashboard with `apm_service_map_config.alert_status_filter = ["active", "delayed"]`
-- WHEN the resource reads back the dashboard and the API returns `["delayed", "active"]` (reversed order)
-- THEN the provider SHALL produce no plan diff
-- AND state SHALL contain a set with values `"active"` and `"delayed"`
-
-##### Scenario: All filter sets populated
-
-- GIVEN a panel with all four filter attributes set with multiple valid enum values
-- WHEN the resource creates the dashboard and reads it back
-- THEN each filter set in state SHALL contain the expected values
-- AND a subsequent plan SHALL show no changes
-
-##### Scenario: Invalid alert_status_filter value rejected
-
-- GIVEN a panel with `apm_service_map_config = { alert_status_filter = ["invalid_value"] }`
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the value is not an allowed enum member
-
-##### Scenario: Invalid map_orientation value rejected
-
-- GIVEN a panel with `apm_service_map_config = { map_orientation = "diagonal" }`
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the value must be `horizontal` or `vertical`
-
-##### Scenario: config_json rejected for apm_service_map panel
-
-- GIVEN a panel with `type = "apm_service_map"` and `config_json` also set
-- WHEN Terraform plans the configuration
-- THEN the resource SHALL return an error diagnostic indicating `config_json` is unsupported for the `apm_service_map` panel type
-
-##### Scenario: Null-preservation on optional scalars
-
-- GIVEN a prior state where `apm_service_map_config.environment` is null
-- WHEN the API read returns an `environment` value
-- THEN state SHALL keep `environment` null
-- AND the subsequent plan SHALL show no changes
-
-##### Scenario: Import null-preservation
-
-- GIVEN an existing dashboard with `apm_service_map` panels that have API-side defaults for optional fields
-- WHEN the resource imports the dashboard
-- THEN optional fields not explicitly configured SHALL remain null in state
-- AND a subsequent plan against a configuration that omits those fields SHALL show no changes
-
-##### Scenario: Full configuration round-trip
-
-- GIVEN an `apm_service_map_config` block with every attribute populated
-- WHEN the resource creates the dashboard and reads it back
-- THEN all attribute values SHALL appear in state
+- GIVEN a panel with `apm_service_map_config.environment = "production"`
+- WHEN apply runs and Kibana returns `environment = "production"` in the API response
+- THEN state SHALL contain `environment = "production"`
 - AND a subsequent plan SHALL show no changes
 
 ### Requirement: AIOps log rate analysis panel behavior (REQ-050)
