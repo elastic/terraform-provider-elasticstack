@@ -30,16 +30,20 @@
 
 ## 4. Acceptance tests
 
-- [ ] 4.1 Re-run the four failing acceptance tests against a 9.5.0-SNAPSHOT stack to confirm the
+- [x] 4.1 Re-run the four failing acceptance tests against a 9.5.0-SNAPSHOT stack to confirm the
   provider-side suppression alone resolves the `ImportStateVerify` mismatch:
   - `TestAccDashboardPanelApmServiceMap_allFilters`
   - `TestAccDashboardPanelApmServiceMap_noConfig`
   - `TestAccDashboardPanelApmServiceMap_serviceGroupIdOnly`
   - `TestAccDashboardPanelApmServiceMap_serviceNameOnly`
 
-- [ ] 4.2 If any test still fails after suppression (e.g. import initialization still surfaces
+  All four passed against a live 9.5.0-SNAPSHOT stack with no `acc_test.go` changes required.
+
+- [x] 4.2 If any test still fails after suppression (e.g. import initialization still surfaces
   `environment`), add `ImportStateVerifyIgnore: []string{"panels.0.apm_service_map_config.environment"}`
   to the import step as a backstop — but prefer fixing the import-path suppression first (task 2.1).
+
+  Not needed: all four tests passed without a backstop, so `acc_test.go` was left unchanged.
 
 ## 5. Build and validate
 
