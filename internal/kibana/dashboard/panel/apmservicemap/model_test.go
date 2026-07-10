@@ -154,6 +154,27 @@ func TestPopulateFromAPI_import_withFields(t *testing.T) {
 }
 
 func TestPopulateFromAPI_environmentServerDefault_readPath(t *testing.T) {
+	t.Run("prior null environment bootstrapped from API ENVIRONMENT_ALL stays null", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringNull(),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
 	t.Run("prior null API ENVIRONMENT_ALL stays null", func(t *testing.T) {
 		pm := &models.PanelModel{
 			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
@@ -179,7 +200,7 @@ func TestPopulateFromAPI_environmentServerDefault_readPath(t *testing.T) {
 		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
 	})
 
-	t.Run("prior production API ENVIRONMENT_ALL preserved", func(t *testing.T) {
+	t.Run("prior production API ENVIRONMENT_ALL reflects API value", func(t *testing.T) {
 		pm := &models.PanelModel{}
 		prior := &models.PanelModel{
 			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
@@ -223,7 +244,7 @@ func TestPopulateFromAPI_environmentServerDefault_readPath(t *testing.T) {
 }
 
 func TestPopulateFromAPI_environmentServerDefault_importPath(t *testing.T) {
-	t.Run("API ENVIRONMENT_ALL imported as null", func(t *testing.T) {
+	t.Run("API only ENVIRONMENT_ALL yields nil config block", func(t *testing.T) {
 		pm := &models.PanelModel{}
 		env := "ENVIRONMENT_ALL"
 		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
@@ -234,8 +255,25 @@ func TestPopulateFromAPI_environmentServerDefault_importPath(t *testing.T) {
 		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
 		require.False(t, diags.HasError(), "%v", diags)
 
+		assert.Nil(t, pm.ApmServiceMapConfig)
+	})
+
+	t.Run("API ENVIRONMENT_ALL with other fields imported with null environment", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		env := "ENVIRONMENT_ALL"
+		serviceName := "checkout"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+				ServiceName: &serviceName,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
 		require.NotNil(t, pm.ApmServiceMapConfig)
 		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+		assert.Equal(t, "checkout", pm.ApmServiceMapConfig.ServiceName.ValueString())
 	})
 
 	t.Run("API nil environment imported as null", func(t *testing.T) {
