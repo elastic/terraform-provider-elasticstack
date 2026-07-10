@@ -98,7 +98,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	if !apmServiceMapConfigHasAnyField(cfg) {
+	if !apmServiceMapConfigHasAnyField(cfg, false) {
 		pm.ApmServiceMapConfig = nil
 		return nil
 	}
@@ -145,7 +145,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 }
 
 func apmServiceMapConfigFromAPIImport(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable, suppressEnvironmentDefault bool) *models.ApmServiceMapConfigModel {
-	if !apmServiceMapConfigHasAnyField(cfg) {
+	if !apmServiceMapConfigHasAnyField(cfg, suppressEnvironmentDefault) {
 		return nil
 	}
 	result := &models.ApmServiceMapConfigModel{
@@ -171,9 +171,13 @@ func apmServiceMapConfigFromAPIImport(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbed
 	return result
 }
 
-func apmServiceMapConfigHasAnyField(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable) bool {
+func apmServiceMapConfigHasAnyField(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable, ignoreEnvironmentServerDefault bool) bool {
+	hasEnvironment := cfg.Environment != nil
+	if ignoreEnvironmentServerDefault && hasEnvironment && *cfg.Environment == environmentServerDefault {
+		hasEnvironment = false
+	}
 	if cfg.Title != nil || cfg.Description != nil || cfg.HideTitle != nil || cfg.HideBorder != nil ||
-		cfg.Environment != nil || cfg.ServiceName != nil || cfg.ServiceGroupId != nil || cfg.Kuery != nil ||
+		hasEnvironment || cfg.ServiceName != nil || cfg.ServiceGroupId != nil || cfg.Kuery != nil ||
 		cfg.MapOrientation != nil || cfg.SyncWithDashboardFilters != nil {
 		return true
 	}
