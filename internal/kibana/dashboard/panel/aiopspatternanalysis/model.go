@@ -127,15 +127,9 @@ func aiopsPatternAnalysisPreserveNullIntentFromPrior(prior, existing *models.Aio
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.MinimumTimeRange) {
-		existing.MinimumTimeRange = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.RandomSamplerMode) {
-		existing.RandomSamplerMode = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.RandomSamplerProbability) {
-		existing.RandomSamplerProbability = types.Float32Null()
-	}
+	panelkit.NullPreserveStringFromPrior(prior.MinimumTimeRange, &existing.MinimumTimeRange)
+	panelkit.NullPreserveStringFromPrior(prior.RandomSamplerMode, &existing.RandomSamplerMode)
+	panelkit.NullPreserveFloat32FromPrior(prior.RandomSamplerProbability, &existing.RandomSamplerProbability)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {

@@ -21,6 +21,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -212,15 +213,9 @@ func esqlControlPreserveNullIntentFromPrior(prior, existing *models.EsqlControlC
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SingleSelect) {
-		existing.SingleSelect = types.BoolNull()
-	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.AvailableOptions) {
-		existing.AvailableOptions = types.ListNull(types.StringType)
-	}
+	panelkit.NullPreserveBoolFromPrior(prior.SingleSelect, &existing.SingleSelect)
+	panelkit.NullPreserveStringFromPrior(prior.Title, &existing.Title)
+	panelkit.NullPreserveListFromPrior(prior.AvailableOptions, &existing.AvailableOptions)
 	if prior.DisplaySettings == nil {
 		existing.DisplaySettings = nil
 	}
