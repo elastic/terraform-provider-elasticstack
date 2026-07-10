@@ -153,6 +153,122 @@ func TestPopulateFromAPI_import_withFields(t *testing.T) {
 	assert.Equal(t, "staging", pm.ApmServiceMapConfig.Environment.ValueString())
 }
 
+func TestPopulateFromAPI_environmentServerDefault_readPath(t *testing.T) {
+	t.Run("prior null API ENVIRONMENT_ALL stays null", func(t *testing.T) {
+		pm := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringNull(),
+			},
+		}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringNull(),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
+	t.Run("prior production API ENVIRONMENT_ALL preserved", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringValue("production"),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.Equal(t, "ENVIRONMENT_ALL", pm.ApmServiceMapConfig.Environment.ValueString())
+	})
+
+	t.Run("prior ENVIRONMENT_ALL explicit API same preserved", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringValue("ENVIRONMENT_ALL"),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.Equal(t, "ENVIRONMENT_ALL", pm.ApmServiceMapConfig.Environment.ValueString())
+	})
+}
+
+func TestPopulateFromAPI_environmentServerDefault_importPath(t *testing.T) {
+	t.Run("API ENVIRONMENT_ALL imported as null", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
+	t.Run("API nil environment imported as null", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		serviceName := "checkout"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				ServiceName: &serviceName,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
+	t.Run("API production imported verbatim", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		env := "production"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.Equal(t, "production", pm.ApmServiceMapConfig.Environment.ValueString())
+	})
+}
+
 func TestPopulateFromAPI_nullPreservation_scalars(t *testing.T) {
 	pm := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
