@@ -116,23 +116,13 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 }
 
 func fieldStatsTableDecodeDiagnostics(err error, branch string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Failed to decode field_stats_table API config",
-		"Could not decode the API field_stats_table "+branch+" config: "+err.Error(),
-	)
-	return diags
+	return panelkit.PanelDecodeDiagnostics("field_stats_table", branch, err)
 }
 
 // fieldStatsTableProbeDiagnostics reports a failure to (un)marshal the kbapi union itself while
 // probing for the view_type discriminator, distinct from a missing/unexpected view_type value.
 func fieldStatsTableProbeDiagnostics(err error) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Failed to decode field_stats_table API config",
-		fmt.Sprintf("Could not determine the field_stats_table view_type: %s.", err.Error()),
-	)
-	return diags
+	return panelkit.PanelProbeDiagnostics("field_stats_table", err)
 }
 
 func fieldStatsTableInvalidViewTypeDiagnostics(viewType string) diag.Diagnostics {

@@ -134,15 +134,8 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 	return discoverSessionMergeConfig0FromAPI(ctx, existing, tfPanel, cfg0)
 }
 
-// discoverSessionDecodeDiagnostics builds a diagnostic for failed kbapi union decoding so
-// callers do not silently lose state during read/refresh.
 func discoverSessionDecodeDiagnostics(err error, branch string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Failed to decode discover_session API config",
-		"Could not decode the API discover_session "+branch+" config: "+err.Error(),
-	)
-	return diags
+	return panelkit.PanelDecodeDiagnostics("discover_session", branch, err)
 }
 
 func discoverSessionPanelConfigFromAPIImport(
