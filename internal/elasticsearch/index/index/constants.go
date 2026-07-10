@@ -17,43 +17,43 @@
 
 package index
 
-// Elasticsearch index setting keys used by the resource schema, models, and
-// API translation layer. Centralised here so the same string literal does not
-// drift between schema attribute names, model field tags, and API mapping
-// helpers.
+import indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+
+// Elasticsearch index setting keys — thin aliases to the shared parent-package
+// constants so existing code in this package continues to compile unchanged.
 const (
-	settingCodec                            = "codec"
-	settingLoadFixedBitsetFiltersEagerly    = "load_fixed_bitset_filters_eagerly"
-	settingMappingCoerce                    = "mapping.coerce"
-	settingNumberOfReplicas                 = "number_of_replicas"
-	settingAutoExpandReplicas               = "auto_expand_replicas"
-	settingMaxResultWindow                  = "max_result_window"
-	settingMaxInnerResultWindow             = "max_inner_result_window"
-	settingMaxRescoreWindow                 = "max_rescore_window"
-	settingMaxDocvalueFieldsSearch          = "max_docvalue_fields_search"
-	settingMaxScriptFields                  = "max_script_fields"
-	settingMaxNgramDiff                     = "max_ngram_diff"
-	settingMaxShingleDiff                   = "max_shingle_diff"
-	settingMaxRefreshListeners              = "max_refresh_listeners"
-	settingMaxTermsCount                    = "max_terms_count"
-	settingMaxRegexLength                   = "max_regex_length"
-	settingGCDeletes                        = "gc_deletes"
-	settingDefaultPipeline                  = "default_pipeline"
-	settingFinalPipeline                    = "final_pipeline"
-	settingNumberOfShards                   = "number_of_shards"
-	settingNumberOfRoutingShards            = "number_of_routing_shards"
-	settingRoutingPartitionSize             = "routing_partition_size"
-	settingShardCheckOnStartup              = "shard.check_on_startup"
-	settingSortField                        = "sort.field"
-	settingSortOrder                        = "sort.order"
-	settingSortMissing                      = "sort.missing"
-	settingSortMode                         = "sort.mode"
-	settingRefreshInterval                  = "refresh_interval"
-	settingSearchIdleAfter                  = "search.idle.after"
-	settingQueryDefaultField                = "query.default_field"
-	settingRoutingAllocationEnable          = "routing.allocation.enable"
-	settingRoutingRebalanceEnable           = "routing.rebalance.enable"
-	settingUnassignedNodeLeftDelayedTimeout = "unassigned.node_left.delayed_timeout"
+	settingCodec                            = indexparent.SettingCodec
+	settingLoadFixedBitsetFiltersEagerly    = indexparent.SettingLoadFixedBitsetFiltersEagerly
+	settingMappingCoerce                    = indexparent.SettingMappingCoerce
+	settingNumberOfReplicas                 = indexparent.SettingNumberOfReplicas
+	settingAutoExpandReplicas               = indexparent.SettingAutoExpandReplicas
+	settingMaxResultWindow                  = indexparent.SettingMaxResultWindow
+	settingMaxInnerResultWindow             = indexparent.SettingMaxInnerResultWindow
+	settingMaxRescoreWindow                 = indexparent.SettingMaxRescoreWindow
+	settingMaxDocvalueFieldsSearch          = indexparent.SettingMaxDocvalueFieldsSearch
+	settingMaxScriptFields                  = indexparent.SettingMaxScriptFields
+	settingMaxNgramDiff                     = indexparent.SettingMaxNgramDiff
+	settingMaxShingleDiff                   = indexparent.SettingMaxShingleDiff
+	settingMaxRefreshListeners              = indexparent.SettingMaxRefreshListeners
+	settingMaxTermsCount                    = indexparent.SettingMaxTermsCount
+	settingMaxRegexLength                   = indexparent.SettingMaxRegexLength
+	settingGCDeletes                        = indexparent.SettingGCDeletes
+	settingDefaultPipeline                  = indexparent.SettingDefaultPipeline
+	settingFinalPipeline                    = indexparent.SettingFinalPipeline
+	settingNumberOfShards                   = indexparent.SettingNumberOfShards
+	settingNumberOfRoutingShards            = indexparent.SettingNumberOfRoutingShards
+	settingRoutingPartitionSize             = indexparent.SettingRoutingPartitionSize
+	settingShardCheckOnStartup              = indexparent.SettingShardCheckOnStartup
+	settingSortField                        = indexparent.SettingSortField
+	settingSortOrder                        = indexparent.SettingSortOrder
+	settingSortMissing                      = indexparent.SettingSortMissing
+	settingSortMode                         = indexparent.SettingSortMode
+	settingRefreshInterval                  = indexparent.SettingRefreshInterval
+	settingSearchIdleAfter                  = indexparent.SettingSearchIdleAfter
+	settingQueryDefaultField                = indexparent.SettingQueryDefaultField
+	settingRoutingAllocationEnable          = indexparent.SettingRoutingAllocationEnable
+	settingRoutingRebalanceEnable           = indexparent.SettingRoutingRebalanceEnable
+	settingUnassignedNodeLeftDelayedTimeout = indexparent.SettingUnassignedNodeLeftDelayedTimeout
 )
 
 // Terraform schema attribute keys reused by the index resource and its sort
