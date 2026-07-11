@@ -389,6 +389,27 @@ func TestAccIndexTemplateDataSourceAllowAutoCreate(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create", "true"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(false),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckAttrZeroOrAbsent("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create"),
+				),
+			},
 		},
 	})
 }
@@ -499,6 +520,38 @@ func TestAccIndexTemplateDataSourceLifecycle(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "name", templateName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention", "60d"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndexTemplateDataSourceDataStreamOptions covers template.data_stream_options.failure_store.enabled
+// and template.data_stream_options.failure_store.lifecycle.data_retention on the data source.
+func TestAccIndexTemplateDataSourceDataStreamOptions(t *testing.T) {
+	templateName := "test-ds-dso-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"template_name": config.StringVariable(templateName)},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.enabled", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.lifecycle.data_retention", "14d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"template_name": config.StringVariable(templateName)},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.enabled", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.lifecycle.data_retention"),
 				),
 			},
 		},
@@ -646,6 +699,17 @@ func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 							"routing":        "",
 						},
 					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
+					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "routing_only_alias", "routing"),
 				),
 			},
 		},
