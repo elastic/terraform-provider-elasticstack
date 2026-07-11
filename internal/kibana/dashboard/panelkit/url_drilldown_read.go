@@ -89,6 +89,47 @@ func ReadURLDrilldownsFromAPI(
 	return out
 }
 
+// MapURLDrilldownsFromAPI converts a slice of any panel-specific anonymous drilldown
+// struct into []URLDrilldownAPIItemData using the provided mapper, then delegates to
+// ReadURLDrilldownsFromAPI. Use this to avoid repeating the mapping loop in every panel
+// package — only the mapper closure differs between panels.
+func MapURLDrilldownsFromAPI[T any](
+	apiDrilldowns *[]T,
+	mapper func(T) URLDrilldownAPIItemData,
+	prior []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
+		return nil
+	}
+	items := make([]URLDrilldownAPIItemData, len(*apiDrilldowns))
+	for i, d := range *apiDrilldowns {
+		items[i] = mapper(d)
+	}
+	return ReadURLDrilldownsFromAPI(items, prior)
+}
+
+// MapDiscoverSessionDrilldownsFromAPI is the discoversession variant of MapURLDrilldownsFromAPI,
+// returning []models.DiscoverSessionPanelDrilldown instead of []models.URLDrilldownModel.
+func MapDiscoverSessionDrilldownsFromAPI[T any](
+	apiDrilldowns *[]T,
+	mapper func(T) URLDrilldownAPIItemData,
+	prior []models.DiscoverSessionPanelDrilldown,
+) []models.DiscoverSessionPanelDrilldown {
+	priorURL := make([]models.URLDrilldownModel, len(prior))
+	for i, p := range prior {
+		priorURL[i] = models.URLDrilldownModel(p)
+	}
+	result := MapURLDrilldownsFromAPI(apiDrilldowns, mapper, priorURL)
+	if result == nil {
+		return nil
+	}
+	out := make([]models.DiscoverSessionPanelDrilldown, len(result))
+	for i, r := range result {
+		out[i] = models.DiscoverSessionPanelDrilldown(r)
+	}
+	return out
+}
+
 // ReadDiscoverSessionDrilldownsFromAPI is a thin wrapper around ReadURLDrilldownsFromAPI
 // for the discoversession panel, which uses models.DiscoverSessionPanelDrilldown (identical
 // fields to models.URLDrilldownModel but a distinct type).

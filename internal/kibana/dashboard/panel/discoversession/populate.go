@@ -605,19 +605,16 @@ func readDiscoverSessionDrilldownsFromConfig0(
 	},
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
-	if api == nil || len(*api) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
-	}
-	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
+	return panelkit.MapDiscoverSessionDrilldownsFromAPI(api, func(d struct {
+		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                                           `json:"label"`
+		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
+		Url          string                                                                           `json:"url"` //nolint:revive
+	}) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{URL: d.Url, Label: d.Label, EncodeUrl: d.EncodeUrl, OpenInNewTab: d.OpenInNewTab}
+	}, prior)
 }
 
 func readDiscoverSessionDrilldownsFromConfig1(
@@ -631,19 +628,16 @@ func readDiscoverSessionDrilldownsFromConfig1(
 	},
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
-	if api == nil || len(*api) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
-	}
-	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
+	return panelkit.MapDiscoverSessionDrilldownsFromAPI(api, func(d struct {
+		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                                           `json:"label"`
+		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
+		Url          string                                                                           `json:"url"` //nolint:revive
+	}) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{URL: d.Url, Label: d.Label, EncodeUrl: d.EncodeUrl, OpenInNewTab: d.OpenInNewTab}
+	}, prior)
 }
 
 func discoverSessionMergeConfig0FromAPI(

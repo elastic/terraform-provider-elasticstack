@@ -143,17 +143,14 @@ func readSloBurnRateDrilldownsFromAPI(
 	},
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
-	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		items[i] = panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
-	}
-	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
+	return panelkit.MapURLDrilldownsFromAPI(apiDrilldowns, func(d struct {
+		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
+		Label        string                                                     `json:"label"`
+		OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
+		Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
+		Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
+		Url          string                                                     `json:"url"` //nolint:revive
+	}) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{URL: d.Url, Label: d.Label, EncodeUrl: d.EncodeUrl, OpenInNewTab: d.OpenInNewTab}
+	}, priorDrilldowns)
 }
