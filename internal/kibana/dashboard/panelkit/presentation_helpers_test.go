@@ -157,3 +157,52 @@ func TestBuildPresentationConfig_nullFieldsSkipped(t *testing.T) {
 	assert.Nil(t, apiHideTitle)
 	assert.Nil(t, apiHideBorder)
 }
+
+func TestNullPreserveBaseFromPrior_nullPriorResetsExisting(t *testing.T) {
+	t.Parallel()
+
+	existingTitle := types.StringValue("title")
+	existingDesc := types.StringValue("desc")
+	existingHideTitle := types.BoolValue(true)
+	existingHideBorder := types.BoolValue(true)
+
+	NullPreserveBaseFromPrior(
+		types.StringNull(), types.StringNull(), types.BoolNull(), types.BoolNull(),
+		&existingTitle, &existingDesc, &existingHideTitle, &existingHideBorder,
+	)
+
+	assert.True(t, existingTitle.IsNull())
+	assert.True(t, existingDesc.IsNull())
+	assert.True(t, existingHideTitle.IsNull())
+	assert.True(t, existingHideBorder.IsNull())
+}
+
+func TestNullPreserveBaseFromPrior_nilExistingPtrIsNoOp(t *testing.T) {
+	t.Parallel()
+
+	NullPreserveBaseFromPrior(
+		types.StringNull(), types.StringNull(), types.BoolNull(), types.BoolNull(),
+		nil, nil, nil, nil,
+	)
+	// no panic; no assertion needed — the nil guard must not dereference
+}
+
+func TestNullPreserveBaseFromPrior_knownPriorLeavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+
+	existingTitle := types.StringValue("title")
+	existingDesc := types.StringValue("desc")
+	existingHideTitle := types.BoolValue(true)
+	existingHideBorder := types.BoolValue(false)
+
+	NullPreserveBaseFromPrior(
+		types.StringValue("prior-title"), types.StringValue("prior-desc"),
+		types.BoolValue(false), types.BoolValue(true),
+		&existingTitle, &existingDesc, &existingHideTitle, &existingHideBorder,
+	)
+
+	assert.Equal(t, "title", existingTitle.ValueString())
+	assert.Equal(t, "desc", existingDesc.ValueString())
+	assert.True(t, existingHideTitle.ValueBool())
+	assert.False(t, existingHideBorder.ValueBool())
+}

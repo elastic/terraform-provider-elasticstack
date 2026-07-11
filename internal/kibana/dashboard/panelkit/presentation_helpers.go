@@ -68,6 +68,28 @@ func NullPreservePresentationFromPrior(
 	}
 }
 
+// NullPreserveBaseFromPrior is a nil-safe wrapper around NullPreservePresentationFromPrior.
+// It is a no-op when any existing pointer is nil, allowing panel helpers to safely call it
+// without a separate nil-guard on the four standard presentation fields.
+func NullPreserveBaseFromPrior(
+	priorTitle types.String,
+	priorDescription types.String,
+	priorHideTitle types.Bool,
+	priorHideBorder types.Bool,
+	existingTitle *types.String,
+	existingDescription *types.String,
+	existingHideTitle *types.Bool,
+	existingHideBorder *types.Bool,
+) {
+	if existingTitle == nil || existingDescription == nil || existingHideTitle == nil || existingHideBorder == nil {
+		return
+	}
+	NullPreservePresentationFromPrior(
+		priorTitle, priorDescription, priorHideTitle, priorHideBorder,
+		existingTitle, existingDescription, existingHideTitle, existingHideBorder,
+	)
+}
+
 // BuildPresentationConfig writes the four standard optional presentation fields from Terraform state
 // into API pointer fields (title, description, hide_title, hide_border).
 func BuildPresentationConfig(

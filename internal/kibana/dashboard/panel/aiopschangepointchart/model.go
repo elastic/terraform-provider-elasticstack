@@ -153,7 +153,7 @@ func aiopsChangePointChartPreserveNullIntentFromPrior(prior, existing *models.Ai
 	panelkit.NullPreserveSetFromPrior(prior.Partitions, &existing.Partitions)
 	panelkit.NullPreserveFloat32FromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
 	panelkit.NullPreserveStringFromPrior(prior.ViewType, &existing.ViewType)
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+	panelkit.NullPreserveBaseFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {
 		existing.TimeRange = nil

@@ -125,7 +125,7 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 		return
 	}
 	panelkit.NullPreserveStringFromPrior(prior.SloInstanceID, &existing.SloInstanceID)
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+	panelkit.NullPreserveBaseFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
 		existing.Drilldowns = nil

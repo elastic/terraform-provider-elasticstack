@@ -223,7 +223,7 @@ func mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing *models.MlAnom
 		}
 	}
 	panelkit.NullPreserveFloat32FromPrior(prior.PerPage, &existing.PerPage)
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+	panelkit.NullPreserveBaseFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

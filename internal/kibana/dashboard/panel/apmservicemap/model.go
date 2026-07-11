@@ -248,7 +248,7 @@ func apmServiceMapPreserveNullIntentFromPrior(prior, existing *models.ApmService
 	if prior == nil || existing == nil {
 		return
 	}
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+	panelkit.NullPreserveBaseFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	panelkit.NullPreserveStringFromPrior(prior.Environment, &existing.Environment)
 	panelkit.NullPreserveStringFromPrior(prior.ServiceName, &existing.ServiceName)

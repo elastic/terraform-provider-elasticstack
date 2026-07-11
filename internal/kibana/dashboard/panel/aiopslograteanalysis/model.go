@@ -79,7 +79,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 
 	if prior.AiopsLogRateAnalysisConfig != nil {
 		p := prior.AiopsLogRateAnalysisConfig
-		panelkit.NullPreservePresentationFromPrior(p.Title, p.Description, p.HideTitle, p.HideBorder,
+		panelkit.NullPreserveBaseFromPrior(p.Title, p.Description, p.HideTitle, p.HideBorder,
 			&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 		if p.TimeRange == nil {
 			existing.TimeRange = nil

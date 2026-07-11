@@ -255,7 +255,7 @@ func mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing *models.MlS
 	panelkit.NullPreserveStringFromPrior(prior.ForecastID, &existing.ForecastID)
 	panelkit.NullPreserveStringFromPrior(prior.FunctionDescription, &existing.FunctionDescription)
 	panelkit.NullPreserveMapFromPrior(prior.SelectedEntities, &existing.SelectedEntities)
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+	panelkit.NullPreserveBaseFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

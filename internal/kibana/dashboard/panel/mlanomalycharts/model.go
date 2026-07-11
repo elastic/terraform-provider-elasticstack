@@ -143,7 +143,7 @@ func mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing *models.MlAnomal
 		return
 	}
 	panelkit.NullPreserveInt64FromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
-	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+	panelkit.NullPreserveBaseFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.SeverityThreshold) == 0 {
 		existing.SeverityThreshold = nil
