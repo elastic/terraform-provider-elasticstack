@@ -218,28 +218,13 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGau
 
 	api.Type = kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge
 
-	if !m.Title.IsNull() {
-		api.Title = m.Title.ValueStringPointer()
-	}
-
-	if !m.Description.IsNull() {
-		api.Description = m.Description.ValueStringPointer()
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal gauge_config.data_source_json", err.Error())
 			return api, diags
 		}
-	}
-
-	if !m.IgnoreGlobalFilters.IsNull() {
-		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-	}
-
-	if !m.Sampling.IsNull() {
-		sampling := float32(m.Sampling.ValueFloat64())
-		api.Sampling = &sampling
 	}
 
 	if m.Query == nil {
@@ -289,19 +274,7 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 	var api kbapi.KibanaHTTPAPIsGaugeESQL
 	api.Type = kbapi.KibanaHTTPAPIsGaugeESQLTypeGauge
 
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		s := float32(m.Sampling.ValueFloat64())
-		api.Sampling = &s
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing data_source_json", "gauge_config.data_source_json must be provided")

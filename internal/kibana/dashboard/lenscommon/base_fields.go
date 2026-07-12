@@ -20,9 +20,31 @@ package lenscommon
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// LensChartBaseFieldsForAPI extracts the four common base fields from a LensChartBaseTFModel and
+// returns them as pointer values suitable for assignment to any Lens API struct that carries
+// Title, Description, IgnoreGlobalFilters, and Sampling. This is the write-direction counterpart
+// of PopulateLensChartBaseFromAPI.
+func LensChartBaseFieldsForAPI(m models.LensChartBaseTFModel) (title, description *string, ignoreGlobalFilters *bool, sampling *float32) {
+	if typeutils.IsKnown(m.Title) {
+		title = m.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(m.Description) {
+		description = m.Description.ValueStringPointer()
+	}
+	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
+		ignoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(m.Sampling) {
+		s := float32(m.Sampling.ValueFloat64())
+		sampling = &s
+	}
+	return
+}
 
 // PopulateLensChartBaseFromAPI returns a LensChartBaseTFModel populated from the common API parameters.
 // Returns false (and appends to diags) when any field fails to populate.
