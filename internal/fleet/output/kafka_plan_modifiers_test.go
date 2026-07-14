@@ -31,11 +31,11 @@ func Test_kafkaCompressionLevelDefaultPlanValue(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		compression  types.String
-		planValue    types.Int64
-		configValue  types.Int64
-		want         types.Int64
+		name        string
+		compression types.String
+		planValue   types.Int64
+		configValue types.Int64
+		want        types.Int64
 	}{
 		{
 			name:        "keeps known plan value",

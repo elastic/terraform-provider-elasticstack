@@ -103,7 +103,7 @@ func kafkaCompressionLevelDefaultPlanValue(
 		return planValue
 	}
 
-	if compression.ValueString() == "gzip" {
+	if compression.ValueString() == kafkaCompressionGzip {
 		return types.Int64Value(defaultLevel)
 	}
 

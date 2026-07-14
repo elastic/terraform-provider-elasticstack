@@ -225,7 +225,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringplanmodifier.UseStateForUnknown(),
 						},
 						Validators: []validator.String{
-							stringvalidator.OneOf("gzip", "snappy", "lz4", "none"),
+							stringvalidator.OneOf(kafkaCompressionGzip, "snappy", "lz4", "none"),
 						},
 					},
 					"compression_level": schema.Int64Attribute{
@@ -237,7 +237,7 @@ func getSchema(_ context.Context) schema.Schema {
 							kafkaCompressionLevelDefaultIfGzip(),
 						},
 						Validators: []validator.Int64{
-							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip", validators.AllowedIfOptions{}),
+							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), kafkaCompressionGzip, validators.AllowedIfOptions{}),
 						},
 					},
 					"connection_type": schema.StringAttribute{
