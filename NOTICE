@@ -4894,10 +4894,10 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/oapi-codegen/runtime
-Version: v1.4.2
+Version: v1.5.0
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/runtime@v1.4.2/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/runtime@v1.5.0/LICENSE:
 
                                  Apache License
                            Version 2.0, January 2004
@@ -5210,10 +5210,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : golang.org/x/tools
-Version: v0.47.0
+Version: v0.48.0
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/golang.org/x/tools@v0.47.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/golang.org/x/tools@v0.48.0/LICENSE:
 
 Copyright 2009 The Go Authors.
 
@@ -68660,10 +68660,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : golang.org/x/mod
-Version: v0.37.0
+Version: v0.38.0
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/golang.org/x/mod@v0.37.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/golang.org/x/mod@v0.38.0/LICENSE:
 
 Copyright 2009 The Go Authors.
 
@@ -68697,10 +68697,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : golang.org/x/net
-Version: v0.56.0
+Version: v0.57.0
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/golang.org/x/net@v0.56.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/golang.org/x/net@v0.57.0/LICENSE:
 
 Copyright 2009 The Go Authors.
 
@@ -68808,10 +68808,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
 Dependency : golang.org/x/telemetry
-Version: v0.0.0-20260625142307-59b4966ccb57
+Version: v0.0.0-20260708182218-49f421fb7959
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/golang.org/x/telemetry@v0.0.0-20260625142307-59b4966ccb57/LICENSE:
+Contents of probable licence file $GOMODCACHE/golang.org/x/telemetry@v0.0.0-20260708182218-49f421fb7959/LICENSE:
 
 Copyright 2009 The Go Authors.
 
