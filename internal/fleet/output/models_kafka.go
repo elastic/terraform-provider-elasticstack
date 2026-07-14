@@ -278,22 +278,6 @@ func readOutputKafkaCompressionLevel(value *float32) *int64 {
 	return &converted
 }
 
-const defaultKafkaGzipCompressionLevel = float32(4)
-
-func kafkaCompressionLevel(compression types.String, compressionLevel types.Int64) *float32 {
-	if !typeutils.IsKnown(compression) || compression.ValueString() != "gzip" {
-		return nil
-	}
-
-	if typeutils.IsKnown(compressionLevel) {
-		val := float32(compressionLevel.ValueInt64())
-		return &val
-	}
-
-	defaultLevel := defaultKafkaGzipCompressionLevel
-	return &defaultLevel
-}
-
 func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	ssl, diags := objectValueToSSL(ctx, model.Ssl)
 	if diags.HasError() {
@@ -359,7 +343,14 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 			comp := kbapi.KibanaHTTPAPIsNewOutputKafkaCompression(kafkaModel.Compression.ValueString())
 			return &comp
 		}(),
-		CompressionLevel: kafkaCompressionLevel(kafkaModel.Compression, kafkaModel.CompressionLevel),
+		CompressionLevel: func() *float32 {
+			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+				return nil
+			}
+
+			compressionLevel := float32(kafkaModel.CompressionLevel.ValueInt64())
+			return &compressionLevel
+		}(),
 		ConnectionType:   connectionType,
 		Topic:            kafkaModel.Topic.ValueStringPointer(),
 		Partition: func() *kbapi.KibanaHTTPAPIsNewOutputKafkaPartition {
@@ -472,7 +463,14 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 			comp := kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompression(kafkaModel.Compression.ValueString())
 			return &comp
 		}(),
-		CompressionLevel: kafkaCompressionLevel(kafkaModel.Compression, kafkaModel.CompressionLevel),
+		CompressionLevel: func() *float32 {
+			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+				return nil
+			}
+
+			compressionLevel := float32(kafkaModel.CompressionLevel.ValueInt64())
+			return &compressionLevel
+		}(),
 		ConnectionType:   connectionType,
 		Topic:            kafkaModel.Topic.ValueStringPointer(),
 		Partition: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaPartition {

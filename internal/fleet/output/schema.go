@@ -234,6 +234,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Computed:    true,
 						PlanModifiers: []planmodifier.Int64{
 							int64planmodifier.UseStateForUnknown(),
+							kafkaCompressionLevelDefaultIfGzip(),
 						},
 						Validators: []validator.Int64{
 							validators.AllowedIfDependentPathEquals(path.Root("kafka").AtName("compression"), "gzip", validators.AllowedIfOptions{}),

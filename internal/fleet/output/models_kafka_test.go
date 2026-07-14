@@ -131,40 +131,6 @@ func Test_fromAPIKafkaModel_readsConfiguredSasl(t *testing.T) {
 	assert.Equal(t, "SCRAM-SHA-256", sasl.Mechanism.ValueString())
 }
 
-func Test_kafkaCompressionLevel(t *testing.T) {
-	tests := []struct {
-		name             string
-		compression      types.String
-		compressionLevel types.Int64
-		want             *float32
-	}{
-		{
-			name:        "returns nil when compression is not gzip",
-			compression: types.StringValue("snappy"),
-		},
-		{
-			name:        "returns nil when compression is unknown",
-			compression: types.StringUnknown(),
-		},
-		{
-			name:             "returns explicit level for gzip",
-			compression:      types.StringValue("gzip"),
-			compressionLevel: types.Int64Value(6),
-			want:             new(float32(6)),
-		},
-		{
-			name:        "defaults to 4 for gzip without explicit level",
-			compression: types.StringValue("gzip"),
-			want:        new(float32(4)),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, kafkaCompressionLevel(tt.compression, tt.compressionLevel))
-		})
-	}
-}
-
 func Test_outputKafkaModel_toAPIHash(t *testing.T) {
 	type fields struct {
 		Hash types.Object
