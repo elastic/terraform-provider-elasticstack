@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/tools v0.47.0
+	golang.org/x/tools v0.48.0
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/speakeasy-api/openapi v1.19.2 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260625142307-59b4966ccb57 // indirect
+	golang.org/x/telemetry v0.0.0-20260708182218-49f421fb7959 // indirect
 )
 
 require (
@@ -397,8 +397,8 @@ require (
 	gocloud.dev v0.45.0 // indirect
 	golang.org/x/crypto v0.54.0
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9 // indirect
-	golang.org/x/mod v0.37.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/mod v0.38.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
