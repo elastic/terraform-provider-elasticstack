@@ -6,6 +6,7 @@
 
 ### Changes
 
+- Skip the data stream lifecycle DELETE on Elastic Cloud Serverless so `terraform destroy` of `elasticstack_elasticsearch_data_stream_lifecycle` completes instead of failing on the HTTP 410 `api_not_available_exception`; a warning is emitted since Elastic manages retention on serverless. ([#4160](https://github.com/elastic/terraform-provider-elasticstack/pull/4160))
 - add links panel support to Kibana dashboard resource ([#4078](https://github.com/elastic/terraform-provider-elasticstack/pull/4078))
 - Reject ML anomaly detection job `results_index_name` values starting with `custom-` to prevent plan/apply drift. ([#4107](https://github.com/elastic/terraform-provider-elasticstack/pull/4107))
 - Fall back to full package uninstall when Fleet 9.5 rejects DeleteKibanaAssets in the install space during integration destroy. ([#4073](https://github.com/elastic/terraform-provider-elasticstack/pull/4073))
