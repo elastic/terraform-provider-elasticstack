@@ -394,6 +394,9 @@ func TestAccResourceILMForcemerge(t *testing.T) {
 //go:embed testdata/TestAccResourceILMFromSDK/create/main.tf
 var sdkILMCreateConfig string
 
+//go:embed testdata/TestAccResourceILMFromSDKNoMetadata/create/main.tf
+var sdkILMFromSDKNoMetadataCreateConfig string
+
 func TestAccResourceILMFrozenPhase(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	repositoryName := fmt.Sprintf("%s-repo", policyName)
@@ -842,6 +845,63 @@ func TestAccResourceILMFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.min_age", "1h"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.set_priority.priority", "10"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceILMFromSDKNoMetadata upgrades state for an ILM policy authored by the last
+// Plugin SDK v2 release (REQ-035) where metadata and allocate routing filters were never set.
+func TestAccResourceILMFromSDKNoMetadata(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.14.3",
+					},
+				},
+				Config: sdkILMFromSDKNoMetadataCreateConfig,
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.0.rollover.0.max_age", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.min_age", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.0.allocate.0.number_of_replicas", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover.max_age", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.min_age", "7d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.allocate.number_of_replicas", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "metadata"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.allocate.include"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.allocate.exclude"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "warm.allocate.require"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
