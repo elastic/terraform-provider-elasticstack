@@ -69,11 +69,14 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 	}
 
 	stateutil.NullifyEmptyString(stateMap, "notify_when", "throttle")
+	stateutil.NullifyEmptyString(stateMap, "params")
 
 	// Handle actions: convert frequency, alerts_filter, and timeframe from lists to objects
 	if actions, ok := stateMap["actions"].([]any); ok {
 		for _, actionAny := range actions {
 			if action, ok := actionAny.(map[string]any); ok {
+				stateutil.NullifyEmptyString(action, "params")
+
 				resp.Diagnostics.Append(stateutil.CollapseListPath(action, "frequency", "actions.frequency")...)
 				if resp.Diagnostics.HasError() {
 					return
