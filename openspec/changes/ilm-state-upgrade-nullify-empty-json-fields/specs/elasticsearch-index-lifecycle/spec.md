@@ -70,13 +70,13 @@ unset optional JSON attributes as `""` rather than null.
 
 ## ADDED Requirements
 
-### Requirement: Acceptance test — SDK upgrade without metadata (REQ-034)
+### Requirement: Acceptance test — SDK upgrade without metadata (REQ-035)
 
 The acceptance test suite SHALL include a test `TestAccResourceILMFromSDKNoMetadata` that verifies
 the state upgrade succeeds for an ILM policy created without `metadata` and with a warm phase
 `allocate` block that omits `include`, `exclude`, and `require`.
 
-- **Step 1** SHALL use registry provider `0.14.5` (the last Plugin SDK v2 release) to create an ILM
+- **Step 1** SHALL use registry provider `0.14.3` (the last release before `elasticstack_elasticsearch_index_lifecycle` migrated to the Plugin Framework in `0.14.4`) to create an ILM
   policy with a hot rollover phase and a warm phase with an `allocate` block specifying only
   `number_of_replicas`, with no `metadata`, `include`, `exclude`, or `require` set.
 - **Step 2** SHALL re-apply the same logical configuration using the Plugin Framework provider
@@ -85,7 +85,7 @@ the state upgrade succeeds for an ILM policy created without `metadata` and with
 
 #### Scenario: End-to-end SDK upgrade — no metadata, allocate without routing filters
 
-- GIVEN an ILM policy created by provider `0.14.5` with a warm phase `allocate` block and no
+- GIVEN an ILM policy created by provider `0.14.3` with a warm phase `allocate` block and no
   `metadata`, `include`, `exclude`, or `require`
 - WHEN the provider is upgraded to the Plugin Framework version and `terraform plan` runs
 - THEN the plan SHALL succeed without an `Invalid JSON String Value` error

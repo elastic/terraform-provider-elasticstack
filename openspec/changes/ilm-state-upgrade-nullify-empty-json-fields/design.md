@@ -26,13 +26,9 @@ Phases that support `allocate`: `warm`, `cold`.
 
 ### `internal/elasticsearch/index/ilm/state_upgrade.go`
 
-Add two targeted calls inside `migrateILMStateV0ToV1`, after the phase-unwrapping loop:
+Add two targeted calls inside `migrateILMStateV0ToV1` during the v0 → v1 upgrade:
 
-```go
-// After the phase-unwrapping loop:
-stateutil.NullifyEmptyString(stateMap, "metadata")
-
-// Inside the loop, after unwrapPhaseActionLists:
+~~~go
 for _, pk := range ilmPhaseBlockKeys {
     resp.Diagnostics.Append(stateutil.CollapseListPath(stateMap, pk, pk)...)
     if resp.Diagnostics.HasError() {
@@ -46,7 +42,7 @@ for _, pk := range ilmPhaseBlockKeys {
     }
 }
 stateutil.NullifyEmptyString(stateMap, "metadata")
-```
+~~~
 
 `stateutil.NullifyEmptyString` is idempotent: if a key is absent, already `nil`, or already a
 non-empty string, it is a no-op.

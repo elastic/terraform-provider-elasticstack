@@ -16,7 +16,7 @@
 
 ## 4. Acceptance test
 
-- [ ] 4.1 In `internal/elasticsearch/index/ilm/` (or the appropriate test file), add `TestAccResourceILMFromSDKNoMetadata` covering: SDK 0.14.5 creation of an ILM policy with a warm phase `allocate` block and no `metadata`/`include`/`exclude`/`require`; provider upgrade to current Plugin Framework provider; assertion that `terraform plan` produces no diff.
+- [ ] 4.1 In `internal/elasticsearch/index/ilm/` (or the appropriate test file), add `TestAccResourceILMFromSDKNoMetadata` covering: SDK 0.14.3 creation of an ILM policy with a warm phase `allocate` block and no `metadata`/`include`/`exclude`/`require`; provider upgrade to current Plugin Framework provider; assertion that `terraform plan` produces no diff.
 - [ ] 4.2 Add the Terraform configuration for `TestAccResourceILMFromSDKNoMetadata` under `internal/elasticsearch/index/ilm/testdata/TestAccResourceILMFromSDKNoMetadata/`, mirroring the layout of existing ILM testdata directories.
 
 ## 5. Validation
