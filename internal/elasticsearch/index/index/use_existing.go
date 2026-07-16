@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 
+	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,7 +39,7 @@ type staticSettingMismatch struct {
 	Actual     string
 }
 
-// compareStaticSettings walks staticSettingsKeys and reports mismatches for
+// compareStaticSettings walks the shared static setting keys and reports mismatches for
 // settings explicitly present in the plan after merging typed attributes and
 // the deprecated `settings` block (see tfModel.toIndexSettings). Keys absent
 // from that merged map are skipped. Values are compared to existing.Settings,
@@ -63,7 +64,7 @@ func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.I
 
 	var mismatches []staticSettingMismatch
 
-	for _, key := range staticSettingsKeys {
+	for _, key := range indexparent.StaticSettingsKeys {
 		planVal, ok := planSettings[key]
 		if !ok {
 			continue
@@ -115,30 +116,30 @@ func lookupExistingSetting(settings map[string]any, key string) (any, bool) {
 
 func configuredDisplayFromPlanValue(key string, planVal any) string {
 	switch key {
-	case settingNumberOfShards, settingNumberOfRoutingShards, settingRoutingPartitionSize:
+	case indexparent.SettingNumberOfShards, indexparent.SettingNumberOfRoutingShards, indexparent.SettingRoutingPartitionSize:
 		i, s, ok := int64FromAny(planVal)
 		if ok {
 			return strconv.FormatInt(i, 10)
 		}
 		return s
-	case settingCodec, settingShardCheckOnStartup:
+	case indexparent.SettingCodec, indexparent.SettingShardCheckOnStartup:
 		return stringFromPlanScalar(planVal)
-	case settingLoadFixedBitsetFiltersEagerly, settingMappingCoerce:
+	case indexparent.SettingLoadFixedBitsetFiltersEagerly, indexparent.SettingMappingCoerce:
 		b, s, ok := boolFromAny(planVal)
 		if ok {
 			return strconv.FormatBool(b)
 		}
 		return s
-	case settingSortField:
+	case indexparent.SettingSortField:
 		_, d := planStringSliceForSortFieldSet(planVal)
 		return d
-	case settingSortOrder:
+	case indexparent.SettingSortOrder:
 		_, d := planStringSliceForSortOrder(planVal)
 		return d
-	case settingSortMissing:
+	case indexparent.SettingSortMissing:
 		_, d := planStringSliceForSortOrder(planVal)
 		return d
-	case settingSortMode:
+	case indexparent.SettingSortMode:
 		_, d := planStringSliceForSortOrder(planVal)
 		return d
 	default:
@@ -148,7 +149,7 @@ func configuredDisplayFromPlanValue(key string, planVal any) string {
 
 func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsListNested bool) *staticSettingMismatch {
 	switch key {
-	case settingNumberOfShards, settingNumberOfRoutingShards, settingRoutingPartitionSize:
+	case indexparent.SettingNumberOfShards, indexparent.SettingNumberOfRoutingShards, indexparent.SettingRoutingPartitionSize:
 		planI, cfg, okP := int64FromAny(planVal)
 		if !okP {
 			_, actStr, _ := int64FromAny(actualRaw)
@@ -163,7 +164,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		}
 		return nil
 
-	case settingCodec, settingShardCheckOnStartup:
+	case indexparent.SettingCodec, indexparent.SettingShardCheckOnStartup:
 		planS := stringFromPlanScalar(planVal)
 		actS := stringFromAny(actualRaw)
 		if planS != actS {
@@ -171,7 +172,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		}
 		return nil
 
-	case settingLoadFixedBitsetFiltersEagerly, settingMappingCoerce:
+	case indexparent.SettingLoadFixedBitsetFiltersEagerly, indexparent.SettingMappingCoerce:
 		planB, cfg, okP := boolFromAny(planVal)
 		if !okP {
 			_, actStr, _ := boolFromAny(actualRaw)
@@ -186,7 +187,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		}
 		return nil
 
-	case settingSortField:
+	case indexparent.SettingSortField:
 		planElems, setFmtCfg := planStringSliceForSortFieldSet(planVal)
 		actSlice := stringSliceFromSortFieldAny(actualRaw)
 
@@ -204,7 +205,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		}
 		return nil
 
-	case settingSortOrder:
+	case indexparent.SettingSortOrder:
 		planElems, cfg := planStringSliceForSortOrder(planVal)
 		actSlice := stringSliceOrderedFromAny(actualRaw)
 		if !slicesEqual(planElems, actSlice) {
@@ -212,7 +213,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		}
 		return nil
 
-	case settingSortMissing:
+	case indexparent.SettingSortMissing:
 		planElems, cfg := planStringSliceForSortOrder(planVal)
 		actSlice := stringSliceOrderedFromAny(actualRaw)
 		if !slicesEqual(planElems, actSlice) {
@@ -220,7 +221,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 		}
 		return nil
 
-	case settingSortMode:
+	case indexparent.SettingSortMode:
 		planElems, cfg := planStringSliceForSortOrder(planVal)
 		actSlice := stringSliceOrderedFromAny(actualRaw)
 		if !slicesEqual(planElems, actSlice) {

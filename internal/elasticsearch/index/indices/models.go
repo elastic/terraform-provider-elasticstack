@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -38,45 +39,45 @@ import (
 
 var (
 	staticSettingsKeys = []string{
-		"number_of_shards",
-		"number_of_routing_shards",
-		"codec",
-		"routing_partition_size",
-		"load_fixed_bitset_filters_eagerly",
-		"shard.check_on_startup",
-		"sort.field",
-		"sort.order",
-		"mapping.coerce",
+		indexparent.SettingNumberOfShards,
+		indexparent.SettingNumberOfRoutingShards,
+		indexparent.SettingCodec,
+		indexparent.SettingRoutingPartitionSize,
+		indexparent.SettingLoadFixedBitsetFiltersEagerly,
+		indexparent.SettingShardCheckOnStartup,
+		indexparent.SettingSortField,
+		indexparent.SettingSortOrder,
+		indexparent.SettingMappingCoerce,
 	}
 	dynamicSettingsKeys = []string{
-		"number_of_replicas",
-		"auto_expand_replicas",
-		"refresh_interval",
-		"search.idle.after",
-		"max_result_window",
-		"max_inner_result_window",
-		"max_rescore_window",
-		"max_docvalue_fields_search",
-		"max_script_fields",
-		"max_ngram_diff",
-		"max_shingle_diff",
+		indexparent.SettingNumberOfReplicas,
+		indexparent.SettingAutoExpandReplicas,
+		indexparent.SettingRefreshInterval,
+		indexparent.SettingSearchIdleAfter,
+		indexparent.SettingMaxResultWindow,
+		indexparent.SettingMaxInnerResultWindow,
+		indexparent.SettingMaxRescoreWindow,
+		indexparent.SettingMaxDocvalueFieldsSearch,
+		indexparent.SettingMaxScriptFields,
+		indexparent.SettingMaxNgramDiff,
+		indexparent.SettingMaxShingleDiff,
 		"blocks.read_only",
 		"blocks.read_only_allow_delete",
 		"blocks.read",
 		"blocks.write",
 		"blocks.metadata",
-		"max_refresh_listeners",
+		indexparent.SettingMaxRefreshListeners,
 		"analyze.max_token_count",
 		"highlight.max_analyzed_offset",
-		"max_terms_count",
-		"max_regex_length",
-		"query.default_field",
-		"routing.allocation.enable",
-		"routing.rebalance.enable",
-		"gc_deletes",
-		"default_pipeline",
-		"final_pipeline",
-		"unassigned.node_left.delayed_timeout",
+		indexparent.SettingMaxTermsCount,
+		indexparent.SettingMaxRegexLength,
+		indexparent.SettingQueryDefaultField,
+		indexparent.SettingRoutingAllocationEnable,
+		indexparent.SettingRoutingRebalanceEnable,
+		indexparent.SettingGCDeletes,
+		indexparent.SettingDefaultPipeline,
+		indexparent.SettingFinalPipeline,
+		indexparent.SettingUnassignedNodeLeftDelayedTimeout,
 		"search.slowlog.threshold.query.warn",
 		"search.slowlog.threshold.query.info",
 		"search.slowlog.threshold.query.debug",
@@ -93,13 +94,13 @@ var (
 		"indexing.slowlog.level",
 		"indexing.slowlog.source",
 	}
-	allSettingsKeys = []string{}
+	allSettingsKeys = func() []string {
+		all := make([]string, 0, len(staticSettingsKeys)+len(dynamicSettingsKeys))
+		all = append(all, staticSettingsKeys...)
+		all = append(all, dynamicSettingsKeys...)
+		return all
+	}()
 )
-
-func init() {
-	allSettingsKeys = append(allSettingsKeys, staticSettingsKeys...)
-	allSettingsKeys = append(allSettingsKeys, dynamicSettingsKeys...)
-}
 
 type tfModel struct {
 	entitycore.ElasticsearchConnectionField
@@ -408,26 +409,9 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 }
 
 func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
-	numField := t.NumField()
-	for i := range numField {
-		field := t.Field(i)
-		if field.Tag.Get("tfsdk") == tagName {
-			return reflect.ValueOf(model).Field(i).Interface().(attr.Value), true
-		}
-	}
-
-	return nil, false
+	return indexparent.GetFieldValueByTagValue(reflect.ValueOf(model), t, tagName)
 }
 
 func (model *indexTfModel) setFieldValueByTagValue(tagName string, t reflect.Type, value attr.Value) bool {
-	numField := t.NumField()
-	for i := range numField {
-		field := t.Field(i)
-		if field.Tag.Get("tfsdk") == tagName {
-			reflect.ValueOf(model).Elem().Field(i).Set(reflect.ValueOf(value))
-			return true
-		}
-	}
-
-	return false
+	return indexparent.SetFieldValueByTagValue(reflect.ValueOf(model), t, tagName, value)
 }
