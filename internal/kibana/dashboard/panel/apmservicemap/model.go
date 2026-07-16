@@ -28,6 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const environmentServerDefault = "ENVIRONMENT_ALL"
+
 // BuildConfig writes the TF model into the API panel struct.
 func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap) diag.Diagnostics {
 	cfg := pm.ApmServiceMapConfig
@@ -83,12 +85,12 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	cfg := apiPanel.Config
 
 	if prior == nil {
-		pm.ApmServiceMapConfig = apmServiceMapConfigFromAPIImport(cfg)
+		pm.ApmServiceMapConfig = apmServiceMapConfigFromAPIImport(cfg, true)
 		return nil
 	}
 
 	if pm.ApmServiceMapConfig == nil && prior.ApmServiceMapConfig != nil {
-		pm.ApmServiceMapConfig = apmServiceMapConfigFromAPIImport(cfg)
+		pm.ApmServiceMapConfig = apmServiceMapConfigFromAPIImport(cfg, false)
 	}
 
 	existing := pm.ApmServiceMapConfig
@@ -96,7 +98,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	if !apmServiceMapConfigHasAnyField(cfg) {
+	if !apmServiceMapConfigHasAnyField(cfg, false) {
 		pm.ApmServiceMapConfig = nil
 		return nil
 	}
@@ -142,11 +144,11 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 	return nil
 }
 
-func apmServiceMapConfigFromAPIImport(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable) *models.ApmServiceMapConfigModel {
-	if !apmServiceMapConfigHasAnyField(cfg) {
+func apmServiceMapConfigFromAPIImport(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable, suppressEnvironmentDefault bool) *models.ApmServiceMapConfigModel {
+	if !apmServiceMapConfigHasAnyField(cfg, suppressEnvironmentDefault) {
 		return nil
 	}
-	return &models.ApmServiceMapConfigModel{
+	result := &models.ApmServiceMapConfigModel{
 		Title:                    types.StringPointerValue(cfg.Title),
 		Description:              types.StringPointerValue(cfg.Description),
 		HideTitle:                types.BoolPointerValue(cfg.HideTitle),
@@ -163,11 +165,19 @@ func apmServiceMapConfigFromAPIImport(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbed
 		SloStatusFilter:          enumSliceToStringSet(cfg.SloStatusFilter),
 		TimeRange:                panelkit.TimeRangeFromAPI(cfg.TimeRange, nil),
 	}
+	if suppressEnvironmentDefault && result.Environment.ValueString() == environmentServerDefault {
+		result.Environment = types.StringNull()
+	}
+	return result
 }
 
-func apmServiceMapConfigHasAnyField(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable) bool {
+func apmServiceMapConfigHasAnyField(cfg kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable, ignoreEnvironmentServerDefault bool) bool {
+	hasEnvironment := cfg.Environment != nil
+	if ignoreEnvironmentServerDefault && hasEnvironment && *cfg.Environment == environmentServerDefault {
+		hasEnvironment = false
+	}
 	if cfg.Title != nil || cfg.Description != nil || cfg.HideTitle != nil || cfg.HideBorder != nil ||
-		cfg.Environment != nil || cfg.ServiceName != nil || cfg.ServiceGroupId != nil || cfg.Kuery != nil ||
+		hasEnvironment || cfg.ServiceName != nil || cfg.ServiceGroupId != nil || cfg.Kuery != nil ||
 		cfg.MapOrientation != nil || cfg.SyncWithDashboardFilters != nil {
 		return true
 	}
