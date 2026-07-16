@@ -17,45 +17,6 @@
 
 package index
 
-import indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
-
-// Elasticsearch index setting keys — thin aliases to the shared parent-package
-// constants so existing code in this package continues to compile unchanged.
-const (
-	settingCodec                            = indexparent.SettingCodec
-	settingLoadFixedBitsetFiltersEagerly    = indexparent.SettingLoadFixedBitsetFiltersEagerly
-	settingMappingCoerce                    = indexparent.SettingMappingCoerce
-	settingNumberOfReplicas                 = indexparent.SettingNumberOfReplicas
-	settingAutoExpandReplicas               = indexparent.SettingAutoExpandReplicas
-	settingMaxResultWindow                  = indexparent.SettingMaxResultWindow
-	settingMaxInnerResultWindow             = indexparent.SettingMaxInnerResultWindow
-	settingMaxRescoreWindow                 = indexparent.SettingMaxRescoreWindow
-	settingMaxDocvalueFieldsSearch          = indexparent.SettingMaxDocvalueFieldsSearch
-	settingMaxScriptFields                  = indexparent.SettingMaxScriptFields
-	settingMaxNgramDiff                     = indexparent.SettingMaxNgramDiff
-	settingMaxShingleDiff                   = indexparent.SettingMaxShingleDiff
-	settingMaxRefreshListeners              = indexparent.SettingMaxRefreshListeners
-	settingMaxTermsCount                    = indexparent.SettingMaxTermsCount
-	settingMaxRegexLength                   = indexparent.SettingMaxRegexLength
-	settingGCDeletes                        = indexparent.SettingGCDeletes
-	settingDefaultPipeline                  = indexparent.SettingDefaultPipeline
-	settingFinalPipeline                    = indexparent.SettingFinalPipeline
-	settingNumberOfShards                   = indexparent.SettingNumberOfShards
-	settingNumberOfRoutingShards            = indexparent.SettingNumberOfRoutingShards
-	settingRoutingPartitionSize             = indexparent.SettingRoutingPartitionSize
-	settingShardCheckOnStartup              = indexparent.SettingShardCheckOnStartup
-	settingSortField                        = indexparent.SettingSortField
-	settingSortOrder                        = indexparent.SettingSortOrder
-	settingSortMissing                      = indexparent.SettingSortMissing
-	settingSortMode                         = indexparent.SettingSortMode
-	settingRefreshInterval                  = indexparent.SettingRefreshInterval
-	settingSearchIdleAfter                  = indexparent.SettingSearchIdleAfter
-	settingQueryDefaultField                = indexparent.SettingQueryDefaultField
-	settingRoutingAllocationEnable          = indexparent.SettingRoutingAllocationEnable
-	settingRoutingRebalanceEnable           = indexparent.SettingRoutingRebalanceEnable
-	settingUnassignedNodeLeftDelayedTimeout = indexparent.SettingUnassignedNodeLeftDelayedTimeout
-)
-
 // Terraform schema attribute keys reused by the index resource and its sort
 // support. These names match the Elasticsearch index sort and alias APIs.
 const (

@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -38,7 +39,7 @@ import (
 var importHydrationPrunableFieldKeys []string
 
 func init() {
-	for _, key := range allSettingsKeys {
+	for _, key := range indexparent.AllSettingsKeys {
 		if sortKeysExpandedFromNestedBlock[key] {
 			continue
 		}
@@ -69,16 +70,16 @@ func hydrateAllSettingsFromRaw(ctx context.Context, model *tfModel) diag.Diagnos
 
 	hydrateAnalysisFromFlatSettings(model, flat)
 
-	if raw, ok := flat["index."+settingQueryDefaultField]; ok {
+	if raw, ok := flat["index."+indexparent.SettingQueryDefaultField]; ok {
 		hydrateQueryDefaultFieldFromRaw(ctx, model, raw)
 	}
 
 	modelType := reflect.TypeFor[tfModel]()
-	for _, key := range allSettingsKeys {
+	for _, key := range indexparent.AllSettingsKeys {
 		if sortKeysSkippedOnImportHydration[key] {
 			continue
 		}
-		if key == settingQueryDefaultField {
+		if key == indexparent.SettingQueryDefaultField {
 			continue
 		}
 

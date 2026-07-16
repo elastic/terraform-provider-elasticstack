@@ -24,7 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -154,7 +154,7 @@ func (r *Resource) updateSettings(
 	planDynamicSettings := map[string]any{}
 	stateDynamicSettings := map[string]any{}
 
-	for _, key := range dynamicSettingsKeys {
+	for _, key := range indexparent.DynamicSettingsKeys {
 		if planSetting, ok := planSettings[key]; ok {
 			planDynamicSettings[key] = planSetting
 		}
@@ -186,8 +186,8 @@ func (r *Resource) updateMappings(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
-	planMappings index.MappingsValue,
-	stateMappings index.MappingsValue,
+	planMappings indexparent.MappingsValue,
+	stateMappings indexparent.MappingsValue,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 

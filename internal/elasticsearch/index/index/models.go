@@ -42,22 +42,18 @@ var (
 	// pre-processor in toIndexSettings() and are skipped in the reflection loop
 	// because they have no corresponding flat tfsdk struct field.
 	sortKeysExpandedFromNestedBlock = map[string]bool{
-		settingSortMissing: true,
-		settingSortMode:    true,
+		indexparent.SettingSortMissing: true,
+		indexparent.SettingSortMode:    true,
 	}
 
 	// sortKeysSkippedOnImportHydration are not written into legacy flat attrs during
 	// import hydration; nested sort is handled by populateSortFromSettings instead.
 	sortKeysSkippedOnImportHydration = map[string]bool{
-		settingSortField:   true,
-		settingSortOrder:   true,
-		settingSortMissing: true,
-		settingSortMode:    true,
+		indexparent.SettingSortField:   true,
+		indexparent.SettingSortOrder:   true,
+		indexparent.SettingSortMissing: true,
+		indexparent.SettingSortMode:    true,
 	}
-
-	staticSettingsKeys  = indexparent.StaticSettingsKeys
-	dynamicSettingsKeys = indexparent.DynamicSettingsKeys
-	allSettingsKeys     = indexparent.AllSettingsKeys
 )
 
 type tfModel struct {
@@ -353,19 +349,19 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 				// else: sortModes[i] stays "" (empty placeholder for positional alignment)
 			}
 
-			settings[settingSortField] = sortFields
-			settings[settingSortOrder] = sortOrders
+			settings[indexparent.SettingSortField] = sortFields
+			settings[indexparent.SettingSortOrder] = sortOrders
 
 			if !allMissingNull {
-				settings[settingSortMissing] = sortMissing
+				settings[indexparent.SettingSortMissing] = sortMissing
 			}
 			if !allModeNull {
-				settings[settingSortMode] = sortModes
+				settings[indexparent.SettingSortMode] = sortModes
 			}
 		}
 	}
 
-	for _, key := range allSettingsKeys {
+	for _, key := range indexparent.AllSettingsKeys {
 		// sort.missing and sort.mode are only populated by the pre-processor above.
 		// They have no flat tfsdk struct field to reflect on, so skip them here.
 		if sortKeysExpandedFromNestedBlock[key] {
