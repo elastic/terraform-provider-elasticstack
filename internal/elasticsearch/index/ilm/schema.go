@@ -64,7 +64,7 @@ func ilmSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"metadata": schema.StringAttribute{
+			attrMetadata: schema.StringAttribute{
 				Description: "Optional user metadata about the ilm policy. Must be valid JSON document.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},

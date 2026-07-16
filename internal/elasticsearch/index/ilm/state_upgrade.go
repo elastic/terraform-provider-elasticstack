@@ -41,8 +41,16 @@ func migrateILMStateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, 
 		}
 		if phaseObj, ok := stateMap[pk].(map[string]any); ok {
 			unwrapPhaseActionLists(phaseObj)
+			if allocateObj, ok := phaseObj[ilmActionAllocate].(map[string]any); ok {
+				stateutil.NullifyEmptyString(allocateObj, attrInclude, attrExclude, attrRequire)
+			}
 		}
 	}
+
+	// The SDK provider stored unset JSON string attributes as "" rather than
+	// null. The Plugin Framework jsontypes.NormalizedType rejects empty strings,
+	// so normalise them to nil before marshalling the upgraded state.
+	stateutil.NullifyEmptyString(stateMap, attrMetadata)
 
 	stateutil.MarshalStateMap(stateMap, resp)
 }
