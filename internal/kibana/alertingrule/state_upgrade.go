@@ -39,8 +39,7 @@ func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrade
 // migrateV0ToV1 handles migration from SDKv2 state format to Plugin Framework state format.
 // The main differences are:
 // - JSON fields may need normalization for jsontypes.Normalized
-// - notify_when may be empty string instead of null
-// - throttle may be empty string instead of null
+// - notify_when, throttle, and params may be empty strings instead of null
 // - frequency, alerts_filter, and timeframe change from lists to single objects
 func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	stateutil.SetDefaultState(req, resp)
@@ -68,26 +67,25 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		}
 	}
 
-	stateutil.NullifyEmptyString(stateMap, "notify_when", "throttle")
-	stateutil.NullifyEmptyString(stateMap, "params")
+	stateutil.NullifyEmptyString(stateMap, attrNotifyWhen, attrThrottle, attrParams)
 
 	// Handle actions: convert frequency, alerts_filter, and timeframe from lists to objects
 	if actions, ok := stateMap["actions"].([]any); ok {
 		for _, actionAny := range actions {
 			if action, ok := actionAny.(map[string]any); ok {
-				stateutil.NullifyEmptyString(action, "params")
+				stateutil.NullifyEmptyString(action, attrParams)
 
-				resp.Diagnostics.Append(stateutil.CollapseListPath(action, "frequency", "actions.frequency")...)
+				resp.Diagnostics.Append(stateutil.CollapseListPath(action, blockFrequency, "actions.frequency")...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
 
-				resp.Diagnostics.Append(stateutil.CollapseListPath(action, "alerts_filter", "actions.alerts_filter")...)
+				resp.Diagnostics.Append(stateutil.CollapseListPath(action, blockAlertsFilter, "actions.alerts_filter")...)
 				if resp.Diagnostics.HasError() {
 					return
 				}
 
-				if filterMap, ok := action["alerts_filter"].(map[string]any); ok {
+				if filterMap, ok := action[blockAlertsFilter].(map[string]any); ok {
 					resp.Diagnostics.Append(stateutil.CollapseListPath(filterMap, "timeframe", "actions.alerts_filter.timeframe")...)
 					if resp.Diagnostics.HasError() {
 						return

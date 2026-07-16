@@ -20,6 +20,7 @@ package alertingrule
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -30,13 +31,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	testSchemaOnce sync.Once
+	testSchema     rschema.Schema
+)
+
 func testResourceSchema(t *testing.T) rschema.Schema {
 	t.Helper()
-	ctx := context.Background()
-	var resp resource.SchemaResponse
-	newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
-	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
-	return resp.Schema
+	testSchemaOnce.Do(func() {
+		ctx := context.Background()
+		var resp resource.SchemaResponse
+		newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
+		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+		testSchema = resp.Schema
+	})
+	return testSchema
 }
 
 func runMigrateV0ToV1(t *testing.T, raw map[string]any) map[string]any {
@@ -101,10 +110,10 @@ func TestMigrateV0ToV1_ParamsNullification(t *testing.T) {
 	t.Parallel()
 
 	validParams := `{"test":"value"}`
-	absentParams := "__absent__"
 
 	cases := []struct {
 		name              string
+		ruleParamsSet     bool
 		ruleParams        any
 		actionParams      []any
 		wantRuleParams    any
@@ -113,26 +122,28 @@ func TestMigrateV0ToV1_ParamsNullification(t *testing.T) {
 	}{
 		{
 			name:              "rule params empty string becomes null",
+			ruleParamsSet:     true,
 			ruleParams:        "",
 			wantRuleParams:    nil,
 			wantDecodeUnderV1: true,
 		},
 		{
 			name:              "rule params valid JSON unchanged",
+			ruleParamsSet:     true,
 			ruleParams:        validParams,
 			wantRuleParams:    validParams,
 			wantDecodeUnderV1: true,
 		},
 		{
 			name:              "rule params null unchanged",
+			ruleParamsSet:     true,
 			ruleParams:        nil,
 			wantRuleParams:    nil,
 			wantDecodeUnderV1: true,
 		},
 		{
 			name:              "rule params absent unchanged",
-			ruleParams:        absentParams,
-			wantRuleParams:    absentParams,
+			ruleParamsSet:     false,
 			wantDecodeUnderV1: false,
 		},
 		{
@@ -155,6 +166,7 @@ func TestMigrateV0ToV1_ParamsNullification(t *testing.T) {
 		},
 		{
 			name:              "both rule and action params empty strings become null",
+			ruleParamsSet:     true,
 			ruleParams:        "",
 			actionParams:      []any{""},
 			wantRuleParams:    nil,
@@ -174,17 +186,17 @@ func TestMigrateV0ToV1_ParamsNullification(t *testing.T) {
 			t.Parallel()
 
 			raw := baseAlertingRuleState()
-			if tc.ruleParams != absentParams {
-				raw["params"] = tc.ruleParams
+			if tc.ruleParamsSet {
+				raw[attrParams] = tc.ruleParams
 			}
 			if tc.actionParams != nil {
 				actions := make([]any, 0, len(tc.actionParams))
 				for _, params := range tc.actionParams {
 					action := map[string]any{
-						"id":            "action-id",
-						"frequency":     []any{},
-						"alerts_filter": []any{},
-						"params":        params,
+						"id":              "action-id",
+						blockFrequency:    []any{},
+						blockAlertsFilter: []any{},
+						attrParams:        params,
 					}
 					actions = append(actions, action)
 				}
@@ -197,10 +209,10 @@ func TestMigrateV0ToV1_ParamsNullification(t *testing.T) {
 			var got map[string]any
 			require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
 
-			if tc.ruleParams != absentParams {
-				require.Equal(t, tc.wantRuleParams, got["params"], "rule-level params normalization mismatch")
+			if tc.ruleParamsSet {
+				require.Equal(t, tc.wantRuleParams, got[attrParams], "rule-level params normalization mismatch")
 			} else {
-				_, ok := got["params"]
+				_, ok := got[attrParams]
 				require.False(t, ok, "absent rule params should remain absent")
 			}
 
@@ -211,7 +223,7 @@ func TestMigrateV0ToV1_ParamsNullification(t *testing.T) {
 				for i, actionAny := range actions {
 					action, ok := actionAny.(map[string]any)
 					require.True(t, ok, "action %d should be a map", i)
-					require.Equal(t, tc.wantActionParams[i], action["params"], "action %d params normalization mismatch", i)
+					require.Equal(t, tc.wantActionParams[i], action[attrParams], "action %d params normalization mismatch", i)
 				}
 			}
 
@@ -226,35 +238,35 @@ func TestMigrateV0ToV1_PreservesExistingTransformations(t *testing.T) {
 	t.Parallel()
 
 	raw := baseAlertingRuleState()
-	raw["params"] = ""
-	raw["notify_when"] = ""
-	raw["throttle"] = ""
+	raw[attrParams] = ""
+	raw[attrNotifyWhen] = ""
+	raw[attrThrottle] = ""
 	raw["actions"] = []any{
 		map[string]any{
-			"id":     "action-1",
-			"params": `{"foo":"bar"}`,
-			"frequency": []any{
+			"id":       "action-1",
+			attrParams: `{"foo":"bar"}`,
+			blockFrequency: []any{
 				map[string]any{
-					"summary":     true,
-					"notify_when": "onActiveAlert",
-					"throttle":    "10m",
+					"summary":      true,
+					attrNotifyWhen: "onActiveAlert",
+					attrThrottle:   "10m",
 				},
 			},
-			"alerts_filter": []any{},
+			blockAlertsFilter: []any{},
 		},
 		map[string]any{
-			"id":            "action-2",
-			"params":        "",
-			"frequency":     []any{},
-			"alerts_filter": []any{},
+			"id":              "action-2",
+			attrParams:        "",
+			blockFrequency:    []any{},
+			blockAlertsFilter: []any{},
 		},
 	}
 
 	got := runMigrateV0ToV1(t, raw)
 
-	require.Nil(t, got["params"], "rule-level params should be nullified")
-	require.Nil(t, got["notify_when"], "notify_when should be nullified")
-	require.Nil(t, got["throttle"], "throttle should be nullified")
+	require.Nil(t, got[attrParams], "rule-level params should be nullified")
+	require.Nil(t, got[attrNotifyWhen], "notify_when should be nullified")
+	require.Nil(t, got[attrThrottle], "throttle should be nullified")
 
 	actions, ok := got["actions"].([]any)
 	require.True(t, ok)
@@ -262,21 +274,21 @@ func TestMigrateV0ToV1_PreservesExistingTransformations(t *testing.T) {
 
 	action1, ok := actions[0].(map[string]any)
 	require.True(t, ok)
-	action1Params, ok := action1["params"].(string)
+	action1Params, ok := action1[attrParams].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"foo":"bar"}`, action1Params, "non-empty action params should be preserved")
-	freq1, ok := action1["frequency"].(map[string]any)
+	freq1, ok := action1[blockFrequency].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, true, freq1["summary"])
-	require.Equal(t, "onActiveAlert", freq1["notify_when"])
-	require.Equal(t, "10m", freq1["throttle"])
-	require.Nil(t, action1["alerts_filter"], "empty alerts_filter list should collapse to null")
+	require.Equal(t, "onActiveAlert", freq1[attrNotifyWhen])
+	require.Equal(t, "10m", freq1[attrThrottle])
+	require.Nil(t, action1[blockAlertsFilter], "empty alerts_filter list should collapse to null")
 
 	action2, ok := actions[1].(map[string]any)
 	require.True(t, ok)
-	require.Nil(t, action2["params"], "empty action params should be nullified")
-	require.Nil(t, action2["frequency"], "empty frequency list should collapse to null")
-	require.Nil(t, action2["alerts_filter"], "empty alerts_filter list should collapse to null")
+	require.Nil(t, action2[attrParams], "empty action params should be nullified")
+	require.Nil(t, action2[blockFrequency], "empty frequency list should collapse to null")
+	require.Nil(t, action2[blockAlertsFilter], "empty alerts_filter list should collapse to null")
 }
 
 func TestUpgradeState_RegistersV0Upgrader(t *testing.T) {
