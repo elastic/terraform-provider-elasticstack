@@ -28,8 +28,14 @@ const (
 
 // Terraform schema attribute keys.
 const (
-	attrTags   = "tags"
-	attrParams = "params"
+	attrTags          = "tags"
+	attrParams        = "params"
+	attrNotifyWhen    = "notify_when"
+	attrRuleTypeID    = "rule_type_id"
+	attrEnabled       = "enabled"
+	attrThrottle      = "throttle"
+	blockFrequency    = "frequency"
+	blockAlertsFilter = "alerts_filter"
 )
 
 // JSON params keys used across rule types.
