@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"maps"
+	"sync"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -30,12 +31,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	resourceSchemaOnce sync.Once
+	resourceSchema     schema.Schema
+)
+
+// testResourceSchema returns the ILM resource schema, built once and shared
+// across subtests since it's identical for every case in this file.
 func testResourceSchema(t *testing.T) schema.Schema {
 	t.Helper()
-	ctx := context.Background()
-	var resp resource.SchemaResponse
-	newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
-	return resp.Schema
+	resourceSchemaOnce.Do(func() {
+		var resp resource.SchemaResponse
+		newResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
+		resourceSchema = resp.Schema
+	})
+	return resourceSchema
+}
+
+// mustNestedMap asserts that m[key] is a map[string]any and returns it.
+func mustNestedMap(t *testing.T, m map[string]any, key string) map[string]any {
+	t.Helper()
+	nested, ok := m[key].(map[string]any)
+	require.True(t, ok, "expected %q to be an object", key)
+	return nested
 }
 
 func runUpgrade(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
@@ -176,10 +194,7 @@ func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				warm, ok := got["warm"].(map[string]any)
-				require.True(t, ok)
-				allocate, ok := warm["allocate"].(map[string]any)
-				require.True(t, ok)
+				allocate := mustNestedMap(t, mustNestedMap(t, got, "warm"), "allocate")
 				require.Nil(t, allocate["include"])
 				replicas, ok := allocate["number_of_replicas"].(float64)
 				require.True(t, ok)
@@ -209,10 +224,7 @@ func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				warm, ok := got["warm"].(map[string]any)
-				require.True(t, ok)
-				allocate, ok := warm["allocate"].(map[string]any)
-				require.True(t, ok)
+				allocate := mustNestedMap(t, mustNestedMap(t, got, "warm"), "allocate")
 				require.Nil(t, allocate["include"])
 				require.Nil(t, allocate["exclude"])
 				require.Nil(t, allocate["require"])
@@ -238,10 +250,7 @@ func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
 				require.Nil(t, got["metadata"])
-				cold, ok := got["cold"].(map[string]any)
-				require.True(t, ok)
-				allocate, ok := cold["allocate"].(map[string]any)
-				require.True(t, ok)
+				allocate := mustNestedMap(t, mustNestedMap(t, got, "cold"), "allocate")
 				require.Nil(t, allocate["include"])
 				require.Nil(t, allocate["exclude"])
 				require.Nil(t, allocate["require"])
@@ -269,19 +278,18 @@ func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
 				metadata, ok := got["metadata"].(string)
 				require.True(t, ok)
 				require.JSONEq(t, `{"k":"v"}`, metadata)
-				warm, ok := got["warm"].(map[string]any)
-				require.True(t, ok)
-				allocate, ok := warm["allocate"].(map[string]any)
-				require.True(t, ok)
-				include, ok := allocate["include"].(string)
-				require.True(t, ok)
-				require.JSONEq(t, `{"box_type":"warm"}`, include)
-				exclude, ok := allocate["exclude"].(string)
-				require.True(t, ok)
-				require.JSONEq(t, `{"box_type":"cold"}`, exclude)
-				requireVal, ok := allocate["require"].(string)
-				require.True(t, ok)
-				require.JSONEq(t, `{"data":"hot"}`, requireVal)
+
+				allocate := mustNestedMap(t, mustNestedMap(t, got, "warm"), "allocate")
+				wantAllocate := map[string]string{
+					"include": `{"box_type":"warm"}`,
+					"exclude": `{"box_type":"cold"}`,
+					"require": `{"data":"hot"}`,
+				}
+				for key, want := range wantAllocate {
+					value, ok := allocate[key].(string)
+					require.True(t, ok, "expected allocate.%s to be a string", key)
+					require.JSONEq(t, want, value)
+				}
 			},
 		},
 	}
