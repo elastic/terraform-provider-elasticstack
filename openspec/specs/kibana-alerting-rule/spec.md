@@ -70,7 +70,9 @@ Notes:
 
 - Top-level and nested Markdown descriptions for several attributes are embedded from `internal/kibana/alertingrule/descriptions/*.md` and `resource-description.md` (includes link to Elastic create-rule API docs and an `api_key` auth note for stack 8.8.0+).
 - Resource schema version is **1** (`schema.Schema.Version`); state upgrade handles **0 → 1**.
+
 ## Requirements
+
 ### Requirement: Kibana alerting rule APIs (REQ-001–REQ-004)
 
 The resource SHALL manage rules through Kibana’s alerting rule HTTP API: create rule, get rule, update rule, and delete rule. When an update response does not reflect the desired enabled/disabled state, the provider SHALL perform the follow-up enable or disable operation Kibana expects so the rule ends up in the intended state. Reference: [Create rule API](https://www.elastic.co/guide/en/kibana/master/create-rule-api.html) (as linked from the resource description).
@@ -423,7 +425,8 @@ Saved state at schema version **0** (legacy provider format) SHALL be upgraded a
 - Missing or nil raw state SHALL produce an error diagnostic `Invalid raw state`.
 - If stored JSON cannot be unmarshaled, the provider SHALL error with `Failed to unmarshal raw state`.
 - If `id` is not already composite (`<space_id>/<rule_id>`), the provider SHALL rewrite it to that form using `space_id` from state (default **`"default"`**) and `rule_id` from state when set, otherwise the previous bare `id` value.
-- Empty string values for `notify_when` and `throttle` SHALL become null in upgraded state.
+- Empty string values for `notify_when`, `throttle`, and rule-level `params` SHALL become null in upgraded state. A non-empty or null rule-level `params` value SHALL be preserved.
+- For each action, an empty-string `params` value SHALL become null; non-empty or null action `params` values SHALL be preserved. This prevents invalid empty strings from reaching the `jsontypes.Normalized` action parameter value.
 - For each action, nested `frequency`, `alerts_filter`, and `timeframe` values that were stored as single-element lists in v0 SHALL become the single nested object shape expected by the current schema (or null when the list was empty).
 - If upgrade changes state and re-serialization fails, the provider SHALL error with `Failed to marshal upgraded state`.
 
@@ -432,6 +435,24 @@ Saved state at schema version **0** (legacy provider format) SHALL be upgraded a
 - GIVEN v0 state with `id` equal to a bare rule id and `space_id` set
 - WHEN upgrade runs
 - THEN upgraded state SHALL have composite `id` `<space_id>/<rule_id>`
+
+#### Scenario: Empty rule-level params
+
+- GIVEN v0 state with rule-level `params` equal to an empty string
+- WHEN upgrade runs
+- THEN upgraded state SHALL set rule-level `params` to null
+
+#### Scenario: Empty action params
+
+- GIVEN v0 state with an action whose `params` equals an empty string
+- WHEN upgrade runs
+- THEN upgraded state SHALL set that action's `params` to null
+
+#### Scenario: Valid params preserved
+
+- GIVEN v0 state with a non-empty JSON value in rule-level or action `params`
+- WHEN upgrade runs
+- THEN the upgraded state SHALL preserve that value
 
 ### Requirement: Authenticated access note (REQ-035)
 
@@ -577,6 +598,7 @@ All four fields SHALL be tagged `omitempty` so they do not appear as required ke
 ### Requirement: Discriminator validation coverage guard (REQ-051)
 
 The provider SHALL maintain automated tests ensuring every `rule_type_id` case in `kbapi.AlertingRuleAPIBody.ValueByDiscriminator()` is either validated by the default discriminator params path or explicitly listed in the params validation override table with documented rationale. The coverage-guard test SHALL derive the set of `rule_type_id` values from the generated `ValueByDiscriminator()` implementation (for example by parsing `generated/kbapi/kibana.gen.go`) so kbapi regeneration that adds a new case is detected automatically.
+
 #### Scenario: New kbapi rule type without validation decision
 
 - GIVEN `kbapi` regeneration adds a new case to `ValueByDiscriminator()`

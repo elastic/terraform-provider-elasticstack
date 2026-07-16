@@ -85,7 +85,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"notify_when": schema.StringAttribute{
+			attrNotifyWhen: schema.StringAttribute{
 				Description: notifyWhenDescription,
 				Optional:    true,
 				Computed:    true,
@@ -99,12 +99,12 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.OneOf("onActionGroupChange", "onActiveAlert", "onThrottleInterval"),
 				},
 			},
-			"params": schema.StringAttribute{
+			attrParams: schema.StringAttribute{
 				Description: "The rule parameters, which differ for each rule type.",
 				Required:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
-			"rule_type_id": schema.StringAttribute{
+			attrRuleTypeID: schema.StringAttribute{
 				Description: ruleTypeIDDescription,
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
@@ -116,7 +116,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Required:    true,
 				CustomType:  kibanacustomtypes.AlertingDurationType{Units: kibanacustomtypes.AlertingDurationUnitsSubDay},
 			},
-			"enabled": schema.BoolAttribute{
+			attrEnabled: schema.BoolAttribute{
 				Description: "Indicates if you want to run the rule on an interval basis.",
 				Optional:    true,
 				Computed:    true,
@@ -127,7 +127,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:    true,
 				ElementType: types.StringType,
 			},
-			"throttle": schema.StringAttribute{
+			attrThrottle: schema.StringAttribute{
 				Description: throttleRuleDescription,
 				Optional:    true,
 				Computed:    true,
@@ -216,14 +216,14 @@ func getSchema(_ context.Context) schema.Schema {
 							Description: "The identifier for the connector saved object.",
 							Required:    true,
 						},
-						"params": schema.StringAttribute{
+						attrParams: schema.StringAttribute{
 							Description: "The parameters for the action, which are sent to the connector.",
 							Required:    true,
 							CustomType:  jsontypes.NormalizedType{},
 						},
 					},
 					Blocks: map[string]schema.Block{
-						"frequency": schema.SingleNestedBlock{
+						blockFrequency: schema.SingleNestedBlock{
 							Description: actionsFrequencyDescription,
 							Validators: []validator.Object{
 								objectvalidator.AlsoRequires(path.MatchRelative().AtName("summary")),
@@ -250,7 +250,7 @@ func getSchema(_ context.Context) schema.Schema {
 								},
 							},
 						},
-						"alerts_filter": schema.SingleNestedBlock{
+						blockAlertsFilter: schema.SingleNestedBlock{
 							Description: alertsFilterDescription,
 							Attributes: map[string]schema.Attribute{
 								"kql": schema.StringAttribute{
