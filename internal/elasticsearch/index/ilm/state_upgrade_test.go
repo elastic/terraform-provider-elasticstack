@@ -137,6 +137,8 @@ func TestILMResourceUpgradeState(t *testing.T) {
 	conn, ok := got["elasticsearch_connection"].([]any)
 	require.True(t, ok)
 	require.Len(t, conn, 1)
+
+	requireUpgradedStateDecodes(t, resp)
 }
 
 func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
@@ -243,6 +245,43 @@ func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
 				require.Nil(t, allocate["include"])
 				require.Nil(t, allocate["exclude"])
 				require.Nil(t, allocate["require"])
+			},
+		},
+		{
+			name: "non_empty_json_strings_preserved",
+			patch: map[string]any{
+				"metadata": `{"k":"v"}`,
+				"warm": []any{
+					map[string]any{
+						"min_age": "7d",
+						"allocate": []any{
+							map[string]any{
+								"include": `{"box_type":"warm"}`,
+								"exclude": `{"box_type":"cold"}`,
+								"require": `{"data":"hot"}`,
+							},
+						},
+					},
+				},
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				metadata, ok := got["metadata"].(string)
+				require.True(t, ok)
+				require.JSONEq(t, `{"k":"v"}`, metadata)
+				warm, ok := got["warm"].(map[string]any)
+				require.True(t, ok)
+				allocate, ok := warm["allocate"].(map[string]any)
+				require.True(t, ok)
+				include, ok := allocate["include"].(string)
+				require.True(t, ok)
+				require.JSONEq(t, `{"box_type":"warm"}`, include)
+				exclude, ok := allocate["exclude"].(string)
+				require.True(t, ok)
+				require.JSONEq(t, `{"box_type":"cold"}`, exclude)
+				requireVal, ok := allocate["require"].(string)
+				require.True(t, ok)
+				require.JSONEq(t, `{"data":"hot"}`, requireVal)
 			},
 		},
 	}
