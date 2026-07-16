@@ -20,49 +20,30 @@ package ilm
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/stretchr/testify/require"
 )
 
-func TestILMResourceUpgradeState(t *testing.T) {
-	t.Parallel()
+func testResourceSchema(t *testing.T) schema.Schema {
+	t.Helper()
+	ctx := context.Background()
+	var resp resource.SchemaResponse
+	newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
+	return resp.Schema
+}
 
-	raw := map[string]any{
-		"id":   "cluster-uuid/policy-x",
-		"name": "policy-x",
-		"hot": []any{
-			map[string]any{
-				"min_age": "1h",
-				"set_priority": []any{
-					map[string]any{"priority": float64(10)},
-				},
-				"rollover": []any{
-					map[string]any{"max_age": "1d"},
-				},
-				"readonly": []any{
-					map[string]any{"enabled": true},
-				},
-			},
-		},
-		"delete": []any{
-			map[string]any{
-				"min_age": "0ms",
-				"delete": []any{
-					map[string]any{"delete_searchable_snapshot": true},
-				},
-			},
-		},
-		"elasticsearch_connection": []any{
-			map[string]any{"username": "u"},
-		},
-	}
+func runUpgrade(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
+	t.Helper()
 	rawJSON, err := json.Marshal(raw)
 	require.NoError(t, err)
 
-	r := &Resource{}
+	r := newResource()
 	upgraders := r.UpgradeState(context.Background())
 	up, ok := upgraders[0]
 	require.True(t, ok)
@@ -72,6 +53,65 @@ func TestILMResourceUpgradeState(t *testing.T) {
 	}
 	resp := &resource.UpgradeStateResponse{}
 	up.StateUpgrader(context.Background(), req, resp)
+	return resp
+}
+
+func requireUpgradedStateDecodes(t *testing.T, resp *resource.UpgradeStateResponse) {
+	t.Helper()
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	require.NotNil(t, resp.DynamicValue)
+	require.NotNil(t, resp.DynamicValue.JSON)
+
+	ctx := context.Background()
+	sch := testResourceSchema(t)
+	tfTyp := sch.Type().TerraformType(ctx)
+	raw, err := resp.DynamicValue.Unmarshal(tfTyp)
+	require.NoError(t, err)
+
+	state := tfsdk.State{Schema: sch, Raw: raw}
+	var model tfModel
+	diags := state.Get(ctx, &model)
+	require.False(t, diags.HasError(), "%s", diags)
+}
+
+func baseILMState() map[string]any {
+	return map[string]any{
+		"id":   "cluster-uuid/policy-x",
+		"name": "policy-x",
+		"elasticsearch_connection": []any{
+			map[string]any{"username": "u"},
+		},
+	}
+}
+
+func TestILMResourceUpgradeState(t *testing.T) {
+	t.Parallel()
+
+	raw := baseILMState()
+	raw["hot"] = []any{
+		map[string]any{
+			"min_age": "1h",
+			"set_priority": []any{
+				map[string]any{"priority": float64(10)},
+			},
+			"rollover": []any{
+				map[string]any{"max_age": "1d"},
+			},
+			"readonly": []any{
+				map[string]any{"enabled": true},
+			},
+		},
+	}
+	raw["delete"] = []any{
+		map[string]any{
+			"min_age": "0ms",
+			"delete": []any{
+				map[string]any{"delete_searchable_snapshot": true},
+			},
+		},
+	}
+
+	resp := runUpgrade(t, raw)
 	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
 
 	var got map[string]any
@@ -97,4 +137,128 @@ func TestILMResourceUpgradeState(t *testing.T) {
 	conn, ok := got["elasticsearch_connection"].([]any)
 	require.True(t, ok)
 	require.Len(t, conn, 1)
+}
+
+func TestMigrateILMStateV0ToV1_nullifyEmptyStrings(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		patch  map[string]any
+		assert func(t *testing.T, got map[string]any)
+	}{
+		{
+			name: "metadata_empty_string",
+			patch: map[string]any{
+				"metadata": "",
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Nil(t, got["metadata"])
+			},
+		},
+		{
+			name: "allocate_include_empty_string",
+			patch: map[string]any{
+				"warm": []any{
+					map[string]any{
+						"min_age": "7d",
+						"allocate": []any{
+							map[string]any{
+								"include":            "",
+								"number_of_replicas": float64(1),
+							},
+						},
+					},
+				},
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				warm, ok := got["warm"].(map[string]any)
+				require.True(t, ok)
+				allocate, ok := warm["allocate"].(map[string]any)
+				require.True(t, ok)
+				require.Nil(t, allocate["include"])
+				replicas, ok := allocate["number_of_replicas"].(float64)
+				require.True(t, ok)
+				require.InEpsilon(t, 1.0, replicas, 0.0001)
+				_, hasExclude := allocate["exclude"]
+				require.False(t, hasExclude)
+				_, hasRequire := allocate["require"]
+				require.False(t, hasRequire)
+			},
+		},
+		{
+			name: "allocate_all_json_attrs_empty_string",
+			patch: map[string]any{
+				"warm": []any{
+					map[string]any{
+						"min_age": "7d",
+						"allocate": []any{
+							map[string]any{
+								"include":            "",
+								"exclude":            "",
+								"require":            "",
+								"number_of_replicas": float64(2),
+							},
+						},
+					},
+				},
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				warm, ok := got["warm"].(map[string]any)
+				require.True(t, ok)
+				allocate, ok := warm["allocate"].(map[string]any)
+				require.True(t, ok)
+				require.Nil(t, allocate["include"])
+				require.Nil(t, allocate["exclude"])
+				require.Nil(t, allocate["require"])
+			},
+		},
+		{
+			name: "metadata_and_allocate_empty_strings",
+			patch: map[string]any{
+				"metadata": "",
+				"cold": []any{
+					map[string]any{
+						"min_age": "30d",
+						"allocate": []any{
+							map[string]any{
+								"include": "",
+								"exclude": "",
+								"require": "",
+							},
+						},
+					},
+				},
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Nil(t, got["metadata"])
+				cold, ok := got["cold"].(map[string]any)
+				require.True(t, ok)
+				allocate, ok := cold["allocate"].(map[string]any)
+				require.True(t, ok)
+				require.Nil(t, allocate["include"])
+				require.Nil(t, allocate["exclude"])
+				require.Nil(t, allocate["require"])
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			raw := baseILMState()
+			maps.Copy(raw, tc.patch)
+
+			resp := runUpgrade(t, raw)
+			require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+			var got map[string]any
+			require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+			tc.assert(t, got)
+			requireUpgradedStateDecodes(t, resp)
+		})
+	}
 }
