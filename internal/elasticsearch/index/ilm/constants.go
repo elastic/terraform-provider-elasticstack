@@ -47,6 +47,7 @@ const (
 	attrMaxAge                   = "max_age"
 	attrMaxPrimaryShardDocs      = "max_primary_shard_docs"
 	attrMaxPrimaryShardSize      = "max_primary_shard_size"
+	attrMetadata                 = "metadata"
 	attrMinAge                   = "min_age"
 	attrMinDocs                  = "min_docs"
 	attrMinPrimaryShardDocs      = "min_primary_shard_docs"
