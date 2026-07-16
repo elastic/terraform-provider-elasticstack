@@ -89,19 +89,7 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 			Type: kbapi.LegacyMetric,
 		}
 
-		if typeutils.IsKnown(m.Title) {
-			api.Title = new(m.Title.ValueString())
-		}
-		if typeutils.IsKnown(m.Description) {
-			api.Description = new(m.Description.ValueString())
-		}
-		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-		}
-		if typeutils.IsKnown(m.Sampling) {
-			sampling := float32(m.Sampling.ValueFloat64())
-			api.Sampling = &sampling
-		}
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 		api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 

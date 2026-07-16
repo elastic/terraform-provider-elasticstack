@@ -1046,10 +1046,10 @@ func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 	chart := kbapi.KibanaHTTPAPIsXyChartNoESQL{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy}
 
 	if typeutils.IsKnown(m.Title) {
-		chart.Title = new(m.Title.ValueString())
+		chart.Title = m.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(m.Description) {
-		chart.Description = new(m.Description.ValueString())
+		chart.Description = m.Description.ValueStringPointer()
 	}
 
 	if m.Axis != nil {
@@ -1107,10 +1107,10 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsX
 	chart := kbapi.KibanaHTTPAPIsXyChartESQL{Type: kbapi.KibanaHTTPAPIsXyChartESQLTypeXy}
 
 	if typeutils.IsKnown(m.Title) {
-		chart.Title = new(m.Title.ValueString())
+		chart.Title = m.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(m.Description) {
-		chart.Description = new(m.Description.ValueString())
+		chart.Description = m.Description.ValueStringPointer()
 	}
 
 	if m.Axis != nil {

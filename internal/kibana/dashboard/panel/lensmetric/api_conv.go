@@ -249,19 +249,7 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommo
 	variant0.Styling = &styling0
 
 	// Set simple fields
-	if typeutils.IsKnown(m.Title) {
-		variant0.Title = new(m.Title.ValueString())
-	}
-	if typeutils.IsKnown(m.Description) {
-		variant0.Description = new(m.Description.ValueString())
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant0.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		sampling := float32(m.Sampling.ValueFloat64())
-		variant0.Sampling = &sampling
-	}
+	variant0.Title, variant0.Description, variant0.IgnoreGlobalFilters, variant0.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	// Set dataset
 	if typeutils.IsKnown(m.DataSourceJSON) {
@@ -333,19 +321,7 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 	variant1.Styling = &styling1
 
 	// Set simple fields
-	if typeutils.IsKnown(m.Title) {
-		variant1.Title = new(m.Title.ValueString())
-	}
-	if typeutils.IsKnown(m.Description) {
-		variant1.Description = new(m.Description.ValueString())
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant1.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		sampling := float32(m.Sampling.ValueFloat64())
-		variant1.Sampling = &sampling
-	}
+	variant1.Title, variant1.Description, variant1.IgnoreGlobalFilters, variant1.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	// Set dataset
 	if typeutils.IsKnown(m.DataSourceJSON) {

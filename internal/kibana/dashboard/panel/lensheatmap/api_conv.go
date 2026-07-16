@@ -220,18 +220,7 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPI
 		Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
 	}
 
-	if typeutils.IsKnown(m.Title) {
-		api.Title = new(m.Title.ValueString())
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = new(m.Description.ValueString())
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing dataset", "heatmap_config.data_source_json must be provided")
@@ -321,18 +310,7 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsH
 		Type: kbapi.KibanaHTTPAPIsHeatmapESQLTypeHeatmap,
 	}
 
-	if typeutils.IsKnown(m.Title) {
-		api.Title = new(m.Title.ValueString())
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = new(m.Description.ValueString())
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		api.Sampling = new(float32(m.Sampling.ValueFloat64()))
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing dataset", "heatmap_config.data_source_json must be provided")

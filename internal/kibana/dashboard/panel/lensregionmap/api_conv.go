@@ -129,24 +129,12 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 			Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap,
 		}
 
-		if typeutils.IsKnown(m.Title) {
-			api.Title = m.Title.ValueStringPointer()
-		}
-		if typeutils.IsKnown(m.Description) {
-			api.Description = m.Description.ValueStringPointer()
-		}
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 		if typeutils.IsKnown(m.DataSourceJSON) {
 			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 				diags.AddError("Failed to unmarshal data_source_json", err.Error())
 				return attrs, diags
 			}
-		}
-		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-		}
-		if typeutils.IsKnown(m.Sampling) {
-			sampling := float32(m.Sampling.ValueFloat64())
-			api.Sampling = &sampling
 		}
 		api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
@@ -185,24 +173,12 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 		Type: kbapi.KibanaHTTPAPIsRegionMapESQLTypeRegionMap,
 	}
 
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal data_source_json", err.Error())
 			return attrs, diags
 		}
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		sampling := float32(m.Sampling.ValueFloat64())
-		api.Sampling = &sampling
 	}
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
