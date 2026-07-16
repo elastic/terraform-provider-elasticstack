@@ -41,7 +41,7 @@ func TestLensChartBaseFieldsForAPI_AllKnown(t *testing.T) {
 	require.NotNil(t, sampling)
 	assert.Equal(t, "my title", *title)
 	assert.Equal(t, "my description", *desc)
-	assert.Equal(t, true, *ignoreGlobalFilters)
+	assert.True(t, *ignoreGlobalFilters)
 	assert.InDelta(t, float32(0.5), *sampling, 1e-6)
 }
 
