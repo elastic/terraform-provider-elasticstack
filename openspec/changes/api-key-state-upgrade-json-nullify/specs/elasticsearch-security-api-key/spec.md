@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: State upgraders nullify empty-string JSON fields (REQ-044–REQ-045 extended)
+### Requirement: State upgraders nullify empty-string JSON fields (REQ-044–REQ-045)
 
 The v0 → v1 and v1 → v2 state upgraders SHALL nullify empty-string values for the
 `metadata` and `role_descriptors` fields before decoding state into the typed model.

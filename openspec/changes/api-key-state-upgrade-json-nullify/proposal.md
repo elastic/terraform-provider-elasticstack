@@ -3,7 +3,7 @@
 `elasticstack_elasticsearch_security_api_key` has two JSON-typed attributes —
 `metadata` (`jsontypes.NormalizedType{}`) and `role_descriptors` (a custom type
 embedding `jsontypes.Normalized` validation) — that are not handled by the
-resource's v0 → v1 state upgrader
+resource's state upgraders (v0 → v1 and v1 → v2)
 (`internal/elasticsearch/security/apikey/resource/state_upgrade.go`).
 
 When the SDKv2 provider persisted `""` for either of those fields (e.g. an API key
