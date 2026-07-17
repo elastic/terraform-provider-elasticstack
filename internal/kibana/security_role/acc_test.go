@@ -161,6 +161,31 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 //go:embed testdata/TestAccKibanaSecurityRoleResourceFromSDK/create/main.tf
 var kibanaSecurityRoleFromSDKCreateConfig string
 
+func TestAccResourceKibanaSecurityRoleDynamicFeature(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.*", map[string]string{
+						"name": "discover",
+					}),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.*.privileges.*", "read"),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.spaces", []string{"*"}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccKibanaSecurityRoleResourceFromSDK(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

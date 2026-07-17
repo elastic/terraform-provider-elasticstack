@@ -1,6 +1,6 @@
 ## 1. Fix unknown-deferral in ValidateResource
 
-- [ ] 1.1 In `internal/kibana/security_role/validators.go`, inside the
+- [x] 1.1 In `internal/kibana/security_role/validators.go`, inside the
   `ValidateResource` method, replace the current loop body (lines 62-72) with the
   unknown-aware version:
   - After the `obj, ok := elem.(types.Object)` type assertion, add a guard that
@@ -14,7 +14,7 @@
 
 ## 2. Unit tests
 
-- [ ] 2.1 In `internal/kibana/security_role/` (create `validators_test.go` if it
+- [x] 2.1 In `internal/kibana/security_role/` (create `validators_test.go` if it
   does not exist), add unit tests for `ValidateResource` covering:
   - A `kibana` element with a known `feature` set (non-empty) → no error.
   - A `kibana` element with a known `base` set (non-empty) → no error.
@@ -27,7 +27,7 @@
 
 ## 3. Acceptance test
 
-- [ ] 3.1 In the existing acceptance test package for `elasticstack_kibana_security_role`
+- [x] 3.1 In the existing acceptance test package for `elasticstack_kibana_security_role`
   (`internal/kibana/security_role/` or the acceptance test directory under
   `internal/kibana/`), add a test case `TestAccResourceKibanaSecurityRoleDynamicFeature`
   that uses a `dynamic "feature"` block:
@@ -56,7 +56,7 @@
 
 ## 4. Spec validation
 
-- [ ] 4.1 Run
+- [x] 4.1 Run
   `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate kibana-security-role-dynamic-block-validation --type change`
   and resolve any reported problems.
 - [ ] 4.2 When implementation is complete, sync the delta spec or archive the
