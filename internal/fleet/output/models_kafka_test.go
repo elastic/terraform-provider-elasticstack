@@ -24,8 +24,112 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func mustKafkaObject(ctx context.Context, t *testing.T, model outputKafkaModel) types.Object {
+	t.Helper()
+
+	obj, diags := types.ObjectValueFrom(ctx, getKafkaAttrTypes(ctx), model)
+	require.False(t, diags.HasError())
+
+	return obj
+}
+
+func baseTestKafkaModel(ctx context.Context) outputKafkaModel {
+	return outputKafkaModel{
+		AuthType:         types.StringValue("user_pass"),
+		BrokerTimeout:    types.Float32Null(),
+		ClientID:         types.StringNull(),
+		Compression:      types.StringNull(),
+		CompressionLevel: types.Int64Null(),
+		ConnectionType:   types.StringNull(),
+		Topic:            types.StringValue("elastic-beats"),
+		Partition:        types.StringNull(),
+		RequiredAcks:     types.Int64Null(),
+		Timeout:          types.Float32Null(),
+		Version:          types.StringNull(),
+		Username:         types.StringValue("kafka_user"),
+		Password:         types.StringValue("kafka_password"),
+		Key:              types.StringNull(),
+		Headers:          types.ListNull(getHeadersAttrTypes(ctx)),
+		Hash:             types.ObjectNull(getHashAttrTypes(ctx)),
+		Random:           types.ObjectNull(getRandomAttrTypes(ctx)),
+		RoundRobin:       types.ObjectNull(getRoundRobinAttrTypes(ctx)),
+		Sasl:             types.ObjectNull(getSaslAttrTypes(ctx)),
+	}
+}
+
+func Test_fromAPIKafkaModel_preservesNullSasl(t *testing.T) {
+	ctx := context.Background()
+
+	kafkaObj := mustKafkaObject(ctx, t, baseTestKafkaModel(ctx))
+
+	model := outputModel{
+		Type:  types.StringValue("kafka"),
+		Kafka: kafkaObj,
+	}
+
+	mechanism := kbapi.KibanaHTTPAPIsOutputKafkaSaslMechanismPLAIN
+	diags := model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputKafka{
+		Type:     kbapi.KibanaHTTPAPIsOutputKafkaTypeKafka,
+		Name:     "Basic Kafka Output",
+		Hosts:    []string{"kafka:9092"},
+		AuthType: kbapi.KibanaHTTPAPIsOutputKafkaAuthTypeUserPass,
+		Topic:    new("elastic-beats"),
+		Sasl: &kbapi.KibanaHTTPAPIsOutputKafka_Sasl{
+			Mechanism: &mechanism,
+		},
+	})
+	require.False(t, diags.HasError())
+
+	var result outputKafkaModel
+	diags = model.Kafka.As(ctx, &result, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+	assert.True(t, result.Sasl.IsNull())
+}
+
+func Test_fromAPIKafkaModel_readsConfiguredSasl(t *testing.T) {
+	ctx := context.Background()
+
+	kafkaModel := baseTestKafkaModel(ctx)
+	saslObj, diags := types.ObjectValueFrom(ctx, getSaslAttrTypes(ctx), outputSaslModel{
+		Mechanism: types.StringValue("SCRAM-SHA-256"),
+	})
+	require.False(t, diags.HasError())
+	kafkaModel.Sasl = saslObj
+
+	kafkaObj := mustKafkaObject(ctx, t, kafkaModel)
+
+	model := outputModel{
+		Type:  types.StringValue("kafka"),
+		Kafka: kafkaObj,
+	}
+
+	mechanism := kbapi.KibanaHTTPAPIsOutputKafkaSaslMechanismSCRAMSHA256
+	diags = model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputKafka{
+		Type:     kbapi.KibanaHTTPAPIsOutputKafkaTypeKafka,
+		Name:     "Kafka Output",
+		Hosts:    []string{"kafka:9092"},
+		AuthType: kbapi.KibanaHTTPAPIsOutputKafkaAuthTypeUserPass,
+		Topic:    new("elastic-beats"),
+		Sasl: &kbapi.KibanaHTTPAPIsOutputKafka_Sasl{
+			Mechanism: &mechanism,
+		},
+	})
+	require.False(t, diags.HasError())
+
+	var result outputKafkaModel
+	diags = model.Kafka.As(ctx, &result, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+
+	var sasl outputSaslModel
+	diags = result.Sasl.As(ctx, &sasl, basetypes.ObjectAsOptions{})
+	require.False(t, diags.HasError())
+	assert.Equal(t, "SCRAM-SHA-256", sasl.Mechanism.ValueString())
+}
 
 func Test_outputKafkaModel_toAPIHash(t *testing.T) {
 	type fields struct {

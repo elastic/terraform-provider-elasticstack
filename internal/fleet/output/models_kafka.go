@@ -344,7 +344,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 			return &comp
 		}(),
 		CompressionLevel: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != kafkaCompressionGzip {
 				return nil
 			}
 
@@ -464,7 +464,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 			return &comp
 		}(),
 		CompressionLevel: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
+			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != kafkaCompressionGzip {
 				return nil
 			}
 
@@ -529,16 +529,20 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 		ssl:                  data.Ssl,
 	})
 
-	// Capture the configured password before re-initializing kafkaModel so that
-	// we can preserve it when Fleet omits/redacts it (it is stored as a secret
-	// reference and not returned in plain form).
+	// Capture the configured password and sasl before re-initializing kafkaModel
+	// so that we can preserve them when Fleet omits/redacts or adds server-side
+	// defaults that the user did not configure.
 	configuredPassword := types.StringNull()
+	saslExplicitlyNull := false
 	if typeutils.IsKnown(model.Kafka) {
 		var existing outputKafkaModel
 		existingDiags := model.Kafka.As(ctx, &existing, basetypes.ObjectAsOptions{})
 		diags.Append(existingDiags...)
 		if !existingDiags.HasError() {
 			configuredPassword = existing.Password
+			if !existing.Sasl.IsUnknown() {
+				saslExplicitlyNull = existing.Sasl.IsNull()
+			}
 		}
 	}
 
@@ -644,7 +648,13 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 	}
 
 	// Handle sasl
-	if data.Sasl != nil {
+	switch {
+	case saslExplicitlyNull:
+		// Fleet may return a default sasl block (e.g. mechanism=PLAIN for
+		// user_pass auth) even when the user did not configure sasl. Preserve
+		// the configured null so Terraform does not see an inconsistent change.
+		kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes(ctx))
+	case data.Sasl != nil:
 		saslModel := outputSaslModel{
 			Mechanism: func() types.String {
 				if data.Sasl.Mechanism != nil {
@@ -656,7 +666,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 		obj, nd := types.ObjectValueFrom(ctx, getSaslAttrTypes(ctx), saslModel)
 		diags.Append(nd...)
 		kafkaModel.Sasl = obj
-	} else {
+	default:
 		kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes(ctx))
 	}
 

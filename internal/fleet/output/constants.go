@@ -44,3 +44,5 @@ const (
 	attrGroupEvents            = "group_events"
 	attrMechanism              = "mechanism"
 )
+
+const kafkaCompressionGzip = "gzip"
