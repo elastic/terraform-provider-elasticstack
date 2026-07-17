@@ -84,7 +84,7 @@ func getSchema(version int64) schema.Schema {
 					SetUnknownIfAccessHasChanges(),
 				},
 			},
-			"expiration": schema.StringAttribute{
+			attrExpiration: schema.StringAttribute{
 				Description: apikey.ExpirationDescription,
 				Optional:    true,
 				PlanModifiers: []planmodifier.String{
@@ -98,7 +98,7 @@ func getSchema(version int64) schema.Schema {
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
-			"metadata": schema.StringAttribute{
+			attrMetadata: schema.StringAttribute{
 				Description: apikey.MetadataDescription,
 				Optional:    true,
 				Computed:    true,

@@ -33,7 +33,7 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 				if resp.Diagnostics.HasError() {
 					return
 				}
-				stateutil.NullifyEmptyString(stateMap, "expiration", "metadata", attrRoleDescriptors)
+				stateutil.NullifyEmptyString(stateMap, attrExpiration, attrMetadata, attrRoleDescriptors)
 				stateutil.MarshalStateMap(stateMap, resp)
 			},
 		},
@@ -43,7 +43,7 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 				if resp.Diagnostics.HasError() {
 					return
 				}
-				stateutil.NullifyEmptyString(stateMap, "metadata", attrRoleDescriptors)
+				stateutil.NullifyEmptyString(stateMap, attrMetadata, attrRoleDescriptors)
 				if v, ok := stateMap[attrType]; !ok || v == nil || v == "" {
 					stateMap[attrType] = apikey.DefaultAPIKeyType
 				}

@@ -77,11 +77,11 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 		{
 			name: "metadata_empty_string",
 			patch: map[string]any{
-				"metadata": "",
+				attrMetadata: "",
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got["metadata"])
+				require.Nil(t, got[attrMetadata])
 			},
 		},
 		{
@@ -97,35 +97,47 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 		{
 			name: "metadata_and_role_descriptors_empty_string",
 			patch: map[string]any{
-				"metadata":            "",
+				attrMetadata:        "",
 				attrRoleDescriptors: "",
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got["metadata"])
+				require.Nil(t, got[attrMetadata])
 				require.Nil(t, got[attrRoleDescriptors])
 			},
 		},
 		{
 			name: "metadata_valid_json_preserved",
 			patch: map[string]any{
-				"metadata": `{}`,
+				attrMetadata: `{}`,
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				metadata, ok := got["metadata"].(string)
+				metadata, ok := got[attrMetadata].(string)
 				require.True(t, ok)
 				require.JSONEq(t, `{}`, metadata)
 			},
 		},
 		{
-			name: "metadata_null",
+			name: "role_descriptors_valid_json_preserved",
 			patch: map[string]any{
-				"metadata": nil,
+				attrRoleDescriptors: `{"role-a":{"cluster":["all"]}}`,
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got["metadata"])
+				roleDescriptors, ok := got[attrRoleDescriptors].(string)
+				require.True(t, ok)
+				require.JSONEq(t, `{"role-a":{"cluster":["all"]}}`, roleDescriptors)
+			},
+		},
+		{
+			name: "metadata_null",
+			patch: map[string]any{
+				attrMetadata: nil,
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Nil(t, got[attrMetadata])
 			},
 		},
 		{
@@ -133,28 +145,28 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 			patch: map[string]any{},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				_, ok := got["metadata"]
+				_, ok := got[attrMetadata]
 				require.False(t, ok)
 			},
 		},
 		{
 			name: "expiration_empty_string",
 			patch: map[string]any{
-				"expiration": "",
+				attrExpiration: "",
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got["expiration"])
+				require.Nil(t, got[attrExpiration])
 			},
 		},
 		{
 			name: "expiration_non_empty_preserved",
 			patch: map[string]any{
-				"expiration": "7d",
+				attrExpiration: "7d",
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Equal(t, "7d", got["expiration"])
+				require.Equal(t, "7d", got[attrExpiration])
 			},
 		},
 	}
@@ -182,11 +194,11 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 		{
 			name: "metadata_empty_string",
 			patch: map[string]any{
-				"metadata": "",
+				attrMetadata: "",
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got["metadata"])
+				require.Nil(t, got[attrMetadata])
 			},
 		},
 		{
@@ -202,30 +214,52 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 		{
 			name: "metadata_and_role_descriptors_empty_string",
 			patch: map[string]any{
-				"metadata":            "",
+				attrMetadata:        "",
 				attrRoleDescriptors: "",
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got["metadata"])
+				require.Nil(t, got[attrMetadata])
 				require.Nil(t, got[attrRoleDescriptors])
 			},
 		},
 		{
 			name: "metadata_valid_json_preserved",
 			patch: map[string]any{
-				"metadata": `{"env":"prod"}`,
+				attrMetadata: `{"env":"prod"}`,
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				metadata, ok := got["metadata"].(string)
+				metadata, ok := got[attrMetadata].(string)
 				require.True(t, ok)
 				require.JSONEq(t, `{"env":"prod"}`, metadata)
 			},
 		},
 		{
+			name: "role_descriptors_valid_json_preserved",
+			patch: map[string]any{
+				attrRoleDescriptors: `{"role-a":{"cluster":["all"]}}`,
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				roleDescriptors, ok := got[attrRoleDescriptors].(string)
+				require.True(t, ok)
+				require.JSONEq(t, `{"role-a":{"cluster":["all"]}}`, roleDescriptors)
+			},
+		},
+		{
 			name:  "type_absent_defaults_to_rest",
 			patch: map[string]any{},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, apikey.DefaultAPIKeyType, got[attrType])
+			},
+		},
+		{
+			name: "type_null_defaults_to_rest",
+			patch: map[string]any{
+				attrType: nil,
+			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
 				require.Equal(t, apikey.DefaultAPIKeyType, got[attrType])

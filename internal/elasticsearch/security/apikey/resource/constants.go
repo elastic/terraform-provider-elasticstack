@@ -22,4 +22,6 @@ const (
 	attrType            = "type"
 	attrRoleDescriptors = "role_descriptors"
 	attrAccess          = "access"
+	attrMetadata        = "metadata"
+	attrExpiration      = "expiration"
 )
