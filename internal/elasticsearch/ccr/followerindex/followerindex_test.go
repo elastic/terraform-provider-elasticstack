@@ -24,6 +24,7 @@ import (
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/followerindexstatus"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -202,7 +203,7 @@ func TestNormalizeFlatSettingsKeys(t *testing.T) {
 	t.Run("flat dotted keys", func(t *testing.T) {
 		t.Parallel()
 		in := map[string]any{"index.refresh_interval": "30s"}
-		out, _ := normalizeFlatSettingsKeys(in)
+		out, _ := ccr.NormalizeFlatSettingsKeys(in)
 		assert.Equal(t, map[string]any{
 			"index": map[string]any{"refresh_interval": "30s"},
 		}, out)
@@ -211,7 +212,7 @@ func TestNormalizeFlatSettingsKeys(t *testing.T) {
 	t.Run("nested keys unchanged", func(t *testing.T) {
 		t.Parallel()
 		in := map[string]any{"index": map[string]any{"refresh_interval": "30s"}}
-		out, _ := normalizeFlatSettingsKeys(in)
+		out, _ := ccr.NormalizeFlatSettingsKeys(in)
 		assert.Equal(t, in, out)
 	})
 }

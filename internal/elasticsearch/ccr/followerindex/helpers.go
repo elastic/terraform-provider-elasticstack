@@ -20,14 +20,11 @@ package followerindex
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
-	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -156,76 +153,17 @@ func tuningParamsChanged(prior, plan Model) bool {
 		!prior.ReadPollTimeout.Equal(plan.ReadPollTimeout)
 }
 
-// normalizeFlatSettingsKeys converts flat dotted keys (e.g. index.refresh_interval)
-// into nested maps for unmarshalling into types.IndexSettings.
-// The bool return indicates whether any normalization was performed.
-func normalizeFlatSettingsKeys(m map[string]any) (map[string]any, bool) {
-	hasDotted := false
-	for k := range m {
-		if strings.Contains(k, ".") {
-			hasDotted = true
-			break
-		}
-	}
-	if !hasDotted {
-		return m, false
-	}
-
-	flat := make(map[string]any)
-	root := make(map[string]any)
-	for k, v := range m {
-		if strings.Contains(k, ".") {
-			flat[k] = v
-		} else {
-			root[k] = v
-		}
-	}
-
-	unflattened := customtypes.UnflattenDottedMap(flat)
-	return mergeSettingsMaps(root, unflattened), true
-}
-
-func mergeSettingsMaps(base, overlay map[string]any) map[string]any {
-	if len(base) == 0 {
-		return overlay
-	}
-	if len(overlay) == 0 {
-		return base
-	}
-	out := make(map[string]any, len(base)+len(overlay))
-	maps.Copy(out, base)
-	for k, v := range overlay {
-		existing, ok := out[k]
-		if !ok {
-			out[k] = v
-			continue
-		}
-		baseMap, baseOK := existing.(map[string]any)
-		overlayMap, overlayOK := v.(map[string]any)
-		if baseOK && overlayOK {
-			out[k] = mergeSettingsMaps(baseMap, overlayMap)
-			continue
-		}
-		out[k] = v
-	}
-	return out
-}
-
 func parseSettingsRawForCreate(settingsRaw string) (*estypes.IndexSettings, diag.Diagnostics) {
-	var raw map[string]any
-	if err := json.Unmarshal([]byte(settingsRaw), &raw); err != nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Failed to parse settings_raw", err.Error()),
-		}
+	raw, diags := typeutils.UnmarshalJSONDiag[map[string]any](settingsRaw, "Failed to parse settings_raw")
+	if diags.HasError() {
+		return nil, diags
 	}
 
-	normalized, changed := normalizeFlatSettingsKeys(raw)
+	normalized, changed := ccr.NormalizeFlatSettingsKeys(raw)
 	if !changed {
-		var settings estypes.IndexSettings
-		if err := json.Unmarshal([]byte(settingsRaw), &settings); err != nil {
-			return nil, diag.Diagnostics{
-				diag.NewErrorDiagnostic("Failed to parse settings_raw into index settings", err.Error()),
-			}
+		settings, settingsDiags := typeutils.UnmarshalJSONDiag[estypes.IndexSettings](settingsRaw, "Failed to parse settings_raw into index settings")
+		if settingsDiags.HasError() {
+			return nil, settingsDiags
 		}
 		return &settings, nil
 	}
@@ -237,24 +175,15 @@ func parseSettingsRawForCreate(settingsRaw string) (*estypes.IndexSettings, diag
 		}
 	}
 
-	var settings estypes.IndexSettings
-	if err := json.Unmarshal(settingsBytes, &settings); err != nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Failed to parse settings_raw into index settings", err.Error()),
-		}
+	settings, settingsDiags := typeutils.UnmarshalJSONDiag[estypes.IndexSettings](string(settingsBytes), "Failed to parse settings_raw into index settings")
+	if settingsDiags.HasError() {
+		return nil, settingsDiags
 	}
-
 	return &settings, nil
 }
 
 func parseSettingsRawForUpdate(settingsRaw string) (map[string]any, diag.Diagnostics) {
-	var settings map[string]any
-	if err := json.Unmarshal([]byte(settingsRaw), &settings); err != nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Failed to parse settings_raw", err.Error()),
-		}
-	}
-	return settings, nil
+	return typeutils.UnmarshalJSONDiag[map[string]any](settingsRaw, "Failed to parse settings_raw")
 }
 
 func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
