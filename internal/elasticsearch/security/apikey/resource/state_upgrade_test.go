@@ -66,6 +66,13 @@ func requireUpgradedJSON(t *testing.T, resp *fwresource.UpgradeStateResponse) ma
 	return got
 }
 
+func requireNullifiedKey(t *testing.T, got map[string]any, key string) {
+	t.Helper()
+	v, ok := got[key]
+	require.True(t, ok, "expected %q to be present after nullification", key)
+	require.Nil(t, v, "expected %q to be JSON null", key)
+}
+
 func TestUpgradeStateV0ToV1(t *testing.T) {
 	t.Parallel()
 
@@ -81,7 +88,7 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrMetadata])
+				requireNullifiedKey(t, got, attrMetadata)
 			},
 		},
 		{
@@ -91,7 +98,7 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrRoleDescriptors])
+				requireNullifiedKey(t, got, attrRoleDescriptors)
 			},
 		},
 		{
@@ -102,8 +109,8 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrMetadata])
-				require.Nil(t, got[attrRoleDescriptors])
+				requireNullifiedKey(t, got, attrMetadata)
+				requireNullifiedKey(t, got, attrRoleDescriptors)
 			},
 		},
 		{
@@ -156,7 +163,7 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrExpiration])
+				requireNullifiedKey(t, got, attrExpiration)
 			},
 		},
 		{
@@ -198,7 +205,7 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrMetadata])
+				requireNullifiedKey(t, got, attrMetadata)
 			},
 		},
 		{
@@ -208,7 +215,7 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrRoleDescriptors])
+				requireNullifiedKey(t, got, attrRoleDescriptors)
 			},
 		},
 		{
@@ -219,8 +226,8 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 			},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Nil(t, got[attrMetadata])
-				require.Nil(t, got[attrRoleDescriptors])
+				requireNullifiedKey(t, got, attrMetadata)
+				requireNullifiedKey(t, got, attrRoleDescriptors)
 			},
 		},
 		{
