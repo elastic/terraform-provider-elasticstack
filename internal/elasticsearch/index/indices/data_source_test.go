@@ -167,6 +167,10 @@ func TestAccIndicesDataSource_ReadsIndexSettings_TypedFields(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.blocks_read", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.blocks_write", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.routing_allocation_enable", "all"),
+					// deletion_protection and wait_for_active_shards are provider-side fields not
+					// returned by the Elasticsearch GET index API, so the data source leaves them null.
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.deletion_protection"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.wait_for_active_shards"),
 				),
 			},
 		},
@@ -257,6 +261,13 @@ func TestAccIndicesDataSource_ReadsMappingsAnalysisAndSettingsRaw(t *testing.T) 
 						"indices.0.settings_raw",
 						regexp.MustCompile(regexp.QuoteMeta(`"index.number_of_replicas":"0"`)),
 					),
+					// analysis_* fields are not populated by the data source because the flat settings
+					// map does not include index.analysis.* keys — confirmed absent here.
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.analysis_analyzer"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.analysis_filter"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.analysis_tokenizer"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.analysis_char_filter"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.analysis_normalizer"),
 				),
 			},
 		},
@@ -366,6 +377,73 @@ func TestAccIndicesDataSource_ReadsSlowlogLevels(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_level", "info"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_level", "warn"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndicesDataSource_SlowlogLevelDefaultsOnModernES creates an index without
+// explicit slowlog level settings and verifies that search_slowlog_level and
+// indexing_slowlog_level are absent (null) on ES 8.x+, which no longer exposes
+// these settings in the flat GET response.
+func TestAccIndicesDataSource_SlowlogLevelDefaultsOnModernES(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					// On ES 8.x+ these fields are absent when not explicitly configured.
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.search_slowlog_level"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.indexing_slowlog_level"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccIndicesDataSource_ReadsAliasRoutingField creates an index with an alias that
+// uses separate index_routing and search_routing and verifies the data source surfaces
+// them correctly. The unified routing field is left empty because Elasticsearch expands
+// it into index_routing and search_routing and does not echo routing back in GET responses.
+func TestAccIndicesDataSource_ReadsAliasRoutingField(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha)
+	aliasName := indexName + "_routed"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+					"alias_name": config.StringVariable(aliasName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.alias.#", "1"),
+					resource.TestCheckTypeSetElemNestedAttrs(
+						"data.elasticstack_elasticsearch_indices.test",
+						"indices.0.alias.*",
+						map[string]string{
+							"name":           aliasName,
+							"index_routing":  "shard-2",
+							"search_routing": "shard-2",
+							// routing is empty because ES expands it into index_routing and search_routing
+							// and does not return the unified routing field in GET index responses.
+							"routing": "",
+						},
+					),
 				),
 			},
 		},
@@ -568,6 +646,9 @@ func TestAccIndicesDataSource_ReadsStaticCreationSettings(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "target", indexName),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.name", indexName),
+					// number_of_routing_shards is set on the fixture but ES does not echo it back
+					// in the flat GET response — the data source leaves it null.
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.number_of_routing_shards"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.routing_partition_size", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.load_fixed_bitset_filters_eagerly", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_indices.test", "indices.0.shard_check_on_startup", "false"),
