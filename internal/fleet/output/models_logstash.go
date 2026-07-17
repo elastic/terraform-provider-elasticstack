@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputLogstash) diag.Diagnostics {
+func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseLogstash) diag.Diagnostics {
 	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,

@@ -776,7 +776,7 @@ func createTestCloudConnector(t *testing.T, secretRefID string) (string, func())
 	name := fmt.Sprintf("tf-acc-agentless-policy-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	body := kbapi.PostFleetCloudConnectorsJSONRequestBody{
 		Name:          name,
-		CloudProvider: kbapi.PostFleetCloudConnectorsJSONBodyCloudProviderAws,
+		CloudProvider: kbapi.Aws,
 		AccountType:   &accountType,
 		Vars: map[string]kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties{
 			"role_arn":    roleArnVar,

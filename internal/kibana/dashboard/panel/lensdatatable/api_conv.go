@@ -30,7 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.KibanaHTTPAPIsDatatableNoESQL) bool {
+func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel) bool {
 	body, err := json.Marshal(apiTable.DataSource)
 	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
 }
@@ -39,7 +39,7 @@ func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,
 	prior *models.DatatableNoESQLConfigModel,
-	api kbapi.KibanaHTTPAPIsDatatableNoESQL,
+	api kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -110,9 +110,9 @@ func datatableNoESQLConfigFromAPI(
 	return diags
 }
 
-func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQL, diag.Diagnostics) {
+func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsDatatableNoESQL{Type: kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable}
+	api := kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -139,7 +139,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQL_Metrics_Item, len(m.Metrics))
+		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
 		for i, metricModel := range m.Metrics {
 			if typeutils.IsKnown(metricModel.ConfigJSON) {
 				if err := json.Unmarshal([]byte(metricModel.ConfigJSON.ValueString()), &metrics[i]); err != nil {
@@ -152,7 +152,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	}
 
 	if len(m.Rows) > 0 {
-		rows := make([]kbapi.KibanaHTTPAPIsDatatableNoESQL_Rows_Item, len(m.Rows))
+		rows := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Rows_Item, len(m.Rows))
 		for i, rowModel := range m.Rows {
 			if typeutils.IsKnown(rowModel.ConfigJSON) {
 				if err := json.Unmarshal([]byte(rowModel.ConfigJSON.ValueString()), &rows[i]); err != nil {
@@ -165,7 +165,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	}
 
 	if len(m.SplitMetricsBy) > 0 {
-		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQL_SplitMetricsBy_Item, len(m.SplitMetricsBy))
+		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_SplitMetricsBy_Item, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
 			if typeutils.IsKnown(splitModel.ConfigJSON) {
 				if err := json.Unmarshal([]byte(splitModel.ConfigJSON.ValueString()), &splits[i]); err != nil {
@@ -183,7 +183,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
@@ -194,7 +194,7 @@ func datatableESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableESQLConfigModel,
 	prior *models.DatatableESQLConfigModel,
-	api kbapi.KibanaHTTPAPIsDatatableESQL,
+	api kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -262,9 +262,9 @@ func datatableESQLConfigFromAPI(
 	return diags
 }
 
-func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableESQL, diag.Diagnostics) {
+func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsDatatableESQL{Type: kbapi.KibanaHTTPAPIsDatatableESQLTypeDataTable}
+	api := kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelTypeDataTable}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -301,16 +301,16 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 
 	if len(m.Rows) > 0 {
 		rows := make([]struct {
-			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLRowsAlignment    `json:"alignment,omitempty"`
-			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLRowsApplyColorTo `json:"apply_color_to,omitempty"`
-			ClickFilter  *bool                                              `json:"click_filter,omitempty"`
-			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                    `json:"collapse_by,omitempty"`
-			Color        *kbapi.KibanaHTTPAPIsDatatableESQL_Rows_Color      `json:"color,omitempty"`
-			Column       string                                             `json:"column"`
-			Format       *kbapi.KibanaHTTPAPIsFormatType                    `json:"format,omitempty"`
-			Label        *string                                            `json:"label,omitempty"`
-			Visible      *bool                                              `json:"visible,omitempty"`
-			Width        *float32                                           `json:"width,omitempty"`
+			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsAlignment    `json:"alignment,omitempty"`
+			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsApplyColorTo `json:"apply_color_to,omitempty"`
+			ClickFilter  *bool                                                          `json:"click_filter,omitempty"`
+			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                                `json:"collapse_by,omitempty"`
+			Color        *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Rows_Color      `json:"color,omitempty"`
+			Column       string                                                         `json:"column"`
+			Format       *kbapi.KibanaHTTPAPIsFormatType                                `json:"format,omitempty"`
+			Label        *string                                                        `json:"label,omitempty"`
+			Visible      *bool                                                          `json:"visible,omitempty"`
+			Width        *float32                                                       `json:"width,omitempty"`
 		}, len(m.Rows))
 		for i, rowModel := range m.Rows {
 			if typeutils.IsKnown(rowModel.ConfigJSON) {
@@ -346,7 +346,7 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 

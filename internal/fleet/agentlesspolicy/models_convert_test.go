@@ -420,14 +420,14 @@ func TestPopulateFromCreateResponse_setsIdentityAndPreservesCreateOnlyFlags(t *t
 	t.Parallel()
 	ctx := context.Background()
 
-	item := kbapi.KibanaHTTPAPIsAgentlessPolicy{
+	item := kbapi.KibanaHTTPAPIsManagedIntegration{
 		Id:        "policy-2",
 		Name:      "test-policy",
 		CreatedAt: "2024-01-01T00:00:00.000Z",
 		CreatedBy: "elastic",
 		UpdatedAt: "2024-01-01T00:00:00.000Z",
 		UpdatedBy: "elastic",
-		Package: kbapi.KibanaHTTPAPIsAgentlessPolicyPackage{
+		Package: kbapi.KibanaHTTPAPIsManagedIntegrationPackage{
 			Name:    "cloud_security_posture",
 			Version: "3.4.0",
 			Title:   "Security Posture Management",
@@ -506,21 +506,21 @@ func TestPopulateFromPackagePolicy_filtersToKnownInputKeys(t *testing.T) {
 // TestPopulateFromCreateResponse_filtersToKnownInputKeys is the create-response
 // counterpart of TestPopulateFromPackagePolicy_filtersToKnownInputKeys: the
 // same cross-policy-template-noise behavior is present in the bundled
-// POST /api/fleet/agentless_policies response (KibanaHTTPAPIsAgentlessPolicy),
+// POST /api/fleet/agentless_policies response (KibanaHTTPAPIsManagedIntegration),
 // not just the package-policies GET/PUT response, and populateFromCreateResponse
 // shares the same inputsKnownKeySet/populateInputsModel filtering path.
 func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	item := kbapi.KibanaHTTPAPIsAgentlessPolicy{
+	item := kbapi.KibanaHTTPAPIsManagedIntegration{
 		Id:        "policy-2",
 		Name:      "test-policy",
 		CreatedAt: "2024-01-01T00:00:00.000Z",
 		CreatedBy: "elastic",
 		UpdatedAt: "2024-01-01T00:00:00.000Z",
 		UpdatedBy: "elastic",
-		Package: kbapi.KibanaHTTPAPIsAgentlessPolicyPackage{
+		Package: kbapi.KibanaHTTPAPIsManagedIntegrationPackage{
 			Name:    "cloud_security_posture",
 			Version: "3.4.0",
 			Title:   "Security Posture Management",

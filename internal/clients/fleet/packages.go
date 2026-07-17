@@ -458,9 +458,9 @@ func waitForPackageInstalled(ctx context.Context, client *Client, packageName, p
 		}
 		if pkg.InstallationInfo != nil {
 			switch pkg.InstallationInfo.InstallStatus {
-			case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstalled:
+			case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
 				return true, nil
-			case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstallFailed:
+			case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
 				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
 			}
 		}

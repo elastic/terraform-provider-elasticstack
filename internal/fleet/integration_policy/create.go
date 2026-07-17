@@ -91,7 +91,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	if policy.Package == nil {
 		resp.Diagnostics.AddError(
 			"Missing package information",
-			fmt.Sprintf("The integration policy '%s' does not contain package information.", typeutils.Deref(policy.Id)),
+			fmt.Sprintf("The integration policy '%s' does not contain package information.", policy.Id),
 		)
 		return
 	}

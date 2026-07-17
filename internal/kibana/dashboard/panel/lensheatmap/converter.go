@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap)
+	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -57,10 +57,10 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
 
-	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
+	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
 		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, prior, heatmapNoESQL)
 	}
-	heatmapESQL, err := attrs.AsKibanaHTTPAPIsHeatmapESQL()
+	heatmapESQL, err := attrs.AsKibanaHTTPAPIsHeatmapESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

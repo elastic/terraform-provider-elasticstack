@@ -37,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap)
+	return string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -77,11 +77,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.RegionMapConfig = &models.RegionMapConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQL(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
 		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, prior, noESQL)
 	}
 
-	regionMapESQL, err := attrs.AsKibanaHTTPAPIsRegionMapESQL()
+	regionMapESQL, err := attrs.AsKibanaHTTPAPIsRegionMapESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

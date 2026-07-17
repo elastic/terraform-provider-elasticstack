@@ -32,7 +32,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {

@@ -20,7 +20,6 @@ package security_entity_store
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -39,7 +38,7 @@ func readEntityStore(
 		return model, true, diags
 	}
 
-	if status.Status == kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled {
+	if status.Status == entityStoreStatusNotInstalled {
 		return model, false, diags
 	}
 

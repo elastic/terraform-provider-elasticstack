@@ -83,7 +83,7 @@ func TestReadAgentlessPolicyViaPackagePolicy(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.NotNil(t, item)
 		require.NotNil(t, item.Id)
-		require.Equal(t, "pp-1", *item.Id)
+		require.Equal(t, "pp-1", item.Id)
 	})
 
 	t.Run("404_returns_nil_no_error", func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestUpdateAgentlessPolicyViaPackagePolicy(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.NotNil(t, item)
 		require.NotNil(t, item.Id)
-		require.Equal(t, "pp-1", *item.Id)
+		require.Equal(t, "pp-1", item.Id)
 	})
 
 	t.Run("non_2xx_returns_error", func(t *testing.T) {

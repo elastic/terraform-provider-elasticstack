@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric)
+	return string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -60,10 +60,10 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 		blocks.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 
-	if variant0, err := attrs.AsKibanaHTTPAPIsMetricNoESQL(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
+	if variant0, err := attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
 		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, priorConfig, variant0)
 	}
-	variant1, err := attrs.AsKibanaHTTPAPIsMetricESQL()
+	variant1, err := attrs.AsKibanaHTTPAPIsMetricESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoESQL) bool {
+func isRegionMapNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel) bool {
 	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
@@ -37,7 +37,7 @@ func regionMapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.RegionMapConfigModel,
 	prior *models.RegionMapConfigModel,
-	api kbapi.KibanaHTTPAPIsRegionMapNoESQL,
+	api kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -79,7 +79,7 @@ func regionMapConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.RegionMapConfigModel,
 	prior *models.RegionMapConfigModel,
-	api kbapi.KibanaHTTPAPIsRegionMapESQL,
+	api kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -125,8 +125,8 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 	}
 
 	if m.Query != nil && typeutils.IsKnown(m.Query.Expression) {
-		api := kbapi.KibanaHTTPAPIsRegionMapNoESQL{
-			Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap,
+		api := kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel{
+			Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap,
 		}
 
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -159,18 +159,18 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 			return attrs, diags
 		}
 
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapNoESQL_Drilldowns_Item](
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel_Drilldowns_Item](
 			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 		)...)
 
-		if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQL(api); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQLByValuePanel(api); err != nil {
 			diags.AddError("Failed to create region map schema", err.Error())
 		}
 		return attrs, diags
 	}
 
-	api := kbapi.KibanaHTTPAPIsRegionMapESQL{
-		Type: kbapi.KibanaHTTPAPIsRegionMapESQLTypeRegionMap,
+	api := kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanelTypeRegionMap,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -202,11 +202,11 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 		return attrs, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
-	if err := attrs.FromKibanaHTTPAPIsRegionMapESQL(api); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsRegionMapESQLByValuePanel(api); err != nil {
 		diags.AddError("Failed to create region map schema", err.Error())
 	}
 	return attrs, diags

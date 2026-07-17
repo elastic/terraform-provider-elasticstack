@@ -883,15 +883,15 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	var unit kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit
 	switch matches[2] {
 	case "s":
-		unit = kbapi.S
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitS
 	case "m":
-		unit = kbapi.M
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitM
 	case "h":
-		unit = kbapi.H
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
 	case "d":
 		// Convert days to hours since API doesn't support days unit
 		value *= 24
-		unit = kbapi.H
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
 	default:
 		diags.AddError(
 			"Unsupported duration unit",

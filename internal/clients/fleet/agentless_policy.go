@@ -34,14 +34,14 @@ import (
 // policy ID, which is the identifier used for all subsequent read, update,
 // and delete operations (see Decision 4 in the fleet-agentless-policy
 // OpenSpec change).
-func CreateAgentlessPolicy(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetAgentlessPoliciesJSONRequestBody) (*kbapi.KibanaHTTPAPIsAgentlessPolicy, diag.Diagnostics) {
-	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsAgentlessPolicy, int, diag.Diagnostics) {
+func CreateAgentlessPolicy(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetAgentlessPoliciesJSONRequestBody) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
+	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsManagedIntegration, int, diag.Diagnostics) {
 		resp, err := client.API.PostFleetAgentlessPoliciesWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
-		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsAgentlessPolicy {
+		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsManagedIntegration {
 			if resp.JSON200 == nil {
 				return nil
 			}
