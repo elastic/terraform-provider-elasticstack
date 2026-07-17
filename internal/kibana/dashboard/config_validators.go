@@ -16,9 +16,3 @@
 // under the License.
 
 package dashboard
-
-import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-
-// drilldownItemModeValidator is an alias for panelkit.DrilldownItemModeValidator kept for
-// backward compatibility with internal usages and the existing unit test.
-type drilldownItemModeValidator = panelkit.DrilldownItemModeValidator

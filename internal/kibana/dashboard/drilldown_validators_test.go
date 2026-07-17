@@ -63,11 +63,11 @@ func structuredDrilldownItemAttrTypesForTest(t *testing.T) map[string]attr.Type 
 	}
 }
 
-func Test_drilldownItemModeValidator(t *testing.T) {
+func Test_panelkitDrilldownItemModeValidator(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	attrTypes := structuredDrilldownItemAttrTypesForTest(t)
-	v := drilldownItemModeValidator{}
+	v := panelkit.DrilldownItemModeValidator{}
 
 	pathRoot := path.Root("drilldowns").AtListIndex(0)
 
