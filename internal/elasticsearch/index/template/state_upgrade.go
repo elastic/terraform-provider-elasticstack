@@ -74,19 +74,11 @@ func migrateIndexTemplateStateV0ToV1(_ context.Context, req resource.UpgradeStat
 		}
 	}
 
-	if tmpl, ok := stateMap[attrTemplate].(map[string]any); ok {
-		stateutil.EnsureMapKeys(tmpl, attrAlias, attrMappings, attrSettings, attrLifecycle, attrDataStreamOptions)
-		stateutil.NullifyEmptyString(tmpl, attrMappings, attrSettings)
-		aliasutil.NormalizeTemplateAliasesInV1State(tmpl)
-	}
+	aliasutil.NormalizeTemplateObjectInV1State(stateMap, attrLifecycle, attrDataStreamOptions)
 
 	stateutil.NullifyEmptyString(stateMap, "metadata")
 
-	// SDKv2 may persist version = 0 when the field is omitted in HCL; Elasticsearch readback and
-	// the Plugin Framework schema treat that as unset (null). Drop the key so migrated state matches.
-	if v, ok := stateMap["version"]; ok && aliasutil.JSONNumberish(v) == 0 {
-		delete(stateMap, "version")
-	}
+	aliasutil.NormalizeVersionZero(stateMap)
 
 	stateutil.MarshalStateMap(stateMap, resp)
 }
