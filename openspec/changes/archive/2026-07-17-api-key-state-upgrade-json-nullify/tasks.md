@@ -1,6 +1,6 @@
 ## 1. Implementation
 
-- [ ] 1.1 In `internal/elasticsearch/security/apikey/resource/state_upgrade.go`,
+- [x] 1.1 In `internal/elasticsearch/security/apikey/resource/state_upgrade.go`,
   refactor the **v0 → v1** upgrader to use the raw-state pattern:
 
   ```go
@@ -19,7 +19,7 @@
   Remove `PriorSchema: &schema0` from this upgrader entry (the raw-state pattern
   does not require a prior schema).
 
-- [ ] 1.2 In the same file, refactor the **v1 → v2** upgrader to use the raw-state
+- [x] 1.2 In the same file, refactor the **v1 → v2** upgrader to use the raw-state
   pattern:
 
   ```go
@@ -40,17 +40,17 @@
 
   Remove `PriorSchema: &schema1` from this upgrader entry.
 
-- [ ] 1.3 Remove the `schemaWithConnection` helper function and the `schema0`/`schema1`
+- [x] 1.3 Remove the `schemaWithConnection` helper function and the `schema0`/`schema1`
   variables from `UpgradeState` if they are no longer referenced elsewhere in the
   file. Also remove any imports that are no longer needed after this refactor
   (e.g. `providerschema`, `typeutils`, `timeouts`, `basetypes`).
 
-- [ ] 1.4 Add `"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"`
+- [x] 1.4 Add `"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"`
   to the import block of `state_upgrade.go` if it is not already present.
 
 ## 2. Testing
 
-- [ ] 2.1 Create `internal/elasticsearch/security/apikey/resource/state_upgrade_test.go`
+- [x] 2.1 Create `internal/elasticsearch/security/apikey/resource/state_upgrade_test.go`
   with unit tests for both upgraders. Cover the following cases for each upgrader:
 
   **v0 → v1:**
@@ -72,8 +72,8 @@
 
 ## 3. Spec
 
-- [ ] 3.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate api-key-state-upgrade-json-nullify --type change`
+- [x] 3.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate api-key-state-upgrade-json-nullify --type change`
   and resolve any reported problems.
-- [ ] 3.2 When implementation is complete, sync the delta spec into
+- [x] 3.2 When implementation is complete, sync the delta spec into
   `openspec/specs/elasticsearch-security-api-key/spec.md` or archive the change
   per the project workflow.
