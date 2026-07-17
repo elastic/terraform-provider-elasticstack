@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -175,11 +176,30 @@ func TestAccResourceKibanaSecurityRoleDynamicFeature(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "name", roleName),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.#", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.base.#"),
 					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.*", map[string]string{
 						"name": "discover",
 					}),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.*.privileges.*", "read"),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.spaces", []string{"*"}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaSecurityRoleDynamicFeatureEmptyForEach(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				ExpectError: regexp.MustCompile(
+					`Either one of the ` + "`feature`" + ` or ` + "`base`" + ` privileges must be set for kibana role!`,
 				),
 			},
 		},
