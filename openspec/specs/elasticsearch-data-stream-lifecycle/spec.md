@@ -40,9 +40,7 @@ resource "elasticstack_elasticsearch_data_stream_lifecycle" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Data stream lifecycle CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put Data Lifecycle API (`IndicesPutDataLifecycle`) to create and update data stream lifecycle settings ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html)). The resource SHALL use the Elasticsearch Get Data Lifecycle API (`IndicesGetDataLifecycle`) to read lifecycle settings. The resource SHALL use the Elasticsearch Delete Data Lifecycle API (`IndicesDeleteDataLifecycle`) to remove lifecycle settings. When Elasticsearch returns a non-success response (other than 404 on read), the resource SHALL surface the API error as a Terraform diagnostic and SHALL not update state.
@@ -222,3 +220,4 @@ The `downsampling` list SHALL accept at most 10 entries. Configurations with mor
 - GIVEN a `downsampling` list with 11 or more entries
 - WHEN Terraform validates the configuration
 - THEN the provider SHALL return a validation error indicating the maximum of 10 items
+

@@ -53,49 +53,49 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 	}
 	prior := lensByValueChartBlocksFromPanel(tfPanel)
 	switch vizType {
-	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy):
+	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy):
 		if prior != nil && prior.XYChartConfig != nil {
 			cpy := *prior.XYChartConfig
 			dest.XYChartConfig = &cpy
 		} else {
 			dest.XYChartConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap):
+	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap):
 		if prior != nil && prior.TreemapConfig != nil {
 			cpy := *prior.TreemapConfig
 			dest.TreemapConfig = &cpy
 		} else {
 			dest.TreemapConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic):
+	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic):
 		if prior != nil && prior.MosaicConfig != nil {
 			cpy := *prior.MosaicConfig
 			dest.MosaicConfig = &cpy
 		} else {
 			dest.MosaicConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable):
+	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable):
 		if prior != nil && prior.DatatableConfig != nil {
 			cpy := *prior.DatatableConfig
 			dest.DatatableConfig = &cpy
 		} else {
 			dest.DatatableConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud):
+	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud):
 		if prior != nil && prior.TagcloudConfig != nil {
 			cpy := *prior.TagcloudConfig
 			dest.TagcloudConfig = &cpy
 		} else {
 			dest.TagcloudConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap):
+	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap):
 		if prior != nil && prior.HeatmapConfig != nil {
 			cpy := *prior.HeatmapConfig
 			dest.HeatmapConfig = &cpy
 		} else {
 			dest.HeatmapConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap):
+	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap):
 		if prior != nil && prior.RegionMapConfig != nil {
 			cpy := *prior.RegionMapConfig
 			dest.RegionMapConfig = &cpy
@@ -109,28 +109,28 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 		} else {
 			dest.LegacyMetricConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric):
+	case string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric):
 		if prior != nil && prior.MetricChartConfig != nil {
 			cpy := *prior.MetricChartConfig
 			dest.MetricChartConfig = &cpy
 		} else {
 			dest.MetricChartConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie):
+	case string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie):
 		if prior != nil && prior.PieChartConfig != nil {
 			cpy := *prior.PieChartConfig
 			dest.PieChartConfig = &cpy
 		} else {
 			dest.PieChartConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge):
+	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge):
 		if prior != nil && prior.GaugeConfig != nil {
 			cpy := *prior.GaugeConfig
 			dest.GaugeConfig = &cpy
 		} else {
 			dest.GaugeConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle):
+	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle):
 	default:
 	}
 }

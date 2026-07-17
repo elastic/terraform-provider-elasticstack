@@ -85,7 +85,7 @@ func mergeWaffleConfigFromPlanSeed(cur, seed *models.WaffleConfigModel) {
 	}
 }
 
-func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQL) diag.Diagnostics {
+func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -171,7 +171,7 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	return diags
 }
 
-func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleESQL) diag.Diagnostics {
+func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -385,7 +385,7 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromKibanaHTTPAPIsWaffleESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsWaffleESQLByValuePanel(esql); err != nil {
 			diags.AddError("Failed to build waffle ES|QL chart", err.Error())
 		}
 		return attrs, diags
@@ -396,16 +396,16 @@ func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromKibanaHTTPAPIsWaffleNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsWaffleNoESQLByValuePanel(noESQL); err != nil {
 		diags.AddError("Failed to build waffle chart", err.Error())
 	}
 	return attrs, diags
 }
 
-func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleNoESQL, diag.Diagnostics) {
+func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsWaffleNoESQL{
-		Type: kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle,
+	api := kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -445,7 +445,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 		}
 	}
 
-	metrics := make([]kbapi.KibanaHTTPAPIsWaffleNoESQL_Metrics_Item, len(m.Metrics))
+	metrics := make([]kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
 	for i, met := range m.Metrics {
 		if err := json.Unmarshal([]byte(met.Config.ValueString()), &metrics[i]); err != nil {
 			diags.AddError("Failed to unmarshal metric config", err.Error())
@@ -454,7 +454,7 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 	api.Metrics = metrics
 
 	if len(m.GroupBy) > 0 {
-		gb := make([]kbapi.KibanaHTTPAPIsWaffleNoESQL_GroupBy_Item, len(m.GroupBy))
+		gb := make([]kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_GroupBy_Item, len(m.GroupBy))
 		for i, g := range m.GroupBy {
 			if err := json.Unmarshal([]byte(g.Config.ValueString()), &gb[i]); err != nil {
 				diags.AddError("Failed to unmarshal group_by config", err.Error())
@@ -469,17 +469,17 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleESQL, diag.Diagnostics) {
+func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsWaffleESQL{
-		Type: kbapi.KibanaHTTPAPIsWaffleESQLTypeWaffle,
+	api := kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsWaffleESQLByValuePanelTypeWaffle,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -513,10 +513,10 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 	}
 
 	metrics := make([]struct {
-		Color  *kbapi.KibanaHTTPAPIsWaffleESQL_Metrics_Color `json:"color,omitempty"`
-		Column string                                        `json:"column"`
-		Format *kbapi.KibanaHTTPAPIsFormatType               `json:"format,omitempty"`
-		Label  *string                                       `json:"label,omitempty"`
+		Color  *kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel_Metrics_Color `json:"color,omitempty"`
+		Column string                                                    `json:"column"`
+		Format *kbapi.KibanaHTTPAPIsFormatType                           `json:"format,omitempty"`
+		Label  *string                                                   `json:"label,omitempty"`
 	}, len(m.EsqlMetrics))
 	for i, em := range m.EsqlMetrics {
 		var format kbapi.KibanaHTTPAPIsFormatType
@@ -534,7 +534,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 			Type:  kbapi.KibanaHTTPAPIsStaticColorType(em.Color.Type.ValueString()),
 			Color: em.Color.Color.ValueString(),
 		}
-		var color kbapi.KibanaHTTPAPIsWaffleESQL_Metrics_Color
+		var color kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel_Metrics_Color
 		if err := color.FromKibanaHTTPAPIsStaticColor(staticColor); err != nil {
 			diags.AddError("Failed to marshal metric color", err.Error())
 			continue
@@ -589,7 +589,7 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 

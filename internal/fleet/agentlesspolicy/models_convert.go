@@ -771,7 +771,7 @@ func (m *agentlessPolicyModel) applyResponseFields(ctx context.Context, spaceID,
 // except space_ids (defaulted below when unset), and touching the others
 // here risks a "Provider produced inconsistent result" error against the
 // plan value the framework already validated.
-func (m *agentlessPolicyModel) populateFromCreateResponse(ctx context.Context, spaceID string, item kbapi.KibanaHTTPAPIsAgentlessPolicy) diag.Diagnostics {
+func (m *agentlessPolicyModel) populateFromCreateResponse(ctx context.Context, spaceID string, item kbapi.KibanaHTTPAPIsManagedIntegration) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.applyResponseFields(ctx, spaceID, item.Id, responseFields{
@@ -840,7 +840,7 @@ func (m *agentlessPolicyModel) populateFromPackagePolicy(ctx context.Context, sp
 		fields.packageTitle = types.StringPointerValue(data.Package.Title)
 	}
 
-	m.applyResponseFields(ctx, spaceID, typeutils.Deref(data.Id), fields, &diags)
+	m.applyResponseFields(ctx, spaceID, data.Id, fields, &diags)
 
 	return diags
 }

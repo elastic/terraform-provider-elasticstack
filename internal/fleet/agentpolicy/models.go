@@ -556,12 +556,12 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	feat agentPolicyFeatures,
 	existingFeatures []apiAgentFeature,
 ) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
-	monitoring := make([]kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabled, 0, 2)
+	monitoring := make([]kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledLogs)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledMetrics)
 	}
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
@@ -644,7 +644,30 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	if diags.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
-	body.GlobalDataTags = tags
+	if tags != nil {
+		updateTags := make([]struct {
+			Name  string                                                                `json:"name"`
+			Value kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBody_GlobalDataTags_Value `json:"value"`
+		}, len(*tags))
+		for i, tag := range *tags {
+			updateTags[i].Name = tag.Name
+			if value, err := tag.Value.AsAgentPolicyGlobalDataTagsItemValue0(); err == nil {
+				if err := updateTags[i].Value.FromKibanaHTTPAPIsUpdateAgentPolicyRequestBodyGlobalDataTagsValue0(value); err != nil {
+					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+				}
+			} else if value, err := tag.Value.AsAgentPolicyGlobalDataTagsItemValue1(); err == nil {
+				if err := updateTags[i].Value.FromKibanaHTTPAPIsUpdateAgentPolicyRequestBodyGlobalDataTagsValue1(value); err != nil {
+					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+				}
+			} else {
+				diags.AddError("global_data_tags validation_error_converting_values", "unsupported global data tag value")
+			}
+		}
+		body.GlobalDataTags = &updateTags
+	}
+	if diags.HasError() {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
+	}
 
 	if typeutils.IsKnown(model.SpaceIDs) {
 		if !feat.SupportsSpaceIDs {

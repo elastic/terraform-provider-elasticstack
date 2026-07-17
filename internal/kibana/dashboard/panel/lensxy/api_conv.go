@@ -1041,9 +1041,9 @@ func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) *kbapi.KibanaHTTPAP
 	return s
 }
 
-func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
+func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	chart := kbapi.KibanaHTTPAPIsXyChartNoESQL{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy}
+	chart := kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy}
 
 	if typeutils.IsKnown(m.Title) {
 		chart.Title = m.Title.ValueStringPointer()
@@ -1094,7 +1094,7 @@ func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 		return chart, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel_Drilldowns_Item](
 		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
 	)...)
 
@@ -1102,9 +1102,9 @@ func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartESQL, diag.Diagnostics) {
+func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	chart := kbapi.KibanaHTTPAPIsXyChartESQL{Type: kbapi.KibanaHTTPAPIsXyChartESQLTypeXy}
+	chart := kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsXyChartESQLByValuePanelTypeXy}
 
 	if typeutils.IsKnown(m.Title) {
 		chart.Title = m.Title.ValueStringPointer()
@@ -1151,7 +1151,7 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsX
 		return chart, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel_Drilldowns_Item](
 		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
 	)...)
 
@@ -1162,7 +1162,7 @@ func xyChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
 	prior *models.XYChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsXyChartNoESQL,
+	apiChart kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1232,7 +1232,7 @@ func xyChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
 	prior *models.XYChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsXyChartESQL,
+	apiChart kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1306,7 +1306,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConf
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromKibanaHTTPAPIsXyChartESQL(chart); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsXyChartESQLByValuePanel(chart); err != nil {
 			diags.AddError("Failed to convert XY chart ES|QL config", err.Error())
 			return attrs, diags
 		}
@@ -1318,7 +1318,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConf
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromKibanaHTTPAPIsXyChartNoESQL(chart); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsXyChartNoESQLByValuePanel(chart); err != nil {
 		diags.AddError("Failed to convert XY chart non-ES|QL config", err.Error())
 		return attrs, diags
 	}

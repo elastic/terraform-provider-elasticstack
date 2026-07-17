@@ -42,7 +42,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie)
+	return string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -123,11 +123,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.PieChartConfig = &models.PieChartConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
 		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, prior, noESQL)
 	}
 
-	esql, err := attrs.AsKibanaHTTPAPIsPieESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsPieESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

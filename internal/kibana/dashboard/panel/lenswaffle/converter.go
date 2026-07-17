@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle)
+	return string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -71,13 +71,13 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	blocks.WaffleConfig = &models.WaffleConfigModel{}
 	var diags diag.Diagnostics
 	if esql {
-		wESQL, err := attrs.AsKibanaHTTPAPIsWaffleESQL()
+		wESQL, err := attrs.AsKibanaHTTPAPIsWaffleESQLByValuePanel()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
 		diags = waffleConfigFromAPIESQL(ctx, blocks.WaffleConfig, prior, wESQL)
 	} else {
-		wNoESQL, err := attrs.AsKibanaHTTPAPIsWaffleNoESQL()
+		wNoESQL, err := attrs.AsKibanaHTTPAPIsWaffleNoESQLByValuePanel()
 		if err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}

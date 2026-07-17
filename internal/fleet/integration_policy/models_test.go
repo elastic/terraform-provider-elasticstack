@@ -34,7 +34,7 @@ func TestOutputIdHandling(t *testing.T) {
 		outputID := "test-output-id"
 		testID := "test-id"
 		data := &kbapi.PackagePolicy{
-			Id:      &testID,
+			Id:      testID,
 			Name:    "test-policy",
 			Enabled: true,
 			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
@@ -259,7 +259,7 @@ func TestConditionHandling(t *testing.T) {
 		}
 
 		data := &kbapi.PackagePolicy{
-			Id:   &testID,
+			Id:   testID,
 			Name: "test-policy",
 			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
 				Name:    "test-integration",
@@ -297,7 +297,7 @@ func TestConditionHandling(t *testing.T) {
 		}
 
 		data := &kbapi.PackagePolicy{
-			Id:   &testID,
+			Id:   testID,
 			Name: "test-policy",
 			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
 				Name:    "test-integration",

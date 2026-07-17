@@ -38,7 +38,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap)
+	return string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -102,11 +102,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
 		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, prior, noESQL)
 	}
 
-	esql, err := attrs.AsKibanaHTTPAPIsTreemapESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsTreemapESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

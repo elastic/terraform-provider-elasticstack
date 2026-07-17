@@ -36,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy)
+	return string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -58,10 +58,10 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.XYChartConfig = &models.XYChartConfigModel{}
 
-	if xyChart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL(); err == nil {
+	if xyChart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel(); err == nil {
 		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, prior, xyChart)
 	}
-	xyChart, err := attrs.AsKibanaHTTPAPIsXyChartESQL()
+	xyChart, err := attrs.AsKibanaHTTPAPIsXyChartESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

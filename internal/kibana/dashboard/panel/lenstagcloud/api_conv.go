@@ -32,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsTagcloudNoESQL) bool {
+func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel) bool {
 	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
@@ -71,7 +71,7 @@ func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
 	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudNoESQL,
+	api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -123,7 +123,7 @@ func tagcloudConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
 	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudESQL,
+	api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -195,7 +195,7 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueCo
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromKibanaHTTPAPIsTagcloudESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsTagcloudESQLByValuePanel(esql); err != nil {
 			diags.AddError("Failed to create tagcloud ES|QL attributes", err.Error())
 		}
 		return attrs, diags
@@ -206,17 +206,17 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueCo
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromKibanaHTTPAPIsTagcloudNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel(noESQL); err != nil {
 		diags.AddError("Failed to create tagcloud attributes", err.Error())
 	}
 	return attrs, diags
 }
 
-func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQL, diag.Diagnostics) {
+func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudNoESQL
+	var api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel
 
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud
+	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud
 
 	if !m.Title.IsNull() {
 		api.Title = m.Title.ValueStringPointer()
@@ -298,17 +298,17 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQL, diag.Diagnostics) {
+func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudESQL
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLTypeTagCloud
+	var api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel
+	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanelTypeTagCloud
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -384,7 +384,7 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 

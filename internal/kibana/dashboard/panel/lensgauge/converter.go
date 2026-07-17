@@ -37,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge)
+	return string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -161,11 +161,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.GaugeConfig = &models.GaugeConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsGaugeNoESQL(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
 		return gaugeConfigFromAPI(ctx, blocks.GaugeConfig, prior, noESQL)
 	}
 
-	esql, err := attrs.AsKibanaHTTPAPIsGaugeESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsGaugeESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

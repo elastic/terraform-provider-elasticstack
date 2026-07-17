@@ -23,7 +23,6 @@ import (
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -86,7 +85,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	// resource can be recovered if finalize fails. Populate basic fields from
 	// the bootstrap response to ensure no unknown values remain in state
 	// (the framework rejects unknown values after apply).
-	bootstrapID := typeutils.Deref(bootstrapPolicy.Id)
+	bootstrapID := bootstrapPolicy.Id
 	planModel.PolicyID = types.StringValue(bootstrapID)
 	if spaceID != "" {
 		planModel.ID = types.StringValue(spaceID + "/" + bootstrapID)

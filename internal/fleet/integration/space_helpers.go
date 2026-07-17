@@ -56,9 +56,9 @@ func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID stri
 	globalInstalled := false
 	if pkg.InstallationInfo != nil {
 		switch pkg.InstallationInfo.InstallStatus {
-		case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstalled:
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
 			globalInstalled = true
-		case kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstallFailed:
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
 			return false
 		}
 	}
@@ -76,7 +76,7 @@ func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID stri
 	return packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID)
 }
 
-func packageInstalledInKibanaSpace(info *kbapi.KibanaHTTPAPIsInstallationInfo, spaceID string) bool {
+func packageInstalledInKibanaSpace(info *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, spaceID string) bool {
 	if info == nil {
 		return false
 	}

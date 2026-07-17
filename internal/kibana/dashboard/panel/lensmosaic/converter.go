@@ -38,7 +38,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic)
+	return string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -110,11 +110,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.MosaicConfig = &models.MosaicConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsMosaicNoESQL(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
 		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, prior, noESQL)
 	}
 
-	esql, err := attrs.AsKibanaHTTPAPIsMosaicESQL()
+	esql, err := attrs.AsKibanaHTTPAPIsMosaicESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

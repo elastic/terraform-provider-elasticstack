@@ -20,6 +20,7 @@ package security_role
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -183,6 +184,32 @@ func TestUnitFlattenExpandKibanaFeatureRoundTrip(t *testing.T) {
 	b2, err := json.Marshal(out)
 	require.NoError(t, err)
 	assert.JSONEq(t, string(b1), string(b2))
+}
+
+func TestUnitExpandKibanaRejectsEmptyPrivileges(t *testing.T) {
+	ctx := context.Background()
+	featureElemType := types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()}
+	spacesSet := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("*")})
+	emptyFeatureSet := types.SetValueMust(featureElemType, []attr.Value{})
+	emptyBaseSet := types.SetValueMust(types.StringType, []attr.Value{})
+
+	kibanaObj := types.ObjectValueMust(kibanaBlockAttrTypes(), map[string]attr.Value{
+		attrSpaces:  spacesSet,
+		attrBase:    emptyBaseSet,
+		attrFeature: emptyFeatureSet,
+	})
+	kibanaSet := types.SetValueMust(kibanaBlockObjectType(), []attr.Value{kibanaObj})
+
+	_, diags := expandKibana(ctx, kibanaSet)
+	require.True(t, diags.HasError(), "expected apply-time privilege validation error")
+	found := false
+	for _, d := range diags.Errors() {
+		if strings.Contains(d.Detail(), "Either one of the `feature` or `base` privileges must be set for kibana role!") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected missing-privilege diagnostic from expandKibana")
 }
 
 func TestUnitExpandElasticsearchOmitsEmptyClusterAndRunAs(t *testing.T) {

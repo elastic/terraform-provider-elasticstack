@@ -167,10 +167,10 @@ func TestOutputModelFromAPIRemoteElasticsearchModelPreservesServiceToken(t *test
 		SpaceIDs:     types.SetNull(types.StringType),
 	}
 
-	diags := model.fromAPIRemoteElasticsearchModel(context.Background(), &kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch{
+	diags := model.fromAPIRemoteElasticsearchModel(context.Background(), &kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch{
 		Id:                 new("output-id"),
 		Name:               "remote-output",
-		Type:               kbapi.KibanaHTTPAPIsOutputRemoteElasticsearchTypeRemoteElasticsearch,
+		Type:               kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearchTypeRemoteElasticsearch,
 		Hosts:              []string{"https://remote-es:9200"},
 		SyncIntegrations:   new(true),
 		WriteToLogsStreams: new(false),

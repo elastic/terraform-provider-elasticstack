@@ -31,11 +31,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isMosaicNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsMosaicNoESQL) bool {
+func isMosaicNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel) bool {
 	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
 }
 
-func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicNoESQL) diag.Diagnostics {
+func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Title = types.StringPointerValue(api.Title)
@@ -110,7 +110,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	return diags
 }
 
-func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicESQL) diag.Diagnostics {
+func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Query = nil
@@ -217,7 +217,7 @@ func mosaicConfigToAPI(m *models.MosaicConfigModel) (lenscommon.VisByValueConfig
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromKibanaHTTPAPIsMosaicESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsMosaicESQLByValuePanel(esql); err != nil {
 			diags.AddError("Failed to create mosaic ES|QL schema", err.Error())
 		}
 		return attrs, diags
@@ -228,17 +228,17 @@ func mosaicConfigToAPI(m *models.MosaicConfigModel) (lenscommon.VisByValueConfig
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromKibanaHTTPAPIsMosaicNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsMosaicNoESQLByValuePanel(noESQL); err != nil {
 		diags.AddError("Failed to create mosaic schema", err.Error())
 	}
 
 	return attrs, diags
 }
 
-func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicESQL, diag.Diagnostics) {
+func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsMosaicESQL
-	api.Type = kbapi.KibanaHTTPAPIsMosaicESQLTypeMosaic
+	var api kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel
+	api.Type = kbapi.KibanaHTTPAPIsMosaicESQLByValuePanelTypeMosaic
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing data_source_json", "mosaic_config.data_source_json must be provided")
@@ -335,17 +335,17 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMosaicESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicNoESQL, diag.Diagnostics) {
+func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsMosaicNoESQL{
-		Type: kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic,
+	api := kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -363,7 +363,7 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsM
 		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
 		return api, diags
 	}
-	var groupBy []kbapi.KibanaHTTPAPIsMosaicNoESQL_GroupBy_Item
+	var groupBy []kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_GroupBy_Item
 	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
 		diags.AddError("Failed to unmarshal group_by", err.Error())
 		return api, diags
@@ -378,7 +378,7 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsM
 		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
 		return api, diags
 	}
-	var groupBreakdownBy []kbapi.KibanaHTTPAPIsMosaicNoESQL_GroupBreakdownBy_Item
+	var groupBreakdownBy []kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_GroupBreakdownBy_Item
 	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &groupBreakdownBy); err != nil {
 		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
 		return api, diags
@@ -431,7 +431,7 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsM
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMosaicNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
