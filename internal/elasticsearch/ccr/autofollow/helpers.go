@@ -20,7 +20,6 @@ package autofollow
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -49,7 +48,7 @@ func (op apiOperation) String() string {
 	case opResume:
 		return "ResumeAutoFollowPattern"
 	default:
-		return fmt.Sprintf("apiOperation(%d)", op)
+		return ccr.FormatUnknownOperation(int(op))
 	}
 }
 
