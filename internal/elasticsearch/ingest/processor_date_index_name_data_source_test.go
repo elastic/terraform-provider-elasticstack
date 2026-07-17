@@ -70,6 +70,8 @@ func TestAccDataSourceIngestProcessorDateIndexName(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "field", "date1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "date_rounding", "M"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "on_failure.#", "1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "on_failure.0", `{"set":{"field":"error.message","value":"date index routing failed"}}`),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "json", expectedJSONDateIndexNameOnFailure),
@@ -82,11 +84,24 @@ func TestAccDataSourceIngestProcessorDateIndexName(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "field", "timestamp_raw"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "date_rounding", "d"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "date_formats.#", "0"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "index_name_prefix"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "timezone", "UTC"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "locale", "ENGLISH"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "index_name_format", "yyyy-MM-dd"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "json", expectedJSONDateIndexNameDefaults),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "field", "ts"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "date_rounding", "h"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "date_formats.#", "0"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "index_name_prefix"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date_index_name.test", "json", expectedJSONDateIndexNameUpdatedValues),
 				),
 			},
 		},
@@ -148,6 +163,18 @@ const expectedJSONDateIndexNameDefaults = `{
   "date_index_name": {
     "date_rounding": "d",
     "field": "timestamp_raw",
+    "ignore_failure": false,
+    "index_name_format": "yyyy-MM-dd",
+    "locale": "ENGLISH",
+    "timezone": "UTC"
+  }
+}
+`
+
+const expectedJSONDateIndexNameUpdatedValues = `{
+  "date_index_name": {
+    "date_rounding": "h",
+    "field": "ts",
     "ignore_failure": false,
     "index_name_format": "yyyy-MM-dd",
     "locale": "ENGLISH",
