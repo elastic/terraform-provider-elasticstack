@@ -46,12 +46,12 @@ type enrollmentTokenModel struct {
 	PolicyID  types.String `tfsdk:"policy_id"`
 }
 
-func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []kbapi.EnrollmentApiKey) (diags diag.Diagnostics) {
+func (model *enrollmentTokensModel) populateFromAPI(ctx context.Context, data []kbapi.KibanaHTTPAPIsEnrollmentApiKey) (diags diag.Diagnostics) {
 	model.Tokens = typeutils.SliceToListType(ctx, data, getTokenType(ctx), path.Root("tokens"), &diags, newEnrollmentTokenModel)
 	return
 }
 
-func newEnrollmentTokenModel(data kbapi.EnrollmentApiKey, _ typeutils.ListMeta) enrollmentTokenModel {
+func newEnrollmentTokenModel(data kbapi.KibanaHTTPAPIsEnrollmentApiKey, _ typeutils.ListMeta) enrollmentTokenModel {
 	return enrollmentTokenModel{
 		KeyID:     types.StringValue(data.Id),
 		Active:    types.BoolValue(data.Active),

@@ -59,7 +59,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 
 	var diags diag.Diagnostics
 
-	dataID := typeutils.Deref(data.Id)
+	dataID := data.Id
 	model.ID = types.StringValue(dataID)
 	model.PolicyID = types.StringValue(dataID)
 	model.Name = types.StringValue(data.Name)

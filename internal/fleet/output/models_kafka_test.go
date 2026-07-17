@@ -72,14 +72,14 @@ func Test_fromAPIKafkaModel_preservesNullSasl(t *testing.T) {
 		Kafka: kafkaObj,
 	}
 
-	mechanism := kbapi.KibanaHTTPAPIsOutputKafkaSaslMechanismPLAIN
-	diags := model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputKafka{
-		Type:     kbapi.KibanaHTTPAPIsOutputKafkaTypeKafka,
+	mechanism := kbapi.KibanaHTTPAPIsOutputResponseKafkaSaslMechanismPLAIN
+	diags := model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputResponseKafka{
+		Type:     kbapi.KibanaHTTPAPIsOutputResponseKafkaTypeKafka,
 		Name:     "Basic Kafka Output",
 		Hosts:    []string{"kafka:9092"},
-		AuthType: kbapi.KibanaHTTPAPIsOutputKafkaAuthTypeUserPass,
+		AuthType: kbapi.KibanaHTTPAPIsOutputResponseKafkaAuthTypeUserPass,
 		Topic:    new("elastic-beats"),
-		Sasl: &kbapi.KibanaHTTPAPIsOutputKafka_Sasl{
+		Sasl: &kbapi.KibanaHTTPAPIsOutputResponseKafka_Sasl{
 			Mechanism: &mechanism,
 		},
 	})
@@ -108,14 +108,14 @@ func Test_fromAPIKafkaModel_readsConfiguredSasl(t *testing.T) {
 		Kafka: kafkaObj,
 	}
 
-	mechanism := kbapi.KibanaHTTPAPIsOutputKafkaSaslMechanismSCRAMSHA256
-	diags = model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputKafka{
-		Type:     kbapi.KibanaHTTPAPIsOutputKafkaTypeKafka,
+	mechanism := kbapi.KibanaHTTPAPIsOutputResponseKafkaSaslMechanismSCRAMSHA256
+	diags = model.fromAPIKafkaModel(ctx, &kbapi.KibanaHTTPAPIsOutputResponseKafka{
+		Type:     kbapi.KibanaHTTPAPIsOutputResponseKafkaTypeKafka,
 		Name:     "Kafka Output",
 		Hosts:    []string{"kafka:9092"},
-		AuthType: kbapi.KibanaHTTPAPIsOutputKafkaAuthTypeUserPass,
+		AuthType: kbapi.KibanaHTTPAPIsOutputResponseKafkaAuthTypeUserPass,
 		Topic:    new("elastic-beats"),
-		Sasl: &kbapi.KibanaHTTPAPIsOutputKafka_Sasl{
+		Sasl: &kbapi.KibanaHTTPAPIsOutputResponseKafka_Sasl{
 			Mechanism: &mechanism,
 		},
 	})

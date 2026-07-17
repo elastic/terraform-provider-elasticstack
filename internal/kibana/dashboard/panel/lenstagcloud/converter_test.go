@@ -31,7 +31,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {

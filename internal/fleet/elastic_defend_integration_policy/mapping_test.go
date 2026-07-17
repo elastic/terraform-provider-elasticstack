@@ -34,7 +34,7 @@ const testArtifactManifest = "WzEyMywxXQ=="
 // suitable for Defend resource tests.
 func buildTestPackagePolicy(id, name, pkgName, pkgVersion string, enabled bool, inputs kbapi.PackagePolicyTypedInputs) *kbapi.PackagePolicy {
 	policy := &kbapi.PackagePolicy{
-		Id:      &id,
+		Id:      id,
 		Name:    name,
 		Enabled: enabled,
 		Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{

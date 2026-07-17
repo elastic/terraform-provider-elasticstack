@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable)
+	return string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -64,11 +64,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.DatatableConfig = &models.DatatableConfigModel{}
 
-	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQL(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
+	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQLByValuePanel(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
 		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
 		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, priorNo, datatableNoESQL)
 	}
-	datatableESQL, err := attrs.AsKibanaHTTPAPIsDatatableESQL()
+	datatableESQL, err := attrs.AsKibanaHTTPAPIsDatatableESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -93,7 +93,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 			return lenscommon.VisByValueConfig0{}, diags
 		}
 
-		if err := attrs.FromKibanaHTTPAPIsDatatableNoESQL(noESQL); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsDatatableNoESQLByValuePanel(noESQL); err != nil {
 			diags.AddError("Failed to convert datatable no-esql config", err.Error())
 			return lenscommon.VisByValueConfig0{}, diags
 		}
@@ -104,7 +104,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 			return lenscommon.VisByValueConfig0{}, diags
 		}
 
-		if err := attrs.FromKibanaHTTPAPIsDatatableESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsDatatableESQLByValuePanel(esql); err != nil {
 			diags.AddError("Failed to convert datatable esql config", err.Error())
 			return lenscommon.VisByValueConfig0{}, diags
 		}

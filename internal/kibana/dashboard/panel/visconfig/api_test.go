@@ -92,10 +92,10 @@ func TestHandler_FromAPI_byValue_datatable(t *testing.T) {
 		`"rows":[{"column":"r","collapse_by":"avg","format":{"type":"number"}}],` +
 		`"styling":{"density":{"mode":"default","height":{"header":{"type":"auto"},"value":{"type":"auto"}}}},` +
 		`"time_range":{"from":"now-7d","to":"now"}}`
-	var api kbapi.KibanaHTTPAPIsDatatableESQL
+	var api kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 	var cfg0 lenscommon.VisByValueConfig0
-	require.NoError(t, cfg0.FromKibanaHTTPAPIsDatatableESQL(api))
+	require.NoError(t, cfg0.FromKibanaHTTPAPIsDatatableESQLByValuePanel(api))
 	item := mustVisPanelItem(t, cfg0)
 
 	var pm models.PanelModel

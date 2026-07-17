@@ -260,7 +260,7 @@ func kafkaStringValue(value types.String) *string {
 	return value.ValueStringPointer()
 }
 
-func readOutputKafkaConnectionType(value *kbapi.KibanaHTTPAPIsOutputKafkaConnectionType) *string {
+func readOutputKafkaConnectionType(value *kbapi.KibanaHTTPAPIsOutputResponseKafkaConnectionType) *string {
 	if value == nil {
 		return nil
 	}
@@ -515,7 +515,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	return union, diags
 }
 
-func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputKafka) (diags diag.Diagnostics) {
+func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseKafka) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,

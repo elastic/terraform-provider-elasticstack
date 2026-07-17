@@ -171,7 +171,7 @@ func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Cl
 			return true, nil
 		}
 
-		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsInstallationInfoInstallStatusInstallFailed {
+		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed {
 			return false, fmt.Errorf("package %s/%s installation failed", name, version)
 		}
 		if pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {

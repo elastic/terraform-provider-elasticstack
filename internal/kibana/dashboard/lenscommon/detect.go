@@ -24,73 +24,73 @@ package lenscommon
 // Implementation mirrors the former dashboard.detectLensVisType loop over kbapi.As*
 // helpers so lens packages stay free of dashboard imports.
 func DetectVizType(attrs VisByValueConfig0) string {
-	if chart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsXyChartESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsXyChartESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsTreemapNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsTreemapESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsTreemapESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsMosaicNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsMosaicESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsMosaicESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsDatatableNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsDatatableNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsDatatableESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsDatatableESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsTagcloudESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsTagcloudESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsHeatmapESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsHeatmapESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsRegionMapESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsRegionMapESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsMetricNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsMetricESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsMetricESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsPieNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsPieESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsPieESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsGaugeNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsGaugeESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsGaugeESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsWaffleNoESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsWaffleNoESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
-	if chart, err := attrs.AsKibanaHTTPAPIsWaffleESQL(); err == nil {
+	if chart, err := attrs.AsKibanaHTTPAPIsWaffleESQLByValuePanel(); err == nil {
 		return string(chart.Type)
 	}
 	return ""

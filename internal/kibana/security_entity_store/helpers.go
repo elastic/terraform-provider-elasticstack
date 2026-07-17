@@ -84,26 +84,46 @@ var engineComponentObjectType = types.ObjectType{AttrTypes: map[string]attr.Type
 	"health":      types.StringType,
 }}
 
+type entityStoreStatusValue string
+
+const (
+	entityStoreStatusNotInstalled entityStoreStatusValue = "not_installed"
+	entityStoreStatusInstalling   entityStoreStatusValue = "installing"
+)
+
+type entityStoreEngineComponentStatus struct {
+	Id        string  `json:"id"`
+	Installed bool    `json:"installed"`
+	Resource  string  `json:"resource"`
+	Health    *string `json:"health,omitempty"`
+}
+
+type entityStoreEngineStatus string
+
+const entityStoreEngineStatusStarted entityStoreEngineStatus = "started"
+
+type entityStoreEngineType string
+
 // entityStoreStatus mirrors the JSON shape returned by GET /api/security/entity_store/status.
 type entityStoreStatus struct {
-	Status  kbapi.SecurityEntityAnalyticsAPIStoreStatus `json:"status"`
-	Engines []entityStoreEngine                         `json:"engines"`
+	Status  entityStoreStatusValue `json:"status"`
+	Engines []entityStoreEngine    `json:"engines"`
 }
 
 type entityStoreEngine struct {
-	Components         *[]kbapi.SecurityEntityAnalyticsAPIEngineComponentStatus `json:"components,omitempty"`
-	Delay              *string                                                  `json:"delay,omitempty"`
-	DocsPerSecond      *int                                                     `json:"docsPerSecond,omitempty"`
-	Error              *entityStoreEngineError                                  `json:"error,omitempty"`
-	FieldHistoryLength int                                                      `json:"fieldHistoryLength"`
-	Filter             *string                                                  `json:"filter,omitempty"`
-	Frequency          *string                                                  `json:"frequency,omitempty"`
-	IndexPattern       string                                                   `json:"indexPattern"`
-	LookbackPeriod     *string                                                  `json:"lookbackPeriod,omitempty"`
-	Status             kbapi.SecurityEntityAnalyticsAPIEngineStatus             `json:"status"`
-	Timeout            *string                                                  `json:"timeout,omitempty"`
-	TimestampField     *string                                                  `json:"timestampField,omitempty"`
-	Type               kbapi.SecurityEntityAnalyticsAPIEntityType               `json:"type"`
+	Components         *[]entityStoreEngineComponentStatus `json:"components,omitempty"`
+	Delay              *string                             `json:"delay,omitempty"`
+	DocsPerSecond      *int                                `json:"docsPerSecond,omitempty"`
+	Error              *entityStoreEngineError             `json:"error,omitempty"`
+	FieldHistoryLength int                                 `json:"fieldHistoryLength"`
+	Filter             *string                             `json:"filter,omitempty"`
+	Frequency          *string                             `json:"frequency,omitempty"`
+	IndexPattern       string                              `json:"indexPattern"`
+	LookbackPeriod     *string                             `json:"lookbackPeriod,omitempty"`
+	Status             entityStoreEngineStatus             `json:"status"`
+	Timeout            *string                             `json:"timeout,omitempty"`
+	TimestampField     *string                             `json:"timestampField,omitempty"`
+	Type               entityStoreEngineType               `json:"type"`
 }
 
 type entityStoreEngineError struct {
@@ -277,7 +297,7 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 	typesList := make([]string, 0, len(engines))
 	for _, e := range engines {
 		typesList = append(typesList, string(e.Type))
-		if e.Status == kbapi.SecurityEntityAnalyticsAPIEngineStatusStarted {
+		if e.Status == entityStoreEngineStatusStarted {
 			started = true
 		}
 	}
@@ -421,7 +441,7 @@ func makeUninstallStateChecker(getStatus entityStoreStatusFunc) asyncutils.State
 			tflog.Debug(ctx, fmt.Sprintf("transient error reading entity store status during uninstall wait: %v", diags.Errors()))
 			return false, nil
 		}
-		return status.Status == kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled, nil
+		return status.Status == entityStoreStatusNotInstalled, nil
 	}
 }
 
@@ -460,7 +480,7 @@ func waitForStartedFromStatusFunc(ctx context.Context, getStatus entityStoreStat
 	if diags.HasError() {
 		return nil, nil, diags
 	}
-	if status.Status != kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling {
+	if status.Status != entityStoreStatusInstalling {
 		return status, rawBody, nil
 	}
 
@@ -487,7 +507,7 @@ func makeStartedStateChecker(getStatus entityStoreStatusFunc, capture func(*enti
 		if capture != nil {
 			capture(status, rawBody)
 		}
-		return status.Status != kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling, nil
+		return status.Status != entityStoreStatusInstalling, nil
 	}
 }
 

@@ -31,7 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsHeatmapNoESQL) bool {
+func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel) bool {
 	body, err := apiChart.DataSource.MarshalJSON()
 	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
 }
@@ -96,7 +96,7 @@ func heatmapConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.HeatmapConfigModel,
 	prior *models.HeatmapConfigModel,
-	api kbapi.KibanaHTTPAPIsHeatmapNoESQL,
+	api kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -141,7 +141,7 @@ func heatmapConfigFromAPINoESQL(
 	return diags
 }
 
-func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
+func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -196,7 +196,7 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConf
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromKibanaHTTPAPIsHeatmapESQL(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsHeatmapESQLByValuePanel(esql); err != nil {
 			diags.AddError("Failed to create heatmap ESQL schema", err.Error())
 		}
 		return attrs, diags
@@ -207,17 +207,17 @@ func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConf
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromKibanaHTTPAPIsHeatmapNoESQL(noESQL); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsHeatmapNoESQLByValuePanel(noESQL); err != nil {
 		diags.AddError("Failed to create heatmap schema", err.Error())
 	}
 
 	return attrs, diags
 }
 
-func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQL, diag.Diagnostics) {
+func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsHeatmapNoESQL{
-		Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap,
+	api := kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -250,7 +250,7 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPI
 	}
 
 	if !m.YAxisJSON.IsNull() {
-		var yAxis kbapi.KibanaHTTPAPIsHeatmapNoESQL_Y
+		var yAxis kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel_Y
 		if err := json.Unmarshal([]byte(m.YAxisJSON.ValueString()), &yAxis); err != nil {
 			diags.AddError("Failed to unmarshal y_axis_json", err.Error())
 			return api, diags
@@ -297,17 +297,17 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPI
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapESQL, diag.Diagnostics) {
+func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsHeatmapESQL{
-		Type: kbapi.KibanaHTTPAPIsHeatmapESQLTypeHeatmap,
+	api := kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanelTypeHeatmap,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -385,7 +385,7 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsH
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
