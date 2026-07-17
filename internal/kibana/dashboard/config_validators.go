@@ -30,20 +30,67 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// ── Shared ES|QL-mode validator scaffold ─────────────────────────────────────
+
+// esqlModeObjectValidator is a shared validator.Object scaffolding for ES|QL-mode
+// chart config validators. It handles the Description/MarkdownDescription forwarding,
+// null/unknown early-return guard, and lensQueryESQLMode detection; chart-specific
+// field validation is delegated to validate.
+type esqlModeObjectValidator struct {
+	description string
+	validate    func(ctx context.Context, esqlMode bool, req validator.ObjectRequest, resp *validator.ObjectResponse)
+}
+
+func (v esqlModeObjectValidator) Description(_ context.Context) string {
+	return v.description
+}
+
+func (v esqlModeObjectValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v esqlModeObjectValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	esqlMode, ok := lensQueryESQLMode(ctx, req.Config, req.Path, &resp.Diagnostics)
+	if !ok {
+		return
+	}
+
+	v.validate(ctx, esqlMode, req, resp)
+}
+
 // ── Gauge ────────────────────────────────────────────────────────────────────
 
 var _ validator.Object = gaugeConfigModeValidator{}
 
 // gaugeConfigModeValidator enforces consistency between non-ES|QL and ES|QL gauge fields,
 // matching heatmap-style ES|QL detection (omit `query` or leave both `query.expression` and `query.language` unset).
-type gaugeConfigModeValidator struct{}
-
-func (gaugeConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures gauge_config uses `metric_json` for non-ES|QL mode and `esql_metric` for ES|QL mode."
+type gaugeConfigModeValidator struct {
+	esqlModeObjectValidator
 }
 
-func (v gaugeConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
+func newGaugeConfigModeValidator() gaugeConfigModeValidator {
+	return gaugeConfigModeValidator{
+		esqlModeObjectValidator: esqlModeObjectValidator{
+			description: "Ensures gauge_config uses `metric_json` for non-ES|QL mode and `esql_metric` for ES|QL mode.",
+			validate:    validateGaugeConfigMode,
+		},
+	}
+}
+
+func validateGaugeConfigMode(ctx context.Context, esqlMode bool, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	var metricJSON customtypes.JSONWithDefaultsValue[map[string]any]
+	var esqlMetric types.Object
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("metric_json"), &metricJSON)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("esql_metric"), &esqlMetric)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(gaugeConfigModeValidateDiags(esqlMode, metricJSON, esqlMetric, &req.Path)...)
 }
 
 // gaugeConfigModeValidateDiags returns ES|QL vs non-ES|QL gauge field consistency diagnostics.
@@ -88,41 +135,37 @@ func gaugeConfigModeValidateDiags(esqlMode bool, metricJSON customtypes.JSONWith
 	return diags
 }
 
-func (v gaugeConfigModeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	esqlMode, ok := lensQueryESQLMode(ctx, req.Config, req.Path, &resp.Diagnostics)
-	if !ok {
-		return
-	}
-
-	var metricJSON customtypes.JSONWithDefaultsValue[map[string]any]
-	var esqlMetric types.Object
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("metric_json"), &metricJSON)...)
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("esql_metric"), &esqlMetric)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(gaugeConfigModeValidateDiags(esqlMode, metricJSON, esqlMetric, &req.Path)...)
-}
-
 // ── Tagcloud ─────────────────────────────────────────────────────────────────
 
 var _ validator.Object = tagcloudConfigModeValidator{}
 
 // tagcloudConfigModeValidator enforces consistency between non-ES|QL and ES|QL tagcloud fields,
 // matching heatmap-style ES|QL detection (omit `query` or leave both `query.expression` and `query.language` unset).
-type tagcloudConfigModeValidator struct{}
-
-func (tagcloudConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures tagcloud_config uses `metric_json`/`tag_by_json` for non-ES|QL mode and `esql_metric`/`esql_tag_by` for ES|QL mode."
+type tagcloudConfigModeValidator struct {
+	esqlModeObjectValidator
 }
 
-func (v tagcloudConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
+func newTagcloudConfigModeValidator() tagcloudConfigModeValidator {
+	return tagcloudConfigModeValidator{
+		esqlModeObjectValidator: esqlModeObjectValidator{
+			description: "Ensures tagcloud_config uses `metric_json`/`tag_by_json` for non-ES|QL mode and `esql_metric`/`esql_tag_by` for ES|QL mode.",
+			validate:    validateTagcloudConfigMode,
+		},
+	}
+}
+
+func validateTagcloudConfigMode(ctx context.Context, esqlMode bool, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	var metricJSON, tagByJSON customtypes.JSONWithDefaultsValue[map[string]any]
+	var esqlMetric, esqlTagBy types.Object
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("metric_json"), &metricJSON)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("tag_by_json"), &tagByJSON)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("esql_metric"), &esqlMetric)...)
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("esql_tag_by"), &esqlTagBy)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(tagcloudConfigModeValidateDiags(esqlMode, metricJSON, tagByJSON, esqlMetric, esqlTagBy, &req.Path)...)
 }
 
 // tagcloudConfigModeValidateDiags returns ES|QL vs non-ES|QL tagcloud field consistency diagnostics.
@@ -194,77 +237,26 @@ func tagcloudConfigModeValidateDiags(esqlMode bool, metricJSON, tagByJSON custom
 	return diags
 }
 
-func (v tagcloudConfigModeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	esqlMode, ok := lensQueryESQLMode(ctx, req.Config, req.Path, &resp.Diagnostics)
-	if !ok {
-		return
-	}
-
-	var metricJSON, tagByJSON customtypes.JSONWithDefaultsValue[map[string]any]
-	var esqlMetric, esqlTagBy types.Object
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("metric_json"), &metricJSON)...)
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("tag_by_json"), &tagByJSON)...)
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("esql_metric"), &esqlMetric)...)
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("esql_tag_by"), &esqlTagBy)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(tagcloudConfigModeValidateDiags(esqlMode, metricJSON, tagByJSON, esqlMetric, esqlTagBy, &req.Path)...)
-}
-
 // ── Waffle ───────────────────────────────────────────────────────────────────
 
 var _ validator.Object = waffleConfigModeValidator{}
 
-// waffleConfigModeValidator enforces consistency between non-ES|QL and ES|QL waffle fields,
-// matching heatmap-style ES|QL detection (omit `query` or leave both `query.expression` and `query.language` unset).
-type waffleConfigModeValidator struct{}
-
-func (waffleConfigModeValidator) Description(_ context.Context) string {
-	return "Ensures waffle_config uses `metrics`/`group_by` for non-ES|QL mode and `esql_metrics`/`esql_group_by` for ES|QL mode."
+// waffleConfigModeValidator enforces consistency between non-ES|QL and ES|QL waffle fields.
+// Uses lensQueryESQLMode for ES|QL detection, consistent with gauge and tagcloud.
+type waffleConfigModeValidator struct {
+	esqlModeObjectValidator
 }
 
-func (v waffleConfigModeValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
+func newWaffleConfigModeValidator() waffleConfigModeValidator {
+	return waffleConfigModeValidator{
+		esqlModeObjectValidator: esqlModeObjectValidator{
+			description: "Ensures waffle_config uses `metrics`/`group_by` for non-ES|QL mode and `esql_metrics`/`esql_group_by` for ES|QL mode.",
+			validate:    validateWaffleConfigMode,
+		},
+	}
 }
 
-func waffleModeListStateFromTF(list types.List) lenswaffle.WaffleModeListState {
-	if list.IsUnknown() {
-		return lenswaffle.WaffleModeListState{Unknown: true}
-	}
-	if list.IsNull() {
-		return lenswaffle.WaffleModeListState{Count: 0}
-	}
-	return lenswaffle.WaffleModeListState{Count: len(list.Elements())}
-}
-
-func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	var queryObj types.Object
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query"), &queryObj)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	esqlMode := queryObj.IsNull()
-	if !esqlMode {
-		var lang, qStr types.String
-		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("language"), &lang)...)
-		resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("query").AtName("expression"), &qStr)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		esqlMode = lang.IsNull() && qStr.IsNull()
-	}
-
+func validateWaffleConfigMode(ctx context.Context, esqlMode bool, req validator.ObjectRequest, resp *validator.ObjectResponse) {
 	var metrics, groupBy, esqlMetrics, esqlGroupBy types.List
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("metrics"), &metrics)...)
 	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.AtName("group_by"), &groupBy)...)
@@ -280,6 +272,16 @@ func (v waffleConfigModeValidator) ValidateObject(ctx context.Context, req valid
 		waffleModeListStateFromTF(esqlMetrics),
 		waffleModeListStateFromTF(esqlGroupBy),
 	)...)
+}
+
+func waffleModeListStateFromTF(list types.List) lenswaffle.WaffleModeListState {
+	if list.IsUnknown() {
+		return lenswaffle.WaffleModeListState{Unknown: true}
+	}
+	if list.IsNull() {
+		return lenswaffle.WaffleModeListState{Count: 0}
+	}
+	return lenswaffle.WaffleModeListState{Count: len(list.Elements())}
 }
 
 // ── Drilldown ────────────────────────────────────────────────────────────────
