@@ -64,6 +64,14 @@ func (v configValidator) ValidateResource(ctx context.Context, req resource.Vali
 			resp.Diagnostics.AddError("Invalid kibana block", "unexpected element type")
 			return
 		}
+		if obj.IsUnknown() {
+			continue
+		}
+		featureAttr, featureOk := obj.Attributes()["feature"]
+		baseAttr, baseOk := obj.Attributes()["base"]
+		if (featureOk && featureAttr.IsUnknown()) || (baseOk && baseAttr.IsUnknown()) {
+			continue
+		}
 		_, _, baseLen, featureLen := kibanaPrivilegeCounts(obj)
 		resp.Diagnostics.Append(validateKibanaPrivileges(baseLen, featureLen)...)
 		if resp.Diagnostics.HasError() {
