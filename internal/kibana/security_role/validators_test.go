@@ -50,9 +50,10 @@ func TestValidateResourceKibanaPrivileges(t *testing.T) {
 	unknownBaseSet := types.SetUnknown(types.StringType)
 
 	tests := []struct {
-		name       string
-		kibanaElem attr.Value
-		wantError  bool
+		name              string
+		kibanaElem        attr.Value
+		wantError         bool
+		wantErrorContains string
 	}{
 		{
 			name: "known non-empty feature",
@@ -77,7 +78,18 @@ func TestValidateResourceKibanaPrivileges(t *testing.T) {
 				attrBase:    emptyBaseSet,
 				attrFeature: emptyFeatureSet,
 			}),
-			wantError: true,
+			wantError:         true,
+			wantErrorContains: "Either one of the `feature` or `base` privileges must be set for kibana role!",
+		},
+		{
+			name: "known non-empty base and feature",
+			kibanaElem: types.ObjectValueMust(kibanaBlockAttrTypes(), map[string]attr.Value{
+				attrSpaces:  spacesSet,
+				attrBase:    knownBaseSet,
+				attrFeature: knownFeatureSet,
+			}),
+			wantError:         true,
+			wantErrorContains: "Only one of the `feature` or `base` privileges allowed!",
 		},
 		{
 			name: "unknown feature set",
@@ -110,12 +122,12 @@ func TestValidateResourceKibanaPrivileges(t *testing.T) {
 				require.True(t, diags.HasError(), "expected privilege validation error")
 				found := false
 				for _, d := range diags.Errors() {
-					if strings.Contains(d.Detail(), "Either one of the `feature` or `base` privileges must be set for kibana role!") {
+					if strings.Contains(d.Detail(), tt.wantErrorContains) {
 						found = true
 						break
 					}
 				}
-				assert.True(t, found, "expected missing-privilege diagnostic")
+				assert.True(t, found, "expected diagnostic containing %q", tt.wantErrorContains)
 				return
 			}
 			assert.False(t, diags.HasError(), "expected no validation errors, got: %v", diags)
