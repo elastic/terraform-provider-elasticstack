@@ -74,6 +74,6 @@
 
 - [x] 3.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate api-key-state-upgrade-json-nullify --type change`
   and resolve any reported problems.
-- [ ] 3.2 When implementation is complete, sync the delta spec into
+- [x] 3.2 When implementation is complete, sync the delta spec into
   `openspec/specs/elasticsearch-security-api-key/spec.md` or archive the change
   per the project workflow.
