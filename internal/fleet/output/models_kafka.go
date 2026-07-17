@@ -61,11 +61,7 @@ type outputHashModel struct {
 	Random types.Bool   `tfsdk:"random"`
 }
 
-type outputRandomModel struct {
-	GroupEvents types.Float64 `tfsdk:"group_events"`
-}
-
-type outputRoundRobinModel struct {
+type outputGroupEventsModel struct {
 	GroupEvents types.Float64 `tfsdk:"group_events"`
 }
 
@@ -126,15 +122,15 @@ func (m outputKafkaModel) toAPIHeaders(ctx context.Context) (*[]struct {
 	return &headers, diags
 }
 
-func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
+func groupEventsObjectToAPI(ctx context.Context, obj types.Object) (*struct {
 	GroupEvents *float32 `json:"group_events,omitempty"`
 }, diag.Diagnostics) {
-	if !typeutils.IsKnown(m.Random) {
+	if !typeutils.IsKnown(obj) {
 		return nil, nil
 	}
 
-	var randomModel outputRandomModel
-	diags := m.Random.As(ctx, &randomModel, basetypes.ObjectAsOptions{})
+	var m outputGroupEventsModel
+	diags := obj.As(ctx, &m, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -143,8 +139,8 @@ func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
 		GroupEvents *float32 `json:"group_events,omitempty"`
 	}{
 		GroupEvents: func() *float32 {
-			if !randomModel.GroupEvents.IsNull() {
-				val := float32(randomModel.GroupEvents.ValueFloat64())
+			if !m.GroupEvents.IsNull() {
+				val := float32(m.GroupEvents.ValueFloat64())
 				return &val
 			}
 			return nil
@@ -152,29 +148,16 @@ func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
 	}, diags
 }
 
+func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
+	GroupEvents *float32 `json:"group_events,omitempty"`
+}, diag.Diagnostics) {
+	return groupEventsObjectToAPI(ctx, m.Random)
+}
+
 func (m outputKafkaModel) toAPIRoundRobin(ctx context.Context) (*struct {
 	GroupEvents *float32 `json:"group_events,omitempty"`
 }, diag.Diagnostics) {
-	if !typeutils.IsKnown(m.RoundRobin) {
-		return nil, nil
-	}
-
-	var roundRobinModel outputRoundRobinModel
-	diags := m.RoundRobin.As(ctx, &roundRobinModel, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &struct {
-		GroupEvents *float32 `json:"group_events,omitempty"`
-	}{
-		GroupEvents: func() *float32 {
-			if !roundRobinModel.GroupEvents.IsNull() {
-				val := float32(roundRobinModel.GroupEvents.ValueFloat64())
-				return &val
-			}
-			return nil
-		}(),
-	}, nil
+	return groupEventsObjectToAPI(ctx, m.RoundRobin)
 }
 
 func (m outputKafkaModel) toAPISasl(ctx context.Context) (*struct {
@@ -615,7 +598,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 
 	// Handle random
 	if data.Random != nil {
-		randomModel := outputRandomModel{
+		randomModel := outputGroupEventsModel{
 			GroupEvents: func() types.Float64 {
 				if data.Random.GroupEvents != nil {
 					return types.Float64Value(float64(*data.Random.GroupEvents))
@@ -632,7 +615,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 
 	// Handle round_robin
 	if data.RoundRobin != nil {
-		roundRobinModel := outputRoundRobinModel{
+		roundRobinModel := outputGroupEventsModel{
 			GroupEvents: func() types.Float64 {
 				if data.RoundRobin.GroupEvents != nil {
 					return types.Float64Value(float64(*data.RoundRobin.GroupEvents))
