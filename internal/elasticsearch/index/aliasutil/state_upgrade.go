@@ -20,6 +20,8 @@ package aliasutil
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/stateutil"
 )
 
 // NormalizeTemplateAliasesInV1State collapses SDK-style echoed index_routing/search_routing (same
@@ -67,6 +69,30 @@ func StringishJSONState(v any) string {
 		return s
 	}
 	return fmt.Sprint(v)
+}
+
+// NormalizeTemplateObjectInV1State normalizes the "template" sub-object inside a V0→V1 state map.
+// It ensures the base keys (alias, mappings, settings) plus any extraKeys are present, nullifies
+// empty-string mappings/settings, and normalizes alias routing fields. The caller is responsible for
+// collapsing the "template" list path (via stateutil.CollapseListPath) before calling this.
+func NormalizeTemplateObjectInV1State(stateMap map[string]any, extraKeys ...string) {
+	tmpl, ok := stateMap["template"].(map[string]any)
+	if !ok {
+		return
+	}
+	baseKeys := []string{"alias", "mappings", "settings"}
+	stateutil.EnsureMapKeys(tmpl, append(baseKeys, extraKeys...)...)
+	stateutil.NullifyEmptyString(tmpl, "mappings", "settings")
+	NormalizeTemplateAliasesInV1State(tmpl)
+}
+
+// NormalizeVersionZero drops the "version" key when its JSON-decoded value is 0.
+// SDKv2 may persist version = 0 when the field is omitted in HCL; Elasticsearch readback and
+// the Plugin Framework schema treat that as unset (null).
+func NormalizeVersionZero(stateMap map[string]any) {
+	if v, ok := stateMap["version"]; ok && JSONNumberish(v) == 0 {
+		delete(stateMap, "version")
+	}
 }
 
 // JSONNumberish returns v as float64 when JSON-decoded state stores numbers (typically float64).
