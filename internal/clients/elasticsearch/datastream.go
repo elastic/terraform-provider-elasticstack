@@ -137,6 +137,26 @@ func GetDataStreamLifecycle(
 }
 
 func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string) fwdiags.Diagnostics {
+	// On Elastic Cloud Serverless, data stream lifecycle and retention are
+	// managed by Elastic. The delete-lifecycle API answers with HTTP 410
+	// (api_not_available_exception), which is uncatchable and leaves
+	// `terraform destroy` unable to complete. There is nothing for the provider
+	// to delete, so skip the request and surface a warning instead of failing.
+	isServerless, diags := apiClient.IsServerless(ctx)
+	if diags.HasError() {
+		return diags
+	}
+	if isServerless {
+		return fwdiags.Diagnostics{
+			fwdiags.NewWarningDiagnostic(
+				"Data stream lifecycle removal skipped on serverless",
+				"Elastic Cloud Serverless manages data stream lifecycle and retention automatically, "+
+					"so the lifecycle cannot be removed through the API. The resource has been removed "+
+					"from Terraform state without changing the data stream on the server.",
+			),
+		}
+	}
+
 	typedClient := apiClient.GetESClient()
 	builder := typedClient.Indices.DeleteDataLifecycle(dataStreamName)
 	if expandWildcards != "" {
