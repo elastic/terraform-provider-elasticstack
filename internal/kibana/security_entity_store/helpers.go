@@ -92,7 +92,7 @@ const (
 )
 
 type entityStoreEngineComponentStatus struct {
-	Id        string  `json:"id"`
+	ID        string  `json:"id"`
 	Installed bool    `json:"installed"`
 	Resource  string  `json:"resource"`
 	Health    *string `json:"health,omitempty"`
@@ -365,12 +365,12 @@ func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.Lis
 			components := make([]engineComponentModel, 0, len(*e.Components))
 			for _, c := range *e.Components {
 				cm := engineComponentModel{
-					ID:        types.StringValue(c.Id),
+					ID:        types.StringValue(c.ID),
 					Installed: types.BoolValue(c.Installed),
-					Resource:  types.StringValue(string(c.Resource)),
+					Resource:  types.StringValue(c.Resource),
 				}
 				if c.Health != nil {
-					cm.Health = types.StringValue(string(*c.Health))
+					cm.Health = types.StringValue(*c.Health)
 				} else {
 					cm.Health = types.StringNull()
 				}
