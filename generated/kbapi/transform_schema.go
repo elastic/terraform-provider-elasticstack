@@ -607,6 +607,7 @@ var transformers = []TransformFunc{
 	fixSyntheticsMonitorModels,
 	fixSyntheticsMonitorParams,
 	fixAlertingRuleBody,
+	fixCasesTemplateTagsQueryParameter,
 	fixSloFloatFormats,
 	fixSloResponseArtifacts,
 	transformRemoveExamples,
@@ -1212,9 +1213,6 @@ func transformFleetPaths(schema *Schema) {
 		"$ref": "#/components/schemas/agent_policy_global_data_tags_item",
 	})
 
-	apiKeysPath := schema.MustGetPath("/api/fleet/enrollment_api_keys")
-	apiKeysPath.Get.CreateRef(schema, "enrollment_api_key", "responses.200.content.application/json.schema.properties.items.items")
-
 	// Server hosts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/models/fleet_server_policy_config.ts
 	// https://github.com/elastic/kibana/blob/main/x-pack/plugins/fleet/common/types/rest_spec/fleet_server_hosts.ts
@@ -1382,6 +1380,12 @@ func transformRemoveAnyOfWhenOneOfPresent(schema *Schema) {
 }
 
 // transformRemoveExamples removes all examples.
+// fixCasesTemplateTagsQueryParameter prevents oapi-codegen from assigning the
+// same Go type name to the Cases template tags query parameter and schema.
+func fixCasesTemplateTagsQueryParameter(schema *Schema) {
+	schema.Components.Set("parameters.Cases_template_tags.x-go-name", "CasesTemplateTagsQueryParameter")
+}
+
 func transformRemoveExamples(schema *Schema) {
 	deleteExampleFn := func(key string, node Map) {
 		if node.Has("example") {
