@@ -50,6 +50,10 @@ func (v esqlModeObjectValidator) MarkdownDescription(ctx context.Context) string
 }
 
 func (v esqlModeObjectValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+	if v.validate == nil {
+		resp.Diagnostics.AddError("Internal validator error", "esqlModeObjectValidator.validate is nil")
+		return
+	}
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
@@ -64,7 +68,7 @@ func (v esqlModeObjectValidator) ValidateObject(ctx context.Context, req validat
 
 // ── Gauge ────────────────────────────────────────────────────────────────────
 
-var _ validator.Object = gaugeConfigModeValidator{}
+var _ validator.Object = newGaugeConfigModeValidator()
 
 // gaugeConfigModeValidator enforces consistency between non-ES|QL and ES|QL gauge fields,
 // matching heatmap-style ES|QL detection (omit `query` or leave both `query.expression` and `query.language` unset).
@@ -137,7 +141,7 @@ func gaugeConfigModeValidateDiags(esqlMode bool, metricJSON customtypes.JSONWith
 
 // ── Tagcloud ─────────────────────────────────────────────────────────────────
 
-var _ validator.Object = tagcloudConfigModeValidator{}
+var _ validator.Object = newTagcloudConfigModeValidator()
 
 // tagcloudConfigModeValidator enforces consistency between non-ES|QL and ES|QL tagcloud fields,
 // matching heatmap-style ES|QL detection (omit `query` or leave both `query.expression` and `query.language` unset).
@@ -239,7 +243,7 @@ func tagcloudConfigModeValidateDiags(esqlMode bool, metricJSON, tagByJSON custom
 
 // ── Waffle ───────────────────────────────────────────────────────────────────
 
-var _ validator.Object = waffleConfigModeValidator{}
+var _ validator.Object = newWaffleConfigModeValidator()
 
 // waffleConfigModeValidator enforces consistency between non-ES|QL and ES|QL waffle fields.
 // Uses lensQueryESQLMode for ES|QL detection, consistent with gauge and tagcloud.
