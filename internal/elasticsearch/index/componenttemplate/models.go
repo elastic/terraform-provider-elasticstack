@@ -43,6 +43,12 @@ func (d Data) GetID() types.String                    { return d.ID }
 func (d Data) GetResourceID() types.String            { return d.Name }
 func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
 
+// GetTemplate satisfies [templateutil.TemplateModel].
+func (d Data) GetTemplate() types.Object { return d.Template }
+
+// WithTemplate satisfies [templateutil.TemplateModel].
+func (d Data) WithTemplate(t types.Object) Data { d.Template = t; return d }
+
 var _ entitycore.WithVersionRequirements = Data{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].

@@ -24,6 +24,7 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -59,7 +60,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedSta
 	plan.Template = planTpl
 	state.Template = stateTpl
 	config.Template = planTpl
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+	merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, templateAttrTypes)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, merged)
 	var mt TemplateModel
@@ -105,7 +106,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_aliasRoutingOnlyPlanVsSplit
 	plan.Template = planTpl
 	state.Template = stateTpl
 	config.Template = planTpl
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+	merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, templateAttrTypes)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, merged)
 	var mt TemplateModel
@@ -120,7 +121,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_nullOrUnknownTemplateNoOp(t
 		var plan, state, config Data
 		plan.Template = types.ObjectNull(templateAttrTypes())
 		state.Template = types.ObjectNull(templateAttrTypes())
-		merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+		merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, templateAttrTypes)
 		require.False(t, diags.HasError(), "%v", diags)
 		require.Nil(t, merged)
 	})
@@ -138,7 +139,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_nullOrUnknownTemplateNoOp(t
 		var plan, state, config Data
 		plan.Template = types.ObjectUnknown(templateAttrTypes())
 		state.Template = stateTpl
-		merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+		merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, templateAttrTypes)
 		require.False(t, diags.HasError(), "%v", diags)
 		require.Nil(t, merged)
 	})
@@ -162,7 +163,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_noSemanticDriftReturnsNil(t
 	plan.Template = tpl
 	state.Template = tpl
 	config.Template = tpl
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+	merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, templateAttrTypes)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.Nil(t, merged)
 }
