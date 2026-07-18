@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -376,6 +377,134 @@ func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestComputeFeatureGatedFields verifies the shared helper that both toAPICreateModel and
+// toAPIUpdateModel use for version-gated attribute validation.
+func TestComputeFeatureGatedFields(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	boolTrue := true
+
+	t.Run("all fields nil when model fields are null/unknown", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			IsProtected:         types.BoolNull(),
+			SupportsAgentless:   types.BoolNull(),
+			InactivityTimeout:   customtypes.NewDurationNull(),
+			UnenrollmentTimeout: customtypes.NewDurationNull(),
+			SpaceIDs:            types.SetNull(types.StringType),
+		}
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{
+			SupportsTamperProtection:    true,
+			SupportsSupportsAgentless:   true,
+			SupportsInactivityTimeout:   true,
+			SupportsUnenrollmentTimeout: true,
+			SupportsSpaceIDs:            true,
+		})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.isProtected)
+		assert.Nil(t, gated.supportsAgentless)
+		assert.Nil(t, gated.inactivityTimeout)
+		assert.Nil(t, gated.unenrollTimeout)
+		assert.Nil(t, gated.spaceIDs)
+	})
+
+	t.Run("is_protected error when tamper protection unsupported and true", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			IsProtected: types.BoolValue(true),
+		}
+		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsTamperProtection: false})
+		assert.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), MinVersionTamperProtection.String())
+	})
+
+	t.Run("is_protected nil when tamper protection unsupported and false", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			IsProtected: types.BoolValue(false),
+		}
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsTamperProtection: false})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.isProtected)
+	})
+
+	t.Run("is_protected set when tamper protection supported", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			IsProtected: types.BoolValue(true),
+		}
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsTamperProtection: true})
+		assert.False(t, diags.HasError())
+		require.NotNil(t, gated.isProtected)
+		assert.Equal(t, &boolTrue, gated.isProtected)
+	})
+
+	t.Run("supports_agentless error when unsupported and set", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			SupportsAgentless: types.BoolValue(true),
+		}
+		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSupportsAgentless: false})
+		assert.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), MinSupportsAgentlessVersion.String())
+	})
+
+	t.Run("inactivity_timeout error when unsupported and set", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			InactivityTimeout: customtypes.NewDurationValue("30s"),
+		}
+		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsInactivityTimeout: false})
+		assert.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), MinVersionInactivityTimeout.String())
+	})
+
+	t.Run("inactivity_timeout set when supported", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			InactivityTimeout: customtypes.NewDurationValue("30s"),
+		}
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsInactivityTimeout: true})
+		assert.False(t, diags.HasError())
+		require.NotNil(t, gated.inactivityTimeout)
+		assert.InDelta(t, float32(30), *gated.inactivityTimeout, 0.001)
+	})
+
+	t.Run("unenrollment_timeout error when unsupported and set", func(t *testing.T) {
+		t.Parallel()
+		model := &agentPolicyModel{
+			UnenrollmentTimeout: customtypes.NewDurationValue("60s"),
+		}
+		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsUnenrollmentTimeout: false})
+		assert.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), MinVersionUnenrollmentTimeout.String())
+	})
+
+	t.Run("space_ids error when unsupported and set", func(t *testing.T) {
+		t.Parallel()
+		spaceSet, _ := types.SetValue(types.StringType, []attr.Value{types.StringValue("default")})
+		model := &agentPolicyModel{
+			SpaceIDs: spaceSet,
+		}
+		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSpaceIDs: false})
+		assert.True(t, diags.HasError())
+		assert.Contains(t, diags[0].Detail(), MinVersionSpaceIDs.String())
+	})
+
+	t.Run("space_ids set when supported", func(t *testing.T) {
+		t.Parallel()
+		spaceSet, _ := types.SetValue(types.StringType, []attr.Value{types.StringValue("default")})
+		model := &agentPolicyModel{
+			SpaceIDs: spaceSet,
+		}
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSpaceIDs: true})
+		assert.False(t, diags.HasError())
+		require.NotNil(t, gated.spaceIDs)
+		assert.Equal(t, []string{"default"}, *gated.spaceIDs)
+	})
 }
 
 // TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList asserts the null-preserving
