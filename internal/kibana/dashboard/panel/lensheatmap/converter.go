@@ -57,7 +57,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
 
-	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
+	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(heatmapNoESQL.DataSource) {
 		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, prior, heatmapNoESQL)
 	}
 	heatmapESQL, err := attrs.AsKibanaHTTPAPIsHeatmapESQLByValuePanel()

@@ -31,11 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isHeatmapNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel) bool {
-	body, err := apiChart.DataSource.MarshalJSON()
-	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
-}
-
 func inferHeatmapXAxisScale(xAxisJSON string) kbapi.KibanaHTTPAPIsHeatmapXAxisScale {
 	var axis map[string]any
 	if err := json.Unmarshal([]byte(xAxisJSON), &axis); err != nil {

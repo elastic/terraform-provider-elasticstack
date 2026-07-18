@@ -150,7 +150,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQLByValuePanel(); err == nil && !isTagcloudNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
 		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, prior, noESQL)
 	}
 

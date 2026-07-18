@@ -64,7 +64,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.DatatableConfig = &models.DatatableConfigModel{}
 
-	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQLByValuePanel(); err == nil && !isDatatableNoESQLCandidateActuallyESQL(datatableNoESQL) {
+	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(datatableNoESQL.DataSource) {
 		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
 		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, priorNo, datatableNoESQL)
 	}
