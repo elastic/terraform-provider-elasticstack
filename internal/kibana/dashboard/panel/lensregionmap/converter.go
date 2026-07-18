@@ -77,7 +77,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.RegionMapConfig = &models.RegionMapConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel(); err == nil && !isRegionMapNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
 		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, prior, noESQL)
 	}
 

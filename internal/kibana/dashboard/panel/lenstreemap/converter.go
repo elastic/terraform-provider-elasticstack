@@ -102,7 +102,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.TreemapConfig = &models.TreemapConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
 		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, prior, noESQL)
 	}
 

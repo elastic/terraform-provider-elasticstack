@@ -60,7 +60,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 		blocks.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 
-	if variant0, err := attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel(); err == nil && !isMetricNoESQLCandidateActuallyESQL(variant0) {
+	if variant0, err := attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(variant0.DataSource) {
 		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, priorConfig, variant0)
 	}
 	variant1, err := attrs.AsKibanaHTTPAPIsMetricESQLByValuePanel()

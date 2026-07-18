@@ -123,7 +123,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.PieChartConfig = &models.PieChartConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
 		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, prior, noESQL)
 	}
 

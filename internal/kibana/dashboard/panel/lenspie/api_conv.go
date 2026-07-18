@@ -32,10 +32,6 @@ import (
 
 const jsonNullString = "null"
 
-func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel) bool {
-	return lenscommon.LensDataSourceIsESQLOrTable(apiChart.DataSource.MarshalJSON())
-}
-
 func pieChartConfigPopulateCommonFields(
 	m *models.PieChartConfigModel,
 	title, description *string,

@@ -89,11 +89,6 @@ func stripMetricBreakdownByAPIFields(jsonStr string) string {
 	return string(out)
 }
 
-func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel) bool {
-	body, err := json.Marshal(apiChart.DataSource)
-	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
-}
-
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,

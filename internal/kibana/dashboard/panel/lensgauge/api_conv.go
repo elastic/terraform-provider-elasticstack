@@ -34,10 +34,6 @@ import (
 
 const jsonNullString = "null"
 
-func isGaugeNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel) bool {
-	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
-}
-
 func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
