@@ -52,7 +52,10 @@ func (m *processorDissectModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Pattern) {
 		body.Pattern = m.Pattern.ValueString()
 	}
-	if typeutils.IsKnown(m.AppendSeparator) {
+	if m.AppendSeparator.IsNull() || m.AppendSeparator.IsUnknown() {
+		m.AppendSeparator = types.StringValue("")
+		body.AppendSeparator = ""
+	} else {
 		body.AppendSeparator = m.AppendSeparator.ValueString()
 	}
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
