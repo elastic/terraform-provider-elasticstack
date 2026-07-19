@@ -110,7 +110,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.MosaicConfig = &models.MosaicConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel(); err == nil && !isMosaicNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
 		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, prior, noESQL)
 	}
 

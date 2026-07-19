@@ -17,6 +17,13 @@
 
 package lenscommon
 
+// IsNoESQLCandidateActuallyESQL returns true when a panel decoded as NoESQL actually
+// carries an ES|QL or table data source. All NoESQLByValuePanel DataSource fields
+// implement json.Marshaler, so a single interface covers every panel type.
+func IsNoESQLCandidateActuallyESQL(dataSource interface{ MarshalJSON() ([]byte, error) }) bool {
+	return LensDataSourceIsESQLOrTable(dataSource.MarshalJSON())
+}
+
 // DetectVizType returns the Kibana Lens chart discriminator string from vis_config.by_value
 // union payload attrs (same strings as VizConverter.VizType / kbapi chart Type fields).
 // Empty string means the union could not be decoded to a known handled chart variant.

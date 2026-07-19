@@ -395,95 +395,21 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if typeutils.IsKnown(model.IsProtected) {
-		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("is_protected"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
-				),
-			}
-		}
-		if feat.SupportsTamperProtection {
-			v := model.IsProtected.ValueBool()
-			body.IsProtected = &v
-		}
+	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	if diags.HasError() {
+		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
-
-	if typeutils.IsKnown(model.SupportsAgentless) {
-		if !feat.SupportsSupportsAgentless {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("supports_agentless"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-				),
-			}
-		}
-		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
-	}
-
-	if typeutils.IsKnown(model.InactivityTimeout) {
-		if !feat.SupportsInactivityTimeout {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("inactivity_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-				),
-			}
-		}
-		duration, diags := model.InactivityTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.InactivityTimeout = &seconds
-	}
-
-	if typeutils.IsKnown(model.UnenrollmentTimeout) {
-		if !feat.SupportsUnenrollmentTimeout {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("unenrollment_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
-				),
-			}
-		}
-		duration, diags := model.UnenrollmentTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.UnenrollTimeout = &seconds
-	}
+	body.IsProtected = gated.isProtected
+	body.SupportsAgentless = gated.supportsAgentless
+	body.InactivityTimeout = gated.inactivityTimeout
+	body.UnenrollTimeout = gated.unenrollTimeout
+	body.SpaceIds = gated.spaceIDs
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
 	body.GlobalDataTags = tags
-
-	if typeutils.IsKnown(model.SpaceIDs) {
-		if !feat.SupportsSpaceIDs {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("space_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
-				),
-			}
-		}
-		var spaceIDs []string
-		d := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		body.SpaceIds = &spaceIDs
-	}
 
 	// Handle required_versions
 	requiredVersions, d := model.convertRequiredVersions(feat)
@@ -575,70 +501,15 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if typeutils.IsKnown(model.IsProtected) {
-		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("is_protected"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
-				),
-			}
-		}
-		if feat.SupportsTamperProtection {
-			v := model.IsProtected.ValueBool()
-			body.IsProtected = &v
-		}
+	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	if diags.HasError() {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
-
-	if typeutils.IsKnown(model.SupportsAgentless) {
-		if !feat.SupportsSupportsAgentless {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("supports_agentless"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-				),
-			}
-		}
-		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
-	}
-
-	if typeutils.IsKnown(model.InactivityTimeout) {
-		if !feat.SupportsInactivityTimeout {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("inactivity_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-				),
-			}
-		}
-		duration, diags := model.InactivityTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.InactivityTimeout = &seconds
-	}
-
-	if typeutils.IsKnown(model.UnenrollmentTimeout) {
-		if !feat.SupportsUnenrollmentTimeout {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("unenrollment_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
-				),
-			}
-		}
-		duration, diags := model.UnenrollmentTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.UnenrollTimeout = &seconds
-	}
+	body.IsProtected = gated.isProtected
+	body.SupportsAgentless = gated.supportsAgentless
+	body.InactivityTimeout = gated.inactivityTimeout
+	body.UnenrollTimeout = gated.unenrollTimeout
+	body.SpaceIds = gated.spaceIDs
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
@@ -667,25 +538,6 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	}
 	if diags.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-	}
-
-	if typeutils.IsKnown(model.SpaceIDs) {
-		if !feat.SupportsSpaceIDs {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("space_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
-				),
-			}
-		}
-		var spaceIDs []string
-		d := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		body.SpaceIds = &spaceIDs
 	}
 
 	// Handle required_versions
@@ -755,6 +607,110 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	}
 
 	return body, nil
+}
+
+// featureGatedFields holds the computed, validated values for attributes that are
+// gated behind minimum-version feature flags. Nil means the attribute was not set
+// (unknown/null) or not supported by the server on an unsupported version.
+type featureGatedFields struct {
+	isProtected       *bool
+	supportsAgentless *bool
+	inactivityTimeout *float32
+	unenrollTimeout   *float32
+	spaceIDs          *[]string
+}
+
+// computeFeatureGatedFields validates all version-gated attributes against the
+// server feature set and returns the computed field values. Both toAPICreateModel
+// and toAPIUpdateModel call this helper, then assign the results to their
+// respective (differently-typed) body structs.
+func (model *agentPolicyModel) computeFeatureGatedFields(ctx context.Context, feat agentPolicyFeatures) (featureGatedFields, diag.Diagnostics) {
+	var f featureGatedFields
+
+	if typeutils.IsKnown(model.IsProtected) {
+		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
+			return f, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("is_protected"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
+				),
+			}
+		}
+		if feat.SupportsTamperProtection {
+			v := model.IsProtected.ValueBool()
+			f.isProtected = &v
+		}
+	}
+
+	if typeutils.IsKnown(model.SupportsAgentless) {
+		if !feat.SupportsSupportsAgentless {
+			return f, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("supports_agentless"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+				),
+			}
+		}
+		f.supportsAgentless = model.SupportsAgentless.ValueBoolPointer()
+	}
+
+	if typeutils.IsKnown(model.InactivityTimeout) {
+		if !feat.SupportsInactivityTimeout {
+			return f, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("inactivity_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+				),
+			}
+		}
+		duration, diags := model.InactivityTimeout.Parse()
+		if diags.HasError() {
+			return f, diags
+		}
+		seconds := float32(duration.Seconds())
+		f.inactivityTimeout = &seconds
+	}
+
+	if typeutils.IsKnown(model.UnenrollmentTimeout) {
+		if !feat.SupportsUnenrollmentTimeout {
+			return f, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("unenrollment_timeout"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
+				),
+			}
+		}
+		duration, diags := model.UnenrollmentTimeout.Parse()
+		if diags.HasError() {
+			return f, diags
+		}
+		seconds := float32(duration.Seconds())
+		f.unenrollTimeout = &seconds
+	}
+
+	if typeutils.IsKnown(model.SpaceIDs) {
+		if !feat.SupportsSpaceIDs {
+			return f, diag.Diagnostics{
+				diag.NewAttributeErrorDiagnostic(
+					path.Root("space_ids"),
+					"Unsupported Elasticsearch version",
+					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
+				),
+			}
+		}
+		var spaceIDs []string
+		diags := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
+		if diags.HasError() {
+			return f, diags
+		}
+		f.spaceIDs = &spaceIDs
+	}
+
+	return f, nil
 }
 
 // convertHostNameFormatToAgentFeature converts the host_name_format field to a single AgentFeature.

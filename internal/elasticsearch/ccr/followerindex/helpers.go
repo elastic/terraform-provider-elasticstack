@@ -20,6 +20,8 @@ package followerindex
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
@@ -60,7 +62,7 @@ func (op apiOperation) String() string {
 	case opOpenIndex:
 		return "OpenIndex"
 	default:
-		return fmt.Sprintf("apiOperation(%d)", op)
+		return ccr.FormatUnknownOperation(int(op))
 	}
 }
 

@@ -30,11 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isDatatableNoESQLCandidateActuallyESQL(apiTable kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel) bool {
-	body, err := json.Marshal(apiTable.DataSource)
-	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
-}
-
 func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,

@@ -161,7 +161,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.GaugeConfig = &models.GaugeConfigModel{}
 
-	if noESQL, err := attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel(); err == nil && !isGaugeNoESQLCandidateActuallyESQL(noESQL) {
+	if noESQL, err := attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
 		return gaugeConfigFromAPI(ctx, blocks.GaugeConfig, prior, noESQL)
 	}
 
