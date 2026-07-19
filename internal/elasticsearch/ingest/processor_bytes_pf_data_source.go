@@ -17,64 +17,14 @@
 
 package ingest
 
-import (
-	"maps"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-type processorBytesModel struct {
-	CommonProcessorModel
-	WithIgnorableTargetField
-}
-
-func (m *processorBytesModel) TypeName() string { return "bytes" }
-
-func (m *processorBytesModel) MarshalBody() (any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	body := processorBytesBody{}
-
-	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
-	if diags.HasError() {
-		return nil, diags
-	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
-
-	return body, diags
-}
+import "github.com/hashicorp/terraform-plugin-framework/datasource"
 
 // NewProcessorBytesDataSource returns a PF data source for the bytes processor.
 func NewProcessorBytesDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-		attrField: schema.StringAttribute{
-			Description: "The field to convert",
-			Required:    true,
-		},
-		attrTargetField: schema.StringAttribute{
-			Description: "The field to assign the converted value to, by default `field` is updated in-place",
-			Optional:    true,
-		},
-		attrIgnoreMissing: schema.BoolAttribute{
-			Description: descIgnoreMissingDocStop,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-
-	maps.Copy(attrs, CommonProcessorSchemaAttributes())
-
-	return NewProcessorDataSource(&processorBytesModel{}, schema.Schema{
-		Description: processorBytesDataSourceDescription,
-		Attributes:  attrs,
+	return newSimpleIgnorableTargetFieldDataSource(simpleProcessorConfig{
+		typeName:        "bytes",
+		description:     processorBytesDataSourceDescription,
+		fieldDesc:       "The field to convert",
+		targetFieldDesc: "The field to assign the converted value to, by default `field` is updated in-place",
 	})
 }

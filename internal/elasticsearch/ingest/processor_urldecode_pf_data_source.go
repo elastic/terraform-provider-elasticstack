@@ -17,64 +17,14 @@
 
 package ingest
 
-import (
-	"maps"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-type processorURLDecodeModel struct {
-	CommonProcessorModel
-	WithIgnorableTargetField
-}
-
-func (m *processorURLDecodeModel) TypeName() string { return "urldecode" }
-
-func (m *processorURLDecodeModel) MarshalBody() (any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	body := processorURLDecodeBody{}
-
-	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
-	if diags.HasError() {
-		return nil, diags
-	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
-
-	return body, diags
-}
+import "github.com/hashicorp/terraform-plugin-framework/datasource"
 
 // NewProcessorURLDecodeDataSource returns a PF data source for the urldecode processor.
 func NewProcessorURLDecodeDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-		attrField: schema.StringAttribute{
-			Description: "The field to decode",
-			Required:    true,
-		},
-		attrTargetField: schema.StringAttribute{
-			Description: descTargetFieldInPlace,
-			Optional:    true,
-		},
-		attrIgnoreMissing: schema.BoolAttribute{
-			Description: descIgnoreMissingDocStop,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-
-	maps.Copy(attrs, CommonProcessorSchemaAttributes())
-
-	return NewProcessorDataSource(&processorURLDecodeModel{}, schema.Schema{
-		Description: processorURLDecodeDataSourceDescription,
-		Attributes:  attrs,
+	return newSimpleIgnorableTargetFieldDataSource(simpleProcessorConfig{
+		typeName:        "urldecode",
+		description:     processorURLDecodeDataSourceDescription,
+		fieldDesc:       "The field to decode",
+		targetFieldDesc: descTargetFieldInPlace,
 	})
 }
