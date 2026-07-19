@@ -19,9 +19,6 @@ package followerindex
 
 import (
 	"encoding/json"
-	"fmt"
-	"maps"
-	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
