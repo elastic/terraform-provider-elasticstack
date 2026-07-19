@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -44,7 +43,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+	merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, templateAttrTypes)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -53,23 +52,4 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 	resp.Diagnostics.Append(resp.Plan.Set(ctx, merged)...)
-}
-
-// reconcilePlanWithPriorStateForSemanticDrift aligns planned template.settings with prior state when
-// Terraform would show a spurious diff: strict inequality but semantic equality (index settings
-// canonical form in state vs practitioner JSON in configuration).
-func reconcilePlanWithPriorStateForSemanticDrift(ctx context.Context, plan, state, config Data) (*Data, diag.Diagnostics) {
-	newTpl, changed, diags := templateutil.ReconcileTemplateWithPriorStateForSemanticDrift(
-		ctx,
-		plan.Template,
-		state.Template,
-		config.Template,
-		templateAttrTypes(),
-	)
-	if diags.HasError() || !changed {
-		return nil, diags
-	}
-	out := plan
-	out.Template = newTpl
-	return &out, diags
 }
