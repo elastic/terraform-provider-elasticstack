@@ -30,8 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const jsonNullString = "null"
-
 func pieChartConfigPopulateCommonFields(
 	m *models.PieChartConfigModel,
 	title, description *string,
@@ -397,7 +395,7 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueCo
 				}
 				if groupBy[i].Format != nil {
 					fb, _ := json.Marshal(groupBy[i].Format)
-					if string(fb) == jsonNullString || len(fb) == 0 {
+					if string(fb) == lenscommon.JSONNullString || len(fb) == 0 {
 						var format kbapi.KibanaHTTPAPIsFormatType
 						_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
 						groupBy[i].Format = &format

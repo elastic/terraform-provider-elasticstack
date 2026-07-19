@@ -33,8 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const jsonNullString = "null"
-
 func waffleChartJSONUsesESQLDataset(waffleChartJSON []byte) (bool, error) {
 	var top struct {
 		DataSource json.RawMessage `json:"data_source"`
@@ -225,7 +223,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 						return jsontypes.NewNormalizedNull()
 					}
 					// Kibana may omit format on saved-object round-trip, leaving Format as an empty union.
-					if string(b) == jsonNullString || len(b) == 0 {
+					if string(b) == lenscommon.JSONNullString || len(b) == 0 {
 						b = []byte(lenscommon.DefaultLensNumberFormatJSON)
 					}
 					return jsontypes.NewNormalizedValue(lenscommon.NormalizeKibanaLensNumberFormatJSONString(string(b)))
@@ -253,7 +251,7 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 				diags.AddError("Failed to marshal esql group_by format", err.Error())
 				continue
 			}
-			if string(formatBytes) == jsonNullString || len(formatBytes) == 0 {
+			if string(formatBytes) == lenscommon.JSONNullString || len(formatBytes) == 0 {
 				formatBytes = []byte(lenscommon.DefaultLensNumberFormatJSON)
 			}
 			formatStr := lenscommon.NormalizeKibanaLensNumberFormatJSONString(string(formatBytes))

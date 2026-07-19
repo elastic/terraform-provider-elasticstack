@@ -32,8 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const jsonNullString = "null"
-
 func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -119,7 +117,7 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 			diags.AddError("Failed to marshal esql metric color", cErr.Error())
 			return diags
 		}
-		if len(colorBytes) > 0 && string(colorBytes) != jsonNullString {
+		if len(colorBytes) > 0 && string(colorBytes) != lenscommon.JSONNullString {
 			em.ColorJSON = jsontypes.NewNormalizedValue(string(colorBytes))
 		} else {
 			em.ColorJSON = jsontypes.NewNormalizedNull()

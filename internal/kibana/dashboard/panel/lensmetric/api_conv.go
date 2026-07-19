@@ -30,8 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-const jsonNullString = "null"
-
 func metricChartAttrsFromPayload(payload any) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
@@ -361,7 +359,7 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 		if !breakdownDiags.HasError() {
 			if breakdownBy.Format != nil {
 				fb, _ := json.Marshal(breakdownBy.Format)
-				if string(fb) == jsonNullString || len(fb) == 0 {
+				if string(fb) == lenscommon.JSONNullString || len(fb) == 0 {
 					var format kbapi.KibanaHTTPAPIsFormatType
 					_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
 					breakdownBy.Format = &format
