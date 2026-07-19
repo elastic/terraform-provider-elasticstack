@@ -87,23 +87,18 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
-
-	datasetBytes, err := api.DataSource.MarshalJSON()
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &models.WaffleLegendModel{}
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
@@ -173,22 +168,17 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
-
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 
 	m.Legend = &models.WaffleLegendModel{}
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)

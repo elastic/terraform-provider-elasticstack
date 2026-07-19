@@ -39,17 +39,20 @@ func treemapConfigFromAPINoESQL(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
-	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
+	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
+	priorSampling := m.Sampling
 
-	datasetBytes, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal data_source_json", err.Error())
+	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.LensChartBaseTFModel = base
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
 
 	if api.GroupBy != nil {
 		gb, gbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -70,12 +73,6 @@ func treemapConfigFromAPINoESQL(
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
-	} else {
-		m.Filters = nil
-	}
 
 	m.Legend = &models.PartitionLegendModel{}
 	lenscommon.PartitionLegendFromTreemapLegend(m.Legend, api.Legend)
@@ -103,17 +100,20 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	// query state from a previous non-ES|QL config.
 	m.Query = nil
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(m.IgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
-	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
+	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
+	priorSampling := m.Sampling
 
-	datasetBytes, err := json.Marshal(api.DataSource)
-	if err != nil {
-		diags.AddError("Failed to marshal data_source_json", err.Error())
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
+	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.LensChartBaseTFModel = base
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
 
 	m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
 	m.Metrics = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionMetricsDefaults)
@@ -163,12 +163,6 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 			m.EsqlGroupBy[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
 			m.EsqlGroupBy[i].Label = typeutils.StringishPointerValue(gb.Label)
 		}
-	}
-
-	if api.Filters != nil && len(*api.Filters) > 0 {
-		m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
-	} else {
-		m.Filters = nil
 	}
 
 	m.Legend = &models.PartitionLegendModel{}

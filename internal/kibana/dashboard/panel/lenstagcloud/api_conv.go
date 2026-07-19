@@ -72,23 +72,19 @@ func tagcloudConfigFromAPI(
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = v
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
 	metricBytes, err := api.Metric.MarshalJSON()
@@ -123,20 +119,17 @@ func tagcloudConfigFromAPIESQL(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulateTagcloudMetricDefaults)
