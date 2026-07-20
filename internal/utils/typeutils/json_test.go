@@ -26,6 +26,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestUnmarshalJSONDiag(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid JSON into map succeeds", func(t *testing.T) {
+		t.Parallel()
+		got, diags := typeutils.UnmarshalJSONDiag[map[string]any](`{"key":"value"}`, "parse error")
+		require.False(t, diags.HasError())
+		require.Equal(t, map[string]any{"key": "value"}, got)
+	})
+
+	t.Run("invalid JSON returns error diag", func(t *testing.T) {
+		t.Parallel()
+		_, diags := typeutils.UnmarshalJSONDiag[map[string]any]("not-json", "parse error")
+		require.True(t, diags.HasError())
+		require.Equal(t, "parse error", diags[0].Summary())
+	})
+
+	t.Run("valid JSON into slice succeeds", func(t *testing.T) {
+		t.Parallel()
+		got, diags := typeutils.UnmarshalJSONDiag[[]string](`["a","b"]`, "parse error")
+		require.False(t, diags.HasError())
+		require.Equal(t, []string{"a", "b"}, got)
+	})
+
+	t.Run("error summary is preserved", func(t *testing.T) {
+		t.Parallel()
+		_, diags := typeutils.UnmarshalJSONDiag[map[string]any]("{bad", "custom summary")
+		require.True(t, diags.HasError())
+		require.Equal(t, "custom summary", diags[0].Summary())
+	})
+}
+
 func TestNormalizeJSONScalar(t *testing.T) {
 	t.Parallel()
 
