@@ -32,11 +32,30 @@ import (
 // (treemap, mosaic, waffle, pie). It acts as a neutral adapter between the package-local
 // anonymous kbapi struct slices and the shared conversion helpers below.
 type EsqlGroupByAPIFields struct {
-	CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy
-	Color      *kbapi.KibanaHTTPAPIsColorMapping
-	Column     string
-	Format     *kbapi.KibanaHTTPAPIsFormatType
-	Label      *string
+	CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
+	Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
+	Column     string                            `json:"column"`
+	Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
+	Label      *string                           `json:"label,omitempty"`
+}
+
+// BuildEsqlGroupBySliceForAPI converts a []EsqlGroupByAPIFields into a []T by marshaling
+// the entries to JSON and unmarshaling into the target slice type. T must be a struct whose
+// JSON-tagged fields match the EsqlGroupByAPIFields JSON tags (collapse_by, color, column,
+// format, label). Use this together with BuildPartitionEsqlGroupByForAPI to eliminate the
+// repeated anonymous-struct copy loops across mosaic, treemap, and similar panels.
+func BuildEsqlGroupBySliceForAPI[T any](entries []EsqlGroupByAPIFields, diags *diag.Diagnostics) []T {
+	data, err := json.Marshal(entries)
+	if err != nil {
+		diags.AddError("Failed to marshal esql group_by entries", err.Error())
+		return nil
+	}
+	var out []T
+	if err := json.Unmarshal(data, &out); err != nil {
+		diags.AddError("Failed to unmarshal esql group_by entries", err.Error())
+		return nil
+	}
+	return out
 }
 
 // PopulatePartitionEsqlGroupByFromAPI converts a slice of EsqlGroupByAPIFields into a
