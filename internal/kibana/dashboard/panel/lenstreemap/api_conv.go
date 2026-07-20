@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -45,11 +44,11 @@ func treemapConfigFromAPINoESQL(
 	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := api.DataSource.MarshalJSON()
-	if err != nil {
-		diags.AddError("Failed to marshal data_source_json", err.Error())
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = dv
 
 	if api.GroupBy != nil {
 		gb, gbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -109,11 +108,11 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(m.Sampling, api.Sampling, 1)
 
 	datasetBytes, err := json.Marshal(api.DataSource)
-	if err != nil {
-		diags.AddError("Failed to marshal data_source_json", err.Error())
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = jsontypes.NewNormalizedValue(string(datasetBytes))
+	m.DataSourceJSON = dv
 
 	m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
 	m.Metrics = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionMetricsDefaults)
