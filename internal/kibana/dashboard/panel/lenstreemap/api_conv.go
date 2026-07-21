@@ -260,17 +260,10 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 	if diags.HasError() {
 		return api, diags
 	}
-	groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
-		CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
-		Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
-		Column     string                            `json:"column"`
-		Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
-		Label      *string                           `json:"label,omitempty"`
-	}](entries, &diags)
+	lenscommon.SetEsqlGroupByOnAPI(entries, &api.GroupBy, &diags)
 	if diags.HasError() {
 		return api, diags
 	}
-	api.GroupBy = &groupBy
 
 	api.Legend = lenscommon.PartitionLegendToTreemapLegend(m.Legend)
 
