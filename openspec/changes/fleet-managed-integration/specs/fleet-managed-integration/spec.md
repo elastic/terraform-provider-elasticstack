@@ -116,7 +116,7 @@ The PUT body SHALL be constructed entirely from the current plan (desired state)
 
 ### Requirement: cloud_connector modelling unchanged
 
-`cloud_connector` SHALL remain a `SingleNestedAttribute` with sub-fields `enabled`, `cloud_connector_id`, `name`, and `target_csp`. All sub-fields SHALL carry `RequiresReplace`. On Read, `name` and `target_csp` SHALL be preserved from prior state (they are write-only wire fields that do not appear in the API GET/PUT response).
+`cloud_connector` SHALL remain a `SingleNestedAttribute` with sub-fields `enabled`, `cloud_connector_id`, `name`, and `target_csp`. The `cloud_connector` attribute SHALL carry a single object-level `RequiresReplace` plan modifier (not one per sub-field), which forces replacement when any sub-field changes. On Read, `name` and `target_csp` SHALL be preserved from prior state (they are write-only wire fields that do not appear in the API GET/PUT response).
 
 #### Scenario: cloud_connector name preserved on Read
 - **WHEN** a resource with `cloud_connector = { name = "my-conn", target_csp = "aws", enabled = true }` is read
@@ -129,15 +129,15 @@ The PUT body SHALL be constructed entirely from the current plan (desired state)
 
 ### Requirement: Version gate for managed_integrations endpoint
 
-The resource SHALL declare a `GetVersionRequirements` entry that enforces the minimum Kibana version that introduced `/api/fleet/managed_integrations`. The exact version SHALL be confirmed against kibana#276925 during implementation (see Open Questions in design.md). Against a Kibana version older than this floor, the resource SHALL fail with a helpful error message naming the minimum required version. The 9.5.0 `condition` gate SHALL remain in place alongside the new floor.
+The resource SHALL declare a `GetVersionRequirements` entry that enforces a minimum Kibana version of **9.5.0** (verified against a 9.5.0-SNAPSHOT build; the same version already used as `policyshape.MinVersionCondition`) for `/api/fleet/managed_integrations`. Against a Kibana version older than 9.5.0, the resource SHALL fail with a helpful error message naming the minimum required version. Because this floor is identical to the version that introduced `condition` support, the resource SHALL NOT perform a separate, distinct capability check for `condition` — `condition` is unconditionally supported once the resource-level floor is satisfied, and no dedicated `SupportsCondition`-style gate SHALL exist.
 
 #### Scenario: Older Kibana returns error
-- **WHEN** the resource is planned or applied against a Kibana version older than the managed_integrations floor
+- **WHEN** the resource is planned or applied against a Kibana version older than 9.5.0
 - **THEN** Terraform SHALL fail with an error message stating the minimum required version
 - **AND** no API call to `/api/fleet/managed_integrations` SHALL be made
 
 #### Scenario: Exactly at version floor succeeds
-- **WHEN** the resource is planned against a Kibana version exactly equal to the floor
+- **WHEN** the resource is planned against a Kibana version exactly equal to 9.5.0
 - **THEN** the version check SHALL pass and API calls SHALL proceed
 
 ### Requirement: Topology and topology skip-check carried over
@@ -165,24 +165,24 @@ The following attributes are create-only (not returned by GET) and SHALL be pres
 
 ### Requirement: Space-aware API calls
 
-All API calls SHALL be space-aware, using `SpaceAwarePathRequestEditor(spaceID)`. The `space_id` attribute SHALL default to `"default"`. Changing `space_id` SHALL force resource replacement.
+All API calls SHALL be space-aware, using `SpaceAwarePathRequestEditor(spaceID)`, where `spaceID` is derived from the `space_ids` attribute (mirroring the existing agentless policy resource and other Fleet resources). The `space_ids` attribute SHALL be a `Computed`+`Optional` set of strings, defaulting to `["default"]` when omitted from config. Changing `space_ids` SHALL force resource replacement.
 
 #### Scenario: Non-default space
-- **WHEN** `space_id = "my-space"` is set and the resource is created
+- **WHEN** `space_ids = ["my-space"]` is set and the resource is created
 - **THEN** all API calls SHALL use the path prefix for `my-space`
 
-#### Scenario: space_id change forces replacement
-- **WHEN** `space_id` is changed in config
+#### Scenario: space_ids change forces replacement
+- **WHEN** `space_ids` is changed in config
 - **THEN** Terraform SHALL destroy and recreate the resource
 
 ### Requirement: Import via composite ID
 
-The resource SHALL support import via the composite ID `"<space_id>/<policy_id>"`. On import, Read SHALL parse the composite ID to derive `space_id` and `policy_id`.
+The resource SHALL support import via the composite ID `"<space_id>/<policy_id>"`, using the shared `fleet.SpaceImporter`. On import with a composite ID, Read SHALL parse it to derive the space ID and `policy_id`, and SHALL set `space_ids` to the singleton set `[<space_id>]`. On import with a plain (non-composite) ID, `policy_id` SHALL be set from the given ID and `space_ids` SHALL NOT be set.
 
 #### Scenario: Import by composite ID
 - **WHEN** `terraform import elasticstack_fleet_managed_integration.x "default/<policy_id>"` is run
 - **THEN** `policy_id` SHALL be set to the parsed value
-- **AND** `space_id` SHALL be set to `"default"`
+- **AND** `space_ids` SHALL be set to `["default"]`
 - **AND** all other attributes SHALL be populated from `GET /api/fleet/managed_integrations/{id}`
 
 ### Requirement: Response type cleanup — no PackagePolicy leakage
@@ -197,7 +197,7 @@ State SHALL never contain attributes derived from the `PackagePolicy` type (e.g.
 
 ### Requirement: elasticstack_fleet_agentless_policy resource — REMOVED
 
-The `elasticstack_fleet_agentless_policy` resource is removed from the provider entirely. There SHALL be no compatibility shim, deprecation warning, or state upgrade function. Users must migrate their Terraform state via `terraform state mv` (for structurally unchanged attributes) or `terraform import`. The `global_data_tags` structural change means `state mv` is not clean for resources using that attribute; those users must re-import.
+The `elasticstack_fleet_agentless_policy` resource is removed from the provider entirely. There SHALL be no compatibility shim, deprecation warning, or state upgrade function. `elasticstack_fleet_agentless_policy` has never shipped in a release, so no migration guidance for released users is required.
 
 #### Scenario: Old resource type not registered
 - **WHEN** a Terraform configuration references `elasticstack_fleet_agentless_policy`

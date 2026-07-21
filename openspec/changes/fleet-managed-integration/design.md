@@ -12,7 +12,8 @@ The resource package is moved wholesale (`internal/fleet/agentlesspolicy/` → `
 - Simplify `update.go` by replacing the echo-current/overlay pattern with a full-replace body built from plan.
 - Drop `RequiresReplace` from `name` and `package.version` (now updatable in-place).
 - Remodel `global_data_tags` as `MapNestedAttribute{name → {string_value, number_value}}` (aligning with `elasticstack_fleet_agent_policy`).
-- Update the version gate to the Kibana release that introduced `/api/fleet/managed_integrations`.
+- Update the version gate to the Kibana release that introduced `/api/fleet/managed_integrations` (confirmed: 9.5.0 — see Decision 8).
+- Simplify away the separate `condition`-support capability check, now redundant with the resource-level version floor (see Decision 8).
 
 **Non-Goals:**
 - `_upgrade` / `_upgrade/dryrun` bulk endpoints — deferred to a separate change.
@@ -27,7 +28,7 @@ The resource package is moved wholesale (`internal/fleet/agentlesspolicy/` → `
 
 New resource type `elasticstack_fleet_managed_integration`; old type `elasticstack_fleet_agentless_policy` removed entirely with no compatibility shim or deprecation warning.
 
-**Why:** The issue explicitly decided migrate-and-rename with no shim. Keeping both types would require maintaining both client paths indefinitely. Users migrate via `terraform state mv` (structurally unchanged attributes) or re-import.
+**Why:** The issue explicitly decided migrate-and-rename with no shim. Keeping both types would require maintaining both client paths indefinitely. `elasticstack_fleet_agentless_policy` has never shipped in a release (it is still listed under `## [Unreleased]` in `CHANGELOG.md`), so there are no released users to provide migration guidance for; this is a pre-release rename, not a breaking change in practice.
 
 ### Decision 2: Move-and-rename, not rewrite
 
@@ -37,9 +38,9 @@ Copy `internal/fleet/agentlesspolicy/` → `internal/fleet/managedintegration/`;
 
 ### Decision 3: No state migration
 
-Users transition via `terraform state mv` or `terraform import`. No `StateUpgraders` or migration helper.
+No `StateUpgraders` or migration helper. Since `elasticstack_fleet_agentless_policy` has never shipped in a release, there is no released-user population to write migration documentation for; anyone tracking `main` directly can use `terraform state mv` for structurally-unchanged attributes or re-import, but this is not a supported/documented migration path.
 
-**Why:** The schema changes (`name`/`package.version` mutability, `global_data_tags` shape) make a fully automatic migration non-trivial and the issue explicitly accepted this trade-off.
+**Why:** The schema changes (`name`/`package.version` mutability, `global_data_tags` shape) make a fully automatic migration non-trivial, and the issue explicitly accepted this trade-off. Because the old resource is unreleased, the trade-off costs nothing in practice.
 
 ### Decision 4: `name` and `package.version` become updatable
 
@@ -51,11 +52,11 @@ Drop `RequiresReplace` from `name` and `package.version` in `schema.go`; keep `R
 
 Rewrite from `ListNestedAttribute{name, value:string}` to `MapNestedAttribute` keyed by tag name, with item `{string_value: StringAttribute, number_value: Float32Attribute}`, `ConflictsWith`+`AtLeastOneOf` validators. Mirror `internal/fleet/agentpolicy/schema.go`.
 
-**Why:** The old shape was an outlier and stringified numbers. Aligning with the sibling `elasticstack_fleet_agent_policy` resource simplifies cross-resource usage. The structural change means `state mv` is not clean for this block; accepted under the no-migration stance.
+**Why:** The old shape was an outlier and stringified numbers. Aligning with the sibling `elasticstack_fleet_agent_policy` resource simplifies cross-resource usage. The structural change would make `state mv` non-clean for this block, but since the resource is unreleased this has no practical migration cost.
 
 ### Decision 6: `cloud_connector` handling unchanged
 
-Keep `SingleNestedAttribute`, all sub-fields `RequiresReplace`, `name`/`target_csp` preserved from state on Read. On PUT (full-replace), `{enabled, cloud_connector_id}` is derived from state and always re-sent — omitting it would detach the connector. `name`/`target_csp` are never sent on PUT (write-only fields that don't round-trip).
+Keep `SingleNestedAttribute` with a single object-level `RequiresReplace` plan modifier (not one per sub-field) — this already forces replacement when any sub-field changes. `name`/`target_csp` preserved from state on Read. On PUT (full-replace), `{enabled, cloud_connector_id}` is derived from state and always re-sent — omitting it would detach the connector. `name`/`target_csp` are never sent on PUT (write-only fields that don't round-trip).
 
 **Why:** Full-replace semantics require re-sending `cloud_connector` on every update to avoid accidental connector detachment. Preserving `name`/`target_csp` from state on Read is the existing pattern; the new clean response type also does not return these fields.
 
@@ -65,11 +66,13 @@ Remove the echo-current/overlay machinery. `buildUpdateBody` takes only the plan
 
 **Why:** The new PUT is full-replace. The old echo-current pattern existed solely to work around the lack of a dedicated PUT. `mergeVarsInto` is likely removable as full-replace sends plan vars wholesale.
 
-### Decision 8: Version gate update (the critical spike)
+### Decision 8: Version gate update — confirmed at 9.5.0, condition gate simplified away
 
-Move the `EnforceMinVersion` floor from 9.3.0 to the Kibana version that introduced `/api/fleet/managed_integrations` (landed in kibana#276925). The 9.5.0 `condition` gate stays as-is. The exact version must be confirmed against that PR or the shipped OAS changelog before setting the constant.
+Move the `EnforceMinVersion` floor from 9.3.0 to **9.5.0** (verified against a 9.5.0-SNAPSHOT Kibana build; the same version already used as `policyshape.MinVersionCondition`). This is now a resource-level `MinVersion` constant in `models.go`/`capabilities.go`, mirroring the pattern in `internal/fleet/agentlesspolicy/models.go`.
 
-**Why:** Using the wrong floor causes 404s against stacks that have `agentless_policies` but not `managed_integrations`. This is the highest-risk item in the migration and must be resolved before implementation is considered complete.
+Because the new floor is identical to `MinVersionCondition`, the separate per-request `condition`-support capability check (`agentlessPolicyFeatures.SupportsCondition`, `resolveAgentlessPolicyFeatures`, and `validateInputConditionSupport` in `models_convert.go`) is now redundant: a stack that can run this resource at all is guaranteed to support `condition`. That capability check, and its dedicated gating, is removed; `condition` is treated as unconditionally supported once the resource-level floor is satisfied.
+
+**Why:** Using the wrong floor causes 404s against stacks that have `agentless_policies` but not `managed_integrations` — this was the highest-risk item in the migration and is now resolved. Collapsing the two gates removes a runtime check that can no longer produce a different answer than the resource-level floor, simplifying `capabilities.go` and `models_convert.go` without losing any protection.
 
 ### Decision 9: `experimentalResources()` placement unchanged
 
@@ -77,15 +80,11 @@ Register the new resource in `experimentalResources()`, matching the upstream te
 
 ## Open Questions
 
-1. **Exact Kibana version for `/api/fleet/managed_integrations`**: Must be confirmed against kibana#276925 or the shipped OAS changelog. Getting this wrong 404s against supported-but-older stacks. This is the highest-priority spike.
-2. **`onlyCreateOnlyFlagsChanged` short-circuit**: Re-evaluate whether this optimisation still applies under full-replace PUT semantics. May simplify to a "no-op if full desired-state body equals last-applied body" check, or may be removable entirely.
-3. **Per-stream `var_group_selections`**: Currently only top-level is supported. Confirm whether the new API's stream-level field should be exposed now or deferred.
+1. **`onlyCreateOnlyFlagsChanged` short-circuit**: Re-evaluate whether this optimisation still applies under full-replace PUT semantics. May simplify to a "no-op if full desired-state body equals last-applied body" check, or may be removable entirely.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |---|---|
-| **Wrong version gate** 404s against stacks with `agentless_policies` but not `managed_integrations` | Resolve the version spike first; add acceptance test skip-gated to the new floor |
 | **Full-replace PUT missing `cloud_connector`** detaches connectors or clears optional fields | Unit + acceptance tests covering cloud_connector update path; explicitly test that cloud_connector is re-sent from state |
-| **`state mv` incompatibility for `global_data_tags`** confuses migrating users | Document the shape change in CHANGELOG and resource description; note that re-import is required for this block |
-| **`package_policies` fallback removal** breaks users on older Kibana versions | Enforced by version gate; the old fallback only existed because the new endpoint didn't exist |
+| **`package_policies` fallback removal** breaks users on older Kibana versions | Enforced by version gate (9.5.0); the old fallback only existed because the new endpoint didn't exist |

@@ -11,7 +11,7 @@ The existing `elasticstack_fleet_agentless_policy` resource targets the deprecat
 - The client layer moves from the deprecated `agentless_policies` endpoints (with package_policy fallbacks) to the dedicated `managed_integrations` CRUD surface: `POST`, `GET/{id}`, `PUT/{id}`, `DELETE/{id}`.
 - Schema changes: `name` and `package.version` become updatable in-place (drop `RequiresReplace`); `package.name` stays `RequiresReplace` (immutable upstream). `global_data_tags` is remodelled from `ListNestedAttribute{name, value:string}` to `MapNestedAttribute` keyed by tag name with `{string_value, number_value}` (aligning with `elasticstack_fleet_agent_policy`).
 - The read/update code is simplified significantly: `populateFromPackagePolicy` is replaced by `populateFromManagedIntegration` (direct read of the clean response), and `update.go`'s echo-current/overlay machinery is replaced by a full-replace body built from the plan.
-- The version gate in `capabilities.go` is moved from the 9.3.0 agentless_policies floor to the Kibana version that introduced `/api/fleet/managed_integrations` (to be confirmed against kibana#276925 during implementation).
+- The version gate in `capabilities.go` is moved from the 9.3.0 `agentless_policies` floor to 9.5.0, the Kibana version that introduced `/api/fleet/managed_integrations` (verified against a 9.5.0-SNAPSHOT build; the same version already used as `policyshape.MinVersionCondition`). Because the new floor now equals the `condition`-support version, the separate `condition` capability check is removed as redundant.
 - `_upgrade` / `_upgrade/dryrun` endpoints are deferred to a separate change.
 
 ## Capabilities
@@ -31,5 +31,5 @@ The existing `elasticstack_fleet_agentless_policy` resource targets the deprecat
 - **New docs/examples**: `examples/resources/elasticstack_fleet_managed_integration/`; generated `docs/resources/fleet_managed_integration.md`.
 - **Deleted docs/examples**: `examples/resources/elasticstack_fleet_agentless_policy/`, `docs/resources/fleet_agentless_policy.md`.
 - **Provider registration**: Remove `agentlesspolicy.NewResource` from `experimentalResources()`; add `managedintegration.NewResource` there.
-- **Generated clients**: `generated/kbapi/oas.yaml` already contains the `managed_integrations` CRUD surface; no regeneration needed.
-- **Breaking change**: Users of `elasticstack_fleet_agentless_policy` must migrate to `elasticstack_fleet_managed_integration` via `terraform state mv` (where schema matches) or re-import. The `global_data_tags` shape change makes `state mv` non-clean for resources using that attribute; this is accepted.
+- **Generated clients**: `generated/kbapi/kibana.gen.go` already contains the `managed_integrations` CRUD surface (`Post/Get/Put/DeleteFleetManagedIntegrations...WithResponse`); no regeneration needed.
+- **No released-user impact**: `elasticstack_fleet_agentless_policy` has never shipped in a release (still listed under `## [Unreleased]` in `CHANGELOG.md`); this is a pre-release rename, not a breaking change for practitioners. No migration guide, state-mv/re-import instructions, or CHANGELOG "Breaking changes" entry are needed.
