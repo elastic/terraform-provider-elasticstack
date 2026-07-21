@@ -77,7 +77,7 @@ func TestAgentlessPolicyModel_getVersionRequirements(t *testing.T) {
 	reqs, diags := m.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
-	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.3.0"))))
+	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.5.0"))))
 }
 
 // fakeMinVersionClient is a minimal stand-in for a *clients.KibanaScopedClient
@@ -112,7 +112,7 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 // Read/Update/Delete siblings in
 // internal/entitycore/kibana_resource_envelope_test.go, using a synthetic
 // model. What those generic tests do NOT cover is whether *this* resource's
-// GetVersionRequirements (agentlessPolicyModel, MinVersion 9.3.0) actually
+// GetVersionRequirements (agentlessPolicyModel, MinVersion 9.5.0) actually
 // causes that gate to fire against an unsupported Kibana -- that is what
 // this test proves, using the resource's real, production
 // agentlessPolicyModel and the real entitycore.EnforceVersionRequirements
@@ -120,9 +120,9 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 //
 // Together, these two facts (the envelope never calls the API when this
 // function errors; this function does error for agentlessPolicyModel against
-// a sub-9.3.0 Kibana) establish that Create/Read/Update/Delete on
+// a sub-9.5.0 Kibana) establish that Create/Read/Update/Delete on
 // elasticstack_fleet_agentless_policy never reach the Fleet API when the
-// connected Kibana is older than 9.3.0. See
+// connected Kibana is older than 9.5.0. See
 // specs/fleet-agentless-policy/spec.md, "Version gating" ->
 // "Scenario: Kibana version too old".
 func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
@@ -146,7 +146,7 @@ func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
 
 		require.True(t, client.called, "EnforceMinVersion must be consulted to evaluate the version requirement")
 		require.NotNil(t, client.requestedMinVersion)
-		require.True(t, client.requestedMinVersion.Equal(version.Must(version.NewVersion("9.3.0"))))
+		require.True(t, client.requestedMinVersion.Equal(version.Must(version.NewVersion("9.5.0"))))
 		require.True(t, diags.HasError(), "version gate must produce an error diagnostic for an unsupported Kibana")
 		require.False(t, apiCallMade, "no API call should be attempted when the version gate fails")
 
@@ -154,7 +154,7 @@ func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
 		for _, d := range diags {
 			summaries = append(summaries, d.Summary()+": "+d.Detail())
 		}
-		require.Contains(t, strings.Join(summaries, "\n"), "9.3.0")
+		require.Contains(t, strings.Join(summaries, "\n"), "9.5.0")
 	})
 
 	t.Run("supported version does not block", func(t *testing.T) {

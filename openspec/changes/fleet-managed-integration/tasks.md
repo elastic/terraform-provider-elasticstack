@@ -1,8 +1,8 @@
 ## 1. Pre-implementation
 
-- [ ] 1.1 Set the `MinVersion` floor to `9.5.0` in `models.go`/`capabilities.go` (confirmed: same version as the existing `policyshape.MinVersionCondition`, verified against a 9.5.0-SNAPSHOT Kibana build) — no further spike needed
-- [ ] 1.2 Review the new `KibanaHTTPAPIsManagedIntegration` response type in `generated/kbapi/kibana.gen.go` to confirm field mapping against the existing schema (document any discrepancies)
-- [ ] 1.3 Confirm `onlyCreateOnlyFlagsChanged` short-circuit behaviour under full-replace semantics; decide whether to retain, simplify, or remove
+- [x] 1.1 Set the `MinVersion` floor to `9.5.0` in `models.go`/`capabilities.go` (confirmed: same version as the existing `policyshape.MinVersionCondition`, verified against a 9.5.0-SNAPSHOT Kibana build) — no further spike needed
+- [x] 1.2 Review the new `KibanaHTTPAPIsManagedIntegration` response type in `generated/kbapi/kibana.gen.go` to confirm field mapping against the existing schema (document any discrepancies)
+- [x] 1.3 Confirm `onlyCreateOnlyFlagsChanged` short-circuit behaviour under full-replace semantics; decide whether to retain, simplify, or remove
 
 ## 2. New client — `internal/clients/fleet/managed_integration.go`
 

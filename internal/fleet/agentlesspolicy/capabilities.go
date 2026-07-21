@@ -29,11 +29,12 @@ import (
 // connected deployment that affect how this resource builds its request
 // bodies. It mirrors internal/fleet/integration_policy/capabilities.go's
 // integrationPolicyFeatures, trimmed to the one capability this resource
-// actually needs: agentlesspolicy has its own MinVersion floor (9.3.0,
-// enforced up-front by the entitycore envelope via GetVersionRequirements in
-// models.go), but `condition` on inputs/streams requires a strictly higher
-// Kibana version (policyshape.MinVersionCondition, 9.5.0) and so needs its
-// own, separate gate.
+// currently still checks at runtime: `condition` on inputs/streams.
+//
+// The resource-level MinVersion floor (models.go, 9.5.0 for
+// /api/fleet/managed_integrations) now matches policyshape.MinVersionCondition,
+// so this separate gate is redundant and will be removed in task 4.2 of the
+// fleet-managed-integration OpenSpec change.
 type agentlessPolicyFeatures struct {
 	SupportsCondition bool
 }

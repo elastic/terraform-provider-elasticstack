@@ -29,10 +29,11 @@ import (
 )
 
 // MinVersion is the minimum Kibana version required for the Fleet
-// agentless policies API. The API is experimental and was added in Kibana
-// 9.3.0 (see proposal.md and design.md of the fleet-agentless-policy
-// OpenSpec change, and the spec.md "Version gating" requirement).
-var MinVersion = version.Must(version.NewVersion("9.3.0"))
+// managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; same
+// floor as policyshape.MinVersionCondition (see openspec/changes/
+// fleet-managed-integration/design.md Decision 8 and spec.md "Version gate
+// for managed_integrations endpoint").
+var MinVersion = version.Must(version.NewVersion("9.5.0"))
 
 // agentlessPolicyModel is the Plugin Framework model for the
 // elasticstack_fleet_agentless_policy resource.
@@ -131,13 +132,14 @@ func (m agentlessPolicyModel) GetSpaceID() types.String {
 func (m agentlessPolicyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 // GetVersionRequirements enforces the minimum Kibana version for the Fleet
-// agentless policies API (experimental, added in Kibana 9.3.0). See
-// specs/fleet-agentless-policy/spec.md, requirement "Version gating".
+// managed_integrations API (experimental, added in Kibana 9.5.0). See
+// openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// spec.md, requirement "Version gate for managed_integrations endpoint".
 func (m agentlessPolicyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *MinVersion,
-			ErrorMessage: fmt.Sprintf("Fleet agentless policies require Elastic Stack v%s or later (experimental API).", MinVersion),
+			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later (experimental API).", MinVersion),
 		},
 	}, nil
 }

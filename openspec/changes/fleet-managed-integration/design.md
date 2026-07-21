@@ -80,7 +80,13 @@ Register the new resource in `experimentalResources()`, matching the upstream te
 
 ## Open Questions
 
-1. **`onlyCreateOnlyFlagsChanged` short-circuit**: Re-evaluate whether this optimisation still applies under full-replace PUT semantics. May simplify to a "no-op if full desired-state body equals last-applied body" check, or may be removable entirely.
+_(none — task 1.3 resolved below)_
+
+### Decision 10: Retain `onlyCreateOnlyFlagsChanged` (task 1.3)
+
+**Decision:** Keep the create/delete-only-flags short-circuit when rewriting `update.go` for full-replace PUT (task 7.6).
+
+**Why:** `create_dataset_templates`, `force`, `force_delete`, and `skip_topology_check` still do not belong in the PUT body. Terraform still invokes Update when only they change. Skipping the PUT avoids an unnecessary round trip and satisfies the spec's "SHALL NOT make any API call" guarantee. Full-replace semantics do not make a body-equality check simpler (timestamps and write-only fields are not in the plan). See `implementation.md` §1.3.
 
 ## Risks / Trade-offs
 
