@@ -27,28 +27,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// nonPersistingEnabledUpdateResponseJSON is the mapped-format
-// GET/PUT-response shape (see mappedFormatPackagePolicyJSON) that
-// TestEnabledChangeNonPersistence_stateReflectsAPIReality uses to simulate
-// the Decision 3 spike finding documented in update.go's header comment and
-// overlayInputFromPlan's own comment: Kibana accepted (200) a PUT that
-// changed inputs["cspm-cloudbeat/cis_aws"].enabled from true to false, but
-// silently did NOT persist it -- a subsequent read still reports `true`.
-// This fixture stands in for that subsequent read: enabled is `true` (the
-// OLD/unchanged value), not `false` (what the plan actually requested).
+// nonPersistingEnabledUpdateResponseJSON simulates a managed_integrations
+// read-after-write response where enabled did not persist.
 const nonPersistingEnabledUpdateResponseJSON = `{
 	"id": "policy-1",
 	"name": "test-policy",
 	"namespace": "default",
-	"enabled": true,
 	"created_at": "2024-01-01T00:00:00.000Z",
 	"created_by": "elastic",
 	"updated_at": "2024-01-02T00:00:00.000Z",
 	"updated_by": "elastic",
-	"revision": 2,
-	"policy_id": "policy-1",
-	"policy_ids": ["policy-1"],
-	"spaceIds": ["default"],
 	"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
 	"vars": {"posture": "cspm", "deployment": "aws"},
 	"description": "old description",
@@ -81,7 +69,7 @@ const nonPersistingEnabledUpdateResponseJSON = `{
 //     (current, per typedFormatPackagePolicyJSON) to false -- confirming the
 //     request really did ask for the change (this resource is not silently
 //     failing to send it).
-//  2. populateFromPackagePolicy is then fed a simulated response
+//  2. populateFromManagedIntegration is then fed a simulated response
 //     (nonPersistingEnabledUpdateResponseJSON) that echoes back enabled=true,
 //     standing in for the entitycore envelope's real read-after-write refresh
 //     (kibana_resource_envelope.go's runKibanaWrite calls Read with the
@@ -141,9 +129,9 @@ func TestEnabledChangeNonPersistence_stateReflectsAPIReality(t *testing.T) {
 	// updateAgentlessPolicy's real sequence: the entitycore envelope calls
 	// Read with the Update callback's returned model, which still carries
 	// plan.Inputs at that point), so inputsKnownKeySet correctly limits
-	// populateInputsModel's output to just the configured input.
-	data := mustPackagePolicyFromJSON(t, nonPersistingEnabledUpdateResponseJSON)
-	popDiags := plan.populateFromPackagePolicy(ctx, "default", data)
+	// populateInputsFromManagedIntegration's output to just the configured input.
+	data := mustManagedIntegrationFromJSON(t, nonPersistingEnabledUpdateResponseJSON)
+	popDiags := plan.populateFromManagedIntegration(ctx, "default", data, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
 	var resultInputs map[string]agentlessInputModel

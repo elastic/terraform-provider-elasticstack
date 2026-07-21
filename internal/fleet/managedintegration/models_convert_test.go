@@ -33,6 +33,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func mustManagedIntegrationFromJSON(t *testing.T, raw string) *kbapi.KibanaHTTPAPIsManagedIntegration {
+	t.Helper()
+	var item kbapi.KibanaHTTPAPIsManagedIntegration
+	require.NoError(t, json.Unmarshal([]byte(raw), &item))
+	return &item
+}
+
 func mustPackagePolicyFromJSON(t *testing.T, raw string) *kbapi.PackagePolicy {
 	t.Helper()
 	var pp kbapi.PackagePolicy
@@ -235,10 +242,19 @@ func TestGlobalDataTagsToModel_numberWire(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "x",
+		"name": "n",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "p", "version": "1.0.0", "title": "t"},
+		"global_data_tags": [{"name": "priority", "value": 1.5}]
+	}`)
+
 	var diags diag.Diagnostics
-	m := globalDataTagsToModel(ctx, []globalDataTagWire{
-		{Name: "priority", Value: float64(1.5)},
-	}, &diags)
+	m := globalDataTagsToModel(ctx, item, &diags)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	var tags map[string]globalDataTagsItemModel
@@ -251,10 +267,19 @@ func TestGlobalDataTagsToModel_unsupportedWireType(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "x",
+		"name": "n",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "p", "version": "1.0.0", "title": "t"},
+		"global_data_tags": [{"name": "bad", "value": ["not", "a", "scalar"]}]
+	}`)
+
 	var diags diag.Diagnostics
-	m := globalDataTagsToModel(ctx, []globalDataTagWire{
-		{Name: "bad", Value: []string{"not", "a", "scalar"}},
-	}, &diags)
+	m := globalDataTagsToModel(ctx, item, &diags)
 	assert.True(t, diags.HasError())
 	assert.True(t, m.IsNull())
 }
@@ -274,9 +299,12 @@ func TestGlobalDataTagsRawFromModel_number(t *testing.T) {
 	var encodeDiags diag.Diagnostics
 	raw := globalDataTagsRawFromModel(ctx, tagsMap, &encodeDiags)
 	require.False(t, encodeDiags.HasError(), "%v", encodeDiags)
-	require.Len(t, raw, 1)
-	assert.Equal(t, "priority", raw[0]["name"])
-	assert.InDelta(t, float64(7), raw[0]["value"], 0.001)
+	require.NotNil(t, raw)
+	require.Len(t, *raw, 1)
+	assert.Equal(t, "priority", (*raw)[0].Name)
+	num, err := (*raw)[0].Value.AsKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1()
+	require.NoError(t, err)
+	assert.InDelta(t, float32(7), num, 0.001)
 }
 
 func TestGlobalDataTagsRawFromModel_neitherValueSet(t *testing.T) {
@@ -364,19 +392,14 @@ func TestToCreateBody_inputs(t *testing.T) {
 	assert.Equal(t, "single-account", streamVars["aws.account_type"])
 }
 
-const mappedFormatPackagePolicyJSON = `{
+const mappedFormatManagedIntegrationJSON = `{
 	"id": "policy-1",
 	"name": "test-policy",
 	"namespace": "default",
-	"enabled": true,
 	"created_at": "2024-01-01T00:00:00.000Z",
 	"created_by": "elastic",
 	"updated_at": "2024-01-02T00:00:00.000Z",
 	"updated_by": "elastic",
-	"revision": 1,
-	"policy_id": "policy-1",
-	"policy_ids": ["policy-1"],
-	"spaceIds": ["default"],
 	"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
 	"vars": {"posture": "cspm", "deployment": "aws"},
 	"description": "test description",
@@ -400,11 +423,11 @@ const mappedFormatPackagePolicyJSON = `{
 	}
 }`
 
-func TestPopulateFromPackagePolicy_decodesMappedInputsAndFields(t *testing.T) {
+func TestPopulateFromManagedIntegration_decodesInputsAndFields(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	data := mustPackagePolicyFromJSON(t, mappedFormatPackagePolicyJSON)
+	item := mustManagedIntegrationFromJSON(t, mappedFormatManagedIntegrationJSON)
 
 	m := agentlessPolicyModel{
 		Force:                  types.BoolValue(true),
@@ -414,7 +437,7 @@ func TestPopulateFromPackagePolicy_decodesMappedInputsAndFields(t *testing.T) {
 		CloudConnector:         types.ObjectNull(cloudConnectorAttrTypes()),
 	}
 
-	diags := m.populateFromPackagePolicy(ctx, "default", data)
+	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	assert.Equal(t, "default/policy-1", m.ID.ValueString())
@@ -471,46 +494,72 @@ func TestPopulateFromPackagePolicy_decodesMappedInputsAndFields(t *testing.T) {
 	assert.Contains(t, streams["cloud_security_posture.findings"].Vars.ValueString(), "single-account")
 }
 
-// TestPopulateFromPackagePolicy_emptyDescriptionBecomesNull covers a real
-// Kibana behavior (empirically confirmed against a live 9.4.3 deployment,
-// see buildUpdateBody's comment): once a description is cleared via update,
-// GET returns an explicit "" rather than omitting the field. description is
-// Optional but not Computed in schema.go, so state must fold that "" back to
-// null or a config that never set description would show a permanent diff.
-func TestPopulateFromPackagePolicy_emptyDescriptionBecomesNull(t *testing.T) {
+// TestPopulateFromManagedIntegration_emptyDescriptionBecomesNull covers a real
+// Kibana behavior: once a description is cleared via update, GET returns an
+// explicit "" rather than omitting the field.
+func TestPopulateFromManagedIntegration_emptyDescriptionBecomesNull(t *testing.T) {
 	t.Parallel()
 
-	data := mustPackagePolicyFromJSON(t, `{
+	item := mustManagedIntegrationFromJSON(t, `{
 		"id": "policy-1",
 		"name": "test-policy",
 		"namespace": "",
-		"enabled": true,
 		"created_at": "2024-01-01T00:00:00.000Z",
 		"created_by": "elastic",
 		"updated_at": "2024-01-01T00:00:00.000Z",
 		"updated_by": "elastic",
-		"revision": 1,
 		"description": "",
-		"package": {"name": "cloud_security_posture", "version": "3.4.0"},
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
 		"inputs": {}
 	}`)
 
 	m := agentlessPolicyModel{}
-	diags := m.populateFromPackagePolicy(context.Background(), "default", data)
+	diags := m.populateFromManagedIntegration(context.Background(), "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	assert.True(t, m.Description.IsNull(), "an explicit empty-string description from the API should fold to null")
 	assert.True(t, m.Namespace.IsNull(), "an explicit empty-string namespace from the API should fold to null")
 }
 
-func TestPopulateFromPackagePolicy_nilData(t *testing.T) {
+func TestPopulateFromManagedIntegration_nilData(t *testing.T) {
 	t.Parallel()
 	m := agentlessPolicyModel{Force: types.BoolValue(true)}
-	diags := m.populateFromPackagePolicy(context.Background(), "default", nil)
+	diags := m.populateFromManagedIntegration(context.Background(), "default", nil, nil)
 	assert.False(t, diags.HasError())
-	// Untouched -- caller (read.go) is responsible for treating a nil data
-	// pointer as "not found" and not persisting state at all.
 	assert.True(t, m.Force.ValueBool())
+}
+
+func TestPopulateFromManagedIntegration_globalDataTagsNumberRoundTrip(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"global_data_tags": [{"name": "priority", "value": 42}]
+	}`)
+
+	m := agentlessPolicyModel{}
+	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var tags map[string]globalDataTagsItemModel
+	require.False(t, m.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
+	require.InDelta(t, float32(42), tags["priority"].NumberValue.ValueFloat32(), 0.001)
+
+	encodeDiags := diag.Diagnostics{}
+	raw := globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &encodeDiags)
+	require.False(t, encodeDiags.HasError(), "%v", encodeDiags)
+	require.NotNil(t, raw)
+	require.Len(t, *raw, 1)
+	num, err := (*raw)[0].Value.AsKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1()
+	require.NoError(t, err)
+	assert.InDelta(t, float32(42), num, 0.001)
 }
 
 func TestPopulateFromCreateResponse_setsIdentityAndPreservesCreateOnlyFlags(t *testing.T) {
@@ -554,27 +603,13 @@ func TestPopulateFromCreateResponse_setsIdentityAndPreservesCreateOnlyFlags(t *t
 	assert.Equal(t, "cspm", m.PolicyTemplate.ValueString())
 }
 
-// TestPopulateFromPackagePolicy_filtersToKnownInputKeys covers the
-// inputsKnownKeySet/populateInputsModel fix for "Provider produced
-// inconsistent result after apply": Fleet's package-policy responses for
-// multi-policy-template packages like cloud_security_posture echo back every
-// input the package declares across ALL of its policy templates, not just
-// the one(s) actually configured (mappedFormatPackagePolicyJSON above
-// includes both "cspm-cloudbeat/cis_aws" and "cspm-cloudbeat/cis_gcp" for
-// exactly this reason). When the model's Inputs map is already Known with a
-// specific key set (the plan's value on Update, or the prior state's value
-// on Read), the decoded response must be filtered down to just those keys.
-// TestPopulateFromPackagePolicy_decodesMappedInputsAndFields above starts
-// m.Inputs at its Go zero value (an untyped, not-Known types.Map), so
-// inputsKnownKeySet always took its nil/no-op path there; this test instead
-// seeds a genuinely Known, single-key Inputs map before decoding a wire
-// response containing two input keys, so the filtering path itself is
-// exercised.
-func TestPopulateFromPackagePolicy_filtersToKnownInputKeys(t *testing.T) {
+// TestPopulateFromManagedIntegration_filtersToKnownInputKeys covers the
+// inputsKnownKeySet filtering behavior for multi-policy-template packages.
+func TestPopulateFromManagedIntegration_filtersToKnownInputKeys(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	data := mustPackagePolicyFromJSON(t, mappedFormatPackagePolicyJSON)
+	item := mustManagedIntegrationFromJSON(t, mappedFormatManagedIntegrationJSON)
 
 	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
 		"cspm-cloudbeat/cis_aws": {
@@ -589,7 +624,7 @@ func TestPopulateFromPackagePolicy_filtersToKnownInputKeys(t *testing.T) {
 		Inputs:         knownInputs,
 	}
 
-	popDiags := m.populateFromPackagePolicy(ctx, "default", data)
+	popDiags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
 	var inputs map[string]agentlessInputModel
@@ -601,11 +636,7 @@ func TestPopulateFromPackagePolicy_filtersToKnownInputKeys(t *testing.T) {
 }
 
 // TestPopulateFromCreateResponse_filtersToKnownInputKeys is the create-response
-// counterpart of TestPopulateFromPackagePolicy_filtersToKnownInputKeys: the
-// same cross-policy-template-noise behavior is present in the bundled
-// POST /api/fleet/managed_integrations response (KibanaHTTPAPIsManagedIntegration),
-// not just the package-policies GET/PUT response, and populateFromCreateResponse
-// shares the same inputsKnownKeySet/populateInputsModel filtering path.
+// counterpart of TestPopulateFromManagedIntegration_filtersToKnownInputKeys.
 func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

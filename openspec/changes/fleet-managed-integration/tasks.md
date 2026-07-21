@@ -39,13 +39,13 @@
 
 ## 6. `models_convert.go` — simplification
 
-- [ ] 6.1 Change `toCreateBody` return type to `kbapi.PostFleetManagedIntegrationsJSONRequestBody` (alias for `KibanaHTTPAPIsCreateManagedIntegrationRequest`); verify the existing construction is correct
-- [ ] 6.2 Replace `populateFromPackagePolicy(*kbapi.PackagePolicy)` with `populateFromManagedIntegration(*kbapi.KibanaHTTPAPIsManagedIntegration)` for the Read path; mirror `populateFromCreateResponse` since response types are now identical
-- [ ] 6.3 Delete the `PackagePolicy`-leakage normalizers: `decodeMappedInputs`, `mappedInputWire`/`mappedStreamWire`, `globalDataTagValueToString`, and the dual-shape decode branches
-- [ ] 6.4 Rewrite `globalDataTagsToModel` / `globalDataTagsRawFromModel` for the new `MapNestedAttribute{name → {string_value|number_value}}` shape, using `internal/fleet/agentpolicy` conversion as reference
-- [ ] 6.5 Verify task 4.2 removed `validateInputConditionSupport` and `SupportsCondition`-based gating (no separate runtime check remains in `models_convert.go` once verified) — `condition` is unconditionally supported once the resource-level 9.5.0 floor is met
-- [ ] 6.6 Keep the `mappedInputKey("<policy_template>-<input_type>")` keying logic (request/response inputs map is keyed the same way)
-- [ ] 6.7 Update `models_convert_test.go` for the clean `KibanaHTTPAPIsManagedIntegration` response type and the new `global_data_tags` shape; add a number-value round-trip test case
+- [x] 6.1 Change `toCreateBody` return type to `kbapi.PostFleetManagedIntegrationsJSONRequestBody` (alias for `KibanaHTTPAPIsCreateManagedIntegrationRequest`); verify the existing construction is correct
+- [x] 6.2 Replace `populateFromPackagePolicy(*kbapi.PackagePolicy)` with `populateFromManagedIntegration(*kbapi.KibanaHTTPAPIsManagedIntegration)` for the Read path; mirror `populateFromCreateResponse` since response types are now identical
+- [x] 6.3 Delete the `PackagePolicy`-leakage normalizers: `decodeMappedInputs`, `mappedInputWire`/`mappedStreamWire`, `globalDataTagValueToString`, and the dual-shape decode branches
+- [x] 6.4 Rewrite `globalDataTagsToModel` / `globalDataTagsRawFromModel` for the new `MapNestedAttribute{name → {string_value|number_value}}` shape, using `internal/fleet/agentpolicy` conversion as reference
+- [x] 6.5 Verify task 4.2 removed `validateInputConditionSupport` and `SupportsCondition`-based gating (no separate runtime check remains in `models_convert.go` once verified) — `condition` is unconditionally supported once the resource-level 9.5.0 floor is met
+- [x] 6.6 Keep the `mappedInputKey("<policy_template>-<input_type>")` keying logic (request/response inputs map is keyed the same way)
+- [x] 6.7 Update `models_convert_test.go` for the clean `KibanaHTTPAPIsManagedIntegration` response type and the new `global_data_tags` shape; add a number-value round-trip test case
 
 ## 7. `update.go` — full-replace simplification
 

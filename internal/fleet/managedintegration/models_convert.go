@@ -15,15 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package managedintegration: this file implements Task 5's conversion layer
-// (openspec/changes/fleet-agentless-policy, "5. Resource: CRUD + import"):
-// building the POST /api/fleet/managed_integrations request body from the
-// Plugin Framework model (toCreateBody), and populating the model from the
-// two distinct API response shapes this resource consumes -- the bundled
-// create response (KibanaHTTPAPIsAgentlessPolicy, populateFromCreateResponse)
-// and the package_policies read/update response (kbapi.PackagePolicy,
-// populateFromPackagePolicy). See design.md Decision 4 for why there are two
-// response shapes at all (no dedicated agentless GET/PUT endpoint exists).
+// Package managedintegration: model ↔ Kibana managed_integrations API
+// conversion — POST/PUT request bodies (toCreateBody) and state population
+// from KibanaHTTPAPIsManagedIntegration (populateFromManagedIntegration).
 //
 // Several kbapi request/response fields are anonymous Go structs (oapi-codegen
 // emits an unnamed struct type per inline schema property, so e.g.
@@ -43,6 +37,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -95,7 +90,6 @@ type agentlessInputModel struct {
 const (
 	keyEnabled          = "enabled"
 	keyCloudConnectorID = "cloud_connector_id"
-	keyValue            = "value"
 )
 
 func packageAttrTypes() map[string]attr.Type {
@@ -115,71 +109,6 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 	}
 }
 
-// mappedInputWire and mappedStreamWire mirror the on-wire shape of a single
-// input/stream in the Fleet "mapped"/simplified package-policy format,
-// empirically confirmed against a live Kibana 9.4.3 deployment (input keys
-// are "<policy_template>-<input_type>"; stream keys are the dataset name --
-// see mappedInputKey and update.go's header comment). Both the agentless
-// create response (KibanaHTTPAPIsAgentlessPolicy.Inputs) and the
-// package-policies read/update response (kbapi.PackagePolicyMappedInputs,
-// obtained via GetPackagePolicy/UpdatePackagePolicy's Format=Simplified) use
-// this wire shape, but oapi-codegen gives each a distinct (in the create
-// case, anonymous) Go type. decodeMappedInputs normalizes either into this
-// shared struct via a JSON round trip so populateInputsModel only needs to be
-// written once.
-type mappedInputWire struct {
-	Enabled   *bool                       `json:"enabled,omitempty"`
-	Condition *string                     `json:"condition,omitempty"`
-	Vars      map[string]any              `json:"vars,omitempty"`
-	Streams   map[string]mappedStreamWire `json:"streams,omitempty"`
-}
-
-type mappedStreamWire struct {
-	Enabled   *bool          `json:"enabled,omitempty"`
-	Condition *string        `json:"condition,omitempty"`
-	Vars      map[string]any `json:"vars,omitempty"`
-}
-
-// decodeMappedInputs normalizes any mapped-format inputs value (from either
-// response shape described above) into mappedInputWire via a JSON round trip.
-func decodeMappedInputs(raw any) (map[string]mappedInputWire, error) {
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 || string(b) == "null" {
-		return nil, nil
-	}
-	var out map[string]mappedInputWire
-	if err := json.Unmarshal(b, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// globalDataTagWire mirrors the on-wire shape of a single global_data_tags
-// entry (`{name, value}`, value a string|number union), shared by the
-// agentless create response and the package-policies response.
-type globalDataTagWire struct {
-	Name  string `json:"name"`
-	Value any    `json:"value"`
-}
-
-func decodeGlobalDataTags(raw any) ([]globalDataTagWire, error) {
-	b, err := json.Marshal(raw)
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 || string(b) == "null" {
-		return nil, nil
-	}
-	var out []globalDataTagWire
-	if err := json.Unmarshal(b, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // mappedInputKey builds the "<policy_template>-<input_type>" key the Fleet
 // mapped/simplified package-policy format uses to identify an input,
 // confirmed empirically against a live Kibana 9.4.3 deployment (see
@@ -192,34 +121,31 @@ func mappedInputKey(policyTemplate *string, inputType string) string {
 	return *policyTemplate + "-" + inputType
 }
 
-// globalDataTagsToModel converts decoded wire tags into the `global_data_tags`
-// map attribute, or a null map when there are none.
-func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags *diag.Diagnostics) types.Map {
+// globalDataTagsToModel converts managed_integrations global_data_tags into
+// the Terraform map attribute, or a null map when there are none.
+func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
 	elemType := globalDataTagsElementType()
-	if len(wire) == 0 {
+	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
 		return types.MapNull(elemType)
 	}
 
-	map0 := make(map[string]globalDataTagsItemModel, len(wire))
-	for _, w := range wire {
+	map0 := make(map[string]globalDataTagsItemModel, len(*item.GlobalDataTags))
+	for _, tag := range *item.GlobalDataTags {
+		tagPath := path.Root("global_data_tags").AtMapKey(tag.Name)
 		item := globalDataTagsItemModel{}
-		tagPath := path.Root("global_data_tags").AtMapKey(w.Name)
-		switch val := w.Value.(type) {
-		case string:
-			item.StringValue = types.StringValue(val)
-		case float64:
-			item.NumberValue = types.Float32Value(float32(val))
-		case float32:
-			item.NumberValue = types.Float32Value(val)
-		default:
+		if num, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1(); err == nil {
+			item.NumberValue = types.Float32Value(num)
+		} else if str, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0(); err == nil {
+			item.StringValue = types.StringValue(str)
+		} else {
 			diags.AddAttributeError(
 				tagPath,
 				"Unsupported global_data_tags value type",
-				fmt.Sprintf("API returned value of type %T for tag %q; expected string or number.", w.Value, w.Name),
+				fmt.Sprintf("API returned an unsupported value for tag %q; expected string or number.", tag.Name),
 			)
 			continue
 		}
-		map0[w.Name] = item
+		map0[tag.Name] = item
 	}
 
 	if diags.HasError() {
@@ -230,10 +156,11 @@ func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags 
 }
 
 // globalDataTagsRawFromModel converts the `global_data_tags` map attribute
-// into a slice of plain {"name":..., "value":...} maps, suitable for a JSON
-// marshal/unmarshal round trip into a request body's GlobalDataTags field.
-// Returns nil when the map is null or unknown, or when encoding fails.
-func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) []map[string]any {
+// into request-body global_data_tags using typed union values.
+func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) *[]struct {
+	Name  string                                                                   `json:"name"`
+	Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
+} {
 	if !typeutils.IsKnown(tags) {
 		return nil
 	}
@@ -242,26 +169,40 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 		return nil
 	}
 
-	raw := make([]map[string]any, 0, len(items))
+	raw := make([]struct {
+		Name  string                                                                   `json:"name"`
+		Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
+	}, 0, len(items))
 	for key, item := range items {
 		tagPath := path.Root("global_data_tags").AtMapKey(key)
+		var value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+		var err error
 		switch {
 		case typeutils.IsKnown(item.StringValue):
-			raw = append(raw, map[string]any{attrName: key, keyValue: item.StringValue.ValueString()})
+			err = value.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(item.StringValue.ValueString())
 		case typeutils.IsKnown(item.NumberValue):
-			raw = append(raw, map[string]any{attrName: key, keyValue: item.NumberValue.ValueFloat32()})
+			err = value.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(item.NumberValue.ValueFloat32())
 		default:
 			diags.AddAttributeError(
 				tagPath,
 				"Invalid global_data_tags entry",
 				"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
 			)
+			continue
 		}
+		if err != nil {
+			diags.AddAttributeError(tagPath, "Failed to encode global_data_tags", err.Error())
+			continue
+		}
+		raw = append(raw, struct {
+			Name  string                                                                   `json:"name"`
+			Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
+		}{Name: key, Value: value})
 	}
 	if diags.HasError() {
 		return nil
 	}
-	return raw
+	return &raw
 }
 
 // varsJSONFromAny builds a policyshape.VarsJSONValue from any mapped-format
@@ -301,67 +242,75 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 	return keys
 }
 
-// populateInputsModel builds the `inputs` map attribute from decoded wire
-// inputs (see decodeMappedInputs), shared by populateFromCreateResponse and
-// populateFromPackagePolicy so the conversion is only written once despite
-// the two API response shapes.
-//
-// knownKeys filters wireInputs down to the given key set before decoding, or
-// performs no filtering at all when nil. This works around a real behavior
-// of both the POST /api/fleet/managed_integrations response and the
-// package_policies GET/PUT (?format=simplified) response for
-// multi-policy-template packages such as cloud_security_posture (CSPM):
-// empirically (see the fleet-agentless-policy OpenSpec change's Task 8
-// acceptance-test work), both responses include an entry for *every* input
-// declared by the package across *all* of its policy templates (e.g. CSPM's
-// kspm-cloudbeat/cis_k8s, kspm-cloudbeat/cis_eks, cspm-cloudbeat/cis_gcp,
-// cspm-cloudbeat/cis_azure, and vuln_mgmt-cloudbeat/vuln_mgmt_aws all appear
-// disabled, in addition to whichever single input the config actually
-// enables), not just the input(s) the policy_template/config selected. The
-// `inputs` schema attribute is Optional+Computed (schema.go), so when config
-// sets a known, explicit inputs map (e.g. one entry), Terraform requires the
-// applied state to contain *exactly* those keys -- the framework hard-fails
-// with "Provider produced inconsistent result after apply: .inputs: new
-// element ... has appeared" otherwise. Filtering the response down to the
-// caller-supplied knownKeys (the model's own Inputs map value captured
-// *before* this function overwrites it -- the plan's value on Create, or the
-// prior model's value on Read/Update) makes state mirror what was actually
-// planned. When inputs is unset entirely (Unknown on Create, or Known from
-// prior state on Read/Update), knownKeys is nil and no filtering happens,
-// preserving the widest-possible-response behavior for that case.
-func populateInputsModel(ctx context.Context, wireInputs map[string]mappedInputWire, knownKeys map[string]struct{}, diags *diag.Diagnostics) policyshape.InputsValue {
+// managedIntegrationVarsToMap decodes a managed-integration vars map (typed
+// union values) into a plain map for Normalized JSON encoding.
+func managedIntegrationVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Vars_AdditionalProperties) map[string]any {
+	if vars == nil || len(*vars) == 0 {
+		return nil
+	}
+	b, err := json.Marshal(vars)
+	if err != nil {
+		return nil
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil
+	}
+	return out
+}
+
+func managedIntegrationStreamVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Streams_Vars_AdditionalProperties) map[string]any {
+	if vars == nil || len(*vars) == 0 {
+		return nil
+	}
+	b, err := json.Marshal(vars)
+	if err != nil {
+		return nil
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil
+	}
+	return out
+}
+
+// populateInputsFromManagedIntegration builds the `inputs` map attribute from
+// KibanaHTTPAPIsManagedIntegration.Inputs.
+func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, knownKeys map[string]struct{}, diags *diag.Diagnostics) policyshape.InputsValue {
+	if item == nil {
+		return policyshape.NewInputsNull(agentlessInputType())
+	}
+	inputs := maps.Clone(item.Inputs)
 	if knownKeys != nil {
-		filtered := make(map[string]mappedInputWire, len(knownKeys))
-		for k := range knownKeys {
-			if wire, ok := wireInputs[k]; ok {
-				filtered[k] = wire
+		for key := range inputs {
+			if _, ok := knownKeys[key]; !ok {
+				delete(inputs, key)
 			}
 		}
-		wireInputs = filtered
 	}
 
-	if len(wireInputs) == 0 {
+	if len(inputs) == 0 {
 		return policyshape.NewInputsNull(agentlessInputType())
 	}
 
-	models := make(map[string]agentlessInputModel, len(wireInputs))
-	for inputID, wire := range wireInputs {
+	models := make(map[string]agentlessInputModel, len(inputs))
+	for inputID, wire := range inputs {
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
 		m := agentlessInputModel{
 			Enabled:   types.BoolPointerValue(wire.Enabled),
 			Condition: types.StringPointerValue(wire.Condition),
-			Vars:      typeutils.MarshalToNormalized(wire.Vars, inputPath.AtName("vars"), diags),
+			Vars:      typeutils.MarshalToNormalized(managedIntegrationVarsToMap(wire.Vars), inputPath.AtName("vars"), diags),
 		}
 
-		if len(wire.Streams) > 0 {
-			streams := make(map[string]policyshape.InputStreamModel, len(wire.Streams))
-			for streamID, sw := range wire.Streams {
+		if wire.Streams != nil && len(*wire.Streams) > 0 {
+			streams := make(map[string]policyshape.InputStreamModel, len(*wire.Streams))
+			for streamID, sw := range *wire.Streams {
 				streamPath := inputPath.AtName("streams").AtMapKey(streamID)
 				streams[streamID] = policyshape.InputStreamModel{
 					Enabled:   types.BoolPointerValue(sw.Enabled),
 					Condition: types.StringPointerValue(sw.Condition),
-					Vars:      typeutils.MarshalToNormalized(sw.Vars, streamPath.AtName("vars"), diags),
+					Vars:      typeutils.MarshalToNormalized(managedIntegrationStreamVarsToMap(sw.Vars), streamPath.AtName("vars"), diags),
 				}
 			}
 			streamsMap, d := types.MapValueFrom(ctx, policyshape.StreamType(), streams)
@@ -416,13 +365,9 @@ func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diag
 	return decoded
 }
 
-// toCreateBody implements Task 5.1: compiles the config/plan model into
-// PostFleetAgentlessPoliciesJSONRequestBody. Per spec: cloud_connector is
-// omitted entirely when the block is not present in config (typeutils.IsKnown
-// returns false for a null, non-Computed attribute), but sent -- even with
-// only `enabled` set -- when the block is present; force and
-// create_dataset_templates are sent on create only.
-func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleetAgentlessPoliciesJSONRequestBody, diag.Diagnostics) {
+// toCreateBody compiles the config/plan model into
+// PostFleetManagedIntegrationsJSONRequestBody.
+func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleetManagedIntegrationsJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	decodedInputs := m.decodeInputs(ctx, &diags)
@@ -430,10 +375,10 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	var pkg packageModel
 	diags.Append(m.Package.As(ctx, &pkg, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
-		return kbapi.PostFleetAgentlessPoliciesJSONRequestBody{}, diags
+		return kbapi.PostFleetManagedIntegrationsJSONRequestBody{}, diags
 	}
 
-	body := kbapi.PostFleetAgentlessPoliciesJSONRequestBody{
+	body := kbapi.PostFleetManagedIntegrationsJSONRequestBody{
 		Name: m.Name.ValueString(),
 		Package: kbapi.KibanaHTTPAPIsPackagePolicyPackage{
 			Name:    pkg.Name.ValueString(),
@@ -493,12 +438,7 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	}
 
 	if typeutils.IsKnown(m.GlobalDataTags) {
-		raw := globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &diags)
-		if b, err := json.Marshal(raw); err != nil {
-			diags.AddAttributeError(path.Root("global_data_tags"), "Failed to encode global_data_tags", err.Error())
-		} else if err := json.Unmarshal(b, &body.GlobalDataTags); err != nil {
-			diags.AddAttributeError(path.Root("global_data_tags"), "Failed to encode global_data_tags for the create request", err.Error())
-		}
+		body.GlobalDataTags = globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &diags)
 	}
 
 	if typeutils.IsKnown(m.CloudConnector) {
@@ -535,7 +475,7 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 // decodeInputs) into the create body's Inputs field (a
 // map[string]struct{...} of anonymous Go type -- see this file's header
 // comment) via a JSON marshal/unmarshal round trip.
-func applyCreateInputs(body *kbapi.PostFleetAgentlessPoliciesJSONRequestBody, decoded map[string]decodedAgentlessInput, diags *diag.Diagnostics) {
+func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, decoded map[string]decodedAgentlessInput, diags *diag.Diagnostics) {
 	if len(decoded) == 0 {
 		return
 	}
@@ -588,211 +528,75 @@ func applyCreateInputs(body *kbapi.PostFleetAgentlessPoliciesJSONRequestBody, de
 	}
 }
 
-// responseFields captures the response fields that populateFromCreateResponse
-// and populateFromPackagePolicy both apply onto the model -- the two response
-// shapes they read from (KibanaHTTPAPIsAgentlessPolicy and
-// kbapi.PackagePolicy respectively) diverge in pointer-vs-value fields and in
-// how `inputs` is boxed (a plain raw value vs. a union type requiring
-// AsPackagePolicyMappedInputs() first), so each caller extracts its own
-// fields into this common shape and applyResponseFields does the actual
-// state-population work once.
-type responseFields struct {
-	name        string
-	description *string
-	namespace   *string
-	createdAt   string
-	updatedAt   string
-
-	// spaceIDs is the response's own space_ids, if the response shape
-	// carries one (only kbapi.PackagePolicy does). nil (not just empty) means
-	// "this response shape has no such field" -- applyResponseFields falls
-	// through to defaulting m.SpaceIDs from spaceID when unset, exactly as
-	// when the slice is present but empty.
-	spaceIDs *[]string
-
-	// hasPackage mirrors kbapi.PackagePolicy's Package pointer being nil:
-	// KibanaHTTPAPIsAgentlessPolicy's Package is never nil, so
-	// populateFromCreateResponse always passes true. When false, m.Package
-	// and m.VarsJSON are left untouched, matching populateFromPackagePolicy's
-	// original `if data.Package != nil` guard.
-	hasPackage     bool
-	packageName    string
-	packageVersion string
-	packageTitle   types.String
-	varsRaw        any
-
-	varGroupSelections               *map[string]string
-	additionalDatastreamsPermissions *[]string
-	globalDataTagsRaw                any
-	inputsRaw                        any
-
-	// decodeErrContext is appended to the two decode-failure diagnostic
-	// messages below, preserving each caller's original wording ("... from
-	// the create response" vs. no suffix at all).
-	decodeErrContext string
-}
-
-// applyResponseFields is the shared body of populateFromCreateResponse and
-// populateFromPackagePolicy: given the id already extracted by the caller
-// (the two response shapes use different id field types) and a responseFields
-// populated from the caller's own response, it sets every model field the two
-// functions have in common. See responseFields' doc comment for how the two
-// callers' response-shape differences are normalized before calling this.
-func (m *agentlessPolicyModel) applyResponseFields(ctx context.Context, spaceID, resourceID string, f responseFields, diags *diag.Diagnostics) {
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
-	m.PolicyID = types.StringValue(resourceID)
-
-	if f.spaceIDs != nil && len(*f.spaceIDs) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *f.spaceIDs)
-		diags.Append(d...)
-		m.SpaceIDs = spaceIDs
-	} else if !typeutils.IsKnown(m.SpaceIDs) {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
-		diags.Append(d...)
-		m.SpaceIDs = spaceIDs
+// populateFromManagedIntegration updates Terraform state from a
+// KibanaHTTPAPIsManagedIntegration response. Create-only attributes
+// (force, force_delete, create_dataset_templates, skip_topology_check,
+// policy_template, cloud_connector write-only fields) are left untouched.
+//
+// spaceIDs is optional metadata from legacy package_policies responses until
+// task 8; when nil, space_ids defaults from spaceID when unset on the model.
+func (m *agentlessPolicyModel) populateFromManagedIntegration(ctx context.Context, spaceID string, item *kbapi.KibanaHTTPAPIsManagedIntegration, spaceIDs *[]string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if item == nil {
+		return diags
 	}
 
-	m.Name = types.StringValue(f.name)
-	// description is Optional but NOT Computed in schema.go, so state must
-	// exactly mirror an unset (null) config value. Empirically, Kibana's
-	// package-policy endpoints return an explicit "" (not an omitted/nil
-	// field) once a description has been cleared via an update -- see
-	// update.go's buildUpdateBody, which sends "" rather than omitting the
-	// field to actively clear it. NonEmptyStringOrNull folds that "" back to
-	// null so a cleared description doesn't show up as a permanent diff
-	// against a config that never set it. namespace gets the same treatment
-	// for consistency, even though it is Computed (so a "" vs null mismatch
-	// there is a milder no-op-diff annoyance, not a hard error).
-	m.Description = typeutils.NonEmptyStringOrNull(f.description)
-	m.Namespace = typeutils.NonEmptyStringOrNull(f.namespace)
-	m.CreatedAt = types.StringValue(f.createdAt)
-	m.UpdatedAt = types.StringValue(f.updatedAt)
+	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.PolicyID = types.StringValue(item.Id)
 
-	if f.hasPackage {
+	if spaceIDs != nil && len(*spaceIDs) > 0 {
+		ids, d := types.SetValueFrom(ctx, types.StringType, *spaceIDs)
+		diags.Append(d...)
+		m.SpaceIDs = ids
+	} else if !typeutils.IsKnown(m.SpaceIDs) {
+		ids, d := types.SetValueFrom(ctx, types.StringType, []string{spaceID})
+		diags.Append(d...)
+		m.SpaceIDs = ids
+	}
+
+	m.Name = types.StringValue(item.Name)
+	m.Description = typeutils.NonEmptyStringOrNull(item.Description)
+	m.Namespace = typeutils.NonEmptyStringOrNull(item.Namespace)
+	m.CreatedAt = types.StringValue(item.CreatedAt)
+	m.UpdatedAt = types.StringValue(item.UpdatedAt)
+
+	if item.Package.Name != "" || item.Package.Version != "" {
 		pkgObj, d := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
-			Name:    types.StringValue(f.packageName),
-			Version: types.StringValue(f.packageVersion),
-			Title:   f.packageTitle,
+			Name:    types.StringValue(item.Package.Name),
+			Version: types.StringValue(item.Package.Version),
+			Title:   types.StringValue(item.Package.Title),
 		})
 		diags.Append(d...)
 		m.Package = pkgObj
-
-		m.VarsJSON = varsJSONFromAny(f.varsRaw, f.packageName, f.packageVersion, diags)
+		m.VarsJSON = varsJSONFromAny(item.Vars, item.Package.Name, item.Package.Version, &diags)
 	}
 
-	if f.varGroupSelections != nil && len(*f.varGroupSelections) > 0 {
-		vgs, d := types.MapValueFrom(ctx, types.StringType, *f.varGroupSelections)
+	if item.VarGroupSelections != nil && len(*item.VarGroupSelections) > 0 {
+		vgs, d := types.MapValueFrom(ctx, types.StringType, *item.VarGroupSelections)
 		diags.Append(d...)
 		m.VarGroupSelections = vgs
 	} else {
 		m.VarGroupSelections = types.MapNull(types.StringType)
 	}
 
-	if f.additionalDatastreamsPermissions != nil && len(*f.additionalDatastreamsPermissions) > 0 {
-		perms, d := types.ListValueFrom(ctx, types.StringType, *f.additionalDatastreamsPermissions)
+	if item.AdditionalDatastreamsPermissions != nil && len(*item.AdditionalDatastreamsPermissions) > 0 {
+		perms, d := types.ListValueFrom(ctx, types.StringType, *item.AdditionalDatastreamsPermissions)
 		diags.Append(d...)
 		m.AdditionalDatastreamsPermissions = perms
 	} else {
 		m.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
 	}
 
-	tagsWire, err := decodeGlobalDataTags(f.globalDataTagsRaw)
-	if err != nil {
-		diags.AddError("Failed to decode global_data_tags"+f.decodeErrContext, err.Error())
-	} else {
-		m.GlobalDataTags = globalDataTagsToModel(ctx, tagsWire, diags)
-	}
+	m.GlobalDataTags = globalDataTagsToModel(ctx, item, &diags)
 
 	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
-	inputsWire, err := decodeMappedInputs(f.inputsRaw)
-	if err != nil {
-		diags.AddError("Failed to decode inputs"+f.decodeErrContext, err.Error())
-	} else {
-		m.Inputs = populateInputsModel(ctx, inputsWire, inputsKnownKeys, diags)
-	}
+	m.Inputs = populateInputsFromManagedIntegration(ctx, item, inputsKnownKeys, &diags)
+
+	return diags
 }
 
-// populateFromCreateResponse implements the "Create" requirement's response
-// decoding (specs/fleet-agentless-policy/spec.md): policy_id and id are set
-// from the response's id field; created_at/updated_at come from the response.
-//
-// space_ids, cloud_connector, policy_template, force, force_delete, and
-// create_dataset_templates are intentionally left untouched beyond what the
-// plan already set: none of them round-trip through
-// KibanaHTTPAPIsAgentlessPolicy (Decision 4), none are Computed in schema.go
-// except space_ids (defaulted below when unset), and touching the others
-// here risks a "Provider produced inconsistent result" error against the
-// plan value the framework already validated.
+// populateFromCreateResponse decodes the managed_integrations create response
+// into state (alias for populateFromManagedIntegration).
 func (m *agentlessPolicyModel) populateFromCreateResponse(ctx context.Context, spaceID string, item kbapi.KibanaHTTPAPIsManagedIntegration) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	m.applyResponseFields(ctx, spaceID, item.Id, responseFields{
-		name:                             item.Name,
-		description:                      item.Description,
-		namespace:                        item.Namespace,
-		createdAt:                        item.CreatedAt,
-		updatedAt:                        item.UpdatedAt,
-		hasPackage:                       true,
-		packageName:                      item.Package.Name,
-		packageVersion:                   item.Package.Version,
-		packageTitle:                     types.StringValue(item.Package.Title),
-		varsRaw:                          item.Vars,
-		varGroupSelections:               item.VarGroupSelections,
-		additionalDatastreamsPermissions: item.AdditionalDatastreamsPermissions,
-		globalDataTagsRaw:                item.GlobalDataTags,
-		inputsRaw:                        item.Inputs,
-		decodeErrContext:                 " from the create response",
-	}, &diags)
-
-	return diags
-}
-
-// populateFromPackagePolicy implements the "Read" requirement (specs/
-// fleet-agentless-policy/spec.md): state is updated from every API-populated
-// field. force, force_delete, and create_dataset_templates are preserved
-// (left untouched on m) since none are returned by GET
-// /api/fleet/package_policies/{id} -- see the "Read preserves force_delete"
-// and "Create-only flags are not round-tripped from the API" scenarios.
-// cloud_connector and policy_template are likewise left untouched: neither
-// is Computed in schema.go, so overwriting them from partial API data (the
-// response includes cloud_connector_id/enabled but never name/target_csp)
-// risks a "Provider produced inconsistent result" error.
-func (m *agentlessPolicyModel) populateFromPackagePolicy(ctx context.Context, spaceID string, data *kbapi.PackagePolicy) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if data == nil {
-		return diags
-	}
-
-	// Extract mapped inputs from the union Inputs field (Format=Simplified,
-	// set by fleet.GetPackagePolicy/fleet.UpdatePackagePolicy, returns mapped
-	// inputs). An empty/nil union is treated as no inputs rather than an
-	// error, matching internal/fleet/integration_policy/models.go.
-	mappedInputs, err := data.Inputs.AsPackagePolicyMappedInputs()
-	if err != nil {
-		mappedInputs = kbapi.PackagePolicyMappedInputs{}
-	}
-
-	fields := responseFields{
-		name:                             data.Name,
-		description:                      data.Description,
-		namespace:                        data.Namespace,
-		createdAt:                        data.CreatedAt,
-		updatedAt:                        data.UpdatedAt,
-		spaceIDs:                         data.SpaceIds,
-		hasPackage:                       data.Package != nil,
-		varsRaw:                          data.Vars,
-		varGroupSelections:               data.VarGroupSelections,
-		additionalDatastreamsPermissions: data.AdditionalDatastreamsPermissions,
-		globalDataTagsRaw:                data.GlobalDataTags,
-		inputsRaw:                        mappedInputs,
-	}
-	if data.Package != nil {
-		fields.packageName = data.Package.Name
-		fields.packageVersion = data.Package.Version
-		fields.packageTitle = types.StringPointerValue(data.Package.Title)
-	}
-
-	m.applyResponseFields(ctx, spaceID, data.Id, fields, &diags)
-
-	return diags
+	return m.populateFromManagedIntegration(ctx, spaceID, &item, nil)
 }

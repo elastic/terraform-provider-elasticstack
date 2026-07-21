@@ -237,7 +237,18 @@ func updateAgentlessPolicy(
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
 
-	diags.Append(plan.populateFromPackagePolicy(ctx, req.SpaceID, updated)...)
+	item, bridgeDiags := managedIntegrationFromPackagePolicyReadResponse(updated)
+	diags.Append(bridgeDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+	}
+
+	var spaceIDs *[]string
+	if updated.SpaceIds != nil {
+		spaceIDs = updated.SpaceIds
+	}
+
+	diags.Append(plan.populateFromManagedIntegration(ctx, req.SpaceID, &item, spaceIDs)...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
@@ -297,7 +308,11 @@ func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kb
 
 	tagsRaw := globalDataTagsRawFromModel(ctx, plan.GlobalDataTags, &diags)
 	if tagsRaw == nil {
-		tagsRaw = []map[string]any{}
+		empty := make([]struct {
+			Name  string                                                                   `json:"name"`
+			Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
+		}, 0)
+		tagsRaw = &empty
 	}
 	if b, err := json.Marshal(tagsRaw); err != nil {
 		diags.AddAttributeError(path.Root("global_data_tags"), "Failed to encode global_data_tags", err.Error())

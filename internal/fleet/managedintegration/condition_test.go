@@ -269,13 +269,13 @@ func TestPopulateFromCreateResponse_leavesConditionNullWhenAbsent(t *testing.T) 
 	assert.True(t, streams["cloud_security_posture.findings"].Condition.IsNull())
 }
 
-// TestPopulateFromPackagePolicy_leavesConditionNullWhenAbsent is the read-path
-// counterpart using the typed package_policies GET fixture (until task 6.2).
-func TestPopulateFromPackagePolicy_leavesConditionNullWhenAbsent(t *testing.T) {
+// TestPopulateFromManagedIntegration_leavesConditionNullWhenAbsent is the read-path
+// counterpart using the managed_integrations response fixture.
+func TestPopulateFromManagedIntegration_leavesConditionNullWhenAbsent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	data := mustPackagePolicyFromJSON(t, mappedFormatPackagePolicyJSON)
+	data := mustManagedIntegrationFromJSON(t, mappedFormatManagedIntegrationJSON)
 	m := agentlessPolicyModel{
 		Force:                  types.BoolValue(true),
 		CreateDatasetTemplates: types.BoolValue(true),
@@ -283,7 +283,7 @@ func TestPopulateFromPackagePolicy_leavesConditionNullWhenAbsent(t *testing.T) {
 		CloudConnector:         types.ObjectNull(cloudConnectorAttrTypes()),
 	}
 
-	diags := m.populateFromPackagePolicy(ctx, "default", data)
+	diags := m.populateFromManagedIntegration(ctx, "default", data, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	var inputs map[string]agentlessInputModel

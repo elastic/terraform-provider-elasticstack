@@ -36,7 +36,7 @@ import (
 // force, force_delete, and create_dataset_templates are preserved from the
 // incoming model -- which is either the prior state (plain Read) or the
 // plan/written model (post-write refresh) -- because
-// populateFromPackagePolicy deliberately never touches them: none of the
+// populateFromManagedIntegration deliberately never touches them: none of the
 // three round-trip through this API response (see specs/
 // fleet-agentless-policy/spec.md's "Read preserves force_delete" and
 // "Create-only flags are not round-tripped from the API" scenarios).
@@ -52,7 +52,18 @@ func readAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient
 		return model, false, diags
 	}
 
-	diags.Append(model.populateFromPackagePolicy(ctx, spaceID, data)...)
+	item, bridgeDiags := managedIntegrationFromPackagePolicyReadResponse(data)
+	diags.Append(bridgeDiags...)
+	if diags.HasError() {
+		return model, false, diags
+	}
+
+	var spaceIDs *[]string
+	if data.SpaceIds != nil {
+		spaceIDs = data.SpaceIds
+	}
+
+	diags.Append(model.populateFromManagedIntegration(ctx, spaceID, &item, spaceIDs)...)
 	if diags.HasError() {
 		return model, false, diags
 	}
