@@ -30,6 +30,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// parseSettingsRaw unmarshals a JSON settings string into a raw message map.
+func parseSettingsRaw(settingsRaw string) (map[string]json.RawMessage, diag.Diagnostics) {
+	return typeutils.UnmarshalJSONDiag[map[string]json.RawMessage](settingsRaw, "Failed to parse settings_raw")
+}
+
 // apiOperation identifies a CCR auto-follow lifecycle API call for testable sequencing.
 type apiOperation int
 
@@ -89,16 +94,6 @@ func planUpdateOperations(prior, plan Model) []apiOperation {
 		ops = append(ops, opResume)
 	}
 	return ops
-}
-
-func parseSettingsRaw(settingsRaw string) (map[string]json.RawMessage, diag.Diagnostics) {
-	var settings map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(settingsRaw), &settings); err != nil {
-		return nil, diag.Diagnostics{
-			diag.NewErrorDiagnostic("Failed to parse settings_raw", err.Error()),
-		}
-	}
-	return settings, nil
 }
 
 func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putautofollowpattern.Request, diag.Diagnostics) {

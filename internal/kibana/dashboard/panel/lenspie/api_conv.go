@@ -382,27 +382,30 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueCo
 		}
 
 		if len(m.GroupBy) > 0 {
-			groupBy := make([]struct {
+			rawEntries := make([]lenscommon.EsqlGroupByAPIFields, len(m.GroupBy))
+			for i, grp := range m.GroupBy {
+				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &rawEntries[i]); err != nil {
+					diags.AddError("Failed to unmarshal group_by", err.Error())
+				}
+				if rawEntries[i].Format != nil {
+					fb, _ := json.Marshal(rawEntries[i].Format)
+					if string(fb) == lenscommon.JSONNullString || len(fb) == 0 {
+						var format kbapi.KibanaHTTPAPIsFormatType
+						_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
+						rawEntries[i].Format = &format
+					}
+				}
+			}
+			groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
 				CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
 				Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
 				Column     string                            `json:"column"`
 				Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
 				Label      *string                           `json:"label,omitempty"`
-			}, len(m.GroupBy))
-			for i, grp := range m.GroupBy {
-				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
-					diags.AddError("Failed to unmarshal group_by", err.Error())
-				}
-				if groupBy[i].Format != nil {
-					fb, _ := json.Marshal(groupBy[i].Format)
-					if string(fb) == lenscommon.JSONNullString || len(fb) == 0 {
-						var format kbapi.KibanaHTTPAPIsFormatType
-						_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
-						groupBy[i].Format = &format
-					}
-				}
+			}](rawEntries, &diags)
+			if !diags.HasError() {
+				chart.GroupBy = &groupBy
 			}
-			chart.GroupBy = &groupBy
 		}
 
 		chart.Type = kbapi.KibanaHTTPAPIsPieESQLByValuePanelTypePie

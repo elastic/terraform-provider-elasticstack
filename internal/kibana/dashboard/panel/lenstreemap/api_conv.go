@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -42,6 +41,7 @@ func treemapConfigFromAPINoESQL(
 	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
 	priorSampling := m.Sampling
 
+<<<<<<< HEAD
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
@@ -53,6 +53,14 @@ func treemapConfigFromAPINoESQL(
 	m.LensChartBaseTFModel = base
 	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
 	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
+=======
+	datasetBytes, err := api.DataSource.MarshalJSON()
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
+		return diags
+	}
+	m.DataSourceJSON = dv
+>>>>>>> origin/main
 
 	if api.GroupBy != nil {
 		gb, gbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -103,6 +111,7 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
 	priorSampling := m.Sampling
 
+<<<<<<< HEAD
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
@@ -114,6 +123,14 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	m.LensChartBaseTFModel = base
 	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
 	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
+=======
+	datasetBytes, err := json.Marshal(api.DataSource)
+	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	if !ok {
+		return diags
+	}
+	m.DataSourceJSON = dv
+>>>>>>> origin/main
 
 	m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
 	m.Metrics = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionMetricsDefaults)
@@ -141,28 +158,11 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.PartitionEsqlGroupByModel, len(*api.GroupBy))
+		src := make([]lenscommon.EsqlGroupByAPIFields, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
-			collapseBy := ""
-			if gb.CollapseBy != nil {
-				collapseBy = string(*gb.CollapseBy)
-			}
-			m.EsqlGroupBy[i].Column = types.StringValue(gb.Column)
-			m.EsqlGroupBy[i].CollapseBy = types.StringValue(collapseBy)
-			colorBytes, err := json.Marshal(gb.Color)
-			if err != nil {
-				diags.AddError("Failed to marshal esql group_by color", err.Error())
-				continue
-			}
-			m.EsqlGroupBy[i].ColorJSON = jsontypes.NewNormalizedValue(string(colorBytes))
-			formatBytes, err := json.Marshal(gb.Format)
-			if err != nil {
-				diags.AddError("Failed to marshal esql group_by format", err.Error())
-				continue
-			}
-			m.EsqlGroupBy[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
-			m.EsqlGroupBy[i].Label = typeutils.StringishPointerValue(gb.Label)
+			src[i] = lenscommon.EsqlGroupByAPIFields{CollapseBy: gb.CollapseBy, Color: gb.Color, Column: gb.Column, Format: gb.Format, Label: gb.Label}
 		}
+		m.EsqlGroupBy = lenscommon.PopulatePartitionEsqlGroupByFromAPI(src, &diags)
 	}
 
 	m.Legend = &models.PartitionLegendModel{}
@@ -274,37 +274,19 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 		api.Metrics[i].Color = &color
 	}
 
-	groupBy := make([]struct {
+	entries := lenscommon.BuildPartitionEsqlGroupByForAPI(m.EsqlGroupBy, &diags)
+	if diags.HasError() {
+		return api, diags
+	}
+	groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
 		CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
 		Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
 		Column     string                            `json:"column"`
 		Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
 		Label      *string                           `json:"label,omitempty"`
-	}, len(m.EsqlGroupBy))
-	for i, eg := range m.EsqlGroupBy {
-		groupBy[i].Column = eg.Column.ValueString()
-		collapseBy := kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
-		groupBy[i].CollapseBy = &collapseBy
-		var color kbapi.KibanaHTTPAPIsColorMapping
-		if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &color); err != nil {
-			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
-			return api, diags
-		}
-		groupBy[i].Color = &color
-		formatSrc := lenscommon.DefaultLensNumberFormatJSON
-		if typeutils.IsKnown(eg.FormatJSON) {
-			formatSrc = eg.FormatJSON.ValueString()
-		}
-		var format kbapi.KibanaHTTPAPIsFormatType
-		if err := json.Unmarshal([]byte(formatSrc), &format); err != nil {
-			diags.AddError("Failed to unmarshal esql group_by format_json", err.Error())
-			return api, diags
-		}
-		groupBy[i].Format = &format
-		if typeutils.IsKnown(eg.Label) {
-			l := eg.Label.ValueString()
-			groupBy[i].Label = &l
-		}
+	}](entries, &diags)
+	if diags.HasError() {
+		return api, diags
 	}
 	api.GroupBy = &groupBy
 
