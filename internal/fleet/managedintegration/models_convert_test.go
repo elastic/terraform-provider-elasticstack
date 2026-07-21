@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -856,6 +857,7 @@ func TestGlobalDataTagsToModel_duplicateNames(t *testing.T) {
 	m := globalDataTagsToModel(ctx, item, &diags)
 	assert.True(t, diags.HasError())
 	assert.True(t, m.IsNull())
+	requireDiagnosticAtPath(t, diags, path.Root("global_data_tags").AtMapKey("env"), "Duplicate global_data_tags name")
 }
 
 func TestMappedInputKey(t *testing.T) {

@@ -20,6 +20,7 @@ package managedintegration
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,7 +82,5 @@ func TestManagedIntegrationFromPackagePolicyReadResponse_typedInputsFail(t *test
 	data := mustPackagePolicyFromJSON(t, typedArrayPackagePolicyForBridgeJSON)
 	_, diags := managedIntegrationFromPackagePolicyReadResponse(data)
 	require.True(t, diags.HasError(), "typed-array inputs must not be silently dropped")
-	require.NotEmpty(t, diags.Errors())
-	assert.Contains(t, diags.Errors()[0].Summary(), "Unexpected package policy inputs format")
-	assert.Contains(t, diags.Errors()[0].Detail(), "Expected simplified (mapped) inputs")
+	requireDiagnosticAtPath(t, diags, path.Root("inputs"), "Unexpected package policy inputs format")
 }

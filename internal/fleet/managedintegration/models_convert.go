@@ -227,7 +227,7 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 
 	b, err := json.Marshal(varsMap)
 	if err != nil {
-		diags.AddError("Failed to marshal vars", err.Error())
+		diags.AddAttributeError(path.Root("vars_json"), "Failed to marshal vars_json from API response", err.Error())
 		return policyshape.NewVarsJSONNull()
 	}
 
@@ -251,6 +251,11 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 
 // managedIntegrationVarsToMap decodes managed-integration input vars (typed
 // union values) into a plain map for Normalized JSON encoding.
+//
+// Malformed union payloads are rejected when kbapi unmarshals the HTTP
+// response; json.Marshal here only fails on unsupported Go types, which the
+// generated client does not surface — so failure paths are covered by
+// attribute-path wiring tests, not by constructing invalid unions in unit tests.
 func managedIntegrationVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Vars_AdditionalProperties, attrPath path.Path, diags *diag.Diagnostics) map[string]any {
 	if vars == nil || len(*vars) == 0 {
 		return nil
