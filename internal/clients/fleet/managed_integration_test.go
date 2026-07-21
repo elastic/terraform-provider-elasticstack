@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -337,24 +336,21 @@ func TestDeleteManagedIntegration(t *testing.T) {
 		// silently break on any wording change. DeleteManagedIntegration now
 		// derives isConflict from the final post-retry HTTP status code; that
 		// derivation on exhausted 409 retries is asserted by
-		// max_retries_exhausted_returns_error below. Here the context is cancelled
-		// after the first 409 round trip completes so ConflictRetry's backoff loop
-		// aborts deterministically instead of burning through the full multi-second
-		// retry schedule.
+		// max_retries_exhausted_returns_error below. After the first HTTP 409
+		// completes, the context is cancelled while ConflictRetry waits to retry,
+		// aborting deterministically once the initial conflict status is recorded.
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		var calls atomic.Int64
-		var firstRoundTrip sync.WaitGroup
-		firstRoundTrip.Add(1)
-		var signalFirstRoundTrip sync.Once
+		first409Complete := make(chan struct{})
 
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			calls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"agent policy is provisioning"}`)
-			signalFirstRoundTrip.Do(firstRoundTrip.Done)
+			close(first409Complete)
 		}))
 		defer srv.Close()
 
@@ -371,11 +367,12 @@ func TestDeleteManagedIntegration(t *testing.T) {
 			}{isConflict: isConflict, hasError: diags.HasError()}
 		}()
 
-		firstRoundTrip.Wait()
-		cancel()
+		<-first409Complete
+		go cancel()
 
 		result := <-resultCh
 		require.True(t, result.hasError)
+		require.True(t, result.isConflict, "a 409 response must be reported as a conflict so delete.go can offer the force_delete hint")
 		require.Equal(t, int64(1), calls.Load(), "cancelling after the first 409 must abort ConflictRetry before a second request")
 	})
 
