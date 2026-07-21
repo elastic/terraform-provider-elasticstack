@@ -122,6 +122,7 @@ func DeleteManagedIntegration(
 	_, diags = kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
 		resp, err := client.API.DeleteFleetManagedIntegrationsPolicyidWithResponse(ctx, policyID, &params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
+			lastStatusCode = 0
 			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
 		}
 		lastStatusCode = resp.StatusCode()

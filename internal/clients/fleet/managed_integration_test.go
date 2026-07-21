@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -329,50 +330,39 @@ func TestDeleteManagedIntegration(t *testing.T) {
 		require.False(t, isConflict, "a non-409 error must not be reported as a conflict")
 	})
 
-	t.Run("409_reports_conflict", func(t *testing.T) {
-		// 409_reports_conflict guards the ConflictRetry wiring used by delete.go's
-		// force_delete hint path. delete.go used to pattern-match diagutil's
-		// generated diagnostic summary text ("... HTTP 409 ..."), which would
-		// silently break on any wording change. DeleteManagedIntegration now
-		// derives isConflict from the final post-retry HTTP status code; that
-		// derivation on exhausted 409 retries is asserted by
-		// max_retries_exhausted_returns_error below. After the first HTTP 409
-		// completes, the context is cancelled while ConflictRetry waits to retry,
-		// aborting deterministically once the initial conflict status is recorded.
+	t.Run("cancel_after_first_409_aborts_retry", func(t *testing.T) {
+		// Verifies ConflictRetry aborts cleanly when the context is cancelled after
+		// the first HTTP 409 round trip. isConflict derives from the final
+		// post-retry status code and is covered by max_retries_exhausted_returns_error
+		// (true) and retries_on_409_then_succeeds (false); context cancellation may
+		// win before that status is recorded, so this subtest does not assert it.
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		var calls atomic.Int64
 		first409Complete := make(chan struct{})
+		var signalFirst409 sync.Once
 
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			calls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"agent policy is provisioning"}`)
-			close(first409Complete)
+			signalFirst409.Do(func() { close(first409Complete) })
 		}))
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		resultCh := make(chan struct {
-			isConflict bool
-			hasError   bool
-		}, 1)
+		resultCh := make(chan bool, 1)
 		go func() {
-			isConflict, diags := fleet.DeleteManagedIntegration(ctx, client, "", "mi-1", false)
-			resultCh <- struct {
-				isConflict bool
-				hasError   bool
-			}{isConflict: isConflict, hasError: diags.HasError()}
+			_, diags := fleet.DeleteManagedIntegration(ctx, client, "", "mi-1", false)
+			resultCh <- diags.HasError()
 		}()
 
 		<-first409Complete
-		go cancel()
+		cancel()
 
-		result := <-resultCh
-		require.True(t, result.hasError)
-		require.True(t, result.isConflict, "a 409 response must be reported as a conflict so delete.go can offer the force_delete hint")
+		require.True(t, <-resultCh, "context cancellation after the first 409 must abort ConflictRetry with an error")
 		require.Equal(t, int64(1), calls.Load(), "cancelling after the first 409 must abort ConflictRetry before a second request")
 	})
 
