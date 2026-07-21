@@ -1049,16 +1049,7 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 	}
 
 	// Set optional meta
-	if apiResp.Meta != nil {
-		metaBytes, err := json.Marshal(apiResp.Meta)
-		if err != nil {
-			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = kbschema.MarshalMetaToNormalized(apiResp.Meta, &diags)
 
 	// Set entries (convert from API model to Terraform model)
 	entriesList, d := convertEntriesFromAPI(ctx, apiResp.Entries)

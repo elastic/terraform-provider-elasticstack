@@ -19,11 +19,11 @@ package securitylistitem
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -133,16 +133,7 @@ func (m *Model) fromAPIModel(ctx context.Context, apiItem *kbapi.SecurityListsAP
 	m.VersionID = typeutils.StringishPointerValue(apiItem.UnderscoreVersion)
 
 	// Set meta if available
-	if apiItem.Meta != nil {
-		metaJSON, err := json.Marshal(apiItem.Meta)
-		if err != nil {
-			diags.AddError("Failed to serialize meta field", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaJSON))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = kbschema.MarshalMetaToNormalized(apiItem.Meta, &diags)
 
 	return diags
 }

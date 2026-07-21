@@ -18,8 +18,6 @@
 package securitylist
 
 import (
-	"encoding/json"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -147,16 +145,7 @@ func (m *Model) fromAPI(apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	// Set optional _version field
 	m.VersionID = typeutils.StringishPointerValue(apiList.UnderscoreVersion)
 
-	if apiList.Meta != nil {
-		metaBytes, err := json.Marshal(apiList.Meta)
-		if err != nil {
-			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = kbschema.MarshalMetaToNormalized(apiList.Meta, &diags)
 
 	return diags
 }
