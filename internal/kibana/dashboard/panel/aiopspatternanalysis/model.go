@@ -60,51 +60,44 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 // PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
 // prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) diag.Diagnostics {
-	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
-	if prior == nil {
-		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
-		return nil
+	var priorCfg **models.AiopsPatternAnalysisConfigModel
+	if prior != nil {
+		priorCfg = &prior.AiopsPatternAnalysisConfig
 	}
+	return panelkit.ApplySimpleConfig(
+		&pm.AiopsPatternAnalysisConfig,
+		priorCfg,
+		api,
+		aiopsPatternAnalysisConfigFromAPIImport,
+		func(existing *models.AiopsPatternAnalysisConfigModel, api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) diag.Diagnostics {
+			// Required fields always update from the API.
+			existing.DataViewID = types.StringValue(api.DataViewId)
+			existing.FieldName = types.StringValue(api.FieldName)
 
-	// Type-change recovery: the plan dropped this config block but prior still has it.
-	// Rebuild entirely from the API and skip null-preservation, since there is no
-	// current-plan null intent to honor.
-	if pm.AiopsPatternAnalysisConfig == nil && prior.AiopsPatternAnalysisConfig != nil {
-		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
-		return nil
-	}
+			// Optional enum/float fields: only update from API when already known in state (REQ-009 null-preservation).
+			if typeutils.IsKnown(existing.MinimumTimeRange) {
+				existing.MinimumTimeRange = patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange)
+			}
+			if typeutils.IsKnown(existing.RandomSamplerMode) {
+				existing.RandomSamplerMode = patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode)
+			}
+			existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, api.RandomSamplerProbability)
 
-	existing := pm.AiopsPatternAnalysisConfig
-	if existing == nil {
-		return nil
-	}
+			panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+				api.Title, api.Description, api.HideTitle, api.HideBorder)
 
-	// Required fields always update from the API.
-	existing.DataViewID = types.StringValue(api.DataViewId)
-	existing.FieldName = types.StringValue(api.FieldName)
+			var priorTR *models.TimeRangeModel
+			if prior.AiopsPatternAnalysisConfig != nil {
+				priorTR = prior.AiopsPatternAnalysisConfig.TimeRange
+			}
+			existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
 
-	// Optional enum/float fields: only update from API when already known in state (REQ-009 null-preservation).
-	if typeutils.IsKnown(existing.MinimumTimeRange) {
-		existing.MinimumTimeRange = patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange)
-	}
-	if typeutils.IsKnown(existing.RandomSamplerMode) {
-		existing.RandomSamplerMode = patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode)
-	}
-	existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, api.RandomSamplerProbability)
-
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		api.Title, api.Description, api.HideTitle, api.HideBorder)
-
-	var priorTR *models.TimeRangeModel
-	if prior.AiopsPatternAnalysisConfig != nil {
-		priorTR = prior.AiopsPatternAnalysisConfig.TimeRange
-	}
-	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
-
-	if prior.AiopsPatternAnalysisConfig != nil {
-		aiopsPatternAnalysisPreserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
-	}
-	return nil
+			if prior.AiopsPatternAnalysisConfig != nil {
+				aiopsPatternAnalysisPreserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
+			}
+			return nil
+		},
+	)
 }
 
 func aiopsPatternAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) *models.AiopsPatternAnalysisConfigModel {
