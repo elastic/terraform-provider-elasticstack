@@ -87,3 +87,13 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 - Full-replace does **not** simplify this to a body-equality check: the plan never includes server-only timestamps, and building the PUT body just to compare would still require a Read.
 
 **Implementation note for task 7:** Keep `onlyCreateOnlyFlagsChanged`; drop the GET+echo-current prelude only when the short-circuit does not fire.
+
+## 2. New managed_integrations client (task 2)
+
+Task 2 adds `internal/clients/fleet/managed_integration.go` with CRUD wrappers targeting `/api/fleet/managed_integrations`. The deprecated `agentless_policy.go` client file was removed.
+
+### Temporary compat bridge — `agentless_policy_compat.go`
+
+`internal/fleet/agentlesspolicy/` still calls the old wrapper names (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) until **task 8** rewires create/read/update/delete to the new managed_integrations wrappers. To preserve buildability without porting package_policies fallbacks into `managed_integration.go`, those legacy wrappers live in **`agentless_policy_compat.go`** (thin re-exports of the deprecated endpoints and `GetPackagePolicy`/`UpdatePackagePolicy` fallbacks).
+
+**Task 8 must delete `agentless_policy_compat.go` and `agentless_policy_compat_test.go`** when resource callers switch to `CreateManagedIntegration` / `ReadManagedIntegration` / `UpdateManagedIntegration` / `DeleteManagedIntegration`.

@@ -30,7 +30,12 @@ import (
 
 // CreateManagedIntegration creates a new Fleet managed integration via
 // POST /api/fleet/managed_integrations.
-func CreateManagedIntegration(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetManagedIntegrationsJSONRequestBody) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
+func CreateManagedIntegration(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	body kbapi.PostFleetManagedIntegrationsJSONRequestBody,
+) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsManagedIntegration, int, diag.Diagnostics) {
 		resp, err := client.API.PostFleetManagedIntegrationsWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
@@ -50,7 +55,11 @@ func CreateManagedIntegration(ctx context.Context, client *Client, spaceID strin
 // ReadManagedIntegration reads a Fleet managed integration via
 // GET /api/fleet/managed_integrations/{id}. Returns (nil, nil) on HTTP 404,
 // signalling that the integration was removed out of band.
-func ReadManagedIntegration(ctx context.Context, client *Client, spaceID, policyID string) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
+func ReadManagedIntegration(
+	ctx context.Context,
+	client *Client,
+	spaceID, policyID string,
+) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
 	resp, err := client.API.GetFleetManagedIntegrationsPolicyidWithResponse(ctx, policyID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -66,7 +75,12 @@ func ReadManagedIntegration(ctx context.Context, client *Client, spaceID, policy
 
 // UpdateManagedIntegration updates a Fleet managed integration via
 // PUT /api/fleet/managed_integrations/{id}.
-func UpdateManagedIntegration(ctx context.Context, client *Client, spaceID, policyID string, body kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
+func UpdateManagedIntegration(
+	ctx context.Context,
+	client *Client,
+	spaceID, policyID string,
+	body kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody,
+) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsManagedIntegration, int, diag.Diagnostics) {
 		resp, err := client.API.PutFleetManagedIntegrationsPolicyidWithResponse(ctx, policyID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
@@ -92,7 +106,12 @@ func UpdateManagedIntegration(ctx context.Context, client *Client, spaceID, poli
 // The returned bool reports whether the (final, post-retry) response was an
 // HTTP 409 Conflict, so callers can offer a force_delete hint without having
 // to pattern-match diagutil's generated diagnostic summary text.
-func DeleteManagedIntegration(ctx context.Context, client *Client, spaceID, policyID string, force bool) (isConflict bool, diags diag.Diagnostics) {
+func DeleteManagedIntegration(
+	ctx context.Context,
+	client *Client,
+	spaceID, policyID string,
+	force bool,
+) (isConflict bool, diags diag.Diagnostics) {
 	params := kbapi.DeleteFleetManagedIntegrationsPolicyidParams{}
 	if force {
 		t := true

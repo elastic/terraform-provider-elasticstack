@@ -33,7 +33,12 @@ import (
 
 // CreateAgentlessPolicy creates a new Fleet agentless policy via the deprecated
 // POST /api/fleet/agentless_policies endpoint.
-func CreateAgentlessPolicy(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetAgentlessPoliciesJSONRequestBody) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
+func CreateAgentlessPolicy(
+	ctx context.Context,
+	client *Client,
+	spaceID string,
+	body kbapi.PostFleetAgentlessPoliciesJSONRequestBody,
+) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsManagedIntegration, int, diag.Diagnostics) {
 		resp, err := client.API.PostFleetAgentlessPoliciesWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
@@ -52,19 +57,33 @@ func CreateAgentlessPolicy(ctx context.Context, client *Client, spaceID string, 
 
 // ReadAgentlessPolicyViaPackagePolicy reads an agentless policy via the
 // package_policies fallback. Returns (nil, nil) on HTTP 404.
-func ReadAgentlessPolicyViaPackagePolicy(ctx context.Context, client *Client, spaceID, policyID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func ReadAgentlessPolicyViaPackagePolicy(
+	ctx context.Context,
+	client *Client,
+	spaceID, policyID string,
+) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	return GetPackagePolicy(ctx, client, policyID, spaceID)
 }
 
 // UpdateAgentlessPolicyViaPackagePolicy updates an agentless policy via the
 // package_policies fallback.
-func UpdateAgentlessPolicyViaPackagePolicy(ctx context.Context, client *Client, spaceID, policyID string, body kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func UpdateAgentlessPolicyViaPackagePolicy(
+	ctx context.Context,
+	client *Client,
+	spaceID, policyID string,
+	body kbapi.PackagePolicyRequest,
+) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	return UpdatePackagePolicy(ctx, client, policyID, spaceID, body)
 }
 
 // DeleteAgentlessPolicy deletes an agentless policy via the deprecated
 // DELETE /api/fleet/agentless_policies/{id} endpoint.
-func DeleteAgentlessPolicy(ctx context.Context, client *Client, spaceID, policyID string, force bool) (isConflict bool, diags diag.Diagnostics) {
+func DeleteAgentlessPolicy(
+	ctx context.Context,
+	client *Client,
+	spaceID, policyID string,
+	force bool,
+) (isConflict bool, diags diag.Diagnostics) {
 	params := kbapi.DeleteFleetAgentlessPoliciesPolicyidParams{}
 	if force {
 		t := true

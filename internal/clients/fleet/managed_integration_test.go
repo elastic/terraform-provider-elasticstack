@@ -23,9 +23,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -94,6 +94,48 @@ func TestCreateManagedIntegration(t *testing.T) {
 		require.NotNil(t, item)
 		require.Equal(t, "mi-1", item.Id)
 		require.Equal(t, int64(3), calls.Load())
+	})
+
+	t.Run("max_retries_exhausted_returns_error", func(t *testing.T) {
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"write lock"}`)
+		}))
+		defer srv.Close()
+
+		client := newTestClient(t, srv)
+		item, diags := fleet.CreateManagedIntegration(context.Background(), client, "", kbapi.PostFleetManagedIntegrationsJSONRequestBody{
+			Name:      "test-managed-integration",
+			Namespace: new("default"),
+		})
+
+		require.Nil(t, item)
+		require.True(t, diags.HasError())
+		require.Equal(t, int64(kibanautil.ConflictMaxAttempts), calls.Load())
+	})
+
+	t.Run("non_409_error_is_not_retried", func(t *testing.T) {
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"invalid body"}`)
+		}))
+		defer srv.Close()
+
+		client := newTestClient(t, srv)
+		item, diags := fleet.CreateManagedIntegration(context.Background(), client, "", kbapi.PostFleetManagedIntegrationsJSONRequestBody{
+			Name:      "test-managed-integration",
+			Namespace: new("default"),
+		})
+
+		require.Nil(t, item)
+		require.True(t, diags.HasError())
+		require.Equal(t, int64(1), calls.Load())
 	})
 }
 
@@ -200,6 +242,44 @@ func TestUpdateManagedIntegration(t *testing.T) {
 		require.NotNil(t, item)
 		require.Equal(t, int64(2), calls.Load())
 	})
+
+	t.Run("max_retries_exhausted_returns_error", func(t *testing.T) {
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"write lock"}`)
+		}))
+		defer srv.Close()
+
+		client := newTestClient(t, srv)
+		item, diags := fleet.UpdateManagedIntegration(context.Background(), client, "", "mi-1", kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody{
+			Name: "updated",
+		})
+
+		require.Nil(t, item)
+		require.True(t, diags.HasError())
+		require.Equal(t, int64(kibanautil.ConflictMaxAttempts), calls.Load())
+	})
+
+	t.Run("non_409_error_is_not_retried", func(t *testing.T) {
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"invalid body"}`)
+		}))
+		defer srv.Close()
+
+		client := newTestClient(t, srv)
+		item, diags := fleet.UpdateManagedIntegration(context.Background(), client, "", "mi-1", kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody{})
+
+		require.Nil(t, item)
+		require.True(t, diags.HasError())
+		require.Equal(t, int64(1), calls.Load())
+	})
 }
 
 func TestDeleteManagedIntegration(t *testing.T) {
@@ -251,21 +331,74 @@ func TestDeleteManagedIntegration(t *testing.T) {
 	})
 
 	t.Run("409_reports_conflict", func(t *testing.T) {
+		// 409_reports_conflict guards the ConflictRetry wiring used by delete.go's
+		// force_delete hint path. delete.go used to pattern-match diagutil's
+		// generated diagnostic summary text ("... HTTP 409 ..."), which would
+		// silently break on any wording change. DeleteManagedIntegration now
+		// derives isConflict from the final post-retry HTTP status code; that
+		// derivation on exhausted 409 retries is asserted by
+		// max_retries_exhausted_returns_error below. Here the context is cancelled
+		// after the first 409 round trip completes so ConflictRetry's backoff loop
+		// aborts deterministically instead of burning through the full multi-second
+		// retry schedule.
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		var calls atomic.Int64
+		var firstRoundTrip sync.WaitGroup
+		firstRoundTrip.Add(1)
+		var signalFirstRoundTrip sync.Once
+
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calls.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"agent policy is provisioning"}`)
+			signalFirstRoundTrip.Do(firstRoundTrip.Done)
 		}))
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-		defer cancel()
+		resultCh := make(chan struct {
+			isConflict bool
+			hasError   bool
+		}, 1)
+		go func() {
+			isConflict, diags := fleet.DeleteManagedIntegration(ctx, client, "", "mi-1", false)
+			resultCh <- struct {
+				isConflict bool
+				hasError   bool
+			}{isConflict: isConflict, hasError: diags.HasError()}
+		}()
 
-		isConflict, diags := fleet.DeleteManagedIntegration(ctx, client, "", "mi-1", false)
+		firstRoundTrip.Wait()
+		cancel()
 
-		require.True(t, diags.HasError())
-		require.True(t, isConflict, "a 409 response must be reported as a conflict so delete.go can offer the force_delete hint")
+		result := <-resultCh
+		require.True(t, result.hasError)
+		require.Equal(t, int64(1), calls.Load(), "cancelling after the first 409 must abort ConflictRetry before a second request")
+	})
+
+	t.Run("retries_on_409_then_succeeds", func(t *testing.T) {
+		var calls atomic.Int64
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			n := calls.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			if n < 2 {
+				w.WriteHeader(http.StatusConflict)
+				fmt.Fprint(w, `{"statusCode":409,"error":"Conflict","message":"write lock"}`)
+				return
+			}
+			fmt.Fprint(w, `{"id":"mi-1"}`)
+		}))
+		defer srv.Close()
+
+		client := newTestClient(t, srv)
+		isConflict, diags := fleet.DeleteManagedIntegration(context.Background(), client, "", "mi-1", false)
+
+		require.False(t, diags.HasError())
+		require.False(t, isConflict, "a transient 409 resolved by retry must not be reported as a conflict")
+		require.Equal(t, int64(2), calls.Load())
 	})
 
 	t.Run("force_delete_sets_force_query_param", func(t *testing.T) {
@@ -296,9 +429,10 @@ func TestDeleteManagedIntegration(t *testing.T) {
 		defer srv.Close()
 
 		client := newTestClient(t, srv)
-		_, diags := fleet.DeleteManagedIntegration(context.Background(), client, "", "mi-1", false)
+		isConflict, diags := fleet.DeleteManagedIntegration(context.Background(), client, "", "mi-1", false)
 
 		require.True(t, diags.HasError())
+		require.True(t, isConflict, "exhausted 409 retries must be reported as a conflict")
 		require.Equal(t, int64(kibanautil.ConflictMaxAttempts), calls.Load())
 	})
 }

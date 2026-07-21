@@ -9,9 +9,9 @@
 - [x] 2.1 Create `internal/clients/fleet/managed_integration.go` with wrappers: `CreateManagedIntegration`, `ReadManagedIntegration`, `UpdateManagedIntegration`, `DeleteManagedIntegration` — all targeting `managed_integrations` endpoints
 - [x] 2.2 Wire `SpaceAwarePathRequestEditor(spaceID)` into all four wrappers (mirroring the existing agentless policy client)
 - [x] 2.3 Retain `ConflictRetry` wrapping and `?force=` mapping on Delete; map `404` to nil/no-op for Read and Delete
-- [x] 2.4 Remove the `ReadAgentlessPolicyViaPackagePolicy` and `UpdateAgentlessPolicyViaPackagePolicy` fallback wrappers (do not port them)
+- [x] 2.4 Remove the `ReadAgentlessPolicyViaPackagePolicy` and `UpdateAgentlessPolicyViaPackagePolicy` fallback wrappers from `managed_integration.go` (do not port them); they remain only in the temporary `agentless_policy_compat.go` bridge until task 8
 - [x] 2.5 Add unit tests for the new client wrappers, including the 404 sentinel behaviour
-- [x] 2.6 Delete `internal/clients/fleet/agentless_policy.go` and its test file
+- [x] 2.6 Delete `internal/clients/fleet/agentless_policy.go` and its test file; retain `agentless_policy_compat.go` as a build-preserving bridge until task 8 deletes it
 
 ## 3. Move and rename the resource package
 
@@ -62,6 +62,7 @@
 - [ ] 8.1 `create.go`: swap the single client call to `CreateManagedIntegration`; response handling targets `KibanaHTTPAPIsManagedIntegration` (no change to response handling logic)
 - [ ] 8.2 `read.go`: swap the single client call to `ReadManagedIntegration`; drop the `package_policies` fallback entirely; preserve create-only flags (`force`, `create_dataset_templates`, `skip_topology_check`) and `cloud_connector.name`/`target_csp` from prior state as today
 - [ ] 8.3 `delete.go`: swap the single client call to `DeleteManagedIntegration`; `force_delete` → `?force=` mapping unchanged
+- [ ] 8.4 Delete `internal/clients/fleet/agentless_policy_compat.go` and `agentless_policy_compat_test.go` once resource callers no longer reference the legacy wrapper names
 
 ## 9. Tests — unit and model conversion
 
