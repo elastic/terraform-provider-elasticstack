@@ -24,8 +24,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
@@ -65,7 +67,7 @@ const attrName = "name"
 func getSchema(_ context.Context) schema.Schema {
 	varsAreSensitive := debugutils.IsSensitiveInSchema()
 	return schema.Schema{
-		MarkdownDescription: "Manages Fleet agentless policies, which provision agent runtime capacity in Elastic's " +
+		MarkdownDescription: "Manages Fleet managed integrations, which provision agent runtime capacity in Elastic's " +
 			"own cloud infrastructure instead of on a host running Elastic Agent. " +
 			"**This resource is experimental**: the underlying Fleet managed integrations API requires Kibana " +
 			"9.5.0 and its behavior may change in future Kibana releases. " +
@@ -75,7 +77,7 @@ func getSchema(_ context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The composite ID of the agentless policy: `<space_id>/<policy_id>`.",
+				MarkdownDescription: "The composite ID of the managed integration: `<space_id>/<policy_id>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -83,7 +85,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"policy_id": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				MarkdownDescription: "The agentless policy (package policy) ID. Server-assigned if omitted; forces replacement on change.",
+				MarkdownDescription: "The managed integration ID. Server-assigned if omitted; forces replacement on change.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
@@ -91,14 +93,11 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			attrName: schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "The name of the agentless policy; forces replacement on change.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
+				MarkdownDescription: "The name of the managed integration; updatable in-place.",
 			},
 			"description": schema.StringAttribute{
 				Optional: true,
-				MarkdownDescription: "The description of the agentless policy; updatable in-place. " +
+				MarkdownDescription: "The description of the managed integration; updatable in-place. " +
 					"An explicit empty string is rejected: it is indistinguishable from \"unset\" once " +
 					"round-tripped through the API (Kibana returns an omitted/empty description as `\"\"`, " +
 					"which this provider folds back to null), so setting `description = \"\"` would otherwise " +
@@ -110,7 +109,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"namespace": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
-				MarkdownDescription: "The namespace of the agentless policy; forces replacement on change. " +
+				MarkdownDescription: "The namespace of the managed integration; forces replacement on change. " +
 					"An explicit empty string is rejected for the same reason as `description`: it is " +
 					"indistinguishable from \"unset\" once round-tripped through the API.",
 				PlanModifiers: []planmodifier.String{
@@ -125,7 +124,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:            true,
 				Optional:            true,
 				ElementType:         types.StringType,
-				MarkdownDescription: "The list of spaces the agentless policy belongs to; defaults to `[\"default\"]`; forces replacement on change.",
+				MarkdownDescription: "The list of spaces the managed integration belongs to; defaults to `[\"default\"]`; forces replacement on change.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
 					setplanmodifier.RequiresReplace(),
@@ -133,7 +132,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"package": schema.SingleNestedAttribute{
 				Required:            true,
-				MarkdownDescription: "The Fleet integration package this agentless policy is based on.",
+				MarkdownDescription: "The Fleet integration package this managed integration is based on.",
 				Attributes: map[string]schema.Attribute{
 					attrName: schema.StringAttribute{
 						Required:            true,
@@ -144,10 +143,7 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 					"version": schema.StringAttribute{
 						Required:            true,
-						MarkdownDescription: "The package version; forces replacement on change.",
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.RequiresReplace(),
-						},
+						MarkdownDescription: "The package version; updatable in-place.",
 					},
 					"title": schema.StringAttribute{
 						Computed: true,
@@ -198,7 +194,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"cloud_connector": schema.SingleNestedAttribute{
 				Optional: true,
 				MarkdownDescription: "References an existing cloud connector for cross-account access. " +
-					"All sub-fields force replacement on change.",
+					"Changing any field forces replacement of the entire `cloud_connector` block.",
 				PlanModifiers: []planmodifier.Object{
 					objectplanmodifier.RequiresReplace(),
 				},
@@ -224,18 +220,33 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"global_data_tags": schema.ListNestedAttribute{
-				Optional:            true,
-				MarkdownDescription: "Global data tags applied to the policy's data streams; updatable in-place.",
+			"global_data_tags": schema.MapNestedAttribute{
+				Optional: true,
+				MarkdownDescription: "Global data tags applied to the managed integration's data streams; updatable in-place. " +
+					"Keyed by tag name; set exactly one of `string_value` or `number_value` per entry.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						attrName: schema.StringAttribute{
-							Required:            true,
-							MarkdownDescription: "Tag name.",
+						globalDataTagStringValueAttr: schema.StringAttribute{
+							Optional:            true,
+							MarkdownDescription: "String value for the tag. If this is set, `number_value` must not be defined.",
+							Validators: []validator.String{
+								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
+								stringvalidator.AtLeastOneOf(
+									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
+									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
+								),
+							},
 						},
-						"value": schema.StringAttribute{
-							Required:            true,
-							MarkdownDescription: "Tag value.",
+						globalDataTagNumberValueAttr: schema.Float32Attribute{
+							Optional:            true,
+							MarkdownDescription: "Number value for the tag. If this is set, `string_value` must not be defined.",
+							Validators: []validator.Float32{
+								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
+								float32validator.AtLeastOneOf(
+									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
+									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
+								),
+							},
 						},
 					},
 				},
@@ -273,7 +284,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"created_at": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The creation timestamp of the agentless policy (ISO 8601).",
+				MarkdownDescription: "The creation timestamp of the managed integration (ISO 8601).",
 				// UseStateForUnknown is correct (and safe in every Update
 				// scenario, real or short-circuited) because created_at never
 				// changes after the resource is created -- Kibana never
@@ -287,7 +298,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"updated_at": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "The last-updated timestamp of the agentless policy (ISO 8601).",
+				MarkdownDescription: "The last-updated timestamp of the managed integration (ISO 8601).",
 				// Deliberately NOT UseStateForUnknown, unlike created_at
 				// above: updated_at legitimately changes on every real
 				// Update (Kibana bumps it), so pre-committing the plan to

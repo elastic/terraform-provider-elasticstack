@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +63,7 @@ func baseTestModel(t *testing.T) agentlessPolicyModel {
 		VarGroupSelections:               types.MapNull(types.StringType),
 		Inputs:                           policyshape.NewInputsNull(agentlessInputType()),
 		CloudConnector:                   types.ObjectNull(cloudConnectorAttrTypes()),
-		GlobalDataTags:                   types.ListNull(types.ObjectType{AttrTypes: globalDataTagAttrTypes()}),
+		GlobalDataTags:                   types.MapNull(globalDataTagsElementType()),
 		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
 		CreateDatasetTemplates:           types.BoolNull(),
 		Force:                            types.BoolNull(),
@@ -180,11 +181,14 @@ func TestToCreateBody_globalDataTags(t *testing.T) {
 	ctx := context.Background()
 
 	m := baseTestModel(t)
-	tagsList, diags := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: globalDataTagAttrTypes()}, []globalDataTagModel{
-		{Name: types.StringValue("env"), Value: types.StringValue("prod")},
+	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"env": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringValue("prod"),
+			globalDataTagNumberValueAttr: types.Float32Null(),
+		}),
 	})
 	require.False(t, diags.HasError())
-	m.GlobalDataTags = tagsList
+	m.GlobalDataTags = tagsMap
 
 	body, bodyDiags := m.toCreateBody(ctx)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
@@ -355,11 +359,10 @@ func TestPopulateFromPackagePolicy_decodesMappedInputsAndFields(t *testing.T) {
 	require.False(t, m.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false).HasError())
 	assert.Equal(t, []string{"logs-foo-*"}, perms)
 
-	var tags []globalDataTagModel
+	var tags map[string]globalDataTagsItemModel
 	require.False(t, m.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
 	require.Len(t, tags, 1)
-	assert.Equal(t, "env", tags[0].Name.ValueString())
-	assert.Equal(t, "prod", tags[0].Value.ValueString())
+	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
 
 	var inputs map[string]agentlessInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
@@ -686,11 +689,14 @@ func TestBuildUpdateBody(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	tagsList, diags := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: globalDataTagAttrTypes()}, []globalDataTagModel{
-		{Name: types.StringValue("env"), Value: types.StringValue("staging")},
+	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"env": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringValue("staging"),
+			globalDataTagNumberValueAttr: types.Float32Null(),
+		}),
 	})
 	require.False(t, diags.HasError())
-	plan.GlobalDataTags = tagsList
+	plan.GlobalDataTags = tagsMap
 
 	body, bodyDiags := buildUpdateBody(ctx, plan, current)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)

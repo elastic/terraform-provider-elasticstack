@@ -57,12 +57,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// packageModel, cloudConnectorModel, and globalDataTagModel are the Go
-// representations of the `package`, `cloud_connector`, and `global_data_tags`
-// nested attributes (see models.go's field-level doc comment). They are
-// decoded/encoded via types.Object(List).As/ObjectValueFrom, matching the
-// convention used by internal/fleet/agentpolicy's advanced_settings and
-// global_data_tags fields.
+// packageModel and cloudConnectorModel are the Go representations of the
+// `package` and `cloud_connector` nested attributes (see models.go's field-level
+// doc comment). global_data_tags uses globalDataTagsItemModel in models.go.
 type packageModel struct {
 	Name    types.String `tfsdk:"name"`
 	Version types.String `tfsdk:"version"`
@@ -74,11 +71,6 @@ type cloudConnectorModel struct {
 	CloudConnectorID types.String `tfsdk:"cloud_connector_id"`
 	Name             types.String `tfsdk:"name"`
 	TargetCSP        types.String `tfsdk:"target_csp"`
-}
-
-type globalDataTagModel struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 }
 
 // agentlessInputModel is the Go representation of a single `inputs` map
@@ -121,13 +113,6 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 		keyCloudConnectorID: types.StringType,
 		attrName:            types.StringType,
 		"target_csp":        types.StringType,
-	}
-}
-
-func globalDataTagAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrName: types.StringType,
-		keyValue: types.StringType,
 	}
 }
 
@@ -208,9 +193,8 @@ func mappedInputKey(policyTemplate *string, inputType string) string {
 	return *policyTemplate + "-" + inputType
 }
 
-// globalDataTagValueToString renders a decoded global_data_tags value
-// (string|number per the API union) as a string; this resource's schema only
-// models string tag values (schema.go's global_data_tags nested object).
+// globalDataTagValueToString renders a decoded global_data_tags wire value
+// (string|number per the API union) as a string for legacy string-only paths.
 func globalDataTagValueToString(v any) string {
 	switch val := v.(type) {
 	case string:
@@ -225,38 +209,54 @@ func globalDataTagValueToString(v any) string {
 }
 
 // globalDataTagsToModel converts decoded wire tags into the `global_data_tags`
-// list attribute, or a null list when there are none.
-func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags *diag.Diagnostics) types.List {
-	attrTypes := globalDataTagAttrTypes()
+// map attribute, or a null map when there are none.
+func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags *diag.Diagnostics) types.Map {
+	elemType := globalDataTagsElementType()
 	if len(wire) == 0 {
-		return types.ListNull(types.ObjectType{AttrTypes: attrTypes})
+		return types.MapNull(elemType)
 	}
 
-	tags := make([]globalDataTagModel, 0, len(wire))
+	map0 := make(map[string]globalDataTagsItemModel, len(wire))
 	for _, w := range wire {
-		tags = append(tags, globalDataTagModel{
-			Name:  types.StringValue(w.Name),
-			Value: types.StringValue(globalDataTagValueToString(w.Value)),
-		})
+		item := globalDataTagsItemModel{}
+		switch val := w.Value.(type) {
+		case string:
+			item.StringValue = types.StringValue(val)
+		case float64:
+			item.NumberValue = types.Float32Value(float32(val))
+		case float32:
+			item.NumberValue = types.Float32Value(val)
+		default:
+			item.StringValue = types.StringValue(globalDataTagValueToString(w.Value))
+		}
+		map0[w.Name] = item
 	}
 
-	list, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: attrTypes}, tags)
-	diags.Append(d...)
-	return list
+	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root("global_data_tags"), diags)
 }
 
-// globalDataTagsRawFromModel converts the `global_data_tags` list attribute
+// globalDataTagsRawFromModel converts the `global_data_tags` map attribute
 // into a slice of plain {"name":..., "value":...} maps, suitable for a JSON
-// marshal/unmarshal round trip into a request body's (structurally anonymous)
-// GlobalDataTags field. Returns nil when list is null or unknown.
-func globalDataTagsRawFromModel(ctx context.Context, list types.List, diags *diag.Diagnostics) []map[string]any {
-	if !typeutils.IsKnown(list) {
+// marshal/unmarshal round trip into a request body's GlobalDataTags field.
+// Returns nil when the map is null or unknown.
+func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) []map[string]any {
+	if !typeutils.IsKnown(tags) {
 		return nil
 	}
-	tags := typeutils.ListTypeAs[globalDataTagModel](ctx, list, path.Root("global_data_tags"), diags)
-	raw := make([]map[string]any, 0, len(tags))
-	for _, t := range tags {
-		raw = append(raw, map[string]any{attrName: t.Name.ValueString(), keyValue: t.Value.ValueString()})
+	items := typeutils.MapTypeToMap(ctx, tags, path.Root("global_data_tags"), diags,
+		func(item globalDataTagsItemModel, meta typeutils.MapMeta) map[string]any {
+			raw := map[string]any{attrName: meta.Key}
+			if typeutils.IsKnown(item.StringValue) {
+				raw[keyValue] = item.StringValue.ValueString()
+			} else if typeutils.IsKnown(item.NumberValue) {
+				raw[keyValue] = item.NumberValue.ValueFloat32()
+			}
+			return raw
+		},
+	)
+	raw := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		raw = append(raw, item)
 	}
 	return raw
 }

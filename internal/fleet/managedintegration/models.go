@@ -24,9 +24,33 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+const (
+	globalDataTagStringValueAttr = "string_value"
+	globalDataTagNumberValueAttr = "number_value"
+)
+
+// globalDataTagsItemModel is the element type of the `global_data_tags` map
+// (keyed by tag name), matching schema.go's MapNestedAttribute item shape.
+type globalDataTagsItemModel struct {
+	StringValue types.String  `tfsdk:"string_value"`
+	NumberValue types.Float32 `tfsdk:"number_value"`
+}
+
+func globalDataTagAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		globalDataTagStringValueAttr: types.StringType,
+		globalDataTagNumberValueAttr: types.Float32Type,
+	}
+}
+
+func globalDataTagsElementType() attr.Type {
+	return types.ObjectType{AttrTypes: globalDataTagAttrTypes()}
+}
 
 // MinVersion is the minimum Kibana version required for the Fleet
 // managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; kept
@@ -46,11 +70,10 @@ var MinVersion = version.Must(version.NewVersion("9.5.0"))
 // CRUD population (populateFromAPI/toAPI*Model conversion functions) is
 // Task 5's responsibility; this file only declares the struct shape.
 //
-// packageModel, cloudConnectorModel, and globalDataTagModel back the
-// `package`, `cloud_connector`, and `global_data_tags` nested attributes
-// respectively; they are plain (non-custom-type) nested objects decoded via
-// types.Object/types.List .As(), matching the convention used by
-// internal/fleet/agentpolicy's advanced_settings/global_data_tags fields.
+// packageModel and cloudConnectorModel back the `package` and `cloud_connector`
+// nested attributes; global_data_tags uses globalDataTagsItemModel as the map
+// element type (see globalDataTagsElementType). Plain nested objects are
+// decoded via types.Object/types.Map helpers, matching internal/fleet/agentpolicy.
 // `inputs` and `vars_json` reuse the shared policyshape custom types
 // directly (policyshape.InputsValue / policyshape.VarsJSONValue) -- no
 // local type duplication.
@@ -69,7 +92,7 @@ type agentlessPolicyModel struct {
 	VarGroupSelections               types.Map                 `tfsdk:"var_group_selections"`               // > string
 	Inputs                           policyshape.InputsValue   `tfsdk:"inputs"`                             // > policyshape.InputModel
 	CloudConnector                   types.Object              `tfsdk:"cloud_connector"`                    // > cloudConnectorModel
-	GlobalDataTags                   types.List                `tfsdk:"global_data_tags"`                   // > globalDataTagModel
+	GlobalDataTags                   types.Map                 `tfsdk:"global_data_tags"`                   // > globalDataTagsItemModel
 	AdditionalDatastreamsPermissions types.List                `tfsdk:"additional_datastreams_permissions"` // > string
 	CreateDatasetTemplates           types.Bool                `tfsdk:"create_dataset_templates"`
 	Force                            types.Bool                `tfsdk:"force"`

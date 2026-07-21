@@ -29,13 +29,13 @@
 
 ## 5. `schema.go` — schema changes
 
-- [ ] 5.1 Drop `RequiresReplace` from `name` attribute (now updatable in-place)
-- [ ] 5.2 Drop `RequiresReplace` from `package.version` attribute (now updatable in-place)
-- [ ] 5.3 Keep `RequiresReplace` on `package.name` (immutable upstream)
-- [ ] 5.4 Rewrite `global_data_tags` from `ListNestedAttribute{name, value:string}` to `MapNestedAttribute` keyed by tag name, item `{string_value: StringAttribute, number_value: Float32Attribute}`, with `stringvalidator.ConflictsWith`+`AtLeastOneOf` — mirror `internal/fleet/agentpolicy/schema.go`
-- [ ] 5.5 Keep `cloud_connector` as `SingleNestedAttribute` with its existing single object-level `RequiresReplace` plan modifier (not one per sub-field) and `name`/`target_csp` retained
-- [ ] 5.6 Update schema description text: replace "agentless" → "managed integration"; keep the experimental notice and ECH/Serverless-only note
-- [ ] 5.7 Update attr-types map in `models.go` to reflect the new `global_data_tags` shape
+- [x] 5.1 Drop `RequiresReplace` from `name` attribute (now updatable in-place)
+- [x] 5.2 Drop `RequiresReplace` from `package.version` attribute (now updatable in-place)
+- [x] 5.3 Keep `RequiresReplace` on `package.name` (immutable upstream)
+- [x] 5.4 Rewrite `global_data_tags` from `ListNestedAttribute{name, value:string}` to `MapNestedAttribute` keyed by tag name, item `{string_value: StringAttribute, number_value: Float32Attribute}`, with `stringvalidator.ConflictsWith`+`AtLeastOneOf` — mirror `internal/fleet/agentpolicy/schema.go`
+- [x] 5.5 Keep `cloud_connector` as `SingleNestedAttribute` with its existing single object-level `RequiresReplace` plan modifier (not one per sub-field) and `name`/`target_csp` retained
+- [x] 5.6 Update schema description text: replace "agentless" → "managed integration"; keep the experimental notice and ECH/Serverless-only note
+- [x] 5.7 Update attr-types map in `models.go` to reflect the new `global_data_tags` shape
 
 ## 6. `models_convert.go` — simplification
 

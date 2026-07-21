@@ -68,7 +68,7 @@ func TestGetSchema_identityAttributes(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, name.Required)
 	assert.False(t, name.Optional)
-	assert.True(t, hasStringRequiresReplace(name.PlanModifiers), "name should force replacement on change")
+	assert.False(t, hasStringRequiresReplace(name.PlanModifiers), "name is updatable in-place, not RequiresReplace")
 
 	description, ok := s.Attributes["description"].(schema.StringAttribute)
 	require.True(t, ok)
@@ -109,7 +109,7 @@ func TestGetSchema_package(t *testing.T) {
 	version, ok := pkg.Attributes["version"].(schema.StringAttribute)
 	require.True(t, ok)
 	assert.True(t, version.Required)
-	assert.True(t, hasStringRequiresReplace(version.PlanModifiers), "package.version should force replacement on change")
+	assert.False(t, hasStringRequiresReplace(version.PlanModifiers), "package.version is updatable in-place, not RequiresReplace")
 
 	title, ok := pkg.Attributes["title"].(schema.StringAttribute)
 	require.True(t, ok)
@@ -233,13 +233,19 @@ func TestGetSchema_extrasAndOperationFlags(t *testing.T) {
 	t.Parallel()
 	s := getSchema(context.Background())
 
-	globalDataTags, ok := s.Attributes["global_data_tags"].(schema.ListNestedAttribute)
+	globalDataTags, ok := s.Attributes["global_data_tags"].(schema.MapNestedAttribute)
 	require.True(t, ok)
 	assert.True(t, globalDataTags.Optional)
-	_, hasName := globalDataTags.NestedObject.Attributes["name"]
-	_, hasValue := globalDataTags.NestedObject.Attributes["value"]
-	assert.True(t, hasName)
-	assert.True(t, hasValue)
+	_, hasStringValue := globalDataTags.NestedObject.Attributes[globalDataTagStringValueAttr]
+	_, hasNumberValue := globalDataTags.NestedObject.Attributes[globalDataTagNumberValueAttr]
+	assert.True(t, hasStringValue)
+	assert.True(t, hasNumberValue)
+	stringValue, ok := globalDataTags.NestedObject.Attributes[globalDataTagStringValueAttr].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.NotEmpty(t, stringValue.Validators)
+	numberValue, ok := globalDataTags.NestedObject.Attributes[globalDataTagNumberValueAttr].(schema.Float32Attribute)
+	require.True(t, ok)
+	assert.NotEmpty(t, numberValue.Validators)
 
 	additionalPerms, ok := s.Attributes["additional_datastreams_permissions"].(schema.ListAttribute)
 	require.True(t, ok)
