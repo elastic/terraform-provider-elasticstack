@@ -174,9 +174,8 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 					// ImportStateVerifyIgnore lists, never actually configured
 					// or asserted by value.
 					resource.TestCheckResourceAttr(testResourceName, "var_group_selections.deployment", "aws"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.#", "1"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.name", "env"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.value", "test"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.%", "1"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.env.string_value", "test"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
 				),
@@ -220,11 +219,9 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 					// in-place update path for global_data_tags (spec.md:
 					// "updatable in-place"), not just create-time coverage.
 					resource.TestCheckResourceAttr(testResourceName, "var_group_selections.deployment", "aws"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.#", "2"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.name", "env"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.0.value", "test"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.1.name", "team"),
-					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.1.value", "security"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.%", "2"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.env.string_value", "test"),
+					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.team.string_value", "security"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
 					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
@@ -532,13 +529,13 @@ func mustFleetClient(t *testing.T) *fleetclient.Client {
 	return client.GetFleetClient()
 }
 
-// TestAccResourceAgentlessPolicy_RequiresReplace covers Task 8.6: changing
-// `name` forces destroy-then-create rather than an in-place update, per
-// spec.md's "name change forces replacement" scenario and Decision 3 (which
-// keeps `name` RequiresReplace as a deliberate Terraform-side safety choice
-// even though the spike found the raw API would technically allow an
-// in-place rename -- see update.go's header comment).
-func TestAccResourceAgentlessPolicy_RequiresReplace(t *testing.T) {
+// TestAccResourceAgentlessPolicy_NameUpdateInPlace asserts Terraform plans an
+// in-place Update when `name` changes (task 5.1 dropped RequiresReplace).
+// Until task 7.3 rewrites buildUpdateBody for managed_integrations PUT, the
+// legacy package_policies update path may not persist the new name on apply —
+// see openspec/changes/fleet-managed-integration/implementation.md
+// "Temporary schema vs update-body mismatch".
+func TestAccResourceAgentlessPolicy_NameUpdateInPlace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 
@@ -568,7 +565,7 @@ func TestAccResourceAgentlessPolicy_RequiresReplace(t *testing.T) {
 				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionDestroyBeforeCreate),
+						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionUpdate),
 					},
 				},
 				Check: resource.TestCheckResourceAttr(testResourceName, "name", renamedName),

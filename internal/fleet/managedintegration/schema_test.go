@@ -46,8 +46,8 @@ func TestGetSchema_noKibanaConnectionBlock(t *testing.T) {
 }
 
 // TestGetSchema_identityAttributes checks Optional/Computed/Required and the
-// force-replacement plan modifiers for the identity attributes against
-// specs/fleet-agentless-policy/spec.md's "Schema attributes" requirement.
+// force-replacement plan modifiers for identity attributes against the
+// fleet-managed-integration OpenSpec schema requirements.
 func TestGetSchema_identityAttributes(t *testing.T) {
 	t.Parallel()
 	s := getSchema(context.Background())
@@ -191,6 +191,7 @@ func TestGetSchema_cloudConnector(t *testing.T) {
 	require.True(t, ok)
 	assert.True(t, cc.Optional)
 	require.NotEmpty(t, cc.PlanModifiers, "cloud_connector should force replacement on change at the object level")
+	assert.True(t, hasObjectRequiresReplace(cc.PlanModifiers), "cloud_connector RequiresReplace must be object-level")
 
 	targetCSP, ok := cc.Attributes["target_csp"].(schema.StringAttribute)
 	require.True(t, ok)
@@ -220,9 +221,16 @@ func TestGetSchema_cloudConnector(t *testing.T) {
 	})
 
 	for _, name := range []string{"enabled", "cloud_connector_id", "name"} {
-		_, ok := cc.Attributes[name]
-		assert.True(t, ok, "expected cloud_connector to define %q", name)
+		attr, ok := cc.Attributes[name]
+		require.True(t, ok, "expected cloud_connector to define %q", name)
+		switch a := attr.(type) {
+		case schema.StringAttribute:
+			assert.False(t, hasStringRequiresReplace(a.PlanModifiers), "cloud_connector.%s must not have its own RequiresReplace", name)
+		case schema.BoolAttribute:
+			assert.Empty(t, a.PlanModifiers, "cloud_connector.%s must not have its own RequiresReplace", name)
+		}
 	}
+	assert.False(t, hasStringRequiresReplace(targetCSP.PlanModifiers), "cloud_connector.target_csp must not have its own RequiresReplace")
 }
 
 // TestGetSchema_extrasAndOperationFlags checks the remaining spec attributes:
@@ -335,6 +343,15 @@ func collectTFSDKTags(rt reflect.Type, out map[string]bool) {
 
 const requiresReplaceDescription = "If the value of this attribute changes, Terraform will destroy and recreate the resource."
 const useStateForUnknownDescription = "Once set, the value of this attribute in state will not change."
+
+func hasObjectRequiresReplace(mods []planmodifier.Object) bool {
+	for _, m := range mods {
+		if m.Description(context.Background()) == requiresReplaceDescription {
+			return true
+		}
+	}
+	return false
+}
 
 func hasStringRequiresReplace(mods []planmodifier.String) bool {
 	for _, m := range mods {

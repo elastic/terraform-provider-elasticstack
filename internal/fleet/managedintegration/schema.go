@@ -40,21 +40,16 @@ import (
 )
 
 // attrName is the schema attribute key "name", reused across the top-level
-// identity attribute, the package object, the cloud_connector object, and
-// each global_data_tags element.
+// identity attribute, the package object, and the cloud_connector object.
 const attrName = "name"
 
-// getSchema implements Task 4 of the fleet-agentless-policy OpenSpec change
-// ("4. Resource: schema"): the full schema described by
-// specs/fleet-agentless-policy/spec.md's "Schema attributes" requirement.
+// getSchema defines the elasticstack_fleet_managed_integration resource schema
+// (openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// spec.md, "Schema attributes"). CRUD population lives in models_convert.go
+// and create/read/update/delete. Version gating is in models.go; the
+// deployment-topology preflight is in create.go/topology.go.
 //
-// CRUD population is Task 5's responsibility (models_convert.go / create.go /
-// read.go / update.go). Version gating and the deployment-topology preflight
-// (Task 6.1/6.2) live in models.go and create.go/topology.go respectively --
-// not in this schema definition. The "experimental" notice on the resource
-// description below is Task 6.3.
-//
-// Task 4.9 note on kibana_connection: unlike internal/fleet/integration_policy
+// kibana_connection: unlike internal/fleet/integration_policy
 // and internal/fleet/agentpolicy (which implement resource.Resource's Schema
 // method directly and so must add the `kibana_connection` block themselves),
 // this resource is built on the entitycore.KibanaResource[T] envelope (see

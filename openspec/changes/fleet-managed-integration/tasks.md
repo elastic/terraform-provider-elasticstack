@@ -84,8 +84,8 @@
 - [ ] 11.1 Rename `TestAccResourceAgentlessPolicy*` functions and acc-test package comments for managed integration; verify composite-ID import strings and destroy checks still target `elasticstack_fleet_managed_integration` (resource type and constants updated in task 3 follow-up)
 - [ ] 11.2 Rename `testdata/TestAccResourceAgentlessPolicy*` directories to `TestAccResourceManagedIntegration*`; verify fixture layout matches renamed test functions (fixture HCL already uses `elasticstack_fleet_managed_integration`)
 - [ ] 11.3 Add an acceptance test for in-place `package.version` bump (the headline new capability)
-- [ ] 11.4 Add an acceptance test for in-place `name` change (no replacement)
-- [ ] 11.5 Update `global_data_tags` acceptance test to the new `Map + string_value/number_value` shape; add a number-value case
+- [ ] 11.4 Verify in-place `name` change end-to-end against live managed_integrations PUT after task 7.3 (schema + plan expectation updated in task 5 review; legacy update body may not persist renames until then — see implementation.md)
+- [ ] 11.5 Add live-stack acceptance coverage for `global_data_tags` `number_value` (map + `string_value` shape validated in moved suite / task 5 review fixtures)
 - [ ] 11.6 Skip-gate acceptance tests against the new version floor established in task 1.1
 - [ ] 11.7 Add a test for update with cloud_connector — assert `cloud_connector` is re-sent from state
 - [ ] 11.8 Add an acceptance test that sets input/stream `condition`, then updates `condition` in place and asserts both values round-trip through create/read/update against a live stack (Kibana >= 9.5.0)

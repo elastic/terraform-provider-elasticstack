@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -201,6 +202,99 @@ func TestToCreateBody_globalDataTags(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "env", tag["name"])
 	assert.Equal(t, "prod", tag["value"])
+}
+
+func TestToCreateBody_globalDataTags_number(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	m := baseTestModel(t)
+	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"priority": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringNull(),
+			globalDataTagNumberValueAttr: types.Float32Value(42),
+		}),
+	})
+	require.False(t, diags.HasError())
+	m.GlobalDataTags = tagsMap
+
+	body, bodyDiags := m.toCreateBody(ctx)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+
+	decoded := decodeRequestJSON(t, body)
+	tags, ok := decoded["global_data_tags"].([]any)
+	require.True(t, ok)
+	require.Len(t, tags, 1)
+	tag, ok := tags[0].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "priority", tag["name"])
+	assert.InDelta(t, float64(42), tag["value"], 0.001)
+}
+
+func TestGlobalDataTagsToModel_numberWire(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	var diags diag.Diagnostics
+	m := globalDataTagsToModel(ctx, []globalDataTagWire{
+		{Name: "priority", Value: float64(1.5)},
+	}, &diags)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var tags map[string]globalDataTagsItemModel
+	require.False(t, m.ElementsAs(ctx, &tags, false).HasError())
+	require.InDelta(t, float32(1.5), tags["priority"].NumberValue.ValueFloat32(), 0.001)
+	assert.True(t, tags["priority"].StringValue.IsNull())
+}
+
+func TestGlobalDataTagsToModel_unsupportedWireType(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	var diags diag.Diagnostics
+	m := globalDataTagsToModel(ctx, []globalDataTagWire{
+		{Name: "bad", Value: []string{"not", "a", "scalar"}},
+	}, &diags)
+	assert.True(t, diags.HasError())
+	assert.True(t, m.IsNull())
+}
+
+func TestGlobalDataTagsRawFromModel_number(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"priority": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringNull(),
+			globalDataTagNumberValueAttr: types.Float32Value(7),
+		}),
+	})
+	require.False(t, diags.HasError())
+
+	var encodeDiags diag.Diagnostics
+	raw := globalDataTagsRawFromModel(ctx, tagsMap, &encodeDiags)
+	require.False(t, encodeDiags.HasError(), "%v", encodeDiags)
+	require.Len(t, raw, 1)
+	assert.Equal(t, "priority", raw[0]["name"])
+	assert.InDelta(t, float64(7), raw[0]["value"], 0.001)
+}
+
+func TestGlobalDataTagsRawFromModel_neitherValueSet(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"my_tag": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringNull(),
+			globalDataTagNumberValueAttr: types.Float32Null(),
+		}),
+	})
+	require.False(t, diags.HasError())
+
+	var encodeDiags diag.Diagnostics
+	raw := globalDataTagsRawFromModel(ctx, tagsMap, &encodeDiags)
+	assert.True(t, encodeDiags.HasError())
+	assert.Nil(t, raw)
 }
 
 func TestToCreateBody_varsJSON(t *testing.T) {

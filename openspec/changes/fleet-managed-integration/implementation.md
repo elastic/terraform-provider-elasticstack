@@ -2,17 +2,29 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
-## Intermediate branch state (after task 4; tasks 5–8 pending)
+## Intermediate branch state (after task 5 schema; tasks 6–8 pending)
 
 Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`. The removed type **`elasticstack_fleet_agentless_policy`** no longer appears in the provider schema.
 
 Task 4 completed the version-gate update: **`MinVersion` remains 9.5.0** (aligned with `policyshape.MinVersionCondition`), the redundant `SupportsCondition` / `validateInputConditionSupport` runtime gate was removed, and `capabilities.go` was deleted (version gating lives only in `models.go` + the entitycore envelope).
 
-Until tasks 5–8 complete the API migration:
+Task 5 completed schema changes: `name` and `package.version` are updatable in-place in Terraform; `global_data_tags` is a `MapNestedAttribute` with `string_value` / `number_value`; acceptance fixtures use the map shape for string tags.
+
+Until tasks 6–8 complete the API migration:
 
 - `MinVersion` remains **9.5.0** with the managed-integration version-gate diagnostic.
 - Create/read/update/delete in this package still call the temporary **`agentless_policy_compat.go`** wrappers (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) targeting deprecated Fleet surfaces, not `/api/fleet/managed_integrations`.
 - Acceptance fixtures and example `.tf` files use `elasticstack_fleet_managed_integration`; test function names and example directory paths remain to be renamed in tasks 10–11.
+
+## Temporary schema vs update-body mismatch (task 5 review — **must close in task 7.3**)
+
+**Problem:** Task 5.1/5.2 dropped `RequiresReplace` on `name` and `package.version`, so Terraform correctly plans **Update** when those attributes change. **`update.go` / `buildUpdateBody` have not been rewritten yet** (task 7): they still target the legacy package_policies PUT path and do not fully align with managed_integrations full-replace semantics (including sending `name` and `package.version` from plan on every PUT — task 7.3).
+
+**Impact until task 7 lands:**
+
+- Plan-time behavior matches the new schema (e.g. `TestAccResourceAgentlessPolicy_NameUpdateInPlace` expects `ResourceActionUpdate`, not destroy/recreate).
+- Apply-time persistence of in-place `name` / `package.version` changes against a live stack is **not guaranteed** and must not be treated as merge-ready acceptance coverage until **task 7.3** ships.
+- **Task 7.3 is a release gate:** it must include `name` and `package.version` from plan in the managed_integrations PUT body before this change is considered complete for acceptance/merge sign-off on in-place rename/version bump scenarios (tasks 11.3–11.4).
 
 ## 1.1 MinVersion floor — **9.5.0**
 
@@ -67,9 +79,9 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 
 ### Schema shape discrepancies (addressed in later tasks)
 
-| Topic | API | Current schema | Follow-up |
-|-------|-----|----------------|-----------|
-| `global_data_tags` | `[{name, value: string\|number}]` | `ListNestedAttribute{name, value:string}` | Task 5.4 → `MapNestedAttribute` with `string_value` / `number_value` |
+| Topic | API | Schema (post task 5) | Follow-up |
+|-------|-----|----------------------|-----------|
+| `global_data_tags` | `[{name, value: string\|number}]` | `MapNestedAttribute` with `string_value` / `number_value` | Task 6.4 conversion cleanup; task 11.5 live `number_value` case |
 | Per-stream `var_group_selections` | present on `inputs.*.streams.*` | not modeled | Deferred (design.md non-goal) |
 | `created_by` / `updated_by` | present on response | not in schema | Deferred (design.md non-goal) |
 | `inputs.*.deprecated` / stream deprecation | present | not in schema | Intentionally ignored (Fleet internal metadata) |

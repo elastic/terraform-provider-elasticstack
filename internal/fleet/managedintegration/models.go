@@ -102,13 +102,9 @@ type agentlessPolicyModel struct {
 	UpdatedAt                        types.String              `tfsdk:"updated_at"`
 }
 
-// Note: the Go representations of the `package`, `cloud_connector`, and
-// `global_data_tags` nested attributes (e.g. a packageModel with
-// Name/Version/Title fields) are intentionally not declared here. They are
-// pure conversion-layer plumbing consumed only by populateFromAPI/toAPI
-// model functions, which is Task 5's responsibility (see
-// openspec/changes/fleet-agentless-policy/tasks.md, section "5. Resource:
-// CRUD + import"); declaring them now with no caller would be dead code.
+// Note: nested attribute element types (packageModel, cloudConnectorModel,
+// globalDataTagsItemModel) live in models.go / models_convert.go for conversion
+// plumbing only.
 
 func (m agentlessPolicyModel) GetID() types.String         { return m.ID }
 func (m agentlessPolicyModel) GetResourceID() types.String { return m.PolicyID }

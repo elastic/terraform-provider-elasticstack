@@ -32,16 +32,14 @@ resource "elasticstack_fleet_managed_integration" "test" {
     deployment = "aws"
   }
 
-  global_data_tags = [
-    {
-      name  = "env"
-      value = "test"
-    },
-    {
-      name  = "team"
-      value = "security"
+  global_data_tags = {
+    env = {
+      string_value = "test"
     }
-  ]
+    team = {
+      string_value = "security"
+    }
+  }
 
   additional_datastreams_permissions = ["logs-custom-*"]
 

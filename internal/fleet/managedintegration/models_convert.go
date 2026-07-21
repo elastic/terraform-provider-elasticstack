@@ -43,7 +43,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -193,21 +192,6 @@ func mappedInputKey(policyTemplate *string, inputType string) string {
 	return *policyTemplate + "-" + inputType
 }
 
-// globalDataTagValueToString renders a decoded global_data_tags wire value
-// (string|number per the API union) as a string for legacy string-only paths.
-func globalDataTagValueToString(v any) string {
-	switch val := v.(type) {
-	case string:
-		return val
-	case float64:
-		return strconv.FormatFloat(val, 'f', -1, 64)
-	case nil:
-		return ""
-	default:
-		return fmt.Sprint(val)
-	}
-}
-
 // globalDataTagsToModel converts decoded wire tags into the `global_data_tags`
 // map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags *diag.Diagnostics) types.Map {
@@ -219,6 +203,7 @@ func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags 
 	map0 := make(map[string]globalDataTagsItemModel, len(wire))
 	for _, w := range wire {
 		item := globalDataTagsItemModel{}
+		tagPath := path.Root("global_data_tags").AtMapKey(w.Name)
 		switch val := w.Value.(type) {
 		case string:
 			item.StringValue = types.StringValue(val)
@@ -227,9 +212,18 @@ func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags 
 		case float32:
 			item.NumberValue = types.Float32Value(val)
 		default:
-			item.StringValue = types.StringValue(globalDataTagValueToString(w.Value))
+			diags.AddAttributeError(
+				tagPath,
+				"Unsupported global_data_tags value type",
+				fmt.Sprintf("API returned value of type %T for tag %q; expected string or number.", w.Value, w.Name),
+			)
+			continue
 		}
 		map0[w.Name] = item
+	}
+
+	if diags.HasError() {
+		return types.MapNull(elemType)
 	}
 
 	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root("global_data_tags"), diags)
@@ -238,25 +232,34 @@ func globalDataTagsToModel(ctx context.Context, wire []globalDataTagWire, diags 
 // globalDataTagsRawFromModel converts the `global_data_tags` map attribute
 // into a slice of plain {"name":..., "value":...} maps, suitable for a JSON
 // marshal/unmarshal round trip into a request body's GlobalDataTags field.
-// Returns nil when the map is null or unknown.
+// Returns nil when the map is null or unknown, or when encoding fails.
 func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) []map[string]any {
 	if !typeutils.IsKnown(tags) {
 		return nil
 	}
-	items := typeutils.MapTypeToMap(ctx, tags, path.Root("global_data_tags"), diags,
-		func(item globalDataTagsItemModel, meta typeutils.MapMeta) map[string]any {
-			raw := map[string]any{attrName: meta.Key}
-			if typeutils.IsKnown(item.StringValue) {
-				raw[keyValue] = item.StringValue.ValueString()
-			} else if typeutils.IsKnown(item.NumberValue) {
-				raw[keyValue] = item.NumberValue.ValueFloat32()
-			}
-			return raw
-		},
-	)
+	items := typeutils.MapTypeAs[globalDataTagsItemModel](ctx, tags, path.Root("global_data_tags"), diags)
+	if diags.HasError() {
+		return nil
+	}
+
 	raw := make([]map[string]any, 0, len(items))
-	for _, item := range items {
-		raw = append(raw, item)
+	for key, item := range items {
+		tagPath := path.Root("global_data_tags").AtMapKey(key)
+		switch {
+		case typeutils.IsKnown(item.StringValue):
+			raw = append(raw, map[string]any{attrName: key, keyValue: item.StringValue.ValueString()})
+		case typeutils.IsKnown(item.NumberValue):
+			raw = append(raw, map[string]any{attrName: key, keyValue: item.NumberValue.ValueFloat32()})
+		default:
+			diags.AddAttributeError(
+				tagPath,
+				"Invalid global_data_tags entry",
+				"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
+			)
+		}
+	}
+	if diags.HasError() {
+		return nil
 	}
 	return raw
 }
