@@ -78,6 +78,7 @@ func TestAgentlessPolicyModel_getVersionRequirements(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
 	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.5.0"))))
+	require.Equal(t, "Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API).", reqs[0].ErrorMessage)
 }
 
 // fakeMinVersionClient is a minimal stand-in for a *clients.KibanaScopedClient
@@ -123,8 +124,9 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 // a sub-9.5.0 Kibana) establish that Create/Read/Update/Delete on
 // elasticstack_fleet_agentless_policy never reach the Fleet API when the
 // connected Kibana is older than 9.5.0. See
-// specs/fleet-agentless-policy/spec.md, "Version gating" ->
-// "Scenario: Kibana version too old".
+// openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// spec.md, requirement "Version gate for managed_integrations endpoint" ->
+// "Scenario: Older Kibana returns error".
 func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
 	t.Parallel()
 
@@ -155,6 +157,7 @@ func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
 			summaries = append(summaries, d.Summary()+": "+d.Detail())
 		}
 		require.Contains(t, strings.Join(summaries, "\n"), "9.5.0")
+		require.Contains(t, strings.Join(summaries, "\n"), "Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API).")
 	})
 
 	t.Run("supported version does not block", func(t *testing.T) {

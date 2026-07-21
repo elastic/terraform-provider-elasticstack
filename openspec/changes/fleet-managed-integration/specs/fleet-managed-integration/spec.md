@@ -163,6 +163,15 @@ The following attributes are create-only (not returned by GET) and SHALL be pres
 - **THEN** `force` SHALL remain `true` in state
 - **AND** no spurious diff SHALL be produced for `force`
 
+### Requirement: Create/delete-only flag updates skip managed_integrations API calls
+
+The attributes `force`, `create_dataset_templates`, `force_delete`, and `skip_topology_check` are not part of the managed_integrations GET or PUT body. None carry `RequiresReplace`, so Terraform still invokes Update when only they change. When the diff is confined to those four attributes, the resource SHALL persist the updated plan to Terraform state without calling any `/api/fleet/managed_integrations/{id}` endpoint (no GET, PUT, or DELETE).
+
+#### Scenario: Create/delete-only flag change updates state without API call
+- **WHEN** an existing resource is updated and the only changed attributes are among `force`, `create_dataset_templates`, `force_delete`, and `skip_topology_check`
+- **THEN** Terraform state SHALL reflect the new flag values
+- **AND** no call to `GET`, `PUT`, or `DELETE` `/api/fleet/managed_integrations/{id}` SHALL occur
+
 ### Requirement: Space-aware API calls
 
 All API calls SHALL be space-aware, using `SpaceAwarePathRequestEditor(spaceID)`, where `spaceID` is derived from the `space_ids` attribute (mirroring the existing agentless policy resource and other Fleet resources). The `space_ids` attribute SHALL be a `Computed`+`Optional` set of strings, defaulting to `["default"]` when omitted from config. Changing `space_ids` SHALL force resource replacement.

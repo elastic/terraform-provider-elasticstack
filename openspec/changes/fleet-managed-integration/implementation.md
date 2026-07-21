@@ -2,6 +2,13 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
+## Intermediate branch state (tasks 2–8 pending)
+
+Task 1 intentionally lands on the existing `internal/fleet/agentlesspolicy/` package before tasks 2–8 complete the migration. Until then:
+
+- `MinVersion` is **9.5.0** and the version-gate diagnostic reads **"Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API)."** even though the registered resource type is still `elasticstack_fleet_agentless_policy` and client calls still target the deprecated surfaces.
+- This mismatch is expected and temporary; tasks 2–8 swap endpoints, rename the package/resource, and align schema/comments with the managed_integrations surface.
+
 ## 1.1 MinVersion floor — **9.5.0**
 
 **Decision:** Set `MinVersion` to `9.5.0` in `internal/fleet/agentlesspolicy/models.go` (constant) and align `capabilities.go` comments to the same floor.
@@ -34,7 +41,7 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 | `package.title` | `package.title` | Computed from registry when omitted |
 | `vars_json` | `vars` | Typed union vars map |
 | `var_group_selections` | `var_group_selections` | Top-level map only |
-| `inputs` | `inputs` | Map keyed by input type ID (same as create/mapped wire) |
+| `inputs` | `inputs` | Map keyed by `"<policy_template>-<input_type>"` (see `mappedInputKey`; bare `input_type` when policy template is empty) |
 | `cloud_connector.enabled` | `cloud_connector.enabled` | |
 | `cloud_connector.cloud_connector_id` | `cloud_connector.cloud_connector_id` | |
 | `additional_datastreams_permissions` | `additional_datastreams_permissions` | List in schema, `*[]string` in API |
@@ -75,7 +82,7 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 
 - `create_dataset_templates`, `force`, `force_delete`, and `skip_topology_check` remain **outside** the PUT body under full-replace semantics (same as today).
 - None are `RequiresReplace`, so Terraform still invokes `Update` when only they change.
-- Sending a full-replace PUT when the diff is confined to these flags would either be a no-op at best or risk unintended side effects; the spec requires **no API call** for such changes.
+- Sending a full-replace PUT when the diff is confined to these flags would either be a no-op at best or risk unintended side effects; the delta spec requirement "Create/delete-only flag updates skip managed_integrations API calls" requires **no managed_integrations GET/PUT/DELETE** for such changes.
 - The existing comparison (all API-backed fields equal, excluding provider plumbing and computed timestamps) remains correct once `name` and `package.version` become updatable — both are already in the comparison chain.
 - Full-replace does **not** simplify this to a body-equality check: the plan never includes server-only timestamps, and building the PUT body just to compare would still require a Read.
 

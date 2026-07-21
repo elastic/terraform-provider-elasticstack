@@ -84,9 +84,9 @@ _(none — task 1.3 resolved below)_
 
 ### Decision 10: Retain `onlyCreateOnlyFlagsChanged` (task 1.3)
 
-**Decision:** Keep the create/delete-only-flags short-circuit when rewriting `update.go` for full-replace PUT (task 7.6).
+**Decision:** Keep the create/delete-only-flags short-circuit when rewriting `update.go` for full-replace PUT (task 7.6), satisfying the delta spec requirement "Create/delete-only flag updates skip managed_integrations API calls".
 
-**Why:** `create_dataset_templates`, `force`, `force_delete`, and `skip_topology_check` still do not belong in the PUT body. Terraform still invokes Update when only they change. Skipping the PUT avoids an unnecessary round trip and satisfies the spec's "SHALL NOT make any API call" guarantee. Full-replace semantics do not make a body-equality check simpler (timestamps and write-only fields are not in the plan). See `implementation.md` §1.3.
+**Why:** `force`, `create_dataset_templates`, `force_delete`, and `skip_topology_check` remain outside the PUT body. Terraform still invokes Update when only they change. The short-circuit writes plan to state without any managed_integrations GET/PUT/DELETE call. Full-replace semantics do not make a body-equality check simpler (timestamps and write-only fields are not in the plan). See `implementation.md` §1.3.
 
 ## Risks / Trade-offs
 
