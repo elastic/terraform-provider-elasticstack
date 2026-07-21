@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -810,7 +811,7 @@ func (m *ExceptionItemModel) setCommonProps(
 			return
 		}
 
-		expireTimeAPI := expireTime.Format("2006-01-02T15:04:05.000Z")
+		expireTimeAPI := expireTime.Format(kbschema.KibanaTimestampLayout)
 		*props.ExpireTime = expireTimeAPI
 	}
 }
@@ -1002,9 +1003,9 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 	m.Description = typeutils.StringishValue(apiResp.Description)
 	m.Type = typeutils.StringishValue(apiResp.Type)
 	m.NamespaceType = typeutils.StringishValue(apiResp.NamespaceType)
-	m.CreatedAt = types.StringValue(apiResp.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.CreatedAt = types.StringValue(apiResp.CreatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.CreatedBy = types.StringValue(apiResp.CreatedBy)
-	m.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.UpdatedBy = types.StringValue(apiResp.UpdatedBy)
 	m.TieBreakerID = types.StringValue(apiResp.TieBreakerId)
 

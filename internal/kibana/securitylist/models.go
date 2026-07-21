@@ -19,11 +19,11 @@ package securitylist
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -139,9 +139,9 @@ func (m *Model) fromAPI(apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.Version = types.Int64Value(int64(apiList.Version))
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
-	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format(time.RFC3339))
+	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.CreatedBy = types.StringValue(apiList.CreatedBy)
-	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format(time.RFC3339))
+	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional _version field
