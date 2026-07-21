@@ -81,14 +81,14 @@
 
 ## 11. Acceptance tests
 
-- [ ] 11.1 Rename `TestAccResourceAgentlessPolicy*` functions and acc-test package comments for managed integration; verify composite-ID import strings and destroy checks still target `elasticstack_fleet_managed_integration` (resource type and constants updated in task 3 follow-up)
-- [ ] 11.2 Rename `testdata/TestAccResourceAgentlessPolicy*` directories to `TestAccResourceManagedIntegration*`; verify fixture layout matches renamed test functions (fixture HCL already uses `elasticstack_fleet_managed_integration`)
-- [ ] 11.3 Add live-stack acceptance test: in-place `package.version` bump persists via managed_integrations PUT (unit coverage in task 7 / `update_test.go`; this step proves apply against Kibana >= 9.5.0)
-- [ ] 11.4 Add live-stack acceptance test: in-place `name` change persists end-to-end (plan-only check exists in `TestAccResourceAgentlessPolicy_NameUpdateInPlace`; assert post-apply state/API after task 7 PUT body)
-- [ ] 11.5 Add live-stack acceptance coverage for `global_data_tags` `number_value` (map + `string_value` shape validated in moved suite / task 5 review fixtures)
-- [ ] 11.6 Skip-gate acceptance tests against the new version floor established in task 1.1
-- [ ] 11.7 Add live-stack acceptance test: update with `cloud_connector` in state — assert association survives (PUT re-sends `{enabled, cloud_connector_id}` from prior state per task 7.2; unit test in `update_test.go`)
-- [ ] 11.8 Add an acceptance test that sets input/stream `condition`, then updates `condition` in place and asserts both values round-trip through create/read/update against a live stack (Kibana >= 9.5.0)
+- [x] 11.1 Rename `TestAccResourceAgentlessPolicy*` functions and acc-test package comments for managed integration; verify composite-ID import strings and destroy checks still target `elasticstack_fleet_managed_integration` (resource type and constants updated in task 3 follow-up)
+- [x] 11.2 Rename `testdata/TestAccResourceAgentlessPolicy*` directories to `TestAccResourceManagedIntegration*`; verify fixture layout matches renamed test functions (fixture HCL already uses `elasticstack_fleet_managed_integration`)
+- [x] 11.3 Add live-stack acceptance test: in-place `package.version` bump persists via managed_integrations PUT (unit coverage in task 7 / `update_test.go`; this step proves apply against Kibana >= 9.5.0)
+- [x] 11.4 Add live-stack acceptance test: in-place `name` change persists end-to-end (plan-only check exists in `TestAccResourceAgentlessPolicy_NameUpdateInPlace`; assert post-apply state/API after task 7 PUT body)
+- [x] 11.5 Add live-stack acceptance coverage for `global_data_tags` `number_value` (map + `string_value` shape validated in moved suite / task 5 review fixtures)
+- [x] 11.6 Skip-gate acceptance tests against the new version floor established in task 1.1
+- [x] 11.7 Add live-stack acceptance test: update with `cloud_connector` in state — assert association survives (PUT re-sends `{enabled, cloud_connector_id}` from prior state per task 7.2; unit test in `update_test.go`)
+- [x] 11.8 Add an acceptance test that sets input/stream `condition`, then updates `condition` in place and asserts both values round-trip through create/read/update against a live stack (Kibana >= 9.5.0)
 
 ## 12. CHANGELOG and validation
 
