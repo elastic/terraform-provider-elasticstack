@@ -12,8 +12,8 @@ Tasks 4–6 completed version gate, schema, and `models_convert.go` simplificati
 
 - `buildUpdateBody(plan, prior)` compiles `PutFleetManagedIntegrationsPolicyidJSONRequestBody` from the plan via shared `toManagedIntegrationRequestBody`; **`prior` supplies `cloud_connector {enabled, cloud_connector_id}` only** (never `name`/`target_csp`).
 - Update **PUT** calls `UpdateManagedIntegration`; the write callback returns **plan only** — no `populateFromManagedIntegration` on the PUT response. Final state comes from the entitycore envelope **Read-after-write** (coding-standards.md).
-- **`onlyCreateOnlyFlagsChanged`** skips Fleet calls and sets **`KibanaWriteResult.SkipReadAfterWrite`** so the envelope persists plan without a Read (no managed_integrations GET/PUT/DELETE).
-- Full-replace optional fields: **known-null → omit** (generated `omitempty` clears on API); **unknown `inputs` → attribute error**; known-empty collections sent explicitly where `sendExplicitEmptyScalars` applies.
+- **`onlyCreateOnlyFlagsChanged`** skips Fleet calls and sets **`KibanaWriteResult.SkipReadAfterWrite`** so the envelope persists plan without Read or PostRead (no managed_integrations GET/PUT/DELETE). The write callback merges known server-computed fields from prior state (for example `updated_at`) into the returned model when the plan leaves them Unknown.
+- Full-replace optional fields: **known-null → omit** (generated `omitempty` clears on API); **unknown top-level API-backed optionals → attribute error**; known-empty collections sent explicitly where `sendExplicitEmptyScalars` applies.
 
 **Still on legacy compat until task 8:** Create/Read/Delete call **`agentless_policy_compat.go`**; Read uses **`package_policy_read_bridge.go`** for mapped package_policies responses. Delete both with task 8.
 

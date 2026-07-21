@@ -112,6 +112,8 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		require.False(t, *called, "no Fleet API call should be made for a create_dataset_templates-only change")
 		require.True(t, result.SkipReadAfterWrite, "create-only-flag short-circuit must skip envelope read-after-write")
 		require.True(t, result.Model.CreateDatasetTemplates.ValueBool())
+		require.Equal(t, "2024-01-02T00:00:00.000Z", result.Model.UpdatedAt.ValueString(),
+			"Unknown plan updated_at must be preserved from prior when skipping read-after-write")
 	})
 
 	t.Run("force and force_delete together changing makes no API call", func(t *testing.T) {
@@ -588,6 +590,44 @@ func TestBuildUpdateBody_omitsKnownNullOptionalFields(t *testing.T) {
 	assert.False(t, hasVGS)
 	assert.False(t, hasPerms)
 	assert.False(t, hasTags)
+}
+
+func TestBuildUpdateBody_unknownTopLevelFieldsErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	basePrior := func(t *testing.T) agentlessPolicyModel {
+		t.Helper()
+		return baseTestModel(t)
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*agentlessPolicyModel)
+	}{
+		{"description", func(m *agentlessPolicyModel) { m.Description = types.StringUnknown() }},
+		{"namespace", func(m *agentlessPolicyModel) { m.Namespace = types.StringUnknown() }},
+		{"policy_template", func(m *agentlessPolicyModel) { m.PolicyTemplate = types.StringUnknown() }},
+		{"vars_json", func(m *agentlessPolicyModel) { m.VarsJSON = policyshape.NewVarsJSONUnknown() }},
+		{"var_group_selections", func(m *agentlessPolicyModel) { m.VarGroupSelections = types.MapUnknown(types.StringType) }},
+		{"additional_datastreams_permissions", func(m *agentlessPolicyModel) { m.AdditionalDatastreamsPermissions = types.ListUnknown(types.StringType) }},
+		{"global_data_tags", func(m *agentlessPolicyModel) { m.GlobalDataTags = types.MapUnknown(globalDataTagsElementType()) }},
+		{"package", func(m *agentlessPolicyModel) { m.Package = types.ObjectUnknown(packageAttrTypes()) }},
+		{"inputs", func(m *agentlessPolicyModel) {
+			m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(policyshape.NewInputsType(agentlessInputType()))}
+		}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			prior := basePrior(t)
+			plan := prior
+			tc.mutate(&plan)
+			_, diags := buildUpdateBody(ctx, plan, prior)
+			require.True(t, diags.HasError())
+			require.Contains(t, diags.Errors()[0].Detail(), "attribute is unknown")
+		})
+	}
 }
 
 func TestBuildUpdateBody_unknownInputsErrors(t *testing.T) {

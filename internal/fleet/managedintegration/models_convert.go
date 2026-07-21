@@ -419,6 +419,11 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Context, opts managedIntegrationRequestOptions) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
+	m.diagnoseUnknownUpdatePlanFields(&diags, opts)
+	if diags.HasError() {
+		return kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest{}, diags
+	}
+
 	decodedInputs := m.decodeInputs(ctx, &diags)
 
 	var pkg packageModel
@@ -552,14 +557,6 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 		}
 	}
 
-	if opts.sendExplicitEmptyScalars && m.Inputs.IsUnknown() {
-		diags.AddAttributeError(
-			path.Root("inputs"),
-			"Cannot build managed integration update request",
-			"The inputs attribute is unknown; cannot build a full-replace update body without removing existing inputs from the API.",
-		)
-	}
-
 	inputOpts := applyCreateInputsOptions{
 		explicitEmptyInputs: opts.sendExplicitEmptyScalars &&
 			!m.Inputs.IsUnknown() && !m.Inputs.IsNull() &&
@@ -569,6 +566,37 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 	applyCreateInputs(&body, decodedInputs, &diags, inputOpts)
 
 	return body, diags
+}
+
+func (m agentlessPolicyModel) diagnoseUnknownUpdatePlanFields(diags *diag.Diagnostics, opts managedIntegrationRequestOptions) {
+	if !opts.sendExplicitEmptyScalars {
+		return
+	}
+	const summary = "Cannot build managed integration update request"
+	type field struct {
+		path    path.Path
+		label   string
+		unknown bool
+	}
+	for _, f := range []field{
+		{path.Root("description"), "description", m.Description.IsUnknown()},
+		{path.Root("namespace"), "namespace", m.Namespace.IsUnknown()},
+		{path.Root("policy_template"), "policy_template", m.PolicyTemplate.IsUnknown()},
+		{path.Root("vars_json"), "vars_json", m.VarsJSON.IsUnknown()},
+		{path.Root("var_group_selections"), "var_group_selections", m.VarGroupSelections.IsUnknown()},
+		{path.Root("additional_datastreams_permissions"), "additional_datastreams_permissions", m.AdditionalDatastreamsPermissions.IsUnknown()},
+		{path.Root("global_data_tags"), "global_data_tags", m.GlobalDataTags.IsUnknown()},
+		{path.Root("package"), "package", m.Package.IsUnknown()},
+		{path.Root("inputs"), "inputs", m.Inputs.IsUnknown()},
+	} {
+		if f.unknown {
+			diags.AddAttributeError(
+				f.path,
+				summary,
+				fmt.Sprintf("The %s attribute is unknown; cannot build a full-replace update body without risking unintended clears on the API.", f.label),
+			)
+		}
+	}
 }
 
 type applyCreateInputsOptions struct {

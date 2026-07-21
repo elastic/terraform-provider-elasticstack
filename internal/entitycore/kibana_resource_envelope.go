@@ -79,10 +79,12 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 type KibanaWriteResult[T KibanaResourceModel] struct {
 	Model T
 	// SkipReadAfterWrite, when true, persists Model to state without invoking
-	// the read callback after Create/Update. Use when the write path performed
-	// no backend mutation that read-after-write would reflect (for example a
-	// provider-side-only config change). Defaults to false so normal writes
-	// still follow the provider rule that final state comes from a read request.
+	// the read callback after Create/Update and without invoking PostRead.
+	// Use when the write path performed no backend mutation that read-after-write
+	// would reflect (for example a provider-side-only config change). Defaults to
+	// false so normal writes still follow the provider rule that final state comes
+	// from a read request. The envelope still applies timeout preservation on the
+	// committed model (see preserveModelTimeouts).
 	SkipReadAfterWrite bool
 }
 
@@ -436,7 +438,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 
 	priorModel := planModel
 
-	if r.postRead != nil {
+	if r.postRead != nil && !written.SkipReadAfterWrite {
 		var prDiags diag.Diagnostics
 		stateModel, prDiags = r.postRead(ctx, client, priorModel, stateModel, inv.privateState)
 		diags.Append(prDiags...)

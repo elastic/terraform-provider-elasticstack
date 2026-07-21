@@ -25,7 +25,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // onlyCreateOnlyFlagsChanged reports whether prior and plan are identical in
@@ -102,8 +105,9 @@ func updateAgentlessPolicy(
 	var diags diag.Diagnostics
 
 	if req.Prior != nil && onlyCreateOnlyFlagsChanged(*req.Prior, plan) {
+		model := preserveKnownComputedFromPrior(ctx, plan, *req.Prior)
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{
-			Model:              plan,
+			Model:              model,
 			SkipReadAfterWrite: true,
 		}, diags
 	}
@@ -152,13 +156,48 @@ func updateAgentlessPolicy(
 // tags. On Update, a known-null optional attribute is omitted from the body
 // (not sent as an empty string or empty collection), which clears the field on
 // the API. A known-empty collection (for example `vars_json = jsonencode({})`)
-// is sent explicitly when sendExplicitEmptyScalars applies. Unknown `inputs`
-// cannot be compiled safely and produce an attribute error rather than risking
-// destructive omission of existing inputs.
+// is sent explicitly when sendExplicitEmptyScalars applies. Unknown top-level
+// API-backed optional attributes produce attribute errors (see
+// diagnoseUnknownUpdatePlanFields). Known-null optional attributes are omitted
+// (omitempty) to clear on full replace.
 func buildUpdateBody(ctx context.Context, plan, prior agentlessPolicyModel) (kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody, diag.Diagnostics) {
 	return plan.toManagedIntegrationRequestBody(ctx, managedIntegrationRequestOptions{
 		omitCreateOnlyFields:     true,
 		priorForCloudConnector:   &prior,
 		sendExplicitEmptyScalars: true,
 	})
+}
+
+// preserveKnownComputedFromPrior copies known server-computed values from prior
+// state into plan when the Update plan leaves them Unknown (typical for
+// updated_at). Used only with SkipReadAfterWrite so direct state write does not
+// persist Unknown computed attributes.
+func preserveKnownComputedFromPrior(ctx context.Context, plan, prior agentlessPolicyModel) agentlessPolicyModel {
+	out := plan
+	out.UpdatedAt = entitycore.PreserveStringFromPriorIfUnknown(out.UpdatedAt, prior.UpdatedAt)
+	out.CreatedAt = entitycore.PreserveStringFromPriorIfUnknown(out.CreatedAt, prior.CreatedAt)
+	out.ID = entitycore.PreserveStringFromPriorIfUnknown(out.ID, prior.ID)
+	out.PolicyID = entitycore.PreserveStringFromPriorIfUnknown(out.PolicyID, prior.PolicyID)
+	if out.SpaceIDs.IsUnknown() && !prior.SpaceIDs.IsUnknown() {
+		out.SpaceIDs = prior.SpaceIDs
+	}
+	if out.VarsJSON.IsUnknown() && !prior.VarsJSON.IsUnknown() {
+		out.VarsJSON = prior.VarsJSON
+	}
+	if out.Package.IsUnknown() && !prior.Package.IsUnknown() {
+		out.Package = prior.Package
+		return out
+	}
+	if !out.Package.IsUnknown() && !prior.Package.IsUnknown() {
+		var planPkg, priorPkg packageModel
+		if !plan.Package.As(ctx, &planPkg, basetypes.ObjectAsOptions{}).HasError() &&
+			!prior.Package.As(ctx, &priorPkg, basetypes.ObjectAsOptions{}).HasError() &&
+			planPkg.Title.IsUnknown() && typeutils.IsKnown(priorPkg.Title) {
+			planPkg.Title = priorPkg.Title
+			if pkgObj, d := types.ObjectValueFrom(ctx, packageAttrTypes(), planPkg); !d.HasError() {
+				out.Package = pkgObj
+			}
+		}
+	}
+	return out
 }

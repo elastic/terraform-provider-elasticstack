@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -2118,6 +2119,92 @@ func TestNewKibanaResource_Update_readAfterWriteByDefault(t *testing.T) {
 	var after testKibanaResourceModel
 	require.False(t, resp.State.Get(ctx, &after).HasError())
 	require.Equal(t, "from-read", after.Name.ValueString())
+}
+
+func TestNewKibanaResource_Update_skipReadAfterWriteSkipsPostRead(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	postReadCalled := false
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+		readCalled = true
+		return model, true, nil
+	}
+	opts.PostRead = func(_ context.Context, req KibanaPostReadRequest[testKibanaResourceModel]) (testKibanaResourceModel, diag.Diagnostics) {
+		postReadCalled = true
+		req.State.Name = types.StringValue("post-read-mutated")
+		return req.State, nil
+	}
+	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("from-write-callback")
+		return KibanaWriteResult[testKibanaResourceModel]{
+			Model:              model,
+			SkipReadAfterWrite: true,
+		}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, readCalled)
+	require.False(t, postReadCalled, "PostRead must not run when SkipReadAfterWrite is true")
+	var after testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "from-write-callback", after.Name.ValueString())
+}
+
+func TestNewKibanaResource_Update_skipReadAfterWritePreservesPlanTimeouts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	opts := defaultTestKibanaResourceOptions()
+	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("written")
+		model.ResourceTimeoutsField = ResourceTimeoutsField{}
+		return KibanaWriteResult[testKibanaResourceModel]{
+			Model:              model,
+			SkipReadAfterWrite: true,
+		}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	objType := testKibanaResourceObjectType()
+	planValue := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":                tftypes.NewValue(tftypes.String, "default/my-resource"),
+		"name":              tftypes.NewValue(tftypes.String, "my-resource"),
+		"space_id":          tftypes.NewValue(tftypes.String, "default"),
+		"kibana_connection": tftypes.NewValue(kibanaConnectionBlockType(), nil),
+		"timeouts":          resourceTimeoutsWithUpdate("30m"),
+	})
+	plan := tfsdk.Plan{
+		Raw:    planValue,
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
+	}
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	var planModel testKibanaResourceModel
+	require.False(t, plan.Get(ctx, &planModel).HasError())
+	wantTimeouts := planModel.GetTimeouts()
+
+	var after testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	var gotTimeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root(attrTimeouts), &gotTimeouts)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, wantTimeouts, gotTimeouts, "plan timeouts must be preserved on SkipReadAfterWrite path")
 }
 
 func TestNewKibanaResource_Create_callbackReceivesNilPriorAndConfig(t *testing.T) {
