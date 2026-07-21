@@ -23,37 +23,63 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestReadAgentlessPolicy_typedPackagePolicyInputsPreservesModelOnBridgeError
-// proves readAgentlessPolicy returns bridge diagnostics and leaves the incoming
-// model untouched when GET /api/fleet/package_policies/{id} returns a typed
-// (non-mapped) inputs array — the shape the compat client still uses until
-// task 8.
-func TestReadAgentlessPolicy_typedPackagePolicyInputsPreservesModelOnBridgeError(t *testing.T) {
+// TestReadAgentlessPolicy_notFound signals removed out-of-band without error.
+func TestReadAgentlessPolicy_notFound(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/fleet/package_policies/", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"item":%s}`, typedArrayPackagePolicyForBridgeJSON)
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"statusCode":404,"error":"Not Found","message":"managed integration not found"}`)
 	})
 	client := newTopologyTestClient(t, mux)
 
 	seeded := baseTestModel(t)
 	seeded.PolicyID = types.StringValue("policy-1")
-	seeded.ID = types.StringValue("default/policy-1")
 	seeded.Name = types.StringValue("seed-name-must-not-change")
-	seeded.Description = types.StringValue("seed-description")
 
 	out, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
-	require.True(t, diags.HasError(), "%v", diags)
+	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, ok)
-	requireDiagnosticAtPath(t, diags, path.Root("inputs"), "Unexpected package policy inputs format")
-
 	assert.Equal(t, "seed-name-must-not-change", out.Name.ValueString())
-	assert.Equal(t, "seed-description", out.Description.ValueString())
+}
+
+// TestReadAgentlessPolicy_populatesFromManagedIntegration exercises GET
+// /api/fleet/managed_integrations/{id} and populateFromManagedIntegration while
+// preserving create-only flags from the incoming model.
+func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
+	const managedIntegrationJSON = `{"item":{` +
+		`"id":"policy-1","name":"api-name",` +
+		`"created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic",` +
+		`"updated_at":"2026-01-02T00:00:00.000Z","updated_by":"elastic",` +
+		`"inputs":{},` +
+		`"package":{"name":"cloud_security_posture","version":"3.4.0"}` +
+		`}}`
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, managedIntegrationJSON)
+	})
+	client := newTopologyTestClient(t, mux)
+
+	seeded := baseTestModel(t)
+	seeded.Force = types.BoolValue(true)
+	seeded.CreateDatasetTemplates = types.BoolValue(true)
+	seeded.SkipTopologyCheck = types.BoolValue(true)
+	seeded.ForceDelete = types.BoolValue(true)
+
+	out, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, ok)
+	assert.Equal(t, "api-name", out.Name.ValueString())
 	assert.Equal(t, "default/policy-1", out.ID.ValueString())
+	assert.True(t, out.Force.ValueBool())
+	assert.True(t, out.CreateDatasetTemplates.ValueBool())
+	assert.True(t, out.SkipTopologyCheck.ValueBool())
+	assert.True(t, out.ForceDelete.ValueBool())
 }

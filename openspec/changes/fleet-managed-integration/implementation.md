@@ -15,7 +15,7 @@ Tasks 4–6 completed version gate, schema, and `models_convert.go` simplificati
 - **`onlyCreateOnlyFlagsChanged`** skips Fleet calls and sets **`KibanaWriteResult.SkipReadAfterWrite`** so the envelope persists plan without Read or PostRead (no managed_integrations GET/PUT/DELETE). The write callback merges known server-computed fields from prior state (for example `updated_at`) into the returned model when the plan leaves them Unknown.
 - Full-replace optional fields: **known-null → omit** (generated `omitempty` clears on API); **unknown top-level API-backed optionals → attribute error**; known-empty collections sent explicitly where `sendExplicitEmptyScalars` applies.
 
-**Still on legacy compat until task 8:** Create/Read/Delete call **`agentless_policy_compat.go`**; Read uses **`package_policy_read_bridge.go`** for mapped package_policies responses. Delete both with task 8.
+**Task 8 (complete)** rewired Create/Read/Delete to `CreateManagedIntegration` / `ReadManagedIntegration` / `DeleteManagedIntegration`; removed `agentless_policy_compat.go` and `package_policy_read_bridge.go`. Create returns plan with server-assigned id only; final state comes from envelope read-after-write (same as Update).
 
 Acceptance fixtures use `elasticstack_fleet_managed_integration`; test renames remain tasks 10–11. Live in-place **name**, **package.version**, and **cloud_connector** persistence are tracked in tasks **11.3–11.4** and **11.7** (not yet implemented).
 
@@ -101,12 +101,6 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 
 **Implementation note for task 7:** Keep `onlyCreateOnlyFlagsChanged`; set `KibanaWriteResult.SkipReadAfterWrite` on that path so the envelope does not invoke Read (no managed_integrations GET). Normal Update still read-after-writes via the Read callback after PUT.
 
-## 2. New managed_integrations client (task 2)
+## 2. New managed_integrations client (task 2 / task 8)
 
-Task 2 adds `internal/clients/fleet/managed_integration.go` with CRUD wrappers targeting `/api/fleet/managed_integrations`. The deprecated `agentless_policy.go` client file was removed.
-
-### Temporary compat bridge — `agentless_policy_compat.go`
-
-`internal/fleet/managedintegration/` still calls the old wrapper names (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) until **task 8** rewires create/read/update/delete to the new managed_integrations wrappers. To preserve buildability without porting package_policies fallbacks into `managed_integration.go`, those legacy wrappers live in **`agentless_policy_compat.go`** (thin re-exports of the deprecated endpoints and `GetPackagePolicy`/`UpdatePackagePolicy` fallbacks).
-
-**Task 8 must delete `agentless_policy_compat.go` and `agentless_policy_compat_test.go`** when resource callers switch to `CreateManagedIntegration` / `ReadManagedIntegration` / `UpdateManagedIntegration` / `DeleteManagedIntegration`.
+Task 2 adds `internal/clients/fleet/managed_integration.go` with CRUD wrappers targeting `/api/fleet/managed_integrations`. The deprecated `agentless_policy.go` client file was removed. Task 8 rewired the resource package to call those wrappers exclusively; the temporary `agentless_policy_compat.go` bridge was removed.

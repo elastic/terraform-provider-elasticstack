@@ -28,12 +28,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// minimalAgentlessPolicyCreateResponse is a well-formed
-// PostFleetAgentlessPolicies 200 response body, just complete enough for
-// populateFromCreateResponse to decode without error. The exact field values
+// minimalManagedIntegrationCreateResponse is a well-formed
+// PostFleetManagedIntegrations 200 response body, just complete enough for
+// the create callback to decode the assigned policy id. The exact field values
 // are not asserted by the tests below -- they only care whether the fleet
 // POST endpoint was hit at all.
-const minimalAgentlessPolicyCreateResponse = `{"item":{` +
+const minimalManagedIntegrationCreateResponse = `{"item":{` +
 	`"id":"pp-1","name":"test-policy",` +
 	`"created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic",` +
 	`"updated_at":"2026-01-01T00:00:00.000Z","updated_by":"elastic",` +
@@ -42,7 +42,7 @@ const minimalAgentlessPolicyCreateResponse = `{"item":{` +
 	`}}`
 
 // fleetCreateCallRecorder builds an http.Handler that serves both the
-// `/api/status` topology probe and the `/api/fleet/agentless_policies`
+// `/api/status` topology probe and the `/api/fleet/managed_integrations`
 // create endpoint from a single httptest server (see
 // newTopologyTestClient in topology_test.go, which this reuses
 // unmodified -- it already accepts any http.Handler). The returned
@@ -60,10 +60,10 @@ func fleetCreateCallRecorder(statusBody string, statusHeaders map[string]string)
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, statusBody)
 	})
-	mux.HandleFunc("/api/fleet/agentless_policies", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
 		fleetPostCalled = true
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, minimalAgentlessPolicyCreateResponse)
+		fmt.Fprint(w, minimalManagedIntegrationCreateResponse)
 	})
 	return mux, &fleetPostCalled
 }

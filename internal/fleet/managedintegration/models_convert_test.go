@@ -41,13 +41,6 @@ func mustManagedIntegrationFromJSON(t *testing.T, raw string) *kbapi.KibanaHTTPA
 	return &item
 }
 
-func mustPackagePolicyFromJSON(t *testing.T, raw string) *kbapi.PackagePolicy {
-	t.Helper()
-	var pp kbapi.PackagePolicy
-	require.NoError(t, json.Unmarshal([]byte(raw), &pp))
-	return &pp
-}
-
 // baseTestModel returns a minimal agentlessPolicyModel with the identity and
 // package attributes populated, matching what the entitycore envelope would
 // have already decoded from plan/state before calling into conversion code.
@@ -587,7 +580,7 @@ func TestPopulateFromCreateResponse_setsIdentityAndPreservesCreateOnlyFlags(t *t
 	m.CreateDatasetTemplates = types.BoolValue(true)
 	m.PolicyTemplate = types.StringValue("cspm")
 
-	diags := m.populateFromCreateResponse(ctx, "default", item)
+	diags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	assert.Equal(t, "default/policy-2", m.ID.ValueString())
@@ -671,7 +664,7 @@ func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
 	require.False(t, diags.HasError())
 	m.Inputs = knownInputs
 
-	popDiags := m.populateFromCreateResponse(ctx, "default", item)
+	popDiags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
 	var inputs map[string]agentlessInputModel

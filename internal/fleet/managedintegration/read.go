@@ -25,39 +25,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// readAgentlessPolicy reads the current managed integration via the temporary
-// GET /api/fleet/package_policies/{id} compat path (see
-// agentless_policy_compat.go) until task 8 switches to
-// ReadManagedIntegration. A nil response (HTTP 404) signals the resource was
-// removed out of band; the caller is responsible for removing it from state.
+// readAgentlessPolicy reads the current managed integration via GET
+// /api/fleet/managed_integrations/{id}. A nil response (HTTP 404) signals
+// the resource was removed out of band; the caller is responsible for
+// removing it from state.
 //
-// force, force_delete, and create_dataset_templates are preserved from the
-// incoming model because populateFromManagedIntegration deliberately never
-// touches them: none round-trip through the read response.
+// force, force_delete, create_dataset_templates, skip_topology_check, and
+// cloud_connector.name/target_csp are preserved from the incoming model because
+// populateFromManagedIntegration deliberately never touches them: none
+// round-trip through the read response.
 func readAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) (agentlessPolicyModel, bool, diag.Diagnostics) {
 	fleetClient := client.GetFleetClient()
 
-	data, diags := fleetclient.ReadAgentlessPolicyViaPackagePolicy(ctx, fleetClient, spaceID, resourceID)
+	item, diags := fleetclient.ReadManagedIntegration(ctx, fleetClient, spaceID, resourceID)
 	if diags.HasError() {
 		return model, false, diags
 	}
 
-	if data == nil {
+	if item == nil {
 		return model, false, diags
 	}
 
-	item, bridgeDiags := managedIntegrationFromPackagePolicyReadResponse(data)
-	diags.Append(bridgeDiags...)
-	if diags.HasError() {
-		return model, false, diags
-	}
-
-	var spaceIDs *[]string
-	if data.SpaceIds != nil {
-		spaceIDs = data.SpaceIds
-	}
-
-	diags.Append(model.populateFromManagedIntegration(ctx, spaceID, &item, spaceIDs)...)
+	diags.Append(model.populateFromManagedIntegration(ctx, spaceID, item, nil)...)
 	if diags.HasError() {
 		return model, false, diags
 	}

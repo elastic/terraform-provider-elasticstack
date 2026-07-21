@@ -24,15 +24,14 @@ import (
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // createAgentlessPolicy compiles the plan into a managed-integration create
-// request body and calls the Fleet client (today via agentless_policy_compat.go
-// until task 8 wires CreateManagedIntegration and POST
-// /api/fleet/managed_integrations). Per spec: a non-2xx response surfaces
-// diagnostics and no state is saved (the entitycore envelope never calls
-// resp.State.Set when this callback returns an error -- see
-// kibana_resource_envelope.go's runKibanaWrite).
+// request body and calls POST /api/fleet/managed_integrations. Per spec: a
+// non-2xx response surfaces diagnostics and no state is saved (the entitycore
+// envelope never calls resp.State.Set when this callback returns an error --
+// see kibana_resource_envelope.go's runKibanaWrite).
 //
 // The MinVersion 9.5.0 gate for managed_integrations is wired via
 // GetVersionRequirements (models.go) and enforced by the entitycore envelope
@@ -59,6 +58,11 @@ import (
 // reason to pay for that call when the user has explicitly opted out of its
 // result. Version gating (GetVersionRequirements, enforced by the envelope
 // before this function even runs) is unaffected either way.
+//
+// Per coding-standards.md, persisted state after create comes from the
+// entitycore envelope read-after-write (Read callback), not from the POST
+// response body. This callback only copies the server-assigned policy id into
+// the returned model so the envelope can invoke Read.
 func createAgentlessPolicy(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -82,16 +86,21 @@ func createAgentlessPolicy(
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
 
-	item, createDiags := fleetclient.CreateAgentlessPolicy(ctx, fleetClient, req.SpaceID, body)
+	item, createDiags := fleetclient.CreateManagedIntegration(ctx, fleetClient, req.SpaceID, body)
 	diags.Append(createDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
-
-	diags.Append(plan.populateFromCreateResponse(ctx, req.SpaceID, *item)...)
-	if diags.HasError() {
+	if item == nil || item.Id == "" {
+		diags.AddError(
+			"Managed integration create returned no identifier",
+			"POST /api/fleet/managed_integrations succeeded but did not return a policy id.",
+		)
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
+
+	plan.PolicyID = types.StringValue(item.Id)
+	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: item.Id}).String())
 
 	return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
 }

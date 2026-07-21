@@ -25,20 +25,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// deleteAgentlessPolicy calls fleetclient.DeleteAgentlessPolicy from the
-// temporary agentless_policy_compat.go bridge (DELETE /api/fleet/agentless_policies/{id},
-// space-aware) with force = force_delete. HTTP 404 is already treated as a no-op
-// by the compat wrapper (see handleDeleteResponse in responses.go).
+// deleteAgentlessPolicy calls DELETE /api/fleet/managed_integrations/{id}
+// (space-aware) with force = force_delete. HTTP 404 is treated as a no-op by
+// the Fleet client (see handleDeleteResponse in responses.go).
 //
 // When force_delete = false and the API returns a conflict, a helpful diagnostic
 // pointing at force_delete is appended (see conflictHintDiagnostics).
-// fleetclient.DeleteAgentlessPolicy reports whether the final observed HTTP status
+// fleetclient.DeleteManagedIntegration reports whether the final observed HTTP status
 // was 409 directly (isConflict), so this no longer pattern-matches diagnostic text.
 func deleteAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) diag.Diagnostics {
 	fleetClient := client.GetFleetClient()
 
 	force := model.ForceDelete.ValueBool()
-	isConflict, diags := fleetclient.DeleteAgentlessPolicy(ctx, fleetClient, spaceID, resourceID, force)
+	isConflict, diags := fleetclient.DeleteManagedIntegration(ctx, fleetClient, spaceID, resourceID, force)
 	if diags.HasError() && !force && isConflict {
 		diags.Append(conflictHintDiagnostics()...)
 	}
@@ -46,13 +45,13 @@ func deleteAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClie
 }
 
 // conflictHintDiagnostics returns a diagnostic explaining force_delete, for
-// deleteAgentlessPolicy to append when fleetclient.DeleteAgentlessPolicy
+// deleteAgentlessPolicy to append when fleetclient.DeleteManagedIntegration
 // reports the delete failed with an HTTP 409 conflict.
 func conflictHintDiagnostics() diag.Diagnostics {
 	var hint diag.Diagnostics
 	hint.AddError(
-		"Agentless policy delete conflict",
-		"Kibana refused to delete this agentless policy, likely because its underlying managed agent "+
+		"Managed integration delete conflict",
+		"Kibana refused to delete this managed integration, likely because its underlying managed agent "+
 			"policy is in a conflicting state (for example, still provisioning, or has associated agents). "+
 			"Set force_delete = true on this resource and re-apply to force deletion "+
 			"(sent to the API as the ?force=true query parameter).",

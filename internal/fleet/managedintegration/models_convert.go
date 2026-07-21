@@ -684,8 +684,9 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 // (force, force_delete, create_dataset_templates, skip_topology_check,
 // policy_template, cloud_connector write-only fields) are left untouched.
 //
-// spaceIDs is optional metadata from legacy package_policies responses until
-// task 8; when nil, space_ids defaults from spaceID when unset on the model.
+// spaceIDs is optional metadata when the caller has space membership outside
+// the read response; when nil, space_ids defaults from spaceID when unset on
+// the model.
 func (m *agentlessPolicyModel) populateFromManagedIntegration(ctx context.Context, spaceID string, item *kbapi.KibanaHTTPAPIsManagedIntegration, spaceIDs *[]string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if item == nil {
@@ -744,10 +745,4 @@ func (m *agentlessPolicyModel) populateFromManagedIntegration(ctx context.Contex
 	m.Inputs = populateInputsFromManagedIntegration(ctx, item, inputsKnownKeys, &diags)
 
 	return diags
-}
-
-// populateFromCreateResponse decodes the managed_integrations create response
-// into state (alias for populateFromManagedIntegration).
-func (m *agentlessPolicyModel) populateFromCreateResponse(ctx context.Context, spaceID string, item kbapi.KibanaHTTPAPIsManagedIntegration) diag.Diagnostics {
-	return m.populateFromManagedIntegration(ctx, spaceID, &item, nil)
 }

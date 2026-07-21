@@ -205,7 +205,7 @@ func TestPopulateFromCreateResponse_roundTripsCondition(t *testing.T) {
 
 	m := baseTestModel(t)
 	m.PolicyTemplate = types.StringValue("cspm")
-	diags := m.populateFromCreateResponse(ctx, "default", item)
+	diags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	var inputs map[string]agentlessInputModel
@@ -251,7 +251,7 @@ func TestPopulateFromCreateResponse_leavesConditionNullWhenAbsent(t *testing.T) 
 
 	m := baseTestModel(t)
 	m.PolicyTemplate = types.StringValue("cspm")
-	diags := m.populateFromCreateResponse(ctx, "default", item)
+	diags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	var inputs map[string]agentlessInputModel

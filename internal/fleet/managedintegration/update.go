@@ -128,9 +128,6 @@ func updateAgentlessPolicy(
 
 	fleetClient := client.GetFleetClient()
 
-	// TEMPORARY (task 8): PUT already targets managed_integrations; Read on
-	// the entitycore read-after-write path still uses the package_policies
-	// compat wrapper until task 8 deletes agentless_policy_compat.go.
 	updated, updateDiags := fleetclient.UpdateManagedIntegration(ctx, fleetClient, req.SpaceID, req.WriteID, body)
 	diags.Append(updateDiags...)
 	if diags.HasError() {

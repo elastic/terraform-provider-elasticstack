@@ -59,10 +59,10 @@
 
 ## 8. `create.go` / `read.go` / `delete.go`
 
-- [ ] 8.1 `create.go`: swap the single client call to `CreateManagedIntegration`; response handling targets `KibanaHTTPAPIsManagedIntegration` (no change to response handling logic)
-- [ ] 8.2 `read.go`: swap the single client call to `ReadManagedIntegration`; drop the `package_policies` fallback entirely; preserve create-only flags (`force`, `create_dataset_templates`, `skip_topology_check`) and `cloud_connector.name`/`target_csp` from prior state as today
-- [ ] 8.3 `delete.go`: swap the single client call to `DeleteManagedIntegration`; `force_delete` → `?force=` mapping unchanged
-- [ ] 8.4 Delete `internal/clients/fleet/agentless_policy_compat.go` and `agentless_policy_compat_test.go` once resource callers no longer reference the legacy wrapper names
+- [x] 8.1 `create.go`: swap the single client call to `CreateManagedIntegration`; response handling targets `KibanaHTTPAPIsManagedIntegration` (no change to response handling logic)
+- [x] 8.2 `read.go`: swap the single client call to `ReadManagedIntegration`; drop the `package_policies` fallback entirely; preserve create-only flags (`force`, `create_dataset_templates`, `skip_topology_check`) and `cloud_connector.name`/`target_csp` from prior state as today
+- [x] 8.3 `delete.go`: swap the single client call to `DeleteManagedIntegration`; `force_delete` → `?force=` mapping unchanged
+- [x] 8.4 Delete `internal/clients/fleet/agentless_policy_compat.go` and `agentless_policy_compat_test.go` once resource callers no longer reference the legacy wrapper names
 
 ## 9. Tests — unit and model conversion
 
