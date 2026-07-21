@@ -38,10 +38,9 @@ func treemapConfigFromAPINoESQL(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
-	priorSampling := m.Sampling
+	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
+	snapshotSampling := m.Sampling
 
-<<<<<<< HEAD
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
@@ -51,16 +50,8 @@ func treemapConfigFromAPINoESQL(
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
-	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
-=======
-	datasetBytes, err := api.DataSource.MarshalJSON()
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
-	if !ok {
-		return diags
-	}
-	m.DataSourceJSON = dv
->>>>>>> origin/main
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(snapshotIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(snapshotSampling, api.Sampling, 1)
 
 	if api.GroupBy != nil {
 		gb, gbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -108,10 +99,9 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 	// query state from a previous non-ES|QL config.
 	m.Query = nil
 
-	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
-	priorSampling := m.Sampling
+	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
+	snapshotSampling := m.Sampling
 
-<<<<<<< HEAD
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
@@ -121,16 +111,8 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
-	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
-=======
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
-	if !ok {
-		return diags
-	}
-	m.DataSourceJSON = dv
->>>>>>> origin/main
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(snapshotIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(snapshotSampling, api.Sampling, 1)
 
 	m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
 	m.Metrics = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionMetricsDefaults)

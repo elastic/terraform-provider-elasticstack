@@ -33,8 +33,8 @@ import (
 func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
-	priorSampling := m.Sampling
+	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
+	snapshotSampling := m.Sampling
 
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
@@ -45,8 +45,8 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
-	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(snapshotIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(snapshotSampling, api.Sampling, 1)
 
 	if api.GroupBy != nil {
 		gb, gbDiags := lenscommon.NewPartitionGroupByJSONFromAPI(api.GroupBy)
@@ -107,8 +107,8 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 
 	m.Query = nil
 
-	priorIgnoreGlobalFilters := m.IgnoreGlobalFilters
-	priorSampling := m.Sampling
+	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
+	snapshotSampling := m.Sampling
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
@@ -119,8 +119,8 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(priorIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
-	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(priorSampling, api.Sampling, 1)
+	m.IgnoreGlobalFilters = lenscommon.MapOptionalBoolWithSnapshotDefault(snapshotIgnoreGlobalFilters, api.IgnoreGlobalFilters, false)
+	m.Sampling = lenscommon.MapOptionalFloatWithSnapshotDefault(snapshotSampling, api.Sampling, 1)
 
 	m.GroupBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
 	m.Metrics = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionMetricsDefaults)
