@@ -6,6 +6,13 @@
 
 ### Changes
 
+- defer privilege validation for unknown dynamic block values in `elasticstack_kibana_security_role` ([#4176](https://github.com/elastic/terraform-provider-elasticstack/pull/4176))
+- Fix `terraform plan` failure for `elasticstack_elasticsearch_security_api_key` when legacy state contains empty-string `metadata` or `role_descriptors` JSON fields. ([#4173](https://github.com/elastic/terraform-provider-elasticstack/pull/4173))
+- Skip the data stream lifecycle DELETE on Elastic Cloud Serverless so destroying `elasticstack_elasticsearch_data_stream_lifecycle` completes instead of failing on the HTTP 410 `api_not_available_exception`. ([#4160](https://github.com/elastic/terraform-provider-elasticstack/pull/4160))
+- Fix Fleet Kafka output apply failures when gzip compression level or sasl block are omitted ([#4122](https://github.com/elastic/terraform-provider-elasticstack/pull/4122))
+- Normalize empty rule and action `params` values while upgrading alerting-rule state from v0 to v1. ([#4166](https://github.com/elastic/terraform-provider-elasticstack/pull/4166))
+- Fix ILM v0→v1 state upgrader invalid JSON error when SDKv2 state stored empty-string values for metadata or allocate routing attributes. ([#4167](https://github.com/elastic/terraform-provider-elasticstack/pull/4167))
+- Suppress Kibana 9.5+ server-injected `ENVIRONMENT_ALL` default on APM service-map dashboard panels when the practitioner omits `environment`. ([#4128](https://github.com/elastic/terraform-provider-elasticstack/pull/4128))
 - add links panel support to Kibana dashboard resource ([#4078](https://github.com/elastic/terraform-provider-elasticstack/pull/4078))
 - Reject ML anomaly detection job `results_index_name` values starting with `custom-` to prevent plan/apply drift. ([#4107](https://github.com/elastic/terraform-provider-elasticstack/pull/4107))
 - Fall back to full package uninstall when Fleet 9.5 rejects DeleteKibanaAssets in the install space during integration destroy. ([#4073](https://github.com/elastic/terraform-provider-elasticstack/pull/4073))
