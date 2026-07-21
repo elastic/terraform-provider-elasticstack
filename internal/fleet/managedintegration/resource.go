@@ -15,8 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package agentlesspolicy implements the elasticstack_fleet_agentless_policy
-// resource (openspec/changes/fleet-agentless-policy). It mirrors the
+// Package managedintegration implements the elasticstack_fleet_managed_integration
+// resource (openspec/changes/fleet-managed-integration). It mirrors the
 // structure of internal/fleet/proxy: resource.go wires the entitycore
 // Kibana resource envelope, models.go defines the Plugin Framework model,
 // schema.go defines the schema, and create.go/read.go/update.go/delete.go
@@ -26,7 +26,7 @@
 // model, and spike"), this package is a skeleton: the schema only carries
 // identity attributes and the CRUD callbacks are stubs. The full schema
 // lands in Task 4 and full CRUD lands in Task 5.
-package agentlesspolicy
+package managedintegration
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -51,7 +51,7 @@ func newResource() *Resource {
 	return &Resource{
 		KibanaResource: entitycore.NewKibanaResource[agentlessPolicyModel](
 			entitycore.ComponentFleet,
-			"agentless_policy",
+			"managed_integration",
 			entitycore.KibanaResourceOptions[agentlessPolicyModel]{
 				Schema: getSchema,
 				Read:   readAgentlessPolicy,

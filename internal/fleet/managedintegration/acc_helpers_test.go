@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentlesspolicy_test
+package managedintegration_test
 
 import (
 	"context"
@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentlesspolicy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/managedintegration"
 )
 
-// isConfirmedCloudOrServerless wraps agentlesspolicy.DetectCloudSignals --
+// isConfirmedCloudOrServerless wraps managedintegration.DetectCloudSignals --
 // the single shared probe for the two cloud/serverless signals
 // (build_flavor == "serverless", and the X-Found-Handling-* cloud-proxy
 // headers) -- with a fail-CLOSED policy, the inverse of
@@ -48,7 +48,7 @@ import (
 // conservative defaults for the same underlying signal; see this repo's PR
 // #4034 discussion for why that is correct, not a contradiction.
 func isConfirmedCloudOrServerless(ctx context.Context, client *clients.KibanaScopedClient) bool {
-	serverless, cloudProxied, ok := agentlesspolicy.DetectCloudSignals(ctx, client)
+	serverless, cloudProxied, ok := managedintegration.DetectCloudSignals(ctx, client)
 	return ok && (serverless || cloudProxied)
 }
 

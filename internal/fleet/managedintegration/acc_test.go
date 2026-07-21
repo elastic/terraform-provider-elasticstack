@@ -67,7 +67,7 @@
 //     "cloud_connectors" additionally requires aws.credentials.external_id.
 //     Sending an incomplete group produces a 400 listing every group's
 //     unmet requirements.
-package agentlesspolicy_test
+package managedintegration_test
 
 import (
 	"context"
@@ -81,7 +81,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentlesspolicy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/managedintegration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -114,7 +114,7 @@ var regexpDefaultSpacePrefix = regexp.MustCompile(`^default/`)
 // without any extra plumbing, mirroring internal/fleet/proxy/acc_test.go's
 // pattern.
 func TestAccResourceAgentlessPolicy(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -345,7 +345,7 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 // both that space_ids round-trips through Create and that the composite ID
 // is exactly "<space_id>/<policy_id>".
 func TestAccResourceAgentlessPolicy_NonDefaultSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
@@ -420,7 +420,7 @@ func TestAccResourceAgentlessPolicy_NonDefaultSpace(t *testing.T) {
 // delete.go) already has unit-level coverage independent of this test: see
 // TestConflictHintDiagnostics in delete_test.go.
 func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -485,7 +485,7 @@ func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
 // secret), but it faithfully exercises cloud_connector_id round-tripping,
 // which is this test's actual point.
 func TestAccResourceAgentlessPolicy_CloudConnector(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
@@ -539,7 +539,7 @@ func mustFleetClient(t *testing.T) *fleetclient.Client {
 // even though the spike found the raw API would technically allow an
 // in-place rename -- see update.go's header comment).
 func TestAccResourceAgentlessPolicy_RequiresReplace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 
 	suffix := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -585,7 +585,7 @@ func TestAccResourceAgentlessPolicy_RequiresReplace(t *testing.T) {
 // confirmation that inputs[*].streams[*].vars changes are accepted and
 // persisted by PUT /api/fleet/package_policies/{id}.
 func TestAccResourceAgentlessPolicy_InputsUpdateInPlace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -642,7 +642,7 @@ func TestAccResourceAgentlessPolicy_InputsUpdateInPlace(t *testing.T) {
 // coverage location.
 func TestAgentlessPolicy_VersionSkipGating(t *testing.T) {
 	t.Log("Task 8.4 coverage: version-skip gating is exercised by every TestAcc* " +
-		"function in this file via versionutils.SkipIfUnsupported(t, agentlesspolicy.MinVersion, ...), " +
+		"function in this file via versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, ...), " +
 		"and the version-gate-fires-before-any-API-call guarantee has dedicated unit " +
 		"coverage in TestAgentlessPolicyModel_versionGate_firesBeforeAPICall (entitycore_contract_test.go).")
 }

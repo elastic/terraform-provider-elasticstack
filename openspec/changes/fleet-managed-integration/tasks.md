@@ -15,11 +15,11 @@
 
 ## 3. Move and rename the resource package
 
-- [ ] 3.1 Copy `internal/fleet/agentlesspolicy/` → `internal/fleet/managedintegration/`; update `package` declaration in every file
-- [ ] 3.2 Rename resource `Metadata.TypeName` from `elasticstack_fleet_agentless_policy` to `elasticstack_fleet_managed_integration` in `resource.go`
-- [ ] 3.3 Update all internal cross-references to `agentlesspolicy`/`elasticstack_fleet_agentless_policy`, including at minimum: `internal/fleet/policyshape/doc.go`, `internal/fleet/policyshape/input_value.go`, `internal/fleet/policyshape/version.go`, `internal/fleet/policyshape/vars_typed.go`, `internal/fleet/integration_policy/policyshape_aliases.go`, `internal/fleet/integration_policy/resource.go`, and `provider/plugin_framework.go` (grep for `agentlesspolicy`/`agentless_policy`/`agentless-policy` to catch any others)
-- [ ] 3.4 In `provider/plugin_framework.go`: remove `agentlesspolicy.NewResource` from `experimentalResources()`; add `managedintegration.NewResource` there
-- [ ] 3.5 Delete the old `internal/fleet/agentlesspolicy/` package directory
+- [x] 3.1 Copy `internal/fleet/agentlesspolicy/` → `internal/fleet/managedintegration/`; update `package` declaration in every file
+- [x] 3.2 Rename resource `Metadata.TypeName` from `elasticstack_fleet_agentless_policy` to `elasticstack_fleet_managed_integration` in `resource.go`
+- [x] 3.3 Update all internal cross-references to `agentlesspolicy`/`elasticstack_fleet_agentless_policy`, including at minimum: `internal/fleet/policyshape/doc.go`, `internal/fleet/policyshape/input_value.go`, `internal/fleet/policyshape/version.go`, `internal/fleet/policyshape/vars_typed.go`, `internal/fleet/integration_policy/policyshape_aliases.go`, `internal/fleet/integration_policy/resource.go`, and `provider/plugin_framework.go` (grep for `agentlesspolicy`/`agentless_policy`/`agentless-policy` to catch any others)
+- [x] 3.4 In `provider/plugin_framework.go`: remove `agentlesspolicy.NewResource` from `experimentalResources()`; add `managedintegration.NewResource` there
+- [x] 3.5 Delete the old `internal/fleet/agentlesspolicy/` package directory
 
 ## 4. `capabilities.go` — version gate update
 

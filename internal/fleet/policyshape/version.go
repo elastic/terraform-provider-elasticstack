@@ -33,7 +33,7 @@ import "github.com/hashicorp/go-version"
 // of sync on a future Kibana change. Originally introduced (as an
 // integration_policy-local var) for internal/fleet/integration_policy; see
 // that package's design.md Open Question 4 resolution for the original
-// empirical investigation. internal/fleet/agentlesspolicy reuses this same
+// empirical investigation. internal/fleet/managedintegration reuses this same
 // constant for the identical gating requirement on its own `condition`
 // attributes.
 var MinVersionCondition = version.Must(version.NewVersion("9.5.0"))

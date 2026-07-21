@@ -39,8 +39,8 @@ type InputValue struct {
 
 // inputModelSansDefaults mirrors InputModel but omits the Defaults field, for
 // InputType configurations that don't declare a `defaults` attribute at all
-// (e.g. the elasticstack_fleet_agentless_policy resource's InputType --
-// see internal/fleet/agentlesspolicy/schema.go's
+// (e.g. the elasticstack_fleet_managed_integration resource's InputType --
+// see internal/fleet/managedintegration/schema.go's
 // agentlessInputAttributeTypes, which deliberately excludes `defaults`
 // because agentless policies don't surface package-defaults introspection).
 //

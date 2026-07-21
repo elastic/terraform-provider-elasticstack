@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Temporary compatibility wrappers for internal/fleet/agentlesspolicy callers until
+// Temporary compatibility wrappers for internal/fleet/managedintegration callers until
 // task 8 swaps them to managed_integration.go. Delete this file with task 8.
 
 package fleet

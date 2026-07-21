@@ -34,7 +34,7 @@
 // openspec/changes/archive/2026-07-02-fleet-agentless-policy/design.md,
 // Decision 3, for the full empirical investigation and rationale.
 
-package agentlesspolicy
+package managedintegration
 
 import (
 	"context"

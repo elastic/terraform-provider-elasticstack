@@ -38,7 +38,7 @@ import "encoding/json"
 // `input.Config = &map[string]TypedVarEntry{...}` compiles without a
 // conversion), whereas a defined type would not be. Callers that need to
 // merge across several different anonymous field types generically (see
-// agentlesspolicy/update.go's mergeVarsInto) can still do so via a JSON
+// managedintegration/update.go's mergeVarsInto) can still do so via a JSON
 // marshal/unmarshal round trip instead of hand-spelling each anonymous type.
 type TypedVarEntry = struct {
 	Frozen *bool   `json:"frozen,omitempty"`

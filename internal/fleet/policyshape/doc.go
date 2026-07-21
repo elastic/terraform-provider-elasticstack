@@ -18,8 +18,7 @@
 // Package policyshape provides the shared Plugin Framework modeling for
 // Fleet package policy inputs, streams, and vars: the "shape" of a package
 // policy body that is common to every resource that creates or updates one
-// (elasticstack_fleet_integration_policy today; elasticstack_fleet_agentless_policy
-// in a later change).
+// (elasticstack_fleet_integration_policy today; elasticstack_fleet_managed_integration).
 //
 // # Naming
 //

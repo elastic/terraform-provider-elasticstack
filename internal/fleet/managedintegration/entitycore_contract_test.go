@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentlesspolicy
+package managedintegration
 
 import (
 	"context"
@@ -122,7 +122,7 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 // Together, these two facts (the envelope never calls the API when this
 // function errors; this function does error for agentlessPolicyModel against
 // a sub-9.5.0 Kibana) establish that Create/Read/Update/Delete on
-// elasticstack_fleet_agentless_policy never reach the Fleet API when the
+// elasticstack_fleet_managed_integration never reach the Fleet API when the
 // connected Kibana is older than 9.5.0. See
 // openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint" ->

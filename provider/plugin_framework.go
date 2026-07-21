@@ -73,7 +73,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/transform"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentlesspolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/customintegration"
 	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
@@ -81,6 +80,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	integrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integrationds"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/managedintegration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/output"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
@@ -315,7 +315,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		kibanatag.NewResource,
-		agentlesspolicy.NewResource,
+		managedintegration.NewResource,
 	}
 }
 

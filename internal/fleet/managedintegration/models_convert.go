@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package agentlesspolicy: this file implements Task 5's conversion layer
+// Package managedintegration: this file implements Task 5's conversion layer
 // (openspec/changes/fleet-agentless-policy, "5. Resource: CRUD + import"):
 // building the POST /api/fleet/agentless_policies request body from the
 // Plugin Framework model (toCreateBody), and populating the model from the
@@ -37,7 +37,7 @@
 // pattern already used elsewhere in this repo for anonymous API fields (see
 // internal/kibana/dashboard/panel/*/api_conv.go) and by
 // policyshape.VarsMapToTypedMap.
-package agentlesspolicy
+package managedintegration
 
 import (
 	"context"

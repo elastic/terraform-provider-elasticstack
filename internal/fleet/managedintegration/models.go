@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentlesspolicy
+package managedintegration
 
 import (
 	"context"
@@ -36,7 +36,7 @@ import (
 var MinVersion = version.Must(version.NewVersion("9.5.0"))
 
 // agentlessPolicyModel is the Plugin Framework model for the
-// elasticstack_fleet_agentless_policy resource.
+// elasticstack_fleet_managed_integration resource.
 //
 // Task 4 of the fleet-agentless-policy OpenSpec change
 // (openspec/changes/fleet-agentless-policy/tasks.md, section "4. Resource:
