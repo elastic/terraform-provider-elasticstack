@@ -13,7 +13,7 @@ provider "elasticstack" {
   kibana {}
 }
 
-resource "elasticstack_fleet_agentless_policy" "test" {
+resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
   description     = "Agentless CSPM Test Policy"
   policy_template = "cspm"

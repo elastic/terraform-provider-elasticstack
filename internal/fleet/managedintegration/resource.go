@@ -21,11 +21,6 @@
 // Kibana resource envelope, models.go defines the Plugin Framework model,
 // schema.go defines the schema, and create.go/read.go/update.go/delete.go
 // implement the CRUD callbacks.
-//
-// As of Task 3 of the OpenSpec change's tasks.md ("3. Resource: skeleton,
-// model, and spike"), this package is a skeleton: the schema only carries
-// identity attributes and the CRUD callbacks are stubs. The full schema
-// lands in Task 4 and full CRUD lands in Task 5.
 package managedintegration
 
 import (
@@ -41,7 +36,7 @@ var (
 	_ resource.ResourceWithImportState = newResource()
 )
 
-// Resource implements the Fleet agentless policy resource.
+// Resource implements the Fleet managed integration resource.
 type Resource struct {
 	*entitycore.KibanaResource[agentlessPolicyModel]
 	*fleet.SpaceImporter

@@ -74,15 +74,15 @@
 
 ## 10. Examples and documentation
 
-- [ ] 10.1 Rename `examples/resources/elasticstack_fleet_agentless_policy/` → `examples/resources/elasticstack_fleet_managed_integration/`; update the resource type name in all `.tf` files
+- [ ] 10.1 Rename `examples/resources/elasticstack_fleet_agentless_policy/` → `examples/resources/elasticstack_fleet_managed_integration/`; update `import.sh` paths and any doc cross-links. Example `.tf` files already use `elasticstack_fleet_managed_integration` (task 3 follow-up); verify plan-only example coverage after the directory rename
 - [ ] 10.2 Add an example demonstrating in-place `package.version` update
 - [ ] 10.3 Run the provider documentation generator (`make generate`) to produce `docs/resources/fleet_managed_integration.md`; delete `docs/resources/fleet_agentless_policy.md`
 - [ ] 10.4 Verify the generated docs include the experimental notice and the ECH/Serverless-only note
 
 ## 11. Acceptance tests
 
-- [ ] 11.1 Move and rename the acceptance test files from `agentlesspolicy` to `managedintegration`; update composite-ID and resource-type strings
-- [ ] 11.2 Rename `testdata/TestAccResourceAgentlessPolicy*` directories to `TestAccResourceManagedIntegration*`; update fixture HCL to use the new resource type
+- [ ] 11.1 Rename `TestAccResourceAgentlessPolicy*` functions and acc-test package comments for managed integration; verify composite-ID import strings and destroy checks still target `elasticstack_fleet_managed_integration` (resource type and constants updated in task 3 follow-up)
+- [ ] 11.2 Rename `testdata/TestAccResourceAgentlessPolicy*` directories to `TestAccResourceManagedIntegration*`; verify fixture layout matches renamed test functions (fixture HCL already uses `elasticstack_fleet_managed_integration`)
 - [ ] 11.3 Add an acceptance test for in-place `package.version` bump (the headline new capability)
 - [ ] 11.4 Add an acceptance test for in-place `name` change (no replacement)
 - [ ] 11.5 Update `global_data_tags` acceptance test to the new `Map + string_value/number_value` shape; add a number-value case

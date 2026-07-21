@@ -42,7 +42,7 @@ type InputValue struct {
 // (e.g. the elasticstack_fleet_managed_integration resource's InputType --
 // see internal/fleet/managedintegration/schema.go's
 // agentlessInputAttributeTypes, which deliberately excludes `defaults`
-// because agentless policies don't surface package-defaults introspection).
+// because managed integrations don't surface package-defaults introspection).
 //
 // terraform-plugin-framework's ObjectValue.As() requires an exact
 // field/attribute match: a target struct field with no corresponding object
@@ -80,7 +80,7 @@ func (m inputModelSansDefaults) toInputModel() InputModel {
 // inputModelSansDefaults). This is the shared entry point EnabledByDefault,
 // MaybeEnabled, and ObjectSemanticEquals use instead of calling v.As(ctx,
 // &InputModel{}, ...) directly, so none of them hard-fail against the
-// agentless_policy resource's defaults-less InputType.
+// managed integration resource's defaults-less InputType.
 func decodeInputModel(ctx context.Context, v InputValue, opts basetypes.ObjectAsOptions) (InputModel, diag.Diagnostics) {
 	if _, ok := v.AttributeTypes(ctx)[AttrDefaults]; !ok {
 		var m inputModelSansDefaults

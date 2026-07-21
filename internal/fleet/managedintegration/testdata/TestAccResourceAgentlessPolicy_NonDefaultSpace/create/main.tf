@@ -21,7 +21,7 @@ resource "elasticstack_kibana_space" "test" {
   description = "Kibana space for fleet agentless policy acceptance test"
 }
 
-resource "elasticstack_fleet_agentless_policy" "test" {
+resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
   description     = "Agentless CSPM Non-Default-Space Test Policy"
   policy_template = "cspm"

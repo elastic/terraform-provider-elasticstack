@@ -15,19 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package agentlesspolicy_test implements Task 8 of the fleet-agentless-policy
-// OpenSpec change (openspec/changes/fleet-agentless-policy/tasks.md, "8.
-// Acceptance tests"). All tests here require TF_ACC=1 and a live Kibana
-// connection; per design.md and the change's own task description, this
-// resource is only functional against Elastic Cloud Hosted or Serverless
-// (Kibana >= 9.3.0) -- the Fleet agentless_policies API itself rejects
-// self-managed stacks ("supports_agentless is only allowed in serverless and
-// cloud environments"), and the resource's own topology preflight
-// (topology.go) additionally refuses self-managed stacks it can positively
-// identify. versionutils.SkipIfUnsupported still provides the Kibana-version
-// part of the gate (see TestAgentlessPolicy_VersionSkipGating below for why
-// no separate TestAcc-level version-gate test is added on top of that and
-// the existing entitycore_contract_test.go unit coverage).
+// Package managedintegration_test implements acceptance tests for
+// elasticstack_fleet_managed_integration (openspec/changes/fleet-managed-integration).
+// All tests here require TF_ACC=1 and a live Kibana connection; per design.md
+// and the change's own task description, this resource is only functional
+// against Elastic Cloud Hosted or Serverless (Kibana >= 9.3.0) -- the Fleet
+// agentless_policies API itself rejects self-managed stacks ("supports_agentless
+// is only allowed in serverless and cloud environments"), and the resource's
+// own topology preflight (topology.go) additionally refuses self-managed stacks
+// it can positively identify. versionutils.SkipIfUnsupported still provides the
+// Kibana-version part of the gate (see TestAgentlessPolicy_VersionSkipGating
+// below for why no separate TestAcc-level version-gate test is added on top of
+// that and the existing entitycore_contract_test.go unit coverage).
 //
 // This repo's CI (.github/workflows/provider.yml) runs every
 // acceptance-test matrix job against a self-managed stack (`make
@@ -98,7 +97,7 @@ import (
 // upgrade only needs one edit.
 const cspmPackageVersion = "3.4.0"
 
-const testResourceName = "elasticstack_fleet_agentless_policy.test"
+const testResourceName = "elasticstack_fleet_managed_integration.test"
 
 var regexpDefaultSpacePrefix = regexp.MustCompile(`^default/`)
 
@@ -470,7 +469,7 @@ func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
 // external_id secret reference" once a cloud_connector block is present).
 // This resource does not implement policyshape's secret-masking
 // reconciliation (HandleRespSecrets/HandleReqRespSecrets -- wired up for
-// integration_policy but not for agentlesspolicy; see this file's package
+// integration_policy but not for managedintegration; see this file's package
 // comment), so a bare string for a password-type var would normally trip
 // "Provider produced inconsistent result after apply" once Kibana echoes it
 // back as a {id,isSecretRef} object. This test sidesteps that gap (which is
@@ -654,7 +653,7 @@ func checkResourceAgentlessPolicyDestroy(s *terraform.State) error {
 	}
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "elasticstack_fleet_agentless_policy" {
+		if rs.Type != "elasticstack_fleet_managed_integration" {
 			continue
 		}
 

@@ -2,16 +2,19 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
-## Intermediate branch state (tasks 2–8 pending)
+## Intermediate branch state (after task 3; tasks 4–8 pending)
 
-Task 1 intentionally lands on the existing `internal/fleet/agentlesspolicy/` package before tasks 2–8 complete the migration. Until then:
+Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`. The removed type **`elasticstack_fleet_agentless_policy`** no longer appears in the provider schema.
 
-- `MinVersion` is **9.5.0** and the version-gate diagnostic reads **"Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API)."** even though the registered resource type is still `elasticstack_fleet_agentless_policy` and client calls still target the deprecated surfaces.
-- This mismatch is expected and temporary; tasks 2–8 swap endpoints, rename the package/resource, and align schema/comments with the managed_integrations surface.
+Until tasks 4–8 complete the API migration:
+
+- `MinVersion` remains **9.5.0** with the managed-integration version-gate diagnostic.
+- Create/read/update/delete in this package still call the temporary **`agentless_policy_compat.go`** wrappers (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) targeting deprecated Fleet surfaces, not `/api/fleet/managed_integrations`.
+- Acceptance fixtures and example `.tf` files use `elasticstack_fleet_managed_integration`; test function names and example directory paths remain to be renamed in tasks 10–11.
 
 ## 1.1 MinVersion floor — **9.5.0**
 
-**Decision:** Set `MinVersion` to `9.5.0` in `internal/fleet/agentlesspolicy/models.go` (constant) and align `capabilities.go` comments to the same floor.
+**Decision:** Set `MinVersion` to `9.5.0` in `internal/fleet/managedintegration/models.go` (constant) and align `capabilities.go` comments to the same floor.
 
 **Rationale:**
 
@@ -21,12 +24,12 @@ Task 1 intentionally lands on the existing `internal/fleet/agentlesspolicy/` pac
 
 **Code touchpoints (task 1.1):**
 
-- `internal/fleet/agentlesspolicy/models.go` — `MinVersion`, `GetVersionRequirements` error text/comments.
-- `internal/fleet/agentlesspolicy/capabilities.go` — comment alignment only (no separate constant; task 4.2 removes the condition gate).
+- `internal/fleet/managedintegration/models.go` — `MinVersion`, `GetVersionRequirements` error text/comments.
+- `internal/fleet/managedintegration/capabilities.go` — comment alignment only (no separate constant; task 4.2 removes the condition gate).
 
 ## 1.2 `KibanaHTTPAPIsManagedIntegration` ↔ schema mapping
 
-Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, lines ~50017–50091) against `internal/fleet/agentlesspolicy/schema.go` and `models.go`.
+Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, lines ~50017–50091) against `internal/fleet/managedintegration/schema.go` and `models.go`.
 
 ### Direct mappings (no conversion surprise)
 
@@ -94,6 +97,6 @@ Task 2 adds `internal/clients/fleet/managed_integration.go` with CRUD wrappers t
 
 ### Temporary compat bridge — `agentless_policy_compat.go`
 
-`internal/fleet/agentlesspolicy/` still calls the old wrapper names (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) until **task 8** rewires create/read/update/delete to the new managed_integrations wrappers. To preserve buildability without porting package_policies fallbacks into `managed_integration.go`, those legacy wrappers live in **`agentless_policy_compat.go`** (thin re-exports of the deprecated endpoints and `GetPackagePolicy`/`UpdatePackagePolicy` fallbacks).
+`internal/fleet/managedintegration/` still calls the old wrapper names (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) until **task 8** rewires create/read/update/delete to the new managed_integrations wrappers. To preserve buildability without porting package_policies fallbacks into `managed_integration.go`, those legacy wrappers live in **`agentless_policy_compat.go`** (thin re-exports of the deprecated endpoints and `GetPackagePolicy`/`UpdatePackagePolicy` fallbacks).
 
 **Task 8 must delete `agentless_policy_compat.go` and `agentless_policy_compat_test.go`** when resource callers switch to `CreateManagedIntegration` / `ReadManagedIntegration` / `UpdateManagedIntegration` / `DeleteManagedIntegration`.

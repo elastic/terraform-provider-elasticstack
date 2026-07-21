@@ -8,7 +8,7 @@ provider "elasticstack" {
 #
 # This resource is only supported on Elastic Cloud Hosted and Serverless
 # (Security or Observability) deployments running Kibana 9.3.0+.
-resource "elasticstack_fleet_agentless_policy" "cspm_aws" {
+resource "elasticstack_fleet_managed_integration" "cspm_aws" {
   name            = "Agentless CSPM - AWS Production"
   description     = "Cloud Security Posture Management for the AWS production account"
   policy_template = "cspm"
