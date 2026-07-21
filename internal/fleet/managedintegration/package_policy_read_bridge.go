@@ -19,9 +19,11 @@ package managedintegration
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 // managedIntegrationFromPackagePolicyReadResponse projects a simplified
@@ -37,7 +39,12 @@ func managedIntegrationFromPackagePolicyReadResponse(data *kbapi.PackagePolicy) 
 
 	mappedInputs, err := data.Inputs.AsPackagePolicyMappedInputs()
 	if err != nil {
-		mappedInputs = kbapi.PackagePolicyMappedInputs{}
+		diags.AddAttributeError(
+			path.Root("inputs"),
+			"Unexpected package policy inputs format",
+			fmt.Sprintf("Expected simplified (mapped) inputs from GET /api/fleet/package_policies/{id}; %v", err),
+		)
+		return kbapi.KibanaHTTPAPIsManagedIntegration{}, diags
 	}
 
 	wire := map[string]any{

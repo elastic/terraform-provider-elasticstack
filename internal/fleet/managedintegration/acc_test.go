@@ -448,7 +448,7 @@ func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
 // change's design.md "no hard dependency on fleet-cloud-connector" decision)
 // and verifying it round-trips.
 //
-// Per design.md's Decision 4 / models_convert.go's populateFromPackagePolicy
+// Per design.md / models_convert.go's populateFromManagedIntegration
 // comment, cloud_connector is intentionally NOT re-read from the API on
 // Read (it isn't Computed in schema.go, and the read response only exposes a
 // bare cloud_connector_id, not the full object) -- so state round-tripping

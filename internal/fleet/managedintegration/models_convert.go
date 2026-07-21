@@ -21,8 +21,7 @@
 //
 // Several kbapi request/response fields are anonymous Go structs (oapi-codegen
 // emits an unnamed struct type per inline schema property, so e.g.
-// KibanaHTTPAPIsAgentlessPolicy.Inputs and
-// KibanaHTTPAPIsCreateAgentlessPolicyRequest.GlobalDataTags have no nameable
+// KibanaHTTPAPIsCreateManagedIntegrationRequest.Inputs have no nameable
 // Go type). Rather than hand-spelling those anonymous types at every call
 // site (fragile, and liable to drift silently out of sync on the next kbapi
 // regeneration), this file builds plain map[string]any/[]any trees matching
@@ -130,13 +129,23 @@ func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManage
 	}
 
 	map0 := make(map[string]globalDataTagsItemModel, len(*item.GlobalDataTags))
+	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
 	for _, tag := range *item.GlobalDataTags {
 		tagPath := path.Root("global_data_tags").AtMapKey(tag.Name)
-		item := globalDataTagsItemModel{}
+		if _, dup := seenNames[tag.Name]; dup {
+			diags.AddAttributeError(
+				tagPath,
+				"Duplicate global_data_tags name",
+				fmt.Sprintf("API returned global_data_tags name %q more than once.", tag.Name),
+			)
+			continue
+		}
+		seenNames[tag.Name] = struct{}{}
+		tagItem := globalDataTagsItemModel{}
 		if num, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1(); err == nil {
-			item.NumberValue = types.Float32Value(num)
+			tagItem.NumberValue = types.Float32Value(num)
 		} else if str, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0(); err == nil {
-			item.StringValue = types.StringValue(str)
+			tagItem.StringValue = types.StringValue(str)
 		} else {
 			diags.AddAttributeError(
 				tagPath,
@@ -145,7 +154,7 @@ func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManage
 			)
 			continue
 		}
-		map0[tag.Name] = item
+		map0[tag.Name] = tagItem
 	}
 
 	if diags.HasError() {
@@ -228,9 +237,7 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 }
 
 // inputsKnownKeySet captures the set of keys of inputs's map value, or nil if
-// inputs is not Known (null or unknown) -- see populateInputsModel's knownKeys
-// parameter for how this is used to filter an API response before it
-// overwrites the very model this was read from.
+// inputs is not Known (null or unknown) -- see populateInputsFromManagedIntegration.
 func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 	if !typeutils.IsKnown(inputs.MapValue) {
 		return nil
@@ -242,33 +249,43 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 	return keys
 }
 
-// managedIntegrationVarsToMap decodes a managed-integration vars map (typed
+// managedIntegrationVarsToMap decodes managed-integration input vars (typed
 // union values) into a plain map for Normalized JSON encoding.
-func managedIntegrationVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Vars_AdditionalProperties) map[string]any {
+func managedIntegrationVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Vars_AdditionalProperties, attrPath path.Path, diags *diag.Diagnostics) map[string]any {
 	if vars == nil || len(*vars) == 0 {
 		return nil
 	}
 	b, err := json.Marshal(vars)
 	if err != nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
+		return nil
+	}
+	if len(b) == 0 || string(b) == "null" {
 		return nil
 	}
 	var out map[string]any
 	if err := json.Unmarshal(b, &out); err != nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
 		return nil
 	}
 	return out
 }
 
-func managedIntegrationStreamVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Streams_Vars_AdditionalProperties) map[string]any {
+func managedIntegrationStreamVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Streams_Vars_AdditionalProperties, attrPath path.Path, diags *diag.Diagnostics) map[string]any {
 	if vars == nil || len(*vars) == 0 {
 		return nil
 	}
 	b, err := json.Marshal(vars)
 	if err != nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
+		return nil
+	}
+	if len(b) == 0 || string(b) == "null" {
 		return nil
 	}
 	var out map[string]any
 	if err := json.Unmarshal(b, &out); err != nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
 		return nil
 	}
 	return out
@@ -300,7 +317,7 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 		m := agentlessInputModel{
 			Enabled:   types.BoolPointerValue(wire.Enabled),
 			Condition: types.StringPointerValue(wire.Condition),
-			Vars:      typeutils.MarshalToNormalized(managedIntegrationVarsToMap(wire.Vars), inputPath.AtName("vars"), diags),
+			Vars:      typeutils.MarshalToNormalized(managedIntegrationVarsToMap(wire.Vars, inputPath.AtName("vars"), diags), inputPath.AtName("vars"), diags),
 		}
 
 		if wire.Streams != nil && len(*wire.Streams) > 0 {
@@ -310,7 +327,7 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 				streams[streamID] = policyshape.InputStreamModel{
 					Enabled:   types.BoolPointerValue(sw.Enabled),
 					Condition: types.StringPointerValue(sw.Condition),
-					Vars:      typeutils.MarshalToNormalized(managedIntegrationStreamVarsToMap(sw.Vars), streamPath.AtName("vars"), diags),
+					Vars:      typeutils.MarshalToNormalized(managedIntegrationStreamVarsToMap(sw.Vars, streamPath.AtName("vars"), diags), streamPath.AtName("vars"), diags),
 				}
 			}
 			streamsMap, d := types.MapValueFrom(ctx, policyshape.StreamType(), streams)

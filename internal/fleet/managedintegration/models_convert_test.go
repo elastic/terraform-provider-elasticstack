@@ -683,6 +683,181 @@ func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
 		"kspm-cloudbeat/cis_k8s is cross-policy-template noise from the wire response and was never in the known key set")
 }
 
+func TestToCreateBody_omitsInputsWhenNullOrUnknown(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	m := baseTestModel(t)
+	body, diags := m.toCreateBody(ctx)
+	require.False(t, diags.HasError(), "%v", diags)
+	decoded := decodeRequestJSON(t, body)
+	_, present := decoded["inputs"]
+	assert.False(t, present, "null inputs in config must omit the inputs field from the create body")
+
+	m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(agentlessInputType())}
+	body, diags = m.toCreateBody(ctx)
+	require.False(t, diags.HasError(), "%v", diags)
+	decoded = decodeRequestJSON(t, body)
+	_, present = decoded["inputs"]
+	assert.False(t, present, "unknown inputs in config must omit the inputs field from the create body")
+}
+
+func TestPopulateFromManagedIntegration_emptyInputsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"inputs": {}
+	}`)
+
+	m := agentlessPolicyModel{}
+	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, diags.HasError(), "%v", diags)
+	assert.True(t, m.Inputs.IsNull())
+}
+
+func TestPopulateFromManagedIntegration_omittedGlobalDataTagsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"}
+	}`)
+
+	m := agentlessPolicyModel{}
+	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, diags.HasError(), "%v", diags)
+	assert.True(t, m.GlobalDataTags.IsNull())
+}
+
+func TestPopulateFromManagedIntegration_stringGlobalDataTagsReadEncodeRoundTrip(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"global_data_tags": [{"name": "env", "value": "prod"}]
+	}`)
+
+	m := agentlessPolicyModel{}
+	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var tags map[string]globalDataTagsItemModel
+	require.False(t, m.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
+	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
+
+	encodeDiags := diag.Diagnostics{}
+	raw := globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &encodeDiags)
+	require.False(t, encodeDiags.HasError(), "%v", encodeDiags)
+	require.NotNil(t, raw)
+	require.Len(t, *raw, 1)
+	str, err := (*raw)[0].Value.AsKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0()
+	require.NoError(t, err)
+	assert.Equal(t, "prod", str)
+}
+
+func TestPopulateFromManagedIntegration_preservesCloudConnector(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	ccObj, diags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+		Enabled:          types.BoolValue(true),
+		CloudConnectorID: types.StringValue("cc-123"),
+		Name:             types.StringValue("my-connector"),
+		TargetCSP:        types.StringValue("aws"),
+	})
+	require.False(t, diags.HasError())
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"cloud_connector": {"enabled": true, "cloud_connector_id": "cc-other"}
+	}`)
+
+	m := agentlessPolicyModel{CloudConnector: ccObj}
+	popDiags := m.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, popDiags.HasError(), "%v", popDiags)
+
+	var cc cloudConnectorModel
+	require.False(t, m.CloudConnector.As(ctx, &cc, basetypes.ObjectAsOptions{}).HasError())
+	assert.Equal(t, "cc-123", cc.CloudConnectorID.ValueString())
+	assert.Equal(t, "my-connector", cc.Name.ValueString())
+	assert.Equal(t, "aws", cc.TargetCSP.ValueString())
+}
+
+func TestPopulateFromManagedIntegration_explicitSpaceIDs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"}
+	}`)
+
+	m := agentlessPolicyModel{}
+	spaceIDs := []string{"space-a", "space-b"}
+	diags := m.populateFromManagedIntegration(ctx, "default", item, &spaceIDs)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var ids []string
+	require.False(t, m.SpaceIDs.ElementsAs(ctx, &ids, false).HasError())
+	assert.ElementsMatch(t, []string{"space-a", "space-b"}, ids)
+}
+
+func TestGlobalDataTagsToModel_duplicateNames(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "x",
+		"name": "n",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "p", "version": "1.0.0", "title": "t"},
+		"global_data_tags": [
+			{"name": "env", "value": "prod"},
+			{"name": "env", "value": "staging"}
+		]
+	}`)
+
+	var diags diag.Diagnostics
+	m := globalDataTagsToModel(ctx, item, &diags)
+	assert.True(t, diags.HasError())
+	assert.True(t, m.IsNull())
+}
+
 func TestMappedInputKey(t *testing.T) {
 	t.Parallel()
 

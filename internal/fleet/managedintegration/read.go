@@ -25,21 +25,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// readAgentlessPolicy implements Task 5.2 of the fleet-agentless-policy
-// OpenSpec change: reads the current agentless policy via
-// GET /api/fleet/package_policies/{id} (space-aware) -- Decision 4, there is
-// no dedicated agentless GET endpoint. A nil response (HTTP 404) signals the
-// resource was removed out of band; the caller (entitycore's
-// baseResourceEnvelope.Read, or the write-then-read refresh in
-// runKibanaWrite) is responsible for removing it from state.
+// readAgentlessPolicy reads the current managed integration via the temporary
+// GET /api/fleet/package_policies/{id} compat path (see
+// agentless_policy_compat.go) until task 8 switches to
+// ReadManagedIntegration. A nil response (HTTP 404) signals the resource was
+// removed out of band; the caller is responsible for removing it from state.
 //
 // force, force_delete, and create_dataset_templates are preserved from the
-// incoming model -- which is either the prior state (plain Read) or the
-// plan/written model (post-write refresh) -- because
-// populateFromManagedIntegration deliberately never touches them: none of the
-// three round-trip through this API response (see specs/
-// fleet-agentless-policy/spec.md's "Read preserves force_delete" and
-// "Create-only flags are not round-tripped from the API" scenarios).
+// incoming model because populateFromManagedIntegration deliberately never
+// touches them: none round-trip through the read response.
 func readAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) (agentlessPolicyModel, bool, diag.Diagnostics) {
 	fleetClient := client.GetFleetClient()
 

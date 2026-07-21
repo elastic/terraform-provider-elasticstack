@@ -372,7 +372,7 @@ func hasStringUseStateForUnknown(mods []planmodifier.String) bool {
 }
 
 // TestGetSchema_descriptionAndNamespaceRejectEmptyString covers a review
-// finding: populateFromPackagePolicy/populateFromCreateResponse fold the
+// finding: populateFromManagedIntegration/populateFromCreateResponse fold the
 // API's `""` back to null for both description and namespace (see
 // typeutils.NonEmptyStringOrNull in models_convert.go), because Kibana
 // returns an explicit "" (not an omitted field) once a description has been

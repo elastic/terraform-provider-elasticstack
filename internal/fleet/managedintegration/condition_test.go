@@ -296,3 +296,47 @@ func TestPopulateFromManagedIntegration_leavesConditionNullWhenAbsent(t *testing
 	require.Contains(t, streams, "cloud_security_posture.findings")
 	assert.True(t, streams["cloud_security_posture.findings"].Condition.IsNull())
 }
+
+// TestPopulateFromManagedIntegration_roundTripsCondition is the read-path
+// counterpart of TestPopulateFromCreateResponse_roundTripsCondition.
+func TestPopulateFromManagedIntegration_roundTripsCondition(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-02T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
+		"inputs": {
+			"cspm-cloudbeat/cis_aws": {
+				"enabled": true,
+				"condition": "host.os.family == 'linux'",
+				"streams": {
+					"cloud_security_posture.findings": {
+						"enabled": true,
+						"condition": "data_stream.dataset == 'audit'"
+					}
+				}
+			}
+		}
+	}`)
+
+	m := baseTestModel(t)
+	m.PolicyTemplate = types.StringValue("cspm")
+	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var inputs map[string]agentlessInputModel
+	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
+	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
+	assert.Equal(t, "host.os.family == 'linux'", inputs["cspm-cloudbeat/cis_aws"].Condition.ValueString())
+
+	var streams map[string]policyshape.InputStreamModel
+	require.False(t, inputs["cspm-cloudbeat/cis_aws"].Streams.ElementsAs(ctx, &streams, false).HasError())
+	require.Contains(t, streams, "cloud_security_posture.findings")
+	assert.Equal(t, "data_stream.dataset == 'audit'", streams["cloud_security_posture.findings"].Condition.ValueString())
+}

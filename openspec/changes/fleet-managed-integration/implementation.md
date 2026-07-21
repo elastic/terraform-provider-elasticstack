@@ -2,7 +2,7 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
-## Intermediate branch state (after task 5 schema; tasks 6–8 pending)
+## Intermediate branch state (after task 6 conversion; tasks 7–8 pending)
 
 Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`. The removed type **`elasticstack_fleet_agentless_policy`** no longer appears in the provider schema.
 
@@ -10,10 +10,11 @@ Task 4 completed the version-gate update: **`MinVersion` remains 9.5.0** (aligne
 
 Task 5 completed schema changes: `name` and `package.version` are updatable in-place in Terraform; `global_data_tags` is a `MapNestedAttribute` with `string_value` / `number_value`; acceptance fixtures use the map shape for string tags.
 
-Until tasks 6–8 complete the API migration:
+Task 6 completed **`models_convert.go` simplification**: create bodies use `PostFleetManagedIntegrationsJSONRequestBody`; state population uses `populateFromManagedIntegration` against `KibanaHTTPAPIsManagedIntegration` (including after create). Legacy read/update still fetch `PackagePolicy` via compat wrappers; **`package_policy_read_bridge.go`** projects mapped-format responses onto the managed-integration type and **returns an `inputs` attribute error** (no state mutation) when `AsPackagePolicyMappedInputs` fails (typed-array GET bodies). Delete the bridge with task 8.
 
-- `MinVersion` remains **9.5.0** with the managed-integration version-gate diagnostic.
-- Create/read/update/delete in this package still call the temporary **`agentless_policy_compat.go`** wrappers (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) targeting deprecated Fleet surfaces, not `/api/fleet/managed_integrations`.
+Until tasks 7–8 complete the API migration:
+
+- Create/read/update/delete in this package still call the temporary **`agentless_policy_compat.go`** wrappers for some paths; **`buildUpdateBody` remains package-policy typed** (task 7).
 - Acceptance fixtures and example `.tf` files use `elasticstack_fleet_managed_integration`; test function names and example directory paths remain to be renamed in tasks 10–11.
 
 ## Temporary schema vs update-body mismatch (task 5 review — **must close in task 7.3**)
