@@ -20,7 +20,7 @@ The pinned version is maintained in `.terraform-version`. Renovate is expected t
 
 ## Regenerating docs
 
-- **Standard provider docs:** `make docs-generate` (uses `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false`).
+- **Standard provider docs:** `make docs-generate` (uses `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false`). If a committed `docs/resources/fleet_managed_integration.md` already exists, the default pass restores it afterward so the experimental exception page is not removed when tfplugindocs omits that resource from the schema.
 - **Full docs tree including committed experimental exceptions:** `make docs-generate-provider` — runs, in order:
   1. `make docs-generate`
   2. `make docs-generate-fleet-managed-integration`

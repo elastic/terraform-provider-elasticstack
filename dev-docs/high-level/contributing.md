@@ -64,7 +64,7 @@ See [`generated-clients.md`](./generated-clients.md).
 
 See [`documentation.md`](./documentation.md).
 
-When you run `make docs-generate`, the command uses the Terraform CLI version pinned in the repository root `.terraform-version` file via `tfplugindocs`. If docs generation behavior changes because Terraform needs to be updated, update `.terraform-version` rather than relying on a locally installed Terraform version.
+Regenerate provider docs with `make docs-generate-provider` (standard pass plus the scoped fleet managed integration page) or `make gen` when you also need `go generate ./...`. The default `make docs-generate` target uses the Terraform CLI version pinned in the repository root `.terraform-version` file via `tfplugindocs` and preserves any committed `docs/resources/fleet_managed_integration.md` after the non-experimental pass. If docs generation behavior changes because Terraform needs to be updated, update `.terraform-version` rather than relying on a locally installed Terraform version.
 
 ## Repo structure
 

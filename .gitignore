@@ -1,4 +1,5 @@
 false
+node_modules/
 # Documentation generation temp dir (docs-generate-fleet-managed-integration).
 .fleet-managed-integration-docs-tmp/
 

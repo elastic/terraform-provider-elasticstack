@@ -51,6 +51,7 @@ KIBANA_PORT ?= 5601
 
 # Temp output for docs-generate-fleet-managed-integration (gitignored).
 FLEET_MANAGED_INTEGRATION_DOCS_TMP := .fleet-managed-integration-docs-tmp
+FLEET_MANAGED_INTEGRATION_DOC := docs/resources/fleet_managed_integration.md
 
 export ELASTICSEARCH_PORT KIBANA_PORT
 
@@ -196,15 +197,32 @@ copy-kibana-ca: .env ## Copy Kibana CA certificate to local machine
 
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
-	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
-	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
+	@ set -euo pipefail; \
+	terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
+	out="$(FLEET_MANAGED_INTEGRATION_DOC)"; \
+	backup=""; \
+	if [[ -f "$$out" ]]; then \
+	  backup="$$(mktemp)"; \
+	  cp "$$out" "$$backup"; \
+	fi; \
+	restore_fleet_managed_integration_doc() { \
+	  if [[ -n "$$backup" && -f "$$backup" ]]; then \
+	    cp "$$backup" "$$out"; \
+	  fi; \
+	}; \
+	cleanup_backup() { [[ -n "$$backup" ]] && rm -f "$$backup"; }; \
+	trap 'status=$$?; if [[ $$status -ne 0 ]]; then restore_fleet_managed_integration_doc; fi; cleanup_backup; exit $$status' EXIT; \
+	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"; \
+	restore_fleet_managed_integration_doc; \
+	trap - EXIT; \
+	cleanup_backup
 
 .PHONY: docs-generate-fleet-managed-integration
 docs-generate-fleet-managed-integration: tools ## Regenerate docs/resources/fleet_managed_integration.md only (experimental resource; does not publish other experimental entities)
 	@ set -euo pipefail; \
 	terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
 	tmpdir="$(FLEET_MANAGED_INTEGRATION_DOCS_TMP)"; \
-	out="docs/resources/fleet_managed_integration.md"; \
+	out="$(FLEET_MANAGED_INTEGRATION_DOC)"; \
 	cleanup() { rm -rf "$$tmpdir"; }; \
 	trap cleanup EXIT INT TERM HUP; \
 	rm -rf "$$tmpdir"; \
