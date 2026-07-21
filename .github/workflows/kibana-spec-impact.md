@@ -143,12 +143,14 @@ Read `/tmp/gh-aw/agent/kibana-spec-impact-report.json` (downloaded from the pre-
    - If `high_confidence_impacts` is **non-empty**: write a JSON array of Terraform `entity_name` values for which you **actually created** an issue this run (≤ issue cap). If you created **zero** issues despite impacts (for example a deliberate policy skip), write `[]` — the helper **requires** this file in that case so baseline advancement is never accidental.
    - If `high_confidence_impacts` is **empty**: write `[]` (the `--issued` flag is then optional on the helper, but writing the file keeps the flow uniform).
 6. Persist repo memory by running (this **always** advances the analyzed baseline to `target_sha`; dedupe fingerprints are recorded **only** for entity names listed in `--issued`, so capped entities stay eligible next run):
+
    ```
    go run ./scripts/kibana-spec-impact memory-record-from-report \
      --memory /tmp/gh-aw/repo-memory/kibana-spec-impact/memory/kibana-spec-impact/kibana-spec-impact.json \
      --report /tmp/gh-aw/agent/kibana-spec-impact-report.json \
      --issued /tmp/gh-aw/agent/kibana-spec-impact-issued.json
    ```
+
    Use the repo-memory path configured for this workflow if it differs in your environment. Run this after `noop` as well so successful analysis still advances the baseline when no new issues are created.
 
 ## Guardrails
@@ -158,3 +160,20 @@ Read `/tmp/gh-aw/agent/kibana-spec-impact-report.json` (downloaded from the pre-
 - Do not exceed the issue cap. If fewer slots than entities, prioritize alphabetically by `entity_name` unless a maintainer instruction overrides.
 - Weak or broad matches are already filtered out by the helper; do not reopen suppressed fingerprints.
 - Only list entities in `/tmp/gh-aw/agent/kibana-spec-impact-issued.json` when you created their issue; the helper rejects `--issued` names that are not present in `high_confidence_impacts`. Capped eligible entities must be omitted so dedupe state never records them (avoids suppressing never-filed entities).
+
+### Issue title length guardrail
+
+GitHub issue titles are limited to **256 characters total**, including the
+`title-prefix` that `create-issue` prepends automatically.
+
+- This workflow's prefix is `"[kibana-spec-impact] "` (21 characters),
+  leaving **235** characters for the title you provide.
+- Before calling `create-issue`, verify that
+  `len("[kibana-spec-impact] ") + len(your title)` is **≤ 256**.
+- For this workflow, the agent-provided title should normally be only the
+  Terraform entity name. Do not add extra prose such as "OpenAPI impact" to
+  the title; that detail belongs in the issue body.
+- If the natural title would exceed the limit, shorten the variable portion.
+  Prefer the core entity name over long descriptive phrases.
+- Do not include markdown heading markers (`#`), emoji, or the prefix label
+  redundantly in the title. The title field is plain text.

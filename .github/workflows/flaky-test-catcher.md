@@ -102,31 +102,56 @@ The workflow reached this point only because `has_ci_failures` is `true` and `is
 
 - Never create more than `${{ needs.pre_activation.outputs.issue_slots_available }}` issues in a single run.
 - Label each issue `flaky-test`.
-- Issue title format: `<BaseTestName>` (the `[flaky-test] ` prefix is added automatically by `create-issue`).
+- Issue title format: `<BaseTestName>` (the `[flaky-test]` prefix is added automatically by `create-issue`).
+
+### Issue title length guardrail
+
+GitHub issue titles are limited to **256 characters total**, including the
+`title-prefix` that `create-issue` prepends automatically.
+
+- This workflow's prefix is `"[flaky-test] "` (13 characters),
+  leaving **243** characters for the title you provide.
+- Before calling `create-issue`, verify that
+  `len("[flaky-test] ") + len(your title)` is **≤ 256**.
+- Continue using the base test name as the agent-provided title. Most base
+  test names fit within the remaining space; if a base test name is unusually
+  long and would exceed the limit, use up to the first 243 characters and
+  place the full name in the issue body.
+- Keep titles concise. Move full file paths, function signatures, attribute
+  lists, failure excerpts, and detailed descriptions into the issue body.
+- Do not include markdown heading markers (`#`), emoji, or the prefix label
+  redundantly in the title. The title field is plain text.
 
 Each issue body must include the following sections (use `##` headings to match SKILL.md):
 
 ## Broken Tests
+
 List the specific test function names (with subtests) that failed in 100% of sampled runs.
 
 ## Flaky Tests
+
 List the specific test function names that failed in ≥ 20% but < 100% of runs, with each test's observed fail rate (e.g. `3/5 runs`).
 
 ## Commit Analysis
+
 Note any commits on `main` since the oldest failing run that appear to address the failure. If a relevant fix commit is found, note: "may already be addressed in `<sha>`". If no relevant commits found, note that explicitly.
 
 ## Sample Failure Output
+
 Paste the most informative `--- FAIL:` log excerpt from the failed runs to give context to the implementer.
 
 ## Affected Stack Versions
+
 List the Elastic Stack versions (Elasticsearch, Kibana) reported in the failing job environment, if discoverable from the logs or job metadata.
 
 ## Noop conditions
 
 Call `noop` with a concise explanation when:
+
 - All affected base tests already have an open `flaky-test` issue (nothing new to open).
 - All test failures are below the 20% fail-rate threshold (noise only, no actionable signal).
 - No `--- FAIL:` patterns were found in any of the failed run logs.
 
 ## Dispatch
+
 After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.

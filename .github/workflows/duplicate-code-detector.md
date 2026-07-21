@@ -93,6 +93,7 @@ Detect and report code duplication by:
 ### 1. Changed Files Analysis
 
 Identify and analyze modified files:
+
 - Determine files changed in the recent commits using `git log` and `git diff`
 - Focus on source code files (programming language files)
 - **Exclude test files** from analysis (files matching patterns: `*_test.*`, `*.test.*`, `*.spec.*`, `test_*.*`, or located in directories named `test`, `tests`, `__tests__`, or `spec`)
@@ -106,6 +107,7 @@ Identify and analyze modified files:
 Apply analysis to find duplicates:
 
 **Pattern Search**:
+
 - Search for duplication indicators using grep and code search:
   - Similar function signatures
   - Repeated logic blocks
@@ -115,6 +117,7 @@ Apply analysis to find duplicates:
 - Identify structural similarities in code organization
 
 **Semantic Analysis**:
+
 - Compare code blocks for logical similarity beyond textual matching
 - Identify different implementations of the same functionality
 - Look for copy-paste patterns with minor variations
@@ -124,12 +127,14 @@ Apply analysis to find duplicates:
 Assess findings to identify true code duplication:
 
 **Duplication Types**:
+
 - **Exact Duplication**: Identical code blocks in multiple locations
 - **Structural Duplication**: Same logic with minor variations (different variable names, etc.)
 - **Functional Duplication**: Different implementations of the same functionality
 - **Copy-Paste Programming**: Similar code blocks that could be extracted into shared utilities
 
 **Assessment Criteria**:
+
 - **Severity**: Amount of duplicated code (lines of code, number of occurrences)
 - **Impact**: Where duplication occurs (critical paths, frequently called code)
 - **Maintainability**: How duplication affects code maintainability
@@ -140,12 +145,14 @@ Assess findings to identify true code duplication:
 Create separate issues for each distinct duplication pattern found, up to `${{ needs.pre_activation.outputs.issue_slots_available }}` patterns this run. Each pattern should get its own issue to enable focused remediation.
 
 **When to Create Issues**:
+
 - Only create issues if significant duplication is found (threshold: >10 lines of duplicated code OR 3+ instances of similar patterns)
 - **Create one issue per distinct duplication pattern** - do NOT bundle multiple patterns in a single issue
 - Limit to the top `${{ needs.pre_activation.outputs.issue_slots_available }}` most significant patterns if more are found
 - Use the `create_issue` tool from safe-outputs MCP **once for each pattern**
 
 **Issue Contents for Each Pattern**:
+
 - **Executive Summary**: Brief description of this specific duplication pattern
 - **Duplication Details**: Specific locations and code blocks for this pattern only
 - **Severity Assessment**: Impact and maintainability concerns for this pattern
@@ -237,6 +244,7 @@ For each distinct duplication pattern found, create a separate issue using this 
 - **Detection Method**: Semantic code analysis
 - **Commit**: ${{ github.event.head_commit.id }}
 - **Analysis Date**: [timestamp]
+
 ````
 
 ## Operational Guidelines
@@ -266,6 +274,24 @@ For each distinct duplication pattern found, create a separate issue using this 
 - Suggest practical refactoring approaches
 - Assign issue to @copilot for automated remediation
 - Use descriptive titles that clearly identify the specific pattern (e.g., "Duplicate Code: Error Handling Pattern in Parser Module")
+
+#### Issue title length guardrail
+
+GitHub issue titles are limited to **256 characters total**, including the
+`title-prefix` that `create-issue` prepends automatically.
+
+- This workflow's prefix is `"[duplicate-code] "` (17 characters),
+  leaving **239** characters for the title you provide.
+- Before calling `create-issue`, verify that
+  `len("[duplicate-code] ") + len(your title)` is **≤ 256**.
+- Keep titles concise. Move full file paths, function signatures, attribute
+  lists, failure excerpts, and detailed descriptions into the issue body.
+- If the natural title would exceed the limit, shorten the variable portion.
+  Prefer a short pattern label over long descriptive phrases (e.g., use
+  "validation helper duplication in elasticsearch package" rather than a title
+  containing multiple file paths).
+- Do not include markdown heading markers (`#`), emoji, or the prefix label
+  redundantly in the title. The title field is plain text.
 
 ## Dispatch
 After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.

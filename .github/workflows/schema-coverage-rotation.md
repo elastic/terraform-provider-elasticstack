@@ -98,34 +98,42 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
 
 1. Read `.agents/skills/schema-coverage/SKILL.md` and follow it strictly when evaluating coverage.
 2. Build the canonical entity inventory with:
+
    ```
    go run ./scripts/schema-coverage-rotation prepare \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json
    ```
+
 3. After the inventory has been prepared, select exactly `${{ needs.pre_activation.outputs.issue_slots_available }}` entities to analyze by running:
+
    ```
    go run ./scripts/schema-coverage-rotation select \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
      --count ${{ needs.pre_activation.outputs.issue_slots_available }}
    ```
+
    The command prints a JSON array on stdout. Each entry has a `type` field (`"resource"` or `"data source"`) and a `name` field (the Terraform entity name). Log that exact JSON array to the job output, then use it to determine which entities to analyze and their types.
    Reuse this exact JSON array for step 5 without mixing in non-JSON log lines.
 4. For each selected entity:
    - Perform schema coverage analysis using the skill rubric.
    - Determine whether there are actionable testing gaps.
 5. After completing analysis of all selected entities, persist all analysis timestamps in a single atomic write by running:
+
    ```
    go run ./scripts/schema-coverage-rotation record \
      --memory /tmp/gh-aw/repo-memory/schema-coverage-rotation/memory/schema-coverage-rotation/schema-coverage.json \
      --entities '<json>'
    ```
+
    where `<json>` is the full JSON array returned by step 3 (the `select` output), unchanged except for shell-safe quoting.
+
 ## Issue creation rules
 
 - Create one issue per analyzed entity only when actionable testing gaps exist.
 - Never create more issues than `${{ needs.pre_activation.outputs.issue_slots_available }}` for the current run.
 
 Issue content must include:
+
 - Entity name.
 - Entity type (`resource` or `data source`).
 - Entity implementation directory path.
@@ -138,5 +146,24 @@ If an analyzed entity has no actionable gaps, do not create an issue for it.
 
 If at least one entity was analyzed but none has actionable gaps, you MUST call `noop` with a short reason.
 
+### Issue title length guardrail
+
+GitHub issue titles are limited to **256 characters total**, including the
+`title-prefix` that `create-issue` prepends automatically.
+
+- This workflow's prefix is `"[schema-coverage] "` (18 characters),
+  leaving **238** characters for the title you provide.
+- Before calling `create-issue`, verify that
+  `len("[schema-coverage] ") + len(your title)` is **≤ 256**.
+- For this workflow, the agent-provided title should normally be only the
+  Terraform entity name. Do not add extra prose such as "schema coverage gaps"
+  to the title; that detail belongs in the issue body.
+- If the natural title would exceed the limit, shorten the variable portion.
+  Prefer the core identifier (pattern label, entity name, or base test name)
+  over long descriptive phrases.
+- Do not include markdown heading markers (`#`), emoji, or the prefix label
+  redundantly in the title. The title field is plain text.
+
 ## Dispatch
+
 After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
