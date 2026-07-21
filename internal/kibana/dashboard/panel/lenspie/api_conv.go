@@ -396,16 +396,7 @@ func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueCo
 					}
 				}
 			}
-			groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
-				CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
-				Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
-				Column     string                            `json:"column"`
-				Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
-				Label      *string                           `json:"label,omitempty"`
-			}](rawEntries, &diags)
-			if !diags.HasError() {
-				chart.GroupBy = &groupBy
-			}
+			lenscommon.SetEsqlGroupByOnAPI(rawEntries, &chart.GroupBy, &diags)
 		}
 
 		chart.Type = kbapi.KibanaHTTPAPIsPieESQLByValuePanelTypePie

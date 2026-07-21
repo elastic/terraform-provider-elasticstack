@@ -513,17 +513,10 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 		if diags.HasError() {
 			return api, diags
 		}
-		groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
-			CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
-			Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
-			Column     string                            `json:"column"`
-			Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
-			Label      *string                           `json:"label,omitempty"`
-		}](entries, &diags)
+		lenscommon.SetEsqlGroupByOnAPI(entries, &api.GroupBy, &diags)
 		if diags.HasError() {
 			return api, diags
 		}
-		api.GroupBy = &groupBy
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)

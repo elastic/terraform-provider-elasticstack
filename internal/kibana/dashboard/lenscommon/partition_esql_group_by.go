@@ -58,6 +58,16 @@ func BuildEsqlGroupBySliceForAPI[T any](entries []EsqlGroupByAPIFields, diags *d
 	return out
 }
 
+// SetEsqlGroupByOnAPI converts entries to the kbapi slice type inferred from dst and assigns
+// the result. T is deduced from dst so callers need not write an explicit anonymous-struct
+// type argument. On error, dst is left unchanged.
+func SetEsqlGroupByOnAPI[T any](entries []EsqlGroupByAPIFields, dst **[]T, diags *diag.Diagnostics) {
+	slice := BuildEsqlGroupBySliceForAPI[T](entries, diags)
+	if !diags.HasError() {
+		*dst = &slice
+	}
+}
+
 // PopulatePartitionEsqlGroupByFromAPI converts a slice of EsqlGroupByAPIFields into a
 // []models.PartitionEsqlGroupByModel. It is the single authoritative implementation of
 // the from-API ES|QL group-by mapping shared by treemap and mosaic.

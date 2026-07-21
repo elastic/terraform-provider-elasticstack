@@ -258,17 +258,10 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPA
 	if diags.HasError() {
 		return api, diags
 	}
-	groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
-		CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
-		Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
-		Column     string                            `json:"column"`
-		Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
-		Label      *string                           `json:"label,omitempty"`
-	}](entries, &diags)
+	lenscommon.SetEsqlGroupByOnAPI(entries, &api.GroupBy, &diags)
 	if diags.HasError() {
 		return api, diags
 	}
-	api.GroupBy = &groupBy
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
