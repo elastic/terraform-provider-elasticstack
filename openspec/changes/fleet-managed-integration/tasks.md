@@ -6,12 +6,12 @@
 
 ## 2. New client — `internal/clients/fleet/managed_integration.go`
 
-- [ ] 2.1 Create `internal/clients/fleet/managed_integration.go` with wrappers: `CreateManagedIntegration`, `ReadManagedIntegration`, `UpdateManagedIntegration`, `DeleteManagedIntegration` — all targeting `managed_integrations` endpoints
-- [ ] 2.2 Wire `SpaceAwarePathRequestEditor(spaceID)` into all four wrappers (mirroring the existing agentless policy client)
-- [ ] 2.3 Retain `ConflictRetry` wrapping and `?force=` mapping on Delete; map `404` to nil/no-op for Read and Delete
-- [ ] 2.4 Remove the `ReadAgentlessPolicyViaPackagePolicy` and `UpdateAgentlessPolicyViaPackagePolicy` fallback wrappers (do not port them)
-- [ ] 2.5 Add unit tests for the new client wrappers, including the 404 sentinel behaviour
-- [ ] 2.6 Delete `internal/clients/fleet/agentless_policy.go` and its test file
+- [x] 2.1 Create `internal/clients/fleet/managed_integration.go` with wrappers: `CreateManagedIntegration`, `ReadManagedIntegration`, `UpdateManagedIntegration`, `DeleteManagedIntegration` — all targeting `managed_integrations` endpoints
+- [x] 2.2 Wire `SpaceAwarePathRequestEditor(spaceID)` into all four wrappers (mirroring the existing agentless policy client)
+- [x] 2.3 Retain `ConflictRetry` wrapping and `?force=` mapping on Delete; map `404` to nil/no-op for Read and Delete
+- [x] 2.4 Remove the `ReadAgentlessPolicyViaPackagePolicy` and `UpdateAgentlessPolicyViaPackagePolicy` fallback wrappers (do not port them)
+- [x] 2.5 Add unit tests for the new client wrappers, including the 404 sentinel behaviour
+- [x] 2.6 Delete `internal/clients/fleet/agentless_policy.go` and its test file
 
 ## 3. Move and rename the resource package
 

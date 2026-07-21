@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// Temporary compatibility wrappers for internal/fleet/agentlesspolicy callers until
+// task 8 swaps them to managed_integration.go. Delete this file with task 8.
+
 package fleet
 
 import (
@@ -28,12 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// CreateAgentlessPolicy creates a new Fleet agentless policy. The endpoint is
-// a bundled create: Kibana provisions a hidden managed agent policy and a
-// package policy in one call. The returned item's Id field is the package
-// policy ID, which is the identifier used for all subsequent read, update,
-// and delete operations (see Decision 4 in the fleet-agentless-policy
-// OpenSpec change).
+// CreateAgentlessPolicy creates a new Fleet agentless policy via the deprecated
+// POST /api/fleet/agentless_policies endpoint.
 func CreateAgentlessPolicy(ctx context.Context, client *Client, spaceID string, body kbapi.PostFleetAgentlessPoliciesJSONRequestBody) (*kbapi.KibanaHTTPAPIsManagedIntegration, diag.Diagnostics) {
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.KibanaHTTPAPIsManagedIntegration, int, diag.Diagnostics) {
 		resp, err := client.API.PostFleetAgentlessPoliciesWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
@@ -51,36 +50,20 @@ func CreateAgentlessPolicy(ctx context.Context, client *Client, spaceID string, 
 	})
 }
 
-// ReadAgentlessPolicyViaPackagePolicy reads the current state of an agentless
-// policy via GET /api/fleet/package_policies/{id}. There is no dedicated GET
-// endpoint for agentless policies; the package_policies endpoint is the
-// documented fallback and works against agentless-created policies (see
-// Decision 4). Returns (nil, nil) on HTTP 404, signalling that the policy was
-// removed out of band.
+// ReadAgentlessPolicyViaPackagePolicy reads an agentless policy via the
+// package_policies fallback. Returns (nil, nil) on HTTP 404.
 func ReadAgentlessPolicyViaPackagePolicy(ctx context.Context, client *Client, spaceID, policyID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	return GetPackagePolicy(ctx, client, policyID, spaceID)
 }
 
-// UpdateAgentlessPolicyViaPackagePolicy updates an agentless policy via
-// PUT /api/fleet/package_policies/{id}. There is no dedicated PUT endpoint
-// for agentless policies; the package_policies endpoint is the documented
-// fallback (see Decision 4). Only the in-place-updatable allowlist of fields
-// should be sent by callers (see Decision 3).
+// UpdateAgentlessPolicyViaPackagePolicy updates an agentless policy via the
+// package_policies fallback.
 func UpdateAgentlessPolicyViaPackagePolicy(ctx context.Context, client *Client, spaceID, policyID string, body kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	return UpdatePackagePolicy(ctx, client, policyID, spaceID, body)
 }
 
-// DeleteAgentlessPolicy deletes an existing Fleet agentless policy by its
-// package policy ID. HTTP 404 is treated as success (idempotent delete).
-// When force is true, the request is sent with ?force=true to delete the
-// policy even if the underlying agent policy is managed.
-//
-// The returned bool reports whether the (final, post-retry) response was an
-// HTTP 409 Conflict, so callers can offer a force_delete hint without having
-// to pattern-match diagutil's generated diagnostic summary text -- see
-// internal/fleet/agentlesspolicy/delete.go's conflictHintDiagnostics, which
-// used to do exactly that and was flagged in review as brittle against
-// wording changes or a switch to a different error-reporting helper.
+// DeleteAgentlessPolicy deletes an agentless policy via the deprecated
+// DELETE /api/fleet/agentless_policies/{id} endpoint.
 func DeleteAgentlessPolicy(ctx context.Context, client *Client, spaceID, policyID string, force bool) (isConflict bool, diags diag.Diagnostics) {
 	params := kbapi.DeleteFleetAgentlessPoliciesPolicyidParams{}
 	if force {
