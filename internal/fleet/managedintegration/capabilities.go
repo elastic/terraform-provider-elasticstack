@@ -17,42 +17,9 @@
 
 package managedintegration
 
-import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-// agentlessPolicyFeatures captures Kibana-version-gated capabilities of the
-// connected deployment that affect how this resource builds its request
-// bodies. It mirrors internal/fleet/integration_policy/capabilities.go's
-// integrationPolicyFeatures, trimmed to the one capability this resource
-// currently still checks at runtime: `condition` on inputs/streams.
-//
-// The resource-level MinVersion floor (models.go, 9.5.0 for
-// /api/fleet/managed_integrations) now matches policyshape.MinVersionCondition,
-// so this separate gate is redundant and will be removed in task 4.2 of the
-// fleet-managed-integration OpenSpec change.
-type agentlessPolicyFeatures struct {
-	SupportsCondition bool
-}
-
-// resolveAgentlessPolicyFeatures resolves agentlessPolicyFeatures against the
-// connected Kibana. Called from both createAgentlessPolicy and
-// updateAgentlessPolicy before building a request body, so that a `condition`
-// value the connected Kibana doesn't support is caught as a clean
-// attribute-scoped Terraform diagnostic (see validateInputConditionSupport in
-// models_convert.go) instead of surfacing as a raw Kibana 400 ("Additional
-// properties are not allowed").
-func resolveAgentlessPolicyFeatures(ctx context.Context, client *clients.KibanaScopedClient) (agentlessPolicyFeatures, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var f agentlessPolicyFeatures
-
-	var bitDiags diag.Diagnostics
-	f.SupportsCondition, bitDiags = client.EnforceMinVersion(ctx, policyshape.MinVersionCondition)
-	diags.Append(bitDiags...)
-
-	return f, diags
-}
+// Version-gated capabilities for this resource are enforced solely via
+// MinVersion and GetVersionRequirements in models.go (9.5.0 for
+// /api/fleet/managed_integrations). That floor matches
+// policyshape.MinVersionCondition, so `condition` on inputs/streams does not
+// need a separate runtime EnforceMinVersion check once the resource-level gate
+// passes.

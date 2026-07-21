@@ -77,17 +77,7 @@ func createAgentlessPolicy(
 
 	fleetClient := client.GetFleetClient()
 
-	// Resolve version-gated capabilities (currently just `condition` support,
-	// added in Kibana 9.5.0) before building the request body: see
-	// capabilities.go's resolveAgentlessPolicyFeatures and
-	// models_convert.go's validateInputConditionSupport.
-	feat, featDiags := resolveAgentlessPolicyFeatures(ctx, client)
-	diags.Append(featDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
-	}
-
-	body, bodyDiags := plan.toCreateBody(ctx, feat)
+	body, bodyDiags := plan.toCreateBody(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags

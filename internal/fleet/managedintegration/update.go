@@ -219,17 +219,7 @@ func updateAgentlessPolicy(
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
 
-	// Resolve version-gated capabilities (currently just `condition` support,
-	// added in Kibana 9.5.0) before building the request body: see
-	// capabilities.go's resolveAgentlessPolicyFeatures and
-	// models_convert.go's validateInputConditionSupport.
-	feat, featDiags := resolveAgentlessPolicyFeatures(ctx, client)
-	diags.Append(featDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
-	}
-
-	body, bodyDiags := buildUpdateBody(ctx, plan, current, feat)
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
@@ -262,19 +252,10 @@ func updateAgentlessPolicy(
 // must exactly match the existing policy -- the spike found that omitting
 // policy_id/policy_ids produces a 400 ("Cannot change agent policies of an
 // agentless integration"), even when not actually changing them.
-func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kbapi.PackagePolicy, feat agentlessPolicyFeatures) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+func buildUpdateBody(ctx context.Context, plan agentlessPolicyModel, current *kbapi.PackagePolicy) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Decode `inputs` (and each input's nested `streams`) exactly once, and
-	// validate `condition` support against the connected Kibana's version
-	// before doing any further work -- see validateInputConditionSupport's
-	// doc comment (models_convert.go) and capabilities.go's
-	// resolveAgentlessPolicyFeatures.
 	decodedInputs := plan.decodeInputs(ctx, &diags)
-	if condDiags := validateInputConditionSupport(decodedInputs, feat.SupportsCondition); condDiags.HasError() {
-		diags.Append(condDiags...)
-		return kbapi.PackagePolicyRequestTypedInputs{}, diags
-	}
 
 	name := current.Name
 	body := kbapi.PackagePolicyRequestTypedInputs{

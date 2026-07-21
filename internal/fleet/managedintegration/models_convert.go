@@ -17,7 +17,7 @@
 
 // Package managedintegration: this file implements Task 5's conversion layer
 // (openspec/changes/fleet-agentless-policy, "5. Resource: CRUD + import"):
-// building the POST /api/fleet/agentless_policies request body from the
+// building the POST /api/fleet/managed_integrations request body from the
 // Plugin Framework model (toCreateBody), and populating the model from the
 // two distinct API response shapes this resource consumes -- the bundled
 // create response (KibanaHTTPAPIsAgentlessPolicy, populateFromCreateResponse)
@@ -378,11 +378,11 @@ func populateInputsModel(ctx context.Context, wireInputs map[string]mappedInputW
 
 // decodedAgentlessInput is the once-decoded form of a single `inputs` map
 // element, with its nested `streams` map (if any) already decoded too.
-// decodeInputs produces this so that validateInputConditionSupport and the
-// request-body builders (applyCreateInputs, buildUpdateInputs) don't each
-// independently re-run the reflection-based typeutils.MapTypeAs decode over
-// the same inputs+streams structure -- mirroring
-// internal/fleet/integration_policy/models.go's decodedInput/decodeInputs.
+// decodeInputs produces this so that the request-body builders
+// (applyCreateInputs, buildUpdateInputs) don't each independently re-run the
+// reflection-based typeutils.MapTypeAs decode over the same inputs+streams
+// structure -- mirroring internal/fleet/integration_policy/models.go's
+// decodedInput/decodeInputs.
 type decodedAgentlessInput struct {
 	model   agentlessInputModel
 	streams map[string]policyshape.InputStreamModel // nil if streams is null/unknown
@@ -413,67 +413,16 @@ func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diag
 	return decoded
 }
 
-// validateInputConditionSupport returns an attribute-scoped error diagnostic
-// for every input/stream `condition` value that is set when the connected
-// Kibana version does not support the `condition` field on package-policy
-// inputs/streams (added in Kibana 9.5.0; see policyshape.MinVersionCondition).
-// It is a no-op when the version supports condition or when no inputs are
-// configured. Mirrors internal/fleet/integration_policy/models.go's
-// validateConditionSupport -- the diagnostic wording is kept identical on
-// purpose, for consistency across both resources that surface `condition` on
-// package-policy inputs/streams.
-func validateInputConditionSupport(decoded map[string]decodedAgentlessInput, supportsCondition bool) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if supportsCondition {
-		return diags
-	}
-
-	for inputID, di := range decoded {
-		inputPath := path.Root("inputs").AtMapKey(inputID)
-
-		if typeutils.IsKnown(di.model.Condition) {
-			diags.AddAttributeError(
-				inputPath.AtName("condition"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Input condition is only supported in Elastic Stack %s and above", policyshape.MinVersionCondition),
-			)
-		}
-
-		for streamID, streamModel := range di.streams {
-			if typeutils.IsKnown(streamModel.Condition) {
-				diags.AddAttributeError(
-					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Stream condition is only supported in Elastic Stack %s and above", policyshape.MinVersionCondition),
-				)
-			}
-		}
-	}
-
-	return diags
-}
-
 // toCreateBody implements Task 5.1: compiles the config/plan model into
 // PostFleetAgentlessPoliciesJSONRequestBody. Per spec: cloud_connector is
 // omitted entirely when the block is not present in config (typeutils.IsKnown
 // returns false for a null, non-Computed attribute), but sent -- even with
 // only `enabled` set -- when the block is present; force and
 // create_dataset_templates are sent on create only.
-func (m agentlessPolicyModel) toCreateBody(ctx context.Context, feat agentlessPolicyFeatures) (kbapi.PostFleetAgentlessPoliciesJSONRequestBody, diag.Diagnostics) {
+func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleetAgentlessPoliciesJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Decode `inputs` (and each input's nested `streams`) exactly once, and
-	// validate `condition` support against the connected Kibana's version
-	// before doing any further work: see validateInputConditionSupport's doc
-	// comment and capabilities.go's resolveAgentlessPolicyFeatures. A rejected
-	// condition here surfaces as a clean attribute-scoped Terraform
-	// diagnostic instead of a raw Kibana 400 from the eventual POST.
 	decodedInputs := m.decodeInputs(ctx, &diags)
-	if condDiags := validateInputConditionSupport(decodedInputs, feat.SupportsCondition); condDiags.HasError() {
-		diags.Append(condDiags...)
-		return kbapi.PostFleetAgentlessPoliciesJSONRequestBody{}, diags
-	}
 
 	var pkg packageModel
 	diags.Append(m.Package.As(ctx, &pkg, basetypes.ObjectAsOptions{})...)

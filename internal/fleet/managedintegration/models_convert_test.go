@@ -93,7 +93,7 @@ func TestToCreateBody_basicFields(t *testing.T) {
 	m.Force = types.BoolValue(true)
 	m.CreateDatasetTemplates = types.BoolValue(true)
 
-	body, diags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, diags := m.toCreateBody(ctx)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -119,7 +119,7 @@ func TestToCreateBody_cloudConnectorOmittedWhenNotConfigured(t *testing.T) {
 	m := baseTestModel(t)
 	// CloudConnector left as ObjectNull by baseTestModel -- block absent from config.
 
-	body, diags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, diags := m.toCreateBody(ctx)
 	require.False(t, diags.HasError(), "%v", diags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -141,7 +141,7 @@ func TestToCreateBody_cloudConnectorSentWithEnabledFalse(t *testing.T) {
 	require.False(t, diags.HasError())
 	m.CloudConnector = ccObj
 
-	body, bodyDiags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := m.toCreateBody(ctx)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -164,7 +164,7 @@ func TestToCreateBody_cloudConnectorWithID(t *testing.T) {
 	require.False(t, diags.HasError())
 	m.CloudConnector = ccObj
 
-	body, bodyDiags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := m.toCreateBody(ctx)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -186,7 +186,7 @@ func TestToCreateBody_globalDataTags(t *testing.T) {
 	require.False(t, diags.HasError())
 	m.GlobalDataTags = tagsList
 
-	body, bodyDiags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := m.toCreateBody(ctx)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -208,7 +208,7 @@ func TestToCreateBody_varsJSON(t *testing.T) {
 	require.False(t, diags.HasError())
 	m.VarsJSON = varsJSON
 
-	body, bodyDiags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := m.toCreateBody(ctx)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -242,7 +242,7 @@ func TestToCreateBody_inputs(t *testing.T) {
 	require.False(t, diags.HasError())
 	m.Inputs = inputsValue
 
-	body, bodyDiags := m.toCreateBody(ctx, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := m.toCreateBody(ctx)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -692,7 +692,7 @@ func TestBuildUpdateBody(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.GlobalDataTags = tagsList
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -789,7 +789,7 @@ func TestBuildUpdateBody_packageTitleOverlay(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Package = pkgObj
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -834,7 +834,7 @@ func TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
@@ -913,7 +913,7 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current, agentlessPolicyFeatures{SupportsCondition: true})
+	body, bodyDiags := buildUpdateBody(ctx, plan, current)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
