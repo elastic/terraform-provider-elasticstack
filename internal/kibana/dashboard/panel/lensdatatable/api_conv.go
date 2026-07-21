@@ -39,18 +39,15 @@ func datatableNoESQLConfigFromAPI(
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
+	m.LensChartBaseTFModel = base
 
 	m.Styling = &models.DatatableStylingModel{}
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {
@@ -59,8 +56,6 @@ func datatableNoESQLConfigFromAPI(
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 
 	if len(api.Metrics) > 0 {
 		m.Metrics = make([]models.DatatableMetricModel, len(api.Metrics))
@@ -194,25 +189,20 @@ func datatableESQLConfigFromAPI(
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
+	m.LensChartBaseTFModel = base
 
 	m.Styling = &models.DatatableStylingModel{}
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {
 		return stylingDiags
 	}
-
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 
 	if api.Metrics != nil && len(*api.Metrics) > 0 {
 		m.Metrics = make([]models.DatatableMetricModel, len(*api.Metrics))

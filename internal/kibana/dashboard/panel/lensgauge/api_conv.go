@@ -36,23 +36,18 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = v
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateGaugeMetricDefaults, &diags)
@@ -84,20 +79,17 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulateGaugeMetricDefaults)
 
 	em := &models.GaugeEsqlMetric{
