@@ -239,38 +239,11 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		m.EsqlGroupBy = make([]models.PartitionEsqlGroupByModel, len(*api.GroupBy))
+		src := make([]lenscommon.EsqlGroupByAPIFields, len(*api.GroupBy))
 		for i, gb := range *api.GroupBy {
-			colorBytes, err := json.Marshal(gb.Color)
-			if err != nil {
-				diags.AddError("Failed to marshal esql group_by color", err.Error())
-				continue
-			}
-			formatBytes, err := json.Marshal(gb.Format)
-			if err != nil {
-				diags.AddError("Failed to marshal esql group_by format", err.Error())
-				continue
-			}
-			if string(formatBytes) == lenscommon.JSONNullString || len(formatBytes) == 0 {
-				formatBytes = []byte(lenscommon.DefaultLensNumberFormatJSON)
-			}
-			formatStr := lenscommon.NormalizeKibanaLensNumberFormatJSONString(string(formatBytes))
-			collapseBy := ""
-			if gb.CollapseBy != nil {
-				collapseBy = string(*gb.CollapseBy)
-			}
-			eg := models.PartitionEsqlGroupByModel{
-				Column:     types.StringValue(gb.Column),
-				CollapseBy: types.StringValue(collapseBy),
-				ColorJSON:  jsontypes.NewNormalizedValue(string(colorBytes)),
-				FormatJSON: jsontypes.NewNormalizedValue(formatStr),
-				Label:      types.StringNull(),
-			}
-			if gb.Label != nil {
-				eg.Label = types.StringValue(*gb.Label)
-			}
-			m.EsqlGroupBy[i] = eg
+			src[i] = lenscommon.EsqlGroupByAPIFields{CollapseBy: gb.CollapseBy, Color: gb.Color, Column: gb.Column, Format: gb.Format, Label: gb.Label}
 		}
+		m.EsqlGroupBy = lenscommon.PopulatePartitionEsqlGroupByFromAPI(src, &diags)
 	}
 
 	m.Metrics = nil
@@ -546,39 +519,21 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 	api.Metrics = metrics
 
 	if len(m.EsqlGroupBy) > 0 {
-		gb := make([]struct {
+		entries := lenscommon.BuildPartitionEsqlGroupByForAPI(m.EsqlGroupBy, &diags)
+		if diags.HasError() {
+			return api, diags
+		}
+		groupBy := lenscommon.BuildEsqlGroupBySliceForAPI[struct {
 			CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
 			Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
 			Column     string                            `json:"column"`
 			Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
 			Label      *string                           `json:"label,omitempty"`
-		}, len(m.EsqlGroupBy))
-		for i, eg := range m.EsqlGroupBy {
-			var color kbapi.KibanaHTTPAPIsColorMapping
-			if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &color); err != nil {
-				diags.AddError("Failed to unmarshal color_json", err.Error())
-			} else {
-				gb[i].Color = &color
-			}
-			gb[i].Column = eg.Column.ValueString()
-			collapseBy := kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
-			gb[i].CollapseBy = &collapseBy
-			formatSrc := lenscommon.DefaultLensNumberFormatJSON
-			if typeutils.IsKnown(eg.FormatJSON) {
-				formatSrc = eg.FormatJSON.ValueString()
-			}
-			var format kbapi.KibanaHTTPAPIsFormatType
-			if err := json.Unmarshal([]byte(formatSrc), &format); err != nil {
-				diags.AddError("Failed to unmarshal format_json", err.Error())
-			} else {
-				gb[i].Format = &format
-			}
-			if typeutils.IsKnown(eg.Label) {
-				s := eg.Label.ValueString()
-				gb[i].Label = &s
-			}
+		}](entries, &diags)
+		if diags.HasError() {
+			return api, diags
 		}
-		api.GroupBy = &gb
+		api.GroupBy = &groupBy
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)

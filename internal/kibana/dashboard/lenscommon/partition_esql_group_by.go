@@ -83,7 +83,10 @@ func PopulatePartitionEsqlGroupByFromAPI(src []EsqlGroupByAPIFields, diags *diag
 			diags.AddError("Failed to marshal esql group_by format", err.Error())
 			continue
 		}
-		out[i].FormatJSON = jsontypes.NewNormalizedValue(string(formatBytes))
+		if string(formatBytes) == JSONNullString || len(formatBytes) == 0 {
+			formatBytes = []byte(DefaultLensNumberFormatJSON)
+		}
+		out[i].FormatJSON = jsontypes.NewNormalizedValue(NormalizeKibanaLensNumberFormatJSONString(string(formatBytes)))
 
 		out[i].Label = typeutils.StringishPointerValue(gb.Label)
 	}
