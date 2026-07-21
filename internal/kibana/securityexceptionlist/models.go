@@ -211,7 +211,7 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	}
 
 	// Set optional meta
-	m.Meta = kbschema.MarshalMetaToNormalized(apiList.Meta, &diags)
+	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)
 
 	return diags
 }

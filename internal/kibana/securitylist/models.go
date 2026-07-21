@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -145,7 +146,7 @@ func (m *Model) fromAPI(apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	// Set optional _version field
 	m.VersionID = typeutils.StringishPointerValue(apiList.UnderscoreVersion)
 
-	m.Meta = kbschema.MarshalMetaToNormalized(apiList.Meta, &diags)
+	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)
 
 	return diags
 }

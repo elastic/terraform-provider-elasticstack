@@ -23,10 +23,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -133,7 +133,7 @@ func (m *Model) fromAPIModel(ctx context.Context, apiItem *kbapi.SecurityListsAP
 	m.VersionID = typeutils.StringishPointerValue(apiItem.UnderscoreVersion)
 
 	// Set meta if available
-	m.Meta = kbschema.MarshalMetaToNormalized(apiItem.Meta, &diags)
+	m.Meta = typeutils.MarshalToNormalized(apiItem.Meta, path.Root("meta"), &diags)
 
 	return diags
 }

@@ -1049,7 +1049,7 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 	}
 
 	// Set optional meta
-	m.Meta = kbschema.MarshalMetaToNormalized(apiResp.Meta, &diags)
+	m.Meta = typeutils.MarshalToNormalized(apiResp.Meta, path.Root("meta"), &diags)
 
 	// Set entries (convert from API model to Terraform model)
 	entriesList, d := convertEntriesFromAPI(ctx, apiResp.Entries)
