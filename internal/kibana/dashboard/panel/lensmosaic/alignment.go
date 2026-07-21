@@ -35,17 +35,21 @@ func alignMosaicConfigStateFromPlan(ctx context.Context, plan, state *models.Mos
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.IgnoreGlobalFilters, &state.IgnoreGlobalFilters)
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.Sampling, &state.Sampling)
-	// Partition group_by/metrics JSON gets re-emitted by Kibana with default keys
-	// (color, rank_by, format defaults). Treat them as semantically equal.
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy, &state.GroupBy)
+	lenscommon.AlignStandardPartitionChartStateFromPlan(
+		ctx,
+		plan.Title, plan.Description,
+		plan.DataSourceJSON,
+		plan.IgnoreGlobalFilters,
+		plan.Sampling,
+		plan.GroupBy, plan.Metrics,
+		plan.Legend, plan.ValueDisplay,
+		&state.Title, &state.Description,
+		&state.DataSourceJSON,
+		&state.IgnoreGlobalFilters,
+		&state.Sampling,
+		&state.GroupBy, &state.Metrics,
+		state.Legend, &state.ValueDisplay,
+	)
+	// Mosaic also has group_breakdown_by, which is not part of the common partition fields.
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBreakdownBy, &state.GroupBreakdownBy)
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics, &state.Metrics)
-	lenscommon.AlignPartitionLegendStateFromPlan(plan.Legend, state.Legend)
-	if plan.ValueDisplay == nil && state.ValueDisplay != nil && lenscommon.PartitionValueDisplayMatchesKibanaDefault(state.ValueDisplay) {
-		state.ValueDisplay = nil
-	}
 }

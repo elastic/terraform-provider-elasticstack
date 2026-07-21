@@ -18,8 +18,13 @@
 package lenscommon
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // AlignPartitionLegendStateFromPlan handles the legend.visible = "auto" default
@@ -43,4 +48,40 @@ func PartitionValueDisplayMatchesKibanaDefault(state *models.PartitionValueDispl
 	modeIsPercentage := typeutils.IsKnown(state.Mode) && state.Mode.ValueString() == "percentage"
 	percentDecimalsUnset := !typeutils.IsKnown(state.PercentDecimals)
 	return modeIsPercentage && percentDecimalsUnset
+}
+
+// AlignStandardPartitionChartStateFromPlan aligns the common partition-chart state
+// fields (title/description, data_source_json, ignore_global_filters, sampling,
+// group_by, metrics, legend, value_display) from plan into state. Callers with
+// additional fields (e.g. group_breakdown_by in mosaic) should handle those after
+// calling this function.
+func AlignStandardPartitionChartStateFromPlan(
+	ctx context.Context,
+	planTitle, planDescription types.String,
+	planDataSourceJSON jsontypes.Normalized,
+	planIgnoreGlobalFilters types.Bool,
+	planSampling types.Float64,
+	planGroupBy customtypes.JSONWithDefaultsValue[[]map[string]any],
+	planMetrics customtypes.JSONWithDefaultsValue[[]map[string]any],
+	planLegend *models.PartitionLegendModel,
+	planValueDisplay *models.PartitionValueDisplay,
+	stateTitle, stateDescription *types.String,
+	stateDataSourceJSON *jsontypes.Normalized,
+	stateIgnoreGlobalFilters *types.Bool,
+	stateSampling *types.Float64,
+	stateGroupBy *customtypes.JSONWithDefaultsValue[[]map[string]any],
+	stateMetrics *customtypes.JSONWithDefaultsValue[[]map[string]any],
+	stateLegend *models.PartitionLegendModel,
+	stateValueDisplay **models.PartitionValueDisplay,
+) {
+	AlignTitleAndDescriptionFromPlan(planTitle, planDescription, stateTitle, stateDescription)
+	PreservePlanJSONIfStateAddsOptionalKeys(planDataSourceJSON, stateDataSourceJSON, "time_field")
+	PreserveKnownTfValueIfStateNull(planIgnoreGlobalFilters, stateIgnoreGlobalFilters)
+	PreserveKnownTfValueIfStateNull(planSampling, stateSampling)
+	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planGroupBy, stateGroupBy)
+	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetrics, stateMetrics)
+	AlignPartitionLegendStateFromPlan(planLegend, stateLegend)
+	if planValueDisplay == nil && *stateValueDisplay != nil && PartitionValueDisplayMatchesKibanaDefault(*stateValueDisplay) {
+		*stateValueDisplay = nil
+	}
 }
