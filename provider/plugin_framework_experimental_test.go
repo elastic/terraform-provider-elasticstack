@@ -35,7 +35,18 @@ func registeredResourceTypeNames(ctx context.Context, p *Provider) map[string]st
 	for _, newRes := range p.Resources(ctx) {
 		r := newRes()
 		var resp resource.MetadataResponse
-		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
+		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+		names[resp.TypeName] = struct{}{}
+	}
+	return names
+}
+
+func stableResourceTypeNames(ctx context.Context, p *Provider) map[string]struct{} {
+	names := make(map[string]struct{})
+	for _, newRes := range p.resources(ctx) {
+		r := newRes()
+		var resp resource.MetadataResponse
+		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
 		names[resp.TypeName] = struct{}{}
 	}
 	return names
@@ -71,6 +82,16 @@ func TestProvider_managedIntegrationRegisteredWhenExperimentalEnvEnabled(t *test
 	require.NotContains(t, names, removedAgentlessPolicyType)
 }
 
+func TestProvider_stableResourcesExcludeManagedIntegrationTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	names := stableResourceTypeNames(ctx, &Provider{version: "0.16.2"})
+
+	require.NotContains(t, names, managedIntegrationResourceType)
+	require.NotContains(t, names, removedAgentlessPolicyType)
+}
+
 func TestProvider_experimentalResourcesIncludesManagedIntegration(t *testing.T) {
 	t.Parallel()
 
@@ -79,7 +100,7 @@ func TestProvider_experimentalResourcesIncludesManagedIntegration(t *testing.T) 
 	for _, newRes := range (&Provider{}).experimentalResources(ctx) {
 		r := newRes()
 		var resp resource.MetadataResponse
-		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
+		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
 		if resp.TypeName == managedIntegrationResourceType {
 			found = true
 			break

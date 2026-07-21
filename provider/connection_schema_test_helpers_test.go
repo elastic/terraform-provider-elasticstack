@@ -21,6 +21,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,13 +39,13 @@ type frameworkDataSourceEntity struct {
 
 func frameworkResourceTypeName(ctx context.Context, r fwresource.Resource) string {
 	resp := fwresource.MetadataResponse{}
-	r.Metadata(ctx, fwresource.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
+	r.Metadata(ctx, fwresource.MetadataRequest{ProviderTypeName: provider.ProviderTypeName}, &resp)
 	return resp.TypeName
 }
 
 func frameworkDataSourceTypeName(ctx context.Context, d datasource.DataSource) string {
 	resp := datasource.MetadataResponse{}
-	d.Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
+	d.Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: provider.ProviderTypeName}, &resp)
 	return resp.TypeName
 }
 
