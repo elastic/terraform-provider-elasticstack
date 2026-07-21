@@ -19,7 +19,6 @@ package managedintegration
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -128,17 +127,9 @@ func updateAgentlessPolicy(
 
 	fleetClient := client.GetFleetClient()
 
-	updated, updateDiags := fleetclient.UpdateManagedIntegration(ctx, fleetClient, req.SpaceID, req.WriteID, body)
+	_, updateDiags := fleetclient.UpdateManagedIntegration(ctx, fleetClient, req.SpaceID, req.WriteID, body)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
-	}
-	if updated == nil {
-		diags.AddError(
-			"Managed integration not found",
-			fmt.Sprintf("Cannot update managed integration %q: it was not found. It may have been deleted out of band; "+
-				"run terraform apply again to detect drift.", req.WriteID),
-		)
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
 

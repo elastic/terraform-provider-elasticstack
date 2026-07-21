@@ -102,17 +102,8 @@ const testResourceName = "elasticstack_fleet_managed_integration.test"
 
 var regexpDefaultSpacePrefix = regexp.MustCompile(`^default/`)
 
-// TestAccResourceAgentlessPolicy covers Task 8.1 (full lifecycle: create ->
-// read -> update description -> update vars -> destroy, gated on Kibana >=
-// 9.3 per design.md/spec.md) and Task 8.2 (import via the composite
-// "<space_id>/<policy_id>" ID -- the default-space case; see
-// TestAccResourceAgentlessPolicy_NonDefaultSpace for the non-default-space
-// case). The resource's own `id` attribute already equals
-// "<space_id>/<policy_id>" (spec.md's "Resource identity and composite ID"
-// requirement), so a plain ImportState step (which defaults to importing by
-// the resource's own last-known ID) exercises the composite-ID import path
-// without any extra plumbing, mirroring internal/fleet/proxy/acc_test.go's
-// pattern.
+// TestAccResourceAgentlessPolicy covers the default-space full lifecycle (create,
+// read, update, import, destroy) against live managed_integrations APIs.
 func TestAccResourceAgentlessPolicy(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
@@ -254,7 +245,7 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 				// See update_test.go's TestOnlyCreateOnlyFlagsChanged for the
 				// equivalent unit-level proof.
 				//
-				// Kibana bumps package_policy.updated_at on every real PUT, so
+				// Kibana bumps managed_integrations updated_at on every real PUT, so
 				// an unchanged updated_at after this apply is direct empirical
 				// evidence against a live deployment that no API call was made
 				// -- not just that the provider's local bookkeeping thinks so.
@@ -282,8 +273,8 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 				),
 			},
 			{
-				// Import by composite ID (Task 8.2, default-space case): the
-				// resource's own `id` is already "default/<policy_id>".
+				// Import by composite ID (default-space case): the resource's own
+				// `id` is already "default/<policy_id>".
 				// ConfigDirectory matches the immediately preceding
 				// "update_flag_only" step (not "update_vars") so this step's
 				// implicit re-apply is a no-op and doesn't reintroduce a real
@@ -300,14 +291,12 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 					"force_delete",
 					"create_dataset_templates",
 					"skip_topology_check",
-					// policy_template is never populated from the API on Read
-					// (Decision 4: it isn't returned by GET
-					// /api/fleet/package_policies/{id}, and isn't Computed in
-					// schema.go), so a fresh import -- which starts from a
-					// blank model with no prior config to preserve it from --
-					// has no way to know it. See spec.md's Import requirement:
-					// "Read SHALL populate all state attributes from the Fleet
-					// API", which policy_template structurally cannot satisfy.
+					// policy_template is create-only in practice (not returned on
+					// managed_integrations GET) and isn't Computed in schema.go, so a
+					// fresh import -- which starts from a blank model with no prior
+					// config to preserve it from -- has no way to know it. See spec.md's
+					// Import requirement: "Read SHALL populate all state attributes from
+					// the Fleet API", which policy_template structurally cannot satisfy.
 					"policy_template",
 					// vars_json carries an internal contextual-normalization
 					// marker (see policyshape's JSONWithContextualDefaultsType)
@@ -335,8 +324,8 @@ func TestAccResourceAgentlessPolicy(t *testing.T) {
 	})
 }
 
-// TestAccResourceAgentlessPolicy_NonDefaultSpace covers the non-default-space
-// half of Task 8.2 (import via composite "<space_id>/<policy_id>" ID):
+// TestAccResourceAgentlessPolicy_NonDefaultSpace covers import via composite
+// "<space_id>/<policy_id>" in a non-default Kibana space.
 // spec.md's "Import by composite ID" scenario is explicitly stated in terms
 // of a non-"default" space, so this creates a real Kibana space and confirms
 // both that space_ids round-trips through Create and that the composite ID
@@ -393,9 +382,8 @@ func TestAccResourceAgentlessPolicy_NonDefaultSpace(t *testing.T) {
 	})
 }
 
-// TestAccResourceAgentlessPolicy_ForceDelete covers Task 8.3.
-//
-// A faithful acceptance-level repro of "a managed-policy conflict on delete"
+// TestAccResourceAgentlessPolicy_ForceDelete verifies force_delete round-trips and
+// that ?force=true delete succeeds end-to-end against live managed_integrations.
 // was investigated and found impractical: the DELETE endpoint's conflict
 // path is documented (design.md Decision 5) as triggering when the hidden
 // managed agent policy is "still provisioning, or has associated agents" --
@@ -453,10 +441,10 @@ func TestAccResourceAgentlessPolicy_ForceDelete(t *testing.T) {
 // Read (it isn't Computed in schema.go, and the read response only exposes a
 // bare cloud_connector_id, not the full object) -- so state round-tripping
 // it is a Terraform-side (config-preservation) guarantee, not proof the
-// value actually reached Kibana. This test additionally makes a raw
-// GET /api/fleet/package_policies/{id} call to confirm the created policy's
-// own cloud_connector_id server-side matches the fixture, which is the part
-// that actually proves the create request carried it.
+// value actually reached Kibana. This test additionally reads GET
+// /api/fleet/managed_integrations/{id} to confirm cloud_connector_id was
+// persisted server-side, which is the part that actually proves the create
+// request carried it (see testCheckCloudConnectorPersisted).
 //
 // Actually wiring the connector so Kibana persists cloud_connector_id
 // server-side (empirically confirmed: it does NOT persist the field at all
@@ -572,13 +560,8 @@ func TestAccResourceAgentlessPolicy_NameUpdateInPlace(t *testing.T) {
 	})
 }
 
-// TestAccResourceAgentlessPolicy_InputsUpdateInPlace covers Task 8.7:
-// changing an input's `vars` (specifically, a stream's vars nested under it
-// -- see this file's package comment on why CSPM's credential vars are
-// stream-scoped) updates in-place rather than replacing the resource, per
-// spec.md's "inputs updated in-place" scenario and the Decision 3 spike's
-// confirmation that inputs[*].streams[*].vars changes are accepted and
-// persisted by PUT /api/fleet/package_policies/{id}.
+// TestAccResourceAgentlessPolicy_InputsUpdateInPlace verifies input stream vars
+// update in-place via managed_integrations PUT (full-replace body from plan).
 func TestAccResourceAgentlessPolicy_InputsUpdateInPlace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)
@@ -662,12 +645,12 @@ func checkResourceAgentlessPolicyDestroy(s *terraform.State) error {
 			spaceID = id.ClusterID
 		}
 
-		pkgPolicy, diags := fleetclient.GetPackagePolicy(context.Background(), fc, policyID, spaceID)
+		item, diags := fleetclient.ReadManagedIntegration(context.Background(), fc, spaceID, policyID)
 		if diags.HasError() {
 			return diagutil.FwDiagsAsError(diags)
 		}
-		if pkgPolicy != nil {
-			return fmt.Errorf("agentless policy id=%v still exists, but it should have been removed", policyID)
+		if item != nil {
+			return fmt.Errorf("managed integration id=%v still exists, but it should have been removed", policyID)
 		}
 	}
 	return nil
@@ -918,11 +901,9 @@ func mintExternalIDSecretRef(ctx context.Context, t *testing.T, fc *fleetclient.
 	return ""
 }
 
-// testCheckCloudConnectorPersisted makes a raw GET
-// /api/fleet/package_policies/{id} call to confirm the created package
-// policy's own cloud_connector_id (a field this resource deliberately does
-// not re-read into state on Read -- see design.md Decision 4) actually
-// matches expectedConnectorID server-side.
+// testCheckCloudConnectorPersisted reads GET /api/fleet/managed_integrations/{id}
+// to confirm cloud_connector_id was persisted server-side (association fields are
+// re-sent on PUT from prior state; name/target_csp are write-only in state).
 func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -930,6 +911,10 @@ func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) 
 			return fmt.Errorf("resource %s not found in state", resourceName)
 		}
 		policyID := rs.Primary.Attributes["policy_id"]
+		spaceID := "default"
+		if id, diags := clients.CompositeIDFromStr(rs.Primary.ID); !diags.HasError() && id != nil {
+			spaceID = id.ClusterID
+		}
 
 		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 		if err != nil {
@@ -937,17 +922,19 @@ func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) 
 		}
 		fc := client.GetFleetClient()
 
-		resp, err := fc.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(context.Background(), policyID, nil)
-		if err != nil {
-			return fmt.Errorf("failed to read back package policy %s: %w", policyID, err)
+		item, diags := fleetclient.ReadManagedIntegration(context.Background(), fc, spaceID, policyID)
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
 		}
-		if resp.StatusCode() != 200 || resp.JSON200 == nil {
-			return fmt.Errorf("failed to read back package policy %s: status %d: %s", policyID, resp.StatusCode(), string(resp.Body))
+		if item == nil {
+			return fmt.Errorf("managed integration %s not found when checking cloud_connector_id", policyID)
 		}
-
-		got := resp.JSON200.Item.CloudConnectorId
-		if got == nil || *got != expectedConnectorID {
-			return fmt.Errorf("package policy %s: expected cloud_connector_id %q, got %v", policyID, expectedConnectorID, got)
+		if item.CloudConnector == nil || item.CloudConnector.CloudConnectorId != expectedConnectorID {
+			got := ""
+			if item.CloudConnector != nil {
+				got = item.CloudConnector.CloudConnectorId
+			}
+			return fmt.Errorf("managed integration %s: expected cloud_connector_id %q, got %q", policyID, expectedConnectorID, got)
 		}
 		return nil
 	}

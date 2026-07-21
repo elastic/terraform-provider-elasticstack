@@ -9,9 +9,9 @@
 - [x] 2.1 Create `internal/clients/fleet/managed_integration.go` with wrappers: `CreateManagedIntegration`, `ReadManagedIntegration`, `UpdateManagedIntegration`, `DeleteManagedIntegration` — all targeting `managed_integrations` endpoints
 - [x] 2.2 Wire `SpaceAwarePathRequestEditor(spaceID)` into all four wrappers (mirroring the existing agentless policy client)
 - [x] 2.3 Retain `ConflictRetry` wrapping and `?force=` mapping on Delete; map `404` to nil/no-op for Read and Delete
-- [x] 2.4 Remove the `ReadAgentlessPolicyViaPackagePolicy` and `UpdateAgentlessPolicyViaPackagePolicy` fallback wrappers from `managed_integration.go` (do not port them); they remain only in the temporary `agentless_policy_compat.go` bridge until task 8
+- [x] 2.4 Remove the `ReadAgentlessPolicyViaPackagePolicy` and `UpdateAgentlessPolicyViaPackagePolicy` fallback wrappers from `managed_integration.go` (do not port them); legacy bridge removed in task 8
 - [x] 2.5 Add unit tests for the new client wrappers, including the 404 sentinel behaviour
-- [x] 2.6 Delete `internal/clients/fleet/agentless_policy.go` and its test file; retain `agentless_policy_compat.go` as a build-preserving bridge until task 8 deletes it
+- [x] 2.6 Delete `internal/clients/fleet/agentless_policy.go` and its test file; delete `agentless_policy_compat.go` in task 8
 
 ## 3. Move and rename the resource package
 
@@ -69,7 +69,7 @@
 - [ ] 9.1 Update `kbapi_roundtrip_test.go` response-shape assertions for the clean `KibanaHTTPAPIsManagedIntegration` type (no leaked PackagePolicy fields)
 - [ ] 9.2 Rewrite `global_data_tags` unit tests for the `Map + string_value/number_value` shape
 - [ ] 9.3 Verify task 7 / `update_test.go` coverage consolidates in-place `name` and `package.version`, cloud_connector from prior state, and full-replace PUT body structure (extend only if gaps remain)
-- [ ] 9.4 Ensure `create_test.go` and `delete_test.go` use the new client wrappers
+- [ ] 9.4 Verify task 8 create/read/delete callback unit tests consolidate managed_integrations client coverage (`create_test.go`, `read_test.go`, `delete_test.go`); extend only if gaps remain
 - [ ] 9.5 Update `enabled_convergence_test.go` and `condition_test.go` for the renamed package (mechanical)
 
 ## 10. Examples and documentation

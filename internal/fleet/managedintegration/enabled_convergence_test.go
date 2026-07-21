@@ -56,7 +56,7 @@ const nonPersistingEnabledUpdateResponseJSON = `{
 // TestEnabledChangeNonPersistence_stateReflectsAPIReality is a regression
 // test for the Task 3 spike finding (update.go's header comment, and
 // overlayInputFromPlan's comment on why no package-specific workaround was
-// added): Kibana's PUT /api/fleet/package_policies/{id} can return 200 for a
+// added): Kibana's managed_integrations PUT can return 200 for a
 // request that changes an input's `enabled` flag without actually persisting
 // that change. Nothing previously proved this resource's Update path
 // converges to the API's real state rather than looping (state believing the

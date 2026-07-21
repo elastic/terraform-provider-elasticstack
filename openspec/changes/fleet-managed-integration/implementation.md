@@ -2,7 +2,7 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
-## Intermediate branch state (after task 7 update body; task 8 client swap pending)
+## Intermediate branch state (after tasks 7–8)
 
 Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`.
 

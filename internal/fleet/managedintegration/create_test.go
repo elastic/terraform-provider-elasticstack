@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -150,5 +151,106 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 			require.False(t, diags.HasError(), "a confirmed cloud-hosted topology must never block Create (skip_topology_check=%v)", skip)
 			require.True(t, *fleetPostCalled, "Create must reach the fleet POST for a confirmed cloud-hosted topology (skip_topology_check=%v)", skip)
 		}
+	})
+}
+
+func createCallbackPlan(t *testing.T) agentlessPolicyModel {
+	t.Helper()
+	plan := baseTestModel(t)
+	plan.SkipTopologyCheck = types.BoolValue(true)
+	return plan
+}
+
+// TestCreateAgentlessPolicy_callback covers createAgentlessPolicy POST handling
+// after topology is skipped (SkipReadAfterWrite is always false; identity only).
+func TestCreateAgentlessPolicy_callback(t *testing.T) {
+	t.Run("success sets policy_id and composite id without SkipReadAfterWrite", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, minimalManagedIntegrationCreateResponse)
+		})
+		client := newTopologyTestClient(t, mux)
+
+		result, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			Plan:    createCallbackPlan(t),
+			SpaceID: "default",
+		})
+		require.False(t, diags.HasError(), "%v", diags)
+		require.False(t, result.SkipReadAfterWrite)
+		assert.Equal(t, "pp-1", result.Model.PolicyID.ValueString())
+		assert.Equal(t, "default/pp-1", result.Model.ID.ValueString())
+	})
+
+	t.Run("server error surfaces diagnostics", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"statusCode":400,"error":"Bad Request","message":"invalid"}`)
+		})
+		client := newTopologyTestClient(t, mux)
+
+		result, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			Plan:    createCallbackPlan(t),
+			SpaceID: "default",
+		})
+		require.True(t, diags.HasError())
+		assert.Equal(t, agentlessPolicyModel{}, result.Model)
+	})
+
+	t.Run("success with empty policy id returns dedicated diagnostic", func(t *testing.T) {
+		const emptyIDResponse = `{"item":{` +
+			`"id":"","name":"test-policy",` +
+			`"created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic",` +
+			`"updated_at":"2026-01-01T00:00:00.000Z","updated_by":"elastic",` +
+			`"inputs":{},` +
+			`"package":{"name":"cloud_security_posture","version":"3.4.0"}` +
+			`}}`
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, emptyIDResponse)
+		})
+		client := newTopologyTestClient(t, mux)
+
+		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			Plan:    createCallbackPlan(t),
+			SpaceID: "default",
+		})
+		require.True(t, diags.HasError())
+		require.Contains(t, diags.Errors()[0].Summary(), "no identifier")
+	})
+
+	t.Run("200 with empty JSON object returns no identifier diagnostic", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, `{}`)
+		})
+		client := newTopologyTestClient(t, mux)
+
+		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			Plan:    createCallbackPlan(t),
+			SpaceID: "default",
+		})
+		require.True(t, diags.HasError())
+		require.Contains(t, diags.Errors()[0].Summary(), "no identifier")
+	})
+
+	t.Run("200 with empty response body surfaces parse error", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+		})
+		client := newTopologyTestClient(t, mux)
+
+		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			Plan:    createCallbackPlan(t),
+			SpaceID: "default",
+		})
+		require.True(t, diags.HasError())
+		errText := diags.Errors()[0].Summary() + diags.Errors()[0].Detail()
+		assert.Contains(t, errText, "JSON")
 	})
 }

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,6 +49,24 @@ func TestReadAgentlessPolicy_notFound(t *testing.T) {
 	assert.Equal(t, "seed-name-must-not-change", out.Name.ValueString())
 }
 
+// TestReadAgentlessPolicy_serverError propagates GET failures.
+func TestReadAgentlessPolicy_serverError(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"statusCode":500,"error":"Internal Server Error","message":"boom"}`)
+	})
+	client := newTopologyTestClient(t, mux)
+
+	seeded := baseTestModel(t)
+	seeded.PolicyID = types.StringValue("policy-1")
+
+	_, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
+	require.True(t, diags.HasError())
+	require.False(t, ok)
+}
+
 // TestReadAgentlessPolicy_populatesFromManagedIntegration exercises GET
 // /api/fleet/managed_integrations/{id} and populateFromManagedIntegration while
 // preserving create-only flags from the incoming model.
@@ -67,11 +86,20 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 	})
 	client := newTopologyTestClient(t, mux)
 
+	ctx := context.Background()
+	ccObj, ccDiags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+		Name:      types.StringValue("seed-connector-name"),
+		TargetCSP: types.StringValue("aws"),
+		Enabled:   types.BoolValue(true),
+	})
+	require.False(t, ccDiags.HasError())
+
 	seeded := baseTestModel(t)
 	seeded.Force = types.BoolValue(true)
 	seeded.CreateDatasetTemplates = types.BoolValue(true)
 	seeded.SkipTopologyCheck = types.BoolValue(true)
 	seeded.ForceDelete = types.BoolValue(true)
+	seeded.CloudConnector = ccObj
 
 	out, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
 	require.False(t, diags.HasError(), "%v", diags)
@@ -82,4 +110,9 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 	assert.True(t, out.CreateDatasetTemplates.ValueBool())
 	assert.True(t, out.SkipTopologyCheck.ValueBool())
 	assert.True(t, out.ForceDelete.ValueBool())
+
+	var cc cloudConnectorModel
+	require.False(t, out.CloudConnector.As(ctx, &cc, basetypes.ObjectAsOptions{}).HasError())
+	assert.Equal(t, "seed-connector-name", cc.Name.ValueString())
+	assert.Equal(t, "aws", cc.TargetCSP.ValueString())
 }
