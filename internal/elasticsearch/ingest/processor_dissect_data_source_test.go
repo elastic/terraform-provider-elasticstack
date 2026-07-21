@@ -34,6 +34,12 @@ func TestAccDataSourceIngestProcessorDissect(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "pattern", dissectTestPattern),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "append_separator", ""),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "ignore_missing", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "json", expectedJSONDissect),
 				),
 			},
@@ -43,6 +49,7 @@ func TestAccDataSourceIngestProcessorDissect(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "pattern", dissectTestPattern),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "append_separator", "|"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "ignore_missing", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_dissect.test", "ignore_failure", "true"),
@@ -97,6 +104,8 @@ func TestAccDataSourceIngestProcessorDissectOnFailureMulti(t *testing.T) {
 		},
 	})
 }
+
+const dissectTestPattern = `%{clientip} %{ident} %{auth} [%{@timestamp}] "%{verb} %{request} HTTP/%{httpversion}" %{status} %{size}`
 
 const expectedJSONDissect = `{
   "dissect": {
