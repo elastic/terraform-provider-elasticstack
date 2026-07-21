@@ -81,7 +81,10 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 		`}}`
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
+	legacyCalls := registerLegacyPackagePoliciesGuard(mux)
+	method := newHTTPMethodCapture()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+		method.record(r)
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, managedIntegrationJSON)
 	})
@@ -105,6 +108,8 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 	out, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, ok)
+	method.requireEqual(t, http.MethodGet)
+	requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 	assert.Equal(t, "api-name", out.Name.ValueString())
 	assert.Equal(t, "default/policy-1", out.ID.ValueString())
 	assert.True(t, out.Force.ValueBool())

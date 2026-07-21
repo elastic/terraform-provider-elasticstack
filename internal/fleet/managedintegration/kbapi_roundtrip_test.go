@@ -28,10 +28,9 @@ import (
 
 // fullyPopulatedManagedIntegrationInputJSON is a hand-built input object in
 // the managed_integrations response shape (KibanaHTTPAPIsManagedIntegration
-// inputs map values). It also embeds several PackagePolicy-typed-input fields
-// that must not appear on managed integration wire JSON; the companion test
-// below asserts they are dropped on unmarshal/re-marshal, not silently
-// carried into create/update bodies.
+// inputs map values). Raw JSON also embeds PackagePolicy-only keys to prove
+// encoding/json drops them when unmarshaling into the managed-integration
+// allowlisted struct fields (they must not reappear on re-marshal).
 const fullyPopulatedManagedIntegrationInputJSON = `{
 	"condition": "host.os.family == 'linux'",
 	"deprecated": {"description": "dep-desc", "since": "9.0.0"},
@@ -73,13 +72,12 @@ const managedIntegrationInputRoundTripDoc = `{
 	}
 }`
 
-// TestKbapiManagedIntegrationInputRoundTrip_simplifiedFieldsSurvive is a
-// regression guard against kbapi regeneration breaking the JSON round trip
-// from a managed_integrations GET input entry to the PUT/POST request input
-// shape. create.go and update.go build request inputs from Terraform state
-// (applyCreateInputs), but the response-side and request-side generated structs
-// must remain JSON-tag compatible for any future read/modify/write path and for
-// hand-built fixtures such as mappedFormatManagedIntegrationJSON.
+// TestKbapiManagedIntegrationInputRoundTrip_simplifiedFieldsSurvive guards the
+// JSON-tag overlap between KibanaHTTPAPIsManagedIntegration input values and
+// KibanaHTTPAPIsCreateManagedIntegrationRequest inputs: fields present on both
+// generated structs must round-trip via json.Marshal/Unmarshal. Production
+// encode/decode uses applyCreateInputs and populateFromManagedIntegration; this
+// test catches kbapi drift in the shared simplified input schema.
 func TestKbapiManagedIntegrationInputRoundTrip_simplifiedFieldsSurvive(t *testing.T) {
 	item := mustManagedIntegrationFromJSON(t, managedIntegrationInputRoundTripDoc)
 	in, ok := item.Inputs["cspm-cloudbeat/cis_aws"]
@@ -133,9 +131,9 @@ func TestKbapiManagedIntegrationInputRoundTrip_simplifiedFieldsSurvive(t *testin
 }
 
 // TestKbapiManagedIntegrationInputRoundTrip_packagePolicyFieldsDropped asserts
-// that legacy PackagePolicy typed-input fields present in raw JSON are not
-// part of the clean KibanaHTTPAPIsManagedIntegration model and therefore must
-// not survive into request bodies built via JSON round trip.
+// the managed-integration input allowlist: PackagePolicy-only JSON keys are
+// ignored on unmarshal into KibanaHTTPAPIsManagedIntegration and therefore
+// cannot appear on request JSON produced from that struct.
 func TestKbapiManagedIntegrationInputRoundTrip_packagePolicyFieldsDropped(t *testing.T) {
 	item := mustManagedIntegrationFromJSON(t, managedIntegrationInputRoundTripDoc)
 	in := item.Inputs["cspm-cloudbeat/cis_aws"]

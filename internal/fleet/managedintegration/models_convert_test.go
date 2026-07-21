@@ -261,6 +261,18 @@ func TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip(t *testing.T)
 	apiTags, ok := decoded["global_data_tags"].([]any)
 	require.True(t, ok)
 	require.Len(t, apiTags, 2)
+	tagByName := make(map[string]map[string]any, len(apiTags))
+	for _, rawTag := range apiTags {
+		tag, ok := rawTag.(map[string]any)
+		require.True(t, ok)
+		name, ok := tag["name"].(string)
+		require.True(t, ok)
+		tagByName[name] = tag
+	}
+	require.Contains(t, tagByName, "env")
+	require.Contains(t, tagByName, "priority")
+	assert.Equal(t, "prod", tagByName["env"]["value"])
+	assert.InDelta(t, float64(7.5), tagByName["priority"]["value"], 0.001)
 
 	item := mustManagedIntegrationFromJSON(t, `{
 		"id": "policy-1",
@@ -293,6 +305,40 @@ func TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip(t *testing.T)
 	require.False(t, encodeDiags.HasError(), "%v", encodeDiags)
 	require.NotNil(t, raw)
 	require.Len(t, *raw, 2)
+	encodedByName := make(map[string]struct {
+		stringVal string
+		numberVal float32
+		hasString bool
+		hasNumber bool
+	}, 2)
+	for _, entry := range *raw {
+		switch entry.Name {
+		case "env":
+			s, err := entry.Value.AsKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0()
+			require.NoError(t, err)
+			encodedByName["env"] = struct {
+				stringVal string
+				numberVal float32
+				hasString bool
+				hasNumber bool
+			}{stringVal: s, hasString: true}
+		case "priority":
+			n, err := entry.Value.AsKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1()
+			require.NoError(t, err)
+			encodedByName["priority"] = struct {
+				stringVal string
+				numberVal float32
+				hasString bool
+				hasNumber bool
+			}{numberVal: n, hasNumber: true}
+		default:
+			t.Fatalf("unexpected global_data_tags name %q in encode output", entry.Name)
+		}
+	}
+	require.True(t, encodedByName["env"].hasString)
+	assert.Equal(t, "prod", encodedByName["env"].stringVal)
+	require.True(t, encodedByName["priority"].hasNumber)
+	assert.InDelta(t, float32(7.5), encodedByName["priority"].numberVal, 0.001)
 }
 
 func TestGlobalDataTagsToModel_numberWire(t *testing.T) {

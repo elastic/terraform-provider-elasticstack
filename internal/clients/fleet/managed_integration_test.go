@@ -35,7 +35,9 @@ import (
 
 func TestCreateManagedIntegration(t *testing.T) {
 	t.Run("success_returns_item", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		var method atomic.Value
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			method.Store(r.Method)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"item":{"id":"mi-1","created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic"}}`)
 		}))
@@ -48,6 +50,7 @@ func TestCreateManagedIntegration(t *testing.T) {
 		})
 
 		require.False(t, diags.HasError())
+		require.Equal(t, http.MethodPost, method.Load())
 		require.NotNil(t, item)
 		require.Equal(t, "mi-1", item.Id)
 	})
@@ -141,7 +144,9 @@ func TestCreateManagedIntegration(t *testing.T) {
 
 func TestReadManagedIntegration(t *testing.T) {
 	t.Run("success_returns_item", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		var method atomic.Value
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			method.Store(r.Method)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"item":{"id":"mi-1","created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic"}}`)
 		}))
@@ -151,6 +156,7 @@ func TestReadManagedIntegration(t *testing.T) {
 		item, diags := fleet.ReadManagedIntegration(context.Background(), client, "", "mi-1")
 
 		require.False(t, diags.HasError())
+		require.Equal(t, http.MethodGet, method.Load())
 		require.NotNil(t, item)
 		require.NotNil(t, item.Id)
 		require.Equal(t, "mi-1", item.Id)
@@ -189,7 +195,9 @@ func TestReadManagedIntegration(t *testing.T) {
 
 func TestUpdateManagedIntegration(t *testing.T) {
 	t.Run("success_returns_item", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		var method atomic.Value
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			method.Store(r.Method)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"item":{"id":"mi-1","created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic"}}`)
 		}))
@@ -199,6 +207,7 @@ func TestUpdateManagedIntegration(t *testing.T) {
 		item, diags := fleet.UpdateManagedIntegration(context.Background(), client, "", "mi-1", kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody{})
 
 		require.False(t, diags.HasError())
+		require.Equal(t, http.MethodPut, method.Load())
 		require.NotNil(t, item)
 		require.NotNil(t, item.Id)
 		require.Equal(t, "mi-1", item.Id)
@@ -285,7 +294,9 @@ func TestUpdateManagedIntegration(t *testing.T) {
 func TestDeleteManagedIntegration(t *testing.T) {
 	t.Run("success_no_error", func(t *testing.T) {
 		var capturedQuery string
+		var method atomic.Value
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			method.Store(r.Method)
 			capturedQuery = r.URL.RawQuery
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"id":"mi-1"}`)
@@ -296,6 +307,7 @@ func TestDeleteManagedIntegration(t *testing.T) {
 		isConflict, diags := fleet.DeleteManagedIntegration(context.Background(), client, "", "mi-1", false)
 
 		require.False(t, diags.HasError())
+		require.Equal(t, http.MethodDelete, method.Load())
 		require.False(t, isConflict)
 		require.NotContains(t, capturedQuery, "force")
 	})
@@ -472,9 +484,11 @@ func TestManagedIntegration_SpaceAwarePath(t *testing.T) {
 	for _, tc := range tests {
 		t.Run("read_"+tc.name, func(t *testing.T) {
 			var capturedPath string
+			var method atomic.Value
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				capturedPath = r.URL.Path
+				method.Store(r.Method)
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprint(w, `{"item":{"id":"mi-1"}}`)
 			}))
@@ -483,14 +497,17 @@ func TestManagedIntegration_SpaceAwarePath(t *testing.T) {
 			client := newTestClient(t, srv)
 			_, diags := fleet.ReadManagedIntegration(context.Background(), client, tc.spaceID, "mi-1")
 			require.False(t, diags.HasError())
+			require.Equal(t, http.MethodGet, method.Load())
 			require.True(t, strings.HasPrefix(capturedPath, tc.wantPathPfx), "request path = %q, want prefix %q", capturedPath, tc.wantPathPfx)
 		})
 
 		t.Run("delete_"+tc.name, func(t *testing.T) {
 			var capturedPath string
+			var method atomic.Value
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				capturedPath = r.URL.Path
+				method.Store(r.Method)
 				w.Header().Set("Content-Type", "application/json")
 				fmt.Fprint(w, `{"id":"mi-1"}`)
 			}))
@@ -499,14 +516,17 @@ func TestManagedIntegration_SpaceAwarePath(t *testing.T) {
 			client := newTestClient(t, srv)
 			_, diags := fleet.DeleteManagedIntegration(context.Background(), client, tc.spaceID, "mi-1", false)
 			require.False(t, diags.HasError())
+			require.Equal(t, http.MethodDelete, method.Load())
 			require.True(t, strings.HasPrefix(capturedPath, tc.wantPathPfx), "request path = %q, want prefix %q", capturedPath, tc.wantPathPfx)
 		})
 	}
 
 	t.Run("create_custom_space", func(t *testing.T) {
 		var capturedPath string
+		var method atomic.Value
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			capturedPath = r.URL.Path
+			method.Store(r.Method)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"item":{"id":"mi-1"}}`)
 		}))
@@ -517,13 +537,16 @@ func TestManagedIntegration_SpaceAwarePath(t *testing.T) {
 			Name: "test",
 		})
 		require.False(t, diags.HasError())
+		require.Equal(t, http.MethodPost, method.Load())
 		require.True(t, strings.HasPrefix(capturedPath, "/s/my-space/api/fleet/managed_integrations"))
 	})
 
 	t.Run("update_custom_space", func(t *testing.T) {
 		var capturedPath string
+		var method atomic.Value
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			capturedPath = r.URL.Path
+			method.Store(r.Method)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"item":{"id":"mi-1"}}`)
 		}))
@@ -532,6 +555,7 @@ func TestManagedIntegration_SpaceAwarePath(t *testing.T) {
 		client := newTestClient(t, srv)
 		_, diags := fleet.UpdateManagedIntegration(context.Background(), client, "my-space", "mi-1", kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody{})
 		require.False(t, diags.HasError())
+		require.Equal(t, http.MethodPut, method.Load())
 		require.True(t, strings.HasPrefix(capturedPath, "/s/my-space/api/fleet/managed_integrations/mi-1"))
 	})
 }

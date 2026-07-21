@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -46,14 +47,15 @@ const minimalManagedIntegrationCreateResponse = `{"item":{` +
 // `/api/status` topology probe and the `/api/fleet/managed_integrations`
 // create endpoint from a single httptest server (see
 // newTopologyTestClient in topology_test.go, which this reuses
-// unmodified -- it already accepts any http.Handler). The returned
-// *bool reports whether the fleet create endpoint was ever hit, which is
+// unmodified -- it already accepts any http.Handler). The returned atomic.Bool
+// reports whether the fleet create endpoint was ever hit, which is
 // the thing these tests care about: did checkDeploymentTopology's verdict
 // (or skip_topology_check bypassing it) actually gate the POST call in
 // createAgentlessPolicy, or not.
-func fleetCreateCallRecorder(statusBody string, statusHeaders map[string]string) (http.Handler, *bool) {
-	fleetPostCalled := false
+func fleetCreateCallRecorder(statusBody string, statusHeaders map[string]string) (http.Handler, *atomic.Bool, *atomic.Int64) {
+	fleetPostCalled := atomic.Bool{}
 	mux := http.NewServeMux()
+	legacyPackagePolicyCalls := registerLegacyPackagePoliciesGuard(mux)
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, _ *http.Request) {
 		for k, v := range statusHeaders {
 			w.Header().Set(k, v)
@@ -61,12 +63,16 @@ func fleetCreateCallRecorder(statusBody string, statusHeaders map[string]string)
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, statusBody)
 	})
-	mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
-		fleetPostCalled = true
+	mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		fleetPostCalled.Store(true)
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, minimalManagedIntegrationCreateResponse)
 	})
-	return mux, &fleetPostCalled
+	return mux, &fleetPostCalled, legacyPackagePolicyCalls
 }
 
 // selfManagedStatusBody and cloudStatusBody mirror the fixtures already used
@@ -102,7 +108,7 @@ var cloudProxyHeader = map[string]string{cloudProxyResponseHeaders[0]: "abc123"}
 // topology_test.go, for the same reason).
 func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 	t.Run("self-managed topology and skip_topology_check=false (default) blocks the fleet POST", func(t *testing.T) {
-		handler, fleetPostCalled := fleetCreateCallRecorder(selfManagedStatusBody, nil)
+		handler, fleetPostCalled, legacyCalls := fleetCreateCallRecorder(selfManagedStatusBody, nil)
 		client := newTopologyTestClient(t, handler)
 
 		plan := baseTestModel(t)
@@ -115,12 +121,13 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 
 		require.True(t, diags.HasError(), "self-managed topology must fail closed")
 		require.Contains(t, diags[0].Summary(), "Unsupported deployment topology")
-		require.False(t, *fleetPostCalled, "the fleet create endpoint must not be called once the topology check fails closed")
+		require.False(t, fleetPostCalled.Load(), "the fleet create endpoint must not be called once the topology check fails closed")
+		requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 		require.Equal(t, agentlessPolicyModel{}, result.Model)
 	})
 
 	t.Run("self-managed topology with skip_topology_check=true proceeds to the fleet POST", func(t *testing.T) {
-		handler, fleetPostCalled := fleetCreateCallRecorder(selfManagedStatusBody, nil)
+		handler, fleetPostCalled, legacyCalls := fleetCreateCallRecorder(selfManagedStatusBody, nil)
 		client := newTopologyTestClient(t, handler)
 
 		plan := baseTestModel(t)
@@ -132,12 +139,13 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 		})
 
 		require.False(t, diags.HasError(), "skip_topology_check=true must bypass what would otherwise be a fail-closed classification")
-		require.True(t, *fleetPostCalled, "Create must proceed to the fleet POST once the topology check is explicitly skipped")
+		require.True(t, fleetPostCalled.Load(), "Create must proceed to the fleet POST once the topology check is explicitly skipped")
+		requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 	})
 
 	t.Run("cloud-hosted topology proceeds to the fleet POST regardless of skip_topology_check", func(t *testing.T) {
 		for _, skip := range []bool{false, true} {
-			handler, fleetPostCalled := fleetCreateCallRecorder(selfManagedStatusBody /* unused when headers set */, cloudProxyHeader)
+			handler, fleetPostCalled, legacyCalls := fleetCreateCallRecorder(selfManagedStatusBody /* unused when headers set */, cloudProxyHeader)
 			client := newTopologyTestClient(t, handler)
 
 			plan := baseTestModel(t)
@@ -149,7 +157,8 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 			})
 
 			require.False(t, diags.HasError(), "a confirmed cloud-hosted topology must never block Create (skip_topology_check=%v)", skip)
-			require.True(t, *fleetPostCalled, "Create must reach the fleet POST for a confirmed cloud-hosted topology (skip_topology_check=%v)", skip)
+			require.True(t, fleetPostCalled.Load(), "Create must reach the fleet POST for a confirmed cloud-hosted topology (skip_topology_check=%v)", skip)
+			requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 		}
 	})
 }
@@ -167,7 +176,10 @@ func createCallbackPlan(t *testing.T) agentlessPolicyModel {
 func TestCreateAgentlessPolicy_callback(t *testing.T) {
 	t.Run("success sets policy_id and composite id without SkipReadAfterWrite", func(t *testing.T) {
 		mux := http.NewServeMux()
-		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, _ *http.Request) {
+		legacyCalls := registerLegacyPackagePoliciesGuard(mux)
+		method := newHTTPMethodCapture()
+		mux.HandleFunc("/api/fleet/managed_integrations", func(w http.ResponseWriter, r *http.Request) {
+			method.record(r)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, minimalManagedIntegrationCreateResponse)
 		})
@@ -178,9 +190,11 @@ func TestCreateAgentlessPolicy_callback(t *testing.T) {
 			SpaceID: "default",
 		})
 		require.False(t, diags.HasError(), "%v", diags)
+		method.requireEqual(t, http.MethodPost)
 		require.False(t, result.SkipReadAfterWrite)
 		assert.Equal(t, "pp-1", result.Model.PolicyID.ValueString())
 		assert.Equal(t, "default/pp-1", result.Model.ID.ValueString())
+		requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 	})
 
 	t.Run("server error surfaces diagnostics", func(t *testing.T) {

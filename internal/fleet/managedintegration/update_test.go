@@ -21,6 +21,7 @@ import (
 	"context"
 	"net/http"
 	"reflect"
+	"sync/atomic"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -33,7 +34,7 @@ import (
 
 // fleetManagedIntegrationCallRecorder records whether PUT
 // /api/fleet/managed_integrations/{id} was hit (updateAgentlessPolicy's
-// non-short-circuit path after task 7).
+// non-short-circuit path after the full-replace update rewrite).
 func fleetManagedIntegrationCallRecorder(t *testing.T) (http.Handler, *bool) {
 	t.Helper()
 	called := false
@@ -429,8 +430,9 @@ func TestUpdateAgentlessPolicy_nilPrior(t *testing.T) {
 	plan.PolicyID = types.StringValue("pp-1")
 	plan.ID = types.StringValue("default/pp-1")
 
+	var unexpectedCalls atomic.Int64
 	client := newTopologyTestClient(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("unexpected API call when prior state is missing")
+		unexpectedCalls.Add(1)
 	}))
 
 	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
@@ -441,6 +443,7 @@ func TestUpdateAgentlessPolicy_nilPrior(t *testing.T) {
 	})
 	require.True(t, diags.HasError())
 	require.Contains(t, diags.Errors()[0].Summary(), "missing prior state")
+	require.Equal(t, int64(0), unexpectedCalls.Load())
 }
 
 func TestUpdateAgentlessPolicy_putError(t *testing.T) {
@@ -500,10 +503,13 @@ func TestUpdateAgentlessPolicy_successDoesNotSkipReadAfterWrite(t *testing.T) {
 	plan.Description = types.StringValue("changed")
 
 	mux := http.NewServeMux()
+	legacyCalls := registerLegacyPackagePoliciesGuard(mux)
+	method := newHTTPMethodCapture()
 	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			return
 		}
+		method.record(r)
 		w.Header().Set("Content-Type", "application/json")
 		const putOK = `{"item":{"id":"pp-1","name":"test-policy","package":{"name":"cloud_security_posture",` +
 			`"version":"3.4.0"},"created_at":"2024-01-01T00:00:00.000Z","updated_at":"2024-01-02T00:00:00.000Z"}}`
@@ -518,6 +524,8 @@ func TestUpdateAgentlessPolicy_successDoesNotSkipReadAfterWrite(t *testing.T) {
 		SpaceID: "default",
 	})
 	require.False(t, diags.HasError(), "%v", diags)
+	method.requireEqual(t, http.MethodPut)
+	requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 	require.False(t, result.SkipReadAfterWrite, "real PUT must leave read-after-write to the envelope")
 }
 
@@ -688,6 +696,25 @@ func TestBuildUpdateBody_fullReplaceExtraFields(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "cost", tag0["name"])
 	assert.InDelta(t, float64(42), tag0["value"], 0.001)
+}
+
+func TestBuildUpdateBody_knownEmptyInputsMapSendsEmptyObject(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	prior := baseTestModel(t)
+	plan := prior
+	emptyInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{})
+	require.False(t, diags.HasError())
+	plan.Inputs = emptyInputs
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+
+	decoded := decodeRequestJSON(t, body)
+	inputs, ok := decoded["inputs"].(map[string]any)
+	require.True(t, ok, "full-replace update must send inputs when the plan map is known-empty")
+	assert.Empty(t, inputs)
 }
 
 func TestBuildUpdateBody_sendsEmptyVarGroupSelectionsMap(t *testing.T) {

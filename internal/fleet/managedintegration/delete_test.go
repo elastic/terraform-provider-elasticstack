@@ -69,7 +69,10 @@ func deleteCallbackTestModel(t *testing.T, forceDelete bool) agentlessPolicyMode
 func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 	t.Run("200 success", func(t *testing.T) {
 		mux := http.NewServeMux()
-		mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
+		legacyCalls := registerLegacyPackagePoliciesGuard(mux)
+		method := newHTTPMethodCapture()
+		mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+			method.record(r)
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, `{"id":"policy-1"}`)
 		})
@@ -77,6 +80,8 @@ func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 
 		diags := deleteAgentlessPolicy(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
 		require.False(t, diags.HasError(), "%v", diags)
+		method.requireEqual(t, http.MethodDelete)
+		requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
 	})
 
 	t.Run("404 is idempotent no-op", func(t *testing.T) {
