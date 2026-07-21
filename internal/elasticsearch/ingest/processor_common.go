@@ -18,10 +18,15 @@
 package ingest
 
 import (
+	"context"
+	"maps"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -82,6 +87,122 @@ func (m *WithIgnorableTargetField) toIgnorableTargetFieldBody(defaultIgnoreMissi
 	}
 
 	return body
+}
+
+// simpleIgnorableTargetFieldModel is the shared Terraform state model for
+// processors whose only non-common attributes are field, target_field, and
+// ignore_missing (bytes, html_strip, lowercase, registered_domain, rename,
+// trim, uppercase, urldecode).
+type simpleIgnorableTargetFieldModel struct {
+	CommonProcessorModel
+	WithIgnorableTargetField
+}
+
+// simpleProcessorConfig holds the per-processor strings needed to build a
+// simpleIgnorableTargetFieldDataSource without repeating boilerplate.
+type simpleProcessorConfig struct {
+	typeName        string
+	description     string
+	fieldDesc       string
+	targetFieldDesc string
+	targetRequired  bool
+}
+
+// simpleIgnorableTargetFieldDataSource is a specialised datasource.DataSource
+// for the 8 simple-transform processors. It keeps the type name outside the
+// model so that Config.Get cannot zero it out.
+type simpleIgnorableTargetFieldDataSource struct {
+	cfg    simpleProcessorConfig
+	schema schema.Schema
+}
+
+var _ datasource.DataSource = (*simpleIgnorableTargetFieldDataSource)(nil)
+var _ datasource.DataSourceWithConfigure = (*simpleIgnorableTargetFieldDataSource)(nil)
+
+func (d *simpleIgnorableTargetFieldDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_elasticsearch_ingest_processor_" + d.cfg.typeName
+}
+
+func (d *simpleIgnorableTargetFieldDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = d.schema
+}
+
+func (d *simpleIgnorableTargetFieldDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var model simpleIgnorableTargetFieldModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var diags diag.Diagnostics
+	body := simpleIgnorableTargetFieldBody{}
+	body.CommonProcessorBody, diags = model.toCommonProcessorBody()
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	body.WithIgnorableTargetFieldBody = model.toIgnorableTargetFieldBody(false)
+
+	jsonStr, hash, diags := marshalAndHash(d.cfg.typeName, body)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	model.SetID(hash)
+	model.SetJSON(jsonStr)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+}
+
+// Configure implements datasource.DataSourceWithConfigure.
+func (d *simpleIgnorableTargetFieldDataSource) Configure(_ context.Context, _ datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+}
+
+// newSimpleIgnorableTargetFieldDataSource builds a PF data source for a
+// processor whose schema is exactly: id, json, field, target_field,
+// ignore_missing, plus CommonProcessorSchemaAttributes.
+func newSimpleIgnorableTargetFieldDataSource(cfg simpleProcessorConfig) datasource.DataSource {
+	targetAttr := schema.StringAttribute{
+		Description: cfg.targetFieldDesc,
+		Optional:    true,
+	}
+	if cfg.targetRequired {
+		targetAttr.Required = true
+		targetAttr.Optional = false
+	}
+
+	attrs := map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: descIdentifierWithPeriod,
+			Computed:    true,
+		},
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
+			Computed:    true,
+		},
+		attrField: schema.StringAttribute{
+			Description: cfg.fieldDesc,
+			Required:    true,
+		},
+		attrTargetField: targetAttr,
+		attrIgnoreMissing: schema.BoolAttribute{
+			Description: descIgnoreMissingDocStop,
+			Optional:    true,
+			Computed:    true,
+		},
+	}
+
+	maps.Copy(attrs, CommonProcessorSchemaAttributes())
+
+	return &simpleIgnorableTargetFieldDataSource{
+		cfg: cfg,
+		schema: schema.Schema{
+			Description: cfg.description,
+			Attributes:  attrs,
+		},
+	}
 }
 
 // CommonProcessorSchemaAttributes returns the schema attributes that are common

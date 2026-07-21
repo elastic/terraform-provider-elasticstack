@@ -17,64 +17,15 @@
 
 package ingest
 
-import (
-	"maps"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-type processorRenameModel struct {
-	CommonProcessorModel
-	WithIgnorableTargetField
-}
-
-func (m *processorRenameModel) TypeName() string { return "rename" }
-
-func (m *processorRenameModel) MarshalBody() (any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	body := processorRenameBody{}
-
-	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
-	if diags.HasError() {
-		return nil, diags
-	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
-
-	return body, diags
-}
+import "github.com/hashicorp/terraform-plugin-framework/datasource"
 
 // NewProcessorRenameDataSource returns a PF data source for the rename processor.
 func NewProcessorRenameDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-		attrField: schema.StringAttribute{
-			Description: "The field to be renamed.",
-			Required:    true,
-		},
-		attrTargetField: schema.StringAttribute{
-			Description: "The new name of the field.",
-			Required:    true,
-		},
-		attrIgnoreMissing: schema.BoolAttribute{
-			Description: descIgnoreMissingDocStop,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-
-	maps.Copy(attrs, CommonProcessorSchemaAttributes())
-
-	return NewProcessorDataSource(&processorRenameModel{}, schema.Schema{
-		Description: processorRenameDataSourceDescription,
-		Attributes:  attrs,
+	return newSimpleIgnorableTargetFieldDataSource(simpleProcessorConfig{
+		typeName:        "rename",
+		description:     processorRenameDataSourceDescription,
+		fieldDesc:       "The field to be renamed.",
+		targetFieldDesc: "The new name of the field.",
+		targetRequired:  true,
 	})
 }

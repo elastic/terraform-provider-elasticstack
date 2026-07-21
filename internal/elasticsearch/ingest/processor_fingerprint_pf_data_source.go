@@ -99,7 +99,7 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorFingerprintDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: descIdentifier,
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
 		attrJSON: schema.StringAttribute{

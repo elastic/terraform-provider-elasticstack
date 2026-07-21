@@ -66,7 +66,7 @@ func GetSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Manages tasks and resources related to ingest pipelines and processors. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest-apis.html",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				MarkdownDescription: descIdentifier,
+				MarkdownDescription: descIdentifierWithPeriod,
 				Computed:            true,
 			},
 			"name": schema.StringAttribute{

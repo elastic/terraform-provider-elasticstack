@@ -17,64 +17,14 @@
 
 package ingest
 
-import (
-	"maps"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-type processorHTMLStripModel struct {
-	CommonProcessorModel
-	WithIgnorableTargetField
-}
-
-func (m *processorHTMLStripModel) TypeName() string { return "html_strip" }
-
-func (m *processorHTMLStripModel) MarshalBody() (any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	body := processorHTMLStripBody{}
-
-	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
-	if diags.HasError() {
-		return nil, diags
-	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
-
-	return body, diags
-}
+import "github.com/hashicorp/terraform-plugin-framework/datasource"
 
 // NewProcessorHTMLStripDataSource returns a PF data source for the html_strip processor.
 func NewProcessorHTMLStripDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-		attrField: schema.StringAttribute{
-			Description: "The field to apply the replacement to.",
-			Required:    true,
-		},
-		attrTargetField: schema.StringAttribute{
-			Description: descTargetFieldInPlace,
-			Optional:    true,
-		},
-		attrIgnoreMissing: schema.BoolAttribute{
-			Description: descIgnoreMissingDocStop,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-
-	maps.Copy(attrs, CommonProcessorSchemaAttributes())
-
-	return NewProcessorDataSource(&processorHTMLStripModel{}, schema.Schema{
-		Description: processorHTMLStripDataSourceDescription,
-		Attributes:  attrs,
+	return newSimpleIgnorableTargetFieldDataSource(simpleProcessorConfig{
+		typeName:        "html_strip",
+		description:     processorHTMLStripDataSourceDescription,
+		fieldDesc:       "The field to apply the replacement to.",
+		targetFieldDesc: descTargetFieldInPlace,
 	})
 }
