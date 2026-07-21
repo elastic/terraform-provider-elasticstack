@@ -389,6 +389,14 @@ func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diag
 
 // managedIntegrationRequestOptions controls how a plan model is compiled into
 // KibanaHTTPAPIsCreateManagedIntegrationRequest (shared by Create and Update).
+//
+// Full-replace Update semantics (sendExplicitEmptyScalars): optional API fields
+// use generated `omitempty` JSON tags — omitting a key clears that field on the
+// server. Known-null optional attributes (description, namespace, inputs, …)
+// are therefore omitted rather than sent as empty strings. Known-empty
+// collections (for example vars_json = jsonencode({})) are marshaled
+// explicitly to clear. Unknown inputs on Update produce an attribute error
+// instead of omitting inputs and risking destructive API behavior.
 type managedIntegrationRequestOptions struct {
 	// omitCreateOnlyFields drops force, create_dataset_templates, and id from
 	// the body (Update PUT must not re-send create-only knobs).
@@ -433,13 +441,13 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 	if !opts.omitCreateOnlyFields && typeutils.IsKnown(m.PolicyID) {
 		body.Id = m.PolicyID.ValueStringPointer()
 	}
-	if typeutils.IsKnown(m.Description) {
+	if !m.Description.IsUnknown() && !m.Description.IsNull() {
 		body.Description = m.Description.ValueStringPointer()
 	}
-	if typeutils.IsKnown(m.Namespace) {
+	if !m.Namespace.IsUnknown() && !m.Namespace.IsNull() {
 		body.Namespace = m.Namespace.ValueStringPointer()
 	}
-	if typeutils.IsKnown(m.PolicyTemplate) {
+	if !m.PolicyTemplate.IsUnknown() && !m.PolicyTemplate.IsNull() {
 		body.PolicyTemplate = m.PolicyTemplate.ValueStringPointer()
 	}
 	if !opts.omitCreateOnlyFields {
@@ -477,7 +485,7 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 		}
 	}
 
-	if typeutils.IsKnown(m.VarGroupSelections) {
+	if !m.VarGroupSelections.IsUnknown() && !m.VarGroupSelections.IsNull() {
 		vgs := map[string]string{}
 		diags.Append(m.VarGroupSelections.ElementsAs(ctx, &vgs, false)...)
 		if len(vgs) > 0 || opts.sendExplicitEmptyScalars {
@@ -485,25 +493,29 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 		}
 	}
 
-	if typeutils.IsKnown(m.AdditionalDatastreamsPermissions) {
-		var perms []string
-		diags.Append(m.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)...)
-		if perms == nil && opts.sendExplicitEmptyScalars {
-			perms = []string{}
+	if !m.AdditionalDatastreamsPermissions.IsUnknown() {
+		if !m.AdditionalDatastreamsPermissions.IsNull() {
+			var perms []string
+			diags.Append(m.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)...)
+			if perms == nil && opts.sendExplicitEmptyScalars {
+				perms = []string{}
+			}
+			body.AdditionalDatastreamsPermissions = &perms
 		}
-		body.AdditionalDatastreamsPermissions = &perms
 	}
 
-	if typeutils.IsKnown(m.GlobalDataTags) {
-		tagsRaw := globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &diags)
-		if tagsRaw == nil && opts.sendExplicitEmptyScalars {
-			empty := make([]struct {
-				Name  string                                                                   `json:"name"`
-				Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
-			}, 0)
-			tagsRaw = &empty
+	if !m.GlobalDataTags.IsUnknown() {
+		if !m.GlobalDataTags.IsNull() {
+			tagsRaw := globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &diags)
+			if tagsRaw == nil && opts.sendExplicitEmptyScalars {
+				empty := make([]struct {
+					Name  string                                                                   `json:"name"`
+					Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
+				}, 0)
+				tagsRaw = &empty
+			}
+			body.GlobalDataTags = tagsRaw
 		}
-		body.GlobalDataTags = tagsRaw
 	}
 
 	ccSource := m
@@ -540,9 +552,19 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 		}
 	}
 
+	if opts.sendExplicitEmptyScalars && m.Inputs.IsUnknown() {
+		diags.AddAttributeError(
+			path.Root("inputs"),
+			"Cannot build managed integration update request",
+			"The inputs attribute is unknown; cannot build a full-replace update body without removing existing inputs from the API.",
+		)
+	}
+
 	inputOpts := applyCreateInputsOptions{
-		explicitEmptyInputs: opts.sendExplicitEmptyScalars && typeutils.IsKnown(m.Inputs.MapValue),
-		includeEmptyVars:    opts.sendExplicitEmptyScalars,
+		explicitEmptyInputs: opts.sendExplicitEmptyScalars &&
+			!m.Inputs.IsUnknown() && !m.Inputs.IsNull() &&
+			typeutils.IsKnown(m.Inputs.MapValue),
+		includeEmptyVars: opts.sendExplicitEmptyScalars,
 	}
 	applyCreateInputs(&body, decodedInputs, &diags, inputOpts)
 

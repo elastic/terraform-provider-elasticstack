@@ -89,7 +89,10 @@ func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
 
 // updateAgentlessPolicy implements Update for managed integrations. The PUT
 // body is a full replace built from the plan (see buildUpdateBody); prior
-// state supplies cloud_connector association fields only.
+// state supplies cloud_connector association fields only. The callback returns
+// the plan model only; per coding-standards.md the entitycore envelope's
+// read-after-write refresh (Read callback) is the sole source of persisted
+// state after a real PUT. Mutate responses are not merged into state here.
 func updateAgentlessPolicy(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -99,7 +102,10 @@ func updateAgentlessPolicy(
 	var diags diag.Diagnostics
 
 	if req.Prior != nil && onlyCreateOnlyFlagsChanged(*req.Prior, plan) {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
+		return entitycore.KibanaWriteResult[agentlessPolicyModel]{
+			Model:              plan,
+			SkipReadAfterWrite: true,
+		}, diags
 	}
 
 	if req.Prior == nil {
@@ -135,17 +141,20 @@ func updateAgentlessPolicy(
 		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
 	}
 
-	diags.Append(plan.populateFromManagedIntegration(ctx, req.SpaceID, updated, nil)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
-	}
-
 	return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
 }
 
 // buildUpdateBody builds the managed_integrations full-replace PUT body from
 // the plan. cloud_connector {enabled, cloud_connector_id} is taken from prior
 // state (not plan) so the association is re-sent without write-only fields.
+//
+// Full-replace semantics: optional request fields use generated `omitempty` JSON
+// tags. On Update, a known-null optional attribute is omitted from the body
+// (not sent as an empty string or empty collection), which clears the field on
+// the API. A known-empty collection (for example `vars_json = jsonencode({})`)
+// is sent explicitly when sendExplicitEmptyScalars applies. Unknown `inputs`
+// cannot be compiled safely and produce an attribute error rather than risking
+// destructive omission of existing inputs.
 func buildUpdateBody(ctx context.Context, plan, prior agentlessPolicyModel) (kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody, diag.Diagnostics) {
 	return plan.toManagedIntegrationRequestBody(ctx, managedIntegrationRequestOptions{
 		omitCreateOnlyFields:     true,

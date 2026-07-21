@@ -78,6 +78,12 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 // flow uses Model when resolving refresh identity and calling read.
 type KibanaWriteResult[T KibanaResourceModel] struct {
 	Model T
+	// SkipReadAfterWrite, when true, persists Model to state without invoking
+	// the read callback after Create/Update. Use when the write path performed
+	// no backend mutation that read-after-write would reflect (for example a
+	// provider-side-only config change). Defaults to false so normal writes
+	// still follow the provider rule that final state comes from a read request.
+	SkipReadAfterWrite bool
 }
 
 // KibanaWriteFunc performs Create or Update after the envelope decodes the plan
@@ -385,40 +391,47 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		return diags
 	}
 
-	readResourceID := written.Model.GetResourceID().ValueString()
-	readSpaceID := written.Model.GetSpaceID().ValueString()
-	if readResourceID == "" {
-		diags.AddError(
-			"Invalid resource identifier",
-			"The resolved read identity is empty after write; cannot refresh.",
-		)
-		return diags
-	}
-
-	if !isKibanaUnscoped(written.Model) && readSpaceID == "" {
-		diags.AddError(
-			"Invalid space identifier",
-			"The resolved read space is empty after write; cannot refresh.",
-		)
-		return diags
-	}
-
-	stateModel, found, readDiags := r.readFunc(ctx, client, readResourceID, readSpaceID, written.Model)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	if !found {
-		notFoundDetail := fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readResourceID)
-		if readSpaceID != "" {
-			notFoundDetail = fmt.Sprintf("%s_%s %q in space %q was not found after write", r.component, r.resourceName, readResourceID, readSpaceID)
+	var stateModel T
+	if written.SkipReadAfterWrite {
+		stateModel = written.Model
+	} else {
+		readResourceID := written.Model.GetResourceID().ValueString()
+		readSpaceID := written.Model.GetSpaceID().ValueString()
+		if readResourceID == "" {
+			diags.AddError(
+				"Invalid resource identifier",
+				"The resolved read identity is empty after write; cannot refresh.",
+			)
+			return diags
 		}
-		diags.AddError(
-			"Resource not found",
-			notFoundDetail,
-		)
-		return diags
+
+		if !isKibanaUnscoped(written.Model) && readSpaceID == "" {
+			diags.AddError(
+				"Invalid space identifier",
+				"The resolved read space is empty after write; cannot refresh.",
+			)
+			return diags
+		}
+
+		var found bool
+		var readDiags diag.Diagnostics
+		stateModel, found, readDiags = r.readFunc(ctx, client, readResourceID, readSpaceID, written.Model)
+		diags.Append(readDiags...)
+		if diags.HasError() {
+			return diags
+		}
+
+		if !found {
+			notFoundDetail := fmt.Sprintf("%s_%s %q was not found after write", r.component, r.resourceName, readResourceID)
+			if readSpaceID != "" {
+				notFoundDetail = fmt.Sprintf("%s_%s %q in space %q was not found after write", r.component, r.resourceName, readResourceID, readSpaceID)
+			}
+			diags.AddError(
+				"Resource not found",
+				notFoundDetail,
+			)
+			return diags
+		}
 	}
 
 	priorModel := planModel

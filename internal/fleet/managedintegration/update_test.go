@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,6 +110,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 
 		require.False(t, diags.HasError(), "%v", diags)
 		require.False(t, *called, "no Fleet API call should be made for a create_dataset_templates-only change")
+		require.True(t, result.SkipReadAfterWrite, "create-only-flag short-circuit must skip envelope read-after-write")
 		require.True(t, result.Model.CreateDatasetTemplates.ValueBool())
 	})
 
@@ -128,6 +131,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 
 		require.False(t, diags.HasError(), "%v", diags)
 		require.False(t, *called, "no Fleet API call should be made for a force/force_delete-only change")
+		require.True(t, result.SkipReadAfterWrite)
 		require.True(t, result.Model.Force.ValueBool())
 		require.True(t, result.Model.ForceDelete.ValueBool())
 	})
@@ -148,6 +152,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 
 		require.False(t, diags.HasError(), "%v", diags)
 		require.False(t, *called, "no Fleet API call should be made for a skip_topology_check-only change")
+		require.True(t, result.SkipReadAfterWrite)
 		require.True(t, result.Model.SkipTopologyCheck.ValueBool())
 	})
 
@@ -415,4 +420,245 @@ func TestBuildUpdateBody_fullReplaceOmitsCreateOnlyFields(t *testing.T) {
 	assert.False(t, hasForce)
 	assert.False(t, hasCreateDS)
 	assert.False(t, hasID)
+}
+
+func TestUpdateAgentlessPolicy_nilPrior(t *testing.T) {
+	plan := baseTestModel(t)
+	plan.PolicyID = types.StringValue("pp-1")
+	plan.ID = types.StringValue("default/pp-1")
+
+	client := newTopologyTestClient(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("unexpected API call when prior state is missing")
+	}))
+
+	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		Plan:    plan,
+		Prior:   nil,
+		WriteID: "pp-1",
+		SpaceID: "default",
+	})
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "missing prior state")
+}
+
+func TestUpdateAgentlessPolicy_putError(t *testing.T) {
+	prior := baseTestModel(t)
+	prior.PolicyID = types.StringValue("pp-1")
+	prior.ID = types.StringValue("default/pp-1")
+	plan := prior
+	plan.Description = types.StringValue("changed")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			http.Error(w, "boom", http.StatusInternalServerError)
+		}
+	})
+	client := newTopologyTestClient(t, mux)
+
+	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		Plan:    plan,
+		Prior:   &prior,
+		WriteID: "pp-1",
+		SpaceID: "default",
+	})
+	require.True(t, diags.HasError())
+}
+
+func TestUpdateAgentlessPolicy_notFoundOnPut(t *testing.T) {
+	prior := baseTestModel(t)
+	prior.PolicyID = types.StringValue("pp-1")
+	prior.ID = types.StringValue("default/pp-1")
+	plan := prior
+	plan.Description = types.StringValue("changed")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			http.Error(w, `{"message":"not found"}`, http.StatusNotFound)
+		}
+	})
+	client := newTopologyTestClient(t, mux)
+
+	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		Plan:    plan,
+		Prior:   &prior,
+		WriteID: "pp-1",
+		SpaceID: "default",
+	})
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "Unexpected status code")
+}
+
+func TestUpdateAgentlessPolicy_successDoesNotSkipReadAfterWrite(t *testing.T) {
+	prior := baseTestModel(t)
+	prior.PolicyID = types.StringValue("pp-1")
+	prior.ID = types.StringValue("default/pp-1")
+	plan := prior
+	plan.Description = types.StringValue("changed")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		const putOK = `{"item":{"id":"pp-1","name":"test-policy","package":{"name":"cloud_security_posture",` +
+			`"version":"3.4.0"},"created_at":"2024-01-01T00:00:00.000Z","updated_at":"2024-01-02T00:00:00.000Z"}}`
+		_, _ = w.Write([]byte(putOK))
+	})
+	client := newTopologyTestClient(t, mux)
+
+	result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		Plan:    plan,
+		Prior:   &prior,
+		WriteID: "pp-1",
+		SpaceID: "default",
+	})
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, result.SkipReadAfterWrite, "real PUT must leave read-after-write to the envelope")
+}
+
+func TestUpdateAgentlessPolicy_malformedPutResponseBody(t *testing.T) {
+	prior := baseTestModel(t)
+	prior.PolicyID = types.StringValue("pp-1")
+	prior.ID = types.StringValue("default/pp-1")
+	plan := prior
+	plan.Description = types.StringValue("changed")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			w.WriteHeader(http.StatusOK)
+		}
+	})
+	client := newTopologyTestClient(t, mux)
+
+	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		Plan:    plan,
+		Prior:   &prior,
+		WriteID: "pp-1",
+		SpaceID: "default",
+	})
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "Failed to parse response")
+}
+
+func TestBuildUpdateBody_cloudConnectorOmittedWhenPriorUnset(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baseTestModel(t)
+	plan := prior
+	plan.Description = types.StringValue("x")
+
+	body, diags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	decoded := decodeRequestJSON(t, body)
+	_, present := decoded["cloud_connector"]
+	assert.False(t, present)
+}
+
+func TestBuildUpdateBody_omitsKnownNullOptionalFields(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baseTestModel(t)
+	plan := prior
+	plan.Description = types.StringNull()
+	plan.Namespace = types.StringNull()
+	plan.PolicyTemplate = types.StringNull()
+	plan.Inputs = policyshape.NewInputsNull(agentlessInputType())
+	plan.VarGroupSelections = types.MapNull(types.StringType)
+	plan.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
+	plan.GlobalDataTags = types.MapNull(globalDataTagsElementType())
+
+	body, diags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	decoded := decodeRequestJSON(t, body)
+	_, hasDesc := decoded["description"]
+	_, hasNS := decoded["namespace"]
+	_, hasPT := decoded["policy_template"]
+	_, hasInputs := decoded["inputs"]
+	_, hasVGS := decoded["var_group_selections"]
+	_, hasPerms := decoded["additional_datastreams_permissions"]
+	_, hasTags := decoded["global_data_tags"]
+	assert.False(t, hasDesc)
+	assert.False(t, hasNS)
+	assert.False(t, hasPT)
+	assert.False(t, hasInputs)
+	assert.False(t, hasVGS)
+	assert.False(t, hasPerms)
+	assert.False(t, hasTags)
+}
+
+func TestBuildUpdateBody_unknownInputsErrors(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baseTestModel(t)
+	plan := prior
+	plan.Inputs = policyshape.InputsValue{
+		MapValue: types.MapUnknown(policyshape.NewInputsType(agentlessInputType())),
+	}
+
+	_, diags := buildUpdateBody(ctx, plan, prior)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Detail(), "inputs attribute is unknown")
+}
+
+func TestBuildUpdateBody_fullReplaceExtraFields(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baseTestModel(t)
+	plan := prior
+	plan.PolicyTemplate = types.StringValue("cspm")
+
+	vgs, diags := types.MapValueFrom(ctx, types.StringType, map[string]string{"vg1": "opt-a"})
+	require.False(t, diags.HasError())
+	plan.VarGroupSelections = vgs
+
+	plan.AdditionalDatastreamsPermissions, diags = types.ListValueFrom(ctx, types.StringType, []string{"logs-*"})
+	require.False(t, diags.HasError())
+
+	plan.GlobalDataTags, diags = types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"cost": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringNull(),
+			globalDataTagNumberValueAttr: types.Float32Value(42),
+		}),
+	})
+	require.False(t, diags.HasError())
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+	decoded := decodeRequestJSON(t, body)
+	assert.Equal(t, "cspm", decoded["policy_template"])
+
+	vgsOut, ok := decoded["var_group_selections"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "opt-a", vgsOut["vg1"])
+
+	perms, ok := decoded["additional_datastreams_permissions"].([]any)
+	require.True(t, ok)
+	require.Len(t, perms, 1)
+
+	tags, ok := decoded["global_data_tags"].([]any)
+	require.True(t, ok)
+	require.Len(t, tags, 1)
+	tag0, ok := tags[0].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "cost", tag0["name"])
+	assert.InDelta(t, float64(42), tag0["value"], 0.001)
+}
+
+func TestBuildUpdateBody_sendsEmptyVarGroupSelectionsMap(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baseTestModel(t)
+	plan := prior
+	plan.VarGroupSelections, _ = types.MapValueFrom(ctx, types.StringType, map[string]string{})
+
+	body, diags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	decoded := decodeRequestJSON(t, body)
+	vgs, ok := decoded["var_group_selections"].(map[string]any)
+	require.True(t, ok)
+	assert.Empty(t, vgs)
 }

@@ -2,30 +2,26 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
-## Intermediate branch state (after task 6 conversion; tasks 7–8 pending)
+## Intermediate branch state (after task 7 update body; task 8 client swap pending)
 
-Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`. The removed type **`elasticstack_fleet_agentless_policy`** no longer appears in the provider schema.
+Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`.
 
-Task 4 completed the version-gate update: **`MinVersion` remains 9.5.0** (aligned with `policyshape.MinVersionCondition`), the redundant `SupportsCondition` / `validateInputConditionSupport` runtime gate was removed, and `capabilities.go` was deleted (version gating lives only in `models.go` + the entitycore envelope).
+Tasks 4–6 completed version gate, schema, and `models_convert.go` simplification against `KibanaHTTPAPIsManagedIntegration`.
 
-Task 5 completed schema changes: `name` and `package.version` are updatable in-place in Terraform; `global_data_tags` is a `MapNestedAttribute` with `string_value` / `number_value`; acceptance fixtures use the map shape for string tags.
+**Task 7 (complete)** rewrote `update.go` for managed_integrations **full-replace PUT**:
 
-Task 6 completed **`models_convert.go` simplification**: create bodies use `PostFleetManagedIntegrationsJSONRequestBody`; state population uses `populateFromManagedIntegration` against `KibanaHTTPAPIsManagedIntegration` (including after create). Legacy read/update still fetch `PackagePolicy` via compat wrappers; **`package_policy_read_bridge.go`** projects mapped-format responses onto the managed-integration type and **returns an `inputs` attribute error** (no state mutation) when `AsPackagePolicyMappedInputs` fails (typed-array GET bodies). Delete the bridge with task 8.
+- `buildUpdateBody(plan, prior)` compiles `PutFleetManagedIntegrationsPolicyidJSONRequestBody` from the plan via shared `toManagedIntegrationRequestBody`; **`prior` supplies `cloud_connector {enabled, cloud_connector_id}` only** (never `name`/`target_csp`).
+- Update **PUT** calls `UpdateManagedIntegration`; the write callback returns **plan only** — no `populateFromManagedIntegration` on the PUT response. Final state comes from the entitycore envelope **Read-after-write** (coding-standards.md).
+- **`onlyCreateOnlyFlagsChanged`** skips Fleet calls and sets **`KibanaWriteResult.SkipReadAfterWrite`** so the envelope persists plan without a Read (no managed_integrations GET/PUT/DELETE).
+- Full-replace optional fields: **known-null → omit** (generated `omitempty` clears on API); **unknown `inputs` → attribute error**; known-empty collections sent explicitly where `sendExplicitEmptyScalars` applies.
 
-Until tasks 7–8 complete the API migration:
+**Still on legacy compat until task 8:** Create/Read/Delete call **`agentless_policy_compat.go`**; Read uses **`package_policy_read_bridge.go`** for mapped package_policies responses. Delete both with task 8.
 
-- Create/read/update/delete in this package still call the temporary **`agentless_policy_compat.go`** wrappers for some paths; **`buildUpdateBody` remains package-policy typed** (task 7).
-- Acceptance fixtures and example `.tf` files use `elasticstack_fleet_managed_integration`; test function names and example directory paths remain to be renamed in tasks 10–11.
+Acceptance fixtures use `elasticstack_fleet_managed_integration`; test renames remain tasks 10–11. Live in-place **name**, **package.version**, and **cloud_connector** persistence are tracked in tasks **11.3–11.4** and **11.7** (not yet implemented).
 
-## Temporary schema vs update-body mismatch (task 5 review — **must close in task 7.3**)
+## ~~Temporary schema vs update-body mismatch~~ (closed in task 7)
 
-**Problem:** Task 5.1/5.2 dropped `RequiresReplace` on `name` and `package.version`, so Terraform correctly plans **Update** when those attributes change. **`update.go` / `buildUpdateBody` have not been rewritten yet** (task 7): they still target the legacy package_policies PUT path and do not fully align with managed_integrations full-replace semantics (including sending `name` and `package.version` from plan on every PUT — task 7.3).
-
-**Impact until task 7 lands:**
-
-- Plan-time behavior matches the new schema (e.g. `TestAccResourceAgentlessPolicy_NameUpdateInPlace` expects `ResourceActionUpdate`, not destroy/recreate).
-- Apply-time persistence of in-place `name` / `package.version` changes against a live stack is **not guaranteed** and must not be treated as merge-ready acceptance coverage until **task 7.3** ships.
-- **Task 7.3 is a release gate:** it must include `name` and `package.version` from plan in the managed_integrations PUT body before this change is considered complete for acceptance/merge sign-off on in-place rename/version bump scenarios (tasks 11.3–11.4).
+Task 5.1/5.2 made `name` and `package.version` updatable in Terraform; task 7.3 includes both in every full-replace PUT body from plan. Acceptance merge sign-off for live rename/version bump still requires tasks **11.3–11.4**.
 
 ## 1.1 MinVersion floor — **9.5.0**
 
@@ -103,7 +99,7 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 - The existing comparison (all API-backed fields equal, excluding provider plumbing and computed timestamps) remains correct once `name` and `package.version` become updatable — both are already in the comparison chain.
 - Full-replace does **not** simplify this to a body-equality check: the plan never includes server-only timestamps, and building the PUT body just to compare would still require a Read.
 
-**Implementation note for task 7:** Keep `onlyCreateOnlyFlagsChanged`; drop the GET+echo-current prelude only when the short-circuit does not fire.
+**Implementation note for task 7:** Keep `onlyCreateOnlyFlagsChanged`; set `KibanaWriteResult.SkipReadAfterWrite` on that path so the envelope does not invoke Read (no managed_integrations GET). Normal Update still read-after-writes via the Read callback after PUT.
 
 ## 2. New managed_integrations client (task 2)
 

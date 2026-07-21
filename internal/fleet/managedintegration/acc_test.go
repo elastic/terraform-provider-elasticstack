@@ -531,10 +531,8 @@ func mustFleetClient(t *testing.T) *fleetclient.Client {
 
 // TestAccResourceAgentlessPolicy_NameUpdateInPlace asserts Terraform plans an
 // in-place Update when `name` changes (task 5.1 dropped RequiresReplace).
-// Until task 7.3 rewrites buildUpdateBody for managed_integrations PUT, the
-// legacy package_policies update path may not persist the new name on apply —
-// see openspec/changes/fleet-managed-integration/implementation.md
-// "Temporary schema vs update-body mismatch".
+// Task 7 sends the new name on managed_integrations PUT; live persistence is
+// covered by task 11.4 (acceptance), not this plan-only step alone.
 func TestAccResourceAgentlessPolicy_NameUpdateInPlace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
 	skipUnlessConfirmedCloud(t)

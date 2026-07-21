@@ -2057,6 +2057,69 @@ func TestNewKibanaResource_Update_readFuncErrorAfterWrite(t *testing.T) {
 	require.Equal(t, "default/my-resource", after.ID.ValueString())
 }
 
+func TestNewKibanaResource_Update_skipReadAfterWriteFromWriteResult(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+		readCalled = true
+		model.Name = types.StringValue(model.Name.ValueString() + "-read")
+		return model, true, nil
+	}
+	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		model := req.Plan
+		model.Name = types.StringValue("from-write-callback")
+		return KibanaWriteResult[testKibanaResourceModel]{
+			Model:              model,
+			SkipReadAfterWrite: true,
+		}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.False(t, readCalled, "read callback must not run when write result sets SkipReadAfterWrite")
+	var after testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "from-write-callback", after.Name.ValueString())
+}
+
+func TestNewKibanaResource_Update_readAfterWriteByDefault(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = func(_ context.Context, _ *clients.KibanaScopedClient, _ string, _ string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+		readCalled = true
+		model.Name = types.StringValue("from-read")
+		return model, true, nil
+	}
+	opts.Update = func(_ context.Context, _ *clients.KibanaScopedClient, req KibanaWriteRequest[testKibanaResourceModel]) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+		return KibanaWriteResult[testKibanaResourceModel]{Model: req.Plan}, nil
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+	prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+	resp := resource.UpdateResponse{State: prior}
+	r.Update(ctx, resource.UpdateRequest{Plan: plan, State: prior, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "read callback must run when SkipReadAfterWrite is false")
+	var after testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "from-read", after.Name.ValueString())
+}
+
 func TestNewKibanaResource_Create_callbackReceivesNilPriorAndConfig(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
