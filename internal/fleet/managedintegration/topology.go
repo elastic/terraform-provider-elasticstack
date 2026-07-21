@@ -89,7 +89,7 @@ type statusBodyDTO struct {
 //     (a) reading the `xpack.fleet.agentless.enabled` kibana.yml flag --
 //     there is no read API for it (it is not an Elasticsearch cluster
 //     setting, and no Fleet settings endpoint echoes it); (b) a `dry_run`
-//     preflight POST to `/api/fleet/agentless_policies` -- there is no
+//     preflight POST to `/api/fleet/managed_integrations` -- there is no
 //     dry_run parameter on that endpoint in the generated kbapi client, and
 //     empirically POSTing malformed bodies to it returns byte-for-byte
 //     identical validation errors on a self-managed and a Cloud Hosted
@@ -162,7 +162,7 @@ func checkDeploymentTopology(ctx context.Context, client *clients.KibanaScopedCl
 		// Decision 7. Do not block a potentially-legitimate cloud-hosted
 		// setup on a transient or unrelated status-endpoint error. If the
 		// deployment genuinely is unsupported, the subsequent POST to
-		// /api/fleet/agentless_policies will surface its own error.
+		// /api/fleet/managed_integrations will surface its own error.
 		return nil
 	}
 
@@ -172,10 +172,10 @@ func checkDeploymentTopology(ctx context.Context, client *clients.KibanaScopedCl
 	var diags diag.Diagnostics
 	diags.AddError(
 		"Unsupported deployment topology",
-		"Fleet agentless policies require Elastic Cloud Hosted or Serverless; this Kibana deployment appears to be "+
-			"self-managed. The Fleet agentless policies API provisions agent runtime capacity in Elastic's own cloud "+
+		"Fleet managed integrations require Elastic Cloud Hosted or Serverless; this Kibana deployment appears to be "+
+			"self-managed. The Fleet managed integrations API provisions agent runtime capacity in Elastic's own cloud "+
 			"infrastructure, so it is only functional on Elastic Cloud Hosted and Serverless (Security or "+
-			"Observability) deployments -- see the Kibana 9.3.0+ Fleet agentless policies documentation. "+
+			"Observability) deployments -- see the Kibana 9.5.0+ Fleet managed integrations documentation. "+
 			"Self-managed (on-premises) Kibana is not supported.",
 	)
 	return diags

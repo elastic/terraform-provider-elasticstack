@@ -67,8 +67,8 @@ func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Fleet agentless policies, which provision agent runtime capacity in Elastic's " +
 			"own cloud infrastructure instead of on a host running Elastic Agent. " +
-			"**This resource is experimental**: the underlying Fleet agentless policies API was added in Kibana " +
-			"9.3.0 and its behavior may change in future Kibana releases. " +
+			"**This resource is experimental**: the underlying Fleet managed integrations API requires Kibana " +
+			"9.5.0 and its behavior may change in future Kibana releases. " +
 			"It is only supported on **Elastic Cloud Hosted** and **Serverless** (Security or Observability) " +
 			"deployments; self-managed (on-premises) Kibana is not supported, and this resource refuses to run " +
 			"against a self-managed deployment it can positively identify as such.",
@@ -267,7 +267,7 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Skips the deployment-topology preflight check. Use only if you are certain " +
 					"this is running against a supported Elastic Cloud Hosted or Serverless deployment and the " +
 					"automatic detection is producing a false positive (e.g. due to non-standard network routing " +
-					"such as PrivateLink). Does not weaken version gating (Kibana 9.3.0+ is still enforced) -- it " +
+					"such as PrivateLink). Does not weaken version gating (Kibana 9.5.0+ is still enforced) -- it " +
 					"only bypasses the topology heuristic. Defaults to `false`. Create-only: consulted only during " +
 					"Create and not read back from the API.",
 			},

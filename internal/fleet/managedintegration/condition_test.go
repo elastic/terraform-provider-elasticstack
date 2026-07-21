@@ -147,6 +147,32 @@ func TestBuildUpdateBody_conditionHandling(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, "data_stream.dataset == 'audit'", stream["condition"])
 	})
+
+	t.Run("omits condition keys when unset", func(t *testing.T) {
+		t.Parallel()
+		plan := baseTestModel(t)
+		plan.Inputs = newInputsWithCondition(t, "", "")
+
+		body, diags := buildUpdateBody(context.Background(), plan, current)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		decoded := decodeRequestJSON(t, body)
+		inputs, ok := decoded["inputs"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, inputs)
+		in, ok := inputs[0].(map[string]any)
+		require.True(t, ok)
+		_, hasInputCondition := in["condition"]
+		assert.False(t, hasInputCondition)
+
+		streams, ok := in["streams"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, streams)
+		stream, ok := streams[0].(map[string]any)
+		require.True(t, ok)
+		_, hasStreamCondition := stream["condition"]
+		assert.False(t, hasStreamCondition)
+	})
 }
 
 // TestPopulateFromCreateResponse_roundTripsCondition decodes `condition` from
@@ -195,4 +221,78 @@ func TestPopulateFromCreateResponse_roundTripsCondition(t *testing.T) {
 	require.False(t, inputs["cspm-cloudbeat/cis_aws"].Streams.ElementsAs(ctx, &streams, false).HasError())
 	require.Contains(t, streams, "cloud_security_posture.findings")
 	assert.Equal(t, "data_stream.dataset == 'audit'", streams["cloud_security_posture.findings"].Condition.ValueString())
+}
+
+// TestPopulateFromCreateResponse_leavesConditionNullWhenAbsent decodes inputs
+// from a managed-integration response that omits `condition` on inputs/streams.
+func TestPopulateFromCreateResponse_leavesConditionNullWhenAbsent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := kbapi.KibanaHTTPAPIsManagedIntegration{
+		Id:        "policy-1",
+		Name:      "test-policy",
+		CreatedAt: "2024-01-01T00:00:00.000Z",
+		CreatedBy: "elastic",
+		UpdatedAt: "2024-01-02T00:00:00.000Z",
+		UpdatedBy: "elastic",
+		Package: kbapi.KibanaHTTPAPIsManagedIntegrationPackage{
+			Name:    "cloud_security_posture",
+			Version: "3.4.0",
+			Title:   "Security Posture Management",
+		},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"cspm-cloudbeat/cis_aws": {
+			"enabled": true,
+			"streams": {
+				"cloud_security_posture.findings": {
+					"enabled": true
+				}
+			}
+		}
+	}`), &item.Inputs))
+
+	m := baseTestModel(t)
+	m.PolicyTemplate = types.StringValue("cspm")
+	diags := m.populateFromCreateResponse(ctx, "default", item)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var inputs map[string]agentlessInputModel
+	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
+	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
+	assert.True(t, inputs["cspm-cloudbeat/cis_aws"].Condition.IsNull())
+
+	var streams map[string]policyshape.InputStreamModel
+	require.False(t, inputs["cspm-cloudbeat/cis_aws"].Streams.ElementsAs(ctx, &streams, false).HasError())
+	require.Contains(t, streams, "cloud_security_posture.findings")
+	assert.True(t, streams["cloud_security_posture.findings"].Condition.IsNull())
+}
+
+// TestPopulateFromPackagePolicy_leavesConditionNullWhenAbsent is the read-path
+// counterpart using the typed package_policies GET fixture (until task 6.2).
+func TestPopulateFromPackagePolicy_leavesConditionNullWhenAbsent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	data := mustPackagePolicyFromJSON(t, mappedFormatPackagePolicyJSON)
+	m := agentlessPolicyModel{
+		Force:                  types.BoolValue(true),
+		CreateDatasetTemplates: types.BoolValue(true),
+		PolicyTemplate:         types.StringValue("cspm"),
+		CloudConnector:         types.ObjectNull(cloudConnectorAttrTypes()),
+	}
+
+	diags := m.populateFromPackagePolicy(ctx, "default", data)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var inputs map[string]agentlessInputModel
+	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
+	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
+	assert.True(t, inputs["cspm-cloudbeat/cis_aws"].Condition.IsNull())
+
+	var streams map[string]policyshape.InputStreamModel
+	require.False(t, inputs["cspm-cloudbeat/cis_aws"].Streams.ElementsAs(ctx, &streams, false).HasError())
+	require.Contains(t, streams, "cloud_security_posture.findings")
+	assert.True(t, streams["cloud_security_posture.findings"].Condition.IsNull())
 }

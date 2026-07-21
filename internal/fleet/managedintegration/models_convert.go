@@ -305,7 +305,7 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 //
 // knownKeys filters wireInputs down to the given key set before decoding, or
 // performs no filtering at all when nil. This works around a real behavior
-// of both the POST /api/fleet/agentless_policies response and the
+// of both the POST /api/fleet/managed_integrations response and the
 // package_policies GET/PUT (?format=simplified) response for
 // multi-policy-template packages such as cloud_security_posture (CSPM):
 // empirically (see the fleet-agentless-policy OpenSpec change's Task 8

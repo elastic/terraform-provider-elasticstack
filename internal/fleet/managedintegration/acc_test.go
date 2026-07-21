@@ -626,25 +626,26 @@ func TestAccResourceAgentlessPolicy_InputsUpdateInPlace(t *testing.T) {
 	})
 }
 
-// TestAgentlessPolicy_VersionSkipGating documents Task 8.4's coverage rather
-// than duplicating it: versionutils.SkipIfUnsupported (used by every TestAcc
-// function above) is the mechanism spec.md's "Version gating" requirement
-// asks tests to gate on, and its own skip-vs-fail behavior is exercised by
-// versionutils' own package tests, not re-tested per-resource here -- no
-// sibling Fleet resource's acc_test.go (proxy, integration_policy) re-tests
-// versionutils itself either. The agentless-policy-specific half of Task
-// 8.4 -- that the version check fires before any API call, for this
-// resource's particular GetVersionRequirements wiring -- already has
-// dedicated unit coverage in entitycore_contract_test.go's
-// TestAgentlessPolicyModel_versionGate_firesBeforeAPICall (Task 6.1). This
-// test function is intentionally a no-op assertion of that fact so `go test
-// -list` / test reports surface the mapping from Task 8.4 to its actual
-// coverage location.
+// TestAgentlessPolicy_VersionSkipGating documents tasks 11.6 and 11.8 coverage
+// rather than duplicating it: versionutils.SkipIfUnsupported (used by every
+// TestAcc function above) is the mechanism spec.md's "Version gating"
+// requirement asks tests to gate on (task 11.6), and its own skip-vs-fail
+// behavior is exercised by versionutils' own package tests, not re-tested
+// per-resource here -- no sibling Fleet resource's acc_test.go (proxy,
+// integration_policy) re-tests versionutils itself either. Live input/stream
+// `condition` create/update round-trip coverage is tracked separately as
+// task 11.8. The guarantee that the version check fires before any API call
+// for this resource's GetVersionRequirements wiring already has dedicated
+// unit coverage in entitycore_contract_test.go's
+// TestAgentlessPolicyModel_versionGate_firesBeforeAPICall. This test function
+// is intentionally a no-op assertion of that mapping so `go test -list` /
+// test reports surface where task 11.6 coverage lives.
 func TestAgentlessPolicy_VersionSkipGating(t *testing.T) {
-	t.Log("Task 8.4 coverage: version-skip gating is exercised by every TestAcc* " +
-		"function in this file via versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, ...), " +
-		"and the version-gate-fires-before-any-API-call guarantee has dedicated unit " +
-		"coverage in TestAgentlessPolicyModel_versionGate_firesBeforeAPICall (entitycore_contract_test.go).")
+	t.Log("Task 11.6 coverage: version-skip gating is exercised by every TestAcc* " +
+		"function in this file via versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, ...). " +
+		"Task 11.8 adds live condition round-trip acceptance coverage. The version-gate-fires-before-any-API-call " +
+		"guarantee has dedicated unit coverage in TestAgentlessPolicyModel_versionGate_firesBeforeAPICall " +
+		"(entitycore_contract_test.go).")
 }
 
 func checkResourceAgentlessPolicyDestroy(s *terraform.State) error {

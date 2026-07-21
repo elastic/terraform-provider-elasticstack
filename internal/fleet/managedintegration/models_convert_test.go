@@ -506,7 +506,7 @@ func TestPopulateFromPackagePolicy_filtersToKnownInputKeys(t *testing.T) {
 // TestPopulateFromCreateResponse_filtersToKnownInputKeys is the create-response
 // counterpart of TestPopulateFromPackagePolicy_filtersToKnownInputKeys: the
 // same cross-policy-template-noise behavior is present in the bundled
-// POST /api/fleet/agentless_policies response (KibanaHTTPAPIsManagedIntegration),
+// POST /api/fleet/managed_integrations response (KibanaHTTPAPIsManagedIntegration),
 // not just the package-policies GET/PUT response, and populateFromCreateResponse
 // shares the same inputsKnownKeySet/populateInputsModel filtering path.
 func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
