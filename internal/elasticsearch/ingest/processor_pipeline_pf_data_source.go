@@ -54,7 +54,7 @@ func (m *processorPipelineModel) MarshalBody() (any, diag.Diagnostics) {
 func NewProcessorPipelineDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: descIdentifier,
+			Description: descIdentifierWithPeriod,
 			Computed:    true,
 		},
 		attrJSON: schema.StringAttribute{
