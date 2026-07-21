@@ -10,6 +10,10 @@ description: |-
 
 {{ .Description | trimspace }}
 
+> **Provider registration:** Set `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` in the environment where you run Terraform before `terraform plan` or `apply`. Without it, the provider schema does not include this resource type.
+
+> **Example snippets:** Each `.tf` file under `examples/resources/elasticstack_fleet_managed_integration/` is a standalone module for documentation and plan-only testing. Do not merge multiple snippet files into one root module.
+
 ## Example Usage
 
 ### CSPM AWS managed integration
@@ -18,7 +22,9 @@ description: |-
 
 ### In-place package version update
 
-Change `package.version` on an existing managed integration to upgrade the Fleet package without replacing the resource. `package.name` must stay the same; changing it still forces replacement.
+After the managed integration exists, change `package.version` on the **same** resource (same Terraform address, e.g. `elasticstack_fleet_managed_integration.cspm_aws`) to upgrade the Fleet package without replacement. `package.name` must stay the same; changing it still forces replacement.
+
+The snippet below is a standalone copy of that resource after bumping `package.version` from `3.4.0` to `3.5.0` (see `resource.tf` for the initial create).
 
 {{ tffile "examples/resources/elasticstack_fleet_managed_integration/package_version_update.tf" }}
 

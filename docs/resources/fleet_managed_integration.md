@@ -10,6 +10,10 @@ description: |-
 
 Manages Fleet managed integrations, which provision agent runtime capacity in Elastic's own cloud infrastructure instead of on a host running Elastic Agent. **This resource is experimental**: the underlying Fleet managed integrations API requires Kibana 9.5.0 and its behavior may change in future Kibana releases. It is only supported on **Elastic Cloud Hosted** and **Serverless** (Security or Observability) deployments; self-managed (on-premises) Kibana is not supported, and this resource refuses to run against a self-managed deployment it can positively identify as such.
 
+> **Provider registration:** Set `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` in the environment where you run Terraform before `terraform plan` or `apply`. Without it, the provider schema does not include this resource type.
+
+> **Example snippets:** Each `.tf` file under `examples/resources/elasticstack_fleet_managed_integration/` is a standalone module for documentation and plan-only testing. Do not merge multiple snippet files into one root module.
+
 ## Example Usage
 
 ### CSPM AWS managed integration
@@ -91,24 +95,26 @@ resource "elasticstack_fleet_managed_integration" "cspm_aws" {
 
 ### In-place package version update
 
-Change `package.version` on an existing managed integration to upgrade the Fleet package without replacing the resource. `package.name` must stay the same; changing it still forces replacement.
+After the managed integration exists, change `package.version` on the **same** resource (same Terraform address, e.g. `elasticstack_fleet_managed_integration.cspm_aws`) to upgrade the Fleet package without replacement. `package.name` must stay the same; changing it still forces replacement.
+
+The snippet below is a standalone copy of that resource after bumping `package.version` from `3.4.0` to `3.5.0` (see `resource.tf` for the initial create).
 
 ```terraform
 provider "elasticstack" {
   kibana {}
 }
 
-# Bump package.version on an existing managed integration to pick up a newer Fleet
-# package release. Terraform applies this as an in-place update (PUT to
-# /api/fleet/managed_integrations) rather than destroy-and-recreate.
-# package.name must stay the same; changing it still forces replacement.
-resource "elasticstack_fleet_managed_integration" "cspm_package_upgrade" {
-  name            = "CSPM package upgrade example"
+# Standalone snippet: the same elasticstack_fleet_managed_integration.cspm_aws resource
+# as in resource.tf after changing package.version in place (3.4.0 → 3.5.0). Apply this
+# diff to an existing integration; do not add this file alongside resource.tf in one module.
+resource "elasticstack_fleet_managed_integration" "cspm_aws" {
+  name            = "Agentless CSPM - AWS Production"
+  description     = "Cloud Security Posture Management for the AWS production account"
   policy_template = "cspm"
 
   package = {
     name    = "cloud_security_posture"
-    version = "3.5.0" # change from e.g. "3.4.0" to upgrade in place
+    version = "3.5.0" # was "3.4.0" — in-place update, not replacement
   }
 
   vars_json = jsonencode({
@@ -135,6 +141,24 @@ resource "elasticstack_fleet_managed_integration" "cspm_package_upgrade" {
       }
     }
   }
+
+  cloud_connector = {
+    enabled            = true
+    cloud_connector_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    name               = "aws-production-cross-account"
+    target_csp         = "aws"
+  }
+
+  global_data_tags = {
+    env = {
+      string_value = "production"
+    }
+    team = {
+      string_value = "cloud-security"
+    }
+  }
+
+  additional_datastreams_permissions = ["logs-custom-*"]
 }
 ```
 
@@ -259,9 +283,9 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-# Import using the bare managed integration ID (assumes the default space)
-terraform import elasticstack_fleet_managed_integration.cspm_aws <fleet_managed_integration_id>
+# Import using the bare managed integration ID (Fleet policy_id; default space)
+terraform import elasticstack_fleet_managed_integration.cspm_aws <policy_id>
 
-# Or using the composite <space_id>/<policy_id> ID
-terraform import elasticstack_fleet_managed_integration.cspm_aws <space_id>/<fleet_managed_integration_id>
+# Or using the composite <space_id>/<policy_id> ID (policy_id is stored as policy_id in state)
+terraform import elasticstack_fleet_managed_integration.cspm_aws <space_id>/<policy_id>
 ```

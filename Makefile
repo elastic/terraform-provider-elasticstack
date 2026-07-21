@@ -194,7 +194,20 @@ copy-kibana-ca: .env ## Copy Kibana CA certificate to local machine
 .PHONY: docs-generate
 docs-generate: tools ## Generate documentation for the provider
 	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
-	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
+	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
+
+.PHONY: docs-generate-fleet-managed-integration
+docs-generate-fleet-managed-integration: tools ## Regenerate docs/resources/fleet_managed_integration.md only (experimental resource; does not publish other experimental entities)
+	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
+	rm -rf .fleet-managed-integration-docs-tmp; \
+	mkdir -p .fleet-managed-integration-docs-tmp; \
+	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate \
+	  --provider-name terraform-provider-elasticstack \
+	  --tf-version "$$terraform_version" \
+	  --website-source-dir fleet-managed-integration-docs \
+	  --rendered-website-dir .fleet-managed-integration-docs-tmp; \
+	cp .fleet-managed-integration-docs-tmp/resources/fleet_managed_integration.md docs/resources/fleet_managed_integration.md; \
+	rm -rf .fleet-managed-integration-docs-tmp
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources
@@ -207,7 +220,7 @@ workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spe
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen
-gen: docs-generate ## Generate the code and documentation
+gen: docs-generate docs-generate-fleet-managed-integration ## Generate the code and documentation
 	@ go generate ./...
 
 .PHONY: clean
@@ -295,7 +308,7 @@ check-fmt: fmt ## Check if code is formatted
 	fi
 
 .PHONY: check-docs
-check-docs: docs-generate  ## Check uncommitted changes on docs
+check-docs: docs-generate docs-generate-fleet-managed-integration ## Check uncommitted changes on docs
 	@if [ "`git status --porcelain docs/`" ]; then \
 	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate' to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
 	fi

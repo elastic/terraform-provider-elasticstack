@@ -2,17 +2,17 @@ provider "elasticstack" {
   kibana {}
 }
 
-# Bump package.version on an existing managed integration to pick up a newer Fleet
-# package release. Terraform applies this as an in-place update (PUT to
-# /api/fleet/managed_integrations) rather than destroy-and-recreate.
-# package.name must stay the same; changing it still forces replacement.
-resource "elasticstack_fleet_managed_integration" "cspm_package_upgrade" {
-  name            = "CSPM package upgrade example"
+# Standalone snippet: the same elasticstack_fleet_managed_integration.cspm_aws resource
+# as in resource.tf after changing package.version in place (3.4.0 → 3.5.0). Apply this
+# diff to an existing integration; do not add this file alongside resource.tf in one module.
+resource "elasticstack_fleet_managed_integration" "cspm_aws" {
+  name            = "Agentless CSPM - AWS Production"
+  description     = "Cloud Security Posture Management for the AWS production account"
   policy_template = "cspm"
 
   package = {
     name    = "cloud_security_posture"
-    version = "3.5.0" # change from e.g. "3.4.0" to upgrade in place
+    version = "3.5.0" # was "3.4.0" — in-place update, not replacement
   }
 
   vars_json = jsonencode({
@@ -39,4 +39,22 @@ resource "elasticstack_fleet_managed_integration" "cspm_package_upgrade" {
       }
     }
   }
+
+  cloud_connector = {
+    enabled            = true
+    cloud_connector_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    name               = "aws-production-cross-account"
+    target_csp         = "aws"
+  }
+
+  global_data_tags = {
+    env = {
+      string_value = "production"
+    }
+    team = {
+      string_value = "cloud-security"
+    }
+  }
+
+  additional_datastreams_permissions = ["logs-custom-*"]
 }
