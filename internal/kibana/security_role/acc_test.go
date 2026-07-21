@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
 func TestAccResourceKibanaSecurityRole(t *testing.T) {
@@ -229,13 +230,23 @@ func TestAccKibanaSecurityRoleResourceFromSDK(t *testing.T) {
 				),
 			},
 			{
+				// Verify that the SDKv2 state (schema version 0) applies cleanly
+				// under the Plugin Framework implementation (schema version 1).
+				// Use ConfigPlanChecks with ExpectEmptyPlan instead of PlanOnly so
+				// that Terraform performs an apply and persists the upgraded
+				// state. With PlanOnly the state remains at version 0, and on
+				// Terraform 1.15.8+ the post-test state cleanup fails because
+				// `terraform show -json` rejects schema version mismatches.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"role_name": config.StringVariable(roleName),
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 		},
 	})

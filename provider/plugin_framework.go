@@ -259,7 +259,6 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		agentdownloadsource.NewResource,
 		serverhost.NewResource,
 		proxy.NewResource,
-		agentlesspolicy.NewResource,
 		systemuser.NewSystemUserResource,
 		securityuser.NewUserResource,
 		role.NewRoleResource,
@@ -316,6 +315,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		kibanatag.NewResource,
+		agentlesspolicy.NewResource,
 	}
 }
 
