@@ -49,6 +49,9 @@ ELASTICSEARCH_PASSWORD ?= password
 ELASTICSEARCH_PORT ?= 9200
 KIBANA_PORT ?= 5601
 
+# Temp output for docs-generate-fleet-managed-integration (gitignored).
+FLEET_MANAGED_INTEGRATION_DOCS_TMP := .fleet-managed-integration-docs-tmp
+
 export ELASTICSEARCH_PORT KIBANA_PORT
 
 # Auto-create .env from template so docker-compose and Make targets work
@@ -198,16 +201,28 @@ docs-generate: tools ## Generate documentation for the provider
 
 .PHONY: docs-generate-fleet-managed-integration
 docs-generate-fleet-managed-integration: tools ## Regenerate docs/resources/fleet_managed_integration.md only (experimental resource; does not publish other experimental entities)
-	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
-	rm -rf .fleet-managed-integration-docs-tmp; \
-	mkdir -p .fleet-managed-integration-docs-tmp; \
+	@ set -euo pipefail; \
+	terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
+	tmpdir="$(FLEET_MANAGED_INTEGRATION_DOCS_TMP)"; \
+	out="docs/resources/fleet_managed_integration.md"; \
+	cleanup() { rm -rf "$$tmpdir"; }; \
+	trap cleanup EXIT INT TERM HUP; \
+	rm -rf "$$tmpdir"; \
+	mkdir -p "$$tmpdir"; \
 	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate \
 	  --provider-name terraform-provider-elasticstack \
 	  --tf-version "$$terraform_version" \
 	  --website-source-dir fleet-managed-integration-docs \
-	  --rendered-website-dir .fleet-managed-integration-docs-tmp; \
-	cp .fleet-managed-integration-docs-tmp/resources/fleet_managed_integration.md docs/resources/fleet_managed_integration.md; \
-	rm -rf .fleet-managed-integration-docs-tmp
+	  --rendered-website-dir "$$tmpdir"; \
+	test -s "$$tmpdir/resources/fleet_managed_integration.md"; \
+	dest="$${out}.tmp.$$$$"; \
+	cp "$$tmpdir/resources/fleet_managed_integration.md" "$$dest"; \
+	mv "$$dest" "$$out"; \
+	trap - EXIT INT TERM HUP; \
+	cleanup
+
+.PHONY: docs-generate-provider
+docs-generate-provider: docs-generate docs-generate-fleet-managed-integration ## Default provider docs plus committed fleet managed integration doc (deterministic order)
 
 .PHONY: workflow-generate
 workflow-generate: ## Generate workflow markdown sources
@@ -220,7 +235,7 @@ workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spe
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen
-gen: docs-generate docs-generate-fleet-managed-integration ## Generate the code and documentation
+gen: docs-generate-provider ## Generate the code and documentation
 	@ go generate ./...
 
 .PHONY: clean
@@ -270,7 +285,7 @@ lint-perf: golangci-lint-custom ## Measure isolated custom-linter performance an
 
 .PHONY: lint
 lint: GOLANGCIFLAGS += --fix
-lint: setup golangci-lint fmt docs-generate ## Run lints to check the spelling and common go patterns
+lint: setup golangci-lint fmt docs-generate-provider ## Run lints to check the spelling and common go patterns
 
 .PHONY: check-lint
 check-lint: setup check-openspec golangci-lint check-fmt gen check-docs
@@ -308,9 +323,9 @@ check-fmt: fmt ## Check if code is formatted
 	fi
 
 .PHONY: check-docs
-check-docs: docs-generate docs-generate-fleet-managed-integration ## Check uncommitted changes on docs
+check-docs: docs-generate-provider ## Check uncommitted changes on docs
 	@if [ "`git status --porcelain docs/`" ]; then \
-	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate' to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
+	  echo "Uncommitted changes were detected in the docs folder. Please run 'make docs-generate-provider' (or 'make gen' to include go generate) to autogenerate the docs, and commit the changes" && echo `git status --porcelain docs/` && exit 1; \
 	fi
 
 .PHONY: setup

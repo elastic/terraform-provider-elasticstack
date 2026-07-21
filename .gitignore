@@ -1,5 +1,6 @@
 false
-node_modules/
+# Documentation generation temp dir (docs-generate-fleet-managed-integration).
+.fleet-managed-integration-docs-tmp/
 
 # pr-monitoring-loop watcher state (per-PR seen IDs, last-poll timestamps)
 .agents/skills/pr-monitoring-loop/scripts/state/
