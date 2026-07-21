@@ -25,19 +25,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// deleteAgentlessPolicy implements Task 5.4 of the fleet-agentless-policy
-// OpenSpec change: calls fleetclient.DeleteAgentlessPolicy
-// (DELETE /api/fleet/agentless_policies/{id}, space-aware) with
-// force = force_delete. HTTP 404 is already treated as a no-op by
-// fleetclient.DeleteAgentlessPolicy (see internal/clients/fleet/
-// agentless_policy.go and internal/clients/fleet/responses.go's
-// handleDeleteResponse, both Task 2 deliverables this task does not modify).
+// deleteAgentlessPolicy calls fleetclient.DeleteAgentlessPolicy from the
+// temporary agentless_policy_compat.go bridge (DELETE /api/fleet/agentless_policies/{id},
+// space-aware) with force = force_delete. HTTP 404 is already treated as a no-op
+// by the compat wrapper (see handleDeleteResponse in responses.go).
 //
-// When force_delete = false and the API returns a conflict, a helpful
-// diagnostic pointing at force_delete is appended (see conflictHintDiagnostics).
-// fleetclient.DeleteAgentlessPolicy reports whether the underlying response
-// was an HTTP 409 directly (isConflict), so this no longer has to infer a
-// conflict by pattern-matching diagnostic summary text.
+// When force_delete = false and the API returns a conflict, a helpful diagnostic
+// pointing at force_delete is appended (see conflictHintDiagnostics).
+// fleetclient.DeleteAgentlessPolicy reports whether the final observed HTTP status
+// was 409 directly (isConflict), so this no longer pattern-matches diagnostic text.
 func deleteAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) diag.Diagnostics {
 	fleetClient := client.GetFleetClient()
 

@@ -175,4 +175,25 @@ func TestDeleteAgentlessPolicy(t *testing.T) {
 		require.True(t, isConflict, "exhausted 409 retries must be reported as a conflict")
 		require.Equal(t, int64(kibanautil.ConflictMaxAttempts), calls.Load())
 	})
+
+	t.Run("transport_error_after_409_resets_is_conflict", func(t *testing.T) {
+		var calls atomic.Int64
+		client := newTestClientWithRoundTripper(t, roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			n := calls.Add(1)
+			if n == 1 {
+				rec := httptest.NewRecorder()
+				rec.Header().Set("Content-Type", "application/json")
+				rec.WriteHeader(http.StatusConflict)
+				fmt.Fprint(rec, `{"statusCode":409,"error":"Conflict","message":"write lock"}`)
+				return rec.Result(), nil
+			}
+			return nil, fmt.Errorf("connection reset by peer")
+		}))
+
+		isConflict, diags := fleet.DeleteAgentlessPolicy(context.Background(), client, "", "pp-1", false)
+
+		require.True(t, diags.HasError())
+		require.False(t, isConflict, "a final transport error must reset isConflict after an earlier 409")
+		require.Equal(t, int64(2), calls.Load())
+	})
 }

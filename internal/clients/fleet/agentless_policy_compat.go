@@ -77,7 +77,9 @@ func UpdateAgentlessPolicyViaPackagePolicy(
 }
 
 // DeleteAgentlessPolicy deletes an agentless policy via the deprecated
-// DELETE /api/fleet/agentless_policies/{id} endpoint.
+// DELETE /api/fleet/agentless_policies/{id} endpoint. Semantics match
+// DeleteManagedIntegration: the returned bool reflects the final HTTP status
+// observed across retries; transport errors reset it to false.
 func DeleteAgentlessPolicy(
 	ctx context.Context,
 	client *Client,

@@ -31,14 +31,14 @@ import (
 // wording changes or a switch to a different error-reporting helper (e.g.
 // diagutil.ReportKibanaBoomHTTPError, whose summary is caller-supplied and
 // might not contain "HTTP 409" at all). fleetclient.DeleteAgentlessPolicy now
-// derives the conflict signal itself from the actual HTTP status code and
-// reports it back as a plain bool (see
-// internal/clients/fleet/agentless_policy.go and its
-// TestDeleteAgentlessPolicy/409_reports_conflict, which exercises that
-// derivation against a real HTTP 409 response), so this function no longer
-// needs to inspect diagnostic text at all -- it is now a pure "build the hint"
-// helper that deleteAgentlessPolicy only calls once it already knows,
-// authoritatively, that the delete failed with a conflict.
+// derives the conflict signal from the final HTTP status code observed across
+// retries and reports it as a plain bool (see internal/clients/fleet/
+// agentless_policy_compat.go and TestDeleteAgentlessPolicy/
+// max_retries_exhausted_returns_error and
+// transport_error_after_409_resets_is_conflict), so this function no longer needs to
+// inspect diagnostic text at all -- it is now a pure "build the hint" helper
+// that deleteAgentlessPolicy only calls once it already knows, authoritatively,
+// that the delete failed with a conflict.
 func TestConflictHintDiagnostics(t *testing.T) {
 	t.Parallel()
 

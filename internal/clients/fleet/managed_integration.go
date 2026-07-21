@@ -103,9 +103,13 @@ func UpdateManagedIntegration(
 // ?force=true to delete the policy even if the underlying agent policy is
 // managed.
 //
-// The returned bool reports whether the (final, post-retry) response was an
-// HTTP 409 Conflict, so callers can offer a force_delete hint without having
-// to pattern-match diagutil's generated diagnostic summary text.
+// The returned bool is true when the final HTTP status code recorded across all
+// retry attempts was HTTP 409 Conflict, so callers can offer a force_delete hint
+// without pattern-matching diagutil's generated diagnostic summary text. A
+// transport or client error on a later attempt resets the stored status to zero,
+// yielding false even when an earlier attempt returned 409. Context cancellation
+// may occur before or after a response is recorded; do not infer conflict from
+// cancellation alone.
 func DeleteManagedIntegration(
 	ctx context.Context,
 	client *Client,
