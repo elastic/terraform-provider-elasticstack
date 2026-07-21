@@ -63,35 +63,17 @@ const nonPersistingEnabledUpdateResponseJSON = `{
 // requested change succeeded, producing a permanent, incorrect non-diff, or
 // worse, resurfacing a stale value on the next plan).
 //
-// This test round-trips through the real production call chain:
-//  1. buildUpdateInputs/overlayInputFromPlan build the PUT request body from a
-//     plan that asks to flip `cspm-cloudbeat/cis_aws`'s enabled from true
-//     (current, per typedFormatPackagePolicyJSON) to false -- confirming the
-//     request really did ask for the change (this resource is not silently
-//     failing to send it).
+// This test round-trips through buildUpdateBody and populateFromManagedIntegration:
+//  1. buildUpdateBody builds the full-replace PUT body from a plan that asks
+//     to flip `cspm-cloudbeat/cis_aws`'s enabled to false.
 //  2. populateFromManagedIntegration is then fed a simulated response
-//     (nonPersistingEnabledUpdateResponseJSON) that echoes back enabled=true,
-//     standing in for the entitycore envelope's real read-after-write refresh
-//     (kibana_resource_envelope.go's runKibanaWrite calls Read with the
-//     Update callback's returned model before persisting state).
-//
-// The correct, honest outcome asserted here is that the resulting model
-// reflects the API's actual (unchanged) value -- NOT the plan's requested
-// value. Terraform will show a diff on the next plan as a result; that is
-// expected/correct behavior given the API's limitation, not a bug this test
-// is trying to catch.
+//     (nonPersistingEnabledUpdateResponseJSON) that echoes back enabled=true.
 func TestEnabledChangeNonPersistence_stateReflectsAPIReality(t *testing.T) {
 	ctx := context.Background()
 
-	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
+	prior := baseTestModel(t)
+	plan := prior
 
-	// Plan requests enabled=false for cspm-cloudbeat/cis_aws (current/typed
-	// fixture above has it at true). The stream/vars shape matches
-	// typedFormatPackagePolicyJSON's cis_aws input so overlayInputFromPlan's
-	// stream-matching path (DataStream.Dataset ==
-	// "cloud_security_posture.findings") is also exercised normally, rather
-	// than being incidentally skipped.
-	plan := baseTestModel(t)
 	streamsMap, diags := types.MapValueFrom(ctx, policyshape.StreamType(), map[string]policyshape.InputStreamModel{
 		"cloud_security_posture.findings": {
 			Enabled: types.BoolValue(true),
@@ -107,29 +89,15 @@ func TestEnabledChangeNonPersistence_stateReflectsAPIReality(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	// Step 1: confirm the request body really does ask Kibana for the
-	// change -- this resource is not silently failing to even send it.
-	decodedInputs := plan.decodeInputs(ctx, &diags)
-	require.False(t, diags.HasError())
-	reqInputs, inputDiags := buildUpdateInputs(current, decodedInputs)
-	require.False(t, inputDiags.HasError(), "%v", inputDiags)
-	require.Len(t, reqInputs, 2)
-	var sawRequestedDisable bool
-	for _, in := range reqInputs {
-		if in.PolicyTemplate != nil && *in.PolicyTemplate == "cspm" && in.Type == "cloudbeat/cis_aws" {
-			sawRequestedDisable = true
-			require.False(t, in.Enabled, "the update request must actually ask Kibana to disable the input")
-		}
-	}
-	require.True(t, sawRequestedDisable, "expected to find the cis_aws input in the built request")
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+	decoded := decodeRequestJSON(t, body)
+	inputs, ok := decoded["inputs"].(map[string]any)
+	require.True(t, ok)
+	in, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, false, in["enabled"], "the update request must ask Kibana to disable the input")
 
-	// Step 2: simulate Kibana accepting the PUT (200) but NOT persisting the
-	// enabled change -- the subsequent read-after-write Read call sees the
-	// input still enabled. plan.Inputs is left as the plan set it (mirroring
-	// updateAgentlessPolicy's real sequence: the entitycore envelope calls
-	// Read with the Update callback's returned model, which still carries
-	// plan.Inputs at that point), so inputsKnownKeySet correctly limits
-	// populateInputsFromManagedIntegration's output to just the configured input.
 	data := mustManagedIntegrationFromJSON(t, nonPersistingEnabledUpdateResponseJSON)
 	popDiags := plan.populateFromManagedIntegration(ctx, "default", data, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)

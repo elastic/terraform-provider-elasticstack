@@ -122,53 +122,49 @@ func TestToCreateBody_conditionHandling(t *testing.T) {
 // TestBuildUpdateBody_conditionHandling is the update-path counterpart of
 // TestToCreateBody_conditionHandling.
 func TestBuildUpdateBody_conditionHandling(t *testing.T) {
-	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
-
 	t.Run("sends input and stream condition on update", func(t *testing.T) {
 		t.Parallel()
-		plan := baseTestModel(t)
+		prior := baseTestModel(t)
+		plan := prior
 		plan.Inputs = newInputsWithCondition(t, "host.os.family == 'linux'", "data_stream.dataset == 'audit'")
 
-		body, diags := buildUpdateBody(context.Background(), plan, current)
+		body, diags := buildUpdateBody(context.Background(), plan, prior)
 		require.False(t, diags.HasError(), "%v", diags)
 
 		decoded := decodeRequestJSON(t, body)
-		inputs, ok := decoded["inputs"].([]any)
+		inputs, ok := decoded["inputs"].(map[string]any)
 		require.True(t, ok)
-		require.NotEmpty(t, inputs)
-		in, ok := inputs[0].(map[string]any)
+		in, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "host.os.family == 'linux'", in["condition"])
 
-		streams, ok := in["streams"].([]any)
+		streams, ok := in["streams"].(map[string]any)
 		require.True(t, ok)
-		require.NotEmpty(t, streams)
-		stream, ok := streams[0].(map[string]any)
+		stream, ok := streams["cloud_security_posture.findings"].(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "data_stream.dataset == 'audit'", stream["condition"])
 	})
 
 	t.Run("omits condition keys when unset", func(t *testing.T) {
 		t.Parallel()
-		plan := baseTestModel(t)
+		prior := baseTestModel(t)
+		plan := prior
 		plan.Inputs = newInputsWithCondition(t, "", "")
 
-		body, diags := buildUpdateBody(context.Background(), plan, current)
+		body, diags := buildUpdateBody(context.Background(), plan, prior)
 		require.False(t, diags.HasError(), "%v", diags)
 
 		decoded := decodeRequestJSON(t, body)
-		inputs, ok := decoded["inputs"].([]any)
+		inputs, ok := decoded["inputs"].(map[string]any)
 		require.True(t, ok)
-		require.NotEmpty(t, inputs)
-		in, ok := inputs[0].(map[string]any)
+		in, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
 		require.True(t, ok)
 		_, hasInputCondition := in["condition"]
 		assert.False(t, hasInputCondition)
 
-		streams, ok := in["streams"].([]any)
+		streams, ok := in["streams"].(map[string]any)
 		require.True(t, ok)
-		require.NotEmpty(t, streams)
-		stream, ok := streams[0].(map[string]any)
+		stream, ok := streams["cloud_security_posture.findings"].(map[string]any)
 		require.True(t, ok)
 		_, hasStreamCondition := stream["condition"]
 		assert.False(t, hasStreamCondition)

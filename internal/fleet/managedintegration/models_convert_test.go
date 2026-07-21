@@ -871,103 +871,14 @@ func TestMappedInputKey(t *testing.T) {
 	assert.Equal(t, "cloudbeat/cis_aws", mappedInputKey(nil, "cloudbeat/cis_aws"))
 }
 
-const typedFormatPackagePolicyJSON = `{
-	"id": "policy-1",
-	"name": "test-policy",
-	"namespace": "default",
-	"enabled": true,
-	"created_at": "2024-01-01T00:00:00.000Z",
-	"created_by": "elastic",
-	"updated_at": "2024-01-02T00:00:00.000Z",
-	"updated_by": "elastic",
-	"revision": 1,
-	"policy_id": "policy-1",
-	"policy_ids": ["policy-1"],
-	"spaceIds": ["default"],
-	"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
-	"vars": {"posture": {"value": "cspm", "type": "text"}, "deployment": {"value": "aws", "type": "text"}},
-	"description": "old description",
-	"inputs": [
-		{
-			"type": "cloudbeat/cis_aws",
-			"policy_template": "cspm",
-			"enabled": true,
-			"streams": [
-				{
-					"id": "cloudbeat/cis_aws-cloud_security_posture.findings-policy-1",
-					"enabled": true,
-					"data_stream": {"type": "logs", "dataset": "cloud_security_posture.findings"},
-					"vars": {"aws.account_type": {"value": "single-account", "type": "text"}}
-				}
-			]
-		},
-		{
-			"type": "cloudbeat/cis_gcp",
-			"policy_template": "cspm",
-			"enabled": false,
-			"streams": [
-				{
-					"id": "cloudbeat/cis_gcp-cloud_security_posture.findings-policy-1",
-					"enabled": false,
-					"data_stream": {"type": "logs", "dataset": "cloud_security_posture.findings"}
-				}
-			]
-		}
-	]
-}`
-
-// typedFormatPackagePolicyMultiVarsJSON is typedFormatPackagePolicyJSON with
-// a second per-input var (`input_var_a`/`input_var_b`) and a second
-// per-stream var (`aws.account_type`/`aws.other_var`) added to the cis_aws
-// input, so a plan that keeps only one of the two keys exercises *partial*
-// removal (a strict-subset plan) rather than full removal (see
-// TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys). The top-level
-// `vars` object already has two keys (`posture`/`deployment`) in the base
-// fixture, so it is reused as-is.
-const typedFormatPackagePolicyMultiVarsJSON = `{
-	"id": "policy-1",
-	"name": "test-policy",
-	"namespace": "default",
-	"enabled": true,
-	"created_at": "2024-01-01T00:00:00.000Z",
-	"created_by": "elastic",
-	"updated_at": "2024-01-02T00:00:00.000Z",
-	"updated_by": "elastic",
-	"revision": 1,
-	"policy_id": "policy-1",
-	"policy_ids": ["policy-1"],
-	"spaceIds": ["default"],
-	"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
-	"vars": {"posture": {"value": "cspm", "type": "text"}, "deployment": {"value": "aws", "type": "text"}},
-	"description": "old description",
-	"inputs": [
-		{
-			"type": "cloudbeat/cis_aws",
-			"policy_template": "cspm",
-			"enabled": true,
-			"vars": {"input_var_a": {"value": "a", "type": "text"}, "input_var_b": {"value": "b", "type": "text"}},
-			"streams": [
-				{
-					"id": "cloudbeat/cis_aws-cloud_security_posture.findings-policy-1",
-					"enabled": true,
-					"data_stream": {"type": "logs", "dataset": "cloud_security_posture.findings"},
-					"vars": {
-						"aws.account_type": {"value": "single-account", "type": "text"},
-						"aws.other_var": {"value": "other", "type": "text"}
-					}
-				}
-			]
-		}
-	]
-}`
-
 func TestBuildUpdateBody(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
+	prior := baseTestModel(t)
+	prior.Namespace = types.StringValue("default")
 
-	plan := baseTestModel(t)
+	plan := prior
 	plan.Description = types.StringValue("new description")
 
 	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm","deployment":"gcp"}`, "cloud_security_posture", "3.4.0", lookupCachedPackageInfo)
@@ -1000,25 +911,21 @@ func TestBuildUpdateBody(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.GlobalDataTags = tagsMap
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
 
 	assert.Equal(t, "test-policy", decoded["name"])
 	assert.Equal(t, "default", decoded["namespace"])
-	assert.Equal(t, "policy-1", decoded["policy_id"])
+	_, hasPolicyID := decoded["id"]
+	assert.False(t, hasPolicyID, "update body must not re-send create-only id")
 	assert.Equal(t, "new description", decoded["description"])
 
 	pkg, ok := decoded["package"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "cloud_security_posture", pkg["name"])
 	assert.Equal(t, "3.4.0", pkg["version"])
-	// Here the plan's package object (built by baseTestModel) happens to
-	// carry the same title as current's, so this assertion alone can't tell
-	// a correct plan-overlay apart from a bug that always falls back to
-	// current's title -- see TestBuildUpdateBody_packageTitleOverlay for a
-	// case where the two differ.
 	assert.Equal(t, "Security Posture Management", pkg["title"])
 
 	tags, ok := decoded["global_data_tags"].([]any)
@@ -1027,53 +934,24 @@ func TestBuildUpdateBody(t *testing.T) {
 
 	vars, ok := decoded["vars"].(map[string]any)
 	require.True(t, ok)
-	deployment, ok := vars["deployment"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "gcp", deployment["value"])
-	assert.Equal(t, "text", deployment["type"], "existing var `type` metadata should be preserved across the merge")
-	posture, ok := vars["posture"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "cspm", posture["value"])
+	assert.Equal(t, "gcp", vars["deployment"])
+	assert.Equal(t, "cspm", vars["posture"])
 
-	inputs, ok := decoded["inputs"].([]any)
+	inputs, ok := decoded["inputs"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, inputs, 2)
+	require.Len(t, inputs, 1)
 
-	var awsInput, gcpInput map[string]any
-	for _, raw := range inputs {
-		in, ok := raw.(map[string]any)
-		require.True(t, ok)
-		switch in["type"] {
-		case "cloudbeat/cis_aws":
-			awsInput = in
-		case "cloudbeat/cis_gcp":
-			gcpInput = in
-		}
-	}
-	require.NotNil(t, awsInput)
-	require.NotNil(t, gcpInput)
-
-	// cis_gcp was not mentioned in the plan's inputs map: it is echoed back
-	// unchanged (still disabled).
-	assert.Equal(t, false, gcpInput["enabled"])
-
-	awsStreams, ok := awsInput["streams"].([]any)
+	awsInput, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, awsStreams, 1)
-	awsStream, ok := awsStreams[0].(map[string]any)
-	require.True(t, ok)
-	// data_stream metadata from the echoed GET response must survive the
-	// round trip even though the plan doesn't model it.
-	ds, ok := awsStream["data_stream"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "cloud_security_posture.findings", ds["dataset"])
+	assert.Equal(t, true, awsInput["enabled"])
 
+	streams, ok := awsInput["streams"].(map[string]any)
+	require.True(t, ok)
+	awsStream, ok := streams["cloud_security_posture.findings"].(map[string]any)
+	require.True(t, ok)
 	streamVars, ok := awsStream["vars"].(map[string]any)
 	require.True(t, ok)
-	accountType, ok := streamVars["aws.account_type"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "organization-account", accountType["value"])
-	assert.Equal(t, "text", accountType["type"], "existing stream var `type` metadata should be preserved across the merge")
+	assert.Equal(t, "organization-account", streamVars["aws.account_type"])
 }
 
 // TestBuildUpdateBody_packageTitleOverlay closes the test gap left by
@@ -1086,9 +964,8 @@ func TestBuildUpdateBody_packageTitleOverlay(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
-
-	plan := baseTestModel(t)
+	prior := baseTestModel(t)
+	plan := prior
 	pkgObj, diags := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
 		Name:    types.StringValue("cloud_security_posture"),
 		Version: types.StringValue("3.4.0"),
@@ -1097,14 +974,14 @@ func TestBuildUpdateBody_packageTitleOverlay(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Package = pkgObj
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
 
 	pkg, ok := decoded["package"].(map[string]any)
 	require.True(t, ok)
-	assert.Equal(t, "Custom CSPM Title", pkg["title"], "package.title must come from the plan, not fall back to current's title")
+	assert.Equal(t, "Custom CSPM Title", pkg["title"], "package.title must come from the plan")
 }
 
 // TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem covers a bug found in
@@ -1116,18 +993,15 @@ func TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
-
-	plan := baseTestModel(t)
+	prior := baseTestModel(t)
+	plan := prior
 	plan.Description = types.StringValue("old description")
 	// VarsJSON left as NewVarsJSONNull() by baseTestModel: an explicit
-	// `vars_json = null` in config must clear current's top-level vars.
+	// `vars_json = null` in config must clear top-level vars on full replace.
 
 	streamsMap, diags := types.MapValueFrom(ctx, policyshape.StreamType(), map[string]policyshape.InputStreamModel{
 		"cloud_security_posture.findings": {
 			Enabled: types.BoolValue(true),
-			// Vars left as the jsontypes.Normalized zero value (null): the
-			// plan removed this stream's `vars` block.
 		},
 	})
 	require.False(t, diags.HasError())
@@ -1135,72 +1009,49 @@ func TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem(t *testing.T) {
 	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
-			// Vars left null too: the plan removed the input's own `vars` block.
 			Streams: streamsMap,
 		},
 	})
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
 
 	vars, ok := decoded["vars"].(map[string]any)
 	require.True(t, ok)
-	assert.Empty(t, vars, "vars_json = null should clear the top-level vars, not echo current's")
+	assert.Empty(t, vars, "vars_json = null should clear the top-level vars")
 
-	inputs, ok := decoded["inputs"].([]any)
+	inputs, ok := decoded["inputs"].(map[string]any)
 	require.True(t, ok)
+	awsInput, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
+	require.True(t, ok)
+	assert.Empty(t, awsInput["vars"], "removing an input's vars block should clear it")
 
-	var awsInput map[string]any
-	for _, raw := range inputs {
-		in, ok := raw.(map[string]any)
-		require.True(t, ok)
-		if in["type"] == "cloudbeat/cis_aws" {
-			awsInput = in
-		}
-	}
-	require.NotNil(t, awsInput)
-	assert.Empty(t, awsInput["vars"], "removing an input's vars block should clear it, not echo current's")
-
-	awsStreams, ok := awsInput["streams"].([]any)
+	streams, ok := awsInput["streams"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, awsStreams, 1)
-	awsStream, ok := awsStreams[0].(map[string]any)
+	awsStream, ok := streams["cloud_security_posture.findings"].(map[string]any)
 	require.True(t, ok)
-	assert.Empty(t, awsStream["vars"], "removing a stream's vars block should clear it, not echo current's")
+	assert.Empty(t, awsStream["vars"], "removing a stream's vars block should clear it")
 }
 
-// TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys covers the
-// [BLOCKER] regression found in review: mergeVarsInto used to seed its
-// result from *dst (the vars already on the policy) and only overlay keys
-// present in the plan, so a key present in existing vars but absent from a
-// non-empty plan survived forever -- users could never *reduce* the key set
-// of vars_json / an input's vars / a stream's vars via Update, only add to
-// or overwrite it. This is distinct from
-// TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem, which covers *full*
-// removal (the whole vars block absent from the plan); here the plan sets a
-// non-empty vars object that is a strict subset of the existing keys, at all
-// three levels mergeVarsInto is used: top-level vars_json, per-input vars,
-// and per-stream vars.
+// TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys covers full-replace
+// semantics: the PUT body vars maps contain exactly the plan's keys at the
+// top level, per-input, and per-stream.
 func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyMultiVarsJSON)
-
-	plan := baseTestModel(t)
+	prior := baseTestModel(t)
+	plan := prior
 	plan.Description = types.StringValue("old description")
 
-	// Top-level: current has posture+deployment; plan keeps only posture.
 	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm"}`, "cloud_security_posture", "3.4.0", lookupCachedPackageInfo)
 	require.False(t, diags.HasError())
 	plan.VarsJSON = varsJSON
 
-	// Stream-level: current has aws.account_type+aws.other_var; plan keeps
-	// only aws.account_type.
 	streamsMap, diags := types.MapValueFrom(ctx, policyshape.StreamType(), map[string]policyshape.InputStreamModel{
 		"cloud_security_posture.findings": {
 			Enabled: types.BoolValue(true),
@@ -1209,8 +1060,6 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 
-	// Input-level: current has input_var_a+input_var_b; plan keeps only
-	// input_var_a.
 	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
@@ -1221,51 +1070,36 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	body, bodyDiags := buildUpdateBody(ctx, plan, current)
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
 	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
 
 	decoded := decodeRequestJSON(t, body)
 
 	vars, ok := decoded["vars"].(map[string]any)
 	require.True(t, ok)
-	assert.Len(t, vars, 1, "top-level vars must contain exactly the plan's keys, not existing's")
+	assert.Len(t, vars, 1)
 	assert.Contains(t, vars, "posture")
-	assert.NotContains(t, vars, "deployment", "deployment was dropped from the plan and must not survive the merge")
-	posture, ok := vars["posture"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "text", posture["type"], "surviving key's existing `type` metadata should be preserved")
+	assert.NotContains(t, vars, "deployment")
 
-	inputs, ok := decoded["inputs"].([]any)
+	inputs, ok := decoded["inputs"].(map[string]any)
 	require.True(t, ok)
-
-	var awsInput map[string]any
-	for _, raw := range inputs {
-		in, ok := raw.(map[string]any)
-		require.True(t, ok)
-		if in["type"] == "cloudbeat/cis_aws" {
-			awsInput = in
-		}
-	}
-	require.NotNil(t, awsInput)
+	awsInput, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
+	require.True(t, ok)
 
 	inputVars, ok := awsInput["vars"].(map[string]any)
 	require.True(t, ok)
-	assert.Len(t, inputVars, 1, "input vars must contain exactly the plan's keys, not existing's")
+	assert.Len(t, inputVars, 1)
 	assert.Contains(t, inputVars, "input_var_a")
-	assert.NotContains(t, inputVars, "input_var_b", "input_var_b was dropped from the plan and must not survive the merge")
+	assert.NotContains(t, inputVars, "input_var_b")
 
-	awsStreams, ok := awsInput["streams"].([]any)
+	streams, ok := awsInput["streams"].(map[string]any)
 	require.True(t, ok)
-	require.Len(t, awsStreams, 1)
-	awsStream, ok := awsStreams[0].(map[string]any)
+	awsStream, ok := streams["cloud_security_posture.findings"].(map[string]any)
 	require.True(t, ok)
 
 	streamVars, ok := awsStream["vars"].(map[string]any)
 	require.True(t, ok)
-	assert.Len(t, streamVars, 1, "stream vars must contain exactly the plan's keys, not existing's")
+	assert.Len(t, streamVars, 1)
 	assert.Contains(t, streamVars, "aws.account_type")
-	assert.NotContains(t, streamVars, "aws.other_var", "aws.other_var was dropped from the plan and must not survive the merge")
-	accountType, ok := streamVars["aws.account_type"].(map[string]any)
-	require.True(t, ok)
-	assert.Equal(t, "text", accountType["type"], "surviving key's existing `type` metadata should be preserved")
+	assert.NotContains(t, streamVars, "aws.other_var")
 }

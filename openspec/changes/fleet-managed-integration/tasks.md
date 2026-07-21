@@ -49,13 +49,13 @@
 
 ## 7. `update.go` — full-replace simplification
 
-- [ ] 7.1 Rewrite `buildUpdateBody` to accept only the plan (no `*kbapi.PackagePolicy` "current" parameter); build `KibanaHTTPAPIsCreateManagedIntegrationRequest` directly from plan
-- [ ] 7.2 Derive `cloud_connector` `{enabled, cloud_connector_id}` from state (not plan) and always re-send it when a connector is associated; never send `name`/`target_csp` on PUT
-- [ ] 7.3 Include `name` and `package.version` from plan (now updatable)
-- [ ] 7.4 Replace `buildUpdateInputs`/`overlayInputFromPlan` with the `decodeInputs`+`applyCreateInputs` helpers from the create path
-- [ ] 7.5 Evaluate and remove `mergeVarsInto` if full-replace makes it unnecessary
-- [ ] 7.6 Re-evaluate `onlyCreateOnlyFlagsChanged` short-circuit per task 1.3 decision
-- [ ] 7.7 Update `update_test.go` to cover: in-place `name` change, in-place `package.version` change, cloud_connector re-sent from state on update, full-replace body content
+- [x] 7.1 Rewrite `buildUpdateBody` to accept only the plan (no `*kbapi.PackagePolicy` "current" parameter); build `KibanaHTTPAPIsCreateManagedIntegrationRequest` directly from plan
+- [x] 7.2 Derive `cloud_connector` `{enabled, cloud_connector_id}` from state (not plan) and always re-send it when a connector is associated; never send `name`/`target_csp` on PUT
+- [x] 7.3 Include `name` and `package.version` from plan (now updatable)
+- [x] 7.4 Replace `buildUpdateInputs`/`overlayInputFromPlan` with the `decodeInputs`+`applyCreateInputs` helpers from the create path
+- [x] 7.5 Evaluate and remove `mergeVarsInto` if full-replace makes it unnecessary
+- [x] 7.6 Re-evaluate `onlyCreateOnlyFlagsChanged` short-circuit per task 1.3 decision
+- [x] 7.7 Update `update_test.go` to cover: in-place `name` change, in-place `package.version` change, cloud_connector re-sent from state on update, full-replace body content
 
 ## 8. `create.go` / `read.go` / `delete.go`
 

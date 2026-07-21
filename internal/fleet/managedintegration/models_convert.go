@@ -353,7 +353,7 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 // decodedAgentlessInput is the once-decoded form of a single `inputs` map
 // element, with its nested `streams` map (if any) already decoded too.
 // decodeInputs produces this so that the request-body builders
-// (applyCreateInputs, buildUpdateInputs) don't each independently re-run the
+// (applyCreateInputs, buildUpdateBody) don't each independently re-run the
 // reflection-based typeutils.MapTypeAs decode over the same inputs+streams
 // structure -- mirroring internal/fleet/integration_policy/models.go's
 // decodedInput/decodeInputs.
@@ -387,9 +387,28 @@ func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diag
 	return decoded
 }
 
+// managedIntegrationRequestOptions controls how a plan model is compiled into
+// KibanaHTTPAPIsCreateManagedIntegrationRequest (shared by Create and Update).
+type managedIntegrationRequestOptions struct {
+	// omitCreateOnlyFields drops force, create_dataset_templates, and id from
+	// the body (Update PUT must not re-send create-only knobs).
+	omitCreateOnlyFields bool
+	// priorForCloudConnector, when non-nil, supplies cloud_connector
+	// {enabled, cloud_connector_id} for Update (never name/target_csp).
+	// When nil, cloud_connector is taken from the plan model (Create).
+	priorForCloudConnector *agentlessPolicyModel
+	// sendExplicitEmptyScalars encodes known-but-empty optional fields so a
+	// full-replace PUT actively clears values removed from config.
+	sendExplicitEmptyScalars bool
+}
+
 // toCreateBody compiles the config/plan model into
 // PostFleetManagedIntegrationsJSONRequestBody.
 func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleetManagedIntegrationsJSONRequestBody, diag.Diagnostics) {
+	return m.toManagedIntegrationRequestBody(ctx, managedIntegrationRequestOptions{})
+}
+
+func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Context, opts managedIntegrationRequestOptions) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	decodedInputs := m.decodeInputs(ctx, &diags)
@@ -397,10 +416,10 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	var pkg packageModel
 	diags.Append(m.Package.As(ctx, &pkg, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
-		return kbapi.PostFleetManagedIntegrationsJSONRequestBody{}, diags
+		return kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest{}, diags
 	}
 
-	body := kbapi.PostFleetManagedIntegrationsJSONRequestBody{
+	body := kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest{
 		Name: m.Name.ValueString(),
 		Package: kbapi.KibanaHTTPAPIsPackagePolicyPackage{
 			Name:    pkg.Name.ValueString(),
@@ -411,7 +430,7 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	if typeutils.IsKnown(pkg.Title) {
 		body.Package.Title = pkg.Title.ValueStringPointer()
 	}
-	if typeutils.IsKnown(m.PolicyID) {
+	if !opts.omitCreateOnlyFields && typeutils.IsKnown(m.PolicyID) {
 		body.Id = m.PolicyID.ValueStringPointer()
 	}
 	if typeutils.IsKnown(m.Description) {
@@ -423,23 +442,36 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	if typeutils.IsKnown(m.PolicyTemplate) {
 		body.PolicyTemplate = m.PolicyTemplate.ValueStringPointer()
 	}
-	if typeutils.IsKnown(m.Force) {
-		body.Force = m.Force.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.CreateDatasetTemplates) {
-		body.CreateDatasetTemplates = m.CreateDatasetTemplates.ValueBoolPointer()
+	if !opts.omitCreateOnlyFields {
+		if typeutils.IsKnown(m.Force) {
+			body.Force = m.Force.ValueBoolPointer()
+		}
+		if typeutils.IsKnown(m.CreateDatasetTemplates) {
+			body.CreateDatasetTemplates = m.CreateDatasetTemplates.ValueBoolPointer()
+		}
 	}
 
-	if typeutils.IsKnown(m.VarsJSON) {
-		sanitized, sd := m.VarsJSON.SanitizedValue()
-		diags.Append(sd...)
-		if !diags.HasError() {
-			varsMap := typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitized), path.Root("vars_json"), &diags)
-			if len(varsMap) > 0 {
-				if b, err := json.Marshal(varsMap); err != nil {
+	if !m.VarsJSON.IsUnknown() {
+		if m.VarsJSON.IsNull() {
+			if opts.sendExplicitEmptyScalars {
+				empty := map[string]any{}
+				if b, err := json.Marshal(empty); err != nil {
 					diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json", err.Error())
 				} else if err := json.Unmarshal(b, &body.Vars); err != nil {
-					diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json for the create request", err.Error())
+					diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json for the request", err.Error())
+				}
+			}
+		} else {
+			sanitized, sd := m.VarsJSON.SanitizedValue()
+			diags.Append(sd...)
+			if !sd.HasError() {
+				varsMap := typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitized), path.Root("vars_json"), &diags)
+				if len(varsMap) > 0 || opts.sendExplicitEmptyScalars {
+					if b, err := json.Marshal(varsMap); err != nil {
+						diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json", err.Error())
+					} else if err := json.Unmarshal(b, &body.Vars); err != nil {
+						diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json for the request", err.Error())
+					}
 				}
 			}
 		}
@@ -448,7 +480,7 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	if typeutils.IsKnown(m.VarGroupSelections) {
 		vgs := map[string]string{}
 		diags.Append(m.VarGroupSelections.ElementsAs(ctx, &vgs, false)...)
-		if len(vgs) > 0 {
+		if len(vgs) > 0 || opts.sendExplicitEmptyScalars {
 			body.VarGroupSelections = &vgs
 		}
 	}
@@ -456,16 +488,31 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 	if typeutils.IsKnown(m.AdditionalDatastreamsPermissions) {
 		var perms []string
 		diags.Append(m.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)...)
+		if perms == nil && opts.sendExplicitEmptyScalars {
+			perms = []string{}
+		}
 		body.AdditionalDatastreamsPermissions = &perms
 	}
 
 	if typeutils.IsKnown(m.GlobalDataTags) {
-		body.GlobalDataTags = globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &diags)
+		tagsRaw := globalDataTagsRawFromModel(ctx, m.GlobalDataTags, &diags)
+		if tagsRaw == nil && opts.sendExplicitEmptyScalars {
+			empty := make([]struct {
+				Name  string                                                                   `json:"name"`
+				Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
+			}, 0)
+			tagsRaw = &empty
+		}
+		body.GlobalDataTags = tagsRaw
 	}
 
-	if typeutils.IsKnown(m.CloudConnector) {
+	ccSource := m
+	if opts.priorForCloudConnector != nil {
+		ccSource = *opts.priorForCloudConnector
+	}
+	if typeutils.IsKnown(ccSource.CloudConnector) {
 		var cc cloudConnectorModel
-		diags.Append(m.CloudConnector.As(ctx, &cc, basetypes.ObjectAsOptions{})...)
+		diags.Append(ccSource.CloudConnector.As(ctx, &cc, basetypes.ObjectAsOptions{})...)
 
 		raw := map[string]any{}
 		if typeutils.IsKnown(cc.Enabled) {
@@ -474,31 +521,57 @@ func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleet
 		if typeutils.IsKnown(cc.CloudConnectorID) {
 			raw[keyCloudConnectorID] = cc.CloudConnectorID.ValueString()
 		}
-		if typeutils.IsKnown(cc.Name) {
-			raw[attrName] = cc.Name.ValueString()
-		}
-		if typeutils.IsKnown(cc.TargetCSP) {
-			raw["target_csp"] = cc.TargetCSP.ValueString()
+		// Update must never send write-only name/target_csp; Create may.
+		if opts.priorForCloudConnector == nil {
+			if typeutils.IsKnown(cc.Name) {
+				raw[attrName] = cc.Name.ValueString()
+			}
+			if typeutils.IsKnown(cc.TargetCSP) {
+				raw["target_csp"] = cc.TargetCSP.ValueString()
+			}
 		}
 
-		if b, err := json.Marshal(raw); err != nil {
-			diags.AddAttributeError(path.Root("cloud_connector"), "Failed to encode cloud_connector", err.Error())
-		} else if err := json.Unmarshal(b, &body.CloudConnector); err != nil {
-			diags.AddAttributeError(path.Root("cloud_connector"), "Failed to encode cloud_connector for the create request", err.Error())
+		if len(raw) > 0 {
+			if b, err := json.Marshal(raw); err != nil {
+				diags.AddAttributeError(path.Root("cloud_connector"), "Failed to encode cloud_connector", err.Error())
+			} else if err := json.Unmarshal(b, &body.CloudConnector); err != nil {
+				diags.AddAttributeError(path.Root("cloud_connector"), "Failed to encode cloud_connector for the request", err.Error())
+			}
 		}
 	}
 
-	applyCreateInputs(&body, decodedInputs, &diags)
+	inputOpts := applyCreateInputsOptions{
+		explicitEmptyInputs: opts.sendExplicitEmptyScalars && typeutils.IsKnown(m.Inputs.MapValue),
+		includeEmptyVars:    opts.sendExplicitEmptyScalars,
+	}
+	applyCreateInputs(&body, decodedInputs, &diags, inputOpts)
 
 	return body, diags
+}
+
+type applyCreateInputsOptions struct {
+	explicitEmptyInputs bool
+	includeEmptyVars    bool
 }
 
 // applyCreateInputs converts the already-decoded `inputs` map (see
 // decodeInputs) into the create body's Inputs field (a
 // map[string]struct{...} of anonymous Go type -- see this file's header
 // comment) via a JSON marshal/unmarshal round trip.
-func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, decoded map[string]decodedAgentlessInput, diags *diag.Diagnostics) {
+func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, decoded map[string]decodedAgentlessInput, diags *diag.Diagnostics, opts applyCreateInputsOptions) {
 	if len(decoded) == 0 {
+		if !opts.explicitEmptyInputs {
+			return
+		}
+		raw := map[string]any{}
+		b, err := json.Marshal(raw)
+		if err != nil {
+			diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs", err.Error())
+			return
+		}
+		if err := json.Unmarshal(b, &body.Inputs); err != nil {
+			diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs for the request", err.Error())
+		}
 		return
 	}
 
@@ -514,11 +587,15 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 		if typeutils.IsKnown(in.Condition) {
 			entry["condition"] = in.Condition.ValueString()
 		}
-		if varsMap := typeutils.NormalizedTypeToMap[any](in.Vars, inputPath.AtName("vars"), diags); len(varsMap) > 0 {
+		varsMap := typeutils.NormalizedTypeToMap[any](in.Vars, inputPath.AtName("vars"), diags)
+		if len(varsMap) > 0 || opts.includeEmptyVars {
+			if varsMap == nil {
+				varsMap = map[string]any{}
+			}
 			entry["vars"] = varsMap
 		}
 
-		if len(di.streams) > 0 {
+		if len(di.streams) > 0 || opts.includeEmptyVars {
 			streamsRaw := map[string]any{}
 			for streamID, s := range di.streams {
 				streamPath := inputPath.AtName("streams").AtMapKey(streamID)
@@ -529,7 +606,11 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 				if typeutils.IsKnown(s.Condition) {
 					streamEntry["condition"] = s.Condition.ValueString()
 				}
-				if sv := typeutils.NormalizedTypeToMap[any](s.Vars, streamPath.AtName("vars"), diags); len(sv) > 0 {
+				sv := typeutils.NormalizedTypeToMap[any](s.Vars, streamPath.AtName("vars"), diags)
+				if len(sv) > 0 || opts.includeEmptyVars {
+					if sv == nil {
+						sv = map[string]any{}
+					}
 					streamEntry["vars"] = sv
 				}
 				streamsRaw[streamID] = streamEntry
@@ -546,7 +627,7 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 		return
 	}
 	if err := json.Unmarshal(b, &body.Inputs); err != nil {
-		diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs for the create request", err.Error())
+		diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs for the request", err.Error())
 	}
 }
 

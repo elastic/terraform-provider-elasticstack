@@ -25,25 +25,22 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// fleetPackagePolicyCallRecorder builds an http.Handler that records whether
-// GET/PUT /api/fleet/package_policies/{id} was ever hit -- the two calls
-// updateAgentlessPolicy's normal (non-short-circuit) path makes via
-// fleetclient.GetDefendPackagePolicy / fleetclient.UpdateAgentlessPolicyViaPackagePolicy.
-// Reused by TestUpdateAgentlessPolicy_createOnlyFlags below to prove the
-// spec.md "Create" requirement's "changing create_dataset_templates after
-// creation SHALL NOT make any API call" guarantee (and its force/force_delete
-// analogues) actually holds through updateAgentlessPolicy's real call site,
-// not just in isolation.
-func fleetPackagePolicyCallRecorder(t *testing.T) (http.Handler, *bool) {
+// fleetManagedIntegrationCallRecorder records whether PUT
+// /api/fleet/managed_integrations/{id} was hit (updateAgentlessPolicy's
+// non-short-circuit path after task 7).
+func fleetManagedIntegrationCallRecorder(t *testing.T) (http.Handler, *bool) {
 	t.Helper()
 	called := false
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/fleet/package_policies/", func(_ http.ResponseWriter, r *http.Request) {
-		called = true
-		t.Errorf("unexpected Fleet API call for a create-only-flag-only change: %s %s", r.Method, r.URL.Path)
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(_ http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			called = true
+			t.Errorf("unexpected Fleet API call for a create-only-flag-only change: %s %s", r.Method, r.URL.Path)
+		}
 	})
 	return mux, &called
 }
@@ -99,12 +96,13 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		prior, plan := newPriorAndPlan(t)
 		plan.CreateDatasetTemplates = types.BoolValue(true)
 
-		handler, called := fleetPackagePolicyCallRecorder(t)
+		handler, called := fleetManagedIntegrationCallRecorder(t)
 		client := newTopologyTestClient(t, handler)
 
 		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
 			Plan:    plan,
 			Prior:   &prior,
+			WriteID: "pp-1",
 			SpaceID: "default",
 		})
 
@@ -118,12 +116,13 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		plan.Force = types.BoolValue(true)
 		plan.ForceDelete = types.BoolValue(true)
 
-		handler, called := fleetPackagePolicyCallRecorder(t)
+		handler, called := fleetManagedIntegrationCallRecorder(t)
 		client := newTopologyTestClient(t, handler)
 
 		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
 			Plan:    plan,
 			Prior:   &prior,
+			WriteID: "pp-1",
 			SpaceID: "default",
 		})
 
@@ -137,12 +136,13 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		prior, plan := newPriorAndPlan(t)
 		plan.SkipTopologyCheck = types.BoolValue(true)
 
-		handler, called := fleetPackagePolicyCallRecorder(t)
+		handler, called := fleetManagedIntegrationCallRecorder(t)
 		client := newTopologyTestClient(t, handler)
 
 		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
 			Plan:    plan,
 			Prior:   &prior,
+			WriteID: "pp-1",
 			SpaceID: "default",
 		})
 
@@ -158,12 +158,11 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 
 		called := false
 		mux := http.NewServeMux()
-		mux.HandleFunc("/api/fleet/package_policies/", func(w http.ResponseWriter, _ *http.Request) {
+		mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPut {
+				return
+			}
 			called = true
-			// Any real handling beyond "was it called" is out of scope for
-			// this test; an error status is enough to prove the
-			// short-circuit did not fire without needing a full fixture
-			// response body.
 			http.Error(w, "not implemented in this test", http.StatusNotImplemented)
 		})
 		client := newTopologyTestClient(t, mux)
@@ -171,6 +170,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
 			Plan:    plan,
 			Prior:   &prior,
+			WriteID: "pp-1",
 			SpaceID: "default",
 		})
 
@@ -327,4 +327,92 @@ func TestOnlyCreateOnlyFlagsChanged_FieldCoverage(t *testing.T) {
 			)
 		}
 	}
+}
+
+func TestBuildUpdateBody_inPlaceNameAndVersion(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	prior := baseTestModel(t)
+	plan := prior
+	plan.Name = types.StringValue("renamed-policy")
+	pkgObj, diags := types.ObjectValueFrom(ctx, packageAttrTypes(), packageModel{
+		Name:    types.StringValue("cloud_security_posture"),
+		Version: types.StringValue("3.5.0"),
+		Title:   types.StringValue("Security Posture Management"),
+	})
+	require.False(t, diags.HasError())
+	plan.Package = pkgObj
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+
+	decoded := decodeRequestJSON(t, body)
+	assert.Equal(t, "renamed-policy", decoded["name"])
+	pkg, ok := decoded["package"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "3.5.0", pkg["version"])
+}
+
+func TestBuildUpdateBody_cloudConnectorFromPriorState(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	ccObj, diags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+		Enabled:          types.BoolValue(true),
+		CloudConnectorID: types.StringValue("cc-from-state"),
+		Name:             types.StringValue("write-only-name"),
+		TargetCSP:        types.StringValue("aws"),
+	})
+	require.False(t, diags.HasError())
+
+	prior := baseTestModel(t)
+	prior.CloudConnector = ccObj
+
+	plan := prior
+	// Plan cloud_connector differs on write-only fields; PUT must still use prior.
+	planCC, diags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+		Enabled:          types.BoolValue(false),
+		CloudConnectorID: types.StringValue("cc-from-plan"),
+		Name:             types.StringValue("other-name"),
+		TargetCSP:        types.StringValue("gcp"),
+	})
+	require.False(t, diags.HasError())
+	plan.CloudConnector = planCC
+
+	body, bodyDiags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+
+	decoded := decodeRequestJSON(t, body)
+	cc, ok := decoded["cloud_connector"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, true, cc["enabled"])
+	assert.Equal(t, "cc-from-state", cc["cloud_connector_id"])
+	_, hasName := cc["name"]
+	_, hasTarget := cc["target_csp"]
+	assert.False(t, hasName, "update must not send cloud_connector.name")
+	assert.False(t, hasTarget, "update must not send cloud_connector.target_csp")
+}
+
+func TestBuildUpdateBody_fullReplaceOmitsCreateOnlyFields(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	prior := baseTestModel(t)
+	prior.Force = types.BoolValue(true)
+	prior.CreateDatasetTemplates = types.BoolValue(true)
+	plan := prior
+	plan.Force = types.BoolValue(false)
+	plan.CreateDatasetTemplates = types.BoolValue(false)
+
+	body, diags := buildUpdateBody(ctx, plan, prior)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	decoded := decodeRequestJSON(t, body)
+	_, hasForce := decoded["force"]
+	_, hasCreateDS := decoded["create_dataset_templates"]
+	_, hasID := decoded["id"]
+	assert.False(t, hasForce)
+	assert.False(t, hasCreateDS)
+	assert.False(t, hasID)
 }
