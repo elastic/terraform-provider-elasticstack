@@ -28,12 +28,16 @@ import "github.com/hashicorp/go-version"
 // that surfaces `condition`) because `condition` itself is part of the
 // InputType/StreamType shape this package owns (see AttrCondition in
 // attribute_types.go and InputModel/InputStreamModel in models.go): every
-// caller of that shared shape needs the same minimum version, and duplicating
-// the literal per resource package would risk the two silently drifting out
-// of sync on a future Kibana change. Originally introduced (as an
-// integration_policy-local var) for internal/fleet/integration_policy; see
-// that package's design.md Open Question 4 resolution for the original
-// empirical investigation. internal/fleet/managedintegration reuses this same
-// constant for the identical gating requirement on its own `condition`
-// attributes.
+// caller of that shared shape should share one version literal so resource
+// floors and attribute-level diagnostics stay aligned. Originally introduced
+// (as an integration_policy-local var) for internal/fleet/integration_policy;
+// see that package's design.md Open Question 4 resolution for the original
+// empirical investigation.
+//
+// internal/fleet/managedintegration.MinVersion is kept equal to this constant
+// so the resource-level entitycore envelope gate and `condition` support share
+// the same floor; managedintegration does not run a separate runtime
+// EnforceMinVersion check for `condition` (see fleet-managed-integration
+// OpenSpec task 4.2). integration_policy still uses EnforceMinVersion against
+// this constant for per-request, attribute-scoped gating when `condition` is set.
 var MinVersionCondition = version.Must(version.NewVersion("9.5.0"))

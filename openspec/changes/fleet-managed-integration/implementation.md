@@ -2,11 +2,13 @@
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 
-## Intermediate branch state (after task 3; tasks 4–8 pending)
+## Intermediate branch state (after task 4; tasks 5–8 pending)
 
 Task 3 moved the resource package to `internal/fleet/managedintegration/` and registered **`elasticstack_fleet_managed_integration`** in `experimentalResources()`. The removed type **`elasticstack_fleet_agentless_policy`** no longer appears in the provider schema.
 
-Until tasks 4–8 complete the API migration:
+Task 4 completed the version-gate update: **`MinVersion` remains 9.5.0** (aligned with `policyshape.MinVersionCondition`), the redundant `SupportsCondition` / `validateInputConditionSupport` runtime gate was removed, and `capabilities.go` was deleted (version gating lives only in `models.go` + the entitycore envelope).
+
+Until tasks 5–8 complete the API migration:
 
 - `MinVersion` remains **9.5.0** with the managed-integration version-gate diagnostic.
 - Create/read/update/delete in this package still call the temporary **`agentless_policy_compat.go`** wrappers (`CreateAgentlessPolicy`, `ReadAgentlessPolicyViaPackagePolicy`, etc.) targeting deprecated Fleet surfaces, not `/api/fleet/managed_integrations`.
@@ -14,18 +16,17 @@ Until tasks 4–8 complete the API migration:
 
 ## 1.1 MinVersion floor — **9.5.0**
 
-**Decision:** Set `MinVersion` to `9.5.0` in `internal/fleet/managedintegration/models.go` (constant) and align `capabilities.go` comments to the same floor.
+**Decision:** Set `MinVersion` to `9.5.0` in `internal/fleet/managedintegration/models.go` (constant). Task 4.2 removed the separate condition capability gate; there is no `capabilities.go` in this package anymore.
 
 **Rationale:**
 
 - `/api/fleet/managed_integrations` was verified on a **9.5.0-SNAPSHOT** Kibana build (see `design.md` Decision 8).
-- This matches `policyshape.MinVersionCondition` (`9.5.0`), so a separate `SupportsCondition` runtime gate becomes redundant (removed in task 4.2).
+- This matches `policyshape.MinVersionCondition` (`9.5.0`), so a separate `SupportsCondition` runtime gate is redundant (removed in task 4.2).
 - Using `9.3.0` (the old `agentless_policies` floor) would allow plans against stacks that have the deprecated surface but not `managed_integrations`, producing 404s.
 
-**Code touchpoints (task 1.1):**
+**Code touchpoints (task 1.1 / task 4):**
 
-- `internal/fleet/managedintegration/models.go` — `MinVersion`, `GetVersionRequirements` error text/comments.
-- `internal/fleet/managedintegration/capabilities.go` — comment alignment only (no separate constant; task 4.2 removes the condition gate).
+- `internal/fleet/managedintegration/models.go` — `MinVersion`, `GetVersionRequirements` error text/comments; `TestMinVersion_matchesPolicyshapeMinVersionCondition` guards alignment with `policyshape.MinVersionCondition`.
 
 ## 1.2 `KibanaHTTPAPIsManagedIntegration` ↔ schema mapping
 

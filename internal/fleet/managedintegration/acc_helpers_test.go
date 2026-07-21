@@ -56,8 +56,9 @@ func isConfirmedCloudOrServerless(ctx context.Context, client *clients.KibanaSco
 // positively confirms the acceptance-testing Kibana connection is Elastic
 // Cloud Hosted or Serverless.
 //
-// Fleet agentless policies only function against Elastic Cloud Hosted or
-// Serverless (Kibana 9.3.0+; see topology.go's checkDeploymentTopology), but
+// Fleet managed integrations only function against Elastic Cloud Hosted or
+// Serverless (Kibana 9.5.0+; see managedintegration.MinVersion and
+// topology.go's checkDeploymentTopology), but
 // this repo's CI (.github/workflows/provider.yml) runs every
 // acceptance-test matrix job against a self-managed stack (`make
 // docker-fleet`) -- there is no Cloud Hosted/Serverless CI lane. Without
@@ -84,8 +85,8 @@ func skipUnlessConfirmedCloud(t *testing.T) {
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		t.Skipf("skipping: could not establish a Kibana connection to check deployment topology (%v); "+
-			"this environment is not confirmed to be Elastic Cloud Hosted or Serverless, and agentless "+
-			"policies require Cloud Hosted/Serverless", err)
+			"this environment is not confirmed to be Elastic Cloud Hosted or Serverless, and managed "+
+			"integrations require Cloud Hosted/Serverless", err)
 		return
 	}
 
@@ -94,7 +95,7 @@ func skipUnlessConfirmedCloud(t *testing.T) {
 
 	if !isConfirmedCloudOrServerless(ctx, client) {
 		t.Skip("skipping: this environment is not a confirmed Elastic Cloud Hosted or Serverless deployment; " +
-			"agentless policies require Cloud Hosted/Serverless and this repo's CI has no such lane -- run " +
+			"managed integrations require Cloud Hosted/Serverless and this repo's CI has no such lane -- run " +
 			"against a real cloud-hosted Kibana to exercise this test")
 	}
 }

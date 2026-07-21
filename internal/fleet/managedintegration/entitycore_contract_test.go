@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -79,6 +80,12 @@ func TestAgentlessPolicyModel_getVersionRequirements(t *testing.T) {
 	require.Len(t, reqs, 1)
 	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.5.0"))))
 	require.Equal(t, "Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API).", reqs[0].ErrorMessage)
+}
+
+func TestMinVersion_matchesPolicyshapeMinVersionCondition(t *testing.T) {
+	t.Parallel()
+	require.True(t, MinVersion.Equal(policyshape.MinVersionCondition),
+		"resource MinVersion and policyshape.MinVersionCondition must stay aligned so the envelope gate guarantees `condition` support")
 }
 
 // fakeMinVersionClient is a minimal stand-in for a *clients.KibanaScopedClient

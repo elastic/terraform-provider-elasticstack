@@ -29,10 +29,11 @@ import (
 )
 
 // MinVersion is the minimum Kibana version required for the Fleet
-// managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; same
-// floor as policyshape.MinVersionCondition (see openspec/changes/
-// fleet-managed-integration/design.md Decision 8 and spec.md "Version gate
-// for managed_integrations endpoint").
+// managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; kept
+// equal to policyshape.MinVersionCondition (see TestMinVersion_matchesPolicyshapeMinVersionCondition
+// and openspec/changes/fleet-managed-integration/design.md Decision 8).
+// Enforced only via GetVersionRequirements and the entitycore envelope — there
+// is no separate per-request capability gate in this package.
 var MinVersion = version.Must(version.NewVersion("9.5.0"))
 
 // agentlessPolicyModel is the Plugin Framework model for the

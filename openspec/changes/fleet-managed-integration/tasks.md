@@ -43,7 +43,7 @@
 - [ ] 6.2 Replace `populateFromPackagePolicy(*kbapi.PackagePolicy)` with `populateFromManagedIntegration(*kbapi.KibanaHTTPAPIsManagedIntegration)` for the Read path; mirror `populateFromCreateResponse` since response types are now identical
 - [ ] 6.3 Delete the `PackagePolicy`-leakage normalizers: `decodeMappedInputs`, `mappedInputWire`/`mappedStreamWire`, `globalDataTagValueToString`, and the dual-shape decode branches
 - [ ] 6.4 Rewrite `globalDataTagsToModel` / `globalDataTagsRawFromModel` for the new `MapNestedAttribute{name → {string_value|number_value}}` shape, using `internal/fleet/agentpolicy` conversion as reference
-- [ ] 6.5 Remove `validateInputConditionSupport` and its `SupportsCondition`-based gating (see task 4.2) — `condition` is unconditionally supported once the resource-level 9.5.0 floor is met, so no distinct runtime validation is needed
+- [ ] 6.5 Verify task 4.2 removed `validateInputConditionSupport` and `SupportsCondition`-based gating (no separate runtime check remains in `models_convert.go` once verified) — `condition` is unconditionally supported once the resource-level 9.5.0 floor is met
 - [ ] 6.6 Keep the `mappedInputKey("<policy_template>-<input_type>")` keying logic (request/response inputs map is keyed the same way)
 - [ ] 6.7 Update `models_convert_test.go` for the clean `KibanaHTTPAPIsManagedIntegration` response type and the new `global_data_tags` shape; add a number-value round-trip test case
 
@@ -88,6 +88,7 @@
 - [ ] 11.5 Update `global_data_tags` acceptance test to the new `Map + string_value/number_value` shape; add a number-value case
 - [ ] 11.6 Skip-gate acceptance tests against the new version floor established in task 1.1
 - [ ] 11.7 Add a test for update with cloud_connector — assert `cloud_connector` is re-sent from state
+- [ ] 11.8 Add an acceptance test that sets input/stream `condition`, then updates `condition` in place and asserts both values round-trip through create/read/update against a live stack (Kibana >= 9.5.0)
 
 ## 12. CHANGELOG and validation
 

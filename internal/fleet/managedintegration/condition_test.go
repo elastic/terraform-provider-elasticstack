@@ -19,8 +19,10 @@ package managedintegration
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -66,9 +68,9 @@ func newInputsWithCondition(t *testing.T, inputCondition, streamCondition string
 }
 
 // TestToCreateBody_conditionHandling asserts that input/stream `condition`
-// values are included in the create request body. Version gating for
-// `condition` is covered by the resource-level MinVersion 9.5.0 floor in
-// models.go (same as policyshape.MinVersionCondition).
+// values are included in the create request body when set and omitted when
+// unset. Version gating is covered by the resource-level MinVersion 9.5.0
+// floor in models.go (same as policyshape.MinVersionCondition).
 func TestToCreateBody_conditionHandling(t *testing.T) {
 	t.Run("sends input and stream condition", func(t *testing.T) {
 		t.Parallel()
@@ -91,6 +93,30 @@ func TestToCreateBody_conditionHandling(t *testing.T) {
 		require.True(t, ok)
 		assert.Equal(t, "data_stream.dataset == 'audit'", stream["condition"])
 	})
+
+	t.Run("omits condition keys when unset", func(t *testing.T) {
+		t.Parallel()
+		m := baseTestModel(t)
+		m.Inputs = newInputsWithCondition(t, "", "")
+
+		body, diags := m.toCreateBody(context.Background())
+		require.False(t, diags.HasError(), "%v", diags)
+
+		decoded := decodeRequestJSON(t, body)
+		inputs, ok := decoded["inputs"].(map[string]any)
+		require.True(t, ok)
+		in, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
+		require.True(t, ok)
+		_, hasInputCondition := in["condition"]
+		assert.False(t, hasInputCondition)
+
+		streams, ok := in["streams"].(map[string]any)
+		require.True(t, ok)
+		stream, ok := streams["cloud_security_posture.findings"].(map[string]any)
+		require.True(t, ok)
+		_, hasStreamCondition := stream["condition"]
+		assert.False(t, hasStreamCondition)
+	})
 }
 
 // TestBuildUpdateBody_conditionHandling is the update-path counterpart of
@@ -98,7 +124,7 @@ func TestToCreateBody_conditionHandling(t *testing.T) {
 func TestBuildUpdateBody_conditionHandling(t *testing.T) {
 	current := mustPackagePolicyFromJSON(t, typedFormatPackagePolicyJSON)
 
-	t.Run("sends input condition on update", func(t *testing.T) {
+	t.Run("sends input and stream condition on update", func(t *testing.T) {
 		t.Parallel()
 		plan := baseTestModel(t)
 		plan.Inputs = newInputsWithCondition(t, "host.os.family == 'linux'", "data_stream.dataset == 'audit'")
@@ -113,5 +139,60 @@ func TestBuildUpdateBody_conditionHandling(t *testing.T) {
 		in, ok := inputs[0].(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "host.os.family == 'linux'", in["condition"])
+
+		streams, ok := in["streams"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, streams)
+		stream, ok := streams[0].(map[string]any)
+		require.True(t, ok)
+		assert.Equal(t, "data_stream.dataset == 'audit'", stream["condition"])
 	})
+}
+
+// TestPopulateFromCreateResponse_roundTripsCondition decodes `condition` from
+// a KibanaHTTPAPIsManagedIntegration create/read response (mapped inputs map).
+func TestPopulateFromCreateResponse_roundTripsCondition(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := kbapi.KibanaHTTPAPIsManagedIntegration{
+		Id:        "policy-1",
+		Name:      "test-policy",
+		CreatedAt: "2024-01-01T00:00:00.000Z",
+		CreatedBy: "elastic",
+		UpdatedAt: "2024-01-02T00:00:00.000Z",
+		UpdatedBy: "elastic",
+		Package: kbapi.KibanaHTTPAPIsManagedIntegrationPackage{
+			Name:    "cloud_security_posture",
+			Version: "3.4.0",
+			Title:   "Security Posture Management",
+		},
+	}
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"cspm-cloudbeat/cis_aws": {
+			"enabled": true,
+			"condition": "host.os.family == 'linux'",
+			"streams": {
+				"cloud_security_posture.findings": {
+					"enabled": true,
+					"condition": "data_stream.dataset == 'audit'"
+				}
+			}
+		}
+	}`), &item.Inputs))
+
+	m := baseTestModel(t)
+	m.PolicyTemplate = types.StringValue("cspm")
+	diags := m.populateFromCreateResponse(ctx, "default", item)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	var inputs map[string]agentlessInputModel
+	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
+	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
+	assert.Equal(t, "host.os.family == 'linux'", inputs["cspm-cloudbeat/cis_aws"].Condition.ValueString())
+
+	var streams map[string]policyshape.InputStreamModel
+	require.False(t, inputs["cspm-cloudbeat/cis_aws"].Streams.ElementsAs(ctx, &streams, false).HasError())
+	require.Contains(t, streams, "cloud_security_posture.findings")
+	assert.Equal(t, "data_stream.dataset == 'audit'", streams["cloud_security_posture.findings"].Condition.ValueString())
 }

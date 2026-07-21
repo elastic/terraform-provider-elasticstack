@@ -26,20 +26,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// createAgentlessPolicy implements Task 5.1 of the fleet-agentless-policy
-// OpenSpec change: compiles the plan into
-// PostFleetAgentlessPoliciesJSONRequestBody, calls
-// fleetclient.CreateAgentlessPolicy (POST /api/fleet/agentless_policies,
-// space-aware), and decodes the response into state. Per spec: a non-2xx
-// response surfaces diagnostics and no state is saved (the entitycore
-// envelope never calls resp.State.Set when this callback returns an error --
-// see kibana_resource_envelope.go's runKibanaWrite).
+// createAgentlessPolicy compiles the plan into a managed-integration create
+// request body and calls the Fleet client (today via agentless_policy_compat.go
+// until task 8 wires CreateManagedIntegration and POST
+// /api/fleet/managed_integrations). Per spec: a non-2xx response surfaces
+// diagnostics and no state is saved (the entitycore envelope never calls
+// resp.State.Set when this callback returns an error -- see
+// kibana_resource_envelope.go's runKibanaWrite).
 //
-// The MinVersion 9.3.0 gate is wired via GetVersionRequirements (models.go)
-// and enforced by the entitycore envelope (entitycore.EnforceVersionRequirements,
-// called from kibana_resource_envelope.go's Create) before this function is
-// ever invoked -- see Task 6.1 and
-// TestAgentlessPolicyModel_versionGate_firesBeforeAPICall in
+// The MinVersion 9.5.0 gate for managed_integrations is wired via
+// GetVersionRequirements (models.go) and enforced by the entitycore envelope
+// (entitycore.EnforceVersionRequirements, called from
+// kibana_resource_envelope.go's Create) before this function is ever invoked
+// -- see TestAgentlessPolicyModel_versionGate_firesBeforeAPICall in
 // entitycore_contract_test.go.
 //
 // Task 6.2 adds the deployment-topology preflight check below (self-managed

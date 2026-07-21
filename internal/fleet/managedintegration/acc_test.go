@@ -19,8 +19,9 @@
 // elasticstack_fleet_managed_integration (openspec/changes/fleet-managed-integration).
 // All tests here require TF_ACC=1 and a live Kibana connection; per design.md
 // and the change's own task description, this resource is only functional
-// against Elastic Cloud Hosted or Serverless (Kibana >= 9.3.0) -- the Fleet
-// agentless_policies API itself rejects self-managed stacks ("supports_agentless
+// against Elastic Cloud Hosted or Serverless (Kibana >= 9.5.0 for
+// managed_integrations; see managedintegration.MinVersion) -- the Fleet
+// managed integrations API rejects self-managed stacks ("supports_agentless
 // is only allowed in serverless and cloud environments"), and the resource's
 // own topology preflight (topology.go) additionally refuses self-managed stacks
 // it can positively identify. versionutils.SkipIfUnsupported still provides the
