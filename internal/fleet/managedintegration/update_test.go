@@ -609,7 +609,9 @@ func TestBuildUpdateBody_unknownTopLevelFieldsErrors(t *testing.T) {
 		{"policy_template", func(m *agentlessPolicyModel) { m.PolicyTemplate = types.StringUnknown() }},
 		{"vars_json", func(m *agentlessPolicyModel) { m.VarsJSON = policyshape.NewVarsJSONUnknown() }},
 		{"var_group_selections", func(m *agentlessPolicyModel) { m.VarGroupSelections = types.MapUnknown(types.StringType) }},
-		{"additional_datastreams_permissions", func(m *agentlessPolicyModel) { m.AdditionalDatastreamsPermissions = types.ListUnknown(types.StringType) }},
+		{"additional_datastreams_permissions", func(m *agentlessPolicyModel) {
+			m.AdditionalDatastreamsPermissions = types.ListUnknown(types.StringType)
+		}},
 		{"global_data_tags", func(m *agentlessPolicyModel) { m.GlobalDataTags = types.MapUnknown(globalDataTagsElementType()) }},
 		{"package", func(m *agentlessPolicyModel) { m.Package = types.ObjectUnknown(packageAttrTypes()) }},
 		{"inputs", func(m *agentlessPolicyModel) {
