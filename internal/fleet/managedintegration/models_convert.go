@@ -131,7 +131,7 @@ func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManage
 	map0 := make(map[string]globalDataTagsItemModel, len(*item.GlobalDataTags))
 	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
 	for _, tag := range *item.GlobalDataTags {
-		tagPath := path.Root("global_data_tags").AtMapKey(tag.Name)
+		tagPath := path.Root(attrGlobalDataTags).AtMapKey(tag.Name)
 		if _, dup := seenNames[tag.Name]; dup {
 			diags.AddAttributeError(
 				tagPath,
@@ -161,7 +161,7 @@ func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManage
 		return types.MapNull(elemType)
 	}
 
-	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root("global_data_tags"), diags)
+	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root(attrGlobalDataTags), diags)
 }
 
 // globalDataTagsRawFromModel converts the `global_data_tags` map attribute
@@ -173,7 +173,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 	if !typeutils.IsKnown(tags) {
 		return nil
 	}
-	items := typeutils.MapTypeAs[globalDataTagsItemModel](ctx, tags, path.Root("global_data_tags"), diags)
+	items := typeutils.MapTypeAs[globalDataTagsItemModel](ctx, tags, path.Root(attrGlobalDataTags), diags)
 	if diags.HasError() {
 		return nil
 	}
@@ -183,7 +183,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 		Value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value `json:"value"`
 	}, 0, len(items))
 	for key, item := range items {
-		tagPath := path.Root("global_data_tags").AtMapKey(key)
+		tagPath := path.Root(attrGlobalDataTags).AtMapKey(key)
 		var value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
 		var err error
 		switch {
@@ -227,7 +227,7 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 
 	b, err := json.Marshal(varsMap)
 	if err != nil {
-		diags.AddAttributeError(path.Root("vars_json"), "Failed to marshal vars_json from API response", err.Error())
+		diags.AddAttributeError(path.Root(attrVarsJSON), "Failed to marshal vars_json from API response", err.Error())
 		return policyshape.NewVarsJSONNull()
 	}
 
@@ -317,7 +317,7 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 
 	models := make(map[string]agentlessInputModel, len(inputs))
 	for inputID, wire := range inputs {
-		inputPath := path.Root("inputs").AtMapKey(inputID)
+		inputPath := path.Root(attrInputs).AtMapKey(inputID)
 
 		m := agentlessInputModel{
 			Enabled:   types.BoolPointerValue(wire.Enabled),
@@ -370,7 +370,7 @@ func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diag
 		return nil
 	}
 
-	inputsMap := typeutils.MapTypeAs[agentlessInputModel](ctx, m.Inputs.MapValue, path.Root("inputs"), diags)
+	inputsMap := typeutils.MapTypeAs[agentlessInputModel](ctx, m.Inputs.MapValue, path.Root(attrInputs), diags)
 	if inputsMap == nil {
 		return nil
 	}
@@ -379,7 +379,7 @@ func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diag
 	for inputID, inputModel := range inputsMap {
 		d := decodedAgentlessInput{model: inputModel}
 		if typeutils.IsKnown(inputModel.Streams) {
-			inputPath := path.Root("inputs").AtMapKey(inputID)
+			inputPath := path.Root(attrInputs).AtMapKey(inputID)
 			d.streams = typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
 		}
 		decoded[inputID] = d
@@ -469,21 +469,21 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 			if opts.sendExplicitEmptyScalars {
 				empty := map[string]any{}
 				if b, err := json.Marshal(empty); err != nil {
-					diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json", err.Error())
+					diags.AddAttributeError(path.Root(attrVarsJSON), "Failed to encode vars_json", err.Error())
 				} else if err := json.Unmarshal(b, &body.Vars); err != nil {
-					diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json for the request", err.Error())
+					diags.AddAttributeError(path.Root(attrVarsJSON), "Failed to encode vars_json for the request", err.Error())
 				}
 			}
 		} else {
 			sanitized, sd := m.VarsJSON.SanitizedValue()
 			diags.Append(sd...)
 			if !sd.HasError() {
-				varsMap := typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitized), path.Root("vars_json"), &diags)
+				varsMap := typeutils.NormalizedTypeToMap[any](jsontypes.NewNormalizedValue(sanitized), path.Root(attrVarsJSON), &diags)
 				if len(varsMap) > 0 || opts.sendExplicitEmptyScalars {
 					if b, err := json.Marshal(varsMap); err != nil {
-						diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json", err.Error())
+						diags.AddAttributeError(path.Root(attrVarsJSON), "Failed to encode vars_json", err.Error())
 					} else if err := json.Unmarshal(b, &body.Vars); err != nil {
-						diags.AddAttributeError(path.Root("vars_json"), "Failed to encode vars_json for the request", err.Error())
+						diags.AddAttributeError(path.Root(attrVarsJSON), "Failed to encode vars_json for the request", err.Error())
 					}
 				}
 			}
@@ -573,27 +573,25 @@ func (m agentlessPolicyModel) diagnoseUnknownUpdatePlanFields(diags *diag.Diagno
 		return
 	}
 	const summary = "Cannot build managed integration update request"
-	type field struct {
-		path    path.Path
-		label   string
+	for _, attr := range []struct {
+		key     string
 		unknown bool
-	}
-	for _, f := range []field{
-		{path.Root("description"), "description", m.Description.IsUnknown()},
-		{path.Root("namespace"), "namespace", m.Namespace.IsUnknown()},
-		{path.Root("policy_template"), "policy_template", m.PolicyTemplate.IsUnknown()},
-		{path.Root("vars_json"), "vars_json", m.VarsJSON.IsUnknown()},
-		{path.Root("var_group_selections"), "var_group_selections", m.VarGroupSelections.IsUnknown()},
-		{path.Root("additional_datastreams_permissions"), "additional_datastreams_permissions", m.AdditionalDatastreamsPermissions.IsUnknown()},
-		{path.Root("global_data_tags"), "global_data_tags", m.GlobalDataTags.IsUnknown()},
-		{path.Root("package"), "package", m.Package.IsUnknown()},
-		{path.Root("inputs"), "inputs", m.Inputs.IsUnknown()},
+	}{
+		{attrDescription, m.Description.IsUnknown()},
+		{attrNamespace, m.Namespace.IsUnknown()},
+		{attrPolicyTemplate, m.PolicyTemplate.IsUnknown()},
+		{attrVarsJSON, m.VarsJSON.IsUnknown()},
+		{attrVarGroupSelections, m.VarGroupSelections.IsUnknown()},
+		{attrAdditionalDatastreamsPermissions, m.AdditionalDatastreamsPermissions.IsUnknown()},
+		{attrGlobalDataTags, m.GlobalDataTags.IsUnknown()},
+		{attrPackage, m.Package.IsUnknown()},
+		{attrInputs, m.Inputs.IsUnknown()},
 	} {
-		if f.unknown {
+		if attr.unknown {
 			diags.AddAttributeError(
-				f.path,
+				path.Root(attr.key),
 				summary,
-				fmt.Sprintf("The %s attribute is unknown; cannot build a full-replace update body without risking unintended clears on the API.", f.label),
+				fmt.Sprintf("The %s attribute is unknown; cannot build a full-replace update body without risking unintended clears on the API.", attr.key),
 			)
 		}
 	}
@@ -616,11 +614,11 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 		raw := map[string]any{}
 		b, err := json.Marshal(raw)
 		if err != nil {
-			diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs", err.Error())
+			diags.AddAttributeError(path.Root(attrInputs), "Failed to encode inputs", err.Error())
 			return
 		}
 		if err := json.Unmarshal(b, &body.Inputs); err != nil {
-			diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs for the request", err.Error())
+			diags.AddAttributeError(path.Root(attrInputs), "Failed to encode inputs for the request", err.Error())
 		}
 		return
 	}
@@ -628,7 +626,7 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 	raw := map[string]any{}
 	for inputID, di := range decoded {
 		in := di.model
-		inputPath := path.Root("inputs").AtMapKey(inputID)
+		inputPath := path.Root(attrInputs).AtMapKey(inputID)
 		entry := map[string]any{}
 
 		if typeutils.IsKnown(in.Enabled) {
@@ -673,11 +671,11 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 
 	b, err := json.Marshal(raw)
 	if err != nil {
-		diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs", err.Error())
+		diags.AddAttributeError(path.Root(attrInputs), "Failed to encode inputs", err.Error())
 		return
 	}
 	if err := json.Unmarshal(b, &body.Inputs); err != nil {
-		diags.AddAttributeError(path.Root("inputs"), "Failed to encode inputs for the request", err.Error())
+		diags.AddAttributeError(path.Root(attrInputs), "Failed to encode inputs for the request", err.Error())
 	}
 }
 

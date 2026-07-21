@@ -43,6 +43,20 @@ import (
 // identity attribute, the package object, and the cloud_connector object.
 const attrName = "name"
 
+// Terraform schema attribute keys reused in models_convert.go (path.Root,
+// diagnostics) and here; centralized to satisfy goconst.
+const (
+	attrDescription                      = "description"
+	attrNamespace                        = "namespace"
+	attrPackage                          = "package"
+	attrPolicyTemplate                   = "policy_template"
+	attrVarsJSON                         = "vars_json"
+	attrVarGroupSelections               = "var_group_selections"
+	attrInputs                           = "inputs"
+	attrGlobalDataTags                   = "global_data_tags"
+	attrAdditionalDatastreamsPermissions = "additional_datastreams_permissions"
+)
+
 // getSchema defines the elasticstack_fleet_managed_integration resource schema
 // (openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, "Schema attributes"). CRUD population lives in models_convert.go
@@ -90,7 +104,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Required:            true,
 				MarkdownDescription: "The name of the managed integration; updatable in-place.",
 			},
-			"description": schema.StringAttribute{
+			attrDescription: schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "The description of the managed integration; updatable in-place. " +
 					"An explicit empty string is rejected: it is indistinguishable from \"unset\" once " +
@@ -101,7 +115,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			"namespace": schema.StringAttribute{
+			attrNamespace: schema.StringAttribute{
 				Computed: true,
 				Optional: true,
 				MarkdownDescription: "The namespace of the managed integration; forces replacement on change. " +
@@ -125,7 +139,7 @@ func getSchema(_ context.Context) schema.Schema {
 					setplanmodifier.RequiresReplace(),
 				},
 			},
-			"package": schema.SingleNestedAttribute{
+			attrPackage: schema.SingleNestedAttribute{
 				Required:            true,
 				MarkdownDescription: "The Fleet integration package this managed integration is based on.",
 				Attributes: map[string]schema.Attribute{
@@ -151,14 +165,14 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"policy_template": schema.StringAttribute{
+			attrPolicyTemplate: schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The policy template within the package to use; forces replacement on change.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"vars_json": schema.StringAttribute{
+			attrVarsJSON: schema.StringAttribute{
 				Computed:   true,
 				Optional:   true,
 				Sensitive:  varsAreSensitive,
@@ -170,13 +184,13 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"var_group_selections": schema.MapAttribute{
+			attrVarGroupSelections: schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
 				MarkdownDescription: "Top-level variable group selections, mapping group name to selected option; updatable in-place. " +
 					"Modeled at the top level only in v1; per-stream var_group_selections is deferred to a follow-up change.",
 			},
-			"inputs": schema.MapNestedAttribute{
+			attrInputs: schema.MapNestedAttribute{
 				Computed:            true,
 				Optional:            true,
 				CustomType:          policyshape.NewInputsType(agentlessInputType()),
@@ -215,7 +229,7 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"global_data_tags": schema.MapNestedAttribute{
+			attrGlobalDataTags: schema.MapNestedAttribute{
 				Optional: true,
 				MarkdownDescription: "Global data tags applied to the managed integration's data streams; updatable in-place. " +
 					"Keyed by tag name; set exactly one of `string_value` or `number_value` per entry.",
@@ -246,7 +260,7 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			"additional_datastreams_permissions": schema.ListAttribute{
+			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,
 				MarkdownDescription: "Additional data stream permissions to grant beyond the package's defaults; updatable in-place.",
