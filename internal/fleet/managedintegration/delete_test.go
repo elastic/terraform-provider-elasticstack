@@ -65,7 +65,7 @@ func deleteCallbackTestModel(t *testing.T, forceDelete bool) agentlessPolicyMode
 }
 
 // TestDeleteAgentlessPolicy_callback exercises deleteAgentlessPolicy against
-// httptest Fleet DELETE /api/fleet/managed_integrations/{id} responses.
+// httptest Fleet DELETE /api/fleet/managed_integrations/{id} (DeleteManagedIntegration).
 func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 	t.Run("200 success", func(t *testing.T) {
 		mux := http.NewServeMux()

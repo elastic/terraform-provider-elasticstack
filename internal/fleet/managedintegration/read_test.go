@@ -68,8 +68,9 @@ func TestReadAgentlessPolicy_serverError(t *testing.T) {
 }
 
 // TestReadAgentlessPolicy_populatesFromManagedIntegration exercises GET
-// /api/fleet/managed_integrations/{id} and populateFromManagedIntegration while
-// preserving create-only flags from the incoming model.
+// /api/fleet/managed_integrations/{id} (ReadManagedIntegration) and
+// populateFromManagedIntegration while preserving create-only flags from the
+// incoming model.
 func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 	const managedIntegrationJSON = `{"item":{` +
 		`"id":"policy-1","name":"api-name",` +

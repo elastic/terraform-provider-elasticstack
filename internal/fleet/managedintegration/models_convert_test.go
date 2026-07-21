@@ -232,6 +232,69 @@ func TestToCreateBody_globalDataTags_number(t *testing.T) {
 	assert.InDelta(t, float64(42), tag["value"], 0.001)
 }
 
+// TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip exercises the
+// Terraform map shape (keys = tag names, values = {string_value | number_value})
+// through API encode (globalDataTagsRawFromModel) and decode
+// (globalDataTagsToModel via populateFromManagedIntegration).
+func TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
+		"env": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringValue("prod"),
+			globalDataTagNumberValueAttr: types.Float32Null(),
+		}),
+		"priority": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
+			globalDataTagStringValueAttr: types.StringNull(),
+			globalDataTagNumberValueAttr: types.Float32Value(7.5),
+		}),
+	})
+	require.False(t, diags.HasError())
+
+	m := baseTestModel(t)
+	m.GlobalDataTags = tagsMap
+
+	body, bodyDiags := m.toCreateBody(ctx)
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+	decoded := decodeRequestJSON(t, body)
+	apiTags, ok := decoded["global_data_tags"].([]any)
+	require.True(t, ok)
+	require.Len(t, apiTags, 2)
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"global_data_tags": [
+			{"name": "env", "value": "prod"},
+			{"name": "priority", "value": 7.5}
+		]
+	}`)
+
+	out := agentlessPolicyModel{}
+	popDiags := out.populateFromManagedIntegration(ctx, "default", item, nil)
+	require.False(t, popDiags.HasError(), "%v", popDiags)
+
+	var tags map[string]globalDataTagsItemModel
+	require.False(t, out.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
+	require.Len(t, tags, 2)
+	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
+	assert.True(t, tags["env"].NumberValue.IsNull())
+	assert.InDelta(t, float32(7.5), tags["priority"].NumberValue.ValueFloat32(), 0.001)
+	assert.True(t, tags["priority"].StringValue.IsNull())
+
+	var encodeDiags diag.Diagnostics
+	raw := globalDataTagsRawFromModel(ctx, out.GlobalDataTags, &encodeDiags)
+	require.False(t, encodeDiags.HasError(), "%v", encodeDiags)
+	require.NotNil(t, raw)
+	require.Len(t, *raw, 2)
+}
+
 func TestGlobalDataTagsToModel_numberWire(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

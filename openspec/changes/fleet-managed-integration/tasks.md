@@ -66,11 +66,11 @@
 
 ## 9. Tests — unit and model conversion
 
-- [ ] 9.1 Update `kbapi_roundtrip_test.go` response-shape assertions for the clean `KibanaHTTPAPIsManagedIntegration` type (no leaked PackagePolicy fields)
-- [ ] 9.2 Rewrite `global_data_tags` unit tests for the `Map + string_value/number_value` shape
-- [ ] 9.3 Verify task 7 / `update_test.go` coverage consolidates in-place `name` and `package.version`, cloud_connector from prior state, and full-replace PUT body structure (extend only if gaps remain)
-- [ ] 9.4 Verify task 8 create/read/delete callback unit tests consolidate managed_integrations client coverage (`create_test.go`, `read_test.go`, `delete_test.go`); extend only if gaps remain
-- [ ] 9.5 Update `enabled_convergence_test.go` and `condition_test.go` for the renamed package (mechanical)
+- [x] 9.1 Update `kbapi_roundtrip_test.go` response-shape assertions for the clean `KibanaHTTPAPIsManagedIntegration` type (no leaked PackagePolicy fields)
+- [x] 9.2 Rewrite `global_data_tags` unit tests for the `Map + string_value/number_value` shape
+- [x] 9.3 Verify task 7 / `update_test.go` coverage consolidates in-place `name` and `package.version`, cloud_connector from prior state, and full-replace PUT body structure (extend only if gaps remain)
+- [x] 9.4 Verify task 8 create/read/delete callback unit tests consolidate managed_integrations client coverage (`create_test.go`, `read_test.go`, `delete_test.go`); extend only if gaps remain
+- [x] 9.5 Update `enabled_convergence_test.go` and `condition_test.go` for the renamed package (mechanical)
 
 ## 10. Examples and documentation
 

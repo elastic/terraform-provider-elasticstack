@@ -30,8 +30,8 @@ import (
 )
 
 // newInputsWithCondition builds an `inputs` map with one input
-// ("cspm-cloudbeat/cis_aws", matching typedFormatPackagePolicyJSON's
-// PolicyTemplate/Type via mappedInputKey, so it also exercises
+// ("cspm-cloudbeat/cis_aws", matching mappedFormatManagedIntegrationJSON's
+// policy_template + input key via mappedInputKey, so it also exercises
 // TestBuildUpdateBody_conditionHandling's update path) carrying the given
 // input-level and stream-level condition expressions (empty string = unset).
 // Mirrors internal/fleet/integration_policy/models_test.go's

@@ -162,7 +162,8 @@ func createCallbackPlan(t *testing.T) agentlessPolicyModel {
 }
 
 // TestCreateAgentlessPolicy_callback covers createAgentlessPolicy POST handling
-// after topology is skipped (SkipReadAfterWrite is always false; identity only).
+// against /api/fleet/managed_integrations (CreateManagedIntegration) after
+// topology is skipped (SkipReadAfterWrite is always false; identity only).
 func TestCreateAgentlessPolicy_callback(t *testing.T) {
 	t.Run("success sets policy_id and composite id without SkipReadAfterWrite", func(t *testing.T) {
 		mux := http.NewServeMux()

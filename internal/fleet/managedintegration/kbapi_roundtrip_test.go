@@ -26,202 +26,184 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// fullyPopulatedTypedInputJSON is a hand-built response-shaped JSON document
-// covering every field of kbapi.PackagePolicyTypedInput (the real generated
-// response-side type buildUpdateInputs decodes from
-// current.Inputs.AsPackagePolicyTypedInputs()), including its nested
-// PackagePolicyTypedInputStream, with every field set to a distinguishable,
-// non-zero/non-default value. compiled_input is deliberately included too:
-// it exists only on the response side (kbapi.PackagePolicyRequestTypedInput
-// has no field for it at all) and this test's assertions below confirm it is
-// -- correctly -- dropped, not silently misrouted somewhere else.
-const fullyPopulatedTypedInputJSON = `{
-	"compiled_input": {"anything": "response-only, must not survive the round trip"},
+// fullyPopulatedManagedIntegrationInputJSON is a hand-built input object in
+// the managed_integrations response shape (KibanaHTTPAPIsManagedIntegration
+// inputs map values). It also embeds several PackagePolicy-typed-input fields
+// that must not appear on managed integration wire JSON; the companion test
+// below asserts they are dropped on unmarshal/re-marshal, not silently
+// carried into create/update bodies.
+const fullyPopulatedManagedIntegrationInputJSON = `{
 	"condition": "host.os.family == 'linux'",
-	"config": {"cfgkey": {"frozen": true, "type": "text", "value": "cfgval"}},
-	"deprecated": {"description": "dep-desc", "replaced_by": {"old": "new"}, "since": "9.0.0"},
+	"deprecated": {"description": "dep-desc", "since": "9.0.0"},
 	"enabled": true,
-	"id": "input-id-1",
-	"keep_enabled": true,
-	"migrate_from": "migrate-from-x",
-	"name": "input-name-1",
-	"policy_template": "cspm",
-	"type": "cloudbeat/cis_aws",
-	"var_group_selections": {"vg1": "opt1"},
-	"vars": {"varkey": {"frozen": false, "type": "text", "value": "varval"}},
-	"streams": [
-		{
-			"compiled_stream": {"compiled": "yes"},
+	"vars": {"varkey": "varval"},
+	"streams": {
+		"cloud_security_posture.findings": {
 			"condition": "data_stream.dataset == 'audit'",
-			"config": {"scfgkey": {"frozen": true, "type": "text", "value": "scfgval"}},
-			"data_stream": {
-				"dataset": "cloud_security_posture.findings",
-				"type": "logs",
-				"elasticsearch": {
-					"dynamic_dataset": true,
-					"dynamic_namespace": true,
-					"privileges": {"indices": ["idx1", "idx2"]}
-				}
-			},
 			"deprecated": {"description": "stream-dep-desc", "since": "9.1.0"},
 			"enabled": true,
-			"id": "stream-id-1",
-			"keep_enabled": true,
-			"migrate_from": "stream-migrate-from",
-			"release": "beta",
 			"var_group_selections": {"svg1": "sopt1"},
-			"vars": {"streamvarkey": {"frozen": true, "type": "text", "value": "streamvarval"}}
+			"vars": {"streamvarkey": "streamvarval"},
+			"compiled_stream": {"compiled": "package-policy-only"},
+			"config": {"scfgkey": {"frozen": true, "type": "text", "value": "scfgval"}},
+			"id": "stream-id-leak",
+			"release": "beta"
 		}
-	]
+	},
+	"compiled_input": {"anything": "package-policy-only"},
+	"id": "input-id-leak",
+	"keep_enabled": true,
+	"migrate_from": "migrate-from-x",
+	"name": "input-name-leak",
+	"policy_template": "cspm",
+	"type": "cloudbeat/cis_aws",
+	"config": {"cfgkey": {"frozen": true, "type": "text", "value": "cfgval"}}
 }`
 
-// TestKbapiTypedInputRoundTrip_allFieldsSurvive is a regression guard against
-// a future kbapi regeneration silently breaking update.go's buildUpdateInputs
-// round trip: for every input it echoes back on Update, buildUpdateInputs
-// does exactly `b, _ := json.Marshal(in); json.Unmarshal(b, &reqIn)` to get
-// from the response-side kbapi.PackagePolicyTypedInput to the request-side
-// kbapi.PackagePolicyRequestTypedInput (see that function's doc comment and
-// this package's header comment on why: oapi-codegen gives several of their
-// shared fields, like Vars/Config, anonymous struct types that can't be
-// spelled out by hand without duplicating oapi-codegen's own generated
-// shape). That round trip is JSON-tag-matched, not Go-field-name-matched --
-// if a future kbapi regeneration renamed or dropped a JSON tag on only one
-// of the two types, this would still compile (both types are independently
-// valid Go structs), but the affected field would silently stop
-// round-tripping in production with no test currently catching it.
-//
-// This test builds a real kbapi.PackagePolicyTypedInput (via JSON, the same
-// way a real Kibana response would populate it, and the only practical way
-// to populate the Vars/Config anonymous-struct fields without hand-spelling
-// oapi-codegen's own generated type shape) with every field set to a
-// distinguishable value, runs it through that exact round trip, and asserts
-// every field survived unchanged -- except compiled_input, which is
-// response-only (kbapi.PackagePolicyRequestTypedInput has no field for it)
-// and is asserted absent, not present, per buildUpdateInputs's own doc
-// comment ("dropping response-only fields like compiled_input").
-func TestKbapiTypedInputRoundTrip_allFieldsSurvive(t *testing.T) {
-	var in kbapi.PackagePolicyTypedInput
-	require.NoError(t, json.Unmarshal([]byte(fullyPopulatedTypedInputJSON), &in))
+const managedIntegrationInputRoundTripDoc = `{
+	"id": "policy-1",
+	"name": "test-policy",
+	"created_at": "2024-01-01T00:00:00.000Z",
+	"created_by": "elastic",
+	"updated_at": "2024-01-02T00:00:00.000Z",
+	"updated_by": "elastic",
+	"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "Security Posture Management"},
+	"inputs": {
+		"cspm-cloudbeat/cis_aws": ` + fullyPopulatedManagedIntegrationInputJSON + `
+	}
+}`
 
-	// This is update.go's buildUpdateInputs round trip, verbatim.
+// TestKbapiManagedIntegrationInputRoundTrip_simplifiedFieldsSurvive is a
+// regression guard against kbapi regeneration breaking the JSON round trip
+// from a managed_integrations GET input entry to the PUT/POST request input
+// shape. create.go and update.go build request inputs from Terraform state
+// (applyCreateInputs), but the response-side and request-side generated structs
+// must remain JSON-tag compatible for any future read/modify/write path and for
+// hand-built fixtures such as mappedFormatManagedIntegrationJSON.
+func TestKbapiManagedIntegrationInputRoundTrip_simplifiedFieldsSurvive(t *testing.T) {
+	item := mustManagedIntegrationFromJSON(t, managedIntegrationInputRoundTripDoc)
+	in, ok := item.Inputs["cspm-cloudbeat/cis_aws"]
+	require.True(t, ok)
+
 	b, err := json.Marshal(in)
 	require.NoError(t, err)
-	var reqIn kbapi.PackagePolicyRequestTypedInput
-	require.NoError(t, json.Unmarshal(b, &reqIn))
 
-	// Input-level scalar/pointer fields.
+	var req kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest
+	wrapper := `{"name":"n","package":{"name":"p","version":"1"},"inputs":{"cspm-cloudbeat/cis_aws":` + string(b) + `}}`
+	require.NoError(t, json.Unmarshal([]byte(wrapper), &req))
+	require.NotNil(t, req.Inputs)
+	reqIn, ok := (*req.Inputs)["cspm-cloudbeat/cis_aws"]
+	require.True(t, ok)
+
 	require.NotNil(t, reqIn.Condition)
 	assert.Equal(t, "host.os.family == 'linux'", *reqIn.Condition)
-	assert.True(t, reqIn.Enabled)
-	require.NotNil(t, reqIn.Id)
-	assert.Equal(t, "input-id-1", *reqIn.Id)
-	require.NotNil(t, reqIn.KeepEnabled)
-	assert.True(t, *reqIn.KeepEnabled)
-	require.NotNil(t, reqIn.MigrateFrom)
-	assert.Equal(t, "migrate-from-x", *reqIn.MigrateFrom)
-	require.NotNil(t, reqIn.Name)
-	assert.Equal(t, "input-name-1", *reqIn.Name)
-	require.NotNil(t, reqIn.PolicyTemplate)
-	assert.Equal(t, "cspm", *reqIn.PolicyTemplate)
-	assert.Equal(t, "cloudbeat/cis_aws", reqIn.Type)
+	require.NotNil(t, reqIn.Enabled)
+	assert.True(t, *reqIn.Enabled)
 
-	// Input-level Config (anonymous map[string]struct{Frozen,Type,Value}).
-	require.NotNil(t, reqIn.Config)
-	cfg := *reqIn.Config
-	require.Contains(t, cfg, "cfgkey")
-	require.NotNil(t, cfg["cfgkey"].Frozen)
-	assert.True(t, *cfg["cfgkey"].Frozen)
-	require.NotNil(t, cfg["cfgkey"].Type)
-	assert.Equal(t, "text", *cfg["cfgkey"].Type)
-	assert.Equal(t, "cfgval", cfg["cfgkey"].Value)
-
-	// Input-level Deprecated (named KibanaHTTPAPIsDeprecationInfo type).
 	require.NotNil(t, reqIn.Deprecated)
 	assert.Equal(t, "dep-desc", reqIn.Deprecated.Description)
 	require.NotNil(t, reqIn.Deprecated.Since)
 	assert.Equal(t, "9.0.0", *reqIn.Deprecated.Since)
-	require.NotNil(t, reqIn.Deprecated.ReplacedBy)
-	assert.Equal(t, "new", (*reqIn.Deprecated.ReplacedBy)["old"])
-
-	// Input-level VarGroupSelections and Vars.
-	require.NotNil(t, reqIn.VarGroupSelections)
-	assert.Equal(t, "opt1", (*reqIn.VarGroupSelections)["vg1"])
 
 	require.NotNil(t, reqIn.Vars)
-	vars := *reqIn.Vars
-	require.Contains(t, vars, "varkey")
-	require.NotNil(t, vars["varkey"].Type)
-	assert.Equal(t, "text", *vars["varkey"].Type)
-	assert.Equal(t, "varval", vars["varkey"].Value)
-	require.NotNil(t, vars["varkey"].Frozen)
-	assert.False(t, *vars["varkey"].Frozen)
-
-	// compiled_input is response-only: kbapi.PackagePolicyRequestTypedInput
-	// has no field for it, so there is nothing to assert it into -- confirmed
-	// here by re-marshaling reqIn and checking the JSON key is genuinely
-	// absent, not merely zero-valued.
-	reqRaw, err := json.Marshal(reqIn)
+	varStr, err := (*reqIn.Vars)["varkey"].AsKibanaHTTPAPIsCreateManagedIntegrationRequestInputsVars0()
 	require.NoError(t, err)
-	var reqDecoded map[string]any
-	require.NoError(t, json.Unmarshal(reqRaw, &reqDecoded))
-	_, hasCompiledInput := reqDecoded["compiled_input"]
-	assert.False(t, hasCompiledInput, "compiled_input is response-only and must not survive into the request body")
+	assert.Equal(t, "varval", varStr)
 
-	// Stream-level fields.
 	require.NotNil(t, reqIn.Streams)
 	streams := *reqIn.Streams
-	require.Len(t, streams, 1)
-	s := streams[0]
+	stream, ok := streams["cloud_security_posture.findings"]
+	require.True(t, ok)
 
-	// Unlike compiled_input, compiled_stream exists on BOTH
-	// PackagePolicyTypedInputStream and PackagePolicyRequestTypedInputStream,
-	// so it must survive.
-	assert.NotNil(t, s.CompiledStream, "compiled_stream exists on both the response and request stream types and must survive")
+	require.NotNil(t, stream.Condition)
+	assert.Equal(t, "data_stream.dataset == 'audit'", *stream.Condition)
+	require.NotNil(t, stream.Enabled)
+	assert.True(t, *stream.Enabled)
 
-	require.NotNil(t, s.Condition)
-	assert.Equal(t, "data_stream.dataset == 'audit'", *s.Condition)
+	require.NotNil(t, stream.Deprecated)
+	assert.Equal(t, "stream-dep-desc", stream.Deprecated.Description)
 
-	require.NotNil(t, s.Config)
-	scfg := *s.Config
-	require.Contains(t, scfg, "scfgkey")
-	require.NotNil(t, scfg["scfgkey"].Frozen)
-	assert.True(t, *scfg["scfgkey"].Frozen)
-	assert.Equal(t, "scfgval", scfg["scfgkey"].Value)
+	require.NotNil(t, stream.VarGroupSelections)
+	assert.Equal(t, "sopt1", (*stream.VarGroupSelections)["svg1"])
 
-	assert.Equal(t, "cloud_security_posture.findings", s.DataStream.Dataset)
-	require.NotNil(t, s.DataStream.Type)
-	assert.Equal(t, "logs", *s.DataStream.Type)
-	require.NotNil(t, s.DataStream.Elasticsearch)
-	require.NotNil(t, s.DataStream.Elasticsearch.DynamicDataset)
-	assert.True(t, *s.DataStream.Elasticsearch.DynamicDataset)
-	require.NotNil(t, s.DataStream.Elasticsearch.DynamicNamespace)
-	assert.True(t, *s.DataStream.Elasticsearch.DynamicNamespace)
-	require.NotNil(t, s.DataStream.Elasticsearch.Privileges)
-	require.NotNil(t, s.DataStream.Elasticsearch.Privileges.Indices)
-	assert.Equal(t, []string{"idx1", "idx2"}, *s.DataStream.Elasticsearch.Privileges.Indices)
+	require.NotNil(t, stream.Vars)
+	sVarStr, err := (*stream.Vars)["streamvarkey"].AsKibanaHTTPAPIsCreateManagedIntegrationRequestInputsStreamsVars0()
+	require.NoError(t, err)
+	assert.Equal(t, "streamvarval", sVarStr)
+}
 
-	require.NotNil(t, s.Deprecated)
-	assert.Equal(t, "stream-dep-desc", s.Deprecated.Description)
+// TestKbapiManagedIntegrationInputRoundTrip_packagePolicyFieldsDropped asserts
+// that legacy PackagePolicy typed-input fields present in raw JSON are not
+// part of the clean KibanaHTTPAPIsManagedIntegration model and therefore must
+// not survive into request bodies built via JSON round trip.
+func TestKbapiManagedIntegrationInputRoundTrip_packagePolicyFieldsDropped(t *testing.T) {
+	item := mustManagedIntegrationFromJSON(t, managedIntegrationInputRoundTripDoc)
+	in := item.Inputs["cspm-cloudbeat/cis_aws"]
 
-	assert.True(t, s.Enabled)
-	require.NotNil(t, s.Id)
-	assert.Equal(t, "stream-id-1", *s.Id)
-	require.NotNil(t, s.KeepEnabled)
-	assert.True(t, *s.KeepEnabled)
-	require.NotNil(t, s.MigrateFrom)
-	assert.Equal(t, "stream-migrate-from", *s.MigrateFrom)
-	require.NotNil(t, s.Release)
-	assert.Equal(t, kbapi.PackagePolicyRequestTypedInputStreamRelease("beta"), *s.Release)
+	b, err := json.Marshal(in)
+	require.NoError(t, err)
 
-	require.NotNil(t, s.VarGroupSelections)
-	assert.Equal(t, "sopt1", (*s.VarGroupSelections)["svg1"])
+	var req kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest
+	wrapper := `{"name":"n","package":{"name":"p","version":"1"},"inputs":{"cspm-cloudbeat/cis_aws":` + string(b) + `}}`
+	require.NoError(t, json.Unmarshal([]byte(wrapper), &req))
 
-	require.NotNil(t, s.Vars)
-	svars := *s.Vars
-	require.Contains(t, svars, "streamvarkey")
-	require.NotNil(t, svars["streamvarkey"].Frozen)
-	assert.True(t, *svars["streamvarkey"].Frozen)
-	require.NotNil(t, svars["streamvarkey"].Type)
-	assert.Equal(t, "text", *svars["streamvarkey"].Type)
-	assert.Equal(t, "streamvarval", svars["streamvarkey"].Value)
+	reqRaw, err := json.Marshal(req)
+	require.NoError(t, err)
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(reqRaw, &decoded))
+	inputs, ok := decoded["inputs"].(map[string]any)
+	require.True(t, ok)
+	inDecoded, ok := inputs["cspm-cloudbeat/cis_aws"].(map[string]any)
+	require.True(t, ok)
+
+	for _, leakKey := range []string{
+		"compiled_input", "id", "keep_enabled", "migrate_from", "name",
+		"policy_template", "type", "config",
+	} {
+		_, present := inDecoded[leakKey]
+		assert.False(t, present, "PackagePolicy-only input field %q must not leak into managed integration request JSON", leakKey)
+	}
+
+	streams, ok := inDecoded["streams"].(map[string]any)
+	require.True(t, ok)
+	stream, ok := streams["cloud_security_posture.findings"].(map[string]any)
+	require.True(t, ok)
+	for _, leakKey := range []string{"compiled_stream", "config", "id", "release"} {
+		_, present := stream[leakKey]
+		assert.False(t, present, "PackagePolicy-only stream field %q must not leak into managed integration request JSON", leakKey)
+	}
+}
+
+// TestKbapiManagedIntegrationResponse_packagePolicyTopLevelFieldsIgnored ensures
+// a GET fixture shaped like an old package_policy document still unmarshals into
+// KibanaHTTPAPIsManagedIntegration without surfacing PackagePolicy-only top-level
+// attributes on the Go struct (they are ignored by encoding/json).
+func TestKbapiManagedIntegrationResponse_packagePolicyTopLevelFieldsIgnored(t *testing.T) {
+	const raw = `{
+		"id": "policy-1",
+		"name": "test-policy",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-02T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"inputs": {},
+		"revision": 3,
+		"agent_policy_id": "ap-1",
+		"output_id": "default",
+		"policy_ids": ["ap-1"]
+	}`
+
+	item := mustManagedIntegrationFromJSON(t, raw)
+	assert.Equal(t, "policy-1", item.Id)
+	assert.Equal(t, "test-policy", item.Name)
+
+	out, err := json.Marshal(item)
+	require.NoError(t, err)
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(out, &decoded))
+	for _, leakKey := range []string{"revision", "agent_policy_id", "output_id", "policy_ids"} {
+		_, present := decoded[leakKey]
+		assert.False(t, present, "PackagePolicy-only top-level field %q must not appear on KibanaHTTPAPIsManagedIntegration", leakKey)
+	}
 }
