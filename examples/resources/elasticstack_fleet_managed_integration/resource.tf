@@ -2,12 +2,12 @@ provider "elasticstack" {
   kibana {}
 }
 
-# Agentless Cloud Security Posture Management (CSPM) policy for an AWS
-# account. Elastic provisions and runs the agent runtime in its own cloud
+# Fleet managed integration: Cloud Security Posture Management (CSPM) for an
+# AWS account. Elastic provisions and runs the agent runtime in its own cloud
 # infrastructure -- no Elastic Agent host is required.
 #
 # This resource is only supported on Elastic Cloud Hosted and Serverless
-# (Security or Observability) deployments running Kibana 9.3.0+.
+# (Security or Observability) deployments running Kibana 9.5.0+.
 resource "elasticstack_fleet_managed_integration" "cspm_aws" {
   name            = "Agentless CSPM - AWS Production"
   description     = "Cloud Security Posture Management for the AWS production account"
@@ -59,16 +59,14 @@ resource "elasticstack_fleet_managed_integration" "cspm_aws" {
     target_csp         = "aws"
   }
 
-  global_data_tags = [
-    {
-      name  = "env"
-      value = "production"
-    },
-    {
-      name  = "team"
-      value = "cloud-security"
+  global_data_tags = {
+    env = {
+      string_value = "production"
     }
-  ]
+    team = {
+      string_value = "cloud-security"
+    }
+  }
 
   additional_datastreams_permissions = ["logs-custom-*"]
 }
