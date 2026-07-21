@@ -70,7 +70,7 @@ func TestStringSliceValue(t *testing.T) {
 	}
 }
 
-func TestStringsToList(t *testing.T) {
+func TestStringsToListMust(t *testing.T) {
 	t.Parallel()
 
 	emptyList := types.ListValueMust(types.StringType, []attr.Value{})
@@ -91,13 +91,13 @@ func TestStringsToList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := typeutils.StringsToList(tt.input)
+			got := typeutils.StringsToListMust(tt.input)
 			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestListToStrings(t *testing.T) {
+func TestListToStringsMust(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -120,7 +120,7 @@ func TestListToStrings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := typeutils.ListToStrings(tt.input)
+			got := typeutils.ListToStringsMust(tt.input)
 			require.Equal(t, tt.want, got)
 		})
 	}

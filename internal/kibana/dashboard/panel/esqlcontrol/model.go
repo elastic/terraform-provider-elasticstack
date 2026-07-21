@@ -100,7 +100,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	// On import (tfPanel == nil) there is no prior intent — populate from API.
 	if tfPanel == nil {
 		existing = &models.EsqlControlConfigModel{
-			SelectedOptions:  typeutils.StringsToList(api.SelectedOptions),
+			SelectedOptions:  typeutils.StringsToListMust(api.SelectedOptions),
 			VariableName:     types.StringValue(api.VariableName),
 			VariableType:     types.StringValue(api.VariableType),
 			EsqlQuery:        types.StringValue(api.EsqlQuery),
@@ -111,7 +111,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		}
 		pm.EsqlControlConfig = existing
 		if len(api.AvailableOptions) > 0 {
-			existing.AvailableOptions = typeutils.StringsToList(api.AvailableOptions)
+			existing.AvailableOptions = typeutils.StringsToListMust(api.AvailableOptions)
 		}
 		if api.DisplaySettings != nil {
 			d := api.DisplaySettings
@@ -131,7 +131,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 			return
 		}
 		existing = &models.EsqlControlConfigModel{
-			SelectedOptions:  typeutils.StringsToList(api.SelectedOptions),
+			SelectedOptions:  typeutils.StringsToListMust(api.SelectedOptions),
 			VariableName:     types.StringValue(api.VariableName),
 			VariableType:     types.StringValue(api.VariableType),
 			EsqlQuery:        types.StringValue(api.EsqlQuery),
@@ -142,7 +142,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 		}
 		pm.EsqlControlConfig = existing
 		if len(api.AvailableOptions) > 0 {
-			existing.AvailableOptions = typeutils.StringsToList(api.AvailableOptions)
+			existing.AvailableOptions = typeutils.StringsToListMust(api.AvailableOptions)
 		}
 		if api.DisplaySettings != nil {
 			d := api.DisplaySettings
@@ -161,7 +161,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 	prevAvailableOptions := existing.AvailableOptions
 
 	// Required fields always get updated from API.
-	existing.SelectedOptions = typeutils.StringsToList(api.SelectedOptions)
+	existing.SelectedOptions = typeutils.StringsToListMust(api.SelectedOptions)
 	existing.VariableName = types.StringValue(api.VariableName)
 	existing.VariableType = types.StringValue(api.VariableType)
 	existing.EsqlQuery = types.StringValue(api.EsqlQuery)
@@ -177,7 +177,7 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiConfi
 
 	// available_options: if TF state had it set (known, non-null list), update from API.
 	if typeutils.IsKnown(existing.AvailableOptions) && len(api.AvailableOptions) > 0 {
-		existing.AvailableOptions = typeutils.StringsToList(api.AvailableOptions)
+		existing.AvailableOptions = typeutils.StringsToListMust(api.AvailableOptions)
 	}
 	lenscommon.PreserveKnownStringIfStateBlank(prevQuery, &existing.EsqlQuery)
 	lenscommon.PreserveKnownStringIfStateBlank(prevTitle, &existing.Title)
@@ -255,7 +255,7 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 	ct := cfg.ControlType.ValueString()
 	if kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryControlType(ct) == kbapi.VALUESFROMQUERY {
 		vq := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery{
-			SelectedOptions: typeutils.ListToStrings(cfg.SelectedOptions),
+			SelectedOptions: typeutils.ListToStringsMust(cfg.SelectedOptions),
 			VariableName:    cfg.VariableName.ValueString(),
 			VariableType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryVariableType(
 				cfg.VariableType.ValueString(),
@@ -277,7 +277,7 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 	}
 
 	sv := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
-		SelectedOptions: typeutils.ListToStrings(cfg.SelectedOptions),
+		SelectedOptions: typeutils.ListToStringsMust(cfg.SelectedOptions),
 		VariableName:    cfg.VariableName.ValueString(),
 		VariableType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableType(
 			cfg.VariableType.ValueString(),
@@ -291,7 +291,7 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 		sv.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.AvailableOptions) {
-		sv.AvailableOptions = typeutils.ListToStrings(cfg.AvailableOptions)
+		sv.AvailableOptions = typeutils.ListToStringsMust(cfg.AvailableOptions)
 	}
 	sv.DisplaySettings = displayToAPI(cfg.DisplaySettings)
 	if err := esqlPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(sv); err != nil {
