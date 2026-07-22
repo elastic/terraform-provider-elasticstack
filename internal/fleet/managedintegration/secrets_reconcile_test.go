@@ -32,11 +32,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func reconcileSecretsMap(t *testing.T, prior, resp map[string]any) diag.Diagnostics {
+	t.Helper()
+	var diags diag.Diagnostics
+	reconcileSecretVarsMapFromPrior(prior, resp, path.Root("vars"), &diags)
+	return diags
+}
+
 func TestReconcileSecretVarsMapFromPrior_bareRef(t *testing.T) {
 	t.Parallel()
 	prior := map[string]any{"token": "plaintext-secret"}
 	resp := map[string]any{"token": map[string]any{"id": "ref-1", "isSecretRef": true}}
-	reconcileSecretVarsMapFromPrior(prior, resp)
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, "plaintext-secret", resp["token"])
 }
 
@@ -44,14 +52,16 @@ func TestReconcileSecretVarsMapFromPrior_wrappedRef(t *testing.T) {
 	t.Parallel()
 	prior := map[string]any{"token": "plaintext-secret"}
 	resp := map[string]any{"token": map[string]any{"value": map[string]any{"id": "ref-2", "isSecretRef": true}}}
-	reconcileSecretVarsMapFromPrior(prior, resp)
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, "plaintext-secret", resp["token"])
 }
 
 func TestReconcileSecretVarsMapFromPrior_keepsRefOnImport(t *testing.T) {
 	t.Parallel()
 	resp := map[string]any{"token": map[string]any{"id": "ref-1", "isSecretRef": true}}
-	reconcileSecretVarsMapFromPrior(nil, resp)
+	diags := reconcileSecretsMap(t, nil, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, map[string]any{"id": "ref-1", "isSecretRef": true}, resp["token"])
 }
 
@@ -59,7 +69,8 @@ func TestReconcileSecretVarsMapFromPrior_unchangedPlaintext(t *testing.T) {
 	t.Parallel()
 	prior := map[string]any{"region": "us-east-1"}
 	resp := map[string]any{"region": "us-east-1"}
-	reconcileSecretVarsMapFromPrior(prior, resp)
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, "us-east-1", resp["region"])
 }
 
@@ -117,22 +128,62 @@ func TestReconcileSecretVarsMapFromPrior_multiIDRefs(t *testing.T) {
 	t.Parallel()
 	prior := map[string]any{"hosts": []any{"secret-a", "secret-b"}}
 	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}}
-	reconcileSecretVarsMapFromPrior(prior, resp)
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, []any{"secret-a", "secret-b"}, resp["hosts"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_multiIDStringPrior(t *testing.T) {
+	t.Parallel()
+	prior := map[string]any{"hosts": []string{"secret-a", "secret-b"}}
+	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}}
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
+	assert.Equal(t, []string{"secret-a", "secret-b"}, resp["hosts"])
 }
 
 func TestReconcileSecretVarsMapFromPrior_multiIDMissingPriorKeepsRef(t *testing.T) {
 	t.Parallel()
-	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}}
-	reconcileSecretVarsMapFromPrior(map[string]any{}, resp)
-	assert.Equal(t, map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}, resp["hosts"])
+	want := map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}
+	resp := map[string]any{"hosts": want}
+	diags := reconcileSecretsMap(t, map[string]any{}, resp)
+	require.False(t, diags.HasError())
+	assert.Equal(t, want, resp["hosts"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_multiIDLengthMismatch(t *testing.T) {
+	t.Parallel()
+	prior := map[string]any{"hosts": []string{"a", "b"}}
+	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a"}}}
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.True(t, diags.HasError())
+	assert.Equal(t, map[string]any{"isSecretRef": true, "ids": []any{"id-a"}}, resp["hosts"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_multiIDIDsTypeMismatch(t *testing.T) {
+	t.Parallel()
+	prior := map[string]any{"hosts": []string{"a"}}
+	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": "not-a-slice"}}
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.True(t, diags.HasError())
+	assert.Equal(t, map[string]any{"isSecretRef": true, "ids": "not-a-slice"}, resp["hosts"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_multiIDPriorTypeMismatch(t *testing.T) {
+	t.Parallel()
+	prior := map[string]any{"hosts": "not-a-list"}
+	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a"}}}
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.True(t, diags.HasError())
+	assert.Equal(t, map[string]any{"isSecretRef": true, "ids": []any{"id-a"}}, resp["hosts"])
 }
 
 func TestReconcileSecretVarsMapFromPrior_multiIDWrappedRef(t *testing.T) {
 	t.Parallel()
 	prior := map[string]any{"token": "plain"}
 	resp := map[string]any{"token": map[string]any{"value": map[string]any{"isSecretRef": true, "id": "one-id"}}}
-	reconcileSecretVarsMapFromPrior(prior, resp)
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, "plain", resp["token"])
 }
 
@@ -141,7 +192,8 @@ func TestReconcileSecretVarsMapFromPrior_priorSecretRefUnchanged(t *testing.T) {
 	ref := map[string]any{"isSecretRef": true, "id": "same"}
 	prior := map[string]any{"token": ref}
 	resp := map[string]any{"token": map[string]any{"isSecretRef": true, "id": "other"}}
-	reconcileSecretVarsMapFromPrior(prior, resp)
+	diags := reconcileSecretsMap(t, prior, resp)
+	require.False(t, diags.HasError())
 	assert.Equal(t, ref, resp["token"])
 }
 

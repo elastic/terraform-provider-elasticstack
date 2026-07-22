@@ -52,26 +52,26 @@ func TestRequiresReplacePlanModifiers_managedIntegration(t *testing.T) {
 	t.Run("policy_id", func(t *testing.T) {
 		t.Parallel()
 		attr := s.Attributes["policy_id"].(schema.StringAttribute)
-		requireRequiresReplaceOnStringChange(t, ctx, attr.PlanModifiers, "policy-a", "policy-b")
+		requireRequiresReplaceOnStringChange(t, attr.PlanModifiers, "policy-a", "policy-b")
 	})
 
 	t.Run("namespace", func(t *testing.T) {
 		t.Parallel()
 		attr := s.Attributes["namespace"].(schema.StringAttribute)
-		requireRequiresReplaceOnStringChange(t, ctx, attr.PlanModifiers, "ns-a", "ns-b")
+		requireRequiresReplaceOnStringChange(t, attr.PlanModifiers, "ns-a", "ns-b")
 	})
 
 	t.Run("policy_template", func(t *testing.T) {
 		t.Parallel()
 		attr := s.Attributes[attrPolicyTemplate].(schema.StringAttribute)
-		requireRequiresReplaceOnStringChange(t, ctx, attr.PlanModifiers, "cspm", "kspm")
+		requireRequiresReplaceOnStringChange(t, attr.PlanModifiers, "cspm", "kspm")
 	})
 
 	t.Run("package.name", func(t *testing.T) {
 		t.Parallel()
 		pkg := s.Attributes[attrPackage].(schema.SingleNestedAttribute)
 		name := pkg.Attributes["name"].(schema.StringAttribute)
-		requireRequiresReplaceOnStringChange(t, ctx, name.PlanModifiers, "pkg-a", "pkg-b")
+		requireRequiresReplaceOnStringChange(t, name.PlanModifiers, "pkg-a", "pkg-b")
 	})
 
 	t.Run("space_ids", func(t *testing.T) {
@@ -81,18 +81,59 @@ func TestRequiresReplacePlanModifiers_managedIntegration(t *testing.T) {
 		require.False(t, diags.HasError())
 		planSet, diags := types.SetValueFrom(ctx, types.StringType, []string{"other-space"})
 		require.False(t, diags.HasError())
-		requireRequiresReplaceOnSetChange(t, ctx, attr.PlanModifiers, stateSet, planSet)
+		priorState, proposedPlan := nonNullUpdatePlanModifierState(t)
+		req := planmodifier.SetRequest{
+			State: priorState, Plan: proposedPlan,
+			StateValue: stateSet, PlanValue: planSet, ConfigValue: planSet,
+		}
+		resp := &planmodifier.SetResponse{PlanValue: planSet}
+		for _, m := range attr.PlanModifiers {
+			m.PlanModifySet(ctx, req, resp)
+		}
+		require.False(t, resp.Diagnostics.HasError())
+		require.True(t, resp.RequiresReplace)
+	})
+
+	t.Run("cloud_connector object", func(t *testing.T) {
+		t.Parallel()
+		ccAttr := s.Attributes["cloud_connector"].(schema.SingleNestedAttribute)
+		stateObj, diags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+			Enabled:          types.BoolValue(true),
+			CloudConnectorID: types.StringValue("cc-1"),
+			Name:             types.StringValue("name-a"),
+			TargetCSP:        types.StringValue("aws"),
+		})
+		require.False(t, diags.HasError())
+		planObj, diags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+			Enabled:          types.BoolValue(true),
+			CloudConnectorID: types.StringValue("cc-1"),
+			Name:             types.StringValue("name-b"),
+			TargetCSP:        types.StringValue("aws"),
+		})
+		require.False(t, diags.HasError())
+		priorState, proposedPlan := nonNullUpdatePlanModifierState(t)
+		req := planmodifier.ObjectRequest{
+			State: priorState, Plan: proposedPlan,
+			StateValue: stateObj, PlanValue: planObj, ConfigValue: planObj,
+		}
+		resp := &planmodifier.ObjectResponse{PlanValue: planObj}
+		for _, m := range ccAttr.PlanModifiers {
+			m.PlanModifyObject(ctx, req, resp)
+		}
+		require.False(t, resp.Diagnostics.HasError())
+		require.True(t, resp.RequiresReplace)
 	})
 
 	t.Run("name unchanged does not require replace", func(t *testing.T) {
 		t.Parallel()
 		attr := s.Attributes["name"].(schema.StringAttribute)
-		requireNoRequiresReplaceOnStringSame(t, ctx, attr.PlanModifiers, "same", "same")
+		requireNoRequiresReplaceOnStringSame(t, attr.PlanModifiers, "same", "same")
 	})
 }
 
-func requireRequiresReplaceOnStringChange(t *testing.T, ctx context.Context, mods []planmodifier.String, state, plan string) {
+func requireRequiresReplaceOnStringChange(t *testing.T, mods []planmodifier.String, state, plan string) {
 	t.Helper()
+	ctx := context.Background()
 	priorState, proposedPlan := nonNullUpdatePlanModifierState(t)
 	stateVal := types.StringValue(state)
 	planVal := types.StringValue(plan)
@@ -111,8 +152,9 @@ func requireRequiresReplaceOnStringChange(t *testing.T, ctx context.Context, mod
 	require.True(t, resp.RequiresReplace, "expected RequiresReplace when value changes from %q to %q", state, plan)
 }
 
-func requireNoRequiresReplaceOnStringSame(t *testing.T, ctx context.Context, mods []planmodifier.String, state, plan string) {
+func requireNoRequiresReplaceOnStringSame(t *testing.T, mods []planmodifier.String, state, plan string) {
 	t.Helper()
+	ctx := context.Background()
 	priorState, proposedPlan := nonNullUpdatePlanModifierState(t)
 	req := planmodifier.StringRequest{
 		State:       priorState,
@@ -127,22 +169,4 @@ func requireNoRequiresReplaceOnStringSame(t *testing.T, ctx context.Context, mod
 	}
 	require.False(t, resp.Diagnostics.HasError())
 	require.False(t, resp.RequiresReplace)
-}
-
-func requireRequiresReplaceOnSetChange(t *testing.T, ctx context.Context, mods []planmodifier.Set, state, plan types.Set) {
-	t.Helper()
-	priorState, proposedPlan := nonNullUpdatePlanModifierState(t)
-	req := planmodifier.SetRequest{
-		State:       priorState,
-		Plan:        proposedPlan,
-		StateValue:  state,
-		PlanValue:   plan,
-		ConfigValue: plan,
-	}
-	resp := &planmodifier.SetResponse{PlanValue: plan}
-	for _, m := range mods {
-		m.PlanModifySet(ctx, req, resp)
-	}
-	require.False(t, resp.Diagnostics.HasError())
-	require.True(t, resp.RequiresReplace)
 }

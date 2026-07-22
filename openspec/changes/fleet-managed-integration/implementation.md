@@ -11,7 +11,7 @@ OpenSpec change `fleet-managed-integration`: **all tasks (1–12) complete**, pl
 | `policy_template` | Schema/spec: create-only, preserved on refresh, null on import; import scenario no longer claims “all attributes” from GET |
 | Plan modifiers | `schema_test.go` wiring + `plan_modifier_behavior_test.go` (non-null update State/Plan); live PlanOnly acc + `ConfigPlanChecks.PreApply` incompatible with terraform-plugin-testing for non-`cloud_connector` RequiresReplace attrs |
 | Create envelope | `create_test.go` + `TestNewKibanaResource_Create_readAfterWriteByDefault` (Kibana envelope read-after-write on Create) |
-| Update coverage | `update_vars` changes `vars_json.deployment`, dual `additional_datastreams_permissions`, stream vars; `var_group_selections` alternate deployment values stay **unit-only** (kbapi/convert tests) — acc keeps `deployment = "aws"` while `vars_json` updates |
+| Update coverage | `update_vars` adds dual `additional_datastreams_permissions`, stream input vars, and a second `global_data_tags` entry; `vars_json` / `var_group_selections` stay `deployment = "aws"` (unchanged from create) — no live var-group switch |
 
 ### Review-fix validation
 
@@ -53,9 +53,9 @@ Acceptance skips (live-stack / cloud preconditions, Kibana ≥ 9.5.0 matrix): `T
 
 | Behavior | Unit / offline | Cloud acceptance |
 |----------|----------------|------------------|
-| Secret ref reconciliation (multi-id, wrapped, prior list) | `secrets_reconcile_test.go` | Cloud connector acc asserts Terraform plaintext + optional API secret shape via read |
-| RequiresReplace on `policy_id`, `namespace`, `policy_template`, `package.name`, `space_ids` | `schema_test.go` + `plan_modifier_behavior_test.go` | `CloudConnectorRequiresReplace` acc for object-level `cloud_connector` only; other attrs not plan-tested live (plugin-testing limitation) |
-| `var_group_selections` alternate values | kbapi round-trip / convert tests | Acc keeps `deployment = "aws"`; switching var-group options live is package/stack-sensitive so not asserted on update |
+| Secret ref reconciliation (multi-id, wrapped, prior list) | `secrets_reconcile_test.go` | Cloud connector acc: Terraform plaintext in state + `testCheckManagedIntegrationExternalIDStoredAsSecretRefOnAPI` (GET union decode) |
+| RequiresReplace on `policy_id`, `namespace`, `policy_template`, `package.name`, `space_ids`, `cloud_connector` object | `schema_test.go` + `plan_modifier_behavior_test.go` | `CloudConnectorRequiresReplace`: DestroyBeforeCreate plan, new `cloud_connector.name`, same connector ID, new `policy_id` |
+| `var_group_selections` | kbapi round-trip / convert tests | Acc keeps `deployment = "aws"` on create and update; `testCheckManagedIntegrationUpdateExtrasPersisted` still requires `var_group_selections.deployment=aws` on GET even when unchanged |
 | Kibana envelope read-after-write on Create | `TestNewKibanaResource_Create_readAfterWriteByDefault` | N/A (entitycore) |
 
 ---

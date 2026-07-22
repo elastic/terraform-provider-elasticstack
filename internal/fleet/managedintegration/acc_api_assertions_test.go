@@ -322,3 +322,31 @@ func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) 
 		return nil
 	}
 }
+
+// testCheckManagedIntegrationExternalIDStoredAsSecretRefOnAPI asserts the Fleet API
+// persists aws.credentials.external_id as a secret reference while Terraform state
+// keeps the configured plaintext (see acc_managed_integration_union_decode_test.go).
+func testCheckManagedIntegrationExternalIDStoredAsSecretRefOnAPI(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)
+		if err != nil {
+			return err
+		}
+		item, err := readManagedIntegrationAPI(context.Background(), spaceID, policyID)
+		if err != nil {
+			return err
+		}
+		v, err := managedIntegrationCSPMFindingsStreamVar(item, externalIDStreamVarKey)
+		if err != nil {
+			return fmt.Errorf("managed integration %s: %w", policyID, err)
+		}
+		refID, ok := managedIntegrationStreamVarSecretRefID(v)
+		if !ok || refID == "" {
+			return fmt.Errorf(
+				"managed integration %s: expected %q stored as Fleet secret reference on API GET, but decode failed",
+				policyID, externalIDStreamVarKey,
+			)
+		}
+		return nil
+	}
+}

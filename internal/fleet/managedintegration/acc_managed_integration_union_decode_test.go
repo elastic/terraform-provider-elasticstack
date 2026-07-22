@@ -19,6 +19,7 @@ package managedintegration_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -173,13 +174,32 @@ func TestManagedIntegrationStreamVarSecretRefDecode(t *testing.T) {
 
 func streamVarFromProbe(t *testing.T, item *kbapi.KibanaHTTPAPIsManagedIntegration, key string) *kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Streams_Vars_AdditionalProperties {
 	t.Helper()
-	in, ok := item.Inputs[cspmMappedInputKey]
-	require.True(t, ok)
-	require.NotNil(t, in.Streams)
-	stream, ok := (*in.Streams)[cspmFindingsStreamKey]
-	require.True(t, ok)
-	require.NotNil(t, stream.Vars)
-	v, ok := (*stream.Vars)[key]
-	require.True(t, ok)
+	v, err := managedIntegrationCSPMFindingsStreamVar(item, key)
+	require.NoError(t, err)
 	return v
+}
+
+func managedIntegrationCSPMFindingsStreamVar(item *kbapi.KibanaHTTPAPIsManagedIntegration, key string) (*kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Streams_Vars_AdditionalProperties, error) {
+	if item == nil {
+		return nil, fmt.Errorf("managed integration item is nil")
+	}
+	in, ok := item.Inputs[cspmMappedInputKey]
+	if !ok {
+		return nil, fmt.Errorf("input %q missing from managed integration API response", cspmMappedInputKey)
+	}
+	if in.Streams == nil {
+		return nil, fmt.Errorf("input %q has no streams in API response", cspmMappedInputKey)
+	}
+	stream, ok := (*in.Streams)[cspmFindingsStreamKey]
+	if !ok {
+		return nil, fmt.Errorf("stream %q missing from managed integration API response", cspmFindingsStreamKey)
+	}
+	if stream.Vars == nil {
+		return nil, fmt.Errorf("stream %q has no vars in API response", cspmFindingsStreamKey)
+	}
+	v, ok := (*stream.Vars)[key]
+	if !ok {
+		return nil, fmt.Errorf("stream var %q missing from managed integration API response", key)
+	}
+	return v, nil
 }

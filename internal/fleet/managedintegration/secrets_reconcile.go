@@ -20,6 +20,7 @@ package managedintegration
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -83,7 +84,7 @@ func reconcileVarsJSONFromPrior(
 	if !ok {
 		return populated
 	}
-	reconcileSecretVarsMapFromPrior(priorMap, respMap)
+	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
 	return varsJSONFromMap(ctx, respMap, packageName, packageVersion, attrPath, diags)
 }
 
@@ -171,7 +172,7 @@ func reconcileNormalizedVarsFromPrior(prior, populated jsontypes.Normalized, att
 	if !ok {
 		return populated
 	}
-	reconcileSecretVarsMapFromPrior(priorMap, respMap)
+	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
 	return normalizedVarsFromMap(respMap, attrPath, diags)
 }
 
@@ -206,11 +207,12 @@ func normalizedVarsFromMap(vars map[string]any, attrPath path.Path, diags *diag.
 // reconcileSecretVarsMapFromPrior mutates resp in place, mirroring
 // policyshape.HandleReqRespSecrets but using prior config/state as the source
 // of plaintext instead of a private secret store.
-func reconcileSecretVarsMapFromPrior(prior, resp map[string]any) {
+func reconcileSecretVarsMapFromPrior(prior, resp map[string]any, basePath path.Path, diags *diag.Diagnostics) {
 	if prior == nil || resp == nil {
 		return
 	}
 	for key, val := range resp {
+		attrPath := basePath.AtMapKey(key)
 		mval, ok := val.(map[string]any)
 		if !ok {
 			continue
@@ -221,26 +223,34 @@ func reconcileSecretVarsMapFromPrior(prior, resp map[string]any) {
 		}
 		if mval, ok := val.(map[string]any); ok {
 			if isSecretRefMap(mval) {
-				reconcileSecretRefValueFromPrior(key, mval, prior, resp)
+				reconcileSecretRefValueFromPrior(key, mval, prior, resp, attrPath, diags)
 			}
 		}
 	}
 }
 
-func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, resp map[string]any) {
+func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, resp map[string]any, attrPath path.Path, diags *diag.Diagnostics) {
 	priorVal, ok := prior[key]
 	if !ok {
 		return
 	}
 	if ids, ok := mval["ids"]; ok {
-		idSlice, ok := ids.([]any)
-		if !ok {
+		idSlice, err := secretRefIDsSlice(ids)
+		if err != nil {
+			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference", err.Error())
 			return
 		}
-		if originals, ok := priorVal.([]any); ok && len(originals) == len(idSlice) {
-			resp[key] = priorVal
+		originals, err := priorPlaintextList(priorVal)
+		if err != nil {
+			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference", err.Error())
 			return
 		}
+		if len(originals) != len(idSlice) {
+			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference",
+				fmt.Sprintf("secret reference id count (%d) does not match configured prior value count (%d)", len(idSlice), len(originals)))
+			return
+		}
+		resp[key] = priorVal
 		return
 	}
 	if priorRef, ok := priorVal.(map[string]any); ok {
@@ -250,6 +260,36 @@ func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, re
 		}
 	}
 	resp[key] = priorVal
+}
+
+func secretRefIDsSlice(ids any) ([]any, error) {
+	switch v := ids.(type) {
+	case []any:
+		return v, nil
+	case []string:
+		out := make([]any, len(v))
+		for i, s := range v {
+			out[i] = s
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unexpected secret reference ids type %T", ids)
+	}
+}
+
+func priorPlaintextList(v any) ([]any, error) {
+	switch x := v.(type) {
+	case []any:
+		return x, nil
+	case []string:
+		out := make([]any, len(x))
+		for i, s := range x {
+			out[i] = s
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("prior value is not a list")
+	}
 }
 
 func isSecretRefMap(m map[string]any) bool {

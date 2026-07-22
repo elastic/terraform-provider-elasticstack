@@ -197,7 +197,7 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					// "updatable in-place"), not just create-time coverage.
 					testCheckJSONSubset("vars_json", map[string]any{
 						"posture":    "cspm",
-						"deployment": "gcp",
+						"deployment": "aws",
 					}),
 					resource.TestCheckResourceAttr(testResourceName, "var_group_selections.deployment", "aws"),
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.%", "2"),
@@ -208,8 +208,8 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.1", "metrics-acc-*"),
 					testCheckManagedIntegrationUpdateExtrasPersisted(
 						testResourceName,
-						map[string]any{"posture": "cspm", "deployment": "gcp"},
 						nil,
+						map[string]string{"deployment": "aws"},
 						[]string{"logs-custom-*", "metrics-acc-*"},
 					),
 					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
@@ -451,6 +451,7 @@ func TestAccResourceManagedIntegration_CloudConnector(t *testing.T) {
 						"aws.credentials.external_id": externalID,
 					}),
 					testCheckCloudConnectorPersisted(testResourceName, connectorID),
+					testCheckManagedIntegrationExternalIDStoredAsSecretRefOnAPI(testResourceName),
 				),
 			},
 		},
@@ -690,6 +691,7 @@ func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
 					testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
 						"aws.credentials.external_id": externalID,
 					}),
+					testCheckManagedIntegrationExternalIDStoredAsSecretRefOnAPI(testResourceName),
 				),
 			},
 			{
@@ -735,6 +737,8 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 		"cloud_connector_name":  config.StringVariable("tf-acc-connector-name-a"),
 	}
 
+	var capturedPolicyID string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceManagedIntegrationDestroy,
@@ -743,6 +747,15 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          baseVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.cloud_connector_id", connectorID),
+					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.name", "tf-acc-connector-name-a"),
+					resource.TestCheckResourceAttrSet(testResourceName, "policy_id"),
+					resource.TestCheckResourceAttrWith(testResourceName, "policy_id", func(value string) error {
+						capturedPolicyID = value
+						return nil
+					}),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -759,6 +772,22 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionDestroyBeforeCreate),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.cloud_connector_id", connectorID),
+					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.name", "tf-acc-connector-name-b"),
+					resource.TestCheckResourceAttrWith(testResourceName, "policy_id", func(value string) error {
+						if value == "" {
+							return fmt.Errorf("policy_id empty after cloud_connector RequiresReplace apply")
+						}
+						if value == capturedPolicyID {
+							return fmt.Errorf(
+								"policy_id unchanged (%q) after cloud_connector RequiresReplace; expected destroy-before-create replacement",
+								value,
+							)
+						}
+						return nil
+					}),
+				),
 			},
 		},
 	})

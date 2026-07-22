@@ -15,7 +15,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "Updated Managed integration CSPM Test Policy"
+  description     = "Updated managed integration CSPM Test Policy"
   policy_template = "cspm"
 
   package = {
@@ -25,7 +25,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
 
   vars_json = jsonencode({
     posture    = "cspm"
-    deployment = "gcp"
+    deployment = "aws"
   })
 
   var_group_selections = {
