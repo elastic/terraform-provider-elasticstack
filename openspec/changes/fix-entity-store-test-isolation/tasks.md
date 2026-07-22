@@ -223,6 +223,8 @@ The entity-link resource (`elasticstack_kibana_security_entity_store_entity_link
 
 ## Task 10 — Package `security_entity_store_resolution_group`: update TF fixture
 
+**Status:** complete
+
 **File**: `testdata/TestAccDataSourceSecurityEntityStoreResolutionGroup/read/main.tf`
 
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on the store, entity, and data source blocks. The data source `elasticstack_kibana_security_entity_store_resolution_group` accepts `space_id`.
