@@ -16,7 +16,7 @@ Changes required:
 
 1. **Go test files** (5 packages): add `accTestKibanaSpaceIDCharset` const and generate a per-test `spaceID` via `sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)`. Pass it via `ConfigVariables` in every `TestStep`. Update `t.Cleanup` to use the generated `spaceID` instead of `"default"`. Add `sdkacctest` import.
 
-2. **Terraform `.tf` fixtures** (31 files across 5 packages): add a `variable "space_id"` block, an `elasticstack_kibana_space.test` resource, and wire `space_id = elasticstack_kibana_space.test.space_id` on every store/entity/link/data-source block. Multi-step tests that reuse a directory across steps already receive the same `spaceID` via `ConfigVariables`, so the space is stable throughout the test.
+2. **Terraform `.tf` fixtures** (37 files across 5 packages): add a `variable "space_id"` block, an `elasticstack_kibana_space.test` resource, and wire `space_id = elasticstack_kibana_space.test.space_id` on every store/entity/link/data-source block. Multi-step tests that reuse a directory across steps already receive the same `spaceID` via `ConfigVariables`, so the space is stable throughout the test.
 
 3. **CI matrix** (`.github/workflows/provider.yml`): add `"9.4.2"` between `"9.4.0"` and `"9.5.0-SNAPSHOT"`.
 

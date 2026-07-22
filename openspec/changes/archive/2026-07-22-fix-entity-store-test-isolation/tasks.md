@@ -6,20 +6,22 @@ All tasks in this change are test-infrastructure only. No provider Go source, sc
 
 ## Task 1 — Package `security_entity_store`: update Go acc_test.go
 
+**Status:** complete
+
 **File**: `internal/kibana/security_entity_store/acc_test.go`
 
-1. Add import `"github.com/hashicorp/terraform-plugin-testing/config"` and `sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"` (check existing imports; `sdkacctest` may already be imported under a different alias in related packages — use whatever is consistent).
-2. Add constant:
+1. [x] Add import `"github.com/hashicorp/terraform-plugin-testing/config"` and `sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"` (check existing imports; `sdkacctest` may already be imported under a different alias in related packages — use whatever is consistent).
+2. [x] Add constant:
    ```go
    const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
    ```
-3. For **each** of the 8 test functions listed below, apply the following pattern:
+3. [x] For **each** of the 9 test functions listed below (8 resource + 1 data source), apply the following pattern:
    - At the top of the test (after `skipIfUnsupported(t)`), generate: `spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)`
    - Replace `t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })` with `t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })`
    - Add `ConfigVariables: config.Variables{"space_id": config.StringVariable(spaceID)}` to **every** `TestStep` in the test (both applying and `PlanOnly` steps — the same variable map).
    - Update any `resource.TestCheckResourceAttr(... "space_id", "default")` checks to use `spaceID`.
 
-   **Test functions** (8):
+   **Test functions** (9: 8 resource + 1 data source):
    - `TestAccResourceKibanaSecurityEntityStore_basic` — ConfigDirectory `"basic"` (2 steps)
    - `TestAccResourceKibanaSecurityEntityStore_singleType` — ConfigDirectory `"single_type"` (2 steps)
    - `TestAccResourceKibanaSecurityEntityStore_updateLogExtraction` — ConfigDirectory `"update_log_extraction"` (2 steps)
@@ -33,6 +35,8 @@ All tasks in this change are test-infrastructure only. No provider Go source, sc
 ---
 
 ## Task 2 — Package `security_entity_store`: update TF fixtures
+
+**Status:** complete
 
 Apply to every `.tf` file in the directories below. Each file needs:
 
@@ -50,7 +54,7 @@ resource "elasticstack_kibana_space" "test" {
 
 And `space_id = elasticstack_kibana_space.test.space_id` added to the `elasticstack_kibana_security_entity_store` resource block (and to any data source block that accepts `space_id`).
 
-**Directories** (10 files in 9 directories):
+**Fixtures** (11 listed `main.tf` files):
 - `testdata/TestAccResourceKibanaSecurityEntityStore_basic/basic/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStore_singleType/single_type/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStore_updateLogExtraction/update_log_extraction/main.tf`
@@ -68,6 +72,8 @@ For the `TestAccDataSourceKibanaSecurityEntityStoreStatus_basic` fixtures, the d
 ---
 
 ## Task 3 — Package `security_entity_store/entities`: update Go acc_test.go
+
+**Status:** complete
 
 **File**: `internal/kibana/security_entity_store/entities/acc_test.go`
 
@@ -92,7 +98,9 @@ For the `TestAccDataSourceKibanaSecurityEntityStoreStatus_basic` fixtures, the d
 
 ## Task 4 — Package `security_entity_store/entities`: update TF fixtures
 
-Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store and data-source blocks.
+**Status:** complete
+
+Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store, entity resource (where present), and data-source blocks.
 
 **Directories** (8 files):
 - `testdata/TestAccDataSourceKibanaSecurityEntityStoreEntities_basic/list/main.tf`
@@ -110,15 +118,17 @@ For `mixedPaginationError` and `entityIdFilterConflict`: these tests error at pl
 
 ## Task 5 — Package `security_entity_store/entity`: update Go acc_test.go
 
+**Status:** complete
+
 **File**: `internal/kibana/security_entity_store/entity/acc_test.go`
 
-1. Add same imports and `accTestKibanaSpaceIDCharset` constant.
-2. For each of the 10 test functions:
+1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
+2. [x] For each of the 11 test functions (7 live-store/apply-path + 4 plan-time validation):
    - Generate `spaceID` per test.
-   - Replace `"default"` in `CleanupEntityStore` calls with `spaceID`.
+   - Replace `"default"` in `CleanupEntityStore` calls with `spaceID` (apply-path tests only; omit cleanup for plan-time validation tests).
    - Add `ConfigVariables` with `space_id` to every step.
 
-   **Test functions** (10):
+   **Test functions** (11):
    - `TestAccResourceKibanaSecurityEntityStoreEntity_generic`
    - `TestAccResourceKibanaSecurityEntityStoreEntity_updateHost`
    - `TestAccResourceKibanaSecurityEntityStoreEntity_import`
@@ -131,15 +141,17 @@ For `mixedPaginationError` and `entityIdFilterConflict`: these tests error at pl
    - `TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonFallback`
    - `TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonConflict`
 
-   Note: `entityJsonConflict`, `entityIdMismatch`, `entityJsonIdMismatch`, `hostJsonConflict` fail at plan time; include `space_id` variable and space resource in fixtures but no store installation occurs.
+   Note: `entityJsonConflict`, `entityIdMismatch`, `entityJsonIdMismatch`, and `hostJsonConflict` fail at plan time before apply, so the configured entity store is never installed on the stack; fixtures still declare store and entity resources with `space_id` wired for consistency.
 
 ---
 
 ## Task 6 — Package `security_entity_store/entity`: update TF fixtures
 
+**Status:** complete
+
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store and entity resource blocks.
 
-**Directories** (11 files):
+**Directories** (12 listed `main.tf` files):
 - `testdata/TestAccResourceKibanaSecurityEntityStoreEntity_generic/create_host/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStoreEntity_updateHost/create_host/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStoreEntity_updateHost/update_host/main.tf`
@@ -159,10 +171,12 @@ The entity resource block also accepts `space_id`; wire it on every entity resou
 
 ## Task 7 — Package `security_entity_store_entity_link`: update Go acc_test.go
 
-**File**: `internal/kibana/security_entity_store_entity_link/acc_test.go`
+**Status:** complete
 
-1. Add same imports and `accTestKibanaSpaceIDCharset` constant.
-2. For each of the 3 test functions:
+**Files**: `internal/kibana/security_entity_store_entity_link/acc_test.go`, `internal/kibana/security_entity_store_entity_link/validation_test.go`
+
+1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
+2. [x] For each of the 3 test functions:
    - Generate `spaceID` per test.
    - Replace `"default"` in `CleanupEntityStore` calls with `spaceID`.
    - Add `ConfigVariables` with `space_id` to every step.
@@ -176,6 +190,8 @@ The entity resource block also accepts `space_id`; wire it on every entity resou
 ---
 
 ## Task 8 — Package `security_entity_store_entity_link`: update TF fixtures
+
+**Status:** complete
 
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all store, entity, and entity-link resource blocks.
 
@@ -192,10 +208,12 @@ The entity-link resource (`elasticstack_kibana_security_entity_store_entity_link
 
 ## Task 9 — Package `security_entity_store_resolution_group`: update Go acc_test.go
 
+**Status:** complete
+
 **File**: `internal/kibana/security_entity_store_resolution_group/acc_test.go`
 
-1. Add same imports and `accTestKibanaSpaceIDCharset` constant.
-2. For `TestAccDataSourceSecurityEntityStoreResolutionGroup`:
+1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
+2. [x] For `TestAccDataSourceSecurityEntityStoreResolutionGroup`:
    - Generate `spaceID`.
    - Replace `"default"` in `CleanupEntityStore` with `spaceID`.
    - Add `ConfigVariables` to the single step.
@@ -205,13 +223,17 @@ The entity-link resource (`elasticstack_kibana_security_entity_store_entity_link
 
 ## Task 10 — Package `security_entity_store_resolution_group`: update TF fixture
 
-**File**: `testdata/TestAccDataSourceSecurityEntityStoreResolutionGroup/read/main.tf`
+**Status:** complete
+
+**File**: `internal/kibana/security_entity_store_resolution_group/testdata/TestAccDataSourceSecurityEntityStoreResolutionGroup/read/main.tf`
 
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on the store, entity, and data source blocks. The data source `elasticstack_kibana_security_entity_store_resolution_group` accepts `space_id`.
 
 ---
 
 ## Task 11 — CI matrix: add 9.4.2
+
+**Status:** complete
 
 **File**: `.github/workflows/provider.yml`
 
@@ -229,7 +251,7 @@ No other CI file changes are needed.
 
 ## Verification checklist (after implementation)
 
-- [ ] `go build ./...` succeeds (no compile errors in test files).
-- [ ] Each of the five packages runs successfully in isolation against a live 9.4.2 stack.
-- [ ] All five packages run concurrently (`go test ./internal/kibana/security_entity_store/... ./internal/kibana/security_entity_store_resolution_group/... ./internal/kibana/security_entity_store_entity_link/...`) against 9.4.2 without the `entity_types inconsistent result` or HTTP 500 errors.
-- [ ] `9.4.2` appears in the CI matrix in `provider.yml`.
+- [x] `go build ./...` succeeds (no compile errors in test files).
+- [x] Each of the five packages runs successfully in isolation against a live 9.4.2 stack.
+- [x] All five packages run concurrently (`go test ./internal/kibana/security_entity_store/... ./internal/kibana/security_entity_store_resolution_group/... ./internal/kibana/security_entity_store_entity_link/...`) against 9.4.2 without the `entity_types inconsistent result` or HTTP 500 errors.
+- [x] `9.4.2` appears in the CI matrix in `provider.yml`.

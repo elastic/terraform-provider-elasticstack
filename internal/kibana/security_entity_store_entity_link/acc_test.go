@@ -26,15 +26,21 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 
 func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
-	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -42,10 +48,11 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", "default/generic:acc-test-target"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", spaceID+"/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity_link.test", "resolution_group_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
@@ -59,10 +66,11 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", "default/generic:acc-test-target"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "id", spaceID+"/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity_link.test", "resolution_group_json"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.#", "2"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
@@ -73,6 +81,7 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
 				ResourceName:             "elasticstack_kibana_security_entity_store_entity_link.test",
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -83,7 +92,8 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 
 func TestAccResourceSecurityEntityStoreEntityLink_SingleElement(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
-	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -91,9 +101,10 @@ func TestAccResourceSecurityEntityStoreEntityLink_SingleElement(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_element"),
+				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_entity_store_entity_link.test", "entity_ids.*", "generic:acc-test-alias1"),
 				),

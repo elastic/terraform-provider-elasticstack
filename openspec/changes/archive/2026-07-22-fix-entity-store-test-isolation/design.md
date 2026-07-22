@@ -87,9 +87,9 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 ### Package: `internal/kibana/security_entity_store`
 
-**Go test** (`acc_test.go`): all 8 test functions (7 store resource tests + 1 status data-source test).
+**Go test** (`acc_test.go`): all 9 test functions (8 store resource tests + 1 status data-source test).
 
-**TF fixtures** (9 directories / 10 files):
+**TF fixtures** (11 listed fixture files):
 - `TestAccResourceKibanaSecurityEntityStore_basic/basic/`
 - `TestAccResourceKibanaSecurityEntityStore_singleType/single_type/`
 - `TestAccResourceKibanaSecurityEntityStore_updateLogExtraction/update_log_extraction/`
@@ -104,7 +104,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 **Go test** (`acc_test.go`): all 8 test functions. The `entities` data source does not install the store itself but reads from one — tests that need a live store create one in the fixture; those that only test validation/pagination errors do not.
 
-**TF fixtures** (7 directories):
+**TF fixtures** (8 listed fixtures):
 - `TestAccDataSourceKibanaSecurityEntityStoreEntities_basic/list/`
 - `TestAccDataSourceKibanaSecurityEntityStoreEntities_filter/filter/`
 - `TestAccDataSourceKibanaSecurityEntityStoreEntities_pageMode/page_mode/`
@@ -116,9 +116,9 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 ### Package: `internal/kibana/security_entity_store/entity`
 
-**Go test** (`acc_test.go`): all 10 test functions.
+**Go test** (`acc_test.go`): all 11 test functions (7 live-store/apply-path + 4 plan-time validation).
 
-**TF fixtures** (9 directories / 11 files):
+**TF fixtures** (12 listed fixture files):
 - `TestAccResourceKibanaSecurityEntityStoreEntity_generic/create_host/`
 - `TestAccResourceKibanaSecurityEntityStoreEntity_updateHost/create_host/`, `update_host/`
 - `TestAccResourceKibanaSecurityEntityStoreEntity_import/create_host/`
@@ -133,7 +133,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 ### Package: `internal/kibana/security_entity_store_entity_link`
 
-**Go test** (`acc_test.go`): 2 test functions (`TestAccResourceSecurityEntityStoreEntityLink`, `TestAccResourceSecurityEntityStoreEntityLink_SingleElement`). Note: `TestAccResourceSecurityEntityStoreEntityLink_Validation` tests are schema-validation-only and can receive the variable for consistency.
+**Go test** (`acc_test.go`, `validation_test.go`): 3 test functions — `TestAccResourceSecurityEntityStoreEntityLink` and `TestAccResourceSecurityEntityStoreEntityLink_SingleElement` in `acc_test.go`; `TestAccResourceSecurityEntityStoreEntityLink_Validation` in `validation_test.go` (schema-validation-only; include `space_id` variable for consistency).
 
 **TF fixtures** (4 directories / 5 files):
 - `TestAccResourceSecurityEntityStoreEntityLink/create/`, `update/`
@@ -145,7 +145,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 **Go test** (`acc_test.go`): 1 test function (`TestAccDataSourceSecurityEntityStoreResolutionGroup`).
 
 **TF fixtures** (1 directory):
-- `TestAccDataSourceSecurityEntityStoreResolutionGroup/read/`
+- `internal/kibana/security_entity_store_resolution_group/testdata/TestAccDataSourceSecurityEntityStoreResolutionGroup/read/main.tf`
 
 ### CI
 
