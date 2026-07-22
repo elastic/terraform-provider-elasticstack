@@ -9,10 +9,9 @@ OpenSpec change `fleet-managed-integration`: **all tasks (1–12) complete**, pl
 | `cloud_connector` read | `applyCloudConnectorFromAPI` merges GET `enabled` / `cloud_connector_id`; preserves write-only `name` / `target_csp` from prior; builds block from API on import |
 | Secret refs | `secrets_reconcile.go` preserves prior/plan plaintext for top-level, input, and stream vars when GET returns `{id,isSecretRef}` (bare or wrapped) |
 | `policy_template` | Schema/spec: create-only, preserved on refresh, null on import; import scenario no longer claims “all attributes” from GET |
-| Plan modifiers | `schema_test.go` asserts `RequiresReplace` on `package.name` and `space_ids`; live PlanOnly acc + `ConfigPlanChecks.PreApply` is incompatible with terraform-plugin-testing |
-| Create envelope | `create_test.go` asserts Create does not set `SkipReadAfterWrite` (read-after-write path) |
-| SNAPSHOT floor | Documented in `design.md`, `CHANGELOG.md` (#4034 entry), and existing spec scenario — Kibana-only `EnforceMinVersion` uplift |
-| Update coverage | `update_vars` acc step + `testCheckManagedIntegrationUpdateExtrasPersisted` API assertions for vars / var_group_selections / permissions |
+| Plan modifiers | `schema_test.go` wiring + `plan_modifier_behavior_test.go` (non-null update State/Plan); live PlanOnly acc + `ConfigPlanChecks.PreApply` incompatible with terraform-plugin-testing for non-`cloud_connector` RequiresReplace attrs |
+| Create envelope | `create_test.go` + `TestNewKibanaResource_Create_readAfterWriteByDefault` (Kibana envelope read-after-write on Create) |
+| Update coverage | `update_vars` changes `vars_json.deployment`, dual `additional_datastreams_permissions`, stream vars; `var_group_selections` alternate deployment values stay **unit-only** (kbapi/convert tests) — acc keeps `deployment = "aws"` while `vars_json` updates |
 
 ### Review-fix validation
 
@@ -22,7 +21,7 @@ OpenSpec change `fleet-managed-integration`: **all tasks (1–12) complete**, pl
 | `go test ./internal/fleet/managedintegration/... ./internal/clients/fleet/... -count=1` (no `TF_ACC`) | pass |
 | `go test ./internal/entitycore/... -run 'KibanaResource\|SkipReadAfterWrite' -count=1` | 103 pass |
 | `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fleet-managed-integration --type change` | valid |
-| `source .env && TF_ACC=1 go test ./internal/fleet/managedintegration/... -count=1 -timeout 30m` | **158 pass, 11 skip**, 0 fail |
+| `source .env && TF_ACC=1 go test ./internal/fleet/managedintegration/... -count=1 -timeout 30m` | **164 pass, 11 skip**, 0 fail |
 
 ## Task 12 — CHANGELOG and validation (complete)
 
@@ -49,6 +48,15 @@ Summary: Rename unreleased Fleet agentless policy resource to elasticstack_fleet
 | Acceptance | `source .env && TF_ACC=1 go test ./internal/fleet/managedintegration/... -count=1 -timeout 30m` | **152 pass, 11 skip**, 0 fail |
 
 Acceptance skips (live-stack / cloud preconditions, Kibana ≥ 9.5.0 matrix): `TestAccResourceManagedIntegration`, `TestAccResourceManagedIntegration_CloudConnector*`, `TestAccResourceManagedIntegration_ConditionRoundTrip`, `TestAccResourceManagedIntegration_ForceDelete`, `TestAccResourceManagedIntegration_GlobalDataTagsNumber`, `TestAccResourceManagedIntegration_InputsUpdateInPlace`, `TestAccResourceManagedIntegration_NameUpdateInPlace`, `TestAccResourceManagedIntegration_NonDefaultSpace`, `TestAccResourceManagedIntegration_PackageVersionUpdate`. Unit and plan-only acceptance paths ran green on the current `.env` stack.
+
+### Unit vs cloud coverage (final review)
+
+| Behavior | Unit / offline | Cloud acceptance |
+|----------|----------------|------------------|
+| Secret ref reconciliation (multi-id, wrapped, prior list) | `secrets_reconcile_test.go` | Cloud connector acc asserts Terraform plaintext + optional API secret shape via read |
+| RequiresReplace on `policy_id`, `namespace`, `policy_template`, `package.name`, `space_ids` | `schema_test.go` + `plan_modifier_behavior_test.go` | `CloudConnectorRequiresReplace` acc for object-level `cloud_connector` only; other attrs not plan-tested live (plugin-testing limitation) |
+| `var_group_selections` alternate values | kbapi round-trip / convert tests | Acc keeps `deployment = "aws"`; switching var-group options live is package/stack-sensitive so not asserted on update |
+| Kibana envelope read-after-write on Create | `TestNewKibanaResource_Create_readAfterWriteByDefault` | N/A (entitycore) |
 
 ---
 
