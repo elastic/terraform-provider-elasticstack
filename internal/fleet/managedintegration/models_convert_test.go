@@ -41,10 +41,10 @@ func mustManagedIntegrationFromJSON(t *testing.T, raw string) *kbapi.KibanaHTTPA
 	return &item
 }
 
-// baseTestModel returns a minimal agentlessPolicyModel with the identity and
+// baseTestModel returns a minimal managedIntegrationModel with the identity and
 // package attributes populated, matching what the entitycore envelope would
 // have already decoded from plan/state before calling into conversion code.
-func baseTestModel(t *testing.T) agentlessPolicyModel {
+func baseTestModel(t *testing.T) managedIntegrationModel {
 	t.Helper()
 	ctx := context.Background()
 
@@ -55,7 +55,7 @@ func baseTestModel(t *testing.T) agentlessPolicyModel {
 	})
 	require.False(t, diags.HasError())
 
-	return agentlessPolicyModel{
+	return managedIntegrationModel{
 		Name:                             types.StringValue("test-policy"),
 		Package:                          pkgObj,
 		Description:                      types.StringNull(),
@@ -63,7 +63,7 @@ func baseTestModel(t *testing.T) agentlessPolicyModel {
 		PolicyTemplate:                   types.StringNull(),
 		VarsJSON:                         policyshape.NewVarsJSONNull(),
 		VarGroupSelections:               types.MapNull(types.StringType),
-		Inputs:                           policyshape.NewInputsNull(agentlessInputType()),
+		Inputs:                           policyshape.NewInputsNull(managedIntegrationInputType()),
 		CloudConnector:                   types.ObjectNull(cloudConnectorAttrTypes()),
 		GlobalDataTags:                   types.MapNull(globalDataTagsElementType()),
 		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
@@ -288,7 +288,7 @@ func TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip(t *testing.T)
 		]
 	}`)
 
-	out := agentlessPolicyModel{}
+	out := managedIntegrationModel{}
 	popDiags := out.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
@@ -461,7 +461,7 @@ func TestToCreateBody_inputs(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 
-	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Vars:    jsontypes.NewNormalizedValue(`{"cloud_formation_template":"x"}`),
@@ -532,7 +532,7 @@ func TestPopulateFromManagedIntegration_decodesInputsAndFields(t *testing.T) {
 
 	item := mustManagedIntegrationFromJSON(t, mappedFormatManagedIntegrationJSON)
 
-	m := agentlessPolicyModel{
+	m := managedIntegrationModel{
 		Force:                  types.BoolValue(true),
 		ForceDelete:            types.BoolValue(true),
 		CreateDatasetTemplates: types.BoolValue(true),
@@ -584,7 +584,7 @@ func TestPopulateFromManagedIntegration_decodesInputsAndFields(t *testing.T) {
 	require.Len(t, tags, 1)
 	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
 	require.Contains(t, inputs, "cspm-cloudbeat/cis_gcp")
@@ -616,7 +616,7 @@ func TestPopulateFromManagedIntegration_emptyDescriptionBecomesNull(t *testing.T
 		"inputs": {}
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	diags := m.populateFromManagedIntegration(context.Background(), "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -626,7 +626,7 @@ func TestPopulateFromManagedIntegration_emptyDescriptionBecomesNull(t *testing.T
 
 func TestPopulateFromManagedIntegration_nilData(t *testing.T) {
 	t.Parallel()
-	m := agentlessPolicyModel{Force: types.BoolValue(true)}
+	m := managedIntegrationModel{Force: types.BoolValue(true)}
 	diags := m.populateFromManagedIntegration(context.Background(), "default", nil, nil)
 	assert.False(t, diags.HasError())
 	assert.True(t, m.Force.ValueBool())
@@ -647,7 +647,7 @@ func TestPopulateFromManagedIntegration_globalDataTagsNumberRoundTrip(t *testing
 		"global_data_tags": [{"name": "priority", "value": 42}]
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -714,7 +714,7 @@ func TestPopulateFromManagedIntegration_filtersToKnownInputKeys(t *testing.T) {
 
 	item := mustManagedIntegrationFromJSON(t, mappedFormatManagedIntegrationJSON)
 
-	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Streams: types.MapNull(policyshape.StreamType()),
@@ -722,7 +722,7 @@ func TestPopulateFromManagedIntegration_filtersToKnownInputKeys(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 
-	m := agentlessPolicyModel{
+	m := managedIntegrationModel{
 		CloudConnector: types.ObjectNull(cloudConnectorAttrTypes()),
 		Inputs:         knownInputs,
 	}
@@ -730,7 +730,7 @@ func TestPopulateFromManagedIntegration_filtersToKnownInputKeys(t *testing.T) {
 	popDiags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	assert.Len(t, inputs, 1, "only the previously-known input key should survive")
 	assert.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
@@ -764,7 +764,7 @@ func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
 	}`), &item.Inputs))
 
 	m := baseTestModel(t)
-	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	knownInputs, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Streams: types.MapNull(policyshape.StreamType()),
@@ -776,7 +776,7 @@ func TestPopulateFromCreateResponse_filtersToKnownInputKeys(t *testing.T) {
 	popDiags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	assert.Len(t, inputs, 1, "only the previously-known input key should survive")
 	assert.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
@@ -797,7 +797,7 @@ func TestToCreateBody_omitsInputsWhenNullOrUnknown(t *testing.T) {
 	_, present := decoded["inputs"]
 	assert.False(t, present, "null inputs in config must omit the inputs field from the create body")
 
-	m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(agentlessInputType())}
+	m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(managedIntegrationInputType())}
 	body, diags = m.toCreateBody(ctx)
 	require.False(t, diags.HasError(), "%v", diags)
 	decoded = decodeRequestJSON(t, body)
@@ -820,7 +820,7 @@ func TestPopulateFromManagedIntegration_emptyInputsNull(t *testing.T) {
 		"inputs": {}
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 	assert.True(t, m.Inputs.IsNull())
@@ -840,7 +840,7 @@ func TestPopulateFromManagedIntegration_omittedGlobalDataTagsNull(t *testing.T) 
 		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"}
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 	assert.True(t, m.GlobalDataTags.IsNull())
@@ -861,7 +861,7 @@ func TestPopulateFromManagedIntegration_stringGlobalDataTagsReadEncodeRoundTrip(
 		"global_data_tags": [{"name": "env", "value": "prod"}]
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -902,7 +902,7 @@ func TestPopulateFromManagedIntegration_preservesCloudConnector(t *testing.T) {
 		"cloud_connector": {"enabled": true, "cloud_connector_id": "cc-other"}
 	}`)
 
-	m := agentlessPolicyModel{CloudConnector: ccObj}
+	m := managedIntegrationModel{CloudConnector: ccObj}
 	popDiags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
@@ -927,7 +927,7 @@ func TestPopulateFromManagedIntegration_explicitSpaceIDs(t *testing.T) {
 		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"}
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	spaceIDs := []string{"space-a", "space-b"}
 	diags := m.populateFromManagedIntegration(ctx, "default", item, &spaceIDs)
 	require.False(t, diags.HasError(), "%v", diags)
@@ -995,7 +995,7 @@ func TestBuildUpdateBody(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 
-	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Streams: streamsMap,
@@ -1108,7 +1108,7 @@ func TestBuildUpdateBody_clearsVarsWhenPlanRemovesThem(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 
-	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Streams: streamsMap,
@@ -1162,7 +1162,7 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	})
 	require.False(t, diags.HasError())
 
-	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Vars:    jsontypes.NewNormalizedValue(`{"input_var_a":"a"}`),

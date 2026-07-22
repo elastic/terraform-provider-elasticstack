@@ -40,7 +40,7 @@ func TestResource_embedsKibanaResource(t *testing.T) {
 	field, ok := rt.FieldByName("KibanaResource")
 	require.True(t, ok)
 	require.True(t, field.Anonymous)
-	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[agentlessPolicyModel]](), field.Type)
+	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[managedIntegrationModel]](), field.Type)
 }
 
 func TestResource_importState_customCompositeID(t *testing.T) {
@@ -71,10 +71,10 @@ func TestResource_importState_customCompositeID(t *testing.T) {
 	require.Equal(t, "myspace", elems[0].ValueString())
 }
 
-func TestAgentlessPolicyModel_getVersionRequirements(t *testing.T) {
+func TestManagedIntegrationModel_getVersionRequirements(t *testing.T) {
 	t.Parallel()
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	reqs, diags := m.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
@@ -105,12 +105,12 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 	return f.supported, nil
 }
 
-// TestAgentlessPolicyModel_versionGate_firesBeforeAPICall is Task 6.1's test:
+// TestManagedIntegrationModel_versionGate_firesBeforeAPICall is Task 6.1's test:
 // it asserts that the version check fires before any API call is attempted.
 //
 // entitycore.EnforceVersionRequirements is the exact function
 // kibana_resource_envelope.go's Create/Read/Update/Delete call -- before
-// invoking createAgentlessPolicy/read/update/delete -- whenever the decoded
+// invoking createManagedIntegration/read/update/delete -- whenever the decoded
 // model satisfies entitycore.WithVersionRequirements (see
 // internal/entitycore/kibana_resource_envelope.go and
 // internal/entitycore/version_requirements.go). That generic short-circuit
@@ -120,21 +120,21 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 // Read/Update/Delete siblings in
 // internal/entitycore/kibana_resource_envelope_test.go, using a synthetic
 // model. What those generic tests do NOT cover is whether *this* resource's
-// GetVersionRequirements (agentlessPolicyModel, MinVersion 9.5.0) actually
+// GetVersionRequirements (managedIntegrationModel, MinVersion 9.5.0) actually
 // causes that gate to fire against an unsupported Kibana -- that is what
 // this test proves, using the resource's real, production
-// agentlessPolicyModel and the real entitycore.EnforceVersionRequirements
+// managedIntegrationModel and the real entitycore.EnforceVersionRequirements
 // function.
 //
 // Together, these two facts (the envelope never calls the API when this
-// function errors; this function does error for agentlessPolicyModel against
+// function errors; this function does error for managedIntegrationModel against
 // a sub-9.5.0 Kibana) establish that Create/Read/Update/Delete on
 // elasticstack_fleet_managed_integration never reach the Fleet API when the
 // connected Kibana is older than 9.5.0. See
 // openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint" ->
 // "Scenario: Older Kibana returns error".
-func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
+func TestManagedIntegrationModel_versionGate_firesBeforeAPICall(t *testing.T) {
 	t.Parallel()
 
 	t.Run("unsupported version blocks with no API call", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
 		client := &fakeMinVersionClient{supported: false}
 		apiCallMade := false
 
-		diags := entitycore.EnforceVersionRequirements(context.Background(), client, agentlessPolicyModel{})
+		diags := entitycore.EnforceVersionRequirements(context.Background(), client, managedIntegrationModel{})
 
 		// Mirrors kibana_resource_envelope.go's control flow: the real
 		// Create/Read/Update/Delete callback (which is what would issue the
@@ -171,14 +171,14 @@ func TestAgentlessPolicyModel_versionGate_firesBeforeAPICall(t *testing.T) {
 		t.Parallel()
 
 		client := &fakeMinVersionClient{supported: true}
-		diags := entitycore.EnforceVersionRequirements(context.Background(), client, agentlessPolicyModel{})
+		diags := entitycore.EnforceVersionRequirements(context.Background(), client, managedIntegrationModel{})
 
 		require.True(t, client.called)
 		require.False(t, diags.HasError(), "version gate must not block a supported Kibana version")
 	})
 }
 
-func TestAgentlessPolicyModel_getSpaceID(t *testing.T) {
+func TestManagedIntegrationModel_getSpaceID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -191,13 +191,13 @@ func TestAgentlessPolicyModel_getSpaceID(t *testing.T) {
 		// explicit space_ids would fail entitycore's validateSpaceID check
 		// (this resource is space-scoped, unlike output/serverhost, which
 		// opt out via KibanaUnscopedSpace). See the GetSpaceID doc comment.
-		m := agentlessPolicyModel{SpaceIDs: types.SetNull(types.StringType)}
+		m := managedIntegrationModel{SpaceIDs: types.SetNull(types.StringType)}
 		require.Equal(t, "default", m.GetSpaceID().ValueString())
 	})
 
 	t.Run("unknown space_ids defaults to \"default\"", func(t *testing.T) {
 		t.Parallel()
-		m := agentlessPolicyModel{SpaceIDs: types.SetUnknown(types.StringType)}
+		m := managedIntegrationModel{SpaceIDs: types.SetUnknown(types.StringType)}
 		require.Equal(t, "default", m.GetSpaceID().ValueString())
 	})
 
@@ -205,7 +205,7 @@ func TestAgentlessPolicyModel_getSpaceID(t *testing.T) {
 		t.Parallel()
 		set, diags := types.SetValueFrom(ctx, types.StringType, []string{"myspace"})
 		require.False(t, diags.HasError())
-		m := agentlessPolicyModel{SpaceIDs: set}
+		m := managedIntegrationModel{SpaceIDs: set}
 		require.Equal(t, "myspace", m.GetSpaceID().ValueString())
 	})
 }

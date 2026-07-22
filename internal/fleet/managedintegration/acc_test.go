@@ -224,10 +224,10 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 				// doc comment): this config is byte-for-byte identical to the
 				// "update_vars" step's above except for adding
 				// skip_topology_check = true, a create-only flag that
-				// updateAgentlessPolicy never sends to the Fleet API. Terraform
+				// updateManagedIntegration never sends to the Fleet API. Terraform
 				// still invokes Update (skip_topology_check is not
 				// RequiresReplace, so this step still shows a plan diff), but
-				// updateAgentlessPolicy itself must recognize the change is
+				// updateManagedIntegration itself must recognize the change is
 				// confined to a create-only flag and skip the GET+PUT round
 				// trip entirely.
 				//
@@ -260,7 +260,7 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 						if value != capturedUpdatedAt {
 							return fmt.Errorf(
 								"updated_at changed from %q to %q after a create-only-flag-only change; "+
-									"this means updateAgentlessPolicy's onlyCreateOnlyFlagsChanged short-circuit "+
+									"this means updateManagedIntegration's onlyCreateOnlyFlagsChanged short-circuit "+
 									"did not fire and a real GET+PUT round trip was made against the Fleet API",
 								capturedUpdatedAt, value,
 							)
@@ -373,10 +373,10 @@ func TestAccResourceManagedIntegration_NonDefaultSpace(t *testing.T) {
 // was investigated and found impractical: the DELETE endpoint's conflict
 // path is documented (design.md Decision 5) as triggering when the hidden
 // managed agent policy is "still provisioning, or has associated agents" --
-// both require either winning a real race against Fleet's own agentless
+// both require either winning a real race against Fleet's own managed-integration
 // provisioning workflow (not something a test can reliably trigger on
 // demand) or actually enrolling a live Elastic Agent against the policy
-// (out of scope: agentless policies exist precisely so no agent host is
+// (out of scope: managed integrations exist precisely so no agent host is
 // needed, and this repo's acceptance tests don't provision arbitrary compute
 // to enroll one). Absent a reliable trigger, this test instead verifies the
 // two things that ARE practically verifiable end-to-end against a real

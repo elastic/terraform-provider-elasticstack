@@ -70,7 +70,7 @@ func clearKibanaEnvOverrides(t *testing.T) {
 	// ("unsupported protocol scheme \"\""). This went unnoticed as long as
 	// every test in this file only exercised the Kibana OpenAPI client
 	// (checkDeploymentTopology's `/api/status` probe); it surfaced once
-	// create_test.go's TestCreateAgentlessPolicy_topologyGatesFleetCall
+	// create_test.go's TestCreateManagedIntegration_topologyGatesFleetCall
 	// started reusing this helper to also exercise a real Fleet POST. If
 	// FLEET_ENDPOINT happens to already be set in the ambient environment
 	// (it is not set by this repo's .env), it is force-unset for the
@@ -148,12 +148,12 @@ func statusHandler(body string, extraHeaders map[string]string, statusCode int) 
 }
 
 // TestCheckDeploymentTopology covers Task 6.2's fail-closed/fail-open matrix
-// (see specs/fleet-agentless-policy/spec.md, "Deployment topology preflight
+// (see openspec/specs/fleet-managed-integration/spec.md, "Deployment topology preflight
 // check", and design.md Decision 7). Two of these cases -- "confirmed cloud
 // hosted" and "confirmed self-managed" -- were additionally verified
 // empirically against a live Kibana 9.4.3 Elastic Cloud Hosted deployment
 // and a live self-managed docker-compose Kibana 9.4.0 (see the Task 6 report
-// for the fleet-agentless-policy OpenSpec change); this test hermetically
+// for the fleet-managed-integration OpenSpec change); this test hermetically
 // pins the same decision logic so it cannot regress silently.
 func TestCheckDeploymentTopology(t *testing.T) {
 	t.Run("serverless build_flavor passes (confirmed cloud)", func(t *testing.T) {

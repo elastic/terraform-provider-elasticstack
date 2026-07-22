@@ -33,7 +33,7 @@ import (
 )
 
 // fleetManagedIntegrationCallRecorder records whether PUT
-// /api/fleet/managed_integrations/{id} was hit (updateAgentlessPolicy's
+// /api/fleet/managed_integrations/{id} was hit (updateManagedIntegration's
 // non-short-circuit path after the full-replace update rewrite).
 func fleetManagedIntegrationCallRecorder(t *testing.T) (http.Handler, *bool) {
 	t.Helper()
@@ -48,23 +48,23 @@ func fleetManagedIntegrationCallRecorder(t *testing.T) (http.Handler, *bool) {
 	return mux, &called
 }
 
-// TestUpdateAgentlessPolicy_createOnlyFlags covers a gap found in the Task
+// TestUpdateManagedIntegration_createOnlyFlags covers a gap found in the Task
 // 10.6 self-review: spec.md's "Create" requirement ("create_dataset_templates
 // sent only on create" scenario) and "Operation flags" schema section both
 // state that create_dataset_templates, force, and force_delete are
 // create/delete-only knobs whose post-create changes "SHALL NOT make any API
 // call" -- but because none of the three is RequiresReplace, Terraform still
-// invokes Update whenever one changes, and updateAgentlessPolicy used to
+// invokes Update whenever one changes, and updateManagedIntegration used to
 // unconditionally do a GET+PUT round trip regardless of what actually
 // changed. onlyCreateOnlyFlagsChanged (this file) now short-circuits that.
 // Subtests below deliberately do not call t.Parallel(): they build clients
 // via newTopologyTestClient, which calls clearKibanaEnvOverrides -> t.Setenv,
 // and t.Setenv is documented as incompatible with parallel tests (matching
 // the non-parallel style already used by TestCheckDeploymentTopology in
-// topology_test.go and TestCreateAgentlessPolicy_topologyGatesFleetCall
+// topology_test.go and TestCreateManagedIntegration_topologyGatesFleetCall
 // in create_test.go, for the same reason).
-func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
-	newPriorAndPlan := func(t *testing.T) (prior, plan agentlessPolicyModel) {
+func TestUpdateManagedIntegration_createOnlyFlags(t *testing.T) {
+	newPriorAndPlan := func(t *testing.T) (prior, plan managedIntegrationModel) {
 		t.Helper()
 		prior = baseTestModel(t)
 		prior.PolicyID = types.StringValue("pp-1")
@@ -102,7 +102,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		handler, called := fleetManagedIntegrationCallRecorder(t)
 		client := newTopologyTestClient(t, handler)
 
-		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		result, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    plan,
 			Prior:   &prior,
 			WriteID: "pp-1",
@@ -125,7 +125,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		handler, called := fleetManagedIntegrationCallRecorder(t)
 		client := newTopologyTestClient(t, handler)
 
-		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		result, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    plan,
 			Prior:   &prior,
 			WriteID: "pp-1",
@@ -146,7 +146,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		handler, called := fleetManagedIntegrationCallRecorder(t)
 		client := newTopologyTestClient(t, handler)
 
-		result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		result, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    plan,
 			Prior:   &prior,
 			WriteID: "pp-1",
@@ -175,7 +175,7 @@ func TestUpdateAgentlessPolicy_createOnlyFlags(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		_, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    plan,
 			Prior:   &prior,
 			WriteID: "pp-1",
@@ -261,7 +261,7 @@ func TestOnlyCreateOnlyFlagsChanged(t *testing.T) {
 
 // TestOnlyCreateOnlyFlagsChanged_FieldCoverage guards against
 // onlyCreateOnlyFlagsChanged's allowlist silently going stale as
-// agentlessPolicyModel evolves. That function is a positive allowlist (every
+// managedIntegrationModel evolves. That function is a positive allowlist (every
 // field it compares is named explicitly, see its doc comment) rather than a
 // negative denylist, so a new schema field added to the model in the future
 // and never wired into either onlyCreateOnlyFlagsChanged's comparison chain
@@ -269,7 +269,7 @@ func TestOnlyCreateOnlyFlagsChanged(t *testing.T) {
 // (Update would skip the API call even though the new field changed) instead
 // of failing safe.
 //
-// This test uses reflection purely to enumerate agentlessPolicyModel's field
+// This test uses reflection purely to enumerate managedIntegrationModel's field
 // names -- it does not attempt to verify onlyCreateOnlyFlagsChanged's
 // comparison logic is behaviorally correct for each one (see
 // TestOnlyCreateOnlyFlagsChanged above for that) -- and asserts every field
@@ -320,12 +320,12 @@ func TestOnlyCreateOnlyFlagsChanged_FieldCoverage(t *testing.T) {
 		"UpdatedAt":              true,
 	}
 
-	for _, field := range reflect.VisibleFields(reflect.TypeFor[agentlessPolicyModel]()) {
+	for _, field := range reflect.VisibleFields(reflect.TypeFor[managedIntegrationModel]()) {
 		name := field.Name
 		inCompared, inExcluded := compared[name], excluded[name]
 		if inCompared == inExcluded { // covers "neither" (false==false) and "both" (true==true)
 			t.Errorf(
-				"agentlessPolicyModel field %q is not accounted for exactly once between "+
+				"managedIntegrationModel field %q is not accounted for exactly once between "+
 					"onlyCreateOnlyFlagsChanged's comparison chain and its doc comment's exclusion list "+
 					"(in compared list: %v, in excluded list: %v). Add it to onlyCreateOnlyFlagsChanged's "+
 					"comparison chain (and this test's `compared` map) if it should trigger an API call when "+
@@ -425,7 +425,7 @@ func TestBuildUpdateBody_fullReplaceOmitsCreateOnlyFields(t *testing.T) {
 	assert.False(t, hasID)
 }
 
-func TestUpdateAgentlessPolicy_nilPrior(t *testing.T) {
+func TestUpdateManagedIntegration_nilPrior(t *testing.T) {
 	plan := baseTestModel(t)
 	plan.PolicyID = types.StringValue("pp-1")
 	plan.ID = types.StringValue("default/pp-1")
@@ -435,7 +435,7 @@ func TestUpdateAgentlessPolicy_nilPrior(t *testing.T) {
 		unexpectedCalls.Add(1)
 	}))
 
-	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+	_, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 		Plan:    plan,
 		Prior:   nil,
 		WriteID: "pp-1",
@@ -446,7 +446,7 @@ func TestUpdateAgentlessPolicy_nilPrior(t *testing.T) {
 	require.Equal(t, int64(0), unexpectedCalls.Load())
 }
 
-func TestUpdateAgentlessPolicy_putError(t *testing.T) {
+func TestUpdateManagedIntegration_putError(t *testing.T) {
 	prior := baseTestModel(t)
 	prior.PolicyID = types.StringValue("pp-1")
 	prior.ID = types.StringValue("default/pp-1")
@@ -461,7 +461,7 @@ func TestUpdateAgentlessPolicy_putError(t *testing.T) {
 	})
 	client := newTopologyTestClient(t, mux)
 
-	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+	_, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 		Plan:    plan,
 		Prior:   &prior,
 		WriteID: "pp-1",
@@ -470,7 +470,7 @@ func TestUpdateAgentlessPolicy_putError(t *testing.T) {
 	require.True(t, diags.HasError())
 }
 
-func TestUpdateAgentlessPolicy_notFoundOnPut(t *testing.T) {
+func TestUpdateManagedIntegration_notFoundOnPut(t *testing.T) {
 	prior := baseTestModel(t)
 	prior.PolicyID = types.StringValue("pp-1")
 	prior.ID = types.StringValue("default/pp-1")
@@ -485,7 +485,7 @@ func TestUpdateAgentlessPolicy_notFoundOnPut(t *testing.T) {
 	})
 	client := newTopologyTestClient(t, mux)
 
-	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+	_, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 		Plan:    plan,
 		Prior:   &prior,
 		WriteID: "pp-1",
@@ -495,7 +495,7 @@ func TestUpdateAgentlessPolicy_notFoundOnPut(t *testing.T) {
 	require.Contains(t, diags.Errors()[0].Summary(), "Unexpected status code")
 }
 
-func TestUpdateAgentlessPolicy_successDoesNotSkipReadAfterWrite(t *testing.T) {
+func TestUpdateManagedIntegration_successDoesNotSkipReadAfterWrite(t *testing.T) {
 	prior := baseTestModel(t)
 	prior.PolicyID = types.StringValue("pp-1")
 	prior.ID = types.StringValue("default/pp-1")
@@ -517,7 +517,7 @@ func TestUpdateAgentlessPolicy_successDoesNotSkipReadAfterWrite(t *testing.T) {
 	})
 	client := newTopologyTestClient(t, mux)
 
-	result, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+	result, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 		Plan:    plan,
 		Prior:   &prior,
 		WriteID: "pp-1",
@@ -529,7 +529,7 @@ func TestUpdateAgentlessPolicy_successDoesNotSkipReadAfterWrite(t *testing.T) {
 	require.False(t, result.SkipReadAfterWrite, "real PUT must leave read-after-write to the envelope")
 }
 
-func TestUpdateAgentlessPolicy_malformedPutResponseBody(t *testing.T) {
+func TestUpdateManagedIntegration_malformedPutResponseBody(t *testing.T) {
 	prior := baseTestModel(t)
 	prior.PolicyID = types.StringValue("pp-1")
 	prior.ID = types.StringValue("default/pp-1")
@@ -544,7 +544,7 @@ func TestUpdateAgentlessPolicy_malformedPutResponseBody(t *testing.T) {
 	})
 	client := newTopologyTestClient(t, mux)
 
-	_, diags := updateAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+	_, diags := updateManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 		Plan:    plan,
 		Prior:   &prior,
 		WriteID: "pp-1",
@@ -576,7 +576,7 @@ func TestBuildUpdateBody_omitsKnownNullOptionalFields(t *testing.T) {
 	plan.Description = types.StringNull()
 	plan.Namespace = types.StringNull()
 	plan.PolicyTemplate = types.StringNull()
-	plan.Inputs = policyshape.NewInputsNull(agentlessInputType())
+	plan.Inputs = policyshape.NewInputsNull(managedIntegrationInputType())
 	plan.VarGroupSelections = types.MapNull(types.StringType)
 	plan.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
 	plan.GlobalDataTags = types.MapNull(globalDataTagsElementType())
@@ -603,27 +603,27 @@ func TestBuildUpdateBody_omitsKnownNullOptionalFields(t *testing.T) {
 func TestBuildUpdateBody_unknownTopLevelFieldsErrors(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	basePrior := func(t *testing.T) agentlessPolicyModel {
+	basePrior := func(t *testing.T) managedIntegrationModel {
 		t.Helper()
 		return baseTestModel(t)
 	}
 
 	tests := []struct {
 		name   string
-		mutate func(*agentlessPolicyModel)
+		mutate func(*managedIntegrationModel)
 	}{
-		{"description", func(m *agentlessPolicyModel) { m.Description = types.StringUnknown() }},
-		{"namespace", func(m *agentlessPolicyModel) { m.Namespace = types.StringUnknown() }},
-		{"policy_template", func(m *agentlessPolicyModel) { m.PolicyTemplate = types.StringUnknown() }},
-		{"vars_json", func(m *agentlessPolicyModel) { m.VarsJSON = policyshape.NewVarsJSONUnknown() }},
-		{"var_group_selections", func(m *agentlessPolicyModel) { m.VarGroupSelections = types.MapUnknown(types.StringType) }},
-		{"additional_datastreams_permissions", func(m *agentlessPolicyModel) {
+		{"description", func(m *managedIntegrationModel) { m.Description = types.StringUnknown() }},
+		{"namespace", func(m *managedIntegrationModel) { m.Namespace = types.StringUnknown() }},
+		{"policy_template", func(m *managedIntegrationModel) { m.PolicyTemplate = types.StringUnknown() }},
+		{"vars_json", func(m *managedIntegrationModel) { m.VarsJSON = policyshape.NewVarsJSONUnknown() }},
+		{"var_group_selections", func(m *managedIntegrationModel) { m.VarGroupSelections = types.MapUnknown(types.StringType) }},
+		{"additional_datastreams_permissions", func(m *managedIntegrationModel) {
 			m.AdditionalDatastreamsPermissions = types.ListUnknown(types.StringType)
 		}},
-		{"global_data_tags", func(m *agentlessPolicyModel) { m.GlobalDataTags = types.MapUnknown(globalDataTagsElementType()) }},
-		{"package", func(m *agentlessPolicyModel) { m.Package = types.ObjectUnknown(packageAttrTypes()) }},
-		{"inputs", func(m *agentlessPolicyModel) {
-			m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(policyshape.NewInputsType(agentlessInputType()))}
+		{"global_data_tags", func(m *managedIntegrationModel) { m.GlobalDataTags = types.MapUnknown(globalDataTagsElementType()) }},
+		{"package", func(m *managedIntegrationModel) { m.Package = types.ObjectUnknown(packageAttrTypes()) }},
+		{"inputs", func(m *managedIntegrationModel) {
+			m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(policyshape.NewInputsType(managedIntegrationInputType()))}
 		}},
 	}
 
@@ -646,7 +646,7 @@ func TestBuildUpdateBody_unknownInputsErrors(t *testing.T) {
 	prior := baseTestModel(t)
 	plan := prior
 	plan.Inputs = policyshape.InputsValue{
-		MapValue: types.MapUnknown(policyshape.NewInputsType(agentlessInputType())),
+		MapValue: types.MapUnknown(policyshape.NewInputsType(managedIntegrationInputType())),
 	}
 
 	_, diags := buildUpdateBody(ctx, plan, prior)
@@ -704,7 +704,7 @@ func TestBuildUpdateBody_knownEmptyInputsMapSendsEmptyObject(t *testing.T) {
 
 	prior := baseTestModel(t)
 	plan := prior
-	emptyInputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{})
+	emptyInputs, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{})
 	require.False(t, diags.HasError())
 	plan.Inputs = emptyInputs
 

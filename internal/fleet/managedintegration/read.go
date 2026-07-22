@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// readAgentlessPolicy reads the current managed integration via GET
+// readManagedIntegration reads the current managed integration via GET
 // /api/fleet/managed_integrations/{id}. A nil response (HTTP 404) signals
 // the resource was removed out of band; the caller is responsible for
 // removing it from state.
@@ -35,7 +35,7 @@ import (
 // set; cloud_connector.enabled and cloud_connector_id are merged from the GET
 // response. Secret-shaped API vars are reconciled against prior state after
 // populate (see secrets_reconcile.go).
-func readAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) (agentlessPolicyModel, bool, diag.Diagnostics) {
+func readManagedIntegration(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model managedIntegrationModel) (managedIntegrationModel, bool, diag.Diagnostics) {
 	fleetClient := client.GetFleetClient()
 
 	item, diags := fleetclient.ReadManagedIntegration(ctx, fleetClient, spaceID, resourceID)

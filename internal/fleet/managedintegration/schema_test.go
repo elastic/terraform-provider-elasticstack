@@ -173,7 +173,7 @@ func TestGetSchema_varsJSONAndInputs(t *testing.T) {
 	assert.True(t, inputVars.Computed, "input-level vars should be Computed to tolerate server-populated informational vars")
 	assert.True(t, hasStringUseStateForUnknown(inputVars.PlanModifiers), "input-level vars should have UseStateForUnknown")
 	_, hasDefaults := inputs.NestedObject.Attributes["defaults"]
-	assert.False(t, hasDefaults, "agentless inputs intentionally omit the package-defaults object modeled by integration_policy")
+	assert.False(t, hasDefaults, "managed integration inputs intentionally omit the package-defaults object modeled by integration_policy")
 
 	varGroupSelections, ok := s.Attributes["var_group_selections"].(schema.MapAttribute)
 	require.True(t, ok)
@@ -310,16 +310,16 @@ func TestGetSchema_extrasAndOperationFlags(t *testing.T) {
 	assert.False(t, hasStringUseStateForUnknown(updatedAt.PlanModifiers), "updated_at must NOT have UseStateForUnknown")
 }
 
-// TestAgentlessPolicyModel_coversAllSchemaAttributes cross-checks that every
+// TestManagedIntegrationModel_coversAllSchemaAttributes cross-checks that every
 // top-level schema attribute has a corresponding tfsdk-tagged field on
-// agentlessPolicyModel, catching drift between schema.go and models.go (the
+// managedIntegrationModel, catching drift between schema.go and models.go (the
 // two files Task 4 edits together).
-func TestAgentlessPolicyModel_coversAllSchemaAttributes(t *testing.T) {
+func TestManagedIntegrationModel_coversAllSchemaAttributes(t *testing.T) {
 	t.Parallel()
 	s := getSchema(context.Background())
 
 	tfsdkTags := map[string]bool{}
-	rt := reflect.TypeFor[agentlessPolicyModel]()
+	rt := reflect.TypeFor[managedIntegrationModel]()
 	collectTFSDKTags(rt, tfsdkTags)
 
 	for attrName := range s.Attributes {

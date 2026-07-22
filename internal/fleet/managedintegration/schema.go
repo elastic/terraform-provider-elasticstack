@@ -195,7 +195,7 @@ func getSchema(_ context.Context) schema.Schema {
 			attrInputs: schema.MapNestedAttribute{
 				Computed:            true,
 				Optional:            true,
-				CustomType:          policyshape.NewInputsType(agentlessInputType()),
+				CustomType:          policyshape.NewInputsType(managedIntegrationInputType()),
 				MarkdownDescription: "Policy inputs mapped by input type ID; updatable in-place.",
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.UseStateForUnknown(),
@@ -332,21 +332,21 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-// agentlessInputType returns the policyshape.InputType used as the element
+// managedIntegrationInputType returns the policyshape.InputType used as the element
 // type of the top-level `inputs` map. It reuses the shared package's
 // InputType/StreamType wrapper types and AttrXxx attribute-name constants,
 // but (unlike internal/fleet/integration_policy, which also surfaces a
 // package-computed `defaults` object) it deliberately omits `defaults`: the
-// spec for this resource (specs/fleet-agentless-policy/spec.md, "Schema
+// spec for this resource (openspec/specs/fleet-managed-integration/spec.md, "Schema
 // attributes") does not model package-defaults introspection for inputs, so
 // this uses a smaller attribute-types map made up entirely of shared
 // building blocks rather than policyshape.InputElementType()'s
 // defaults-inclusive map.
-func agentlessInputType() policyshape.InputType {
-	return policyshape.NewInputType(agentlessInputAttributeTypes())
+func managedIntegrationInputType() policyshape.InputType {
+	return policyshape.NewInputType(managedIntegrationInputAttributeTypes())
 }
 
-func agentlessInputAttributeTypes() map[string]attr.Type {
+func managedIntegrationInputAttributeTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		policyshape.AttrEnabled:   types.BoolType,
 		policyshape.AttrCondition: types.StringType,
@@ -359,7 +359,7 @@ func agentlessInputAttributeTypes() map[string]attr.Type {
 
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
-		CustomType: agentlessInputType(),
+		CustomType: managedIntegrationInputType(),
 		Attributes: map[string]schema.Attribute{
 			policyshape.AttrEnabled: schema.BoolAttribute{
 				Computed:            true,

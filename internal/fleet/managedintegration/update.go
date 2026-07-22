@@ -35,11 +35,11 @@ import (
 // skip_topology_check. Those four are create/delete-request-only knobs --
 // never part of the Fleet API's read response, and deliberately not
 // RequiresReplace (see spec.md's "Schema attributes" requirement and this
-// file's updateAgentlessPolicy) -- so a config change confined to them
+// file's updateManagedIntegration) -- so a config change confined to them
 // carries no information the API needs to see, and per spec.md's "Create"
 // requirement changing them "SHALL NOT make any API call".
 // skip_topology_check in particular is consulted only by Create's preflight
-// check (see create.go) and is never read by updateAgentlessPolicy, so it
+// check (see create.go) and is never read by updateManagedIntegration, so it
 // gets the same treatment. Comparing every other field (rather than
 // allowlisting "the fields Update actually sends") is deliberately
 // conservative: if anything else in the model also drifted -- including
@@ -72,7 +72,7 @@ import (
 // updated_at deliberately does NOT, since it genuinely changes on every real
 // Update; see schema.go's updated_at comment for why forcing it to look
 // unchanged in the plan would be actively wrong.)
-func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
+func onlyCreateOnlyFlagsChanged(prior, plan managedIntegrationModel) bool {
 	return prior.ID.Equal(plan.ID) &&
 		prior.PolicyID.Equal(plan.PolicyID) &&
 		prior.Name.Equal(plan.Name) &&
@@ -89,23 +89,23 @@ func onlyCreateOnlyFlagsChanged(prior, plan agentlessPolicyModel) bool {
 		prior.AdditionalDatastreamsPermissions.Equal(plan.AdditionalDatastreamsPermissions)
 }
 
-// updateAgentlessPolicy implements Update for managed integrations. The PUT
+// updateManagedIntegration implements Update for managed integrations. The PUT
 // body is a full replace built from the plan (see buildUpdateBody); prior
 // state supplies cloud_connector association fields only. The callback returns
 // the plan model only; per coding-standards.md the entitycore envelope's
 // read-after-write refresh (Read callback) is the sole source of persisted
 // state after a real PUT. Mutate responses are not merged into state here.
-func updateAgentlessPolicy(
+func updateManagedIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[agentlessPolicyModel],
-) (entitycore.KibanaWriteResult[agentlessPolicyModel], diag.Diagnostics) {
+	req entitycore.KibanaWriteRequest[managedIntegrationModel],
+) (entitycore.KibanaWriteResult[managedIntegrationModel], diag.Diagnostics) {
 	plan := req.Plan
 	var diags diag.Diagnostics
 
 	if req.Prior != nil && onlyCreateOnlyFlagsChanged(*req.Prior, plan) {
 		model := preserveKnownComputedFromPrior(ctx, plan, *req.Prior)
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{
 			Model:              model,
 			SkipReadAfterWrite: true,
 		}, diags
@@ -116,13 +116,13 @@ func updateAgentlessPolicy(
 			"Managed integration update missing prior state",
 			"Internal error: Update requires prior state to preserve cloud_connector on full-replace PUT.",
 		)
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 	}
 
 	body, bodyDiags := buildUpdateBody(ctx, plan, *req.Prior)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 	}
 
 	fleetClient := client.GetFleetClient()
@@ -130,10 +130,10 @@ func updateAgentlessPolicy(
 	_, updateDiags := fleetclient.UpdateManagedIntegration(ctx, fleetClient, req.SpaceID, req.WriteID, body)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 	}
 
-	return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
+	return entitycore.KibanaWriteResult[managedIntegrationModel]{Model: plan}, diags
 }
 
 // buildUpdateBody builds the managed_integrations full-replace PUT body from
@@ -148,7 +148,7 @@ func updateAgentlessPolicy(
 // API-backed optional attributes produce attribute errors (see
 // diagnoseUnknownUpdatePlanFields). Known-null optional attributes are omitted
 // (omitempty) to clear on full replace.
-func buildUpdateBody(ctx context.Context, plan, prior agentlessPolicyModel) (kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody, diag.Diagnostics) {
+func buildUpdateBody(ctx context.Context, plan, prior managedIntegrationModel) (kbapi.PutFleetManagedIntegrationsPolicyidJSONRequestBody, diag.Diagnostics) {
 	return plan.toManagedIntegrationRequestBody(ctx, managedIntegrationRequestOptions{
 		omitCreateOnlyFields:     true,
 		priorForCloudConnector:   &prior,
@@ -160,7 +160,7 @@ func buildUpdateBody(ctx context.Context, plan, prior agentlessPolicyModel) (kba
 // state into plan when the Update plan leaves them Unknown (typical for
 // updated_at). Used only with SkipReadAfterWrite so direct state write does not
 // persist Unknown computed attributes.
-func preserveKnownComputedFromPrior(ctx context.Context, plan, prior agentlessPolicyModel) agentlessPolicyModel {
+func preserveKnownComputedFromPrior(ctx context.Context, plan, prior managedIntegrationModel) managedIntegrationModel {
 	out := plan
 	out.UpdatedAt = entitycore.PreserveStringFromPriorIfUnknown(out.UpdatedAt, prior.UpdatedAt)
 	out.CreatedAt = entitycore.PreserveStringFromPriorIfUnknown(out.CreatedAt, prior.CreatedAt)

@@ -35,7 +35,7 @@ import (
 // shapes echoed by GET with the practitioner's prior plaintext (or prior plan)
 // so read-after-write and refresh do not produce inconsistent results. When
 // prior has no configured value (import without config), API refs are kept.
-func reconcileManagedIntegrationSecretsFromPrior(ctx context.Context, prior, populated *agentlessPolicyModel, diags *diag.Diagnostics) {
+func reconcileManagedIntegrationSecretsFromPrior(ctx context.Context, prior, populated *managedIntegrationModel, diags *diag.Diagnostics) {
 	if prior == nil || populated == nil {
 		return
 	}
@@ -54,7 +54,7 @@ func reconcileManagedIntegrationSecretsFromPrior(ctx context.Context, prior, pop
 	}
 }
 
-func packageNameVersionFromModel(ctx context.Context, m *agentlessPolicyModel, diags *diag.Diagnostics) (name, version string) {
+func packageNameVersionFromModel(ctx context.Context, m *managedIntegrationModel, diags *diag.Diagnostics) (name, version string) {
 	if !typeutils.IsKnown(m.Package) || m.Package.IsNull() {
 		return "", ""
 	}
@@ -118,9 +118,9 @@ func varsJSONFromMap(_ context.Context, vars map[string]any, packageName, packag
 	return v
 }
 
-func reconcileInputsSecretsFromPrior(ctx context.Context, prior, populated *agentlessPolicyModel, diags *diag.Diagnostics) {
-	priorInputs := typeutils.MapTypeAs[agentlessInputModel](ctx, prior.Inputs.MapValue, path.Root(attrInputs), diags)
-	popInputs := typeutils.MapTypeAs[agentlessInputModel](ctx, populated.Inputs.MapValue, path.Root(attrInputs), diags)
+func reconcileInputsSecretsFromPrior(ctx context.Context, prior, populated *managedIntegrationModel, diags *diag.Diagnostics) {
+	priorInputs := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, prior.Inputs.MapValue, path.Root(attrInputs), diags)
+	popInputs := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, populated.Inputs.MapValue, path.Root(attrInputs), diags)
 	if priorInputs == nil || popInputs == nil {
 		return
 	}
@@ -152,7 +152,7 @@ func reconcileInputsSecretsFromPrior(ctx context.Context, prior, populated *agen
 		popInputs[inputID] = popIn
 	}
 
-	inputsValue, d := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), popInputs)
+	inputsValue, d := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), popInputs)
 	diags.Append(d...)
 	populated.Inputs = inputsValue
 }

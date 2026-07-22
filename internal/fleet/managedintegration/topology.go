@@ -50,8 +50,8 @@ type statusBodyDTO struct {
 	} `json:"version"`
 }
 
-// DetectCloudSignals implements Task 6.2 of the fleet-agentless-policy
-// OpenSpec change (design.md Decision 7; specs/fleet-agentless-policy/spec.md
+// DetectCloudSignals implements Task 6.2 of the fleet-managed-integration
+// OpenSpec change (design.md Decision 7; openspec/specs/fleet-managed-integration/spec.md
 // "Deployment topology preflight check"). It makes a single call to Kibana's
 // own `GET /api/status` endpoint and reports the two independent signals
 // that distinguish an Elastic Cloud Hosted or Serverless deployment from a
@@ -97,7 +97,7 @@ type statusBodyDTO struct {
 //     logic), so the endpoint itself cannot be used as a non-destructive
 //     topology probe.
 //
-// Empirical verification (2026-07-01, see the fleet-agentless-policy
+// Empirical verification (2026-07-01, see the fleet-managed-integration
 // OpenSpec change's Task 6 report): against a live Kibana 9.4.3 Elastic
 // Cloud Hosted deployment, `GET /api/status` returned build_flavor
 // "traditional" with both X-Found-Handling-* headers present -- classified
@@ -152,7 +152,7 @@ func DetectCloudSignals(ctx context.Context, client *clients.KibanaScopedClient)
 // self-managed (non-cloud). Every other outcome -- confirmed
 // cloud/serverless, or a probe that could not be completed or parsed --
 // returns nil (fail open), per Decision 7's explicit "fail open when
-// inconclusive" fallback. This function is called from createAgentlessPolicy
+// inconclusive" fallback. This function is called from createManagedIntegration
 // only (Create-time preflight; Read/Update/Delete are unaffected, per
 // tasks.md section 6).
 func checkDeploymentTopology(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {

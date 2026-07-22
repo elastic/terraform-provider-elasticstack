@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// createAgentlessPolicy compiles the plan into a managed-integration create
+// createManagedIntegration compiles the plan into a managed-integration create
 // request body and calls POST /api/fleet/managed_integrations. Per spec: a
 // non-2xx response surfaces diagnostics and no state is saved (the entitycore
 // envelope never calls resp.State.Set when this callback returns an error --
@@ -37,13 +37,13 @@ import (
 // GetVersionRequirements (models.go) and enforced by the entitycore envelope
 // (entitycore.EnforceVersionRequirements, called from
 // kibana_resource_envelope.go's Create) before this function is ever invoked
-// -- see TestAgentlessPolicyModel_versionGate_firesBeforeAPICall in
+// -- see TestManagedIntegrationModel_versionGate_firesBeforeAPICall in
 // entitycore_contract_test.go.
 //
 // Task 6.2 adds the deployment-topology preflight check below (self-managed
 // stacks are rejected before the POST call runs; see checkDeploymentTopology
 // and its tests in topology.go/topology_test.go, design.md Decision 7, and
-// specs/fleet-agentless-policy/spec.md's "Deployment topology preflight
+// openspec/specs/fleet-managed-integration/spec.md's "Deployment topology preflight
 // check" requirement).
 //
 // design.md's Open Question 6 asked whether the fail-open heuristic should
@@ -63,18 +63,18 @@ import (
 // entitycore envelope read-after-write (Read callback), not from the POST
 // response body. This callback only copies the server-assigned policy id into
 // the returned model so the envelope can invoke Read.
-func createAgentlessPolicy(
+func createManagedIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[agentlessPolicyModel],
-) (entitycore.KibanaWriteResult[agentlessPolicyModel], diag.Diagnostics) {
+	req entitycore.KibanaWriteRequest[managedIntegrationModel],
+) (entitycore.KibanaWriteResult[managedIntegrationModel], diag.Diagnostics) {
 	plan := req.Plan
 	var diags diag.Diagnostics
 
 	if !plan.SkipTopologyCheck.ValueBool() {
 		diags.Append(checkDeploymentTopology(ctx, client)...)
 		if diags.HasError() {
-			return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+			return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 		}
 	}
 
@@ -83,24 +83,24 @@ func createAgentlessPolicy(
 	body, bodyDiags := plan.toCreateBody(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 	}
 
 	item, createDiags := fleetclient.CreateManagedIntegration(ctx, fleetClient, req.SpaceID, body)
 	diags.Append(createDiags...)
 	if diags.HasError() {
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 	}
 	if item == nil || item.Id == "" {
 		diags.AddError(
 			"Managed integration create returned no identifier",
 			"POST /api/fleet/managed_integrations succeeded but did not return a policy id.",
 		)
-		return entitycore.KibanaWriteResult[agentlessPolicyModel]{}, diags
+		return entitycore.KibanaWriteResult[managedIntegrationModel]{}, diags
 	}
 
 	plan.PolicyID = types.StringValue(item.Id)
 	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: item.Id}).String())
 
-	return entitycore.KibanaWriteResult[agentlessPolicyModel]{Model: plan}, diags
+	return entitycore.KibanaWriteResult[managedIntegrationModel]{Model: plan}, diags
 }

@@ -52,7 +52,7 @@ func newInputsWithCondition(t *testing.T, inputCondition, streamCondition string
 	})
 	require.False(t, diags.HasError())
 
-	inputModel := agentlessInputModel{
+	inputModel := managedIntegrationInputModel{
 		Enabled: types.BoolValue(true),
 		Streams: streams,
 	}
@@ -60,7 +60,7 @@ func newInputsWithCondition(t *testing.T, inputCondition, streamCondition string
 		inputModel.Condition = types.StringValue(inputCondition)
 	}
 
-	inputs, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	inputs, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": inputModel,
 	})
 	require.False(t, diags.HasError())
@@ -208,7 +208,7 @@ func TestPopulateFromCreateResponse_roundTripsCondition(t *testing.T) {
 	diags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
 	assert.Equal(t, "host.os.family == 'linux'", inputs["cspm-cloudbeat/cis_aws"].Condition.ValueString())
@@ -254,7 +254,7 @@ func TestPopulateFromCreateResponse_leavesConditionNullWhenAbsent(t *testing.T) 
 	diags := m.populateFromManagedIntegration(ctx, "default", &item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
 	assert.True(t, inputs["cspm-cloudbeat/cis_aws"].Condition.IsNull())
@@ -272,7 +272,7 @@ func TestPopulateFromManagedIntegration_leavesConditionNullWhenAbsent(t *testing
 	ctx := context.Background()
 
 	data := mustManagedIntegrationFromJSON(t, mappedFormatManagedIntegrationJSON)
-	m := agentlessPolicyModel{
+	m := managedIntegrationModel{
 		Force:                  types.BoolValue(true),
 		CreateDatasetTemplates: types.BoolValue(true),
 		PolicyTemplate:         types.StringValue("cspm"),
@@ -282,7 +282,7 @@ func TestPopulateFromManagedIntegration_leavesConditionNullWhenAbsent(t *testing
 	diags := m.populateFromManagedIntegration(ctx, "default", data, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
 	assert.True(t, inputs["cspm-cloudbeat/cis_aws"].Condition.IsNull())
@@ -326,7 +326,7 @@ func TestPopulateFromManagedIntegration_roundTripsCondition(t *testing.T) {
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var inputs map[string]agentlessInputModel
+	var inputs map[string]managedIntegrationInputModel
 	require.False(t, m.Inputs.ElementsAs(ctx, &inputs, false).HasError())
 	require.Contains(t, inputs, "cspm-cloudbeat/cis_aws")
 	assert.Equal(t, "host.os.family == 'linux'", inputs["cspm-cloudbeat/cis_aws"].Condition.ValueString())

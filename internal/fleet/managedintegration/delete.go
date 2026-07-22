@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// deleteAgentlessPolicy calls DELETE /api/fleet/managed_integrations/{id}
+// deleteManagedIntegration calls DELETE /api/fleet/managed_integrations/{id}
 // (space-aware) with force = force_delete. HTTP 404 is treated as a no-op by
 // the Fleet client (see handleDeleteResponse in responses.go).
 //
@@ -33,7 +33,7 @@ import (
 // pointing at force_delete is appended (see conflictHintDiagnostics).
 // fleetclient.DeleteManagedIntegration reports whether the final observed HTTP status
 // was 409 directly (isConflict), so this no longer pattern-matches diagnostic text.
-func deleteAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) diag.Diagnostics {
+func deleteManagedIntegration(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model managedIntegrationModel) diag.Diagnostics {
 	fleetClient := client.GetFleetClient()
 
 	force := model.ForceDelete.ValueBool()
@@ -45,7 +45,7 @@ func deleteAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClie
 }
 
 // conflictHintDiagnostics returns a diagnostic explaining force_delete, for
-// deleteAgentlessPolicy to append when fleetclient.DeleteManagedIntegration
+// deleteManagedIntegration to append when fleetclient.DeleteManagedIntegration
 // reports the delete failed with an HTTP 409 conflict.
 func conflictHintDiagnostics() diag.Diagnostics {
 	var hint diag.Diagnostics

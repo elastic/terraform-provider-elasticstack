@@ -80,7 +80,7 @@ func TestEnabledChangeNonPersistence_stateReflectsAPIReality(t *testing.T) {
 		},
 	})
 	require.False(t, diags.HasError())
-	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	inputsValue, diags := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(false),
 			Streams: streamsMap,
@@ -102,7 +102,7 @@ func TestEnabledChangeNonPersistence_stateReflectsAPIReality(t *testing.T) {
 	popDiags := plan.populateFromManagedIntegration(ctx, "default", data, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
-	var resultInputs map[string]agentlessInputModel
+	var resultInputs map[string]managedIntegrationInputModel
 	require.False(t, plan.Inputs.ElementsAs(ctx, &resultInputs, false).HasError())
 	require.Contains(t, resultInputs, "cspm-cloudbeat/cis_aws")
 

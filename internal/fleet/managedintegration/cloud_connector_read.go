@@ -32,7 +32,7 @@ import (
 // preserving write-only name and target_csp from prior state when present.
 // When prior had no block (import), the block is built from API values with
 // null write-only fields.
-func (m *agentlessPolicyModel) applyCloudConnectorFromAPI(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) {
+func (m *managedIntegrationModel) applyCloudConnectorFromAPI(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) {
 	if item == nil {
 		return
 	}

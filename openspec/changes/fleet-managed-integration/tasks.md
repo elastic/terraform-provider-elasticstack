@@ -24,7 +24,7 @@
 ## 4. `capabilities.go` — version gate update
 
 - [x] 4.1 Verify the 9.5.0 `MinVersion` floor established in task 1.1 still applies after the package rename to `managedintegration` (task 3.1); do not re-raise the floor here
-- [x] 4.2 Remove the separate `condition`-support capability check (`agentlessPolicyFeatures`/`resolveAgentlessPolicyFeatures` and its `SupportsCondition` field) — now redundant with the resource-level 9.5.0 floor, since `policyshape.MinVersionCondition` is also 9.5.0. Delete `capabilities.go`'s dedicated gating; `condition` is unconditionally supported once the resource exists at all.
+- [x] 4.2 Remove the separate `condition`-support capability check (dedicated features resolver and its `SupportsCondition` field) — now redundant with the resource-level 9.5.0 floor, since `policyshape.MinVersionCondition` is also 9.5.0. Delete `capabilities.go`'s dedicated gating; `condition` is unconditionally supported once the resource exists at all.
 - [x] 4.3 Update any comments referencing "agentless_policies" to reference "managed_integrations"
 
 ## 5. `schema.go` — schema changes
@@ -76,7 +76,7 @@
 
 - [x] 10.1 Rename `examples/resources/elasticstack_fleet_agentless_policy/` → `examples/resources/elasticstack_fleet_managed_integration/`; update `import.sh` paths and any doc cross-links. Example `.tf` files already use `elasticstack_fleet_managed_integration` (task 3 follow-up); verify plan-only example coverage after the directory rename
 - [x] 10.2 Add an example demonstrating in-place `package.version` update
-- [x] 10.3 Run `make gen` (via `docs-generate-provider`: default docs then scoped fleet managed integration) to produce `docs/resources/fleet_managed_integration.md`; `docs/resources/fleet_agentless_policy.md` was never present on this branch (nothing to delete)
+- [x] 10.3 Run `make gen` to produce committed provider docs including `docs/resources/fleet_managed_integration.md` (experimental resource page is maintained manually alongside default `make docs-generate`; tfplugindocs omits experimental-only resources from the standard pass); `docs/resources/fleet_agentless_policy.md` was never present on this branch (nothing to delete)
 - [x] 10.4 Verify the generated docs include the experimental notice and the ECH/Serverless-only note
 
 ## 11. Acceptance tests

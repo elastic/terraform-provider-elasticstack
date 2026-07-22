@@ -86,7 +86,7 @@ func TestReconcileManagedIntegrationSecretsFromPrior_streamVars(t *testing.T) {
 	})
 	require.False(t, d.HasError())
 
-	priorInputs, d := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	priorInputs, d := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Streams: streamsPrior,
@@ -102,7 +102,7 @@ func TestReconcileManagedIntegrationSecretsFromPrior_streamVars(t *testing.T) {
 	})
 	require.False(t, d.HasError())
 
-	popInputs, d := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), map[string]agentlessInputModel{
+	popInputs, d := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
 		"cspm-cloudbeat/cis_aws": {
 			Enabled: types.BoolValue(true),
 			Streams: streamsPop,
@@ -110,14 +110,14 @@ func TestReconcileManagedIntegrationSecretsFromPrior_streamVars(t *testing.T) {
 	})
 	require.False(t, d.HasError())
 
-	prior := agentlessPolicyModel{Inputs: priorInputs}
-	populated := agentlessPolicyModel{Inputs: popInputs}
+	prior := managedIntegrationModel{Inputs: priorInputs}
+	populated := managedIntegrationModel{Inputs: popInputs}
 
 	var diags diag.Diagnostics
 	reconcileManagedIntegrationSecretsFromPrior(ctx, &prior, &populated, &diags)
 	require.False(t, diags.HasError())
 
-	inputsMap := typeutils.MapTypeAs[agentlessInputModel](ctx, populated.Inputs.MapValue, path.Root(attrInputs), &diags)
+	inputsMap := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, populated.Inputs.MapValue, path.Root(attrInputs), &diags)
 	require.False(t, diags.HasError())
 	streamsMap := typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, inputsMap["cspm-cloudbeat/cis_aws"].Streams, path.Root(attrInputs), &diags)
 	require.False(t, diags.HasError())
@@ -212,7 +212,7 @@ func TestPopulateFromManagedIntegration_cloudConnectorFromAPIOnImport(t *testing
 		"cloud_connector": {"enabled": true, "cloud_connector_id": "cc-import"}
 	}`)
 
-	m := agentlessPolicyModel{}
+	m := managedIntegrationModel{}
 	popDiags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, popDiags.HasError())
 

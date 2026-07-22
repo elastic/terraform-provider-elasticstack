@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestReadAgentlessPolicy_notFound signals removed out-of-band without error.
-func TestReadAgentlessPolicy_notFound(t *testing.T) {
+// TestReadManagedIntegration_notFound signals removed out-of-band without error.
+func TestReadManagedIntegration_notFound(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -43,14 +43,14 @@ func TestReadAgentlessPolicy_notFound(t *testing.T) {
 	seeded.PolicyID = types.StringValue("policy-1")
 	seeded.Name = types.StringValue("seed-name-must-not-change")
 
-	out, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
+	out, ok, diags := readManagedIntegration(context.Background(), client, "policy-1", "default", seeded)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, ok)
 	assert.Equal(t, "seed-name-must-not-change", out.Name.ValueString())
 }
 
-// TestReadAgentlessPolicy_serverError propagates GET failures.
-func TestReadAgentlessPolicy_serverError(t *testing.T) {
+// TestReadManagedIntegration_serverError propagates GET failures.
+func TestReadManagedIntegration_serverError(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -62,16 +62,16 @@ func TestReadAgentlessPolicy_serverError(t *testing.T) {
 	seeded := baseTestModel(t)
 	seeded.PolicyID = types.StringValue("policy-1")
 
-	_, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
+	_, ok, diags := readManagedIntegration(context.Background(), client, "policy-1", "default", seeded)
 	require.True(t, diags.HasError())
 	require.False(t, ok)
 }
 
-// TestReadAgentlessPolicy_populatesFromManagedIntegration exercises GET
+// TestReadManagedIntegration_populatesFromManagedIntegration exercises GET
 // /api/fleet/managed_integrations/{id} (ReadManagedIntegration) and
 // populateFromManagedIntegration while preserving create-only flags from the
 // incoming model.
-func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
+func TestReadManagedIntegration_populatesFromManagedIntegration(t *testing.T) {
 	const managedIntegrationJSON = `{"item":{` +
 		`"id":"policy-1","name":"api-name",` +
 		`"created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic",` +
@@ -107,7 +107,7 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 	seeded.ForceDelete = types.BoolValue(true)
 	seeded.CloudConnector = ccObj
 
-	out, ok, diags := readAgentlessPolicy(context.Background(), client, "policy-1", "default", seeded)
+	out, ok, diags := readManagedIntegration(context.Background(), client, "policy-1", "default", seeded)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.True(t, ok)
 	method.requireEqual(t, http.MethodGet)

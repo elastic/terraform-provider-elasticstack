@@ -51,7 +51,7 @@ const minimalManagedIntegrationCreateResponse = `{"item":{` +
 // reports whether the fleet create endpoint was ever hit, which is
 // the thing these tests care about: did checkDeploymentTopology's verdict
 // (or skip_topology_check bypassing it) actually gate the POST call in
-// createAgentlessPolicy, or not.
+// createManagedIntegration, or not.
 func fleetCreateCallRecorder(statusBody string, statusHeaders map[string]string) (http.Handler, *atomic.Bool, *atomic.Int64) {
 	fleetPostCalled := atomic.Bool{}
 	mux := http.NewServeMux()
@@ -90,9 +90,9 @@ const selfManagedStatusBody = `{"version":{"number":"9.4.0","build_flavor":"trad
 // TestCheckDeploymentTopology in this package.
 var cloudProxyHeader = map[string]string{cloudProxyResponseHeaders[0]: "abc123"}
 
-// TestCreateAgentlessPolicy_topologyGatesFleetCall is Task 6's reviewer
+// TestCreateManagedIntegration_topologyGatesFleetCall is Task 6's reviewer
 // finding #2 closed: it drives checkDeploymentTopology through
-// createAgentlessPolicy's actual call site (rather than only unit-testing
+// createManagedIntegration's actual call site (rather than only unit-testing
 // checkDeploymentTopology in isolation, as TestCheckDeploymentTopology
 // does), and it is also the test for the skip_topology_check escape hatch
 // added to resolve design.md's Open Question 6: a self-managed-shaped
@@ -106,7 +106,7 @@ var cloudProxyHeader = map[string]string{cloudProxyResponseHeaders[0]: "abc123"}
 // and t.Setenv is documented as incompatible with parallel tests (matching
 // the non-parallel style already used by TestCheckDeploymentTopology in
 // topology_test.go, for the same reason).
-func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
+func TestCreateManagedIntegration_topologyGatesFleetCall(t *testing.T) {
 	t.Run("self-managed topology and skip_topology_check=false (default) blocks the fleet POST", func(t *testing.T) {
 		handler, fleetPostCalled, legacyCalls := fleetCreateCallRecorder(selfManagedStatusBody, nil)
 		client := newTopologyTestClient(t, handler)
@@ -114,7 +114,7 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 		plan := baseTestModel(t)
 		plan.SkipTopologyCheck = types.BoolValue(false)
 
-		result, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		result, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    plan,
 			SpaceID: "default",
 		})
@@ -123,7 +123,7 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 		require.Contains(t, diags[0].Summary(), "Unsupported deployment topology")
 		require.False(t, fleetPostCalled.Load(), "the fleet create endpoint must not be called once the topology check fails closed")
 		requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
-		require.Equal(t, agentlessPolicyModel{}, result.Model)
+		require.Equal(t, managedIntegrationModel{}, result.Model)
 	})
 
 	t.Run("self-managed topology with skip_topology_check=true proceeds to the fleet POST", func(t *testing.T) {
@@ -133,7 +133,7 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 		plan := baseTestModel(t)
 		plan.SkipTopologyCheck = types.BoolValue(true)
 
-		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		_, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    plan,
 			SpaceID: "default",
 		})
@@ -151,7 +151,7 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 			plan := baseTestModel(t)
 			plan.SkipTopologyCheck = types.BoolValue(skip)
 
-			_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+			_, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 				Plan:    plan,
 				SpaceID: "default",
 			})
@@ -163,19 +163,19 @@ func TestCreateAgentlessPolicy_topologyGatesFleetCall(t *testing.T) {
 	})
 }
 
-func createCallbackPlan(t *testing.T) agentlessPolicyModel {
+func createCallbackPlan(t *testing.T) managedIntegrationModel {
 	t.Helper()
 	plan := baseTestModel(t)
 	plan.SkipTopologyCheck = types.BoolValue(true)
 	return plan
 }
 
-// TestCreateAgentlessPolicy_callback covers createAgentlessPolicy POST handling
+// TestCreateManagedIntegration_callback covers createManagedIntegration POST handling
 // against /api/fleet/managed_integrations (CreateManagedIntegration) after
 // topology is skipped (SkipReadAfterWrite is always false; identity only).
 // The Kibana envelope read-after-write on Create is also asserted in
 // entitycore.TestNewKibanaResource_Create_readAfterWriteByDefault.
-func TestCreateAgentlessPolicy_callback(t *testing.T) {
+func TestCreateManagedIntegration_callback(t *testing.T) {
 	t.Run("success sets policy_id and composite id without SkipReadAfterWrite", func(t *testing.T) {
 		mux := http.NewServeMux()
 		legacyCalls := registerLegacyPackagePoliciesGuard(mux)
@@ -187,7 +187,7 @@ func TestCreateAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		result, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		result, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    createCallbackPlan(t),
 			SpaceID: "default",
 		})
@@ -208,12 +208,12 @@ func TestCreateAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		result, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		result, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    createCallbackPlan(t),
 			SpaceID: "default",
 		})
 		require.True(t, diags.HasError())
-		assert.Equal(t, agentlessPolicyModel{}, result.Model)
+		assert.Equal(t, managedIntegrationModel{}, result.Model)
 	})
 
 	t.Run("success with empty policy id returns dedicated diagnostic", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestCreateAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		_, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    createCallbackPlan(t),
 			SpaceID: "default",
 		})
@@ -247,7 +247,7 @@ func TestCreateAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		_, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    createCallbackPlan(t),
 			SpaceID: "default",
 		})
@@ -262,7 +262,7 @@ func TestCreateAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		_, diags := createAgentlessPolicy(context.Background(), client, entitycore.KibanaWriteRequest[agentlessPolicyModel]{
+		_, diags := createManagedIntegration(context.Background(), client, entitycore.KibanaWriteRequest[managedIntegrationModel]{
 			Plan:    createCallbackPlan(t),
 			SpaceID: "default",
 		})

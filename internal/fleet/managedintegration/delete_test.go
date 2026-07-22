@@ -43,7 +43,7 @@ import (
 // max_retries_exhausted_returns_error and
 // transport_error_after_409_resets_is_conflict), so this function no longer needs to
 // inspect diagnostic text at all -- it is now a pure "build the hint" helper
-// that deleteAgentlessPolicy only calls once it already knows, authoritatively,
+// that deleteManagedIntegration only calls once it already knows, authoritatively,
 // that the delete failed with a conflict.
 func TestConflictHintDiagnostics(t *testing.T) {
 	t.Parallel()
@@ -56,7 +56,7 @@ func TestConflictHintDiagnostics(t *testing.T) {
 	assert.Contains(t, hint[0].Detail(), "force=true")
 }
 
-func deleteCallbackTestModel(t *testing.T, forceDelete bool) agentlessPolicyModel {
+func deleteCallbackTestModel(t *testing.T, forceDelete bool) managedIntegrationModel {
 	t.Helper()
 	m := baseTestModel(t)
 	m.PolicyID = types.StringValue("policy-1")
@@ -64,9 +64,9 @@ func deleteCallbackTestModel(t *testing.T, forceDelete bool) agentlessPolicyMode
 	return m
 }
 
-// TestDeleteAgentlessPolicy_callback exercises deleteAgentlessPolicy against
+// TestDeleteManagedIntegration_callback exercises deleteManagedIntegration against
 // httptest Fleet DELETE /api/fleet/managed_integrations/{id} (DeleteManagedIntegration).
-func TestDeleteAgentlessPolicy_callback(t *testing.T) {
+func TestDeleteManagedIntegration_callback(t *testing.T) {
 	t.Run("200 success", func(t *testing.T) {
 		mux := http.NewServeMux()
 		legacyCalls := registerLegacyPackagePoliciesGuard(mux)
@@ -78,7 +78,7 @@ func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		diags := deleteAgentlessPolicy(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
+		diags := deleteManagedIntegration(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
 		require.False(t, diags.HasError(), "%v", diags)
 		method.requireEqual(t, http.MethodDelete)
 		requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
@@ -93,7 +93,7 @@ func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		diags := deleteAgentlessPolicy(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
+		diags := deleteManagedIntegration(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
 		require.False(t, diags.HasError(), "%v", diags)
 	})
 
@@ -108,7 +108,7 @@ func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		diags := deleteAgentlessPolicy(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
+		diags := deleteManagedIntegration(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, false))
 		require.True(t, diags.HasError())
 		require.Equal(t, int64(kibanautil.ConflictMaxAttempts), calls.Load())
 		require.GreaterOrEqual(t, len(diags.Errors()), 2, "expect HTTP error plus force_delete hint")
@@ -129,7 +129,7 @@ func TestDeleteAgentlessPolicy_callback(t *testing.T) {
 		})
 		client := newTopologyTestClient(t, mux)
 
-		diags := deleteAgentlessPolicy(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, true))
+		diags := deleteManagedIntegration(context.Background(), client, "policy-1", "default", deleteCallbackTestModel(t, true))
 		require.True(t, diags.HasError())
 		require.Equal(t, int64(kibanautil.ConflictMaxAttempts), calls.Load())
 		require.Len(t, diags.Errors(), 1, "force_delete=true must not append conflictHintDiagnostics")

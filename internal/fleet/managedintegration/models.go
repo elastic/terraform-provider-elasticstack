@@ -60,13 +60,13 @@ func globalDataTagsElementType() attr.Type {
 // is no separate per-request capability gate in this package.
 var MinVersion = version.Must(version.NewVersion("9.5.0"))
 
-// agentlessPolicyModel is the Plugin Framework model for the
+// managedIntegrationModel is the Plugin Framework model for the
 // elasticstack_fleet_managed_integration resource.
 //
-// Task 4 of the fleet-agentless-policy OpenSpec change
-// (openspec/changes/fleet-agentless-policy/tasks.md, section "4. Resource:
+// Task 4 of the fleet-managed-integration OpenSpec change
+// (openspec/changes/fleet-managed-integration/tasks.md, section "4. Resource:
 // schema") adds one field per schema attribute defined in schema.go (see
-// specs/fleet-agentless-policy/spec.md, "Schema attributes" requirement).
+// openspec/specs/fleet-managed-integration/spec.md, "Schema attributes" requirement).
 // CRUD population (populateFromAPI/toAPI*Model conversion functions) is
 // Task 5's responsibility; this file only declares the struct shape.
 //
@@ -77,7 +77,7 @@ var MinVersion = version.Must(version.NewVersion("9.5.0"))
 // `inputs` and `vars_json` reuse the shared policyshape custom types
 // directly (policyshape.InputsValue / policyshape.VarsJSONValue) -- no
 // local type duplication.
-type agentlessPolicyModel struct {
+type managedIntegrationModel struct {
 	entitycore.ResourceTimeoutsField
 	ID                               types.String              `tfsdk:"id"`
 	KibanaConnection                 types.List                `tfsdk:"kibana_connection"`
@@ -106,11 +106,11 @@ type agentlessPolicyModel struct {
 // globalDataTagsItemModel) live in models.go / models_convert.go for conversion
 // plumbing only.
 
-func (m agentlessPolicyModel) GetID() types.String         { return m.ID }
-func (m agentlessPolicyModel) GetResourceID() types.String { return m.PolicyID }
+func (m managedIntegrationModel) GetID() types.String         { return m.ID }
+func (m managedIntegrationModel) GetResourceID() types.String { return m.PolicyID }
 
 // defaultSpaceID is the Kibana space used when space_ids is not configured.
-// See specs/fleet-agentless-policy/spec.md, "Resource identity and composite
+// See openspec/specs/fleet-managed-integration/spec.md, "Resource identity and composite
 // ID": "space_ids SHALL be Optional+Computed defaulting to [\"default\"]".
 const defaultSpaceID = "default"
 
@@ -133,7 +133,7 @@ const defaultSpaceID = "default"
 // skeleton (which returned "" for null/unknown), made in Task 5 because
 // Create is the first caller that actually exercises this path end-to-end;
 // see the corresponding test update in schema_test.go/entitycore_contract_test.go.
-func (m agentlessPolicyModel) GetSpaceID() types.String {
+func (m managedIntegrationModel) GetSpaceID() types.String {
 	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
 		return types.StringValue(defaultSpaceID)
 	}
@@ -149,13 +149,13 @@ func (m agentlessPolicyModel) GetSpaceID() types.String {
 	return types.StringValue(defaultSpaceID)
 }
 
-func (m agentlessPolicyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m managedIntegrationModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 // GetVersionRequirements enforces the minimum Kibana version for the Fleet
 // managed_integrations API (experimental, added in Kibana 9.5.0). See
 // openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint".
-func (m agentlessPolicyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (m managedIntegrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *MinVersion,

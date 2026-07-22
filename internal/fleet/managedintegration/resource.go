@@ -38,21 +38,21 @@ var (
 
 // Resource implements the Fleet managed integration resource.
 type Resource struct {
-	*entitycore.KibanaResource[agentlessPolicyModel]
+	*entitycore.KibanaResource[managedIntegrationModel]
 	*fleet.SpaceImporter
 }
 
 func newResource() *Resource {
 	return &Resource{
-		KibanaResource: entitycore.NewKibanaResource[agentlessPolicyModel](
+		KibanaResource: entitycore.NewKibanaResource[managedIntegrationModel](
 			entitycore.ComponentFleet,
 			"managed_integration",
-			entitycore.KibanaResourceOptions[agentlessPolicyModel]{
+			entitycore.KibanaResourceOptions[managedIntegrationModel]{
 				Schema: getSchema,
-				Read:   readAgentlessPolicy,
-				Delete: deleteAgentlessPolicy,
-				Create: createAgentlessPolicy,
-				Update: updateAgentlessPolicy,
+				Read:   readManagedIntegration,
+				Delete: deleteManagedIntegration,
+				Create: createManagedIntegration,
+				Update: updateManagedIntegration,
 			},
 		),
 		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),

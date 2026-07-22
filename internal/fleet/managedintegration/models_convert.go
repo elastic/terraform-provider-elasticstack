@@ -66,15 +66,15 @@ type cloudConnectorModel struct {
 	TargetCSP        types.String `tfsdk:"target_csp"`
 }
 
-// agentlessInputModel is the Go representation of a single `inputs` map
-// element. It deliberately mirrors agentlessInputAttributeTypes() in
+// managedIntegrationInputModel is the Go representation of a single `inputs` map
+// element. It deliberately mirrors managedIntegrationInputAttributeTypes() in
 // schema.go (enabled/condition/vars/streams) rather than reusing
 // policyshape.InputModel directly: policyshape.InputModel also declares a
-// `defaults` field that agentlessInputAttributeTypes() does not surface (see
-// schema.go's agentlessInputType doc comment), and the Plugin Framework's
+// `defaults` field that managedIntegrationInputAttributeTypes() does not surface (see
+// schema.go's managedIntegrationInputType doc comment), and the Plugin Framework's
 // object-to-struct decoding requires the struct's tfsdk fields to match the
 // object's attribute set.
-type agentlessInputModel struct {
+type managedIntegrationInputModel struct {
 	Enabled   types.Bool           `tfsdk:"enabled"`
 	Condition types.String         `tfsdk:"condition"`
 	Vars      jsontypes.Normalized `tfsdk:"vars"`
@@ -300,7 +300,7 @@ func managedIntegrationStreamVarsToMap(vars *map[string]*kbapi.KibanaHTTPAPIsMan
 // KibanaHTTPAPIsManagedIntegration.Inputs.
 func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, knownKeys map[string]struct{}, diags *diag.Diagnostics) policyshape.InputsValue {
 	if item == nil {
-		return policyshape.NewInputsNull(agentlessInputType())
+		return policyshape.NewInputsNull(managedIntegrationInputType())
 	}
 	inputs := maps.Clone(item.Inputs)
 	if knownKeys != nil {
@@ -312,14 +312,14 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 	}
 
 	if len(inputs) == 0 {
-		return policyshape.NewInputsNull(agentlessInputType())
+		return policyshape.NewInputsNull(managedIntegrationInputType())
 	}
 
-	models := make(map[string]agentlessInputModel, len(inputs))
+	models := make(map[string]managedIntegrationInputModel, len(inputs))
 	for inputID, wire := range inputs {
 		inputPath := path.Root(attrInputs).AtMapKey(inputID)
 
-		m := agentlessInputModel{
+		m := managedIntegrationInputModel{
 			Enabled:   types.BoolPointerValue(wire.Enabled),
 			Condition: types.StringPointerValue(wire.Condition),
 			Vars:      typeutils.MarshalToNormalized(managedIntegrationVarsToMap(wire.Vars, inputPath.AtName("vars"), diags), inputPath.AtName("vars"), diags),
@@ -345,39 +345,39 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 		models[inputID] = m
 	}
 
-	inputsValue, d := policyshape.NewInputsValueFrom(ctx, agentlessInputType(), models)
+	inputsValue, d := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), models)
 	diags.Append(d...)
 	return inputsValue
 }
 
-// decodedAgentlessInput is the once-decoded form of a single `inputs` map
+// decodedManagedIntegrationInput is the once-decoded form of a single `inputs` map
 // element, with its nested `streams` map (if any) already decoded too.
 // decodeInputs produces this so that the request-body builders
 // (applyCreateInputs, buildUpdateBody) don't each independently re-run the
 // reflection-based typeutils.MapTypeAs decode over the same inputs+streams
 // structure -- mirroring internal/fleet/integration_policy/models.go's
 // decodedInput/decodeInputs.
-type decodedAgentlessInput struct {
-	model   agentlessInputModel
+type decodedManagedIntegrationInput struct {
+	model   managedIntegrationInputModel
 	streams map[string]policyshape.InputStreamModel // nil if streams is null/unknown
 }
 
 // decodeInputs decodes the `inputs` attribute, and each input's nested
 // `streams` map, exactly once. Returns nil if `inputs` itself is null/unknown
 // or fails to decode.
-func (m agentlessPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedAgentlessInput {
+func (m managedIntegrationModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedManagedIntegrationInput {
 	if !typeutils.IsKnown(m.Inputs.MapValue) {
 		return nil
 	}
 
-	inputsMap := typeutils.MapTypeAs[agentlessInputModel](ctx, m.Inputs.MapValue, path.Root(attrInputs), diags)
+	inputsMap := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, m.Inputs.MapValue, path.Root(attrInputs), diags)
 	if inputsMap == nil {
 		return nil
 	}
 
-	decoded := make(map[string]decodedAgentlessInput, len(inputsMap))
+	decoded := make(map[string]decodedManagedIntegrationInput, len(inputsMap))
 	for inputID, inputModel := range inputsMap {
-		d := decodedAgentlessInput{model: inputModel}
+		d := decodedManagedIntegrationInput{model: inputModel}
 		if typeutils.IsKnown(inputModel.Streams) {
 			inputPath := path.Root(attrInputs).AtMapKey(inputID)
 			d.streams = typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
@@ -404,7 +404,7 @@ type managedIntegrationRequestOptions struct {
 	// priorForCloudConnector, when non-nil, supplies cloud_connector
 	// {enabled, cloud_connector_id} for Update (never name/target_csp).
 	// When nil, cloud_connector is taken from the plan model (Create).
-	priorForCloudConnector *agentlessPolicyModel
+	priorForCloudConnector *managedIntegrationModel
 	// sendExplicitEmptyScalars encodes known-but-empty optional fields so a
 	// full-replace PUT actively clears values removed from config.
 	sendExplicitEmptyScalars bool
@@ -412,11 +412,11 @@ type managedIntegrationRequestOptions struct {
 
 // toCreateBody compiles the config/plan model into
 // PostFleetManagedIntegrationsJSONRequestBody.
-func (m agentlessPolicyModel) toCreateBody(ctx context.Context) (kbapi.PostFleetManagedIntegrationsJSONRequestBody, diag.Diagnostics) {
+func (m managedIntegrationModel) toCreateBody(ctx context.Context) (kbapi.PostFleetManagedIntegrationsJSONRequestBody, diag.Diagnostics) {
 	return m.toManagedIntegrationRequestBody(ctx, managedIntegrationRequestOptions{})
 }
 
-func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Context, opts managedIntegrationRequestOptions) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest, diag.Diagnostics) {
+func (m managedIntegrationModel) toManagedIntegrationRequestBody(ctx context.Context, opts managedIntegrationRequestOptions) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	m.diagnoseUnknownUpdatePlanFields(&diags, opts)
@@ -568,7 +568,7 @@ func (m agentlessPolicyModel) toManagedIntegrationRequestBody(ctx context.Contex
 	return body, diags
 }
 
-func (m agentlessPolicyModel) diagnoseUnknownUpdatePlanFields(diags *diag.Diagnostics, opts managedIntegrationRequestOptions) {
+func (m managedIntegrationModel) diagnoseUnknownUpdatePlanFields(diags *diag.Diagnostics, opts managedIntegrationRequestOptions) {
 	if !opts.sendExplicitEmptyScalars {
 		return
 	}
@@ -606,7 +606,7 @@ type applyCreateInputsOptions struct {
 // decodeInputs) into the create body's Inputs field (a
 // map[string]struct{...} of anonymous Go type -- see this file's header
 // comment) via a JSON marshal/unmarshal round trip.
-func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, decoded map[string]decodedAgentlessInput, diags *diag.Diagnostics, opts applyCreateInputsOptions) {
+func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, decoded map[string]decodedManagedIntegrationInput, diags *diag.Diagnostics, opts applyCreateInputsOptions) {
 	if len(decoded) == 0 {
 		if !opts.explicitEmptyInputs {
 			return
@@ -691,7 +691,7 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 // spaceIDs is optional metadata when the caller has space membership outside
 // the read response; when nil, space_ids defaults from spaceID when unset on
 // the model.
-func (m *agentlessPolicyModel) populateFromManagedIntegration(ctx context.Context, spaceID string, item *kbapi.KibanaHTTPAPIsManagedIntegration, spaceIDs *[]string) diag.Diagnostics {
+func (m *managedIntegrationModel) populateFromManagedIntegration(ctx context.Context, spaceID string, item *kbapi.KibanaHTTPAPIsManagedIntegration, spaceIDs *[]string) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if item == nil {
 		return diags
