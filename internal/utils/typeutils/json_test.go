@@ -192,6 +192,24 @@ func TestMarshalToNormalized(t *testing.T) {
 		require.True(t, result.IsNull())
 	})
 
+	t.Run("typed nil map returns null", func(t *testing.T) {
+		t.Parallel()
+		var value map[string]any
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized(value, path.Root("field"), &d)
+		require.False(t, d.HasError())
+		require.True(t, result.IsNull())
+	})
+
+	t.Run("pointer to nil map returns null", func(t *testing.T) {
+		t.Parallel()
+		var value map[string]any
+		var d diag.Diagnostics
+		result := typeutils.MarshalToNormalized(&value, path.Root("field"), &d)
+		require.False(t, d.HasError())
+		require.True(t, result.IsNull())
+	})
+
 	t.Run("map marshals correctly", func(t *testing.T) {
 		t.Parallel()
 		var d diag.Diagnostics

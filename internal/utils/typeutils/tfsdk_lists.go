@@ -27,6 +27,59 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+// --- []types.String <-> []string helpers (no context required) ---
+
+// ValueStringSlice converts []types.String to []string.
+func ValueStringSlice(v []types.String) []string {
+	var res []string
+	for _, s := range v {
+		res = append(res, s.ValueString())
+	}
+	return res
+}
+
+// StringSliceValue converts []string to []types.String.
+func StringSliceValue(v []string) []types.String {
+	var res []types.String
+	for _, s := range v {
+		res = append(res, types.StringValue(s))
+	}
+	return res
+}
+
+// --- Must-style helpers (panic on failure, no context required) ---
+
+// StringsToListMust converts a []string to a types.List of string elements.
+// The result is always valid; an empty or nil slice produces an empty list.
+// This is a Must-style variant that panics on error; use SliceToListTypeString
+// for safe, diagnostic-based conversion.
+func StringsToListMust(strs []string) types.List {
+	if len(strs) == 0 {
+		return types.ListValueMust(types.StringType, []attr.Value{})
+	}
+	vals := make([]attr.Value, len(strs))
+	for i, s := range strs {
+		vals[i] = types.StringValue(s)
+	}
+	return types.ListValueMust(types.StringType, vals)
+}
+
+// ListToStringsMust extracts a []string from a types.List of string elements.
+// Null or unknown lists return nil.
+// This is a Must-style variant that panics on non-string elements; use
+// ListTypeToSliceString for safe, diagnostic-based extraction.
+func ListToStringsMust(list types.List) []string {
+	if list.IsNull() || list.IsUnknown() {
+		return nil
+	}
+	elems := list.Elements()
+	strs := make([]string, len(elems))
+	for i, v := range elems {
+		strs[i] = v.(types.String).ValueString()
+	}
+	return strs
+}
+
 // NonEmptyListOrDefault returns the original list if slice is empty,
 // otherwise converts slice into a types.List.
 func NonEmptyListOrDefault[T any](ctx context.Context, original types.List, elemType attr.Type, slice []T) (types.List, diag.Diagnostics) {

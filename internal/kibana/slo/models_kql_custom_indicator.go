@@ -180,48 +180,44 @@ func (m *tfModel) populateFromKqlCustomIndicator(apiIndicator kbapi.SLOsIndicato
 	return diags
 }
 
-func kqlTFFormToKqlWithFiltersUnion(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFilters, diag.Diagnostics) {
+// kqlTFFormToUnion converts a Terraform KQL object form to a union output type via a caller-supplied
+// setter. The setter receives the parsed SLOsKqlWithFilters1 and is responsible for calling the
+// appropriate From* method on the (zero-value) output. This eliminates the repeated
+// parse-propagate-cast-set boilerplate across the three KQL union variants.
+func kqlTFFormToUnion[TOut any](
+	obj types.Object, errPrefix string,
+	setFn func(*TOut, kbapi.SLOsKqlWithFilters1) error,
+) (TOut, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	one, d := kqlTFFormToAPI1(obj, errPrefix)
 	diags.Append(d...)
 	if diags.HasError() {
-		return kbapi.SLOsKqlWithFilters{}, diags
+		var zero TOut
+		return zero, diags
 	}
-	var out kbapi.SLOsKqlWithFilters
-	if err := out.FromSLOsKqlWithFilters1(one); err != nil {
+	var out TOut
+	if err := setFn(&out, one); err != nil {
 		diags.AddError("Invalid configuration", errPrefix+": "+err.Error())
 	}
 	return out, diags
+}
+
+func kqlTFFormToKqlWithFiltersUnion(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFilters, diag.Diagnostics) {
+	return kqlTFFormToUnion(obj, errPrefix, func(out *kbapi.SLOsKqlWithFilters, one kbapi.SLOsKqlWithFilters1) error {
+		return out.FromSLOsKqlWithFilters1(one)
+	})
 }
 
 func kqlTFFormToKqlWithFiltersGoodUnion(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFiltersGood, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	one, d := kqlTFFormToAPI1(obj, errPrefix)
-	diags.Append(d...)
-	if diags.HasError() {
-		return kbapi.SLOsKqlWithFiltersGood{}, diags
-	}
-	g1 := kbapi.SLOsKqlWithFiltersGood1(one)
-	var out kbapi.SLOsKqlWithFiltersGood
-	if err := out.FromSLOsKqlWithFiltersGood1(g1); err != nil {
-		diags.AddError("Invalid configuration", errPrefix+": "+err.Error())
-	}
-	return out, diags
+	return kqlTFFormToUnion(obj, errPrefix, func(out *kbapi.SLOsKqlWithFiltersGood, one kbapi.SLOsKqlWithFilters1) error {
+		return out.FromSLOsKqlWithFiltersGood1(kbapi.SLOsKqlWithFiltersGood1(one))
+	})
 }
 
 func kqlTFFormToKqlWithFiltersTotalUnion(obj types.Object, errPrefix string) (kbapi.SLOsKqlWithFiltersTotal, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	one, d := kqlTFFormToAPI1(obj, errPrefix)
-	diags.Append(d...)
-	if diags.HasError() {
-		return kbapi.SLOsKqlWithFiltersTotal{}, diags
-	}
-	t1 := kbapi.SLOsKqlWithFiltersTotal1(one)
-	var out kbapi.SLOsKqlWithFiltersTotal
-	if err := out.FromSLOsKqlWithFiltersTotal1(t1); err != nil {
-		diags.AddError("Invalid configuration", errPrefix+": "+err.Error())
-	}
-	return out, diags
+	return kqlTFFormToUnion(obj, errPrefix, func(out *kbapi.SLOsKqlWithFiltersTotal, one kbapi.SLOsKqlWithFilters1) error {
+		return out.FromSLOsKqlWithFiltersTotal1(kbapi.SLOsKqlWithFiltersTotal1(one))
+	})
 }
 
 // kqlTFFormToAPI1 maps Terraform object-form KQL to the kbapi object union arm (KqlQuery + Filters).
