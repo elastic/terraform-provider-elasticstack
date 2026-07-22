@@ -18,11 +18,12 @@
 package lenscommon
 
 import (
-	"encoding/json"
-	"reflect"
+	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual preserves normalized JSON from plan when state only adds structurally
@@ -31,19 +32,9 @@ func PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsont
 	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
 		return
 	}
-
-	var planObj T
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
-		return
-	}
-	var stateObj T
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
-		return
-	}
-
-	planNormalized := NormalizeXYPlanComparisonJSON(defaults(planObj))
-	stateNormalized := NormalizeXYPlanComparisonJSON(defaults(stateObj))
-	if reflect.DeepEqual(planNormalized, stateNormalized) {
-		*state = plan
+	var diags diag.Diagnostics
+	result := panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(context.Background(), plan, *state, defaults, &diags)
+	if !diags.HasError() {
+		*state = result
 	}
 }
