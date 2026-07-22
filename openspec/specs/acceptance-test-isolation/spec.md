@@ -41,7 +41,7 @@ All store, entity, entity-link, and data-source resource blocks in the fixture S
 
 ### Requirement: Elastic Stack 9.4.2 included in acceptance-test CI matrix (REQ-ACC-002)
 
-The `version` list in `.github/workflows/provider.yml` SHALL include `"9.4.2"` inserted between `"9.4.0"` and `"9.5.0-SNAPSHOT"`.
+The `version` list in `.github/workflows/provider.yml` SHALL include `"9.4.2"` immediately before `"9.5.0-SNAPSHOT"` and SHALL NOT include `"9.4.0"`, so the matrix tests only one 9.4.x release.
 
 #### Scenario: Entity-store tests pass in CI against 9.4.2
 
@@ -50,9 +50,11 @@ The `version` list in `.github/workflows/provider.yml` SHALL include `"9.4.2"` i
 - THEN all entity-store family tests pass
 - AND the issue #3952 closure gate ("tests run successfully against that version") is satisfied
 
-#### Scenario: Existing matrix entries are unaffected
+#### Scenario: 9.4.2 replaces 9.4.0
 
-- GIVEN the insertion of `"9.4.2"` between `"9.4.0"` and `"9.5.0-SNAPSHOT"`
-- WHEN CI runs the full matrix
-- THEN all other version entries continue to behave as before
+- GIVEN the matrix includes `"9.4.0"` followed by `"9.4.2"` and `"9.5.0-SNAPSHOT"`
+- WHEN the redundant 9.4.x matrix entry is removed and CI runs the full matrix
+- THEN `"9.4.2"` remains immediately before `"9.5.0-SNAPSHOT"`
+- AND `"9.4.0"` is no longer included
+- AND all other version entries continue to behave as before
 
