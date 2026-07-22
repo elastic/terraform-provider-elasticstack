@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	cspmMappedInputKey          = "cspm-cloudbeat/cis_aws"
-	cspmFindingsStreamKey       = "cloud_security_posture.findings"
+	cspmMappedInputKey             = "cspm-cloudbeat/cis_aws"
+	cspmFindingsStreamKey          = "cloud_security_posture.findings"
 	managedIntegrationDefaultSpace = "default"
 )
 
@@ -172,19 +172,9 @@ func testCheckManagedIntegrationStreamVarString(resourceName, varKey, want strin
 		if !ok {
 			return fmt.Errorf("managed integration %s: var %q missing from API response", policyID, varKey)
 		}
-		raw, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		var parsed struct {
-			Value json.RawMessage `json:"value"`
-		}
-		if err := json.Unmarshal(raw, &parsed); err != nil {
-			return fmt.Errorf("managed integration %s: decode var %q: %w", policyID, varKey, err)
-		}
-		var got string
-		if err := json.Unmarshal(parsed.Value, &got); err != nil {
-			return fmt.Errorf("managed integration %s: var %q value is not a string: %s", policyID, varKey, string(parsed.Value))
+		got, ok := managedIntegrationStreamVarString(v)
+		if !ok {
+			return fmt.Errorf("managed integration %s: var %q is not a decodable string value", policyID, varKey)
 		}
 		if got != want {
 			return fmt.Errorf("managed integration %s: var %q: got %q, want %q", policyID, varKey, got, want)

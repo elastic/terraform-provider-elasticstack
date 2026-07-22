@@ -23,6 +23,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	semver "github.com/Masterminds/semver/v3"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -31,6 +32,12 @@ import (
 )
 
 const cspmPackageName = "cloud_security_posture"
+
+const (
+	cspmFleetRegistryTimeout    = 60 * time.Second
+	cspmFleetInstallTimeout     = 120 * time.Second
+	cspmFleetPairResolveTimeout = 90 * time.Second
+)
 
 // cspmVersionPairCandidates lists preferred (from, to) semver pairs for
 // in-place package.version acceptance tests. Only adjacent, same-major bumps are
@@ -59,7 +66,8 @@ func skipUnlessCSPMPinnedPackageAvailable(t *testing.T) {
 			cspmPinnedPrecheckReason = err.Error()
 			return
 		}
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), cspmFleetRegistryTimeout)
+		defer cancel()
 		if !cspmPackageVersionKnown(ctx, fc, cspmPackageVersion) {
 			cspmPinnedPrecheckReason = fmt.Sprintf("%s/%s is not available in the Fleet registry", cspmPackageName, cspmPackageVersion)
 			return
@@ -68,7 +76,9 @@ func skipUnlessCSPMPinnedPackageAvailable(t *testing.T) {
 			cspmPinnedPrecheckOK = true
 			return
 		}
-		if err := tryInstallCSPMPackage(ctx, fc, cspmPackageVersion); err != nil {
+		installCtx, installCancel := context.WithTimeout(context.Background(), cspmFleetInstallTimeout)
+		defer installCancel()
+		if err := tryInstallCSPMPackage(installCtx, fc, cspmPackageVersion); err != nil {
 			cspmPinnedPrecheckReason = err.Error()
 			return
 		}
@@ -118,7 +128,8 @@ func resolveCSPMInPlaceVersionUpgradePair(t *testing.T) (fromVersion, toVersion 
 	if err != nil {
 		t.Skip("skipping: " + err.Error())
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), cspmFleetPairResolveTimeout)
+	defer cancel()
 
 	for _, pair := range cspmVersionPairCandidates {
 		from, to := pair[0], pair[1]

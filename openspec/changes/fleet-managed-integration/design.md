@@ -70,7 +70,7 @@ Remove the echo-current/overlay machinery. `buildUpdateBody` takes only the plan
 
 Move the `EnforceMinVersion` floor from 9.3.0 to **9.5.0** (verified against a 9.5.0-SNAPSHOT Kibana build; the same version already used as `policyshape.MinVersionCondition`). This is now a resource-level `MinVersion` constant in `models.go`/`capabilities.go`, mirroring the pattern in `internal/fleet/agentlesspolicy/models.go`.
 
-Shared client version checks (`internal/clients/version_utils.go`) treat a same-core **`-SNAPSHOT`** server build as satisfying a **release** minimum (e.g. Kibana `9.5.0-SNAPSHOT` meets floor `9.5.0`), matching CI matrix stacks and acceptance tests that probe Kibana via `EnforceMinVersion` rather than Elasticsearch alone.
+**Kibana-only SNAPSHOT convention:** `KibanaScopedClient.EnforceMinVersion` (`kibanaVersionAtLeastRelease` in `internal/clients/version_utils.go`) treats a same-core **`-SNAPSHOT`** Kibana build as satisfying a **release** minimum (e.g. `9.5.0-SNAPSHOT` meets floor `9.5.0`), matching CI matrix stacks and acceptance tests that probe Kibana `/api/status`. `ElasticsearchScopedClient.EnforceMinVersion` uses strict semver only (same-core `-SNAPSHOT` does **not** uplift a release floor).
 
 Because the new floor is identical to `MinVersionCondition`, the separate per-request `condition`-support capability check (`agentlessPolicyFeatures.SupportsCondition`, `resolveAgentlessPolicyFeatures`, and `validateInputConditionSupport` in `models_convert.go`) is now redundant: a stack that can run this resource at all is guaranteed to support `condition`. That capability check, and its dedicated gating, is removed; `condition` is treated as unconditionally supported once the resource-level floor is satisfied.
 

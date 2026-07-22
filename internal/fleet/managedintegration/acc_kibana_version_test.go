@@ -32,8 +32,8 @@ import (
 
 // kibanaBelowMinSkipReason formats the skip message when Kibana does not satisfy
 // managedintegration.MinVersion via clients.KibanaScopedClient.EnforceMinVersion.
-func kibanaBelowMinSkipReason(min *version.Version) string {
-	return fmt.Sprintf("skipping: Kibana version is below the managed integration minimum %s", min.String())
+func kibanaBelowMinSkipReason(minimum *version.Version) string {
+	return fmt.Sprintf("skipping: Kibana version is below the managed integration minimum %s", minimum.String())
 }
 
 // kibanaMeetsManagedIntegrationMinVersion evaluates the same Kibana /api/status

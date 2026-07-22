@@ -29,14 +29,24 @@ import (
 func TestExternalIDSecretRefFromManagedIntegration(t *testing.T) {
 	t.Parallel()
 
-	t.Run("extracts secret ref from stream var", func(t *testing.T) {
+	t.Run("extracts bare secret ref union arm", func(t *testing.T) {
 		t.Parallel()
 		item := mustManagedIntegrationProbeResponse(t, `{
-			"aws.credentials.external_id": {"value": {"id": "secret-abc", "isSecretRef": true}}
+			"aws.credentials.external_id": {"id": "secret-bare", "isSecretRef": true}
 		}`)
 		id, ok := externalIDSecretRefFromManagedIntegration(item)
 		assert.True(t, ok)
-		assert.Equal(t, "secret-abc", id)
+		assert.Equal(t, "secret-bare", id)
+	})
+
+	t.Run("extracts wrapped secret ref fallback", func(t *testing.T) {
+		t.Parallel()
+		item := mustManagedIntegrationProbeResponse(t, `{
+			"aws.credentials.external_id": {"value": {"id": "secret-wrapped", "isSecretRef": true}}
+		}`)
+		id, ok := externalIDSecretRefFromManagedIntegration(item)
+		assert.True(t, ok)
+		assert.Equal(t, "secret-wrapped", id)
 	})
 
 	t.Run("rejects plain string value", func(t *testing.T) {

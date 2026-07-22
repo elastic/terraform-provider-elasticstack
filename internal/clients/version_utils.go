@@ -32,10 +32,21 @@ import (
 // version-constraint logic.
 type versionFetcher func(ctx context.Context) (rawVersion, flavor string, diags fwdiag.Diagnostics)
 
-// serverVersionMeetsMinimum reports whether server satisfies minimum, including
-// the Elastic build convention that a same-core -SNAPSHOT server satisfies a
-// release (non-prerelease) minimum (e.g. Kibana 9.5.0-SNAPSHOT meets floor 9.5.0).
-func serverVersionMeetsMinimum(server, minimum *version.Version) bool {
+// minVersionCheck compares a parsed server version against a release minimum.
+type minVersionCheck func(server, minimum *version.Version) bool
+
+// versionAtLeastRelease reports whether server satisfies minimum using strict
+// semver GreaterThanOrEqual (used for Elasticsearch EnforceMinVersion).
+func versionAtLeastRelease(server, minimum *version.Version) bool {
+	return server.GreaterThanOrEqual(minimum)
+}
+
+// kibanaVersionAtLeastRelease reports whether a Kibana server version satisfies
+// a release minimum. It uses strict semver first, then applies the Elastic
+// Kibana/CI convention that a same-core -SNAPSHOT build satisfies a release
+// floor (e.g. 9.5.0-SNAPSHOT meets minimum 9.5.0). Elasticsearch
+// EnforceMinVersion does not apply this uplift.
+func kibanaVersionAtLeastRelease(server, minimum *version.Version) bool {
 	if server.GreaterThanOrEqual(minimum) {
 		return true
 	}
@@ -75,8 +86,8 @@ func applyVersionConstraint(
 // enforceMinVersion implements the shared body of EnforceMinVersion for both
 // scoped client types. It short-circuits to true when minVersion is nil, then
 // delegates to the provided fetch function to obtain the server version, and
-// finally applies the GreaterThanOrEqual constraint via applyVersionConstraint.
-func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch versionFetcher) (bool, fwdiag.Diagnostics) {
+// finally applies meets via applyVersionConstraint.
+func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch versionFetcher, meets minVersionCheck) (bool, fwdiag.Diagnostics) {
 	if minVersion == nil {
 		return true, nil
 	}
@@ -85,7 +96,7 @@ func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch v
 		return false, diags
 	}
 	return applyVersionConstraint(flavor, rawVersion, func(sv *version.Version) bool {
-		return serverVersionMeetsMinimum(sv, minVersion)
+		return meets(sv, minVersion)
 	})
 }
 

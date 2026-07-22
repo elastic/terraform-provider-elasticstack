@@ -140,6 +140,11 @@ The resource SHALL declare a `GetVersionRequirements` entry that enforces a mini
 - **WHEN** the resource is planned against a Kibana version exactly equal to 9.5.0
 - **THEN** the version check SHALL pass and API calls SHALL proceed
 
+#### Scenario: Same-core Kibana SNAPSHOT build at release floor succeeds
+- **WHEN** the resource is planned against a Kibana version of `9.5.0-SNAPSHOT` (same core as the 9.5.0 release floor)
+- **THEN** the Kibana `EnforceMinVersion` check SHALL pass via the provider's Kibana SNAPSHOT convention
+- **AND** API calls to `/api/fleet/managed_integrations` SHALL proceed when other preconditions are met
+
 ### Requirement: Topology and topology skip-check carried over
 
 The resource SHALL carry over the `topology.go` preflight that rejects self-managed stacks (not ECH or Serverless), with the `skip_topology_check` escape hatch attribute. This logic is endpoint-agnostic and carries over unchanged from the agentless policy resource.

@@ -18,8 +18,6 @@
 package managedintegration_test
 
 import (
-	"encoding/json"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 )
 
@@ -43,25 +41,5 @@ func externalIDSecretRefFromManagedIntegration(item *kbapi.KibanaHTTPAPIsManaged
 	if !ok || v == nil {
 		return "", false
 	}
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return "", false
-	}
-	var wrapper struct {
-		Value json.RawMessage `json:"value"`
-	}
-	if err := json.Unmarshal(raw, &wrapper); err != nil {
-		return "", false
-	}
-	var secretRef struct {
-		ID          string `json:"id"`
-		IsSecretRef bool   `json:"isSecretRef"`
-	}
-	if err := json.Unmarshal(wrapper.Value, &secretRef); err != nil {
-		return "", false
-	}
-	if !secretRef.IsSecretRef || secretRef.ID == "" {
-		return "", false
-	}
-	return secretRef.ID, true
+	return managedIntegrationStreamVarSecretRefID(v)
 }

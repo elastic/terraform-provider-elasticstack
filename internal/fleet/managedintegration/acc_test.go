@@ -25,7 +25,7 @@
 // own topology preflight (topology.go) additionally refuses self-managed stacks
 // it can positively identify. Positive acceptance tests gate on Kibana
 // managedintegration.MinVersion via clients.KibanaScopedClient.EnforceMinVersion
-// (acc_kibana_version.go), not the Elasticsearch cluster version. Topology
+// (acc_kibana_version_test.go), not the Elasticsearch cluster version. Topology
 // (Cloud Hosted/Serverless) gating is separate: skipUnlessConfirmedCloud(t).
 // Live-stack preconditions also call skipUnlessManagedIntegrationLiveStack for
 // the pinned CSPM package version (acc_package_helpers_test.go).

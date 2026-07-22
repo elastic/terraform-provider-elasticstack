@@ -17,11 +17,21 @@ Tasks 4–6 completed version gate, schema, and `models_convert.go` simplificati
 
 **Task 8 (complete)** rewired Create/Read/Delete to `CreateManagedIntegration` / `ReadManagedIntegration` / `DeleteManagedIntegration`; removed `agentless_policy_compat.go` and `package_policy_read_bridge.go`. Create returns plan with server-assigned id only; final state comes from envelope read-after-write (same as Update).
 
-Acceptance fixtures use `elasticstack_fleet_managed_integration`; test renames remain tasks 10–11. Live in-place **name**, **package.version**, and **cloud_connector** persistence are tracked in tasks **11.3–11.4** and **11.7** (not yet implemented).
+Acceptance fixtures use `elasticstack_fleet_managed_integration`; tasks **10–11** renamed tests/fixtures and added live-stack coverage (see **Task 11** below).
 
 ## ~~Temporary schema vs update-body mismatch~~ (closed in task 7)
 
-Task 5.1/5.2 made `name` and `package.version` updatable in Terraform; task 7.3 includes both in every full-replace PUT body from plan. Acceptance merge sign-off for live rename/version bump still requires tasks **11.3–11.4**.
+Task 5.1/5.2 made `name` and `package.version` updatable in Terraform; task 7.3 includes both in every full-replace PUT body from plan. Live rename/version bump sign-off is covered by task **11.3–11.4** acceptance tests when Kibana ≥ 9.5.0 and cloud preconditions pass.
+
+## Task 11 — acceptance suite (complete)
+
+Tasks **11.1–11.8** are implemented under `internal/fleet/managedintegration/acc_test.go` with helpers in `acc_kibana_version_test.go`, `acc_package_helpers_test.go`, `acc_api_assertions_test.go`, and related `*_test.go` files.
+
+**Live matrix notes:**
+
+- Positive `TestAccResourceManagedIntegration*` cases **skip** when Kibana is below `managedintegration.MinVersion` (`9.5.0`), using the same `KibanaScopedClient.EnforceMinVersion` path as production (including same-core `-SNAPSHOT` uplift on Kibana only).
+- **`TestAccResourceManagedIntegration_VersionSkipGating`** (negative version acceptance) requires a stack **older than 9.5.0**; it passes on such stacks and is **skipped** when Kibana already meets the floor. Outcome is therefore **old-Kibana / manual matrix / CI stack-version dependent**, not a universal green on every acceptance environment.
+- Cloud-hosted topology scenarios still require `skipUnlessConfirmedCloud` and Kibana ≥ 9.5.0 plus a pinned `cloud_security_posture` package (`skipUnlessManagedIntegrationLiveStack`).
 
 ## 1.1 MinVersion floor — **9.5.0**
 
