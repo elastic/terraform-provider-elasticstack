@@ -183,7 +183,7 @@ resource "elasticstack_fleet_managed_integration" "cspm_aws" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `namespace` (String) The namespace of the managed integration; forces replacement on change. An explicit empty string is rejected for the same reason as `description`: it is indistinguishable from "unset" once round-tripped through the API.
 - `policy_id` (String) The managed integration ID. Server-assigned if omitted; forces replacement on change.
-- `policy_template` (String) The policy template within the package to use; forces replacement on change.
+- `policy_template` (String) Policy template within the package, configured at create time. Not returned by GET; preserved from prior config on refresh. Null after import when unavailable. Changing it forces replacement.
 - `skip_topology_check` (Boolean) Skips the deployment-topology preflight check. Use only if you are certain this is running against a supported Elastic Cloud Hosted or Serverless deployment and the automatic detection is producing a false positive (e.g. due to non-standard network routing such as PrivateLink). Does not weaken version gating (Kibana 9.5.0+ is still enforced) -- it only bypasses the topology heuristic. Defaults to `false`. Create-only: consulted only during Create and not read back from the API.
 - `space_ids` (Set of String) The list of spaces the managed integration belongs to; defaults to `["default"]`; forces replacement on change.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))

@@ -1,6 +1,28 @@
 # Implementation notes — fleet-managed-integration
 
-OpenSpec change `fleet-managed-integration`: **all tasks (1–12) complete.** Change is not archived.
+OpenSpec change `fleet-managed-integration`: **all tasks (1–12) complete**, plus **aggregated review fixes** (2026-07-22). Change is not archived.
+
+## Review fixes (2026-07-22)
+
+| Area | Change |
+|------|--------|
+| `cloud_connector` read | `applyCloudConnectorFromAPI` merges GET `enabled` / `cloud_connector_id`; preserves write-only `name` / `target_csp` from prior; builds block from API on import |
+| Secret refs | `secrets_reconcile.go` preserves prior/plan plaintext for top-level, input, and stream vars when GET returns `{id,isSecretRef}` (bare or wrapped) |
+| `policy_template` | Schema/spec: create-only, preserved on refresh, null on import; import scenario no longer claims “all attributes” from GET |
+| Plan modifiers | `schema_test.go` asserts `RequiresReplace` on `package.name` and `space_ids`; live PlanOnly acc + `ConfigPlanChecks.PreApply` is incompatible with terraform-plugin-testing |
+| Create envelope | `create_test.go` asserts Create does not set `SkipReadAfterWrite` (read-after-write path) |
+| SNAPSHOT floor | Documented in `design.md`, `CHANGELOG.md` (#4034 entry), and existing spec scenario — Kibana-only `EnforceMinVersion` uplift |
+| Update coverage | `update_vars` acc step + `testCheckManagedIntegrationUpdateExtrasPersisted` API assertions for vars / var_group_selections / permissions |
+
+### Review-fix validation
+
+| Command | Result |
+|---------|--------|
+| `make lint` / `make check-lint` / `make build` | exit 0 |
+| `go test ./internal/fleet/managedintegration/... ./internal/clients/fleet/... -count=1` (no `TF_ACC`) | pass |
+| `go test ./internal/entitycore/... -run 'KibanaResource\|SkipReadAfterWrite' -count=1` | 103 pass |
+| `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fleet-managed-integration --type change` | valid |
+| `source .env && TF_ACC=1 go test ./internal/fleet/managedintegration/... -count=1 -timeout 30m` | **158 pass, 11 skip**, 0 fail |
 
 ## Task 12 — CHANGELOG and validation (complete)
 
