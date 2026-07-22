@@ -147,6 +147,8 @@ For `mixedPaginationError` and `entityIdFilterConflict`: these tests error at pl
 
 ## Task 6 — Package `security_entity_store/entity`: update TF fixtures
 
+**Status:** complete
+
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store and entity resource blocks.
 
 **Directories** (11 files):
