@@ -235,14 +235,14 @@ func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, re
 		return
 	}
 	if ids, ok := mval["ids"]; ok {
-		idSlice, err := secretRefIDsSlice(ids)
-		if err != nil {
-			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference", err.Error())
+		idSlice, ok := coerceAnySlice(ids)
+		if !ok {
+			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference", fmt.Sprintf("unexpected secret reference ids type %T", ids))
 			return
 		}
-		originals, err := priorPlaintextList(priorVal)
-		if err != nil {
-			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference", err.Error())
+		originals, ok := coerceAnySlice(priorVal)
+		if !ok {
+			diags.AddAttributeError(attrPath, "Failed to reconcile Fleet secret reference", fmt.Sprintf("prior value is not a list (got %T)", priorVal))
 			return
 		}
 		if len(originals) != len(idSlice) {
@@ -262,39 +262,24 @@ func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, re
 	resp[key] = priorVal
 }
 
-func secretRefIDsSlice(ids any) ([]any, error) {
-	switch v := ids.(type) {
-	case []any:
-		return v, nil
-	case []string:
-		out := make([]any, len(v))
-		for i, s := range v {
-			out[i] = s
-		}
-		return out, nil
-	default:
-		return nil, fmt.Errorf("unexpected secret reference ids type %T", ids)
-	}
-}
-
-func priorPlaintextList(v any) ([]any, error) {
+// coerceAnySlice normalizes a decoded-JSON list value into []any, accepting
+// either the []any that json.Unmarshal produces or a []string a caller may
+// have supplied directly. The bool reports whether v was a list at all.
+func coerceAnySlice(v any) ([]any, bool) {
 	switch x := v.(type) {
 	case []any:
-		return x, nil
+		return x, true
 	case []string:
 		out := make([]any, len(x))
 		for i, s := range x {
 			out[i] = s
 		}
-		return out, nil
+		return out, true
 	default:
-		return nil, fmt.Errorf("prior value is not a list")
+		return nil, false
 	}
 }
 
 func isSecretRefMap(m map[string]any) bool {
-	if v, ok := m["isSecretRef"]; ok && v == true {
-		return true
-	}
-	return false
+	return m["isSecretRef"] == true
 }

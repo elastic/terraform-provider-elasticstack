@@ -41,7 +41,7 @@ type InputValue struct {
 // InputType configurations that don't declare a `defaults` attribute at all
 // (e.g. the elasticstack_fleet_managed_integration resource's InputType --
 // see internal/fleet/managedintegration/schema.go's
-// agentlessInputAttributeTypes, which deliberately excludes `defaults`
+// managedIntegrationInputAttributeTypes, which deliberately excludes `defaults`
 // because managed integrations don't surface package-defaults introspection).
 //
 // terraform-plugin-framework's ObjectValue.As() requires an exact

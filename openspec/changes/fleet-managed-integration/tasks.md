@@ -44,7 +44,7 @@
 - [x] 6.3 Delete the `PackagePolicy`-leakage normalizers: `decodeMappedInputs`, `mappedInputWire`/`mappedStreamWire`, `globalDataTagValueToString`, and the dual-shape decode branches
 - [x] 6.4 Rewrite `globalDataTagsToModel` / `globalDataTagsRawFromModel` for the new `MapNestedAttribute{name → {string_value|number_value}}` shape, using `internal/fleet/agentpolicy` conversion as reference
 - [x] 6.5 Verify task 4.2 removed `validateInputConditionSupport` and `SupportsCondition`-based gating (no separate runtime check remains in `models_convert.go` once verified) — `condition` is unconditionally supported once the resource-level 9.5.0 floor is met
-- [x] 6.6 Keep the `mappedInputKey("<policy_template>-<input_type>")` keying logic (request/response inputs map is keyed the same way)
+- [x] 6.6 Pass `inputs` map keys through opaquely (request and response inputs are keyed the same way — Fleet's `"<policy_template>-<input_type>"` convention — so the provider never constructs or parses the composite key)
 - [x] 6.7 Update `models_convert_test.go` for the clean `KibanaHTTPAPIsManagedIntegration` response type and the new `global_data_tags` shape; add a number-value round-trip test case
 
 ## 7. `update.go` — full-replace simplification

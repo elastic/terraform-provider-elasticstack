@@ -962,17 +962,6 @@ func TestGlobalDataTagsToModel_duplicateNames(t *testing.T) {
 	requireDiagnosticAtPath(t, diags, path.Root("global_data_tags").AtMapKey("env"), "Duplicate global_data_tags name")
 }
 
-func TestMappedInputKey(t *testing.T) {
-	t.Parallel()
-
-	cspm := "cspm"
-	assert.Equal(t, "cspm-cloudbeat/cis_aws", mappedInputKey(&cspm, "cloudbeat/cis_aws"))
-
-	empty := ""
-	assert.Equal(t, "cloudbeat/cis_aws", mappedInputKey(&empty, "cloudbeat/cis_aws"))
-	assert.Equal(t, "cloudbeat/cis_aws", mappedInputKey(nil, "cloudbeat/cis_aws"))
-}
-
 func TestBuildUpdateBody(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

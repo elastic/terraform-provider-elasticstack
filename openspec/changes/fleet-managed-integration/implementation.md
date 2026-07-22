@@ -126,7 +126,7 @@ Reviewed `generated/kbapi/kibana.gen.go` (`KibanaHTTPAPIsManagedIntegration`, li
 | `package.title` | `package.title` | Computed from registry when omitted |
 | `vars_json` | `vars` | Typed union vars map |
 | `var_group_selections` | `var_group_selections` | Top-level map only |
-| `inputs` | `inputs` | Map keyed by `"<policy_template>-<input_type>"` (see `mappedInputKey`; bare `input_type` when policy template is empty) |
+| `inputs` | `inputs` | Map with caller/API-provided keys (Fleet's `"<policy_template>-<input_type>"` convention, or bare `input_type` when the policy template is empty); keys are passed through opaquely |
 | `cloud_connector.enabled` | `cloud_connector.enabled` | |
 | `cloud_connector.cloud_connector_id` | `cloud_connector.cloud_connector_id` | |
 | `additional_datastreams_permissions` | `additional_datastreams_permissions` | List in schema, `*[]string` in API |
