@@ -53,6 +53,7 @@ type advancedSettingsAPIValues = struct {
 	AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
 	AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
 	AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+	AgentFeaturesIncludeTagsInEventsEnabled     any `json:"agent_features_include_tags_in_events_enabled,omitempty"`
 	AgentInternal                               any `json:"agent_internal,omitempty"`
 	AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
 	AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
