@@ -145,7 +145,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 **Go test** (`acc_test.go`): 1 test function (`TestAccDataSourceSecurityEntityStoreResolutionGroup`).
 
 **TF fixtures** (1 directory):
-- `TestAccDataSourceSecurityEntityStoreResolutionGroup/read/`
+- `internal/kibana/security_entity_store_resolution_group/testdata/TestAccDataSourceSecurityEntityStoreResolutionGroup/read/main.tf`
 
 ### CI
 
