@@ -1,4 +1,36 @@
-# Implementation notes — task 1 (pre-implementation)
+# Implementation notes — fleet-managed-integration
+
+OpenSpec change `fleet-managed-integration`: **all tasks (1–12) complete.** Change is not archived.
+
+## Task 12 — CHANGELOG and validation (complete)
+
+### 12.1 CHANGELOG
+
+Edited the existing `## [Unreleased]` entry introduced by [#4034](https://github.com/elastic/terraform-provider-elasticstack/pull/4034) in place (no second entry): `elasticstack_fleet_agentless_policy` → `elasticstack_fleet_managed_integration`, Kibana floor **9.5.0+**, wording “managed integrations”. Released sections untouched.
+
+Recommended PR `## Changelog` block (see `.github/pull_request_template.md`):
+
+```md
+Customer impact: none
+Summary: Rename unreleased Fleet agentless policy resource to elasticstack_fleet_managed_integration backed by managed_integrations APIs (Kibana 9.5.0+).
+```
+
+### 12.2–12.5 Validation (2026-07-22)
+
+| Step | Command | Result |
+|------|---------|--------|
+| Lint | `make lint` | exit 0 |
+| Build | `make build` | exit 0 |
+| Full lint | `make check-lint` | exit 0 (after CHANGELOG commit; `check-fmt` requires clean tree after `fmt`) |
+| OpenSpec | `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fleet-managed-integration --type change` | `Change 'fleet-managed-integration' is valid` |
+| Unit | `go test ./internal/fleet/managedintegration/... ./internal/clients/fleet/... -count=1` | pass (2 packages) |
+| Acceptance | `source .env && TF_ACC=1 go test ./internal/fleet/managedintegration/... -count=1 -timeout 30m` | **152 pass, 11 skip**, 0 fail |
+
+Acceptance skips (live-stack / cloud preconditions, Kibana ≥ 9.5.0 matrix): `TestAccResourceManagedIntegration`, `TestAccResourceManagedIntegration_CloudConnector*`, `TestAccResourceManagedIntegration_ConditionRoundTrip`, `TestAccResourceManagedIntegration_ForceDelete`, `TestAccResourceManagedIntegration_GlobalDataTagsNumber`, `TestAccResourceManagedIntegration_InputsUpdateInPlace`, `TestAccResourceManagedIntegration_NameUpdateInPlace`, `TestAccResourceManagedIntegration_NonDefaultSpace`, `TestAccResourceManagedIntegration_PackageVersionUpdate`. Unit and plan-only acceptance paths ran green on the current `.env` stack.
+
+---
+
+## Task 1 (pre-implementation)
 
 Artifacts for OpenSpec change `fleet-managed-integration`, section **1. Pre-implementation**.
 

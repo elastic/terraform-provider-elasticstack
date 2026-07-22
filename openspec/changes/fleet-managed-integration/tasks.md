@@ -92,8 +92,8 @@
 
 ## 12. CHANGELOG and validation
 
-- [ ] 12.1 `CHANGELOG.md` is auto-generated from merged PR bodies (see `scripts/changelog`); it is not hand-edited per PR. Since `elasticstack_fleet_agentless_policy` (added by #4034) is still under `## [Unreleased]` and has never shipped in a release, directly edit that existing `CHANGELOG.md` entry to describe `elasticstack_fleet_managed_integration` instead of adding a second entry for the same unreleased feature. In the PR body's `## Changelog` section (per `.github/pull_request_template.md`), use `Customer impact: none` (no released users are affected) with a one-line `Summary`; no `### Breaking changes` block is needed
-- [ ] 12.2 Run `make build` and fix any compilation errors
-- [ ] 12.3 Run `make check-lint` and fix any lint issues
-- [ ] 12.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fleet-managed-integration --type change` and resolve any reported problems
-- [ ] 12.5 Run targeted unit tests for `internal/fleet/managedintegration` and `internal/clients/fleet`
+- [x] 12.1 `CHANGELOG.md` is auto-generated from merged PR bodies (see `scripts/changelog`); it is not hand-edited per PR. Since `elasticstack_fleet_agentless_policy` (added by #4034) is still under `## [Unreleased]` and has never shipped in a release, directly edit that existing `CHANGELOG.md` entry to describe `elasticstack_fleet_managed_integration` instead of adding a second entry for the same unreleased feature. In the PR body's `## Changelog` section (per `.github/pull_request_template.md`), use `Customer impact: none` (no released users are affected) with a one-line `Summary`; no `### Breaking changes` block is needed
+- [x] 12.2 Run `make build` and fix any compilation errors
+- [x] 12.3 Run `make check-lint` and fix any lint issues
+- [x] 12.4 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fleet-managed-integration --type change` and resolve any reported problems
+- [x] 12.5 Run targeted unit tests for `internal/fleet/managedintegration` and `internal/clients/fleet`
