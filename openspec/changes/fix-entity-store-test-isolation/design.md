@@ -104,7 +104,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 **Go test** (`acc_test.go`): all 8 test functions. The `entities` data source does not install the store itself but reads from one — tests that need a live store create one in the fixture; those that only test validation/pagination errors do not.
 
-**TF fixtures** (7 directories):
+**TF fixtures** (8 listed fixtures):
 - `TestAccDataSourceKibanaSecurityEntityStoreEntities_basic/list/`
 - `TestAccDataSourceKibanaSecurityEntityStoreEntities_filter/filter/`
 - `TestAccDataSourceKibanaSecurityEntityStoreEntities_pageMode/page_mode/`

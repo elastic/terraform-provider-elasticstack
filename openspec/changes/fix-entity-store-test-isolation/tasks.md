@@ -100,7 +100,7 @@ For the `TestAccDataSourceKibanaSecurityEntityStoreStatus_basic` fixtures, the d
 
 **Status:** complete
 
-Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store and data-source blocks.
+Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store, entity resource (where present), and data-source blocks.
 
 **Directories** (8 files):
 - `testdata/TestAccDataSourceKibanaSecurityEntityStoreEntities_basic/list/main.tf`
