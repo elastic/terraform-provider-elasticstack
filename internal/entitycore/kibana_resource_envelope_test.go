@@ -2058,6 +2058,35 @@ func TestNewKibanaResource_Update_readFuncErrorAfterWrite(t *testing.T) {
 	require.Equal(t, "default/my-resource", after.ID.ValueString())
 }
 
+func TestNewKibanaResource_Create_readAfterWriteByDefault(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	factory := newTestConfiguredFactory(ctx, t)
+	readCalled := false
+	opts := defaultTestKibanaResourceOptions()
+	opts.Read = func(c context.Context, client *clients.KibanaScopedClient, id, space string, model testKibanaResourceModel) (testKibanaResourceModel, bool, diag.Diagnostics) {
+		readCalled = true
+		return testKibanaReadFuncDistinguishing(c, client, id, space, model)
+	}
+	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+	r.client = factory
+
+	plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, tftypes.UnknownValue), tftypes.NewValue(tftypes.String, "default"))
+	objType := testKibanaResourceObjectType()
+	respState := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
+	}
+	resp := resource.CreateResponse{State: respState}
+	r.Create(ctx, resource.CreateRequest{Plan: plan, Config: kibanaTestConfig(plan)}, &resp)
+
+	require.False(t, resp.Diagnostics.HasError())
+	require.True(t, readCalled, "read callback must run when Create write result does not set SkipReadAfterWrite")
+	var after testKibanaResourceModel
+	require.False(t, resp.State.Get(ctx, &after).HasError())
+	require.Equal(t, "my-resource-read", after.Name.ValueString())
+}
+
 func TestNewKibanaResource_Update_skipReadAfterWriteFromWriteResult(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

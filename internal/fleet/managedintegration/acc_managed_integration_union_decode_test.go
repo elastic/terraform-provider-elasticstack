@@ -26,6 +26,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const externalIDStreamVarKey = "aws.credentials.external_id"
+
+func mustManagedIntegrationProbeResponse(t *testing.T, streamVarsJSON string) *kbapi.KibanaHTTPAPIsManagedIntegration {
+	t.Helper()
+	payload := `{
+		"id": "probe-1",
+		"name": "probe",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-02T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"inputs": {
+			"cspm-cloudbeat/cis_aws": {
+				"enabled": true,
+				"streams": {
+					"cloud_security_posture.findings": {
+						"enabled": true,
+						"vars": ` + streamVarsJSON + `
+					}
+				}
+			}
+		}
+	}`
+	var item kbapi.KibanaHTTPAPIsManagedIntegration
+	require.NoError(t, json.Unmarshal([]byte(payload), &item))
+	return &item
+}
+
 func managedIntegrationStreamVarString(prop *kbapi.KibanaHTTPAPIsManagedIntegration_Inputs_Streams_Vars_AdditionalProperties) (string, bool) {
 	if prop == nil {
 		return "", false

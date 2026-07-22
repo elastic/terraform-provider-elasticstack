@@ -10,7 +10,7 @@ variable "cloud_connector_id" {
   type = string
 }
 
-variable "external_id_secret_id" {
+variable "external_id_plaintext" {
   type = string
 }
 
@@ -52,13 +52,10 @@ resource "elasticstack_fleet_managed_integration" "test" {
         "cloud_security_posture.findings" = {
           enabled = true
           vars = jsonencode({
-            role_arn               = "arn:aws:iam::123456789012:role/tf-acc-test-role"
-            "aws.credentials.type" = "cloud_connectors"
-            "aws.account_type"     = "single-account"
-            "aws.credentials.external_id" = {
-              isSecretRef = true
-              id          = var.external_id_secret_id
-            }
+            role_arn                      = "arn:aws:iam::123456789012:role/tf-acc-test-role"
+            "aws.credentials.type"        = "cloud_connectors"
+            "aws.account_type"            = "single-account"
+            "aws.credentials.external_id" = var.external_id_plaintext
           })
         }
       }

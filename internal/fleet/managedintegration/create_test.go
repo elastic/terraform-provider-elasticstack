@@ -173,6 +173,8 @@ func createCallbackPlan(t *testing.T) agentlessPolicyModel {
 // TestCreateAgentlessPolicy_callback covers createAgentlessPolicy POST handling
 // against /api/fleet/managed_integrations (CreateManagedIntegration) after
 // topology is skipped (SkipReadAfterWrite is always false; identity only).
+// The Kibana envelope read-after-write on Create is also asserted in
+// entitycore.TestNewKibanaResource_Create_readAfterWriteByDefault.
 func TestCreateAgentlessPolicy_callback(t *testing.T) {
 	t.Run("success sets policy_id and composite id without SkipReadAfterWrite", func(t *testing.T) {
 		mux := http.NewServeMux()
