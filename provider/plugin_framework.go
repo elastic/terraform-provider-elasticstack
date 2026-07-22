@@ -134,9 +134,8 @@ const (
 	kbKeyName    = "kibana"
 	fleetKeyName = "fleet"
 
-	providerTypeName = "elasticstack"
 	// ProviderTypeName is the Terraform provider type name (provider "elasticstack" { ... }).
-	ProviderTypeName = providerTypeName
+	ProviderTypeName = "elasticstack"
 
 	IncludeExperimentalEnvVar = "TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL"
 	AccTestVersion            = "acctest"
@@ -162,7 +161,7 @@ func NewFrameworkProvider(version string) fwprovider.Provider {
 }
 
 func (p *Provider) Metadata(_ context.Context, _ fwprovider.MetadataRequest, res *fwprovider.MetadataResponse) {
-	res.TypeName = providerTypeName
+	res.TypeName = ProviderTypeName
 	res.Version = p.version
 }
 

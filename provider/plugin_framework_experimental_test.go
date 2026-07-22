@@ -35,7 +35,7 @@ func registeredResourceTypeNames(ctx context.Context, p *Provider) map[string]st
 	for _, newRes := range p.Resources(ctx) {
 		r := newRes()
 		var resp resource.MetadataResponse
-		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: ProviderTypeName}, &resp)
 		names[resp.TypeName] = struct{}{}
 	}
 	return names
@@ -46,7 +46,7 @@ func stableResourceTypeNames(ctx context.Context, p *Provider) map[string]struct
 	for _, newRes := range p.resources(ctx) {
 		r := newRes()
 		var resp resource.MetadataResponse
-		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: ProviderTypeName}, &resp)
 		names[resp.TypeName] = struct{}{}
 	}
 	return names
@@ -100,7 +100,7 @@ func TestProvider_experimentalResourcesIncludesManagedIntegration(t *testing.T) 
 	for _, newRes := range (&Provider{}).experimentalResources(ctx) {
 		r := newRes()
 		var resp resource.MetadataResponse
-		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: providerTypeName}, &resp)
+		r.Metadata(ctx, resource.MetadataRequest{ProviderTypeName: ProviderTypeName}, &resp)
 		if resp.TypeName == managedIntegrationResourceType {
 			found = true
 			break
