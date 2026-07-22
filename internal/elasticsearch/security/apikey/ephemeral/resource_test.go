@@ -253,10 +253,7 @@ func TestEphemeralSchemaAccessRequiresTypeValidation(t *testing.T) {
 }
 
 func TestCloseAPIKey(t *testing.T) {
-	t.Parallel()
-
 	t.Run("does not call delete when invalidate_on_close is false", func(t *testing.T) {
-		t.Parallel()
 
 		originalDelete := deleteAPIKeyFn
 		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
@@ -275,7 +272,6 @@ func TestCloseAPIKey(t *testing.T) {
 	})
 
 	t.Run("does not call delete when key id is empty", func(t *testing.T) {
-		t.Parallel()
 
 		originalDelete := deleteAPIKeyFn
 		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
@@ -294,7 +290,6 @@ func TestCloseAPIKey(t *testing.T) {
 	})
 
 	t.Run("calls delete when invalidate_on_close is true", func(t *testing.T) {
-		t.Parallel()
 
 		originalDelete := deleteAPIKeyFn
 		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
