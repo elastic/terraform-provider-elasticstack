@@ -54,3 +54,55 @@ func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req
 
 	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
 }
+
+func readWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior workflowModel) (workflowModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	// Restore space_id so populateFromAPI can build the composite ID correctly.
+	prior.SpaceID = types.StringValue(spaceID)
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
+	}
+
+	if workflow == nil {
+		return prior, false, diags
+	}
+
+	prior.populateFromAPI(workflow)
+	return prior, true, diags
+}
+
+func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[workflowModel]) (entitycore.KibanaWriteResult[workflowModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
+
+	body := plan.toAPIUpdateModel()
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	updated, d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[workflowModel]{}, diags
+	}
+
+	// SpaceID is set explicitly so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
+
+	if updated != nil && !updated.Valid {
+		diags.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
+	}
+
+	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
+}
+
+func deleteWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ workflowModel) diag.Diagnostics {
+	oapiClient := client.GetKibanaOapiClient()
+	return kibanaoapi.DeleteWorkflow(ctx, oapiClient, spaceID, resourceID)
+}

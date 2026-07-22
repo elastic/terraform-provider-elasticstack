@@ -58,3 +58,58 @@ func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 
 	return entitycore.KibanaWriteResult[agentModel]{Model: plan}, diags
 }
+
+func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior agentModel) (agentModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
+	}
+
+	if agent == nil {
+		return prior, false, diags
+	}
+
+	diags.Append(prior.populateFromAPI(ctx, spaceID, agent)...)
+	return prior, true, diags
+}
+
+func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
+
+	supportsSkillIDs, d := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	}
+
+	body, d := plan.toAPIUpdateModel(ctx, supportsSkillIDs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	}
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	_, d = kibanaoapi.UpdateAgent(ctx, oapiClient, req.SpaceID, req.WriteID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	}
+
+	// SpaceID is set explicitly so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
+
+	return entitycore.KibanaWriteResult[agentModel]{Model: plan}, diags
+}
+
+func deleteAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ agentModel) diag.Diagnostics {
+	oapiClient := client.GetKibanaOapiClient()
+	return kibanaoapi.DeleteAgent(ctx, oapiClient, spaceID, resourceID)
+}

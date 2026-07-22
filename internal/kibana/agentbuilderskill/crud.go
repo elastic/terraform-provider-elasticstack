@@ -51,3 +51,52 @@ func createSkill(ctx context.Context, client *clients.KibanaScopedClient, req en
 
 	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
 }
+
+func readSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior skillModel) (skillModel, bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, resourceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return prior, false, diags
+	}
+
+	if skill == nil {
+		return prior, false, diags
+	}
+
+	diags.Append(prior.populateFromAPI(ctx, spaceID, skill)...)
+	return prior, true, diags
+}
+
+func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[skillModel]) (entitycore.KibanaWriteResult[skillModel], diag.Diagnostics) {
+	plan := req.Plan
+	var diags diag.Diagnostics
+
+	body, d := plan.toAPIUpdateModel(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
+	}
+
+	oapiClient := client.GetKibanaOapiClient()
+
+	_, d = kibanaoapi.UpdateSkill(ctx, oapiClient, req.SpaceID, req.WriteID, body)
+	diags.Append(d...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[skillModel]{}, diags
+	}
+
+	// SpaceID is set explicitly so the returned model carries the resolved
+	// space for the envelope's read-after-write step.
+	plan.SpaceID = types.StringValue(req.SpaceID)
+
+	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
+}
+
+func deleteSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ skillModel) diag.Diagnostics {
+	oapiClient := client.GetKibanaOapiClient()
+	return kibanaoapi.DeleteSkill(ctx, oapiClient, spaceID, resourceID)
+}
