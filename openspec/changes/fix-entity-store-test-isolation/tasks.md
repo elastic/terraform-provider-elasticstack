@@ -233,6 +233,8 @@ Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id`
 
 ## Task 11 — CI matrix: add 9.4.2
 
+**Status:** complete
+
 **File**: `.github/workflows/provider.yml`
 
 In the `strategy.matrix.version` list (currently ending with `"9.4.0"` then `"9.5.0-SNAPSHOT"`), insert `"9.4.2"` between those two entries:
