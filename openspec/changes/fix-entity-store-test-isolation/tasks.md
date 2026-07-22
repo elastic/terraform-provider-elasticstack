@@ -141,7 +141,7 @@ For `mixedPaginationError` and `entityIdFilterConflict`: these tests error at pl
    - `TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonFallback`
    - `TestAccResourceKibanaSecurityEntityStoreEntity_hostJsonConflict`
 
-   Note: `entityJsonConflict`, `entityIdMismatch`, `entityJsonIdMismatch`, `hostJsonConflict` fail at plan time; include `space_id` variable and space resource in fixtures but no store installation occurs.
+   Note: `entityJsonConflict`, `entityIdMismatch`, `entityJsonIdMismatch`, and `hostJsonConflict` fail at plan time before apply, so the configured entity store is never installed on the stack; fixtures still declare store and entity resources with `space_id` wired for consistency.
 
 ---
 
@@ -151,7 +151,7 @@ For `mixedPaginationError` and `entityIdFilterConflict`: these tests error at pl
 
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store and entity resource blocks.
 
-**Directories** (11 files):
+**Directories** (12 listed `main.tf` files):
 - `testdata/TestAccResourceKibanaSecurityEntityStoreEntity_generic/create_host/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStoreEntity_updateHost/create_host/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStoreEntity_updateHost/update_host/main.tf`
