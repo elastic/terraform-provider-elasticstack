@@ -123,12 +123,12 @@ For `mixedPaginationError` and `entityIdFilterConflict`: these tests error at pl
 **File**: `internal/kibana/security_entity_store/entity/acc_test.go`
 
 1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
-2. [x] For each of the 10 test functions:
+2. [x] For each of the 11 test functions (7 live-store/apply-path + 4 plan-time validation):
    - Generate `spaceID` per test.
-   - Replace `"default"` in `CleanupEntityStore` calls with `spaceID`.
+   - Replace `"default"` in `CleanupEntityStore` calls with `spaceID` (apply-path tests only; omit cleanup for plan-time validation tests).
    - Add `ConfigVariables` with `space_id` to every step.
 
-   **Test functions** (10):
+   **Test functions** (11):
    - `TestAccResourceKibanaSecurityEntityStoreEntity_generic`
    - `TestAccResourceKibanaSecurityEntityStoreEntity_updateHost`
    - `TestAccResourceKibanaSecurityEntityStoreEntity_import`
