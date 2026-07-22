@@ -173,7 +173,7 @@ The entity resource block also accepts `space_id`; wire it on every entity resou
 
 **Status:** complete
 
-**File**: `internal/kibana/security_entity_store_entity_link/acc_test.go`
+**Files**: `internal/kibana/security_entity_store_entity_link/acc_test.go`, `internal/kibana/security_entity_store_entity_link/validation_test.go`
 
 1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
 2. [x] For each of the 3 test functions:

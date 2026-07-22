@@ -133,7 +133,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 ### Package: `internal/kibana/security_entity_store_entity_link`
 
-**Go test** (`acc_test.go`): 2 test functions (`TestAccResourceSecurityEntityStoreEntityLink`, `TestAccResourceSecurityEntityStoreEntityLink_SingleElement`). Note: `TestAccResourceSecurityEntityStoreEntityLink_Validation` tests are schema-validation-only and can receive the variable for consistency.
+**Go test** (`acc_test.go`, `validation_test.go`): 3 test functions — `TestAccResourceSecurityEntityStoreEntityLink` and `TestAccResourceSecurityEntityStoreEntityLink_SingleElement` in `acc_test.go`; `TestAccResourceSecurityEntityStoreEntityLink_Validation` in `validation_test.go` (schema-validation-only; include `space_id` variable for consistency).
 
 **TF fixtures** (4 directories / 5 files):
 - `TestAccResourceSecurityEntityStoreEntityLink/create/`, `update/`
