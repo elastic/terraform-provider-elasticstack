@@ -251,7 +251,7 @@ No other CI file changes are needed.
 
 ## Verification checklist (after implementation)
 
-- [ ] `go build ./...` succeeds (no compile errors in test files).
-- [ ] Each of the five packages runs successfully in isolation against a live 9.4.2 stack.
-- [ ] All five packages run concurrently (`go test ./internal/kibana/security_entity_store/... ./internal/kibana/security_entity_store_resolution_group/... ./internal/kibana/security_entity_store_entity_link/...`) against 9.4.2 without the `entity_types inconsistent result` or HTTP 500 errors.
-- [ ] `9.4.2` appears in the CI matrix in `provider.yml`.
+- [x] `go build ./...` succeeds (no compile errors in test files).
+- [x] Each of the five packages runs successfully in isolation against a live 9.4.2 stack.
+- [x] All five packages run concurrently (`go test ./internal/kibana/security_entity_store/... ./internal/kibana/security_entity_store_resolution_group/... ./internal/kibana/security_entity_store_entity_link/...`) against 9.4.2 without the `entity_types inconsistent result` or HTTP 500 errors.
+- [x] `9.4.2` appears in the CI matrix in `provider.yml`.
