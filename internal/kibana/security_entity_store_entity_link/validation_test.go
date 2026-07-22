@@ -31,6 +31,7 @@ import (
 func TestAccResourceSecurityEntityStoreEntityLink_Validation(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -38,13 +39,13 @@ func TestAccResourceSecurityEntityStoreEntityLink_Validation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("self_link"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				ExpectError:              regexp.MustCompile(`Self-link not allowed`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				ExpectError:              regexp.MustCompile(`must contain at least`),
 			},
 		},

@@ -34,6 +34,7 @@ const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -42,7 +43,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
@@ -61,7 +62,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				PlanOnly:                 true,
 			},
 		},
@@ -71,6 +72,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_generic(t *testing.T) {
 func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -79,12 +81,12 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "generic"),
@@ -97,7 +99,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				PlanOnly:                 true,
 			},
 		},
@@ -107,6 +109,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_updateHost(t *testing.T) {
 func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -115,12 +118,12 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_import(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				ResourceName:             "elasticstack_kibana_security_entity_store_entity.test",
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -186,6 +189,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_entityJsonIdMismatch(t *test
 func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -194,7 +198,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "host"),
@@ -208,7 +212,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_host"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				PlanOnly:                 true,
 			},
 		},
@@ -220,6 +224,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_hostType(t *testing.T) {
 func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -228,7 +233,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_user"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "user"),
@@ -241,7 +246,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_user"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				PlanOnly:                 true,
 			},
 		},
@@ -253,6 +258,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_userType(t *testing.T) {
 func TestAccResourceKibanaSecurityEntityStoreEntity_serviceType(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -261,7 +267,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_serviceType(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_service"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_entity_store_entity.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity.test", "entity_type", "service"),
@@ -274,7 +280,7 @@ func TestAccResourceKibanaSecurityEntityStoreEntity_serviceType(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_service"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				PlanOnly:                 true,
 			},
 		},

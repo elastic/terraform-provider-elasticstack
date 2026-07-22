@@ -39,6 +39,7 @@ var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
@@ -47,7 +48,7 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", spaceID),
@@ -65,7 +66,7 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "target_id", "generic:acc-test-target"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_entity_store_entity_link.test", "space_id", spaceID),
@@ -80,7 +81,7 @@ func TestAccResourceSecurityEntityStoreEntityLink(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
+				ConfigVariables:          vars,
 				ResourceName:             "elasticstack_kibana_security_entity_store_entity_link.test",
 				ImportState:              true,
 				ImportStateVerify:        true,
