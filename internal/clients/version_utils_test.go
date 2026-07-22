@@ -69,7 +69,7 @@ func TestApplyVersionConstraint_VersionComparison(t *testing.T) {
 	minVer, err := goversion.NewVersion("8.15.0")
 	require.NoError(t, err)
 
-	check := func(sv *goversion.Version) bool { return versionAtLeastRelease(sv, minVer) }
+	check := func(sv *goversion.Version) bool { return sv.GreaterThanOrEqual(minVer) }
 
 	tests := []struct {
 		rawVersion string
@@ -130,7 +130,7 @@ func makeErrorFetcher() versionFetcher {
 func TestEnforceMinVersion_NilVersion(t *testing.T) {
 	t.Parallel()
 	// fetch must never be called when minVersion is nil.
-	ok, diags := enforceMinVersion(t.Context(), nil, makeErrorFetcher(), versionAtLeastRelease)
+	ok, diags := enforceMinVersion(t.Context(), nil, makeErrorFetcher())
 	require.False(t, diags.HasError())
 	assert.True(t, ok)
 }
@@ -138,7 +138,7 @@ func TestEnforceMinVersion_NilVersion(t *testing.T) {
 func TestEnforceMinVersion_ServerlessShortCircuit(t *testing.T) {
 	t.Parallel()
 	minVer := goversion.Must(goversion.NewVersion("99.0.0"))
-	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("8.10.0", ServerlessFlavor), versionAtLeastRelease)
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("8.10.0", ServerlessFlavor))
 	require.False(t, diags.HasError())
 	assert.True(t, ok, "serverless must satisfy any version gate")
 }
@@ -146,7 +146,7 @@ func TestEnforceMinVersion_ServerlessShortCircuit(t *testing.T) {
 func TestEnforceMinVersion_Satisfied(t *testing.T) {
 	t.Parallel()
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("8.19.0", "default"), versionAtLeastRelease)
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("8.19.0", "default"))
 	require.False(t, diags.HasError())
 	assert.True(t, ok)
 }
@@ -154,7 +154,7 @@ func TestEnforceMinVersion_Satisfied(t *testing.T) {
 func TestEnforceMinVersion_NotSatisfied(t *testing.T) {
 	t.Parallel()
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("7.17.0", "default"), versionAtLeastRelease)
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("7.17.0", "default"))
 	require.False(t, diags.HasError())
 	assert.False(t, ok)
 }
@@ -162,7 +162,7 @@ func TestEnforceMinVersion_NotSatisfied(t *testing.T) {
 func TestEnforceMinVersion_FetchError(t *testing.T) {
 	t.Parallel()
 	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
-	ok, diags := enforceMinVersion(t.Context(), minVer, makeErrorFetcher(), versionAtLeastRelease)
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeErrorFetcher())
 	assert.False(t, ok)
 	require.True(t, diags.HasError())
 }
@@ -193,53 +193,4 @@ func TestEnforceVersionCheck_FetchError(t *testing.T) {
 	ok, diags := enforceVersionCheck(t.Context(), func(_ *goversion.Version) bool { return true }, makeErrorFetcher())
 	assert.False(t, ok)
 	require.True(t, diags.HasError())
-}
-
-func TestKibanaVersionAtLeastRelease_SnapshotBuildOnReleaseFloor(t *testing.T) {
-	t.Parallel()
-
-	minVer := goversion.Must(goversion.NewVersion("9.5.0"))
-
-	tests := []struct {
-		server string
-		want   bool
-		name   string
-	}{
-		{"9.4.0-SNAPSHOT", false, "snapshot below core"},
-		{"9.5.0-SNAPSHOT", true, "snapshot same core as release floor"},
-		{"9.5.0", true, "release equal"},
-		{"9.5.1", true, "release above"},
-		{"9.5.0-beta.1", false, "non-SNAPSHOT prerelease on same core"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			sv, err := goversion.NewVersion(tc.server)
-			require.NoError(t, err)
-			assert.Equal(t, tc.want, kibanaVersionAtLeastRelease(sv, minVer), "server %q", tc.server)
-		})
-	}
-}
-
-func TestSnapshotBuildSatisfiesReleaseMinimum_MinimumAlsoPrerelease(t *testing.T) {
-	t.Parallel()
-	server := goversion.Must(goversion.NewVersion("9.5.0-SNAPSHOT"))
-	minBeta := goversion.Must(goversion.NewVersion("9.5.0-beta.1"))
-	assert.False(t, snapshotBuildSatisfiesReleaseMinimum(server, minBeta))
-}
-
-func TestEnforceMinVersion_KibanaSnapshotBuildMeetsReleaseMinimum(t *testing.T) {
-	t.Parallel()
-	minVer := goversion.Must(goversion.NewVersion("9.5.0"))
-	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("9.5.0-SNAPSHOT", "default"), kibanaVersionAtLeastRelease)
-	require.False(t, diags.HasError())
-	assert.True(t, ok)
-}
-
-func TestEnforceMinVersion_ElasticsearchSnapshotBelowReleaseMinimum(t *testing.T) {
-	t.Parallel()
-	minVer := goversion.Must(goversion.NewVersion("9.5.0"))
-	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("9.5.0-SNAPSHOT", "default"), versionAtLeastRelease)
-	require.False(t, diags.HasError())
-	assert.False(t, ok)
 }

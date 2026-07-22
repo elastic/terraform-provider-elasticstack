@@ -78,14 +78,22 @@ func TestManagedIntegrationModel_getVersionRequirements(t *testing.T) {
 	reqs, diags := m.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
-	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.5.0"))))
+	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.5.0-SNAPSHOT"))))
 	require.Equal(t, "Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API).", reqs[0].ErrorMessage)
 }
 
-func TestMinVersion_matchesPolicyshapeMinVersionCondition(t *testing.T) {
+func TestMinVersion_matchesPolicyshapeMinVersionConditionCore(t *testing.T) {
 	t.Parallel()
-	require.True(t, MinVersion.Equal(policyshape.MinVersionCondition),
-		"resource MinVersion and policyshape.MinVersionCondition must stay aligned so the envelope gate guarantees `condition` support")
+	require.True(t, MinVersion.Core().Equal(policyshape.MinVersionCondition.Core()),
+		"resource MinVersion core and policyshape.MinVersionCondition must stay aligned so the envelope gate guarantees `condition` support on release builds")
+	require.Equal(t, "SNAPSHOT", MinVersion.Prerelease())
+}
+
+func TestMinVersion_semverFloor(t *testing.T) {
+	t.Parallel()
+	require.True(t, version.Must(version.NewVersion("9.5.0-SNAPSHOT")).GreaterThanOrEqual(MinVersion))
+	require.True(t, version.Must(version.NewVersion("9.5.0")).GreaterThanOrEqual(MinVersion))
+	require.False(t, version.Must(version.NewVersion("9.4.9")).GreaterThanOrEqual(MinVersion))
 }
 
 // fakeMinVersionClient is a minimal stand-in for a *clients.KibanaScopedClient
@@ -155,7 +163,7 @@ func TestManagedIntegrationModel_versionGate_firesBeforeAPICall(t *testing.T) {
 
 		require.True(t, client.called, "EnforceMinVersion must be consulted to evaluate the version requirement")
 		require.NotNil(t, client.requestedMinVersion)
-		require.True(t, client.requestedMinVersion.Equal(version.Must(version.NewVersion("9.5.0"))))
+		require.True(t, client.requestedMinVersion.Equal(version.Must(version.NewVersion("9.5.0-SNAPSHOT"))))
 		require.True(t, diags.HasError(), "version gate must produce an error diagnostic for an unsupported Kibana")
 		require.False(t, apiCallMade, "no API call should be attempted when the version gate fails")
 

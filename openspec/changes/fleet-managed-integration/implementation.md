@@ -91,23 +91,23 @@ Tasks **11.1–11.8** are implemented under `internal/fleet/managedintegration/a
 
 **Live matrix notes:**
 
-- Positive `TestAccResourceManagedIntegration*` cases **skip** when Kibana is below `managedintegration.MinVersion` (`9.5.0`), using the same `KibanaScopedClient.EnforceMinVersion` path as production (including same-core `-SNAPSHOT` uplift on Kibana only).
+- Positive `TestAccResourceManagedIntegration*` cases **skip** when Kibana is below `managedintegration.MinVersion` (`9.5.0-SNAPSHOT`), using the same `KibanaScopedClient.EnforceMinVersion` path as production.
 - **`TestAccResourceManagedIntegration_VersionSkipGating`** (negative version acceptance) requires a stack **older than 9.5.0**; it passes on such stacks and is **skipped** when Kibana already meets the floor. Outcome is therefore **old-Kibana / manual matrix / CI stack-version dependent**, not a universal green on every acceptance environment.
 - Cloud-hosted topology scenarios still require `skipUnlessConfirmedCloud` and Kibana ≥ 9.5.0 plus a pinned `cloud_security_posture` package (`skipUnlessManagedIntegrationLiveStack`).
 
-## 1.1 MinVersion floor — **9.5.0**
+## 1.1 MinVersion floor — **9.5.0-SNAPSHOT** (user-facing **9.5.0**)
 
-**Decision:** Set `MinVersion` to `9.5.0` in `internal/fleet/managedintegration/models.go` (constant). Task 4.2 removed the separate condition capability gate; there is no `capabilities.go` in this package anymore.
+**Decision:** Set `MinVersion` to `9.5.0-SNAPSHOT` in `internal/fleet/managedintegration/models.go`. Task 4.2 removed the separate condition capability gate; there is no `capabilities.go` in this package anymore.
 
 **Rationale:**
 
 - `/api/fleet/managed_integrations` was verified on a **9.5.0-SNAPSHOT** Kibana build (see `design.md` Decision 8).
-- This matches `policyshape.MinVersionCondition` (`9.5.0`), so a separate `SupportsCondition` runtime gate is redundant (removed in task 4.2).
+- This shares the 9.5.0 core with `policyshape.MinVersionCondition`, so a separate `SupportsCondition` runtime gate is redundant (removed in task 4.2).
 - Using `9.3.0` (the old `agentless_policies` floor) would allow plans against stacks that have the deprecated surface but not `managed_integrations`, producing 404s.
 
 **Code touchpoints (task 1.1 / task 4):**
 
-- `internal/fleet/managedintegration/models.go` — `MinVersion`, `GetVersionRequirements` error text/comments; `TestMinVersion_matchesPolicyshapeMinVersionCondition` guards alignment with `policyshape.MinVersionCondition`.
+- `internal/fleet/managedintegration/models.go` — `MinVersion`, `GetVersionRequirements` error text/comments; `TestMinVersion_matchesPolicyshapeMinVersionConditionCore` guards core alignment with `policyshape.MinVersionCondition`.
 
 ## 1.2 `KibanaHTTPAPIsManagedIntegration` ↔ schema mapping
 

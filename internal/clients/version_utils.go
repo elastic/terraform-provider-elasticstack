@@ -19,7 +19,6 @@ package clients
 
 import (
 	"context"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
@@ -31,40 +30,6 @@ import (
 // enforceVersionCheck helpers to decouple the fetch mechanism from the
 // version-constraint logic.
 type versionFetcher func(ctx context.Context) (rawVersion, flavor string, diags fwdiag.Diagnostics)
-
-// minVersionCheck compares a parsed server version against a release minimum.
-type minVersionCheck func(server, minimum *version.Version) bool
-
-// versionAtLeastRelease reports whether server satisfies minimum using strict
-// semver GreaterThanOrEqual (used for Elasticsearch EnforceMinVersion).
-func versionAtLeastRelease(server, minimum *version.Version) bool {
-	return server.GreaterThanOrEqual(minimum)
-}
-
-// kibanaVersionAtLeastRelease reports whether a Kibana server version satisfies
-// a release minimum. It uses strict semver first, then applies the Elastic
-// Kibana/CI convention that a same-core -SNAPSHOT build satisfies a release
-// floor (e.g. 9.5.0-SNAPSHOT meets minimum 9.5.0). Elasticsearch
-// EnforceMinVersion does not apply this uplift.
-func kibanaVersionAtLeastRelease(server, minimum *version.Version) bool {
-	if server.GreaterThanOrEqual(minimum) {
-		return true
-	}
-	return snapshotBuildSatisfiesReleaseMinimum(server, minimum)
-}
-
-// snapshotBuildSatisfiesReleaseMinimum is true when minimum is a release version,
-// server shares the same core version, and server's prerelease is SNAPSHOT.
-// Other prereleases (e.g. beta) do not satisfy a release minimum.
-func snapshotBuildSatisfiesReleaseMinimum(server, minimum *version.Version) bool {
-	if minimum.Prerelease() != "" || server.Prerelease() == "" {
-		return false
-	}
-	if !server.Core().Equal(minimum.Core()) {
-		return false
-	}
-	return strings.EqualFold(server.Prerelease(), "SNAPSHOT")
-}
 
 // applyVersionConstraint evaluates check against rawVersion, short-circuiting
 // to true for serverless clusters. It is the shared core of EnforceMinVersion
@@ -86,8 +51,8 @@ func applyVersionConstraint(
 // enforceMinVersion implements the shared body of EnforceMinVersion for both
 // scoped client types. It short-circuits to true when minVersion is nil, then
 // delegates to the provided fetch function to obtain the server version, and
-// finally applies meets via applyVersionConstraint.
-func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch versionFetcher, meets minVersionCheck) (bool, fwdiag.Diagnostics) {
+// finally applies the GreaterThanOrEqual constraint via applyVersionConstraint.
+func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch versionFetcher) (bool, fwdiag.Diagnostics) {
 	if minVersion == nil {
 		return true, nil
 	}
@@ -96,7 +61,7 @@ func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch v
 		return false, diags
 	}
 	return applyVersionConstraint(flavor, rawVersion, func(sv *version.Version) bool {
-		return meets(sv, minVersion)
+		return sv.GreaterThanOrEqual(minVersion)
 	})
 }
 

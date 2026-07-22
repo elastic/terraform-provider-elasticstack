@@ -34,9 +34,9 @@ import "github.com/hashicorp/go-version"
 // see that package's design.md Open Question 4 resolution for the original
 // empirical investigation.
 //
-// internal/fleet/managedintegration.MinVersion is kept equal to this constant
-// so the resource-level entitycore envelope gate and `condition` support share
-// the same floor; managedintegration does not run a separate runtime
+// internal/fleet/managedintegration.MinVersion uses a 9.5.0-SNAPSHOT semver floor
+// (same core as this constant) so CI snapshot stacks pass via ordinary comparison;
+// user-facing diagnostics still name the 9.5.0 release. managedintegration does not run a separate runtime
 // EnforceMinVersion check for `condition` (see fleet-managed-integration
 // OpenSpec task 4.2). integration_policy still uses EnforceMinVersion against
 // this constant for per-request, attribute-scoped gating when `condition` is set.

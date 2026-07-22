@@ -129,20 +129,20 @@ The PUT body SHALL be constructed entirely from the current plan (desired state)
 
 ### Requirement: Version gate for managed_integrations endpoint
 
-The resource SHALL declare a `GetVersionRequirements` entry that enforces a minimum Kibana version of **9.5.0** (verified against a 9.5.0-SNAPSHOT build; the same version already used as `policyshape.MinVersionCondition`) for `/api/fleet/managed_integrations`. Against a Kibana version older than 9.5.0, the resource SHALL fail with a helpful error message naming the minimum required version. Because this floor is identical to the version that introduced `condition` support, the resource SHALL NOT perform a separate, distinct capability check for `condition` — `condition` is unconditionally supported once the resource-level floor is satisfied, and no dedicated `SupportsCondition`-style gate SHALL exist.
+The resource SHALL declare a `GetVersionRequirements` entry with an internal minimum Kibana version of **`9.5.0-SNAPSHOT`** (verified against a 9.5.0-SNAPSHOT build; same core as `policyshape.MinVersionCondition`) for `/api/fleet/managed_integrations`. Practitioner-facing error messages SHALL name the **9.5.0** release. Against a Kibana version older than 9.5.0, the resource SHALL fail with a helpful error message naming the minimum required version. Because this floor shares the 9.5.0 core with the version that introduced `condition` support, the resource SHALL NOT perform a separate, distinct capability check for `condition` — `condition` is unconditionally supported once the resource-level floor is satisfied, and no dedicated `SupportsCondition`-style gate SHALL exist.
 
 #### Scenario: Older Kibana returns error
 - **WHEN** the resource is planned or applied against a Kibana version older than 9.5.0
 - **THEN** Terraform SHALL fail with an error message stating the minimum required version
 - **AND** no API call to `/api/fleet/managed_integrations` SHALL be made
 
-#### Scenario: Exactly at version floor succeeds
-- **WHEN** the resource is planned against a Kibana version exactly equal to 9.5.0
+#### Scenario: Release at or above version floor succeeds
+- **WHEN** the resource is planned against a Kibana version of `9.5.0` or later
 - **THEN** the version check SHALL pass and API calls SHALL proceed
 
-#### Scenario: Same-core Kibana SNAPSHOT build at release floor succeeds
-- **WHEN** the resource is planned against a Kibana version of `9.5.0-SNAPSHOT` (same core as the 9.5.0 release floor)
-- **THEN** the Kibana `EnforceMinVersion` check SHALL pass via the provider's Kibana SNAPSHOT convention
+#### Scenario: Kibana SNAPSHOT build at version floor succeeds
+- **WHEN** the resource is planned against a Kibana version of `9.5.0-SNAPSHOT`
+- **THEN** the `EnforceMinVersion` check SHALL pass via ordinary semver comparison against the `9.5.0-SNAPSHOT` floor
 - **AND** API calls to `/api/fleet/managed_integrations` SHALL proceed when other preconditions are met
 
 ### Requirement: Topology and topology skip-check carried over

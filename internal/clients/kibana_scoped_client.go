@@ -117,11 +117,9 @@ func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion
 
 // EnforceMinVersion returns true when the Kibana server version is greater than
 // or equal to minVersion, or when the server is running in serverless mode.
-// Same-core Kibana -SNAPSHOT builds satisfy a release minimum (e.g. 9.5.0-SNAPSHOT
-// meets floor 9.5.0); see kibanaVersionAtLeastRelease in version_utils.go.
 // If minVersion is nil, no minimum is enforced and the method returns true.
 func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
-	return enforceMinVersion(ctx, minVersion, k.fetchVersion, kibanaVersionAtLeastRelease)
+	return enforceMinVersion(ctx, minVersion, k.fetchVersion)
 }
 
 // EnforceVersionCheck returns true when the given version check function

@@ -121,7 +121,7 @@ func (e *ElasticsearchScopedClient) ID(ctx context.Context, resourceID string) (
 // equal to minVersion, or when the server is running in serverless mode.
 // If minVersion is nil, no minimum is enforced and the method returns true.
 func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
-	return enforceMinVersion(ctx, minVersion, e.fetchVersion, versionAtLeastRelease)
+	return enforceMinVersion(ctx, minVersion, e.fetchVersion)
 }
 
 // IsServerless returns true when the connected Elasticsearch cluster is running

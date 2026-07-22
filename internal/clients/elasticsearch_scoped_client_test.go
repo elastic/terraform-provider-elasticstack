@@ -281,21 +281,6 @@ func TestElasticsearchScopedClient_EnforceMinVersion_NotSatisfied(t *testing.T) 
 	assert.False(t, ok, "7.17.0 must not satisfy min version 8.0.0")
 }
 
-func TestElasticsearchScopedClient_EnforceMinVersion_SnapshotDoesNotUpliftReleaseFloor(t *testing.T) {
-	t.Parallel()
-	srv := newMockElasticsearchServer("9.5.0-SNAPSHOT")
-	defer srv.Close()
-
-	scoped := newMockScopedClient(t, srv)
-
-	minVer, err := goversion.NewVersion("9.5.0")
-	require.NoError(t, err)
-
-	ok, diags := scoped.EnforceMinVersion(context.Background(), minVer)
-	require.False(t, diags.HasError())
-	assert.False(t, ok, "Elasticsearch EnforceMinVersion must not treat 9.5.0-SNAPSHOT as satisfying release floor 9.5.0")
-}
-
 // --- IsServerless ---
 
 func TestElasticsearchScopedClient_IsServerless_MissingEndpoint(t *testing.T) {

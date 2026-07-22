@@ -53,12 +53,16 @@ func globalDataTagsElementType() attr.Type {
 }
 
 // MinVersion is the minimum Kibana version required for the Fleet
-// managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; kept
-// equal to policyshape.MinVersionCondition (see TestMinVersion_matchesPolicyshapeMinVersionCondition
-// and openspec/changes/fleet-managed-integration/design.md Decision 8).
+// managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; the
+// `-SNAPSHOT` floor allows CI snapshot stacks via ordinary semver comparison.
+// User-facing diagnostics name the 9.5.0 release (see minVersionUserFacing and
+// policyshape.MinVersionCondition for the condition-support release).
 // Enforced only via GetVersionRequirements and the entitycore envelope — there
 // is no separate per-request capability gate in this package.
-var MinVersion = version.Must(version.NewVersion("9.5.0"))
+var MinVersion = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
+
+// minVersionUserFacing is the release version named in practitioner-facing errors.
+const minVersionUserFacing = "9.5.0"
 
 // managedIntegrationModel is the Plugin Framework model for the
 // elasticstack_fleet_managed_integration resource.
@@ -159,7 +163,7 @@ func (m managedIntegrationModel) GetVersionRequirements(_ context.Context) ([]en
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *MinVersion,
-			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later (experimental API).", MinVersion),
+			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later (experimental API).", minVersionUserFacing),
 		},
 	}, nil
 }
