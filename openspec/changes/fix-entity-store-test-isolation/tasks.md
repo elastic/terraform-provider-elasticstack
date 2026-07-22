@@ -208,10 +208,12 @@ The entity-link resource (`elasticstack_kibana_security_entity_store_entity_link
 
 ## Task 9 — Package `security_entity_store_resolution_group`: update Go acc_test.go
 
+**Status:** complete
+
 **File**: `internal/kibana/security_entity_store_resolution_group/acc_test.go`
 
-1. Add same imports and `accTestKibanaSpaceIDCharset` constant.
-2. For `TestAccDataSourceSecurityEntityStoreResolutionGroup`:
+1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
+2. [x] For `TestAccDataSourceSecurityEntityStoreResolutionGroup`:
    - Generate `spaceID`.
    - Replace `"default"` in `CleanupEntityStore` with `spaceID`.
    - Add `ConfigVariables` to the single step.
