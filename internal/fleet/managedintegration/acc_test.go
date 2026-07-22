@@ -195,17 +195,22 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					// testdata/.../update_vars/main.tf), exercising the
 					// in-place update path for global_data_tags (spec.md:
 					// "updatable in-place"), not just create-time coverage.
+					testCheckJSONSubset("vars_json", map[string]any{
+						"posture":    "cspm",
+						"deployment": "gcp",
+					}),
 					resource.TestCheckResourceAttr(testResourceName, "var_group_selections.deployment", "aws"),
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.%", "2"),
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.env.string_value", "test"),
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.team.string_value", "security"),
-					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "2"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
+					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.1", "metrics-acc-*"),
 					testCheckManagedIntegrationUpdateExtrasPersisted(
 						testResourceName,
-						map[string]any{"posture": "cspm", "deployment": "aws"},
-						map[string]string{"deployment": "aws"},
-						[]string{"logs-custom-*"},
+						map[string]any{"posture": "cspm", "deployment": "gcp"},
+						nil,
+						[]string{"logs-custom-*", "metrics-acc-*"},
 					),
 					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
 						capturedUpdatedAt = value
@@ -410,26 +415,17 @@ func TestAccResourceManagedIntegration_ForceDelete(t *testing.T) {
 	})
 }
 
-// TestAccResourceManagedIntegration_CloudConnector covers Task 8.5: creating a
-// policy with cloud_connector.cloud_connector_id set to a real, pre-existing
-// cloud connector (created out-of-band via a raw Fleet API call in this test
-// -- there is no elasticstack_fleet_cloud_connector resource yet, per this
-// change's design.md "no hard dependency on fleet-cloud-connector" decision)
-// and verifying it round-trips.
-//
-// Read merges cloud_connector.enabled and cloud_connector_id from GET while
-// preserving write-only name/target_csp from config (see cloud_connector_read.go).
-// Stream vars configured as Fleet secret-ref shapes round-trip without drift;
-// plaintext password vars are preserved via secrets_reconcile.go on read-after-write.
-// This test still uses a pre-minted secret ref for external_id because cloud
-// connector wiring requires a valid Fleet secret reference on the CSPM input.
+// TestAccResourceManagedIntegration_CloudConnector wires a real cloud connector
+// (POST /api/fleet/cloud_connectors) and configures a plaintext stream
+// aws.credentials.external_id. Terraform state must retain the plaintext after
+// create/read even when the Fleet API stores a secret reference server-side.
 func TestAccResourceManagedIntegration_CloudConnector(t *testing.T) {
 	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
-	secretRefID := mintExternalIDSecretRef(context.Background(), t, mustFleetClient(t))
-	connectorID, cleanupConnector := createTestCloudConnector(t, secretRefID)
+	externalID := fmt.Sprintf("tf-acc-ext-%s", sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum))
+	connectorID, cleanupConnector := createTestCloudConnector(t, externalID)
 	t.Cleanup(cleanupConnector)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -445,30 +441,20 @@ func TestAccResourceManagedIntegration_CloudConnector(t *testing.T) {
 					"policy_name":           config.StringVariable(policyName),
 					"package_version":       config.StringVariable(cspmPackageVersion),
 					"cloud_connector_id":    config.StringVariable(connectorID),
-					"external_id_secret_id": config.StringVariable(secretRefID),
+					"external_id_plaintext": config.StringVariable(externalID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.cloud_connector_id", connectorID),
 					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.enabled", "true"),
 					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.target_csp", "aws"),
+					testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
+						"aws.credentials.external_id": externalID,
+					}),
 					testCheckCloudConnectorPersisted(testResourceName, connectorID),
 				),
 			},
 		},
 	})
-}
-
-// mustFleetClient is a small helper so TestAccResourceManagedIntegration_CloudConnector
-// can obtain a *fleetclient.Client for mintExternalIDSecretRef without
-// duplicating clients.NewAcceptanceTestingKibanaScopedClient's error handling
-// inline.
-func mustFleetClient(t *testing.T) *fleetclient.Client {
-	t.Helper()
-	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create Kibana client: %v", err)
-	}
-	return client.GetFleetClient()
 }
 
 // TestAccResourceManagedIntegration_NameUpdateInPlace verifies in-place `name`
@@ -679,8 +665,8 @@ func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
 	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
-	secretRefID := mintExternalIDSecretRef(context.Background(), t, mustFleetClient(t))
-	connectorID, cleanupConnector := createTestCloudConnector(t, secretRefID)
+	externalID := fmt.Sprintf("tf-acc-ext-%s", sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum))
+	connectorID, cleanupConnector := createTestCloudConnector(t, externalID)
 	t.Cleanup(cleanupConnector)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -688,7 +674,7 @@ func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
 		"policy_name":           config.StringVariable(policyName),
 		"package_version":       config.StringVariable(cspmPackageVersion),
 		"cloud_connector_id":    config.StringVariable(connectorID),
-		"external_id_secret_id": config.StringVariable(secretRefID),
+		"external_id_plaintext": config.StringVariable(externalID),
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -701,6 +687,9 @@ func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
 				ConfigVariables:          baseVars,
 				Check: resource.ComposeTestCheckFunc(
 					testCheckCloudConnectorPersisted(testResourceName, connectorID),
+					testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
+						"aws.credentials.external_id": externalID,
+					}),
 				),
 			},
 			{
@@ -715,6 +704,9 @@ func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "description", "Updated description after cloud_connector association"),
 					resource.TestCheckResourceAttr(testResourceName, "cloud_connector.cloud_connector_id", connectorID),
+					testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
+						"aws.credentials.external_id": externalID,
+					}),
 					testCheckCloudConnectorPersisted(testResourceName, connectorID),
 				),
 			},
@@ -730,8 +722,8 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
-	secretRefID := mintExternalIDSecretRef(context.Background(), t, mustFleetClient(t))
-	connectorID, cleanupConnector := createTestCloudConnector(t, secretRefID)
+	externalID := fmt.Sprintf("tf-acc-ext-%s", sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum))
+	connectorID, cleanupConnector := createTestCloudConnector(t, externalID)
 	t.Cleanup(cleanupConnector)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -739,7 +731,7 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 		"policy_name":           config.StringVariable(policyName),
 		"package_version":       config.StringVariable(cspmPackageVersion),
 		"cloud_connector_id":    config.StringVariable(connectorID),
-		"external_id_secret_id": config.StringVariable(secretRefID),
+		"external_id_plaintext": config.StringVariable(externalID),
 		"cloud_connector_name":  config.StringVariable("tf-acc-connector-name-a"),
 	}
 
@@ -759,10 +751,9 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 					"policy_name":           config.StringVariable(policyName),
 					"package_version":       config.StringVariable(cspmPackageVersion),
 					"cloud_connector_id":    config.StringVariable(connectorID),
-					"external_id_secret_id": config.StringVariable(secretRefID),
+					"external_id_plaintext": config.StringVariable(externalID),
 					"cloud_connector_name":  config.StringVariable("tf-acc-connector-name-b"),
 				},
-				PlanOnly: true,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionDestroyBeforeCreate),
@@ -895,18 +886,11 @@ func testCheckJSONSubset(attr string, expected map[string]any) resource.TestChec
 	}
 }
 
-// createTestCloudConnector creates a real AWS cloud connector via a raw
-// POST /api/fleet/cloud_connectors call (there is no
-// elasticstack_fleet_cloud_connector resource yet -- see this file's
-// TestAccResourceManagedIntegration_CloudConnector doc comment) and returns its
-// ID plus a cleanup function that deletes it. secretRefID must be a real,
-// already-minted Fleet secret ID (see mintExternalIDSecretRef) -- the Kibana
-// Fleet plugin requires `external_id` to be a pre-existing secret reference
-// ({isSecretRef: true, id: ...}) rather than a bare string (empirically
-// confirmed: a bare string is rejected with "External ID secret reference is
-// not valid", even though `role_arn` accepts a bare string arm of the same
-// union).
-func createTestCloudConnector(t *testing.T, secretRefID string) (string, func()) {
+// createTestCloudConnector creates a real AWS cloud connector via POST
+// /api/fleet/cloud_connectors (no Terraform resource yet). externalIDPlaintext
+// is stored as a password/text var on the connector and must match the managed
+// integration stream var when using aws.credentials.type = cloud_connectors.
+func createTestCloudConnector(t *testing.T, externalIDPlaintext string) (string, func()) {
 	t.Helper()
 
 	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
@@ -921,11 +905,8 @@ func createTestCloudConnector(t *testing.T, secretRefID string) (string, func())
 		Type: "password",
 		Value: func() kbapi.PostFleetCloudConnectorsJSONBody_Vars_3_Value {
 			var v kbapi.PostFleetCloudConnectorsJSONBody_Vars_3_Value
-			if err := v.FromPostFleetCloudConnectorsJSONBodyVars3Value1(kbapi.PostFleetCloudConnectorsJSONBodyVars3Value1{
-				Id:          secretRefID,
-				IsSecretRef: true,
-			}); err != nil {
-				t.Fatalf("failed to build cloud connector external_id secret ref: %v", err)
+			if err := v.FromPostFleetCloudConnectorsJSONBodyVars3Value0(externalIDPlaintext); err != nil {
+				t.Fatalf("failed to build cloud connector external_id plaintext: %v", err)
 			}
 			return v
 		}(),
@@ -985,72 +966,4 @@ func createTestCloudConnector(t *testing.T, secretRefID string) (string, func())
 		}
 	}
 	return connectorID, cleanup
-}
-
-// mintExternalIDSecretRef creates and deletes a throwaway managed integration
-// so Fleet converts a plaintext aws.credentials.external_id stream var into a
-// stored secret, then returns that secret's ref ID.
-func mintExternalIDSecretRef(ctx context.Context, t *testing.T, fc *fleetclient.Client) string {
-	t.Helper()
-
-	probeName := fmt.Sprintf("tf-acc-secret-probe-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
-	policyTemplate := "cspm"
-	createBody := kbapi.PostFleetManagedIntegrationsJSONRequestBody{
-		Name: probeName,
-		Package: kbapi.KibanaHTTPAPIsPackagePolicyPackage{
-			Name:    cspmPackageName,
-			Version: cspmPackageVersion,
-		},
-		PolicyTemplate: &policyTemplate,
-	}
-	if err := json.Unmarshal([]byte(`{"posture":"cspm","deployment":"aws"}`), &createBody.Vars); err != nil {
-		t.Fatalf("failed to build secret-probe vars: %v", err)
-	}
-	if err := json.Unmarshal([]byte(`{
-		"cspm-cloudbeat/cis_aws": {
-			"enabled": true,
-			"streams": {
-				"cloud_security_posture.findings": {
-					"enabled": true,
-					"vars": {
-						"aws.credentials.external_id": "tf-acc-secret-probe-value",
-						"aws.credentials.type": "cloud_connectors",
-						"aws.account_type": "single-account",
-						"role_arn": "arn:aws:iam::123456789012:role/tf-acc-test-role"
-					}
-				}
-			}
-		}
-	}`), &createBody.Inputs); err != nil {
-		t.Fatalf("failed to build secret-probe inputs: %v", err)
-	}
-
-	item, diags := fleetclient.CreateManagedIntegration(ctx, fc, managedIntegrationDefaultSpace, createBody)
-	if diags.HasError() {
-		t.Fatalf("failed to create secret-probe managed integration: %v", diags)
-	}
-	if item == nil {
-		t.Fatal("failed to create secret-probe managed integration: empty response")
-	}
-	probeID := item.Id
-
-	t.Cleanup(func() {
-		_, delDiags := fleetclient.DeleteManagedIntegration(ctx, fc, managedIntegrationDefaultSpace, probeID, true)
-		if delDiags.HasError() {
-			t.Logf("failed to delete secret-probe managed integration %s: %v", probeID, delDiags)
-		}
-	})
-
-	readBack, diags := fleetclient.ReadManagedIntegration(ctx, fc, managedIntegrationDefaultSpace, probeID)
-	if diags.HasError() {
-		t.Fatalf("failed to read back secret-probe managed integration: %v", diags)
-	}
-	if readBack == nil {
-		t.Fatalf("secret-probe managed integration %s not found after create", probeID)
-	}
-	if secretID, ok := externalIDSecretRefFromManagedIntegration(readBack); ok {
-		return secretID
-	}
-	t.Fatalf("could not find a secret ref for %s in secret-probe managed integration %s", externalIDStreamVarKey, probeID)
-	return ""
 }

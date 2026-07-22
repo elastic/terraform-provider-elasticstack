@@ -25,7 +25,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
 
   vars_json = jsonencode({
     posture    = "cspm"
-    deployment = "aws"
+    deployment = "gcp"
   })
 
   var_group_selections = {
@@ -41,7 +41,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
     }
   }
 
-  additional_datastreams_permissions = ["logs-custom-*"]
+  additional_datastreams_permissions = ["logs-custom-*", "metrics-acc-*"]
 
   inputs = {
     "cspm-cloudbeat/cis_aws" = {

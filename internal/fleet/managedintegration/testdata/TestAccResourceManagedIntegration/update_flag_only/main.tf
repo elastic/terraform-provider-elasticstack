@@ -18,10 +18,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
   description     = "Updated Managed integration CSPM Test Policy"
   policy_template = "cspm"
   # Only this create-only flag differs from the "update_vars" step's config --
-  # see TestAccResourceManagedIntegration's "create-only-flag-only change" step,
-  # which proves onlyCreateOnlyFlagsChanged's short-circuit (update.go) fires
-  # for real against a live Kibana by asserting updated_at does NOT change
-  # across this apply.
+  # see TestAccResourceManagedIntegration's "create-only-flag-only change" step.
   skip_topology_check = true
 
   package = {
@@ -31,7 +28,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
 
   vars_json = jsonencode({
     posture    = "cspm"
-    deployment = "aws"
+    deployment = "gcp"
   })
 
   var_group_selections = {
@@ -47,7 +44,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
     }
   }
 
-  additional_datastreams_permissions = ["logs-custom-*"]
+  additional_datastreams_permissions = ["logs-custom-*", "metrics-acc-*"]
 
   inputs = {
     "cspm-cloudbeat/cis_aws" = {

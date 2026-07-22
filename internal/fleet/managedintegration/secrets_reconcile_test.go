@@ -113,6 +113,38 @@ func TestReconcileManagedIntegrationSecretsFromPrior_streamVars(t *testing.T) {
 	assert.Contains(t, streamsMap["cloud_security_posture.findings"].Vars.ValueString(), "my-plaintext")
 }
 
+func TestReconcileSecretVarsMapFromPrior_multiIDRefs(t *testing.T) {
+	t.Parallel()
+	prior := map[string]any{"hosts": []any{"secret-a", "secret-b"}}
+	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}}
+	reconcileSecretVarsMapFromPrior(prior, resp)
+	assert.Equal(t, []any{"secret-a", "secret-b"}, resp["hosts"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_multiIDMissingPriorKeepsRef(t *testing.T) {
+	t.Parallel()
+	resp := map[string]any{"hosts": map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}}
+	reconcileSecretVarsMapFromPrior(map[string]any{}, resp)
+	assert.Equal(t, map[string]any{"isSecretRef": true, "ids": []any{"id-a", "id-b"}}, resp["hosts"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_multiIDWrappedRef(t *testing.T) {
+	t.Parallel()
+	prior := map[string]any{"token": "plain"}
+	resp := map[string]any{"token": map[string]any{"value": map[string]any{"isSecretRef": true, "id": "one-id"}}}
+	reconcileSecretVarsMapFromPrior(prior, resp)
+	assert.Equal(t, "plain", resp["token"])
+}
+
+func TestReconcileSecretVarsMapFromPrior_priorSecretRefUnchanged(t *testing.T) {
+	t.Parallel()
+	ref := map[string]any{"isSecretRef": true, "id": "same"}
+	prior := map[string]any{"token": ref}
+	resp := map[string]any{"token": map[string]any{"isSecretRef": true, "id": "other"}}
+	reconcileSecretVarsMapFromPrior(prior, resp)
+	assert.Equal(t, ref, resp["token"])
+}
+
 func TestPopulateFromManagedIntegration_cloudConnectorFromAPIOnImport(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

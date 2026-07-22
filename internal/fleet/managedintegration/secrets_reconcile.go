@@ -221,12 +221,35 @@ func reconcileSecretVarsMapFromPrior(prior, resp map[string]any) {
 		}
 		if mval, ok := val.(map[string]any); ok {
 			if isSecretRefMap(mval) {
-				if priorVal, ok := prior[key]; ok {
-					resp[key] = priorVal
-				}
+				reconcileSecretRefValueFromPrior(key, mval, prior, resp)
 			}
 		}
 	}
+}
+
+func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, resp map[string]any) {
+	priorVal, ok := prior[key]
+	if !ok {
+		return
+	}
+	if ids, ok := mval["ids"]; ok {
+		idSlice, ok := ids.([]any)
+		if !ok {
+			return
+		}
+		if originals, ok := priorVal.([]any); ok && len(originals) == len(idSlice) {
+			resp[key] = priorVal
+			return
+		}
+		return
+	}
+	if priorRef, ok := priorVal.(map[string]any); ok {
+		if isSecretRefMap(priorRef) {
+			resp[key] = priorVal
+			return
+		}
+	}
+	resp[key] = priorVal
 }
 
 func isSecretRefMap(m map[string]any) bool {

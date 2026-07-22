@@ -225,6 +225,9 @@ func testCheckManagedIntegrationUpdateExtrasPersisted(
 	wantPerms []string,
 ) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
+		if len(wantVars) == 0 && len(wantVarGroups) == 0 && len(wantPerms) == 0 {
+			return fmt.Errorf("testCheckManagedIntegrationUpdateExtrasPersisted: at least one expected section must be non-empty")
+		}
 		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)
 		if err != nil {
 			return err
@@ -233,35 +236,67 @@ func testCheckManagedIntegrationUpdateExtrasPersisted(
 		if err != nil {
 			return err
 		}
-		if item.Vars != nil {
+		if len(wantVars) > 0 {
+			if item.Vars == nil {
+				return fmt.Errorf("managed integration %s: vars missing from API response", policyID)
+			}
 			got := policyshape.VarsAnyToMap(item.Vars)
 			for k, want := range wantVars {
-				if fmt.Sprint(got[k]) != fmt.Sprint(want) {
-					return fmt.Errorf("managed integration %s: vars[%q] want %v, got %v", policyID, k, want, got[k])
+				gotVal, ok := got[k]
+				if !ok {
+					return fmt.Errorf("managed integration %s: vars[%q] missing from API; got keys %v", policyID, k, mapKeys(got))
+				}
+				if !managedIntegrationAPIValuesEqual(gotVal, want) {
+					return fmt.Errorf("managed integration %s: vars[%q] want %v (%T), got %v (%T)", policyID, k, want, want, gotVal, gotVal)
 				}
 			}
 		}
-		if item.VarGroupSelections != nil {
+		if len(wantVarGroups) > 0 {
+			if item.VarGroupSelections == nil {
+				return fmt.Errorf("managed integration %s: var_group_selections missing from API response", policyID)
+			}
 			for k, want := range wantVarGroups {
-				if got, ok := (*item.VarGroupSelections)[k]; !ok || got != want {
+				got, ok := (*item.VarGroupSelections)[k]
+				if !ok || got != want {
 					return fmt.Errorf("managed integration %s: var_group_selections[%q] want %q, got %q", policyID, k, want, got)
 				}
 			}
 		}
-		if item.AdditionalDatastreamsPermissions != nil {
-			if len(*item.AdditionalDatastreamsPermissions) != len(wantPerms) {
-				return fmt.Errorf("managed integration %s: additional_datastreams_permissions len want %d, got %d",
-					policyID, len(wantPerms), len(*item.AdditionalDatastreamsPermissions))
+		if len(wantPerms) > 0 {
+			if item.AdditionalDatastreamsPermissions == nil {
+				return fmt.Errorf("managed integration %s: additional_datastreams_permissions missing from API response", policyID)
+			}
+			got := *item.AdditionalDatastreamsPermissions
+			if len(got) != len(wantPerms) {
+				return fmt.Errorf("managed integration %s: additional_datastreams_permissions len want %d, got %d (%v)",
+					policyID, len(wantPerms), len(got), got)
 			}
 			for i, want := range wantPerms {
-				if (*item.AdditionalDatastreamsPermissions)[i] != want {
+				if got[i] != want {
 					return fmt.Errorf("managed integration %s: additional_datastreams_permissions[%d] want %q, got %q",
-						policyID, i, want, (*item.AdditionalDatastreamsPermissions)[i])
+						policyID, i, want, got[i])
 				}
 			}
 		}
 		return nil
 	}
+}
+
+func managedIntegrationAPIValuesEqual(got, want any) bool {
+	gotBytes, err1 := json.Marshal(got)
+	wantBytes, err2 := json.Marshal(want)
+	if err1 != nil || err2 != nil {
+		return fmt.Sprint(got) == fmt.Sprint(want)
+	}
+	return string(gotBytes) == string(wantBytes)
+}
+
+func mapKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) resource.TestCheckFunc {
