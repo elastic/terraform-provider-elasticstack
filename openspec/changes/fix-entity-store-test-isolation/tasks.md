@@ -191,6 +191,8 @@ The entity resource block also accepts `space_id`; wire it on every entity resou
 
 ## Task 8 — Package `security_entity_store_entity_link`: update TF fixtures
 
+**Status:** complete
+
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all store, entity, and entity-link resource blocks.
 
 **Directories** (5 files):
