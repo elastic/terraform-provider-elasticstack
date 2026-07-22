@@ -19,7 +19,6 @@ package securityexceptionlist
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -212,16 +211,7 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	}
 
 	// Set optional meta
-	if apiList.Meta != nil {
-		metaBytes, err := json.Marshal(apiList.Meta)
-		if err != nil {
-			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)
 
 	return diags
 }
