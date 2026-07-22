@@ -72,6 +72,28 @@ func TestAccDataSourceIngestProcessorDrop(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_drop.test", "on_failure.#", "1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "on_failure.0", `{"set":{"field":"error.message","value":"drop failed"}}`),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJSONDropOnFailure),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_drop.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_drop.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_drop.test", "tag"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure_multi"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_drop.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "on_failure.0", `{"set":{"field":"error.message","value":"drop failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "on_failure.1", `{"set":{"field":"error.type","value":"drop"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJSONDropOnFailureMulti),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_ignore_failure_false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_drop.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_drop.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_drop.test", "json", expectedJSONDropMinimal),
 				),
 			},
 			{
@@ -134,6 +156,26 @@ const expectedJSONDropOnFailure = `{
 				"set": {
 					"field": "error.message",
 					"value": "drop failed"
+				}
+			}
+		]
+	}
+}`
+
+const expectedJSONDropOnFailureMulti = `{
+	"drop": {
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "drop failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "drop"
 				}
 			}
 		]
