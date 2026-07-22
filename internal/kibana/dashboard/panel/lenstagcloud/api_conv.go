@@ -32,7 +32,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// applyStylingFromAPI populates the typed `orientation` and `font_size`
+func tagcloudStylingToAPI(m *models.TagcloudConfigModel) *kbapi.KibanaHTTPAPIsTagcloudStyling {
+	var styling *kbapi.KibanaHTTPAPIsTagcloudStyling
+
+	if !m.Orientation.IsNull() {
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
+		styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
+	}
+
+	if m.FontSize != nil {
+		fontSize := struct {
+			Max *float32 `json:"max,omitempty"`
+			Min *float32 `json:"min,omitempty"`
+		}{}
+		if !m.FontSize.Min.IsNull() {
+			minValue := float32(m.FontSize.Min.ValueFloat64())
+			fontSize.Min = &minValue
+		}
+		if !m.FontSize.Max.IsNull() {
+			maxValue := float32(m.FontSize.Max.ValueFloat64())
+			fontSize.Max = &maxValue
+		}
+		if styling == nil {
+			styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
+		}
+		styling.FontSize = &fontSize
+	}
+
+	return styling
+}
+
+// tagcloudConfigApplyStylingFromAPI populates the typed `orientation` and `font_size`
 // attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
 // reads so the two paths stay in lockstep.
 func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.KibanaHTTPAPIsTagcloudStyling) {
@@ -207,28 +237,13 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 
 	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud
 
-	if !m.Title.IsNull() {
-		api.Title = m.Title.ValueStringPointer()
-	}
-
-	if !m.Description.IsNull() {
-		api.Description = m.Description.ValueStringPointer()
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if !m.DataSourceJSON.IsNull() {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal tagcloud_config.data_source_json", err.Error())
 			return api, diags
 		}
-	}
-
-	if !m.IgnoreGlobalFilters.IsNull() {
-		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-	}
-
-	if !m.Sampling.IsNull() {
-		sampling := float32(m.Sampling.ValueFloat64())
-		api.Sampling = &sampling
 	}
 
 	if m.Query == nil {
@@ -239,29 +254,7 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	if !m.Orientation.IsNull() {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
-		api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
-	}
-
-	if m.FontSize != nil {
-		fontSize := struct {
-			Max *float32 `json:"max,omitempty"`
-			Min *float32 `json:"min,omitempty"`
-		}{}
-		if !m.FontSize.Min.IsNull() {
-			minValue := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &minValue
-		}
-		if !m.FontSize.Max.IsNull() {
-			maxValue := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &maxValue
-		}
-		if api.Styling == nil {
-			api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
-		}
-		api.Styling.FontSize = &fontSize
-	}
+	api.Styling = tagcloudStylingToAPI(m)
 
 	if m.MetricJSON.IsNull() {
 		diags.AddError("Missing metric_json", "tagcloud_config.metric_json must be set for non-ES|QL tagclouds (or use `esql_metric` in ES|QL mode)")
@@ -312,28 +305,7 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	if !m.Orientation.IsNull() {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
-		api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
-	}
-	if m.FontSize != nil {
-		fontSize := struct {
-			Max *float32 `json:"max,omitempty"`
-			Min *float32 `json:"min,omitempty"`
-		}{}
-		if !m.FontSize.Min.IsNull() {
-			minValue := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &minValue
-		}
-		if !m.FontSize.Max.IsNull() {
-			maxValue := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &maxValue
-		}
-		if api.Styling == nil {
-			api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
-		}
-		api.Styling.FontSize = &fontSize
-	}
+	api.Styling = tagcloudStylingToAPI(m)
 
 	if m.EsqlMetric == nil {
 		diags.AddError("Missing esql_metric", "tagcloud_config.esql_metric must be set in ES|QL mode")
