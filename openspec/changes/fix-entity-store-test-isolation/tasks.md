@@ -10,18 +10,18 @@ All tasks in this change are test-infrastructure only. No provider Go source, sc
 
 **File**: `internal/kibana/security_entity_store/acc_test.go`
 
-1. [x] Add import `"github.com/hashicorp/terraform-plugin-testing/config"` and `sdkacctest "github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"` (check existing imports; `sdkacctest` may already be imported under a different alias in related packages — use whatever is consistent).
+1. [x] Add import `"github.com/hashicorp/terraform-plugin-testing/config"` and `sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"` (check existing imports; `sdkacctest` may already be imported under a different alias in related packages — use whatever is consistent).
 2. [x] Add constant:
    ```go
    const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
    ```
-3. [x] For **each** of the 8 test functions listed below, apply the following pattern:
+3. [x] For **each** of the 9 test functions listed below (8 resource + 1 data source), apply the following pattern:
    - At the top of the test (after `skipIfUnsupported(t)`), generate: `spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)`
    - Replace `t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })` with `t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })`
    - Add `ConfigVariables: config.Variables{"space_id": config.StringVariable(spaceID)}` to **every** `TestStep` in the test (both applying and `PlanOnly` steps — the same variable map).
    - Update any `resource.TestCheckResourceAttr(... "space_id", "default")` checks to use `spaceID`.
 
-   **Test functions** (8):
+   **Test functions** (9: 8 resource + 1 data source):
    - `TestAccResourceKibanaSecurityEntityStore_basic` — ConfigDirectory `"basic"` (2 steps)
    - `TestAccResourceKibanaSecurityEntityStore_singleType` — ConfigDirectory `"single_type"` (2 steps)
    - `TestAccResourceKibanaSecurityEntityStore_updateLogExtraction` — ConfigDirectory `"update_log_extraction"` (2 steps)
