@@ -98,6 +98,8 @@ For the `TestAccDataSourceKibanaSecurityEntityStoreStatus_basic` fixtures, the d
 
 ## Task 4 — Package `security_entity_store/entities`: update TF fixtures
 
+**Status:** complete
+
 Add `variable "space_id"`, `elasticstack_kibana_space.test`, and wire `space_id` on all entity-store and data-source blocks.
 
 **Directories** (8 files):
