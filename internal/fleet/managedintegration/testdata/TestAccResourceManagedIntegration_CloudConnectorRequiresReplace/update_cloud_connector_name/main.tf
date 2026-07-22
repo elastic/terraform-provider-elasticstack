@@ -10,16 +10,11 @@ variable "cloud_connector_id" {
   type = string
 }
 
-# external_id_secret_id is the ID of a Fleet secret already minted by the
-# test (see mintExternalIDSecretRef in acc_test.go) that backs the cloud
-# connector's own external_id. Configuring aws.credentials.external_id as
-# the already-secret-ref-shaped value below (rather than a plaintext string)
-# is a test-fixture-only workaround for a real gap: this resource does not
-# yet implement secret-masking reconciliation for password-type vars, so a
-# plaintext value here would cause "Provider produced inconsistent result
-# after apply" once Kibana echoes it back as a {id,isSecretRef} object. See
-# acc_test.go's TestAccResourceManagedIntegration_CloudConnector doc comment.
 variable "external_id_secret_id" {
+  type = string
+}
+
+variable "cloud_connector_name" {
   type = string
 }
 
@@ -30,7 +25,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "Managed integration CSPM Cloud Connector Test Policy"
+  description     = "cloud_connector RequiresReplace plan test"
   policy_template = "cspm"
 
   package = {
@@ -46,6 +41,7 @@ resource "elasticstack_fleet_managed_integration" "test" {
   cloud_connector = {
     enabled            = true
     cloud_connector_id = var.cloud_connector_id
+    name               = var.cloud_connector_name
     target_csp         = "aws"
   }
 

@@ -69,7 +69,7 @@ func TestApplyVersionConstraint_VersionComparison(t *testing.T) {
 	minVer, err := goversion.NewVersion("8.15.0")
 	require.NoError(t, err)
 
-	check := func(sv *goversion.Version) bool { return sv.GreaterThanOrEqual(minVer) }
+	check := func(sv *goversion.Version) bool { return serverVersionMeetsMinimum(sv, minVer) }
 
 	tests := []struct {
 		rawVersion string
@@ -193,4 +193,45 @@ func TestEnforceVersionCheck_FetchError(t *testing.T) {
 	ok, diags := enforceVersionCheck(t.Context(), func(_ *goversion.Version) bool { return true }, makeErrorFetcher())
 	assert.False(t, ok)
 	require.True(t, diags.HasError())
+}
+
+func TestServerVersionMeetsMinimum_SnapshotBuildOnReleaseFloor(t *testing.T) {
+	t.Parallel()
+
+	minVer := goversion.Must(goversion.NewVersion("9.5.0"))
+
+	tests := []struct {
+		server string
+		want   bool
+		name   string
+	}{
+		{"9.4.0-SNAPSHOT", false, "snapshot below core"},
+		{"9.5.0-SNAPSHOT", true, "snapshot same core as release floor"},
+		{"9.5.0", true, "release equal"},
+		{"9.5.1", true, "release above"},
+		{"9.5.0-beta.1", false, "non-SNAPSHOT prerelease on same core"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			sv, err := goversion.NewVersion(tc.server)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, serverVersionMeetsMinimum(sv, minVer), "server %q", tc.server)
+		})
+	}
+}
+
+func TestSnapshotBuildSatisfiesReleaseMinimum_MinimumAlsoPrerelease(t *testing.T) {
+	t.Parallel()
+	server := goversion.Must(goversion.NewVersion("9.5.0-SNAPSHOT"))
+	minBeta := goversion.Must(goversion.NewVersion("9.5.0-beta.1"))
+	assert.False(t, snapshotBuildSatisfiesReleaseMinimum(server, minBeta))
+}
+
+func TestEnforceMinVersion_SnapshotBuildMeetsReleaseMinimum(t *testing.T) {
+	t.Parallel()
+	minVer := goversion.Must(goversion.NewVersion("9.5.0"))
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("9.5.0-SNAPSHOT", "default"))
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
 }

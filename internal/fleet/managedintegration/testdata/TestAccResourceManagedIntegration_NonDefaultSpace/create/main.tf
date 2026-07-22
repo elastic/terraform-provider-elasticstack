@@ -17,13 +17,13 @@ provider "elasticstack" {
 
 resource "elasticstack_kibana_space" "test" {
   space_id    = var.space_id
-  name        = "Agentless Policy ${var.space_id}"
-  description = "Kibana space for fleet agentless policy acceptance test"
+  name        = "Managed integration policy ${var.space_id}"
+  description = "Kibana space for fleet managed integration acceptance test"
 }
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "Agentless CSPM Non-Default-Space Test Policy"
+  description     = "Managed integration CSPM Non-Default-Space Test Policy"
   policy_template = "cspm"
   space_ids       = [elasticstack_kibana_space.test.space_id]
 

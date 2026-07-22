@@ -1,5 +1,5 @@
 variable "policy_name" {
-  description = "The agentless policy name"
+  description = "The managed integration policy name"
   type        = string
 }
 
@@ -15,7 +15,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "Updated Agentless CSPM Test Policy"
+  description     = "Updated Managed integration CSPM Test Policy"
   policy_template = "cspm"
 
   package = {

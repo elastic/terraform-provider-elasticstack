@@ -65,8 +65,9 @@ func isConfirmedCloudOrServerless(ctx context.Context, client *clients.KibanaSco
 // this check, checkDeploymentTopology's own preflight correctly rejects that
 // self-managed stack, which would FAIL these tests in CI. Skipping instead
 // is the correct outcome for an environment that structurally cannot run
-// them -- the same conceptual situation as versionutils.SkipIfUnsupported
-// skipping a test against a too-old Kibana rather than failing it.
+// them -- the same conceptual situation as skipUnlessKibanaMeetsManagedIntegrationMinVersion
+// skipping a test against a Kibana below managedintegration.MinVersion rather
+// than failing it.
 //
 // Deliberately not gated behind a manual opt-in environment variable: that
 // alternative was considered and rejected (it would require new CI wiring

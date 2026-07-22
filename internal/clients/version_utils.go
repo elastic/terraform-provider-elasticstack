@@ -19,6 +19,7 @@ package clients
 
 import (
 	"context"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
@@ -30,6 +31,29 @@ import (
 // enforceVersionCheck helpers to decouple the fetch mechanism from the
 // version-constraint logic.
 type versionFetcher func(ctx context.Context) (rawVersion, flavor string, diags fwdiag.Diagnostics)
+
+// serverVersionMeetsMinimum reports whether server satisfies minimum, including
+// the Elastic build convention that a same-core -SNAPSHOT server satisfies a
+// release (non-prerelease) minimum (e.g. Kibana 9.5.0-SNAPSHOT meets floor 9.5.0).
+func serverVersionMeetsMinimum(server, minimum *version.Version) bool {
+	if server.GreaterThanOrEqual(minimum) {
+		return true
+	}
+	return snapshotBuildSatisfiesReleaseMinimum(server, minimum)
+}
+
+// snapshotBuildSatisfiesReleaseMinimum is true when minimum is a release version,
+// server shares the same core version, and server's prerelease is SNAPSHOT.
+// Other prereleases (e.g. beta) do not satisfy a release minimum.
+func snapshotBuildSatisfiesReleaseMinimum(server, minimum *version.Version) bool {
+	if minimum.Prerelease() != "" || server.Prerelease() == "" {
+		return false
+	}
+	if !server.Core().Equal(minimum.Core()) {
+		return false
+	}
+	return strings.EqualFold(server.Prerelease(), "SNAPSHOT")
+}
 
 // applyVersionConstraint evaluates check against rawVersion, short-circuiting
 // to true for serverless clusters. It is the shared core of EnforceMinVersion
@@ -61,7 +85,7 @@ func enforceMinVersion(ctx context.Context, minVersion *version.Version, fetch v
 		return false, diags
 	}
 	return applyVersionConstraint(flavor, rawVersion, func(sv *version.Version) bool {
-		return sv.GreaterThanOrEqual(minVersion)
+		return serverVersionMeetsMinimum(sv, minVersion)
 	})
 }
 

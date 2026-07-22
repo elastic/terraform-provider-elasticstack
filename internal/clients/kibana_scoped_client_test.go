@@ -170,6 +170,17 @@ func TestKibanaScopedClient_EnforceMinVersion_StatefulAboveMin(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestKibanaScopedClient_EnforceMinVersion_SnapshotBuildMeetsReleaseMinimum(t *testing.T) {
+	t.Parallel()
+	sc := newKibanaScopedClientWithStatusServer(t, "9.5.0-SNAPSHOT", "default")
+	minVer, err := version.NewVersion("9.5.0")
+	require.NoError(t, err)
+
+	ok, diags := sc.EnforceMinVersion(t.Context(), minVer)
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "9.5.0-SNAPSHOT must satisfy a 9.5.0 release minimum")
+}
+
 func TestKibanaScopedClient_EnforceMinVersion_ServerlessShortCircuit(t *testing.T) {
 	t.Parallel()
 	sc := newKibanaScopedClientWithStatusServer(t, "8.10.0", ServerlessFlavor)

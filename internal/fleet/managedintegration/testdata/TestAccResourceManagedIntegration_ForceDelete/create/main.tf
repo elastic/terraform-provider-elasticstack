@@ -13,7 +13,7 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "Agentless CSPM Force-Delete Test Policy"
+  description     = "Managed integration CSPM Force-Delete Test Policy"
   policy_template = "cspm"
   force_delete    = true
 

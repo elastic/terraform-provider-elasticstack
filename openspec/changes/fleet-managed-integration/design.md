@@ -70,6 +70,8 @@ Remove the echo-current/overlay machinery. `buildUpdateBody` takes only the plan
 
 Move the `EnforceMinVersion` floor from 9.3.0 to **9.5.0** (verified against a 9.5.0-SNAPSHOT Kibana build; the same version already used as `policyshape.MinVersionCondition`). This is now a resource-level `MinVersion` constant in `models.go`/`capabilities.go`, mirroring the pattern in `internal/fleet/agentlesspolicy/models.go`.
 
+Shared client version checks (`internal/clients/version_utils.go`) treat a same-core **`-SNAPSHOT`** server build as satisfying a **release** minimum (e.g. Kibana `9.5.0-SNAPSHOT` meets floor `9.5.0`), matching CI matrix stacks and acceptance tests that probe Kibana via `EnforceMinVersion` rather than Elasticsearch alone.
+
 Because the new floor is identical to `MinVersionCondition`, the separate per-request `condition`-support capability check (`agentlessPolicyFeatures.SupportsCondition`, `resolveAgentlessPolicyFeatures`, and `validateInputConditionSupport` in `models_convert.go`) is now redundant: a stack that can run this resource at all is guaranteed to support `condition`. That capability check, and its dedicated gating, is removed; `condition` is treated as unconditionally supported once the resource-level floor is satisfied.
 
 **Why:** Using the wrong floor causes 404s against stacks that have `agentless_policies` but not `managed_integrations` — this was the highest-risk item in the migration and is now resolved. Collapsing the two gates removes a runtime check that can no longer produce a different answer than the resource-level floor, simplifying `capabilities.go` and `models_convert.go` without losing any protection.

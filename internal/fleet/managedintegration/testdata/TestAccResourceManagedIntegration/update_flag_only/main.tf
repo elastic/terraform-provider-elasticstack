@@ -1,5 +1,5 @@
 variable "policy_name" {
-  description = "The agentless policy name"
+  description = "The managed integration policy name"
   type        = string
 }
 
@@ -15,10 +15,10 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "Updated Agentless CSPM Test Policy"
+  description     = "Updated Managed integration CSPM Test Policy"
   policy_template = "cspm"
   # Only this create-only flag differs from the "update_vars" step's config --
-  # see TestAccResourceAgentlessPolicy's "create-only-flag-only change" step,
+  # see TestAccResourceManagedIntegration's "create-only-flag-only change" step,
   # which proves onlyCreateOnlyFlagsChanged's short-circuit (update.go) fires
   # for real against a live Kibana by asserting updated_at does NOT change
   # across this apply.

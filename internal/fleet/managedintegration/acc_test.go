@@ -21,22 +21,18 @@
 // and the change's own task description, this resource is only functional
 // against Elastic Cloud Hosted or Serverless (Kibana >= 9.5.0 for
 // managed_integrations; see managedintegration.MinVersion) -- the Fleet
-// managed integrations API rejects self-managed stacks ("supports_agentless
-// is only allowed in serverless and cloud environments"), and the resource's
+// managed integrations API rejects self-managed stacks, and the resource's
 // own topology preflight (topology.go) additionally refuses self-managed stacks
-// it can positively identify. versionutils.SkipIfUnsupported still provides the
-// Kibana-version part of the gate (see TestAccResourceManagedIntegration_VersionSkipGating
-// below). Every TestAcc* function below that requires a working managed integration
-// therefore calls skipUnlessConfirmedCloud(t) (acc_helpers_test.go) right after its
-// versionutils.SkipIfUnsupported call: it makes the same GET /api/status
-// probe as topology.go, but -- unlike topology.go, which fails open on
-// ambiguity to protect a real cloud user's apply -- fails closed, skipping
-// the test unless Cloud Hosted/Serverless is positively confirmed. This
-// resolves what was previously an open gap here (no environment signal for
-// "this is definitely cloud" existed in the repo's acctest package): the
-// gap is closed by a test-only, fail-closed mirror of topology.go's
-// detection signal, not by new CI infrastructure or a manual opt-in env
-// var (both considered and rejected -- see PR #4034).
+// it can positively identify. Positive acceptance tests gate on Kibana
+// managedintegration.MinVersion via clients.KibanaScopedClient.EnforceMinVersion
+// (acc_kibana_version.go), not the Elasticsearch cluster version. Topology
+// (Cloud Hosted/Serverless) gating is separate: skipUnlessConfirmedCloud(t).
+// Live-stack preconditions also call skipUnlessManagedIntegrationLiveStack for
+// the pinned CSPM package version (acc_package_helpers_test.go).
+//
+// Every TestAcc* that needs a working managed integration calls
+// skipUnlessManagedIntegrationLiveStack then skipUnlessConfirmedCloud right
+// after acctest.PreCheck where applicable.
 //
 // The golden-path package is cloud_security_posture (CSPM), per design.md's
 // Open Question 2. Every fixture here uses the "cspm" policy_template with
@@ -73,9 +69,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/managedintegration"
-	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -98,7 +91,7 @@ var regexpDefaultSpacePrefix = regexp.MustCompile(`^default/`)
 // TestAccResourceManagedIntegration covers the default-space full lifecycle (create,
 // read, update, import, destroy) against live managed_integrations APIs.
 func TestAccResourceManagedIntegration(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -124,7 +117,7 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 				ConfigVariables:          baseVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "name", policyName),
-					resource.TestCheckResourceAttr(testResourceName, "description", "Agentless CSPM Test Policy"),
+					resource.TestCheckResourceAttr(testResourceName, "description", "Managed integration CSPM Test Policy"),
 					resource.TestCheckResourceAttr(testResourceName, "namespace", "default"),
 					resource.TestCheckResourceAttr(testResourceName, "policy_template", "cspm"),
 					resource.TestCheckResourceAttr(testResourceName, "package.name", "cloud_security_posture"),
@@ -175,7 +168,7 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(testResourceName, "description", "Updated Agentless CSPM Test Policy"),
+					resource.TestCheckResourceAttr(testResourceName, "description", "Updated managed integration CSPM Test Policy"),
 				),
 			},
 			{
@@ -192,7 +185,7 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(testResourceName, "description", "Updated Agentless CSPM Test Policy"),
+					resource.TestCheckResourceAttr(testResourceName, "description", "Updated managed integration CSPM Test Policy"),
 					testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
 						"role_arn":             "arn:aws:iam::123456789012:role/tf-acc-test-role-updated",
 						"aws.credentials.type": "assume_role",
@@ -324,12 +317,12 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 // both that space_ids round-trips through Create and that the composite ID
 // is exactly "<space_id>/<policy_id>".
 func TestAccResourceManagedIntegration_NonDefaultSpace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
-	policyName := fmt.Sprintf("agentless-policy-%s", suffix)
-	spaceID := fmt.Sprintf("agentless-policy-%s", suffix)
+	policyName := fmt.Sprintf("managed-integration-%s", suffix)
+	spaceID := fmt.Sprintf("managed-integration-%s", suffix)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -398,7 +391,7 @@ func TestAccResourceManagedIntegration_NonDefaultSpace(t *testing.T) {
 // delete.go) already has unit-level coverage independent of this test: see
 // TestConflictHintDiagnostics in delete_test.go.
 func TestAccResourceManagedIntegration_ForceDelete(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -463,7 +456,7 @@ func TestAccResourceManagedIntegration_ForceDelete(t *testing.T) {
 // secret), but it faithfully exercises cloud_connector_id round-tripping,
 // which is this test's actual point.
 func TestAccResourceManagedIntegration_CloudConnector(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
@@ -513,12 +506,12 @@ func mustFleetClient(t *testing.T) *fleetclient.Client {
 // TestAccResourceManagedIntegration_NameUpdateInPlace verifies in-place `name`
 // updates plan as Update and persist in Terraform state and on the Fleet API.
 func TestAccResourceManagedIntegration_NameUpdateInPlace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	suffix := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
-	firstName := "agentless-" + suffix
-	renamedName := "agentless-" + suffix + "-renamed"
+	firstName := "mi-" + suffix
+	renamedName := "mi-" + suffix + "-renamed"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -557,7 +550,7 @@ func TestAccResourceManagedIntegration_NameUpdateInPlace(t *testing.T) {
 // TestAccResourceManagedIntegration_InputsUpdateInPlace verifies input stream vars
 // update in-place via managed_integrations PUT (full-replace body from plan).
 func TestAccResourceManagedIntegration_InputsUpdateInPlace(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -590,9 +583,12 @@ func TestAccResourceManagedIntegration_InputsUpdateInPlace(t *testing.T) {
 						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionUpdate),
 					},
 				},
-				Check: testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
-					"aws.account_type": "organization-account",
-				}),
+				Check: resource.ComposeTestCheckFunc(
+					testCheckJSONSubset("inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.vars", map[string]any{
+						"aws.account_type": "organization-account",
+					}),
+					testCheckManagedIntegrationStreamVarString(testResourceName, "aws.account_type", "organization-account"),
+				),
 			},
 		},
 	})
@@ -601,7 +597,7 @@ func TestAccResourceManagedIntegration_InputsUpdateInPlace(t *testing.T) {
 // TestAccResourceManagedIntegration_PackageVersionUpdate verifies package.version
 // updates in-place via managed_integrations PUT against a live stack.
 func TestAccResourceManagedIntegration_PackageVersionUpdate(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	fromVersion, toVersion := resolveCSPMInPlaceVersionUpgradePair(t)
@@ -654,7 +650,7 @@ func TestAccResourceManagedIntegration_PackageVersionUpdate(t *testing.T) {
 // TestAccResourceManagedIntegration_GlobalDataTagsNumber verifies number_value
 // tags round-trip through create against a live stack.
 func TestAccResourceManagedIntegration_GlobalDataTagsNumber(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -674,6 +670,10 @@ func TestAccResourceManagedIntegration_GlobalDataTagsNumber(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.%", "2"),
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.env.string_value", "test"),
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.priority.number_value", "42"),
+					testCheckManagedIntegrationGlobalDataTagsPersisted(testResourceName,
+						map[string]string{"env": "test"},
+						map[string]float64{"priority": 42},
+					),
 				),
 			},
 		},
@@ -681,14 +681,10 @@ func TestAccResourceManagedIntegration_GlobalDataTagsNumber(t *testing.T) {
 }
 
 // TestAccResourceManagedIntegration_VersionSkipGating verifies apply fails on
-// Kibana stacks older than managedintegration.MinVersion (9.5.0). Runs only
-// when the acceptance Elasticsearch version is below that floor.
+// Kibana stacks older than managedintegration.MinVersion (9.5.0). Runs only when
+// Kibana /api/status reports a version below that floor.
 func TestAccResourceManagedIntegration_VersionSkipGating(t *testing.T) {
-	constraints, err := version.NewConstraint("< " + managedintegration.MinVersion.String())
-	if err != nil {
-		t.Fatal(err)
-	}
-	versionutils.SkipIfUnsupportedConstraints(t, constraints, versionutils.FlavorStateful)
+	skipIfKibanaMeetsManagedIntegrationMinVersion(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
 
@@ -711,7 +707,7 @@ func TestAccResourceManagedIntegration_VersionSkipGating(t *testing.T) {
 // TestAccResourceManagedIntegration_CloudConnectorUpdate verifies a non-connector
 // field update preserves cloud_connector association on the Fleet API.
 func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 	acctest.PreCheck(t)
 
@@ -758,10 +754,61 @@ func TestAccResourceManagedIntegration_CloudConnectorUpdate(t *testing.T) {
 	})
 }
 
+// TestAccResourceManagedIntegration_CloudConnectorRequiresReplace verifies the
+// object-level RequiresReplace plan modifier on cloud_connector (any sub-field
+// change forces destroy-before-create).
+func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.T) {
+	skipUnlessManagedIntegrationLiveStack(t)
+	skipUnlessConfirmedCloud(t)
+	acctest.PreCheck(t)
+
+	secretRefID := mintExternalIDSecretRef(context.Background(), t, mustFleetClient(t))
+	connectorID, cleanupConnector := createTestCloudConnector(t, secretRefID)
+	t.Cleanup(cleanupConnector)
+
+	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
+	baseVars := config.Variables{
+		"policy_name":           config.StringVariable(policyName),
+		"package_version":       config.StringVariable(cspmPackageVersion),
+		"cloud_connector_id":    config.StringVariable(connectorID),
+		"external_id_secret_id": config.StringVariable(secretRefID),
+		"cloud_connector_name":  config.StringVariable("tf-acc-connector-name-a"),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceManagedIntegrationDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          baseVars,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_cloud_connector_name"),
+				ConfigVariables: config.Variables{
+					"policy_name":           config.StringVariable(policyName),
+					"package_version":       config.StringVariable(cspmPackageVersion),
+					"cloud_connector_id":    config.StringVariable(connectorID),
+					"external_id_secret_id": config.StringVariable(secretRefID),
+					"cloud_connector_name":  config.StringVariable("tf-acc-connector-name-b"),
+				},
+				PlanOnly: true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+			},
+		},
+	})
+}
+
 // TestAccResourceManagedIntegration_ConditionRoundTrip verifies input/stream
 // condition expressions round-trip through create, read, and in-place update.
 func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, managedintegration.MinVersion, versionutils.FlavorAny)
+	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
 
 	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
@@ -786,6 +833,7 @@ func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.condition", initialInputCondition),
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.condition", initialStreamCondition),
+					testCheckManagedIntegrationConditionsPersisted(testResourceName, initialInputCondition, initialStreamCondition),
 				),
 			},
 			{
@@ -805,6 +853,7 @@ func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.condition", updatedInputCondition),
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.condition", updatedStreamCondition),
+					testCheckManagedIntegrationConditionsPersisted(testResourceName, updatedInputCondition, updatedStreamCondition),
 				),
 			},
 		},
@@ -937,7 +986,7 @@ func createTestCloudConnector(t *testing.T, secretRefID string) (string, func())
 	}
 
 	accountType := kbapi.PostFleetCloudConnectorsJSONBodyAccountTypeSingleAccount
-	name := fmt.Sprintf("tf-acc-agentless-policy-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	name := fmt.Sprintf("tf-acc-managed-integration-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	body := kbapi.PostFleetCloudConnectorsJSONRequestBody{
 		Name:          name,
 		CloudProvider: kbapi.Aws,
@@ -970,25 +1019,22 @@ func createTestCloudConnector(t *testing.T, secretRefID string) (string, func())
 	return connectorID, cleanup
 }
 
-// mintExternalIDSecretRef creates and immediately deletes a throwaway
-// agentless CSPM policy purely to get Fleet to convert a plain-string
-// password-type var (aws.credentials.external_id) into a stored secret, then
-// returns that secret's ref ID -- see createTestCloudConnector's doc
-// comment for why this indirection is necessary (the cloud_connectors API
-// has no direct "create a secret" endpoint of its own).
+// mintExternalIDSecretRef creates and deletes a throwaway managed integration
+// so Fleet converts a plaintext aws.credentials.external_id stream var into a
+// stored secret, then returns that secret's ref ID.
 func mintExternalIDSecretRef(ctx context.Context, t *testing.T, fc *fleetclient.Client) string {
 	t.Helper()
 
 	probeName := fmt.Sprintf("tf-acc-secret-probe-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
-	createBody := kbapi.PostFleetAgentlessPoliciesJSONRequestBody{
+	policyTemplate := "cspm"
+	createBody := kbapi.PostFleetManagedIntegrationsJSONRequestBody{
 		Name: probeName,
 		Package: kbapi.KibanaHTTPAPIsPackagePolicyPackage{
-			Name:    "cloud_security_posture",
+			Name:    cspmPackageName,
 			Version: cspmPackageVersion,
 		},
+		PolicyTemplate: &policyTemplate,
 	}
-	policyTemplate := "cspm"
-	createBody.PolicyTemplate = &policyTemplate
 	if err := json.Unmarshal([]byte(`{"posture":"cspm","deployment":"aws"}`), &createBody.Vars); err != nil {
 		t.Fatalf("failed to build secret-probe vars: %v", err)
 	}
@@ -1011,184 +1057,32 @@ func mintExternalIDSecretRef(ctx context.Context, t *testing.T, fc *fleetclient.
 		t.Fatalf("failed to build secret-probe inputs: %v", err)
 	}
 
-	createResp, err := fc.API.PostFleetAgentlessPoliciesWithResponse(ctx, createBody)
-	if err != nil {
-		t.Fatalf("failed to create secret-probe agentless policy: %v", err)
+	item, diags := fleetclient.CreateManagedIntegration(ctx, fc, managedIntegrationDefaultSpace, createBody)
+	if diags.HasError() {
+		t.Fatalf("failed to create secret-probe managed integration: %v", diags)
 	}
-	if createResp.StatusCode() != 200 || createResp.JSON200 == nil {
-		t.Fatalf("failed to create secret-probe agentless policy: status %d: %s", createResp.StatusCode(), string(createResp.Body))
+	if item == nil {
+		t.Fatal("failed to create secret-probe managed integration: empty response")
 	}
-	probeID := createResp.JSON200.Item.Id
+	probeID := item.Id
 
 	t.Cleanup(func() {
-		force := true
-		_, err := fc.API.DeleteFleetAgentlessPoliciesPolicyidWithResponse(ctx, probeID, &kbapi.DeleteFleetAgentlessPoliciesPolicyidParams{Force: &force})
-		if err != nil {
-			t.Logf("failed to delete secret-probe agentless policy %s: %v", probeID, err)
+		_, delDiags := fleetclient.DeleteManagedIntegration(ctx, fc, managedIntegrationDefaultSpace, probeID, true)
+		if delDiags.HasError() {
+			t.Logf("failed to delete secret-probe managed integration %s: %v", probeID, delDiags)
 		}
 	})
 
-	getResp, err := fc.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, probeID, nil)
-	if err != nil {
-		t.Fatalf("failed to read back secret-probe agentless policy: %v", err)
+	readBack, diags := fleetclient.ReadManagedIntegration(ctx, fc, managedIntegrationDefaultSpace, probeID)
+	if diags.HasError() {
+		t.Fatalf("failed to read back secret-probe managed integration: %v", diags)
 	}
-	if getResp.StatusCode() != 200 || getResp.JSON200 == nil {
-		t.Fatalf("failed to read back secret-probe agentless policy: status %d: %s", getResp.StatusCode(), string(getResp.Body))
+	if readBack == nil {
+		t.Fatalf("secret-probe managed integration %s not found after create", probeID)
 	}
-
-	// Parsed directly from the raw response body (rather than through
-	// kbapi's PackagePolicyMappedOrTypedInputs union accessors) to sidestep
-	// ambiguity in which union arm GetFleetPackagePoliciesPackagepolicyidWithResponse's
-	// generated accessors pick apart; this shape was confirmed directly
-	// against a live Kibana 9.4.3 response body during development of this
-	// fixture.
-	// Value is decoded as json.RawMessage rather than a fixed struct because
-	// its shape varies by var: most are a bare string (e.g. role_arn's
-	// `{"value":"arn:...","type":"text"}`), while a secret-backed var's
-	// value is an object (`{"value":{"id":"...","isSecretRef":true},...}`).
-	var parsed struct {
-		Item struct {
-			Inputs []struct {
-				Type    string `json:"type"`
-				Streams []struct {
-					Vars map[string]struct {
-						Value json.RawMessage `json:"value"`
-					} `json:"vars"`
-				} `json:"streams"`
-			} `json:"inputs"`
-		} `json:"item"`
+	if secretID, ok := externalIDSecretRefFromManagedIntegration(readBack); ok {
+		return secretID
 	}
-	if err := json.Unmarshal(getResp.Body, &parsed); err != nil {
-		t.Fatalf("failed to decode secret-probe policy response: %v", err)
-	}
-	for _, in := range parsed.Item.Inputs {
-		if in.Type != "cloudbeat/cis_aws" {
-			continue
-		}
-		for _, s := range in.Streams {
-			v, ok := s.Vars["aws.credentials.external_id"]
-			if !ok {
-				continue
-			}
-			var secretRef struct {
-				ID          string `json:"id"`
-				IsSecretRef bool   `json:"isSecretRef"`
-			}
-			if err := json.Unmarshal(v.Value, &secretRef); err != nil {
-				continue
-			}
-			if secretRef.IsSecretRef {
-				return secretRef.ID
-			}
-		}
-	}
-	t.Fatalf("could not find a secret ref for aws.credentials.external_id in secret-probe policy %s", probeID)
+	t.Fatalf("could not find a secret ref for %s in secret-probe managed integration %s", externalIDStreamVarKey, probeID)
 	return ""
-}
-
-// testCheckManagedIntegrationNamePersisted reads GET /api/fleet/managed_integrations/{id}
-// to confirm the integration name was persisted server-side after an in-place rename.
-func testCheckManagedIntegrationNamePersisted(resourceName, expectedName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok || rs.Primary == nil {
-			return fmt.Errorf("resource %s not found in state", resourceName)
-		}
-		policyID := rs.Primary.Attributes["policy_id"]
-		spaceID := "default"
-		if id, diags := clients.CompositeIDFromStr(rs.Primary.ID); !diags.HasError() && id != nil {
-			spaceID = id.ClusterID
-		}
-
-		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-		if err != nil {
-			return err
-		}
-		fc := client.GetFleetClient()
-
-		item, diags := fleetclient.ReadManagedIntegration(context.Background(), fc, spaceID, policyID)
-		if diags.HasError() {
-			return diagutil.FwDiagsAsError(diags)
-		}
-		if item == nil {
-			return fmt.Errorf("managed integration %s not found when checking name", policyID)
-		}
-		if item.Name != expectedName {
-			return fmt.Errorf("managed integration %s: expected name %q, got %q", policyID, expectedName, item.Name)
-		}
-		return nil
-	}
-}
-
-// testCheckManagedIntegrationPackageVersionPersisted reads GET /api/fleet/managed_integrations/{id}
-// to confirm package.version was persisted server-side after an in-place bump.
-func testCheckManagedIntegrationPackageVersionPersisted(resourceName, expectedVersion string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok || rs.Primary == nil {
-			return fmt.Errorf("resource %s not found in state", resourceName)
-		}
-		policyID := rs.Primary.Attributes["policy_id"]
-		spaceID := "default"
-		if id, diags := clients.CompositeIDFromStr(rs.Primary.ID); !diags.HasError() && id != nil {
-			spaceID = id.ClusterID
-		}
-
-		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-		if err != nil {
-			return err
-		}
-		fc := client.GetFleetClient()
-
-		item, diags := fleetclient.ReadManagedIntegration(context.Background(), fc, spaceID, policyID)
-		if diags.HasError() {
-			return diagutil.FwDiagsAsError(diags)
-		}
-		if item == nil {
-			return fmt.Errorf("managed integration %s not found when checking package.version", policyID)
-		}
-		if item.Package.Version != expectedVersion {
-			return fmt.Errorf("managed integration %s: expected package.version %q, got %q", policyID, expectedVersion, item.Package.Version)
-		}
-		return nil
-	}
-}
-
-// testCheckCloudConnectorPersisted reads GET /api/fleet/managed_integrations/{id}
-// to confirm cloud_connector_id was persisted server-side (association fields are
-// re-sent on PUT from prior state; name/target_csp are write-only in state).
-func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok || rs.Primary == nil {
-			return fmt.Errorf("resource %s not found in state", resourceName)
-		}
-		policyID := rs.Primary.Attributes["policy_id"]
-		spaceID := "default"
-		if id, diags := clients.CompositeIDFromStr(rs.Primary.ID); !diags.HasError() && id != nil {
-			spaceID = id.ClusterID
-		}
-
-		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
-		if err != nil {
-			return err
-		}
-		fc := client.GetFleetClient()
-
-		item, diags := fleetclient.ReadManagedIntegration(context.Background(), fc, spaceID, policyID)
-		if diags.HasError() {
-			return diagutil.FwDiagsAsError(diags)
-		}
-		if item == nil {
-			return fmt.Errorf("managed integration %s not found when checking cloud_connector_id", policyID)
-		}
-		if item.CloudConnector == nil || item.CloudConnector.CloudConnectorId != expectedConnectorID {
-			got := ""
-			if item.CloudConnector != nil {
-				got = item.CloudConnector.CloudConnectorId
-			}
-			return fmt.Errorf("managed integration %s: expected cloud_connector_id %q, got %q", policyID, expectedConnectorID, got)
-		}
-		return nil
-	}
 }
