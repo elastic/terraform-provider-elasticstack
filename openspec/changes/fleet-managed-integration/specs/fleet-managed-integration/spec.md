@@ -116,7 +116,7 @@ The PUT body SHALL be constructed entirely from the current plan (desired state)
 
 ### Requirement: cloud_connector modelling unchanged
 
-`cloud_connector` SHALL remain a `SingleNestedAttribute` with sub-fields `enabled`, `cloud_connector_id`, `name`, and `target_csp`. The `cloud_connector` attribute SHALL carry a single object-level `RequiresReplace` plan modifier (not one per sub-field), which forces replacement when any sub-field changes. On Read, `name` and `target_csp` SHALL be preserved from prior state (they are write-only wire fields that do not appear in the API GET/PUT response).
+`cloud_connector` SHALL remain a `SingleNestedAttribute` with sub-fields `enabled`, `cloud_connector_id`, `name`, and `target_csp`. The `cloud_connector` attribute SHALL carry a single object-level `RequiresReplace` plan modifier (not one per sub-field), which forces replacement when any sub-field changes. On Read, `name` and `target_csp` SHALL be preserved from prior state (they are write-only wire fields that do not appear in the API GET/PUT response). `enabled` and `cloud_connector_id` SHALL be merged from the GET response. When prior state had no `cloud_connector` block (for example import), the block SHALL be built from API values with null write-only fields.
 
 #### Scenario: cloud_connector name preserved on Read
 - **WHEN** a resource with `cloud_connector = { name = "my-conn", target_csp = "aws", enabled = true }` is read
@@ -197,7 +197,36 @@ The resource SHALL support import via the composite ID `"<space_id>/<policy_id>"
 - **WHEN** `terraform import elasticstack_fleet_managed_integration.x "default/<policy_id>"` is run
 - **THEN** `policy_id` SHALL be set to the parsed value
 - **AND** `space_ids` SHALL be set to `["default"]`
-- **AND** all other attributes SHALL be populated from `GET /api/fleet/managed_integrations/{id}`
+- **AND** attributes returned by `GET /api/fleet/managed_integrations/{id}` SHALL be populated into state
+- **AND** `policy_template` SHALL remain null when not available from GET
+- **AND** create-only attributes (`force`, `create_dataset_templates`, `skip_topology_check`) SHALL remain null unless later set in config
+
+### Requirement: policy_template create-only preservation
+
+`policy_template` SHALL be configurable at create time and SHALL NOT appear on the managed_integrations GET response. On Read and read-after-write, when prior state or plan carries a known `policy_template`, the resource SHALL preserve that value. After import without practitioner config, `policy_template` SHALL remain null.
+
+#### Scenario: policy_template preserved on refresh
+- **WHEN** a resource was created with `policy_template = "cspm"` and a refresh runs
+- **THEN** state SHALL retain `policy_template = "cspm"`
+- **AND** the value SHALL NOT be cleared because GET omits the field
+
+#### Scenario: policy_template null on import
+- **WHEN** a resource is imported by composite ID and GET does not return `policy_template`
+- **THEN** `policy_template` SHALL be null in state until set in config
+
+### Requirement: Secret reference reconciliation on Read
+
+When the managed_integrations GET response returns input, stream, or top-level vars as Fleet secret references (`{id,isSecretRef}` bare or wrapped), the resource SHALL reconcile those fields against prior Terraform state or the write plan so plaintext values configured by the practitioner are preserved on read-after-write and refresh, preventing inconsistent apply results. When no prior plaintext exists (for example import), API secret reference shapes MAY remain in state.
+
+#### Scenario: Plaintext stream var preserved after read
+- **WHEN** the practitioner configured a plaintext password-type stream var
+- **AND** GET returns the var as a secret reference object
+- **THEN** state SHALL retain the configured plaintext value from prior state
+
+#### Scenario: Import retains secret reference shape
+- **WHEN** a resource is imported without prior practitioner var values
+- **AND** GET returns secret reference objects
+- **THEN** state MAY contain the secret reference shapes until the practitioner sets plaintext in config
 
 ### Requirement: Response type cleanup — no PackagePolicy leakage
 

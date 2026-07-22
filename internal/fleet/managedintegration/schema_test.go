@@ -88,6 +88,7 @@ func TestGetSchema_identityAttributes(t *testing.T) {
 	assert.True(t, spaceIDs.Computed)
 	assert.Equal(t, types.StringType, spaceIDs.ElementType)
 	require.NotEmpty(t, spaceIDs.PlanModifiers)
+	assert.True(t, hasSetRequiresReplace(spaceIDs.PlanModifiers), "space_ids should force replacement on change")
 }
 
 // TestGetSchema_package checks that package.name/version force replacement
@@ -354,6 +355,15 @@ func hasObjectRequiresReplace(mods []planmodifier.Object) bool {
 }
 
 func hasStringRequiresReplace(mods []planmodifier.String) bool {
+	for _, m := range mods {
+		if m.Description(context.Background()) == requiresReplaceDescription {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSetRequiresReplace(mods []planmodifier.Set) bool {
 	for _, m := range mods {
 		if m.Description(context.Background()) == requiresReplaceDescription {
 			return true

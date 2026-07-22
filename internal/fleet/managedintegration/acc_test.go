@@ -201,6 +201,12 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceName, "global_data_tags.team.string_value", "security"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.#", "1"),
 					resource.TestCheckResourceAttr(testResourceName, "additional_datastreams_permissions.0", "logs-custom-*"),
+					testCheckManagedIntegrationUpdateExtrasPersisted(
+						testResourceName,
+						map[string]any{"posture": "cspm", "deployment": "aws"},
+						map[string]string{"deployment": "aws"},
+						[]string{"logs-custom-*"},
+					),
 					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
 						capturedUpdatedAt = value
 						return nil
@@ -277,12 +283,9 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					"force_delete",
 					"create_dataset_templates",
 					"skip_topology_check",
-					// policy_template is create-only in practice (not returned on
-					// managed_integrations GET) and isn't Computed in schema.go, so a
-					// fresh import -- which starts from a blank model with no prior
-					// config to preserve it from -- has no way to know it. See spec.md's
-					// Import requirement: "Read SHALL populate all state attributes from
-					// the Fleet API", which policy_template structurally cannot satisfy.
+					// policy_template is create-only (absent from GET); import starts
+					// without prior config so it remains null until set — see
+					// spec.md "policy_template create-only preservation".
 					"policy_template",
 					// vars_json carries an internal contextual-normalization
 					// marker (see policyshape's JSONWithContextualDefaultsType)
@@ -293,16 +296,8 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					// TestAccResourceIntegrationPolicySecrets in
 					// internal/fleet/integration_policy/acc_test.go).
 					"vars_json",
-					// inputs legitimately differs after a fresh import: the
-					// live-managed resource's state is filtered down to just
-					// the keys the config tracks (see
-					// models_convert.go's inputsKnownKeySet), but an import
-					// starts with no such reference and so faithfully surfaces
-					// every input CSPM's create/read responses include across
-					// all of its policy templates, per spec.md's Import
-					// requirement ("Read SHALL populate all state attributes
-					// from the Fleet API"). This is expected, not a bug -- see
-					// this file's package comment.
+					// inputs may differ after import when the API returns more keys
+					// than config tracks (inputsKnownKeySet); see package comment.
 					"inputs",
 				},
 			},
@@ -422,39 +417,12 @@ func TestAccResourceManagedIntegration_ForceDelete(t *testing.T) {
 // change's design.md "no hard dependency on fleet-cloud-connector" decision)
 // and verifying it round-trips.
 //
-// Per design.md / models_convert.go's populateFromManagedIntegration
-// comment, cloud_connector is intentionally NOT re-read from the API on
-// Read (it isn't Computed in schema.go, and the read response only exposes a
-// bare cloud_connector_id, not the full object) -- so state round-tripping
-// it is a Terraform-side (config-preservation) guarantee, not proof the
-// value actually reached Kibana. This test additionally reads GET
-// /api/fleet/managed_integrations/{id} to confirm cloud_connector_id was
-// persisted server-side, which is the part that actually proves the create
-// request carried it (see testCheckCloudConnectorPersisted).
-//
-// Actually wiring the connector so Kibana persists cloud_connector_id
-// server-side (empirically confirmed: it does NOT persist the field at all
-// when cloud_connector.enabled = false, only when true) requires the
-// input's own aws.credentials.type = "cloud_connectors", which in turn
-// requires aws.credentials.external_id to be a *valid* secret reference
-// (a bare string is rejected outright: "Package policy must contain valid
-// external_id secret reference" once a cloud_connector block is present).
-// This resource does not implement policyshape's secret-masking
-// reconciliation (HandleRespSecrets/HandleReqRespSecrets -- wired up for
-// integration_policy but not for managedintegration; see this file's package
-// comment), so a bare string for a password-type var would normally trip
-// "Provider produced inconsistent result after apply" once Kibana echoes it
-// back as a {id,isSecretRef} object. This test sidesteps that gap (which is
-// real, but out of scope for Task 8 -- see design.md's Non-Goals) by
-// configuring aws.credentials.external_id as the *already-secret-ref-shaped*
-// value up front (`{isSecretRef: true, id: <secret-id>}`), obtained from a
-// throwaway probe policy exactly as createTestCloudConnector's own fixture
-// does. Since the configured value already matches what Kibana will echo
-// back byte-for-byte, there is no drift to reconcile. This is not a
-// realistic end-user config (a real user would just supply a plaintext
-// external_id learned from their cloud provider and let Fleet mint the
-// secret), but it faithfully exercises cloud_connector_id round-tripping,
-// which is this test's actual point.
+// Read merges cloud_connector.enabled and cloud_connector_id from GET while
+// preserving write-only name/target_csp from config (see cloud_connector_read.go).
+// Stream vars configured as Fleet secret-ref shapes round-trip without drift;
+// plaintext password vars are preserved via secrets_reconcile.go on read-after-write.
+// This test still uses a pre-minted secret ref for external_id because cloud
+// connector wiring requires a valid Fleet secret reference on the CSPM input.
 func TestAccResourceManagedIntegration_CloudConnector(t *testing.T) {
 	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)

@@ -77,7 +77,8 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 		`"created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic",` +
 		`"updated_at":"2026-01-02T00:00:00.000Z","updated_by":"elastic",` +
 		`"inputs":{},` +
-		`"package":{"name":"cloud_security_posture","version":"3.4.0"}` +
+		`"package":{"name":"cloud_security_posture","version":"3.4.0"},` +
+		`"cloud_connector":{"enabled":true,"cloud_connector_id":"cc-from-api"}` +
 		`}}`
 
 	mux := http.NewServeMux()
@@ -92,9 +93,10 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 
 	ctx := context.Background()
 	ccObj, ccDiags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
-		Name:      types.StringValue("seed-connector-name"),
-		TargetCSP: types.StringValue("aws"),
-		Enabled:   types.BoolValue(true),
+		Name:             types.StringValue("seed-connector-name"),
+		TargetCSP:        types.StringValue("aws"),
+		Enabled:          types.BoolValue(true),
+		CloudConnectorID: types.StringValue("cc-stale-in-state"),
 	})
 	require.False(t, ccDiags.HasError())
 
@@ -121,4 +123,6 @@ func TestReadAgentlessPolicy_populatesFromManagedIntegration(t *testing.T) {
 	require.False(t, out.CloudConnector.As(ctx, &cc, basetypes.ObjectAsOptions{}).HasError())
 	assert.Equal(t, "seed-connector-name", cc.Name.ValueString())
 	assert.Equal(t, "aws", cc.TargetCSP.ValueString())
+	assert.Equal(t, "cc-from-api", cc.CloudConnectorID.ValueString())
+	assert.True(t, cc.Enabled.ValueBool())
 }

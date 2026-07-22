@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -217,8 +218,52 @@ func testCheckManagedIntegrationPackageVersionPersisted(resourceName, expectedVe
 	}
 }
 
-// testCheckCloudConnectorPersisted reads GET /api/fleet/managed_integrations/{id}
-// to confirm cloud_connector association fields persisted server-side.
+func testCheckManagedIntegrationUpdateExtrasPersisted(
+	resourceName string,
+	wantVars map[string]any,
+	wantVarGroups map[string]string,
+	wantPerms []string,
+) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)
+		if err != nil {
+			return err
+		}
+		item, err := readManagedIntegrationAPI(context.Background(), spaceID, policyID)
+		if err != nil {
+			return err
+		}
+		if item.Vars != nil {
+			got := policyshape.VarsAnyToMap(item.Vars)
+			for k, want := range wantVars {
+				if fmt.Sprint(got[k]) != fmt.Sprint(want) {
+					return fmt.Errorf("managed integration %s: vars[%q] want %v, got %v", policyID, k, want, got[k])
+				}
+			}
+		}
+		if item.VarGroupSelections != nil {
+			for k, want := range wantVarGroups {
+				if got, ok := (*item.VarGroupSelections)[k]; !ok || got != want {
+					return fmt.Errorf("managed integration %s: var_group_selections[%q] want %q, got %q", policyID, k, want, got)
+				}
+			}
+		}
+		if item.AdditionalDatastreamsPermissions != nil {
+			if len(*item.AdditionalDatastreamsPermissions) != len(wantPerms) {
+				return fmt.Errorf("managed integration %s: additional_datastreams_permissions len want %d, got %d",
+					policyID, len(wantPerms), len(*item.AdditionalDatastreamsPermissions))
+			}
+			for i, want := range wantPerms {
+				if (*item.AdditionalDatastreamsPermissions)[i] != want {
+					return fmt.Errorf("managed integration %s: additional_datastreams_permissions[%d] want %q, got %q",
+						policyID, i, want, (*item.AdditionalDatastreamsPermissions)[i])
+				}
+			}
+		}
+		return nil
+	}
+}
+
 func testCheckCloudConnectorPersisted(resourceName, expectedConnectorID string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)

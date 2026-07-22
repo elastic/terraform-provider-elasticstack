@@ -908,7 +908,7 @@ func TestPopulateFromManagedIntegration_preservesCloudConnector(t *testing.T) {
 
 	var cc cloudConnectorModel
 	require.False(t, m.CloudConnector.As(ctx, &cc, basetypes.ObjectAsOptions{}).HasError())
-	assert.Equal(t, "cc-123", cc.CloudConnectorID.ValueString())
+	assert.Equal(t, "cc-other", cc.CloudConnectorID.ValueString())
 	assert.Equal(t, "my-connector", cc.Name.ValueString())
 	assert.Equal(t, "aws", cc.TargetCSP.ValueString())
 }
