@@ -36,6 +36,8 @@ All tasks in this change are test-infrastructure only. No provider Go source, sc
 
 ## Task 2 — Package `security_entity_store`: update TF fixtures
 
+**Status:** complete
+
 Apply to every `.tf` file in the directories below. Each file needs:
 
 ```hcl
