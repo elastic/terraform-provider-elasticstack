@@ -120,51 +120,74 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 		return attrs, diags
 	}
 
-	if m.Query != nil && typeutils.IsKnown(m.Query.Expression) {
-		api := kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel{
-			Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap,
-		}
-
-		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
-		if typeutils.IsKnown(m.DataSourceJSON) {
-			if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
-				diags.AddError("Failed to unmarshal data_source_json", err.Error())
-				return attrs, diags
-			}
-		}
-		api.Query = lenscommon.FilterSimpleToAPI(m.Query)
-
-		api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-		if typeutils.IsKnown(m.MetricJSON) {
-			if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
-				diags.AddError("Failed to unmarshal metric", err.Error())
-				return attrs, diags
-			}
-		}
-		if typeutils.IsKnown(m.RegionJSON) {
-			if err := json.Unmarshal([]byte(m.RegionJSON.ValueString()), &api.Region); err != nil {
-				diags.AddError("Failed to unmarshal region", err.Error())
-				return attrs, diags
-			}
-		}
-
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-		diags.Append(presDiags...)
-		if presDiags.HasError() {
+	if lenscommon.ConfigUsesESQL(m.Query) {
+		esql, esqlDiags := regionMapConfigToAPIESQL(m)
+		diags.Append(esqlDiags...)
+		if diags.HasError() {
 			return attrs, diags
 		}
-
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel_Drilldowns_Item](
-			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-		)...)
-
-		if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQLByValuePanel(api); err != nil {
-			diags.AddError("Failed to create region map schema", err.Error())
+		if err := attrs.FromKibanaHTTPAPIsRegionMapESQLByValuePanel(esql); err != nil {
+			diags.AddError("Failed to create region map ES|QL schema", err.Error())
 		}
 		return attrs, diags
 	}
 
+	noESQL, noESQLDiags := regionMapConfigToAPINoESQL(m)
+	diags.Append(noESQLDiags...)
+	if diags.HasError() {
+		return attrs, diags
+	}
+	if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQLByValuePanel(noESQL); err != nil {
+		diags.AddError("Failed to create region map schema", err.Error())
+	}
+	return attrs, diags
+}
+
+func regionMapConfigToAPINoESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	api := kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap,
+	}
+
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
+	if typeutils.IsKnown(m.DataSourceJSON) {
+		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
+			diags.AddError("Failed to unmarshal data_source_json", err.Error())
+			return api, diags
+		}
+	}
+	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
+
+	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
+
+	if typeutils.IsKnown(m.MetricJSON) {
+		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
+			diags.AddError("Failed to unmarshal metric", err.Error())
+			return api, diags
+		}
+	}
+	if typeutils.IsKnown(m.RegionJSON) {
+		if err := json.Unmarshal([]byte(m.RegionJSON.ValueString()), &api.Region); err != nil {
+			diags.AddError("Failed to unmarshal region", err.Error())
+			return api, diags
+		}
+	}
+
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return api, diags
+	}
+
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel_Drilldowns_Item](
+		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+	)...)
+
+	return api, diags
+}
+
+func regionMapConfigToAPIESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	api := kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel{
 		Type: kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanelTypeRegionMap,
 	}
@@ -173,7 +196,7 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 	if typeutils.IsKnown(m.DataSourceJSON) {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal data_source_json", err.Error())
-			return attrs, diags
+			return api, diags
 		}
 	}
 
@@ -182,28 +205,25 @@ func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValue
 	if typeutils.IsKnown(m.MetricJSON) {
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
-			return attrs, diags
+			return api, diags
 		}
 	}
 	if typeutils.IsKnown(m.RegionJSON) {
 		if err := json.Unmarshal([]byte(m.RegionJSON.ValueString()), &api.Region); err != nil {
 			diags.AddError("Failed to unmarshal region", err.Error())
-			return attrs, diags
+			return api, diags
 		}
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
 	diags.Append(presDiags...)
 	if presDiags.HasError() {
-		return attrs, diags
+		return api, diags
 	}
 
 	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
-	if err := attrs.FromKibanaHTTPAPIsRegionMapESQLByValuePanel(api); err != nil {
-		diags.AddError("Failed to create region map schema", err.Error())
-	}
-	return attrs, diags
+	return api, diags
 }
