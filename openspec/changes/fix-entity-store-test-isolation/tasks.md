@@ -73,6 +73,8 @@ For the `TestAccDataSourceKibanaSecurityEntityStoreStatus_basic` fixtures, the d
 
 ## Task 3 — Package `security_entity_store/entities`: update Go acc_test.go
 
+**Status:** complete
+
 **File**: `internal/kibana/security_entity_store/entities/acc_test.go`
 
 1. Add same imports (`config`, `sdkacctest`) and `accTestKibanaSpaceIDCharset` constant.
