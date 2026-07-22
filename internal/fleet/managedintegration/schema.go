@@ -166,8 +166,10 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			attrPolicyTemplate: schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The policy template within the package to use; forces replacement on change.",
+				Optional: true,
+				MarkdownDescription: "Policy template within the package, configured at create time. " +
+					"Not returned by GET; preserved from prior config on refresh. " +
+					"Null after import when unavailable. Changing it forces replacement.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},

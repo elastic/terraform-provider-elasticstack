@@ -682,7 +682,11 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 // populateFromManagedIntegration updates Terraform state from a
 // KibanaHTTPAPIsManagedIntegration response. Create-only attributes
 // (force, force_delete, create_dataset_templates, skip_topology_check,
-// policy_template, cloud_connector write-only fields) are left untouched.
+// policy_template) and cloud_connector write-only fields are preserved from
+// the incoming model when set; cloud_connector.enabled and
+// cloud_connector_id are merged from the API response (see
+// applyCloudConnectorFromAPI). Call reconcileManagedIntegrationSecretsFromPrior
+// after populate on read paths when prior state/config is available.
 //
 // spaceIDs is optional metadata when the caller has space membership outside
 // the read response; when nil, space_ids defaults from spaceID when unset on
@@ -743,6 +747,8 @@ func (m *agentlessPolicyModel) populateFromManagedIntegration(ctx context.Contex
 
 	inputsKnownKeys := inputsKnownKeySet(m.Inputs)
 	m.Inputs = populateInputsFromManagedIntegration(ctx, item, inputsKnownKeys, &diags)
+
+	m.applyCloudConnectorFromAPI(ctx, item, &diags)
 
 	return diags
 }

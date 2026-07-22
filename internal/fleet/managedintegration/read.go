@@ -31,9 +31,10 @@ import (
 // removing it from state.
 //
 // force, force_delete, create_dataset_templates, skip_topology_check, and
-// cloud_connector.name/target_csp are preserved from the incoming model because
-// populateFromManagedIntegration deliberately never touches them: none
-// round-trip through the read response.
+// cloud_connector.name/target_csp are preserved from the incoming model when
+// set; cloud_connector.enabled and cloud_connector_id are merged from the GET
+// response. Secret-shaped API vars are reconciled against prior state after
+// populate (see secrets_reconcile.go).
 func readAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model agentlessPolicyModel) (agentlessPolicyModel, bool, diag.Diagnostics) {
 	fleetClient := client.GetFleetClient()
 
@@ -46,7 +47,12 @@ func readAgentlessPolicy(ctx context.Context, client *clients.KibanaScopedClient
 		return model, false, diags
 	}
 
+	priorSnapshot := model
 	diags.Append(model.populateFromManagedIntegration(ctx, spaceID, item, nil)...)
+	if diags.HasError() {
+		return model, false, diags
+	}
+	reconcileManagedIntegrationSecretsFromPrior(ctx, &priorSnapshot, &model, &diags)
 	if diags.HasError() {
 		return model, false, diags
 	}
