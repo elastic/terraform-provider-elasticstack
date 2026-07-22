@@ -23,11 +23,14 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccResourceSecurityEntityStoreEntityLink_Validation(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -35,11 +38,13 @@ func TestAccResourceSecurityEntityStoreEntityLink_Validation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("self_link"),
+				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
 				ExpectError:              regexp.MustCompile(`Self-link not allowed`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
 				ExpectError:              regexp.MustCompile(`must contain at least`),
 			},
 		},

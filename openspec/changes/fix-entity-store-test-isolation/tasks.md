@@ -171,10 +171,12 @@ The entity resource block also accepts `space_id`; wire it on every entity resou
 
 ## Task 7 — Package `security_entity_store_entity_link`: update Go acc_test.go
 
+**Status:** complete
+
 **File**: `internal/kibana/security_entity_store_entity_link/acc_test.go`
 
-1. Add same imports and `accTestKibanaSpaceIDCharset` constant.
-2. For each of the 3 test functions:
+1. [x] Add same imports and `accTestKibanaSpaceIDCharset` constant.
+2. [x] For each of the 3 test functions:
    - Generate `spaceID` per test.
    - Replace `"default"` in `CleanupEntityStore` calls with `spaceID`.
    - Add `ConfigVariables` with `space_id` to every step.
