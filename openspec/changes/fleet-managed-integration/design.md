@@ -86,7 +86,7 @@ _(none — task 1.3 resolved below)_
 
 **Decision:** Keep the create/delete-only-flags short-circuit when rewriting `update.go` for full-replace PUT (task 7.6), satisfying the delta spec requirement "Create/delete-only flag updates skip managed_integrations API calls".
 
-**Why:** `force`, `create_dataset_templates`, `force_delete`, and `skip_topology_check` remain outside the PUT body. Terraform still invokes Update when only they change. The short-circuit writes plan to state without any managed_integrations GET/PUT/DELETE call. Full-replace semantics do not make a body-equality check simpler (timestamps and write-only fields are not in the plan). See `implementation.md` §1.3.
+**Why:** `force`, `create_dataset_templates`, `force_delete`, and `skip_topology_check` remain outside the PUT body. Terraform still invokes Update when only they change. The short-circuit writes plan to state without any managed_integrations GET/PUT/DELETE call. Full-replace semantics do not make a body-equality check simpler (timestamps and write-only fields are not in the plan). The write callback sets `KibanaWriteResult.SkipReadAfterWrite` so the Kibana resource envelope persists the returned model without Read (see `openspec/specs/entitycore-kibana-resource-envelope`); merge known server-computed values from prior state when the plan leaves them Unknown.
 
 ## Risks / Trade-offs
 
