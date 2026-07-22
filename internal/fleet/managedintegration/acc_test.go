@@ -212,6 +212,10 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 						map[string]string{"deployment": "aws"},
 						[]string{"logs-custom-*", "metrics-acc-*"},
 					),
+					testCheckManagedIntegrationGlobalDataTagsPersisted(testResourceName,
+						map[string]string{"env": "test", "team": "security"},
+						nil,
+					),
 					resource.TestCheckResourceAttrWith(testResourceName, "updated_at", func(value string) error {
 						capturedUpdatedAt = value
 						return nil
@@ -270,14 +274,34 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 				),
 			},
 			{
+				// Remove optional global_data_tags and
+				// additional_datastreams_permissions while keeping the rest of
+				// the "update_flag_only" config equivalent (including
+				// skip_topology_check).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_clear_extras"),
+				ConfigVariables:          baseVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "skip_topology_check", "true"),
+					resource.TestCheckNoResourceAttr(testResourceName, "global_data_tags.%"),
+					resource.TestCheckNoResourceAttr(testResourceName, "additional_datastreams_permissions.#"),
+					testCheckManagedIntegrationOptionalCollectionsClearedOnAPI(testResourceName),
+				),
+			},
+			{
 				// Import by composite ID (default-space case): the resource's own
 				// `id` is already "default/<policy_id>".
 				// ConfigDirectory matches the immediately preceding
-				// "update_flag_only" step (not "update_vars") so this step's
-				// implicit re-apply is a no-op and doesn't reintroduce a real
-				// GET+PUT before the import itself.
+				// "update_clear_extras" step so this step's implicit re-apply is
+				// a no-op and doesn't reintroduce a real GET+PUT before the
+				// import itself.
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_flag_only"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_clear_extras"),
 				ConfigVariables:          baseVars,
 				ResourceName:             testResourceName,
 				ImportState:              true,

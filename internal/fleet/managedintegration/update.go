@@ -30,48 +30,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// onlyCreateOnlyFlagsChanged reports whether prior and plan are identical in
-// every attribute except create_dataset_templates, force, force_delete, and
-// skip_topology_check. Those four are create/delete-request-only knobs --
-// never part of the Fleet API's read response, and deliberately not
-// RequiresReplace (see spec.md's "Schema attributes" requirement and this
-// file's updateManagedIntegration) -- so a config change confined to them
-// carries no information the API needs to see, and per spec.md's "Create"
-// requirement changing them "SHALL NOT make any API call".
-// skip_topology_check in particular is consulted only by Create's preflight
-// check (see create.go) and is never read by updateManagedIntegration, so it
-// gets the same treatment. Comparing every other field (rather than
-// allowlisting "the fields Update actually sends") is deliberately
-// conservative: if anything else in the model also drifted -- including
-// drift entitycore/Terraform itself wouldn't have produced, such as a
-// concurrent out-of-band edit surfaced by a prior Read -- this returns false
-// and the normal PUT path below runs instead.
+// onlyCreateOnlyFlagsChanged is true when prior and plan match on every
+// attribute except create_dataset_templates, force, force_delete, and
+// skip_topology_check. Those knobs are create/delete-only (not in the Fleet
+// read body); changing them alone must not trigger PUT (see
+// openspec/specs/fleet-managed-integration/spec.md). All other model fields
+// are compared so unrelated drift still runs the normal update path.
 //
-// kibana_connection (ResourceTimeoutsField) and the Timeouts block are
-// intentionally excluded: they are pure provider-side plumbing that is never
-// part of the Fleet request body either, so their presence or absence has no
-// bearing on whether an API call is needed.
-//
-// created_at and updated_at are also intentionally excluded, for a different
-// reason than the plumbing fields above: they are purely server-Computed
-// (never Optional -- a user's config can never set or influence them), so
-// they can never actually be *what changed* between prior and plan; comparing
-// them here would only ever be testing an artifact of how the Plugin
-// Framework happened to resolve their plan value, not a real signal of user
-// intent. That distinction used to matter concretely: created_at/updated_at
-// are Computed with no plan modifier that forces them to a known value, so
-// the framework marks them Unknown in the plan for every Update regardless of
-// whether they are "really" changing -- which made a naive
-// prior.CreatedAt.Equal(plan.CreatedAt)-style comparison always false in a
-// real Terraform plan (Unknown never equals a known value), permanently
-// defeating this short-circuit outside of unit tests that hand-built a plan
-// with matching known timestamps. Excluding both fields here fixes that
-// directly, without depending on schema.go's plan modifiers lining up a
-// particular way. (created_at additionally now carries UseStateForUnknown in
-// schema.go, since it never legitimately changes after creation -- but
-// updated_at deliberately does NOT, since it genuinely changes on every real
-// Update; see schema.go's updated_at comment for why forcing it to look
-// unchanged in the plan would be actively wrong.)
+// Not compared: kibana_connection and Timeouts (provider-only plumbing);
+// created_at and updated_at (Computed-only — users cannot change them, and
+// updated_at is often Unknown in the plan so a naive Equal would always fail).
 func onlyCreateOnlyFlagsChanged(prior, plan managedIntegrationModel) bool {
 	return prior.ID.Equal(plan.ID) &&
 		prior.PolicyID.Equal(plan.PolicyID) &&

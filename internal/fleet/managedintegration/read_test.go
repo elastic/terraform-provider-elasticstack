@@ -23,6 +23,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -125,4 +130,75 @@ func TestReadManagedIntegration_populatesFromManagedIntegration(t *testing.T) {
 	assert.Equal(t, "aws", cc.TargetCSP.ValueString())
 	assert.Equal(t, "cc-from-api", cc.CloudConnectorID.ValueString())
 	assert.True(t, cc.Enabled.ValueBool())
+}
+
+// TestReadManagedIntegration_callback_preservesStreamSecretVars wires readManagedIntegration
+// end-to-end: GET returns kbapi managed-integration stream vars as a Fleet secret
+// reference; prior state holds plaintext; populate + reconcile must keep plaintext.
+func TestReadManagedIntegration_callback_preservesStreamSecretVars(t *testing.T) {
+	const plaintextExternalID = "my-plaintext-external-id"
+	const managedIntegrationJSON = `{"item":{` +
+		`"id":"policy-1","name":"api-name",` +
+		`"created_at":"2026-01-01T00:00:00.000Z","created_by":"elastic",` +
+		`"updated_at":"2026-01-02T00:00:00.000Z","updated_by":"elastic",` +
+		`"inputs":{` +
+		`"cspm-cloudbeat/cis_aws":{` +
+		`"enabled":true,` +
+		`"streams":{` +
+		`"cloud_security_posture.findings":{` +
+		`"enabled":true,` +
+		`"vars":{` +
+		`"aws.credentials.external_id":{"id":"secret-from-api","isSecretRef":true}` +
+		`}` +
+		`}` +
+		`}` +
+		`}` +
+		`},` +
+		`"package":{"name":"cloud_security_posture","version":"3.4.0"}` +
+		`}}`
+
+	mux := http.NewServeMux()
+	legacyCalls := registerLegacyPackagePoliciesGuard(mux)
+	method := newHTTPMethodCapture()
+	mux.HandleFunc("/api/fleet/managed_integrations/", func(w http.ResponseWriter, r *http.Request) {
+		method.record(r)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, managedIntegrationJSON)
+	})
+	client := newTopologyTestClient(t, mux)
+
+	ctx := context.Background()
+	streamsPrior, d := types.MapValueFrom(ctx, policyshape.StreamType(), map[string]policyshape.InputStreamModel{
+		"cloud_security_posture.findings": {
+			Enabled: types.BoolValue(true),
+			Vars:    jsontypes.NewNormalizedValue(`{"aws.credentials.external_id":` + fmt.Sprintf("%q", plaintextExternalID) + `}`),
+		},
+	})
+	require.False(t, d.HasError())
+
+	priorInputs, d := policyshape.NewInputsValueFrom(ctx, managedIntegrationInputType(), map[string]managedIntegrationInputModel{
+		"cspm-cloudbeat/cis_aws": {
+			Enabled: types.BoolValue(true),
+			Streams: streamsPrior,
+		},
+	})
+	require.False(t, d.HasError())
+
+	seeded := baseTestModel(t)
+	seeded.PolicyID = types.StringValue("policy-1")
+	seeded.Inputs = priorInputs
+
+	out, ok, diags := readManagedIntegration(ctx, client, "policy-1", "default", seeded)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, ok)
+	method.requireEqual(t, http.MethodGet)
+	requireNoLegacyPackagePoliciesCalls(t, legacyCalls)
+
+	var assertDiags diag.Diagnostics
+	inputsMap := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, out.Inputs.MapValue, path.Root(attrInputs), &assertDiags)
+	require.False(t, assertDiags.HasError())
+	streamsMap := typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, inputsMap["cspm-cloudbeat/cis_aws"].Streams, path.Root(attrInputs), &assertDiags)
+	require.False(t, assertDiags.HasError())
+	assert.Contains(t, streamsMap["cloud_security_posture.findings"].Vars.ValueString(), plaintextExternalID)
+	assert.NotContains(t, streamsMap["cloud_security_posture.findings"].Vars.ValueString(), "isSecretRef")
 }

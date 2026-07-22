@@ -39,6 +39,35 @@ func reconcileSecretsMap(t *testing.T, prior, resp map[string]any) diag.Diagnost
 	return diags
 }
 
+func TestSecretReconcileJSONToMap_invalidJSON(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		attrLabel string
+	}{
+		{name: "vars_json", attrLabel: secretReconcileAttrVarsJSON},
+		{name: "vars", attrLabel: secretReconcileAttrVars},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var diags diag.Diagnostics
+			_, ok := secretReconcileJSONToMap(jsontypes.NewNormalizedValue("{"), path.Root(tc.name), tc.attrLabel, &diags)
+			require.False(t, ok)
+			require.True(t, diags.HasError())
+			require.Contains(t, diags.Errors()[0].Summary(), "Failed to decode "+tc.attrLabel+" for secret reconciliation")
+		})
+	}
+}
+
+func TestNormalizedVarsFromMap_emptyMapIsNull(t *testing.T) {
+	t.Parallel()
+	var diags diag.Diagnostics
+	out := normalizedVarsFromMap(map[string]any{}, path.Root("vars"), &diags)
+	require.False(t, diags.HasError())
+	assert.True(t, out.IsNull())
+}
+
 func TestReconcileSecretVarsMapFromPrior_bareRef(t *testing.T) {
 	t.Parallel()
 	prior := map[string]any{"token": "plaintext-secret"}

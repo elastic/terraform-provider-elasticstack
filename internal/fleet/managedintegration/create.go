@@ -27,42 +27,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// createManagedIntegration compiles the plan into a managed-integration create
-// request body and calls POST /api/fleet/managed_integrations. Per spec: a
-// non-2xx response surfaces diagnostics and no state is saved (the entitycore
-// envelope never calls resp.State.Set when this callback returns an error --
-// see kibana_resource_envelope.go's runKibanaWrite).
+// createManagedIntegration POSTs /api/fleet/managed_integrations. Errors return
+// diagnostics and no state (entitycore runKibanaWrite). MinVersion 9.5.0 is
+// enforced by the envelope before this runs (GetVersionRequirements). Unless
+// skip_topology_check is set, checkDeploymentTopology runs first (see
+// openspec/specs/fleet-managed-integration/spec.md).
 //
-// The MinVersion 9.5.0 gate for managed_integrations is wired via
-// GetVersionRequirements (models.go) and enforced by the entitycore envelope
-// (entitycore.EnforceVersionRequirements, called from
-// kibana_resource_envelope.go's Create) before this function is ever invoked
-// -- see TestManagedIntegrationModel_versionGate_firesBeforeAPICall in
-// entitycore_contract_test.go.
-//
-// Task 6.2 adds the deployment-topology preflight check below (self-managed
-// stacks are rejected before the POST call runs; see checkDeploymentTopology
-// and its tests in topology.go/topology_test.go, design.md Decision 7, and
-// openspec/specs/fleet-managed-integration/spec.md's "Deployment topology preflight
-// check" requirement).
-//
-// design.md's Open Question 6 asked whether the fail-open heuristic should
-// additionally offer an explicit opt-out for legitimate Elastic Cloud
-// Hosted/Serverless deployments whose networking (e.g. PrivateLink) never
-// emits the cloud-proxy headers checkDeploymentTopology looks for and so get
-// permanently, incorrectly classified as self-managed with no
-// Terraform-native workaround. That question is now resolved: the
-// `skip_topology_check` schema attribute (schema.go) is the escape hatch.
-// When it is true, checkDeploymentTopology is not called at all -- the check
-// itself makes a live HTTP call to Kibana's status endpoint, so there is no
-// reason to pay for that call when the user has explicitly opted out of its
-// result. Version gating (GetVersionRequirements, enforced by the envelope
-// before this function even runs) is unaffected either way.
-//
-// Per coding-standards.md, persisted state after create comes from the
-// entitycore envelope read-after-write (Read callback), not from the POST
-// response body. This callback only copies the server-assigned policy id into
-// the returned model so the envelope can invoke Read.
+// Persisted state comes from the envelope read-after-write (Read callback),
+// not the POST body; this callback only sets policy_id (and composite id) so
+// Read can run.
 func createManagedIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,

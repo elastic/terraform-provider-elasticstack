@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -29,6 +31,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -105,6 +109,88 @@ func testCheckManagedIntegrationConditionsPersisted(resourceName, inputCondition
 	}
 }
 
+// managedIntegrationOptionalCollectionsCleared reports whether Fleet GET returns
+// global_data_tags and additional_datastreams_permissions as absent or empty.
+func managedIntegrationOptionalCollectionsCleared(item *kbapi.KibanaHTTPAPIsManagedIntegration) (globalDataTagsCleared, additionalPermsCleared bool) {
+	if item == nil {
+		return false, false
+	}
+	globalDataTagsCleared = item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0
+	additionalPermsCleared = item.AdditionalDatastreamsPermissions == nil || len(*item.AdditionalDatastreamsPermissions) == 0
+	return globalDataTagsCleared, additionalPermsCleared
+}
+
+func testCheckManagedIntegrationOptionalCollectionsClearedOnAPI(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)
+		if err != nil {
+			return err
+		}
+		item, err := readManagedIntegrationAPI(context.Background(), spaceID, policyID)
+		if err != nil {
+			return err
+		}
+		tagsCleared, permsCleared := managedIntegrationOptionalCollectionsCleared(item)
+		if !tagsCleared {
+			got := "nil"
+			if item.GlobalDataTags != nil {
+				got = fmt.Sprintf("%d entries", len(*item.GlobalDataTags))
+			}
+			return fmt.Errorf("managed integration %s: expected global_data_tags cleared on API GET, got %s", policyID, got)
+		}
+		if !permsCleared {
+			got := "nil"
+			if item.AdditionalDatastreamsPermissions != nil {
+				got = fmt.Sprintf("%d entries", len(*item.AdditionalDatastreamsPermissions))
+			}
+			return fmt.Errorf("managed integration %s: expected additional_datastreams_permissions cleared on API GET, got %s", policyID, got)
+		}
+		return nil
+	}
+}
+
+func managedIntegrationGlobalDataTagsFromAPI(item *kbapi.KibanaHTTPAPIsManagedIntegration) (stringTags map[string]string, numberTags map[string]float64, err error) {
+	if item == nil || item.GlobalDataTags == nil {
+		return nil, nil, fmt.Errorf("global_data_tags missing from API response")
+	}
+	stringTags = map[string]string{}
+	numberTags = map[string]float64{}
+	for _, tag := range *item.GlobalDataTags {
+		raw, err := json.Marshal(tag.Value)
+		if err != nil {
+			return nil, nil, fmt.Errorf("marshal tag %q value: %w", tag.Name, err)
+		}
+		var asString string
+		if err := json.Unmarshal(raw, &asString); err == nil {
+			stringTags[tag.Name] = asString
+			continue
+		}
+		var asNumber float64
+		if err := json.Unmarshal(raw, &asNumber); err == nil {
+			numberTags[tag.Name] = asNumber
+			continue
+		}
+		return nil, nil, fmt.Errorf("unexpected global_data_tags value shape for %q: %s", tag.Name, string(raw))
+	}
+	return stringTags, numberTags, nil
+}
+
+func managedIntegrationGlobalDataTagsExactMatch(
+	policyID string,
+	gotString map[string]string,
+	gotNumber map[string]float64,
+	wantString map[string]string,
+	wantNumber map[string]float64,
+) error {
+	if maps.Equal(gotString, wantString) && maps.Equal(gotNumber, wantNumber) {
+		return nil
+	}
+	return fmt.Errorf(
+		"managed integration %s: global_data_tags mismatch: got string=%v number=%v, want string=%v number=%v",
+		policyID, gotString, gotNumber, wantString, wantNumber,
+	)
+}
+
 func testCheckManagedIntegrationGlobalDataTagsPersisted(resourceName string, stringTags map[string]string, numberTags map[string]float64) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)
@@ -115,39 +201,11 @@ func testCheckManagedIntegrationGlobalDataTagsPersisted(resourceName string, str
 		if err != nil {
 			return err
 		}
-		if item.GlobalDataTags == nil {
-			return fmt.Errorf("managed integration %s: global_data_tags missing from API response", policyID)
+		gotString, gotNumber, err := managedIntegrationGlobalDataTagsFromAPI(item)
+		if err != nil {
+			return fmt.Errorf("managed integration %s: %w", policyID, err)
 		}
-		gotString := map[string]string{}
-		gotNumber := map[string]float64{}
-		for _, tag := range *item.GlobalDataTags {
-			raw, err := json.Marshal(tag.Value)
-			if err != nil {
-				return fmt.Errorf("managed integration %s: marshal tag %q value: %w", policyID, tag.Name, err)
-			}
-			var asString string
-			if err := json.Unmarshal(raw, &asString); err == nil {
-				gotString[tag.Name] = asString
-				continue
-			}
-			var asNumber float64
-			if err := json.Unmarshal(raw, &asNumber); err == nil {
-				gotNumber[tag.Name] = asNumber
-				continue
-			}
-			return fmt.Errorf("managed integration %s: unexpected global_data_tags value shape for %q: %s", policyID, tag.Name, string(raw))
-		}
-		for k, want := range stringTags {
-			if gotString[k] != want {
-				return fmt.Errorf("managed integration %s: global_data_tags[%q] string: got %q, want %q", policyID, k, gotString[k], want)
-			}
-		}
-		for k, want := range numberTags {
-			if gotNumber[k] != want {
-				return fmt.Errorf("managed integration %s: global_data_tags[%q] number: got %v, want %v", policyID, k, gotNumber[k], want)
-			}
-		}
-		return nil
+		return managedIntegrationGlobalDataTagsExactMatch(policyID, gotString, gotNumber, stringTags, numberTags)
 	}
 }
 
@@ -349,4 +407,101 @@ func testCheckManagedIntegrationExternalIDStoredAsSecretRefOnAPI(resourceName st
 		}
 		return nil
 	}
+}
+
+func TestManagedIntegrationGlobalDataTagsExactMatch(t *testing.T) {
+	t.Parallel()
+
+	wantString := map[string]string{"env": "test", "team": "security"}
+	wantNumber := map[string]float64{"priority": 42}
+	gotOK := map[string]string{"env": "test", "team": "security"}
+	gotNumberOK := map[string]float64{"priority": 42}
+
+	require.NoError(t, managedIntegrationGlobalDataTagsExactMatch("p1", gotOK, gotNumberOK, wantString, wantNumber))
+	require.NoError(t, managedIntegrationGlobalDataTagsExactMatch("p1", nil, nil, nil, nil))
+
+	err := managedIntegrationGlobalDataTagsExactMatch("p1", gotOK, map[string]float64{}, wantString, wantNumber)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "priority")
+
+	err = managedIntegrationGlobalDataTagsExactMatch("p1",
+		map[string]string{"env": "test", "team": "security", "extra": "surprise"},
+		gotNumberOK, wantString, wantNumber,
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "extra")
+	assert.Contains(t, err.Error(), "want string=")
+}
+
+func TestManagedIntegrationGlobalDataTagsFromAPI(t *testing.T) {
+	t.Parallel()
+
+	var item kbapi.KibanaHTTPAPIsManagedIntegration
+	require.NoError(t, json.Unmarshal([]byte(`{
+		"id": "p1",
+		"name": "n",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+		"global_data_tags": [
+			{"name": "env", "value": "test"},
+			{"name": "priority", "value": 42}
+		]
+	}`), &item))
+
+	gotString, gotNumber, err := managedIntegrationGlobalDataTagsFromAPI(&item)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"env": "test"}, gotString)
+	assert.Equal(t, map[string]float64{"priority": 42}, gotNumber)
+}
+
+func TestManagedIntegrationOptionalCollectionsCleared(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil pointers", func(t *testing.T) {
+		t.Parallel()
+		tags, perms := managedIntegrationOptionalCollectionsCleared(&kbapi.KibanaHTTPAPIsManagedIntegration{})
+		assert.True(t, tags)
+		assert.True(t, perms)
+	})
+
+	t.Run("empty slices", func(t *testing.T) {
+		t.Parallel()
+		var item kbapi.KibanaHTTPAPIsManagedIntegration
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"id": "p1",
+			"name": "n",
+			"created_at": "2024-01-01T00:00:00.000Z",
+			"created_by": "elastic",
+			"updated_at": "2024-01-01T00:00:00.000Z",
+			"updated_by": "elastic",
+			"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+			"global_data_tags": [],
+			"additional_datastreams_permissions": []
+		}`), &item))
+		tags, perms := managedIntegrationOptionalCollectionsCleared(&item)
+		assert.True(t, tags)
+		assert.True(t, perms)
+	})
+
+	t.Run("non-empty", func(t *testing.T) {
+		t.Parallel()
+		var item kbapi.KibanaHTTPAPIsManagedIntegration
+		require.NoError(t, json.Unmarshal([]byte(`{
+			"id": "p1",
+			"name": "n",
+			"created_at": "2024-01-01T00:00:00.000Z",
+			"created_by": "elastic",
+			"updated_at": "2024-01-01T00:00:00.000Z",
+			"updated_by": "elastic",
+			"package": {"name": "cloud_security_posture", "version": "3.4.0", "title": "t"},
+			"global_data_tags": [{"name": "env", "value": "prod"}],
+			"additional_datastreams_permissions": ["logs-*"]
+		}`), &item))
+		gotTags, gotPerms := managedIntegrationOptionalCollectionsCleared(&item)
+		assert.False(t, gotTags)
+		assert.False(t, gotPerms)
+	})
 }

@@ -76,11 +76,11 @@ func reconcileVarsJSONFromPrior(
 	if populated.IsNull() {
 		return populated
 	}
-	priorMap, ok := varsJSONToMap(prior, attrPath, diags)
+	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, secretReconcileAttrVarsJSON, diags)
 	if !ok || len(priorMap) == 0 {
 		return populated
 	}
-	respMap, ok := varsJSONToMap(populated, attrPath, diags)
+	respMap, ok := secretReconcileJSONToMap(populated, attrPath, secretReconcileAttrVarsJSON, diags)
 	if !ok {
 		return populated
 	}
@@ -88,7 +88,18 @@ func reconcileVarsJSONFromPrior(
 	return varsJSONFromMap(ctx, respMap, packageName, packageVersion, attrPath, diags)
 }
 
-func varsJSONToMap(v policyshape.VarsJSONValue, attrPath path.Path, diags *diag.Diagnostics) (map[string]any, bool) {
+const (
+	secretReconcileAttrVarsJSON = "vars_json"
+	secretReconcileAttrVars     = "vars"
+)
+
+type secretReconcileJSONString interface {
+	IsNull() bool
+	IsUnknown() bool
+	ValueString() string
+}
+
+func secretReconcileJSONToMap(v secretReconcileJSONString, attrPath path.Path, attrLabel string, diags *diag.Diagnostics) (map[string]any, bool) {
 	if v.IsNull() || v.IsUnknown() {
 		return nil, false
 	}
@@ -98,22 +109,30 @@ func varsJSONToMap(v policyshape.VarsJSONValue, attrPath path.Path, diags *diag.
 	}
 	var out map[string]any
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars_json for secret reconciliation", err.Error())
+		diags.AddAttributeError(attrPath, fmt.Sprintf("Failed to decode %s for secret reconciliation", attrLabel), err.Error())
 		return nil, false
 	}
 	return out, true
 }
 
-func varsJSONFromMap(_ context.Context, vars map[string]any, packageName, packageVersion string, attrPath path.Path, diags *diag.Diagnostics) policyshape.VarsJSONValue {
+func marshalSecretReconcileVarsMap(vars map[string]any, attrPath path.Path, attrLabel string, diags *diag.Diagnostics) (raw string, useNull bool) {
 	if len(vars) == 0 {
-		return policyshape.NewVarsJSONNull()
+		return "", true
 	}
 	b, err := json.Marshal(vars)
 	if err != nil {
-		diags.AddAttributeError(attrPath, "Failed to marshal vars_json after secret reconciliation", err.Error())
+		diags.AddAttributeError(attrPath, fmt.Sprintf("Failed to marshal %s after secret reconciliation", attrLabel), err.Error())
+		return "", true
+	}
+	return string(b), false
+}
+
+func varsJSONFromMap(_ context.Context, vars map[string]any, packageName, packageVersion string, attrPath path.Path, diags *diag.Diagnostics) policyshape.VarsJSONValue {
+	raw, useNull := marshalSecretReconcileVarsMap(vars, attrPath, secretReconcileAttrVarsJSON, diags)
+	if useNull {
 		return policyshape.NewVarsJSONNull()
 	}
-	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, lookupCachedPackageInfo)
+	v, d := policyshape.NewVarsJSONWithIntegration(raw, packageName, packageVersion, lookupCachedPackageInfo)
 	diags.Append(d...)
 	return v
 }
@@ -164,11 +183,11 @@ func reconcileNormalizedVarsFromPrior(prior, populated jsontypes.Normalized, att
 	if prior.IsNull() || prior.IsUnknown() {
 		return populated
 	}
-	priorMap, ok := normalizedVarsToMap(prior, attrPath, diags)
+	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, secretReconcileAttrVars, diags)
 	if !ok || len(priorMap) == 0 {
 		return populated
 	}
-	respMap, ok := normalizedVarsToMap(populated, attrPath, diags)
+	respMap, ok := secretReconcileJSONToMap(populated, attrPath, secretReconcileAttrVars, diags)
 	if !ok {
 		return populated
 	}
@@ -176,32 +195,12 @@ func reconcileNormalizedVarsFromPrior(prior, populated jsontypes.Normalized, att
 	return normalizedVarsFromMap(respMap, attrPath, diags)
 }
 
-func normalizedVarsToMap(n jsontypes.Normalized, attrPath path.Path, diags *diag.Diagnostics) (map[string]any, bool) {
-	if n.IsNull() || n.IsUnknown() {
-		return nil, false
-	}
-	raw := n.ValueString()
-	if raw == "" {
-		return nil, false
-	}
-	var out map[string]any
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars for secret reconciliation", err.Error())
-		return nil, false
-	}
-	return out, true
-}
-
 func normalizedVarsFromMap(vars map[string]any, attrPath path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
-	if len(vars) == 0 {
+	raw, useNull := marshalSecretReconcileVarsMap(vars, attrPath, secretReconcileAttrVars, diags)
+	if useNull {
 		return jsontypes.NewNormalizedNull()
 	}
-	b, err := json.Marshal(vars)
-	if err != nil {
-		diags.AddAttributeError(attrPath, "Failed to marshal vars after secret reconciliation", err.Error())
-		return jsontypes.NewNormalizedNull()
-	}
-	return jsontypes.NewNormalizedValue(string(b))
+	return jsontypes.NewNormalizedValue(raw)
 }
 
 // reconcileSecretVarsMapFromPrior mutates resp in place, mirroring

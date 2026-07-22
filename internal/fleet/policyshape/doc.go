@@ -23,8 +23,8 @@
 // # Naming
 //
 // This package started life as the "policyshape" working name proposed in
-// openspec/changes/fleet-agentless-policy/design.md (Decision 2) and
-// openspec/changes/fleet-agentless-policy/specs/fleet-policyshape/spec.md.
+// openspec/changes/archive/2026-07-02-fleet-agentless-policy/design.md (Decision 2) and
+// openspec/changes/archive/2026-07-02-fleet-agentless-policy/specs/fleet-policyshape/spec.md.
 // The name was validated against the existing internal/fleet/* naming
 // convention before being finalized:
 //

@@ -98,7 +98,7 @@ func TestOutputIdHandling(t *testing.T) {
 }
 
 // TestConditionHandling verifies the additive `condition` attribute (Phase 1,
-// openspec/changes/fleet-agentless-policy) round-trips end to end for both
+// openspec/changes/archive/2026-07-02-fleet-agentless-policy) round-trips end to end for both
 // inputs and streams: sent on the request when set, omitted when unset, and
 // read back from the API response into state.
 func TestConditionHandling(t *testing.T) {

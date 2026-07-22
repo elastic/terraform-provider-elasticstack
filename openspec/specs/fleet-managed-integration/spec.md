@@ -79,6 +79,14 @@ The PUT body SHALL be constructed entirely from the current plan (desired state)
 - **THEN** the upstream API detaches the connector
 - **GIVEN** this requirement, the resource MUST always re-send cloud_connector from state when one is present
 
+#### Scenario: Optional collections cleared when removed from config on update
+- **WHEN** a resource previously had `global_data_tags` and/or `additional_datastreams_permissions` set
+- **AND** an update removes those attributes from config (empty or unset in the plan)
+- **THEN** the PUT body SHALL send cleared values for those fields (empty arrays or equivalent)
+- **AND** Fleet SHALL persist the cleared values
+- **AND** Terraform state SHALL reflect the attributes as unset or empty after apply
+- **AND** a subsequent GET MAY omit the fields or return empty arrays; either representation SHALL be treated as cleared
+
 ### Requirement: In-place name and package.version updates
 
 `name` and `package.version` SHALL be updatable in-place (no `RequiresReplace` plan modifier). Changing them SHALL trigger a PUT to the managed_integrations endpoint rather than a destroy-and-recreate cycle. `package.name` SHALL remain `RequiresReplace` (immutable upstream).

@@ -124,6 +124,30 @@ func TestRequiresReplacePlanModifiers_managedIntegration(t *testing.T) {
 		require.True(t, resp.RequiresReplace)
 	})
 
+	t.Run("cloud_connector object to null", func(t *testing.T) {
+		t.Parallel()
+		ccAttr := s.Attributes["cloud_connector"].(schema.SingleNestedAttribute)
+		stateObj, diags := types.ObjectValueFrom(ctx, cloudConnectorAttrTypes(), cloudConnectorModel{
+			Enabled:          types.BoolValue(true),
+			CloudConnectorID: types.StringValue("cc-1"),
+			Name:             types.StringValue("name-a"),
+			TargetCSP:        types.StringValue("aws"),
+		})
+		require.False(t, diags.HasError())
+		planObj := types.ObjectNull(cloudConnectorAttrTypes())
+		priorState, proposedPlan := nonNullUpdatePlanModifierState(t)
+		req := planmodifier.ObjectRequest{
+			State: priorState, Plan: proposedPlan,
+			StateValue: stateObj, PlanValue: planObj, ConfigValue: planObj,
+		}
+		resp := &planmodifier.ObjectResponse{PlanValue: planObj}
+		for _, m := range ccAttr.PlanModifiers {
+			m.PlanModifyObject(ctx, req, resp)
+		}
+		require.False(t, resp.Diagnostics.HasError())
+		require.True(t, resp.RequiresReplace)
+	})
+
 	t.Run("name unchanged does not require replace", func(t *testing.T) {
 		t.Parallel()
 		attr := s.Attributes["name"].(schema.StringAttribute)
