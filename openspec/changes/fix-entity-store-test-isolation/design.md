@@ -89,7 +89,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 **Go test** (`acc_test.go`): all 9 test functions (8 store resource tests + 1 status data-source test).
 
-**TF fixtures** (9 directories / 10 files):
+**TF fixtures** (11 listed fixture files):
 - `TestAccResourceKibanaSecurityEntityStore_basic/basic/`
 - `TestAccResourceKibanaSecurityEntityStore_singleType/single_type/`
 - `TestAccResourceKibanaSecurityEntityStore_updateLogExtraction/update_log_extraction/`

@@ -54,7 +54,7 @@ resource "elasticstack_kibana_space" "test" {
 
 And `space_id = elasticstack_kibana_space.test.space_id` added to the `elasticstack_kibana_security_entity_store` resource block (and to any data source block that accepts `space_id`).
 
-**Directories** (10 files in 9 directories):
+**Fixtures** (11 listed `main.tf` files):
 - `testdata/TestAccResourceKibanaSecurityEntityStore_basic/basic/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStore_singleType/single_type/main.tf`
 - `testdata/TestAccResourceKibanaSecurityEntityStore_updateLogExtraction/update_log_extraction/main.tf`
