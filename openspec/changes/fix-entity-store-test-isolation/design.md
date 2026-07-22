@@ -87,7 +87,7 @@ Tests such as `entityJsonConflict`, `entityIdMismatch`, `mixedPaginationError`, 
 
 ### Package: `internal/kibana/security_entity_store`
 
-**Go test** (`acc_test.go`): all 8 test functions (7 store resource tests + 1 status data-source test).
+**Go test** (`acc_test.go`): all 9 test functions (8 store resource tests + 1 status data-source test).
 
 **TF fixtures** (9 directories / 10 files):
 - `TestAccResourceKibanaSecurityEntityStore_basic/basic/`
