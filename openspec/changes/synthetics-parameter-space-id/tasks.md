@@ -14,10 +14,10 @@
 
 ## 3. CRUD operations
 
-- [ ] 3.1 **Create** (`create.go`): append `kibanautil.SpaceAwarePathRequestEditor(req.SpaceID)` to `PostParametersWithBodyWithResponse`. Store composite `id` in plan after create: `plan.ID = types.StringValue(clients.CompositeID{ClusterID: req.SpaceID, ResourceID: *createResponse.Id}.String())`.
-- [ ] 3.2 **Read** (`read.go`): append `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to `GetParameterWithResponse` (the `spaceID` parameter already flows via `resolveKibanaResourceIdentity`). Update the `modelFromOAPI` call to pass `spaceID`.
-- [ ] 3.3 **Update** (`update.go`): append `kibanautil.SpaceAwarePathRequestEditor(req.SpaceID)` to `PutParameterWithBodyWithResponse`. Reassemble composite `id` after update: `plan.ID = types.StringValue(clients.CompositeID{ClusterID: req.SpaceID, ResourceID: req.WriteID}.String())`.
-- [ ] 3.4 **Delete** (`delete.go`): append `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to both `DeleteParameterWithResponse` and `DeleteSyntheticsParamsWithResponse` calls (the `spaceID` parameter already flows via `resolveKibanaResourceIdentity`).
+- [x] 3.1 **Create** (`create.go`): append `kibanautil.SpaceAwarePathRequestEditor(req.SpaceID)` to `PostParametersWithBodyWithResponse`. Store composite `id` in plan after create: `plan.ID = types.StringValue(clients.CompositeID{ClusterID: req.SpaceID, ResourceID: *createResponse.Id}.String())`.
+- [x] 3.2 **Read** (`read.go`): append `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to `GetParameterWithResponse` (the `spaceID` parameter already flows via `resolveKibanaResourceIdentity`). Update the `modelFromOAPI` call to pass `spaceID`.
+- [x] 3.3 **Update** (`update.go`): append `kibanautil.SpaceAwarePathRequestEditor(req.SpaceID)` to `PutParameterWithBodyWithResponse`. Reassemble composite `id` after update: `plan.ID = types.StringValue(clients.CompositeID{ClusterID: req.SpaceID, ResourceID: req.WriteID}.String())`.
+- [x] 3.4 **Delete** (`delete.go`): append `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to both `DeleteParameterWithResponse` and `DeleteSyntheticsParamsWithResponse` calls (the `spaceID` parameter already flows via `resolveKibanaResourceIdentity`).
 
 ## 4. Import
 

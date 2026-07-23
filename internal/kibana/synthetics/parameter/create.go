@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -46,7 +47,7 @@ func createParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	createResult, err := kibanaClient.API.PostParametersWithBodyWithResponse(ctx, "application/json", bytes.NewReader(inputJSON))
+	createResult, err := kibanaClient.API.PostParametersWithBodyWithResponse(ctx, "application/json", bytes.NewReader(inputJSON), kibanautil.SpaceAwarePathRequestEditor(req.SpaceID))
 	if err != nil {
 		diags.AddError(fmt.Sprintf("Failed to create parameter `%s`", input.Key), err.Error())
 		return entitycore.KibanaWriteResult[Model]{}, diags
@@ -63,7 +64,7 @@ func createParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	plan.ID = types.StringValue(*createResponse.Id)
+	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: *createResponse.Id}).String())
 
 	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }
