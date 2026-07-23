@@ -20,7 +20,6 @@ package parameter_test
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"regexp"
 	"testing"
 
@@ -354,11 +353,11 @@ func testAccCheckParameterExistsInKibanaSpace(resourceAddr, spaceID string) reso
 		if err != nil {
 			return err
 		}
-		return testAccGetParameter(spaceID, paramUUID, true)
+		return testAccAssertParameterExistsInKibanaAPI(spaceID, paramUUID)
 	}
 }
 
-func testAccGetParameter(spaceID, paramUUID string, wantExists bool) error {
+func testAccAssertParameterExistsInKibanaAPI(spaceID, paramUUID string) error {
 	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
 	if err != nil {
 		return err
@@ -370,31 +369,10 @@ func testAccGetParameter(spaceID, paramUUID string, wantExists bool) error {
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return fmt.Errorf("get parameter %q in space %q: %w", paramUUID, spaceID, err)
+		return fmt.Errorf("get parameter %q in Kibana space %q: %w", paramUUID, spaceID, err)
 	}
-	status := http.StatusInternalServerError
-	if resp.HTTPResponse != nil {
-		status = resp.HTTPResponse.StatusCode
-	}
-	if wantExists {
-		if resp.JSON200 != nil && status == http.StatusOK {
-			return nil
-		}
-		return fmt.Errorf("expected parameter %q to exist in Kibana space %q (status %d)", paramUUID, spaceID, status)
-	}
-
-	switch status {
-	case http.StatusNotFound:
+	if resp.JSON200 != nil && resp.StatusCode() == 200 {
 		return nil
-	case http.StatusForbidden:
-		return fmt.Errorf("expected parameter %q absent from space %q (404), got forbidden (403)", paramUUID, spaceID)
-	default:
-		if status >= http.StatusInternalServerError {
-			return fmt.Errorf("expected parameter %q absent from space %q (404), got server error (%d)", paramUUID, spaceID, status)
-		}
-		if resp.JSON200 != nil && status == http.StatusOK {
-			return fmt.Errorf("expected parameter %q to be absent from Kibana space %q", paramUUID, spaceID)
-		}
-		return fmt.Errorf("expected parameter %q absent from space %q (404), got status %d", paramUUID, spaceID, status)
 	}
+	return fmt.Errorf("expected parameter %q readable in Kibana space %q (HTTP 200 with body), got status %d", paramUUID, spaceID, resp.StatusCode())
 }
