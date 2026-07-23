@@ -71,6 +71,24 @@ func TestParseCreateParameterResponse_successWithID(t *testing.T) {
 	require.Equal(t, "param-uuid", *got.Id)
 }
 
+func TestParseCreateParameterResponse_successWithNilID(t *testing.T) {
+	t.Parallel()
+
+	union := kboapi.CreateParamResponse{}
+	require.NoError(t, union.FromSyntheticsPostParameterResponse(kboapi.SyntheticsPostParameterResponse{}))
+
+	resp := &kboapi.PostParametersResponse{
+		Body:         []byte(`{}`),
+		HTTPResponse: &http.Response{StatusCode: http.StatusOK, Status: "200 OK"},
+		JSON200:      &union,
+	}
+
+	_, diags := parseCreateParameterResponse(resp, "my-key")
+	require.True(t, diags.HasError())
+	require.Contains(t, diags.Errors()[0].Summary(), "Unexpected nil id")
+	require.Contains(t, diags.Errors()[0].Detail(), "did not include a parameter id")
+}
+
 func TestParseCreateParameterResponse_nilResponse(t *testing.T) {
 	t.Parallel()
 

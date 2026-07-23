@@ -51,7 +51,10 @@ func parseCreateParameterResponse(resp *kboapi.PostParametersResponse, key strin
 	}
 
 	if createResponse.Id == nil {
-		diags.AddError(fmt.Sprintf("Unexpected nil id in create parameter response `%s`", key), "")
+		diags.AddError(
+			fmt.Sprintf("Unexpected nil id in create parameter response `%s`", key),
+			"Kibana returned HTTP 200 but the create response did not include a parameter id.",
+		)
 		return empty, diags
 	}
 
