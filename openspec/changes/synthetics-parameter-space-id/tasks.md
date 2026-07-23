@@ -21,11 +21,11 @@
 
 ## 4. Import
 
-- [ ] 4.1 Replace `resource.ImportStatePassthroughID` in `resource.go` with a custom `ImportState` implementation built on `clients.ResolveCompositeSpaceAndID` (mirror `internal/kibana/tag/import.go`) that:
+- [x] 4.1 Replace `resource.ImportStatePassthroughID` in `resource.go` with a custom `ImportState` implementation built on `clients.ResolveCompositeSpaceAndID` (mirror `internal/kibana/tag/import.go`) that:
   - Accepts bare UUID (no `/`): set `space_id = "default"`, `id = "default/<uuid>"`.
   - Accepts composite `<space_id>/<uuid>`: set `space_id` to the space segment, `id` to the full composite.
   - Returns an error diagnostic if the UUID segment is empty.
-- [ ] 4.2 Update the existing `entitycore_contract_test.go::TestResource_importState_passthroughCompoundID` to reflect the new composite/space-splitting import behavior (it currently asserts verbatim passthrough).
+- [x] 4.2 Update the existing `entitycore_contract_test.go::TestResource_importState_passthroughCompoundID` to reflect the new composite/space-splitting import behavior (it currently asserts verbatim passthrough).
 
 ## 5. Testing
 

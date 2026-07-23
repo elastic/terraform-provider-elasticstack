@@ -22,11 +22,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,7 +41,7 @@ func TestResource_embedsEntityCoreKibanaResource(t *testing.T) {
 	require.Equal(t, reflect.TypeFor[*entitycore.KibanaResource[Model]](), field.Type)
 }
 
-func TestResource_importState_passthroughCompoundID(t *testing.T) {
+func TestResource_importState_compositeID(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -52,8 +54,45 @@ func TestResource_importState_passthroughCompoundID(t *testing.T) {
 	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
 	require.False(t, resp.Diagnostics.HasError())
 
-	var id types.String
+	var id, spaceID types.String
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
 	require.False(t, resp.Diagnostics.HasError())
 	require.Equal(t, importID, id.ValueString())
+	require.Equal(t, "cluster", spaceID.ValueString())
+}
+
+func TestResource_importState_bareUUID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	const paramUUID = "550e8400-e29b-41d4-a716-446655440000"
+	r.ImportState(ctx, resource.ImportStateRequest{ID: paramUUID}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, clients.DefaultSpaceID+"/"+paramUUID, id.ValueString())
+	require.Equal(t, clients.DefaultSpaceID, spaceID.ValueString())
+}
+
+func TestResource_importState_rejectsEmptyResourceSegment(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "my-space/"}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	assert.Equal(t, "Wrong resource ID.", resp.Diagnostics.Errors()[0].Summary())
 }
