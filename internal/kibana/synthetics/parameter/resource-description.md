@@ -7,9 +7,10 @@ Parameters are scoped to a Kibana space. Set `space_id` to the target space iden
 
 The computed `id` is a composite identifier: `<space_id>/<parameter_uuid>`, where the UUID is assigned by Kibana.
 
-Import accepts a bare parameter UUID (treated as the `default` space, with `id` set to `default/<uuid>`) or the composite form `<space_id>/<parameter_uuid>`.
+Import accepts a bare parameter UUID (treated as the `default` space, with `id` set to `default/<parameter_uuid>`) or the composite form `<space_id>/<parameter_uuid>`.
 
 **Example** (parameter in a named space):
+
 
 ```terraform
 provider "elasticstack" {

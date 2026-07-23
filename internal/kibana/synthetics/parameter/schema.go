@@ -44,7 +44,7 @@ func getSchema(_ context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Generated id for the parameter.",
+				MarkdownDescription: "The composite ID of the parameter: `<space_id>/<parameter_uuid>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
