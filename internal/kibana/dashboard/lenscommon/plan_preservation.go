@@ -181,19 +181,19 @@ func PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsont
 	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
 		return
 	}
-
-	var planObj T
-	if err := json.Unmarshal([]byte(plan.ValueString()), &planObj); err != nil {
+	planV, pd := customtypes.NewJSONWithDefaultsValue(plan.ValueString(), defaults).WithDefaults()
+	stateV, sd := customtypes.NewJSONWithDefaultsValue(state.ValueString(), defaults).WithDefaults()
+	if pd.HasError() || sd.HasError() {
 		return
 	}
-	var stateObj T
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+	var planObj, stateObj any
+	if err := json.Unmarshal([]byte(planV.ValueString()), &planObj); err != nil {
 		return
 	}
-
-	planNormalized := NormalizeXYPlanComparisonJSON(defaults(planObj))
-	stateNormalized := NormalizeXYPlanComparisonJSON(defaults(stateObj))
-	if reflect.DeepEqual(planNormalized, stateNormalized) {
+	if err := json.Unmarshal([]byte(stateV.ValueString()), &stateObj); err != nil {
+		return
+	}
+	if reflect.DeepEqual(planObj, stateObj) {
 		*state = plan
 	}
 }
