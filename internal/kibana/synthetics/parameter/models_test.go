@@ -47,6 +47,13 @@ func TestModel_GetSpaceID(t *testing.T) {
 	require.Equal(t, clients.DefaultSpaceID, m.GetSpaceID().ValueString())
 }
 
+func TestModel_toParameterRequest_updateOmitsShareAcrossSpaces(t *testing.T) {
+	t.Parallel()
+
+	m := Model{ShareAcrossSpaces: types.BoolValue(true)}
+	require.Nil(t, m.toParameterRequest(true).ShareAcrossSpaces)
+}
+
 func TestModelFromOAPI_setsCompositeIDAndSpaceID(t *testing.T) {
 	t.Parallel()
 
@@ -72,13 +79,6 @@ func TestModelFromOAPI_emptySpaceIDDefaultsToDefaultSpace(t *testing.T) {
 
 	require.Equal(t, clients.DefaultSpaceID, m.SpaceID.ValueString())
 	require.Equal(t, clients.DefaultSpaceID+"/abc-123", m.ID.ValueString())
-}
-
-func TestNormalizeSpaceID(t *testing.T) {
-	t.Parallel()
-
-	require.Equal(t, clients.DefaultSpaceID, normalizeSpaceID(""))
-	require.Equal(t, "ops-team", normalizeSpaceID("ops-team"))
 }
 
 func TestModel_setCompositeIdentity_emptySpaceDefaultsToDefault(t *testing.T) {

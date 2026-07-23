@@ -53,9 +53,8 @@ func createParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 	}
 
 	createResponse, parseDiags := parseCreateParameterResponse(createResult, input.Key)
-	diags.Append(parseDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
+	if parseDiags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, parseDiags
 	}
 
 	plan.setCompositeIdentity(req.SpaceID, *createResponse.Id)

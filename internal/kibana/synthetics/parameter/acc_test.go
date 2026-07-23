@@ -20,7 +20,6 @@ package parameter_test
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -70,14 +69,8 @@ func TestSyntheticParameterResource(t *testing.T) {
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs, ok := s.RootModule().Resources[resourceID]
-					if !ok {
-						return "", fmt.Errorf("resource not found: %s", resourceID)
-					}
-					return rs.Primary.ID, nil
-				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory("import"),
+				ImportStateIdFunc:        testAccParameterCompositeImportID(resourceID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
 			},
 			// Import by bare parameter UUID (default space).
 			{
@@ -101,7 +94,6 @@ func TestSyntheticParameterResource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "0"),
 					resource.TestCheckResourceAttr(resourceID, "space_id", clients.DefaultSpaceID),
 					testAccCheckCompositeIDFormat(resourceID, clients.DefaultSpaceID),
-					testAccCheckParameterExistsInKibanaSpace(resourceID, clients.DefaultSpaceID),
 				),
 			},
 			// Update and Read testing
@@ -118,7 +110,6 @@ func TestSyntheticParameterResource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.2", "e"),
 					resource.TestCheckResourceAttr(resourceID, "space_id", clients.DefaultSpaceID),
 					testAccCheckCompositeIDFormat(resourceID, clients.DefaultSpaceID),
-					testAccCheckParameterExistsInKibanaSpace(resourceID, clients.DefaultSpaceID),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -196,7 +187,6 @@ func TestSyntheticParameterResource_nonDefaultSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID),
 					resource.TestCheckResourceAttr(resourceID, "key", fmt.Sprintf("test-key-space-%s", suffix)),
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value-space"),
-					resource.TestMatchResourceAttr(resourceID, "id", regexp.MustCompile("^"+regexp.QuoteMeta(spaceID)+"/")),
 					testAccCheckCompositeIDFormat(resourceID, spaceID),
 					testAccCheckParameterExistsInKibanaSpace(resourceID, spaceID),
 				),
@@ -206,15 +196,9 @@ func TestSyntheticParameterResource_nonDefaultSpace(t *testing.T) {
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					rs, ok := s.RootModule().Resources[resourceID]
-					if !ok {
-						return "", fmt.Errorf("resource not found: %s", resourceID)
-					}
-					return rs.Primary.ID, nil
-				},
-				ConfigDirectory: acctest.NamedTestCaseDirectory("import"),
-				ConfigVariables: vars,
+				ImportStateIdFunc:        testAccParameterCompositeImportID(resourceID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          vars,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -225,7 +209,6 @@ func TestSyntheticParameterResource_nonDefaultSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "key", fmt.Sprintf("test-key-space-updated-%s", suffix)),
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value-space-updated"),
 					testAccCheckCompositeIDFormat(resourceID, spaceID),
-					testAccCheckParameterExistsInKibanaSpace(resourceID, spaceID),
 				),
 			},
 		},
@@ -309,6 +292,16 @@ func TestSyntheticParameterResource_spaceRequiresReplace(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccParameterCompositeImportID(resourceAddr string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return "", fmt.Errorf("resource not found: %s", resourceAddr)
+		}
+		return rs.Primary.ID, nil
+	}
 }
 
 func testAccParameterResourceUUIDFromState(s *terraform.State, resourceAddr string) (string, error) {

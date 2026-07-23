@@ -23,7 +23,6 @@ import (
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -48,8 +47,8 @@ func (m Model) GetResourceID() types.String {
 	if m.ID.IsNull() || m.ID.IsUnknown() {
 		return types.StringNull()
 	}
-	compID, _ := synthetics.TryReadCompositeID(m.ID.ValueString())
-	if compID != nil {
+	compID, diags := clients.CompositeIDFromStr(m.ID.ValueString())
+	if !diags.HasError() {
 		return types.StringValue(compID.ResourceID)
 	}
 	return m.ID
@@ -57,15 +56,8 @@ func (m Model) GetResourceID() types.String {
 
 func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
-func normalizeSpaceID(spaceID string) string {
-	if spaceID == "" {
-		return clients.DefaultSpaceID
-	}
-	return spaceID
-}
-
 func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
-	spaceID = normalizeSpaceID(spaceID)
+	spaceID = clients.EffectiveSpaceID(spaceID)
 	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
 	m.SpaceID = types.StringValue(spaceID)
 }
@@ -89,7 +81,7 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 }
 
 func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse, spaceID string) Model {
-	spaceID = normalizeSpaceID(spaceID)
+	spaceID = clients.EffectiveSpaceID(spaceID)
 	// Namespaces is omitempty in the Kibana API and is only populated for users
 	// with read-only permissions; treat a missing list as not shared across spaces.
 	allSpaces := param.Namespaces != nil && slices.Equal(*param.Namespaces, []string{"*"})

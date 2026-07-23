@@ -22,18 +22,21 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+var getParameterAPI = func(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string) (*kbapi.GetParameterResponse, error) {
+	return client.GetKibanaOapiClient().API.GetParameterWithResponse(ctx, resourceID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+}
+
 func readParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	kibanaClient := client.GetKibanaOapiClient()
-
-	getResult, err := kibanaClient.API.GetParameterWithResponse(ctx, resourceID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	getResult, err := getParameterAPI(ctx, client, resourceID, spaceID)
 	if err != nil {
 		diags.AddError(fmt.Sprintf("Failed to get parameter `%s`", resourceID), err.Error())
 		return model, false, diags

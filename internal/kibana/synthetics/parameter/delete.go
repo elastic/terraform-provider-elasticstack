@@ -20,10 +20,12 @@ package parameter
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -56,12 +58,7 @@ func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 			diags.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
 			return diags
 		}
-		if deleteResult.StatusCode() != 200 {
-			diags.AddError(
-				fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
-				fmt.Sprintf("API returned status %s", deleteResult.Status()),
-			)
-		}
+		diags.Append(diagutil.HandleStatusResponse(deleteResult.StatusCode(), deleteResult.Body, http.StatusOK)...)
 		return diags
 	}
 
@@ -75,11 +72,8 @@ func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 		return diags
 	}
 
-	if deleteResult.StatusCode() != 200 {
-		diags.AddError(
-			fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
-			fmt.Sprintf("API returned status %s", deleteResult.Status()),
-		)
+	diags.Append(diagutil.HandleStatusResponse(deleteResult.StatusCode(), deleteResult.Body, http.StatusOK)...)
+	if diags.HasError() {
 		return diags
 	}
 
