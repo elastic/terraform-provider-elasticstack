@@ -46,7 +46,7 @@ The resource SHALL support Terraform import using either a composite `<space_id>
 
 ### Requirement: `space_id` attribute (REQ-012)
 
-The resource SHALL expose an **optional, computed** `space_id` string attribute with `UseStateForUnknown` and `RequiresReplace` plan modifiers. When `space_id` is not configured, the attribute SHALL be computed and set to `"default"` after the first successful create. The provider SHALL validate that `space_id` is a known, non-empty value before invoking create or update.
+The resource SHALL expose an **optional, computed** `space_id` string attribute defined via the canonical `kbschema.ResourceSpaceIDAttribute()` helper: `Default` of `"default"` (`clients.DefaultSpaceID`), with `UseStateForUnknown` and `RequiresReplace` plan modifiers. When `space_id` is not configured, the schema default SHALL materialize `"default"` before create or update. The model SHALL NOT implement `KibanaUnscopedSpace`; the envelope's normal non-empty `space_id` validation SHALL apply and SHALL be satisfied by the schema default.
 
 #### Scenario: `space_id` defaults to "default"
 
@@ -68,7 +68,7 @@ The resource SHALL expose an **optional, computed** `space_id` string attribute 
 
 ### Requirement: Composite `id` encoding (REQ-013)
 
-The resource `id` SHALL be stored as a composite `<space_id>/<parameter_uuid>` string after a successful create. This encoding enables `resolveKibanaResourceIdentity` to recover both the UUID and the space from state without requiring a separate read of the `space_id` field. On read-after-write, `modelFromOAPI` SHALL accept the `spaceID` from the write context and assemble the composite `id`.
+The resource `id` SHALL be stored as a composite `<space_id>/<parameter_uuid>` string (via `clients.CompositeID`) after a successful create or update. This encoding enables `resolveKibanaResourceIdentity` to recover both the UUID and the space from state without requiring a separate read of the `space_id` field. On read-after-write, `modelFromOAPI` SHALL accept the `spaceID` from the write context and assemble the composite `id`. A legacy bare-UUID `id` (no `/`) in prior state SHALL continue to resolve correctly: it SHALL fall back to the bare UUID as the resource id and the default space, and SHALL be rewritten to composite form on the next create, update, or refresh. No schema-version bump or `StateUpgraders` migration SHALL be introduced.
 
 #### Scenario: `id` set to composite after create
 
@@ -82,12 +82,12 @@ The resource `id` SHALL be stored as a composite `<space_id>/<parameter_uuid>` s
 - WHEN Kibana returns the new parameter UUID `"abc-123"`
 - THEN the provider SHALL store `id = "default/abc-123"` in state
 
-### Requirement: Schema version bump and state migration v0→v1 (REQ-014)
+### Requirement: Backward compatibility for legacy bare-UUID state (REQ-014)
 
-The resource schema version SHALL be bumped from **0** to **1**. A `StateUpgraders` entry for version **0** SHALL rewrite the `id` attribute from a bare UUID to `"default/<uuid>"` and SHALL add `"space_id": "default"` to the migrated state. This migration SHALL be non-destructive: no resource is destroyed or recreated as part of the state upgrade.
+The resource SHALL remain compatible with existing state that stores a bare-UUID `id` without any schema-version bump or `StateUpgraders` migration. A legacy default-space parameter SHALL continue to be readable, updatable, and deletable: `resolveKibanaResourceIdentity` SHALL parse the bare UUID (no `/`) as the resource id with the default space, and CRUD SHALL route to the unscoped path. The bare-UUID `id` SHALL be rewritten to the composite `"default/<uuid>"` form on the next successful create, update, or refresh, without destroying or recreating the resource.
 
-#### Scenario: State migration rewrites bare UUID
+#### Scenario: Legacy bare-UUID state resolves to default space
 
-- GIVEN a Terraform state file containing a `elasticstack_kibana_synthetics_parameter` resource with a bare UUID `id` (schema version 0)
-- WHEN the provider runs for the first time at schema version 1
-- THEN the provider SHALL upgrade the state: `id` becomes `"default/<uuid>"` and `space_id` is set to `"default"`, with no plan difference caused by the migration alone
+- GIVEN existing state containing a `elasticstack_kibana_synthetics_parameter` with a bare UUID `id` and no `space_id`
+- WHEN read, update, or delete runs
+- THEN the provider SHALL treat it as a default-space parameter, route to the unscoped Synthetics Parameters path, and (on write/refresh) rewrite `id` to `"default/<uuid>"` with no destroy/recreate

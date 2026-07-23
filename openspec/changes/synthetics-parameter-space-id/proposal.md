@@ -4,9 +4,9 @@ Practitioners cannot manage Synthetics parameters in non-default Kibana spaces u
 
 ## What Changes
 
-Add `space_id` to `elasticstack_kibana_synthetics_parameter` using the same composite-ID pattern already established by `elasticstack_kibana_synthetics_monitor`. The composite `id` is stored as `<space_id>/<parameter_uuid>` so import is self-contained and `resolveKibanaResourceIdentity` can recover space from state.
+Add `space_id` to `elasticstack_kibana_synthetics_parameter` using the provider's **canonical space-aware pattern**: the shared `kbschema.ResourceSpaceIDAttribute()` schema helper (`optional + computed`, default `"default"`, `UseStateForUnknown` + `RequiresReplace`), an explicit `"default"` space value, and a composite `id` of `<space_id>/<parameter_uuid>`. This is the pattern used by ~27 Kibana resources (tag, connectors, dataview, slo, alerting rule, and others) via `internal/kibana/kbschema/space_id.go`, and it is preferred over the older `KibanaUnscopedSpace` opt-out (used by only the synthetics monitor/private-location trio and a few Fleet resources).
 
-A `StateUpgraders` schema version bump (v0 → v1) migrates existing state from bare UUID `id` to `default/<uuid>`.
+The composite `id` is stored as `<space_id>/<parameter_uuid>` so import is self-contained and `resolveKibanaResourceIdentity` can recover the space from state.
 
 ### Schema sketch (to merge into canonical `## Schema` on sync)
 
@@ -19,21 +19,29 @@ resource "elasticstack_kibana_synthetics_parameter" "example" {
 }
 ```
 
-The `id` field changes from a bare Kibana UUID to `<space_id>/<parameter_uuid>`.
+The `space_id` attribute is defined via `kbschema.ResourceSpaceIDAttribute()`. The `id` field changes from a bare Kibana UUID to `<space_id>/<parameter_uuid>`.
 
 ### Composite-ID identity mechanics
 
-- `GetID()` returns the raw `id` (composite or bare).
-- `GetResourceID()` parses `id` as a composite; returns the UUID segment, or `id` itself for legacy bare values.
-- `GetSpaceID()` returns `SpaceID` (defaulting to `""`).
-- The model no longer implements `KibanaUnscopedSpace`; `IsUnscopedSpace()` is removed.
-- `SpaceAwarePathRequestEditor(req.SpaceID)` is passed in all four CRUD calls to rewrite the API path.
+- `GetID()` returns the raw `id` (composite or bare legacy value).
+- `GetResourceID()` parses `id` as a composite (`synthetics.TryReadCompositeID`); returns the UUID segment, or `id` itself for legacy bare values.
+- `GetSpaceID()` returns `m.SpaceID` directly (the schema default guarantees it is `"default"` when not configured).
+- The model **no longer implements** `KibanaUnscopedSpace`; `IsUnscopedSpace()` and the `var _ entitycore.KibanaUnscopedSpace = Model{}` assertion are removed. The envelope's normal non-empty `space_id` validation applies, and it is satisfied because the schema default materializes `"default"` before create/update.
+- `SpaceAwarePathRequestEditor(spaceID)` is passed in all four CRUD calls to rewrite the API path. `SpaceAwarePathRequestEditor`/`BuildSpaceAwarePath` leave the path unchanged when the space is `"default"` or empty.
 
-### State migration
+### No state migration required
 
-Schema version is bumped from **0** to **1**. The `StateUpgraders` v0→v1 function reads the existing `id` (bare UUID) and rewrites it as `default/<uuid>`, and writes `space_id = "default"` into state.
+Existing default-space parameters store a bare-UUID `id` (legacy). No `StateUpgraders` / schema version bump is needed: `resolveKibanaResourceIdentity` parses `id` via `CompositeIDFromStr`, and a bare UUID (no `/`) falls back to `GetResourceID()` + `GetSpaceID()`. A legacy parameter is by definition a default-space parameter, and an empty/`"default"` space routes to the unscoped path — so the fallback is correct, not lossy. The bare-UUID `id` is rewritten to the composite form naturally on the next create/update or refresh; no destructive action occurs.
 
-Import by bare UUID remains supported: `ImportState` accepts `<uuid>` (maps to default space) or `<space_id>/<uuid>`.
+This matches how every other Kibana resource added `space_id` — none shipped a schema-version bump solely to introduce the attribute.
+
+### Import
+
+`ImportState` is replaced (the resource currently uses `ImportStatePassthroughID`) with a small custom handler built on `clients.ResolveCompositeSpaceAndID`, matching the tag resource's `import.go`:
+
+- Bare `<uuid>` (no `/`): maps to the default space; sets `space_id = "default"` and `id = "default/<uuid>"`.
+- Composite `<space_id>/<uuid>`: sets `space_id` to the space segment and `id` to the full composite.
+- An empty UUID segment (`<space_id>/`) returns an error diagnostic.
 
 ## Capabilities
 
@@ -43,9 +51,14 @@ Import by bare UUID remains supported: `ImportState` accepts `<uuid>` (maps to d
 
 ### Modified Capabilities
 
-- `kibana-synthetics-parameter`: Add `space_id` attribute, composite `id`, space-aware CRUD routing, `StateUpgraders` v0→v1 migration, and updated import behavior.
+- `kibana-synthetics-parameter`: Add `space_id` attribute (canonical `kbschema` helper, default `"default"`), composite `id`, space-aware CRUD routing, and updated import behavior. Remove the `KibanaUnscopedSpace` opt-out.
 
 ## Impact
 
 - **Specs**: Delta under `openspec/changes/synthetics-parameter-space-id/specs/kibana-synthetics-parameter/spec.md`.
-- **Implementation** (future): `internal/kibana/synthetics/parameter/` (schema, model, create, read, update, delete, state upgrade file), acceptance tests, and resource description docs.
+- **Implementation** (future): `internal/kibana/synthetics/parameter/` (schema, model, create, read, update, delete, import), acceptance tests, and resource description docs. No state-upgrade file.
+
+## Open Questions
+
+- **Version gate.** The resource currently gates the Parameters API at Kibana 8.12.0. Is the space-prefixed path (`/s/{space_id}/api/synthetics/params`) available from 8.12.0, or does non-default-space usage need a later floor? Note the precedent: `synthetics/privatelocation` gates non-default-space usage at 9.4.0 via a `GetVersionRequirements` check. If a floor is needed, mirror that pattern (version requirement + friendly error) rather than a hard resource-wide bump.
+- **`share_across_spaces = true` with a non-default `space_id`.** These are semantically in tension (share-across-all vs. scope-to-one). Should the provider reject the combination with a validation error, or document that `share_across_spaces` wins? Current scope leaves `share_across_spaces` semantics unchanged.
