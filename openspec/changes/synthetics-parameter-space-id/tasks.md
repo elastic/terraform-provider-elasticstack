@@ -5,12 +5,12 @@
 
 ## 2. Schema and model
 
-- [ ] 2.1 Add `"space_id"` to `internal/kibana/synthetics/parameter/schema.go` using the canonical helper `kbschema.ResourceSpaceIDAttribute()` (`optional + computed`, `Default: stringdefault.StaticString(clients.DefaultSpaceID)`, `UseStateForUnknown`, `RequiresReplace`). Do **not** bump `schema.Schema.Version`.
-- [ ] 2.2 Add `SpaceID types.String \`tfsdk:"space_id"\`` to `Model` in `internal/kibana/synthetics/parameter/models.go`.
-- [ ] 2.3 Update `GetSpaceID()` on `Model` to return `m.SpaceID` directly (the schema default guarantees `"default"` when unconfigured).
-- [ ] 2.4 Update `GetResourceID()` on `Model` to parse `GetID()` as a composite (using `synthetics.TryReadCompositeID`); return the UUID segment, or fall back to the bare `id` for legacy state.
-- [ ] 2.5 Remove the `KibanaUnscopedSpace` implementation: delete `IsUnscopedSpace()` from `Model` and remove the `var _ entitycore.KibanaUnscopedSpace = Model{}` assertion. (Safe only because of the `"default"` schema default in 2.1.)
-- [ ] 2.6 Extend `modelFromOAPI` to accept a `spaceID string` argument and store both `SpaceID` and the composite `id` (`clients.CompositeID{ClusterID: spaceID, ResourceID: uuid}.String()`). Update all call sites.
+- [x] 2.1 Add `"space_id"` to `internal/kibana/synthetics/parameter/schema.go` using the canonical helper `kbschema.ResourceSpaceIDAttribute()` (`optional + computed`, `Default: stringdefault.StaticString(clients.DefaultSpaceID)`, `UseStateForUnknown`, `RequiresReplace`). Do **not** bump `schema.Schema.Version`.
+- [x] 2.2 Add `SpaceID types.String \`tfsdk:"space_id"\`` to `Model` in `internal/kibana/synthetics/parameter/models.go`.
+- [x] 2.3 Update `GetSpaceID()` on `Model` to return `m.SpaceID` directly (the schema default guarantees `"default"` when unconfigured).
+- [x] 2.4 Update `GetResourceID()` on `Model` to parse `GetID()` as a composite (using `synthetics.TryReadCompositeID`); return the UUID segment, or fall back to the bare `id` for legacy state.
+- [x] 2.5 Remove the `KibanaUnscopedSpace` implementation: delete `IsUnscopedSpace()` from `Model` and remove the `var _ entitycore.KibanaUnscopedSpace = Model{}` assertion. (Safe only because of the `"default"` schema default in 2.1.)
+- [x] 2.6 Extend `modelFromOAPI` to accept a `spaceID string` argument and store both `SpaceID` and the composite `id` (`clients.CompositeID{ClusterID: spaceID, ResourceID: uuid}.String()`). Update all call sites.
 
 ## 3. CRUD operations
 

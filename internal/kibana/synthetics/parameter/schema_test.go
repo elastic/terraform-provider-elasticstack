@@ -18,11 +18,15 @@
 package parameter
 
 import (
+	"context"
 	"testing"
 
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_roundtrip(t *testing.T) {
@@ -108,7 +112,7 @@ func Test_roundtrip(t *testing.T) {
 			if !tt.omitNamespaces {
 				response.Namespaces = &tt.namespaces
 			}
-			m := modelFromOAPI(response)
+			m := modelFromOAPI(response, clients.DefaultSpaceID)
 
 			actual := m.toParameterRequest(false)
 
@@ -119,4 +123,13 @@ func Test_roundtrip(t *testing.T) {
 			assert.Equal(t, typeutils.Deref(tt.request.ShareAcrossSpaces), typeutils.Deref(actual.ShareAcrossSpaces))
 		})
 	}
+}
+
+func TestSchema_hasSpaceIDAttribute(t *testing.T) {
+	t.Parallel()
+
+	spaceIDAttr, ok := getSchema(context.Background()).Attributes["space_id"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.True(t, spaceIDAttr.IsOptional())
+	assert.True(t, spaceIDAttr.IsComputed())
 }
