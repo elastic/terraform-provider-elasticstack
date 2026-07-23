@@ -29,11 +29,11 @@
 
 ## 5. Testing
 
-- [ ] 5.1 Add or extend an acceptance test in `acc_test.go` with a step that creates a parameter in a named non-default space, verifies `space_id` and composite `id` in state, and verifies the Kibana API is called under the correct space path.
-- [ ] 5.2 Add acceptance test steps for import by bare UUID and by composite `<space_id>/<uuid>` (including `ImportStateVerify`).
-- [ ] 5.3 Add a default-space regression test: a parameter without `space_id` gets `space_id = "default"` and `id = "default/<uuid>"`, and routes to the unscoped path.
-- [ ] 5.4 Add unit tests for `modelFromOAPI` with a `spaceID` argument to verify composite `id` assembly.
-- [ ] 5.5 Add unit tests for the updated `GetResourceID()` / `GetSpaceID()` methods covering bare-UUID legacy state and composite state.
+- [x] 5.1 Add or extend an acceptance test in `acc_test.go` with a step that creates a parameter in a named non-default space, verifies `space_id` and composite `id` in state, and verifies the Kibana API is called under the correct space path.
+- [x] 5.2 Add acceptance test steps for import by bare UUID and by composite `<space_id>/<uuid>` (including `ImportStateVerify`).
+- [x] 5.3 Add a default-space regression test: a parameter without `space_id` gets `space_id = "default"` and `id = "default/<uuid>"`, and routes to the unscoped path.
+- [x] 5.4 Add unit tests for `modelFromOAPI` with a `spaceID` argument to verify composite `id` assembly.
+- [x] 5.5 Add unit tests for the updated `GetResourceID()` / `GetSpaceID()` methods covering bare-UUID legacy state and composite state.
 
 ## 6. Docs
 
