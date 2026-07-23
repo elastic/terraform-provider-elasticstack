@@ -115,6 +115,17 @@ func TestAccDataSourceIngestProcessorGrok(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_grok.test", "json", expectedJSONGrokEmptyPatternDefinitions),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ecs_compatibility_disabled"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_grok.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_grok.test", "field", "message"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_grok.test", "patterns.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_grok.test", "ecs_compatibility", "disabled"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_grok.test", "json", expectedJSONGrokEcsDisabled),
+				),
+			},
 		},
 	})
 }
@@ -199,6 +210,20 @@ const expectedJSONGrokEmptyPatternDefinitions = `{
 		"ignore_missing": false,
 		"patterns": [
 			"%{WORD:status}"
+		],
+		"trace_match": false
+	}
+}
+`
+
+const expectedJSONGrokEcsDisabled = `{
+	"grok": {
+		"ecs_compatibility": "disabled",
+		"field": "message",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"patterns": [
+			"%{WORD:event.action}"
 		],
 		"trace_match": false
 	}
