@@ -21,7 +21,9 @@ import (
 	"slices"
 
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -30,6 +32,7 @@ type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
 	ID                types.String   `tfsdk:"id"`
+	SpaceID           types.String   `tfsdk:"space_id"`
 	Key               types.String   `tfsdk:"key"`
 	Value             types.String   `tfsdk:"value"`
 	Description       types.String   `tfsdk:"description"`
@@ -38,13 +41,21 @@ type Model struct {
 }
 
 var _ entitycore.KibanaResourceModel = Model{}
-var _ entitycore.KibanaUnscopedSpace = Model{}
 
-func (m Model) GetID() types.String         { return m.ID }
-func (m Model) GetResourceID() types.String { return m.ID }
-func (m Model) GetSpaceID() types.String    { return types.StringValue("") }
+func (m Model) GetID() types.String { return m.ID }
 
-func (m Model) IsUnscopedSpace() bool { return true }
+func (m Model) GetResourceID() types.String {
+	if m.ID.IsNull() || m.ID.IsUnknown() {
+		return types.StringNull()
+	}
+	compID, _ := synthetics.TryReadCompositeID(m.ID.ValueString())
+	if compID != nil {
+		return types.StringValue(compID.ResourceID)
+	}
+	return m.ID
+}
+
+func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
 func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
@@ -64,13 +75,19 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 	}
 }
 
-func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse) Model {
+func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse, spaceID string) Model {
 	// Namespaces is omitempty in the Kibana API and is only populated for users
 	// with read-only permissions; treat a missing list as not shared across spaces.
 	allSpaces := param.Namespaces != nil && slices.Equal(*param.Namespaces, []string{"*"})
 
+	var id types.String
+	if param.Id != nil {
+		id = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: *param.Id}).String())
+	}
+
 	return Model{
-		ID:          types.StringPointerValue(param.Id),
+		ID:          id,
+		SpaceID:     types.StringValue(spaceID),
 		Key:         types.StringPointerValue(param.Key),
 		Value:       types.StringPointerValue(param.Value),
 		Description: types.StringPointerValue(param.Description),

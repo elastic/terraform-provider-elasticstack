@@ -31,6 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 )
 
 //go:embed resource-description.md
@@ -48,6 +50,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"space_id": kbschema.ResourceSpaceIDAttribute(),
 			"key": schema.StringAttribute{
 				Optional:            false,
 				Required:            true,

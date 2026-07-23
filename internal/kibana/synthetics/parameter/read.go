@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func readParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, model Model) (Model, bool, diag.Diagnostics) {
+func readParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) (Model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	kibanaClient := client.GetKibanaOapiClient()
@@ -48,7 +48,7 @@ func readParameter(ctx context.Context, client *clients.KibanaScopedClient, reso
 		return model, false, diags
 	}
 
-	result := modelFromOAPI(*unwrapped)
+	result := modelFromOAPI(*unwrapped, spaceID)
 	result.KibanaConnection = model.KibanaConnection
 
 	return result, true, diags
