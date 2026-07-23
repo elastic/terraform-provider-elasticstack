@@ -39,6 +39,6 @@
 
 - [x] 6.1 Update `internal/kibana/synthetics/parameter/resource-description.md` to document `space_id` and the composite `id` format, and include an HCL example with `space_id`.
 
-## 7. Version gate (resolve open question first)
+## 7. Version gate
 
-- [ ] 7.1 Determine whether the space-prefixed Parameters path needs a Kibana version floor above 8.12.0. If so, add a `GetVersionRequirements` check for non-default `space_id` mirroring `internal/kibana/synthetics/privatelocation` (per-attribute requirement + friendly error), and cover it with a version-gated test. If not, document that no additional gate is required.
+- [x] 7.1 Determine whether the space-prefixed Parameters path needs a Kibana version floor above 8.12.0. **Resolved:** space-prefixed paths are documented in Kibana v8.12.0 (`add-param.asciidoc`); no floor above 8.12.0 and no `GetVersionRequirements` check (see `design.md` / `proposal.md`).
