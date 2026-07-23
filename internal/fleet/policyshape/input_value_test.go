@@ -268,7 +268,7 @@ func mustNewInputValue(ctx context.Context, t *testing.T, input InputModel) Inpu
 }
 
 // defaultsLessInputAttributeTypes reproduces the shape of
-// internal/fleet/agentlesspolicy/schema.go's agentlessInputAttributeTypes()
+// internal/fleet/managedintegration/schema.go's managedIntegrationInputAttributeTypes()
 // (enabled/condition/vars/streams, deliberately omitting `defaults`) without
 // importing that package (policyshape must not depend on any of its own
 // consumers). This is the attribute-types map decodeInputModel's
@@ -299,7 +299,7 @@ func mustNewDefaultsLessInputValue(ctx context.Context, t *testing.T, m inputMod
 // &InputModel{}, ...) directly, which hard-fails with "Struct defines fields
 // not found in object: defaults" against an InputValue built from an
 // attribute-types map with no `defaults` key -- exactly what
-// agentlesspolicy's agentlessInputAttributeTypes() produces. This test
+// managedintegration's managedIntegrationInputAttributeTypes() produces. This test
 // exercises all three methods against such a defaults-less InputValue and
 // asserts they behave correctly (no error, and semantically sane results)
 // rather than hard-failing.

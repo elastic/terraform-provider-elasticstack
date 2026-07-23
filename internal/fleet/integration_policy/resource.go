@@ -48,7 +48,7 @@ var (
 // MinVersionCondition is the minimum Kibana version that accepts the
 // `condition` field on package-policy inputs/streams. It now lives in
 // policyshape (see that package's version.go) since `condition` is part of
-// the shared InputType/StreamType shape and internal/fleet/agentlesspolicy
+// the shared InputType/StreamType shape and internal/fleet/managedintegration
 // gates the same attribute against the same requirement; kept as a
 // package-level alias here so existing call sites in this package
 // (capabilities.go, models.go, models_test.go) don't all need an import

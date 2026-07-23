@@ -62,6 +62,15 @@ func resourceTimeoutsWithCreate(create string) tftypes.Value {
 	})
 }
 
+func resourceTimeoutsWithUpdate(update string) tftypes.Value {
+	return tftypes.NewValue(resourceTimeoutsObjectType(), map[string]tftypes.Value{
+		"create": tftypes.NewValue(tftypes.String, nil),
+		"read":   tftypes.NewValue(tftypes.String, nil),
+		"update": tftypes.NewValue(tftypes.String, update),
+		"delete": tftypes.NewValue(tftypes.String, nil),
+	})
+}
+
 func testResourceObjectTypeWithTimeouts() tftypes.Type {
 	return tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{

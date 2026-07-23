@@ -32,7 +32,7 @@ func TestProtoV6ProviderServerFactory(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){
-					"elasticstack": func() (tfprotov6.ProviderServer, error) {
+					provider.ProviderTypeName: func() (tfprotov6.ProviderServer, error) {
 						server := provider.ProtoV6ProviderServerFactory("acceptance_test")()
 						if server == nil {
 							return nil, fmt.Errorf("provider server factory returned nil")
