@@ -1,6 +1,7 @@
 # Preserve environment and command-line variable values across .env inclusion.
 # The .env file (auto-created from .env.template) may contain defaults that
 # would otherwise silently override values set via workflow matrices or local shell.
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 define _env_guard_save
 _$(1)_ORIGIN := $(origin $(1))
 _$(1)_VALUE  := $($(1))
@@ -37,6 +38,10 @@ ACCTEST_SHARD_INDEX ?= 0
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
+
+# Optional diff baseline for targeted acceptance test selection.
+TARGETED_TESTACC_BASE ?=
+TARGETED_TESTACC_VERBOSE ?= 0
 
 USE_TLS ?= 0
 COMPOSE_FILE := docker-compose.yml
@@ -101,6 +106,23 @@ testacc-vs-docker:
 .PHONY: testacc
 testacc: ## Run acceptance tests
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$(shell go list ./... | sort | awk '(NR-1) % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+
+.PHONY: targeted-testacc
+targeted-testacc: ## Run acceptance tests relevant to the current branch diff
+	@set -euo pipefail; \
+	targeted_pkgs="$(TARGETED_PKGS)"; \
+	if [ -z "$${targeted_pkgs}" ]; then \
+		targeted_pkgs=$$(TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --shard-index=$(ACCTEST_SHARD_INDEX) --verbose=$(TARGETED_TESTACC_VERBOSE) | tr '\n' ' '); \
+	fi; \
+	if [ -z "$${targeted_pkgs}" ]; then \
+		echo "No acceptance test packages selected for this diff/shard; skipping."; \
+		exit 0; \
+	fi; \
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$${targeted_pkgs}" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+
+.PHONY: targeted-testacc-dry-run
+targeted-testacc-dry-run: ## Print acceptance test packages selected for the current branch diff (does not run tests)
+	@TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --shard-index=$(ACCTEST_SHARD_INDEX) --verbose=$(TARGETED_TESTACC_VERBOSE) --dry-run
 
 .PHONY: hook-test
 hook-test: ## Run hook JavaScript unit tests

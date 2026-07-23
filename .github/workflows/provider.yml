@@ -6,6 +6,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+  merge_group:
 
 permissions:
   contents: read
@@ -199,8 +200,34 @@ jobs:
       - name: Get dependencies
         run: make vendor
 
+      - id: targeted
+        name: Compute targeted acceptance test packages
+        run: |
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "has_packages=true" >> "$GITHUB_OUTPUT"
+            echo "targeted_pkgs=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The actions/checkout step gives us a shallow merge commit only, so
+          # merge-base / HEAD~1 resolution fails and the tool falls back to the
+          # full suite. Fetch the PR base commit and pass it explicitly so the
+          # tool can compute the real diff for this PR.
+          base_ref="refs/remotes/origin/pr-base"
+          if git fetch origin +${{ github.event.pull_request.base.sha }}:"${base_ref}" --depth=1; then
+            targeted=$(go run ./scripts/targeted-testacc/... --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+          else
+            targeted=$(go run ./scripts/targeted-testacc/... --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+          fi
+          targeted=$(echo "$targeted" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          if [[ -n "$targeted" ]]; then
+            echo "has_packages=true" >> "$GITHUB_OUTPUT"
+            echo "targeted_pkgs=$targeted" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_packages=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Pre-pull fleet image
-        if: matrix.fleetImage
+        if: matrix.fleetImage && steps.targeted.outputs.has_packages == 'true'
         timeout-minutes: 5
         run: |
           for i in {1..3}; do
@@ -216,6 +243,7 @@ jobs:
           exit 1
 
       - name: Start stack with docker compose
+        if: steps.targeted.outputs.has_packages == 'true'
         timeout-minutes: 10
         run: make docker-fleet
         env:
@@ -225,6 +253,7 @@ jobs:
           FLEET_IMAGE: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}
 
       - name: Wait for stack readiness
+        if: steps.targeted.outputs.has_packages == 'true'
         run: |
           for i in {1..60}; do
             if curl -fsS -u "elastic:${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health > /dev/null; then
@@ -250,6 +279,7 @@ jobs:
 
       - id: get-api-key
         name: Get ES API key
+        if: steps.targeted.outputs.has_packages == 'true'
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
@@ -257,7 +287,7 @@ jobs:
 
       - id: setup-fleet
         name: Setup Fleet
-        if: matrix.version == '8.10.4' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10' || matrix.version == '9.0.8' || matrix.version == '9.1.10' || matrix.version == '9.2.8' || matrix.version == '9.3.6' || endsWith(matrix.version, '-SNAPSHOT')
+        if: steps.targeted.outputs.has_packages == 'true' && (matrix.version == '8.10.4' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10' || matrix.version == '9.0.8' || matrix.version == '9.1.10' || matrix.version == '9.2.8' || matrix.version == '9.3.6' || endsWith(matrix.version, '-SNAPSHOT'))
         run: |-
           make setup-kibana-fleet
         env:
@@ -266,15 +296,21 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10'
+        if: steps.targeted.outputs.has_packages == 'true' && (matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10')
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
         id: tf-acceptance
+        if: steps.targeted.outputs.has_packages == 'true'
         timeout-minutes: 45
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
-        run: make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+        run: |
+          if [[ -n "${{ steps.targeted.outputs.targeted_pkgs }}" ]]; then
+            make targeted-testacc TARGETED_PKGS="${{ steps.targeted.outputs.targeted_pkgs }}" ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+          else
+            make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+          fi
         env:
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
