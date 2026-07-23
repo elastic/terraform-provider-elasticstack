@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createParameter(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
@@ -53,18 +52,13 @@ func createParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	createResponse, err := createResult.JSON200.AsSyntheticsPostParameterResponse()
-	if err != nil {
-		diags.AddError(fmt.Sprintf("Failed to parse parameter response `%s`", input.Key), err.Error())
+	createResponse, parseDiags := parseCreateParameterResponse(createResult, input.Key)
+	diags.Append(parseDiags...)
+	if diags.HasError() {
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	if createResponse.Id == nil {
-		diags.AddError(fmt.Sprintf("Unexpected nil id in create parameter response `%s`", input.Key), "")
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: *createResponse.Id}).String())
+	plan.setCompositeIdentity(req.SpaceID, *createResponse.Id)
 
 	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }

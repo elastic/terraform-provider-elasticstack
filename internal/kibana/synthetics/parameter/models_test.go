@@ -73,3 +73,30 @@ func TestModelFromOAPI_emptySpaceIDDefaultsToDefaultSpace(t *testing.T) {
 	require.Equal(t, clients.DefaultSpaceID, m.SpaceID.ValueString())
 	require.Equal(t, clients.DefaultSpaceID+"/abc-123", m.ID.ValueString())
 }
+
+func TestNormalizeSpaceID(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, clients.DefaultSpaceID, normalizeSpaceID(""))
+	require.Equal(t, "ops-team", normalizeSpaceID("ops-team"))
+}
+
+func TestModel_setCompositeIdentity_emptySpaceDefaultsToDefault(t *testing.T) {
+	t.Parallel()
+
+	var m Model
+	m.setCompositeIdentity("", "uuid-1")
+
+	require.Equal(t, clients.DefaultSpaceID, m.SpaceID.ValueString())
+	require.Equal(t, clients.DefaultSpaceID+"/uuid-1", m.ID.ValueString())
+}
+
+func TestModel_setCompositeIdentity_namedSpace(t *testing.T) {
+	t.Parallel()
+
+	var m Model
+	m.setCompositeIdentity("ops-team", "uuid-1")
+
+	require.Equal(t, "ops-team", m.SpaceID.ValueString())
+	require.Equal(t, "ops-team/uuid-1", m.ID.ValueString())
+}

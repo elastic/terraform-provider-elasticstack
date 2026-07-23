@@ -57,6 +57,19 @@ func (m Model) GetResourceID() types.String {
 
 func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
+func normalizeSpaceID(spaceID string) string {
+	if spaceID == "" {
+		return clients.DefaultSpaceID
+	}
+	return spaceID
+}
+
+func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
+	spaceID = normalizeSpaceID(spaceID)
+	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
+	m.SpaceID = types.StringValue(spaceID)
+}
+
 func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
@@ -76,20 +89,12 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 }
 
 func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse, spaceID string) Model {
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = normalizeSpaceID(spaceID)
 	// Namespaces is omitempty in the Kibana API and is only populated for users
 	// with read-only permissions; treat a missing list as not shared across spaces.
 	allSpaces := param.Namespaces != nil && slices.Equal(*param.Namespaces, []string{"*"})
 
-	var id types.String
-	if param.Id != nil {
-		id = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: *param.Id}).String())
-	}
-
-	return Model{
-		ID:          id,
+	model := Model{
 		SpaceID:     types.StringValue(spaceID),
 		Key:         types.StringPointerValue(param.Key),
 		Value:       types.StringPointerValue(param.Value),
@@ -99,4 +104,8 @@ func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse, spaceID string) 
 		Tags:              typeutils.NonNilSlice(typeutils.StringSliceValue(typeutils.Deref(param.Tags))),
 		ShareAcrossSpaces: types.BoolValue(allSpaces),
 	}
+	if param.Id != nil {
+		model.setCompositeIdentity(spaceID, *param.Id)
+	}
+	return model
 }

@@ -22,12 +22,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func updateParameter(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
@@ -47,13 +48,18 @@ func updateParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	_, err = kibanaClient.API.PutParameterWithBodyWithResponse(ctx, req.WriteID, "application/json", bytes.NewReader(inputJSON), kibanautil.SpaceAwarePathRequestEditor(req.SpaceID))
+	updateResult, err := kibanaClient.API.PutParameterWithBodyWithResponse(ctx, req.WriteID, "application/json", bytes.NewReader(inputJSON), kibanautil.SpaceAwarePathRequestEditor(req.SpaceID))
 	if err != nil {
 		diags.AddError(fmt.Sprintf("Failed to update parameter `%s`", req.WriteID), err.Error())
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: req.WriteID}).String())
+	diags.Append(diagutil.HandleStatusResponse(updateResult.StatusCode(), updateResult.Body, http.StatusOK)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, diags
+	}
+
+	plan.setCompositeIdentity(req.SpaceID, req.WriteID)
 
 	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }
