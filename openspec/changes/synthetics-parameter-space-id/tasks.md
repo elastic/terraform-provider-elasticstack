@@ -37,7 +37,7 @@
 
 ## 6. Docs
 
-- [ ] 6.1 Update `internal/kibana/synthetics/parameter/resource-description.md` to document `space_id` and the composite `id` format, and include an HCL example with `space_id`.
+- [x] 6.1 Update `internal/kibana/synthetics/parameter/resource-description.md` to document `space_id` and the composite `id` format, and include an HCL example with `space_id`.
 
 ## 7. Version gate (resolve open question first)
 
