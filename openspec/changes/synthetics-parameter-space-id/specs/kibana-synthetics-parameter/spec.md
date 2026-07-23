@@ -91,3 +91,13 @@ The resource SHALL remain compatible with existing state that stores a bare-UUID
 - GIVEN existing state containing a `elasticstack_kibana_synthetics_parameter` with a bare UUID `id` and no `space_id`
 - WHEN read, update, or delete runs
 - THEN the provider SHALL treat it as a default-space parameter, route to the unscoped Synthetics Parameters path, and (on write/refresh) rewrite `id` to `"default/<uuid>"` with no destroy/recreate
+
+### Requirement: Non-default space at existing API baseline (REQ-015)
+
+Space-prefixed Synthetics Parameters API paths for non-default Kibana spaces SHALL NOT require a Kibana version floor above the resource's existing **8.12.0** API baseline. The provider SHALL NOT introduce a `GetVersionRequirements` check solely to gate non-default `space_id` routing (contrast Synthetics private location, which requires a higher stack version for non-default space).
+
+#### Scenario: Non-default space without extra version gate
+
+- GIVEN a parameter configured with a non-default `space_id`
+- WHEN create, read, update, or delete runs against a Kibana version that already satisfies the resource's existing minimum
+- THEN the provider SHALL route via the space-prefixed Synthetics Parameters API path and SHALL NOT fail with a version diagnostic introduced solely for non-default space routing
