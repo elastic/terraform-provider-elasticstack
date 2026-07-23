@@ -76,6 +76,9 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 }
 
 func modelFromOAPI(param kboapi.SyntheticsGetParameterResponse, spaceID string) Model {
+	if spaceID == "" {
+		spaceID = clients.DefaultSpaceID
+	}
 	// Namespaces is omitempty in the Kibana API and is only populated for users
 	// with read-only permissions; treat a missing list as not shared across spaces.
 	allSpaces := param.Namespaces != nil && slices.Equal(*param.Namespaces, []string{"*"})

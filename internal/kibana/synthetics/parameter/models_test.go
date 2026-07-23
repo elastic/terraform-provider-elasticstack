@@ -60,3 +60,16 @@ func TestModelFromOAPI_setsCompositeIDAndSpaceID(t *testing.T) {
 	require.Equal(t, "my-space", m.SpaceID.ValueString())
 	require.Equal(t, "abc-123", m.GetResourceID().ValueString())
 }
+
+func TestModelFromOAPI_emptySpaceIDDefaultsToDefaultSpace(t *testing.T) {
+	t.Parallel()
+
+	paramUUID := "abc-123"
+	m := modelFromOAPI(kboapi.SyntheticsGetParameterResponse{
+		Id:  &paramUUID,
+		Key: new("my-key"),
+	}, "")
+
+	require.Equal(t, clients.DefaultSpaceID, m.SpaceID.ValueString())
+	require.Equal(t, clients.DefaultSpaceID+"/abc-123", m.ID.ValueString())
+}
