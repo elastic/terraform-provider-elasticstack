@@ -165,35 +165,22 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 }
 
 func treemapConfigToAPI(m *models.TreemapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, esqlDiags := treemapConfigToAPITreemapESQL(m)
-		diags.Append(esqlDiags...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsTreemapESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to create treemap ES|QL schema", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, noESQLDiags := treemapConfigToAPINoESQL(m)
-	diags.Append(noESQLDiags...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsTreemapNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to create treemap schema", err.Error())
-	}
-
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel, diag.Diagnostics) {
+			return treemapConfigToAPITreemapESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTreemapESQLByValuePanel,
+		"Failed to create treemap ES|QL schema",
+		func() (kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel, diag.Diagnostics) {
+			return treemapConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTreemapNoESQLByValuePanel,
+		"Failed to create treemap schema",
+	)
 }
 
 func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel, diag.Diagnostics) {

@@ -324,43 +324,34 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (*kbapi.KibanaHTTPAPIsWaffle
 }
 
 func waffleConfigToAPI(m *models.WaffleConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
 
-	diags.Append(WaffleConfigModeValidateDiags(lenscommon.ConfigUsesESQL(m.Query), WaffleModeListStateFromSlice(len(m.Metrics)),
+	usesESQL := lenscommon.ConfigUsesESQL(m.Query)
+	var diags diag.Diagnostics
+	diags.Append(WaffleConfigModeValidateDiags(usesESQL, WaffleModeListStateFromSlice(len(m.Metrics)),
 		WaffleModeListStateFromSlice(len(m.GroupBy)),
 		WaffleModeListStateFromSlice(len(m.EsqlMetrics)),
 		WaffleModeListStateFromSlice(len(m.EsqlGroupBy)),
 	)...)
 	if diags.HasError() {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, diags
 	}
 
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, d := waffleConfigToAPIESQL(m)
-		diags.Append(d...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsWaffleESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to build waffle ES|QL chart", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, d := waffleConfigToAPINoESQL(m)
-	diags.Append(d...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsWaffleNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to build waffle chart", err.Error())
-	}
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		usesESQL,
+		func() (kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel, diag.Diagnostics) {
+			return waffleConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsWaffleESQLByValuePanel,
+		"Failed to build waffle ES|QL chart",
+		func() (kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel, diag.Diagnostics) {
+			return waffleConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsWaffleNoESQLByValuePanel,
+		"Failed to build waffle chart",
+	)
 }
 
 func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel, diag.Diagnostics) {
