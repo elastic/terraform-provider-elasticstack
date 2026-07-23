@@ -95,4 +95,36 @@ func TestResource_importState_rejectsEmptyResourceSegment(t *testing.T) {
 	r.ImportState(ctx, resource.ImportStateRequest{ID: "my-space/"}, resp)
 	require.True(t, resp.Diagnostics.HasError())
 	assert.Equal(t, "Wrong resource ID.", resp.Diagnostics.Errors()[0].Summary())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "<cluster_uuid>/<resource identifier>")
+}
+
+func TestResource_importState_rejectsMultipleSlashes(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	const importID = "my-space/uuid/extra"
+	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), importID)
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "at most one slash")
+}
+
+func TestResource_importState_rejectsEmptyImportID(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: ""}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	assert.Equal(t, "Wrong resource ID.", resp.Diagnostics.Errors()[0].Summary())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "bare `<parameter_uuid>`")
 }

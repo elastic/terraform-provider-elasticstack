@@ -19,6 +19,7 @@ package parameter
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -28,7 +29,22 @@ import (
 )
 
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
+	if strings.Count(request.ID, "/") > 1 {
+		response.Diagnostics.AddError(
+			fmt.Sprintf("Failed to parse parameter import ID %s", request.ID),
+			fmt.Sprintf(
+				"Import ID must use at most one slash in the form `<space_id>/<parameter_uuid>` or a bare `<parameter_uuid>`. Current value: %s",
+				request.ID,
+			),
+		)
+		return
+	}
+
 	if strings.Contains(request.ID, "/") {
+		// ResolveCompositeSpaceAndID leaves malformed composite strings (for example
+		// "<space_id>/" with an empty resource segment) as the full raw ID when
+		// CompositeIDFromStr fails, so import would succeed with an invalid UUID.
+		// Pre-check CompositeIDFromStr to surface the same rejection as state identity parsing.
 		if _, diags := clients.CompositeIDFromStr(request.ID); diags.HasError() {
 			response.Diagnostics.Append(diags...)
 			return
