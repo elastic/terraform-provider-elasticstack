@@ -4,7 +4,7 @@
 
 _Replaces existing REQ-001._
 
-The resource SHALL manage Synthetics parameters through Kibana's Synthetics Parameters API using the space-aware path pattern: create via `POST /s/{space_id}/api/synthetics/params`, read via `GET /s/{space_id}/api/synthetics/params/{id}`, update via `PUT /s/{space_id}/api/synthetics/params/{id}`, and delete via `DELETE /s/{space_id}/api/synthetics/params` (or `DELETE /s/{space_id}/api/synthetics/params/{id}` for Kibana ≥ 8.17.0). When `space_id` is `"default"` or empty, the path SHALL remain unchanged (no `/s/{space_id}` prefix injected). All operations SHALL use `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to rewrite the request URL path before the call is sent.
+The resource SHALL manage Synthetics parameters through Kibana's Synthetics Parameters API using the space-aware path pattern: create via `POST /s/{space_id}/api/synthetics/params`, read via `GET /s/{space_id}/api/synthetics/params/{id}`, update via `PUT /s/{space_id}/api/synthetics/params/{id}`, and delete via `DELETE /s/{space_id}/api/synthetics/params` (or `DELETE /s/{space_id}/api/synthetics/params/{id}` for Kibana ≥ 8.17.0). When `space_id` is `"default"` or empty, the path SHALL remain unchanged (no `/s/{space_id}` prefix injected). All operations SHALL use `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to rewrite the request URL path before the call is sent. All operations SHALL use the same Kibana OpenAPI (`kbapi`) HTTP transport for authentication and headers.
 
 #### Scenario: CRUD uses space-aware Synthetics Parameters APIs
 
@@ -17,6 +17,18 @@ The resource SHALL manage Synthetics parameters through Kibana's Synthetics Para
 - GIVEN a managed Synthetics parameter with `space_id = "default"` (or `space_id` unset)
 - WHEN create, read, update, or delete runs
 - THEN the provider SHALL use the Kibana Synthetics Parameters API without a space path prefix
+
+### Requirement: Identity and computed `id` (REQ-003)
+
+_Replaces existing REQ-003._
+
+The resource SHALL expose a computed `id` stored as `<space_id>/<parameter_uuid>` after successful create or update (see REQ-013). The `id` SHALL be preserved across reads using `UseStateForUnknown`. Because `id` also carries `RequiresReplace`, any operation that changes the parameter's Kibana identity SHALL trigger replacement.
+
+#### Scenario: Composite `id` preserved on read
+
+- GIVEN a managed parameter with a composite `id` in state
+- WHEN read runs successfully
+- THEN the provider SHALL preserve the composite `id` in state using `UseStateForUnknown`
 
 ### Requirement: Import by composite or bare id (REQ-004)
 
@@ -41,6 +53,24 @@ The resource SHALL support Terraform import using either a composite `<space_id>
 - GIVEN an import id of the form `<space_id>/` (empty UUID segment)
 - WHEN import runs
 - THEN the provider SHALL return an error diagnostic
+
+### Requirement: Read-after-write on create and update (REQ-006)
+
+_Replaces existing REQ-006._
+
+After a successful create or update API call, the resource SHALL perform a follow-up read of the parameter by id and SHALL use the read response to populate state. This is required because Kibana's create response omits the `value` field and Kibana's update response returns the old `value`. The follow-up GET SHALL use the same space-aware path rules as REQ-001 for the parameter's effective `space_id` (via `SpaceAwarePathRequestEditor`).
+
+#### Scenario: Read-after-write uses space-aware GET in named space
+
+- GIVEN a successful create or update for a parameter with effective `space_id = "my-space"`
+- WHEN the provider performs the follow-up read
+- THEN the provider SHALL call `GET /s/my-space/api/synthetics/params/{id}` and populate state from the GET response
+
+#### Scenario: Read-after-write uses unscoped GET in default space
+
+- GIVEN a successful create or update for a parameter in the default space
+- WHEN the provider performs the follow-up read
+- THEN the provider SHALL call `GET /api/synthetics/params/{id}` without a space path prefix and populate state from the GET response
 
 ## ADDED Requirements
 
@@ -94,10 +124,10 @@ The resource SHALL remain compatible with existing state that stores a bare-UUID
 
 ### Requirement: Non-default space at existing API baseline (REQ-015)
 
-Space-prefixed Synthetics Parameters API paths for non-default Kibana spaces SHALL NOT require a Kibana version floor above the resource's existing **8.12.0** API baseline. The provider SHALL NOT introduce a `GetVersionRequirements` check solely to gate non-default `space_id` routing (contrast Synthetics private location, which requires a higher stack version for non-default space).
+Kibana **v8.12.0** documents space-prefixed Synthetics Parameters CRUD routes alongside unscoped routes (Parameters API baseline; see `design.md`). That **8.12.0** marker describes documented API availability for non-default space routing—not a new or raised runtime `GetVersionRequirements` floor introduced by this change. The provider SHALL NOT add a `GetVersionRequirements` entry solely to gate non-default `space_id` values (contrast Synthetics private location, which requires a higher stack version for non-default space).
 
 #### Scenario: Non-default space without extra version gate
 
 - GIVEN a parameter configured with a non-default `space_id`
-- WHEN create, read, update, or delete runs against a Kibana version that already satisfies the resource's existing minimum
-- THEN the provider SHALL route via the space-prefixed Synthetics Parameters API path and SHALL NOT fail with a version diagnostic introduced solely for non-default space routing
+- WHEN create, read, update, or delete runs on a Kibana deployment where space-prefixed Parameters routes are available
+- THEN the provider SHALL route via the space-prefixed Synthetics Parameters API path and SHALL NOT fail with a version diagnostic introduced solely for non-default `space_id` routing

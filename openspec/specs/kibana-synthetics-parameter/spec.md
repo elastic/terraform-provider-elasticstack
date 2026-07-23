@@ -116,19 +116,19 @@ The resource SHALL use the provider's configured Kibana OpenAPI (`kbapi`) client
 
 ### Requirement: Read-after-write on create and update (REQ-006)
 
-After a successful create or update API call, the resource SHALL perform a follow-up read of the parameter by id and SHALL use the read response to populate state. This is required because Kibana's create response omits the `value` field and Kibana's update response returns the old `value`.
+After a successful create or update API call, the resource SHALL perform a follow-up read of the parameter by id and SHALL use the read response to populate state. This is required because Kibana's create response omits the `value` field and Kibana's update response returns the old `value`. The follow-up GET SHALL use the same space-aware path rules as REQ-001 for the parameter's effective `space_id` (via `SpaceAwarePathRequestEditor`).
 
-#### Scenario: Create read-after-write
+#### Scenario: Read-after-write uses space-aware GET in named space
 
-- GIVEN a successful POST to create a parameter
-- WHEN the provider receives the create response
-- THEN the provider SHALL call `GET /api/synthetics/params/{id}` and populate state from the GET response
+- GIVEN a successful create or update for a parameter with effective `space_id = "my-space"`
+- WHEN the provider performs the follow-up read
+- THEN the provider SHALL call `GET /s/my-space/api/synthetics/params/{id}` and populate state from the GET response
 
-#### Scenario: Update read-after-write
+#### Scenario: Read-after-write uses unscoped GET in default space
 
-- GIVEN a successful PUT to update a parameter
-- WHEN the provider receives the update response
-- THEN the provider SHALL call `GET /api/synthetics/params/{id}` and populate state from the GET response
+- GIVEN a successful create or update for a parameter in the default space
+- WHEN the provider performs the follow-up read
+- THEN the provider SHALL call `GET /api/synthetics/params/{id}` without a space path prefix and populate state from the GET response
 
 ### Requirement: `share_across_spaces` create-only field (REQ-007)
 
@@ -254,13 +254,13 @@ The resource SHALL remain compatible with existing state that stores a bare-UUID
 
 ### Requirement: Non-default space at existing API baseline (REQ-015)
 
-Space-prefixed Synthetics Parameters API paths for non-default Kibana spaces SHALL NOT require a Kibana version floor above the resource's existing **8.12.0** API baseline. The provider SHALL NOT introduce a `GetVersionRequirements` check solely to gate non-default `space_id` routing (contrast Synthetics private location, which requires a higher stack version for non-default space).
+Kibana **v8.12.0** documents space-prefixed Synthetics Parameters CRUD routes alongside unscoped routes (Parameters API baseline; see `design.md`). That **8.12.0** marker describes documented API availability for non-default space routing—not a new or raised runtime `GetVersionRequirements` floor introduced by this change. The provider SHALL NOT add a `GetVersionRequirements` entry solely to gate non-default `space_id` values (contrast Synthetics private location, which requires a higher stack version for non-default space).
 
 #### Scenario: Non-default space without extra version gate
 
 - GIVEN a parameter configured with a non-default `space_id`
-- WHEN create, read, update, or delete runs against a Kibana version that already satisfies the resource's existing minimum
-- THEN the provider SHALL route via the space-prefixed Synthetics Parameters API path and SHALL NOT fail with a version diagnostic introduced solely for non-default space routing
+- WHEN create, read, update, or delete runs on a Kibana deployment where space-prefixed Parameters routes are available
+- THEN the provider SHALL route via the space-prefixed Synthetics Parameters API path and SHALL NOT fail with a version diagnostic introduced solely for non-default `space_id` routing
 
 ## Traceability
 
