@@ -82,7 +82,10 @@ func writeIntegration(
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, scope)
+	// Poll via the configured space API path but treat global install status only.
+	// Strict target-space detection is deferred to installInSpace's later wait.
+	pollScope := spaceScope{id: scope.id, aware: false}
+	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, pollScope)
 	if waitErr != nil {
 		diags.AddError(
 			"Failed to install Fleet integration package",
