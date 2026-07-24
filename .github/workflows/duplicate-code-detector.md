@@ -8,7 +8,7 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -39,9 +39,9 @@ safe-outputs:
     max: 3
 
 timeout-minutes: 15
+model: "llm-gateway/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-5"
   args:
     - "--effort"
     - "high"

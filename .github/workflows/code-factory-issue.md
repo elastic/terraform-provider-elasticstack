@@ -30,7 +30,7 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -274,9 +274,9 @@ steps:
     with:
       name: code-factory-issue-context
       path: /tmp/code-factory-context/
+model: "llm-gateway/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-5"
   args:
     - "--effort"
     - "high"

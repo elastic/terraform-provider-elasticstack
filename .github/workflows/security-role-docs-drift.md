@@ -13,9 +13,9 @@ on:
       - main
     paths:
       - 'generated/kbapi/**'
+model: "llm-gateway/gpt-5.5"
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.5"
   version: 2.1.98
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
@@ -45,12 +45,12 @@ checkout:
   fetch-depth: 0
 steps:
   - name: Checkout repository
-    uses: actions/checkout@v7.0.0
+    uses: actions/checkout@v7.0.1
     with:
       fetch-depth: 0
       persist-credentials: false
   - name: Setup Go
-    uses: actions/setup-go@v6.5.0
+    uses: actions/setup-go@v7.0.0
     with:
       go-version-file: go.mod
       cache: false
