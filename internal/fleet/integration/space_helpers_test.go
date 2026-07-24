@@ -34,10 +34,10 @@ func TestFleetPackageInstalled(t *testing.T) {
 	installedStatusStr := "installed"
 
 	tests := []struct {
-		name   string
-		pkg    *kbapi.KibanaHTTPAPIsGetPackageInfo
-		scope  spaceScope
-		want   bool
+		name  string
+		pkg   *kbapi.KibanaHTTPAPIsGetPackageInfo
+		scope spaceScope
+		want  bool
 	}{
 		{
 			name:  "nil package",

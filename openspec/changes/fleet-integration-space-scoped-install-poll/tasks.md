@@ -26,7 +26,7 @@
 
 - [x] 4.1 Adapt the existing `TestAccReproduceIssue4282` (already on this branch from PR #4300), gated by `versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)` — do not add a duplicate `TestAccResourceIntegration_SpaceRestrictedKey`.
 - [x] 4.2 Reuse the existing `testdata/TestAccReproduceIssue4282/` fixture: `elasticstack_kibana_space` (random space id) + `elasticstack_kibana_security_role`/`elasticstack_elasticsearch_security_user` scoped only to that space + `elasticstack_fleet_integration` (`name = "tcp"`, `version = "1.16.0"`, `space_id = <space_id>`, restricted `kibana_connection`).
-- [x] 4.3 Positive assertion: apply succeeds; `testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceID)` passes (remove the pre-fix `ExpectError` 403 expectation).
+- [x] 4.3 Positive assertion: apply succeeds; `testAccCheckIntegrationInstalledInSpace(spaceID)` passes (admin client, tcp/1.16.0 fixture) and `testAccCheckFleetGetPackageTargetSpaceAllowed` confirms the restricted client sees the package installed in the target space (remove the pre-fix `ExpectError` 403 expectation).
 - [x] 4.4 Negative guard: restricted-credentials checks that target-space `GetPackage` succeeds and default-space `GetPackage` returns HTTP 403 (not merely generic forbidden wording).
 - [ ] 4.5 Confirm the existing role privilege set (`fleet`/`fleetv2` all, scoped to the test space) works against a running 9.1+ stack — adjust only if the restricted user 403s on the legitimately-scoped path too. *(Blocked: worktree Elastic stack unavailable — connection refused on configured endpoints.)*
 
