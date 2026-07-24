@@ -6,7 +6,7 @@ network:
     - terraform
 steps:
   - name: Setup Go
-    uses: actions/setup-go@v6.5.0
+    uses: actions/setup-go@v7.0.0
     with:
       go-version-file: go.mod
       cache: false
@@ -28,7 +28,7 @@ steps:
       echo "TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform" >> "$GITHUB_ENV"
       echo "PATH=$GITHUB_WORKSPACE/bin:$PATH" >> "$GITHUB_ENV"
   - name: Setup Node.js
-    uses: actions/setup-node@v6.4.0
+    uses: actions/setup-node@v7.0.0
     with:
       node-version-file: package.json
   - name: Setup repository dependencies

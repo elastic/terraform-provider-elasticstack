@@ -12,18 +12,18 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
     - name: Setup Go
-      uses: actions/setup-go@v6.5.0
+      uses: actions/setup-go@v7.0.0
       with:
         go-version-file: go.mod
         cache: false
     # NOTE: This ref must match the repo-memory tool config branch-name below.
     - name: Checkout repo-memory branch
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         ref: memory/ci-deadcode-removal-rotation
         path: gh-aw-repo-memory/ci-deadcode-removal-rotation
@@ -89,9 +89,9 @@ on:
         echo "summary<<EOF" >> "$GITHUB_OUTPUT"
         echo "$summary" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
+model: "llm-gateway/DeepSeek-V4-Flash"
 engine:
   id: claude
-  model: "llm-gateway/DeepSeek-V4-Flash"
   args:
     - "--effort"
     - "high"

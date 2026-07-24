@@ -17,7 +17,7 @@ on:
     contents: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -64,9 +64,9 @@ if: >-
   needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps: []
+model: "llm-gateway/claude-opus-4-8"
 engine:
   id: claude
-  model: "llm-gateway/claude-opus-4-8"
   args:
     - "--effort"
     - "high"

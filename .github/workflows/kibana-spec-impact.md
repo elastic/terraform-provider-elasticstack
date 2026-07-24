@@ -16,17 +16,17 @@ on:
       - 'internal/clients/kibanaoapi/**'
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         fetch-depth: 0
     - name: Setup Go
-      uses: actions/setup-go@v6.5.0
+      uses: actions/setup-go@v7.0.0
       with:
         go-version-file: go.mod
         cache: false
     # NOTE: This ref must match the repo-memory tool config branch-name below.
     - name: Checkout repo-memory branch
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         ref: memory/kibana-spec-impact
         path: gh-aw-repo-memory/kibana-spec-impact
@@ -51,9 +51,9 @@ on:
         name: kibana-spec-impact-report
         path: /tmp/gh-aw/agent/kibana-spec-impact-report.json
         if-no-files-found: error
+model: "llm-gateway/gpt-5.5"
 engine:
   id: claude
-  model: "llm-gateway/gpt-5.5"
   version: 2.1.98
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"

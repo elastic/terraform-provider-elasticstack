@@ -8,7 +8,7 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -20,9 +20,9 @@ on:
         script: |
           const fn = require('${{ github.workspace }}/.github/scripts/workflows/flaky-test-catcher/catch.js');
           await fn({ github, context, core });
+model: "llm-gateway/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-5"
   args:
     - "--effort"
     - "high"
