@@ -201,34 +201,22 @@ func tagcloudConfigFromAPIESQL(
 }
 
 func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, d := tagcloudConfigToAPIESQL(m)
-		diags.Append(d...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsTagcloudESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to create tagcloud ES|QL attributes", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, d := tagcloudConfigToAPINoESQL(m)
-	diags.Append(d...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to create tagcloud attributes", err.Error())
-	}
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
+			return tagcloudConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudESQLByValuePanel,
+		"Failed to create tagcloud ES|QL attributes",
+		func() (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
+			return tagcloudConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel,
+		"Failed to create tagcloud attributes",
+	)
 }
 
 func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {

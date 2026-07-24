@@ -178,35 +178,22 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 }
 
 func heatmapConfigToAPI(m *models.HeatmapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var attrs lenscommon.VisByValueConfig0
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, esqlDiags := heatmapConfigToAPIESQL(m)
-		diags.Append(esqlDiags...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsHeatmapESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to create heatmap ESQL schema", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, noESQLDiags := heatmapConfigToAPINoESQL(m)
-	diags.Append(noESQLDiags...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsHeatmapNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to create heatmap schema", err.Error())
-	}
-
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel, diag.Diagnostics) {
+			return heatmapConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsHeatmapESQLByValuePanel,
+		"Failed to create heatmap ESQL schema",
+		func() (kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel, diag.Diagnostics) {
+			return heatmapConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsHeatmapNoESQLByValuePanel,
+		"Failed to create heatmap schema",
+	)
 }
 
 func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel, diag.Diagnostics) {

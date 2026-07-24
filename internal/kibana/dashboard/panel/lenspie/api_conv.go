@@ -364,32 +364,20 @@ func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPI
 }
 
 func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var attrs lenscommon.VisByValueConfig0
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		chart, chartDiags := pieChartConfigToAPIESQL(m)
-		diags.Append(chartDiags...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsPieESQLByValuePanel(chart); err != nil {
-			diags.AddError("Failed to create PieESQL schema", err.Error())
-		}
-		return attrs, diags
-	}
-
-	chart, chartDiags := pieChartConfigToAPINoESQL(m)
-	diags.Append(chartDiags...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsPieNoESQLByValuePanel(chart); err != nil {
-		diags.AddError("Failed to create PieNoESQL schema", err.Error())
-	}
-
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsPieESQLByValuePanel, diag.Diagnostics) {
+			return pieChartConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsPieESQLByValuePanel,
+		"Failed to create PieESQL schema",
+		func() (kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel, diag.Diagnostics) {
+			return pieChartConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsPieNoESQLByValuePanel,
+		"Failed to create PieNoESQL schema",
+	)
 }
