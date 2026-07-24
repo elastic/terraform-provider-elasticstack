@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workflowPath = path.resolve(__dirname, '../../../workflows/openspec-verify-label.md');
 const lockPath = path.resolve(__dirname, '../../../workflows/openspec-verify-label.lock.yml');
-const claudeModelPattern = /llm-gateway\/claude-opus-4-6/;
+const claudeModelPattern = /llm-gateway\/claude-opus-4-8/;
 
 function workflowSource() {
   return readFileSync(workflowPath, 'utf8');
@@ -200,7 +200,7 @@ test('verify-label workflow bootstrap steps run unconditionally (no verification
 test('verify-label compiled lock pre_activation job has issues and pull-requests write permissions', () => {
   const lock = lockSource();
   // Extract just the pre_activation job block (up to the next top-level job key)
-  const preActivationMatch = lock.match(/^  pre_activation:\n([\s\S]*?)(?=\n  \w[\w-]*:\n)/m);
+  const preActivationMatch = lock.match(/^ {2}pre_activation:\n([\s\S]*?)(?=\n {2}\w[\w-]*:\n)/m);
   assert.ok(preActivationMatch, 'expected to find pre_activation job block in lock file');
   const preActivationBlock = preActivationMatch[0];
   assert.ok(preActivationBlock.includes('issues: write'), 'expected issues: write in pre_activation job permissions');
