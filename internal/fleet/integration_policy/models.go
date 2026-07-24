@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -327,34 +328,13 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 // (validateConditionSupport, toAPIInputsFromInputsAttribute) don't each
 // independently re-run the reflection-based typeutils.MapTypeAs decode over
 // the same inputs+streams structure.
-type decodedInput struct {
-	model   integrationPolicyInputsModel
-	streams map[string]integrationPolicyInputStreamModel // nil if streams is null/unknown
-}
+type decodedInput = policyshape.DecodedInput[integrationPolicyInputsModel]
 
 // decodeInputs decodes the 'inputs' attribute, and each input's nested
 // 'streams' map, exactly once. Returns nil if 'inputs' itself is null/unknown
 // or fails to decode.
 func (model integrationPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedInput {
-	if !typeutils.IsKnown(model.Inputs.MapValue) {
-		return nil
-	}
-
-	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
-	if inputsMap == nil {
-		return nil
-	}
-
-	decoded := make(map[string]decodedInput, len(inputsMap))
-	for inputID, inputModel := range inputsMap {
-		d := decodedInput{model: inputModel}
-		if typeutils.IsKnown(inputModel.Streams) {
-			inputPath := path.Root("inputs").AtMapKey(inputID)
-			d.streams = typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
-		}
-		decoded[inputID] = d
-	}
-	return decoded
+	return policyshape.DecodeInputs[integrationPolicyInputsModel](ctx, model.Inputs, path.Root("inputs"), diags)
 }
 
 // validateConditionSupport returns an attribute-scoped error diagnostic for
@@ -372,7 +352,7 @@ func (model integrationPolicyModel) validateConditionSupport(feat integrationPol
 	for inputID, di := range decoded {
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
-		if typeutils.IsKnown(di.model.Condition) {
+		if typeutils.IsKnown(di.Model.Condition) {
 			diags.AddAttributeError(
 				inputPath.AtName("condition"),
 				"Unsupported Elasticsearch version",
@@ -380,7 +360,7 @@ func (model integrationPolicyModel) validateConditionSupport(feat integrationPol
 			)
 		}
 
-		for streamID, streamModel := range di.streams {
+		for streamID, streamModel := range di.Streams {
 			if typeutils.IsKnown(streamModel.Condition) {
 				diags.AddAttributeError(
 					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
@@ -403,15 +383,15 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(decoded map[s
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
 		apiInput := kbapi.PackagePolicyRequestMappedInput{
-			Enabled:   di.model.Enabled.ValueBoolPointer(),
-			Condition: di.model.Condition.ValueStringPointer(),
-			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](di.model.Vars, inputPath.AtName("vars"), diags)),
+			Enabled:   di.Model.Enabled.ValueBoolPointer(),
+			Condition: di.Model.Condition.ValueStringPointer(),
+			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](di.Model.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
-		if len(di.streams) > 0 {
-			streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(di.streams))
-			for streamID, streamModel := range di.streams {
+		if len(di.Streams) > 0 {
+			streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(di.Streams))
+			for streamID, streamModel := range di.Streams {
 				streamVarsPath := inputPath.AtName("streams").AtMapKey(streamID).AtName("vars")
 				streamVars := typeutils.NormalizedTypeToMap[any](streamModel.Vars, streamVarsPath, diags)
 				streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{

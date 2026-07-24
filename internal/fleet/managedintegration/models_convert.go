@@ -81,6 +81,8 @@ type managedIntegrationInputModel struct {
 	Streams   types.Map            `tfsdk:"streams"` // > policyshape.InputStreamModel
 }
 
+func (m managedIntegrationInputModel) GetStreams() types.Map { return m.Streams }
+
 // Map/attribute key constants reused across this file's raw wire-format
 // builders and attr-type helpers. Consolidated into named constants (rather
 // than repeating the string literals) both for consistency and because
@@ -325,36 +327,14 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 // decodeInputs produces this so that the request-body builders
 // (applyCreateInputs, buildUpdateBody) don't each independently re-run the
 // reflection-based typeutils.MapTypeAs decode over the same inputs+streams
-// structure -- mirroring internal/fleet/integration_policy/models.go's
-// decodedInput/decodeInputs.
-type decodedManagedIntegrationInput struct {
-	model   managedIntegrationInputModel
-	streams map[string]policyshape.InputStreamModel // nil if streams is null/unknown
-}
+// structure.
+type decodedManagedIntegrationInput = policyshape.DecodedInput[managedIntegrationInputModel]
 
 // decodeInputs decodes the `inputs` attribute, and each input's nested
 // `streams` map, exactly once. Returns nil if `inputs` itself is null/unknown
 // or fails to decode.
 func (m managedIntegrationModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedManagedIntegrationInput {
-	if !typeutils.IsKnown(m.Inputs.MapValue) {
-		return nil
-	}
-
-	inputsMap := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, m.Inputs.MapValue, path.Root(attrInputs), diags)
-	if inputsMap == nil {
-		return nil
-	}
-
-	decoded := make(map[string]decodedManagedIntegrationInput, len(inputsMap))
-	for inputID, inputModel := range inputsMap {
-		d := decodedManagedIntegrationInput{model: inputModel}
-		if typeutils.IsKnown(inputModel.Streams) {
-			inputPath := path.Root(attrInputs).AtMapKey(inputID)
-			d.streams = typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
-		}
-		decoded[inputID] = d
-	}
-	return decoded
+	return policyshape.DecodeInputs[managedIntegrationInputModel](ctx, m.Inputs, path.Root(attrInputs), diags)
 }
 
 // managedIntegrationRequestOptions controls how a plan model is compiled into
@@ -592,7 +572,7 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 
 	raw := map[string]any{}
 	for inputID, di := range decoded {
-		in := di.model
+		in := di.Model
 		inputPath := path.Root(attrInputs).AtMapKey(inputID)
 		entry := map[string]any{}
 
@@ -610,9 +590,9 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 			entry["vars"] = varsMap
 		}
 
-		if len(di.streams) > 0 || opts.includeEmptyVars {
+		if len(di.Streams) > 0 || opts.includeEmptyVars {
 			streamsRaw := map[string]any{}
-			for streamID, s := range di.streams {
+			for streamID, s := range di.Streams {
 				streamPath := inputPath.AtName("streams").AtMapKey(streamID)
 				streamEntry := map[string]any{}
 				if typeutils.IsKnown(s.Enabled) {
