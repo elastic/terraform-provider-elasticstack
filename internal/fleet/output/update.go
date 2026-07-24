@@ -20,6 +20,7 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -27,33 +28,25 @@ import (
 )
 
 func updateOutput(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[outputModel]) (entitycore.KibanaWriteResult[outputModel], diag.Diagnostics) {
-	var diags diag.Diagnostics
 	planModel := req.Plan
-
 	fleetClient := client.GetFleetClient()
 
-	body, d := planModel.toAPIUpdateModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[outputModel]{}, diags
-	}
-
 	outputID := planModel.OutputID.ValueString()
-
 	spaceID := req.SpaceID
 	if req.Prior != nil {
 		spaceID = req.Prior.GetSpaceID().ValueString()
 	}
-	output, d := fleet.UpdateOutput(ctx, fleetClient, outputID, spaceID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[outputModel]{}, diags
-	}
 
-	diags.Append(planModel.populateFromAPI(ctx, output)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[outputModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[outputModel]{Model: planModel}, diags
+	return entitycore.WriteEntity(
+		func() (kbapi.UpdateOutputUnion, diag.Diagnostics) {
+			return planModel.toAPIUpdateModel(ctx)
+		},
+		func(body kbapi.UpdateOutputUnion) (*kbapi.OutputUnion, diag.Diagnostics) {
+			return fleet.UpdateOutput(ctx, fleetClient, outputID, spaceID, body)
+		},
+		func(output *kbapi.OutputUnion) (outputModel, diag.Diagnostics) {
+			diags := planModel.populateFromAPI(ctx, output)
+			return planModel, diags
+		},
+	)
 }

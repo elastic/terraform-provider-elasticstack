@@ -20,30 +20,25 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func readOutput(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model outputModel) (outputModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	fleetClient := client.GetFleetClient()
 
-	output, d := fleet.GetOutput(ctx, fleetClient, resourceID, spaceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
-
-	if output == nil {
-		return model, false, nil
-	}
-
-	diags.Append(model.populateFromAPI(ctx, output)...)
-	if diags.HasError() {
-		return model, true, diags
-	}
-
-	return model, true, diags
+	return entitycore.ReadEntity(
+		model,
+		func() (*kbapi.OutputUnion, diag.Diagnostics) {
+			return fleet.GetOutput(ctx, fleetClient, resourceID, spaceID)
+		},
+		func(output *kbapi.OutputUnion) bool { return output == nil },
+		func(output *kbapi.OutputUnion) (outputModel, diag.Diagnostics) {
+			diags := model.populateFromAPI(ctx, output)
+			return model, diags
+		},
+	)
 }

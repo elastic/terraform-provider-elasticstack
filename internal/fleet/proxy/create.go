@@ -20,6 +20,7 @@ package proxy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -28,26 +29,16 @@ import (
 
 func createProxy(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[proxyModel]) (entitycore.KibanaWriteResult[proxyModel], diag.Diagnostics) {
 	plan := req.Plan
-	var diags diag.Diagnostics
-
 	fleetClient := client.GetFleetClient()
 
-	body, bodyDiags := plan.toAPICreateModel()
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
-
-	created, createDiags := fleetclient.CreateProxy(ctx, fleetClient, req.SpaceID, body)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(req.SpaceID, *created)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[proxyModel]{Model: plan}, diags
+	return entitycore.WriteEntity(
+		plan.toAPICreateModel,
+		func(body kbapi.PostFleetProxiesJSONRequestBody) (*kbapi.FleetProxyItem, diag.Diagnostics) {
+			return fleetclient.CreateProxy(ctx, fleetClient, req.SpaceID, body)
+		},
+		func(created *kbapi.FleetProxyItem) (proxyModel, diag.Diagnostics) {
+			diags := plan.populateFromAPI(req.SpaceID, *created)
+			return plan, diags
+		},
+	)
 }

@@ -20,27 +20,25 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func readServerHost(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model serverHostModel) (serverHostModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	fleetClient := client.GetFleetClient()
 
-	host, d := fleet.GetFleetServerHost(ctx, fleetClient, resourceID, spaceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return model, false, diags
-	}
-
-	if host == nil {
-		return model, false, nil
-	}
-
-	d = model.populateFromAPI(ctx, host)
-	diags.Append(d...)
-
-	return model, true, diags
+	return entitycore.ReadEntity(
+		model,
+		func() (*kbapi.ServerHost, diag.Diagnostics) {
+			return fleet.GetFleetServerHost(ctx, fleetClient, resourceID, spaceID)
+		},
+		func(host *kbapi.ServerHost) bool { return host == nil },
+		func(host *kbapi.ServerHost) (serverHostModel, diag.Diagnostics) {
+			diags := model.populateFromAPI(ctx, host)
+			return model, diags
+		},
+	)
 }

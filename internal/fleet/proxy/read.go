@@ -20,30 +20,25 @@ package proxy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func readProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model proxyModel) (proxyModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	fleetClient := client.GetFleetClient()
 
-	apiResp, getDiags := fleetclient.GetProxy(ctx, fleetClient, spaceID, resourceID)
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return model, false, diags
-	}
-
-	if apiResp == nil {
-		return model, false, diags
-	}
-
-	diags.Append(model.populateFromAPI(spaceID, *apiResp)...)
-	if diags.HasError() {
-		return model, false, diags
-	}
-
-	return model, true, diags
+	return entitycore.ReadEntity(
+		model,
+		func() (*kbapi.FleetProxyItem, diag.Diagnostics) {
+			return fleetclient.GetProxy(ctx, fleetClient, spaceID, resourceID)
+		},
+		func(apiResp *kbapi.FleetProxyItem) bool { return apiResp == nil },
+		func(apiResp *kbapi.FleetProxyItem) (proxyModel, diag.Diagnostics) {
+			diags := model.populateFromAPI(spaceID, *apiResp)
+			return model, diags
+		},
+	)
 }

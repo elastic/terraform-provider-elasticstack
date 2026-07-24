@@ -20,6 +20,7 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -27,32 +28,25 @@ import (
 )
 
 func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[serverHostModel]) (entitycore.KibanaWriteResult[serverHostModel], diag.Diagnostics) {
-	var diags diag.Diagnostics
+	plan := req.Plan
 	fleetClient := client.GetFleetClient()
 
-	hostID := req.Plan.HostID.ValueString()
-	body, d := req.Plan.toAPIUpdateModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-	}
-
+	hostID := plan.HostID.ValueString()
 	spaceID := req.SpaceID
 	if req.Prior != nil {
 		spaceID = req.Prior.GetSpaceID().ValueString()
 	}
 
-	host, d := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-	}
-
-	d = req.Plan.populateFromAPI(ctx, host)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[serverHostModel]{Model: req.Plan}, diags
+	return entitycore.WriteEntity(
+		func() (kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diag.Diagnostics) {
+			return plan.toAPIUpdateModel(ctx)
+		},
+		func(body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+			return fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
+		},
+		func(host *kbapi.ServerHost) (serverHostModel, diag.Diagnostics) {
+			diags := plan.populateFromAPI(ctx, host)
+			return plan, diags
+		},
+	)
 }
