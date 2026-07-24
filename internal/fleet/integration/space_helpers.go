@@ -28,6 +28,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// spaceScope is the resolved space context for one CRUD operation.
+type spaceScope struct {
+	id    string // "" == default space
+	aware bool   // server supports per-space Kibana asset tracking (>= 9.1.0)
+}
+
 func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersionEnforceable, spaceID string) (bool, diag.Diagnostics) {
 	if spaceID == "" {
 		return false, nil
@@ -36,19 +42,25 @@ func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersio
 	return client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
 }
 
-func resolveSpaceAware(ctx context.Context, client clients.MinVersionEnforceable, spaceID types.String, diags *diag.Diagnostics) bool {
+func resolveSpaceScope(ctx context.Context, client clients.MinVersionEnforceable, spaceID types.String, diags *diag.Diagnostics) spaceScope {
 	if !typeutils.IsKnown(spaceID) {
-		return false
+		return spaceScope{}
 	}
-	supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, spaceID.ValueString())
+
+	id := spaceID.ValueString()
+	if id == "" {
+		return spaceScope{}
+	}
+
+	supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, id)
 	diags.Append(versionDiags...)
-	return supported
+	return spaceScope{id: id, aware: supported}
 }
 
 // fleetPackageInstalled determines whether Fleet reports a package as fully installed.
 // Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
 // and status casing can vary.
-func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID string, spaceAware bool) bool {
+func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, scope spaceScope) bool {
 	if pkg == nil {
 		return false
 	}
@@ -69,11 +81,11 @@ func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID stri
 		return false
 	}
 
-	if !spaceAware || spaceID == "" {
+	if !scope.aware || scope.id == "" {
 		return true
 	}
 
-	return packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID)
+	return packageInstalledInKibanaSpace(pkg.InstallationInfo, scope.id)
 }
 
 func packageInstalledInKibanaSpace(info *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, spaceID string) bool {

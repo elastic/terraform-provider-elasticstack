@@ -40,7 +40,7 @@ func readIntegration(
 	name := model.Name.ValueString()
 	version := model.Version.ValueString()
 
-	spaceAware := resolveSpaceAware(ctx, client, model.SpaceID, &diags)
+	scope := resolveSpaceScope(ctx, client, model.SpaceID, &diags)
 	if diags.HasError() {
 		return model, false, diags
 	}
@@ -50,7 +50,7 @@ func readIntegration(
 	if diags.HasError() {
 		return model, false, diags
 	}
-	if pkg == nil || !fleetPackageInstalled(pkg, spaceID, spaceAware) {
+	if pkg == nil || !fleetPackageInstalled(pkg, scope) {
 		return model, false, diags
 	}
 

@@ -93,12 +93,12 @@ func deleteIntegration(
 		return diags
 	}
 
-	spaceAware := resolveSpaceAware(ctx, client, model.SpaceID, &diags)
+	scope := resolveSpaceScope(ctx, client, model.SpaceID, &diags)
 	if diags.HasError() {
 		return diags
 	}
 
-	if spaceAware {
+	if scope.aware {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
 		diags.Append(getDiags...)
 		if diags.HasError() {
