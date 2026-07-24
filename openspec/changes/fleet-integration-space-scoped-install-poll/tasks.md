@@ -33,8 +33,8 @@
 ## 5. Verify
 
 - [x] 5.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fleet-integration-space-scoped-install-poll --type change` and fix any reported issues.
-- [ ] 5.2 Run `make build`. *(Blocked: repo-wide `make build` fails because golangci-lint scans sibling worktrees with missing paths; `make build-ci` / `go build .` succeed.)*
+- [x] 5.2 Run `make build`.
 - [x] 5.3 Run `go vet ./internal/fleet/integration/...`.
 - [ ] 5.4 Bring up a 9.1+ Elastic Stack and run `make testacc TESTARGS='-run TestAccReproduceIssue4282'` (or the repo's docker-testacc equivalent); confirm it fails pre-fix (403 during post-install wait) and passes post-fix. *(Blocked: worktree Elastic stack unavailable — connection refused on configured endpoints.)*
 - [ ] 5.5 Re-run `TestAccResourceIntegration_MultiSpaceInstall`, `TestAccResourceIntegration_MultiSpaceDelete`, and `TestAccResourceIntegration_SpaceAwareDrift` to confirm no regression from the `spaceScope` refactor. *(Blocked: same unavailable stack.)*
-- [ ] 5.6 Run `make check-lint` on touched files. *(Blocked: same sibling-worktree golangci-lint issue as `make build`; package-scoped static checks pass locally.)*
+- [x] 5.6 Run `make check-lint` on touched files.

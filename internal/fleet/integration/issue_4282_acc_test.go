@@ -86,7 +86,7 @@ func TestAccReproduceIssue4282(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", spaceID),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceID),
+					testAccCheckIntegrationInstalledInSpace(spaceID),
 					testAccCheckFleetGetPackageTargetSpaceAllowed(username, password, spaceID),
 					testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password),
 				),
@@ -108,14 +108,18 @@ func testAccFleetClientForUser(username, password string) (*fleet.Client, error)
 	})
 }
 
-func diagnosticContainsHTTP403(d interface{ Summary() string; Detail() string }) bool {
+func diagnosticContainsHTTP403(d interface {
+	Summary() string
+	Detail() string
+}) bool {
 	summary := strings.ToLower(d.Summary())
 	detail := strings.ToLower(d.Detail())
 	return strings.Contains(summary, "http 403") || strings.Contains(detail, "http 403")
 }
 
 // testAccCheckFleetGetPackageTargetSpaceAllowed verifies restricted credentials
-// can read packages from the configured target space after apply.
+// can read the package from the configured target space and that Fleet reports
+// it installed there.
 func testAccCheckFleetGetPackageTargetSpaceAllowed(username, password, spaceID string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		fleetClient, err := testAccFleetClientForUser(username, password)
@@ -123,15 +127,12 @@ func testAccCheckFleetGetPackageTargetSpaceAllowed(username, password, spaceID s
 			return err
 		}
 
-		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, "tcp", "1.16.0", spaceID)
+		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, testAccTCPIntegrationName, testAccTCPIntegrationVersion, spaceID)
 		if diags.HasError() {
 			return fmt.Errorf("expected target-space GetPackage to succeed with restricted credentials, got: %v", diags)
 		}
-		if pkg == nil {
-			return fmt.Errorf("expected target-space GetPackage to return package info")
-		}
 
-		return nil
+		return testAccAssertPackageInstalledInSpace(pkg, testAccTCPIntegrationName, testAccTCPIntegrationVersion, spaceID)
 	}
 }
 
@@ -144,7 +145,7 @@ func testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password string)
 			return err
 		}
 
-		_, diags := fleet.GetPackage(context.Background(), fleetClient, "tcp", "1.16.0", "")
+		_, diags := fleet.GetPackage(context.Background(), fleetClient, testAccTCPIntegrationName, testAccTCPIntegrationVersion, "")
 		if !diags.HasError() {
 			return fmt.Errorf("expected default-space GetPackage to fail with restricted credentials, but succeeded")
 		}

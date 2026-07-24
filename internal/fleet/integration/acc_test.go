@@ -40,6 +40,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testAccTCPIntegrationName    = "tcp"
+	testAccTCPIntegrationVersion = "1.16.0"
+)
+
 var (
 	minVersionIntegration       = version.Must(version.NewVersion("8.6.0"))
 	minVersionIntegrationPolicy = version.Must(version.NewVersion("8.10.0"))
@@ -479,42 +484,50 @@ func TestAccResourceIntegrationSkipDestroy(t *testing.T) {
 	})
 }
 
+// testAccAssertPackageInstalledInSpace verifies Fleet reports the package
+// installed in the specified space.
+func testAccAssertPackageInstalledInSpace(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, name, version, spaceID string) error {
+	if pkg == nil {
+		return fmt.Errorf("package %s/%s not installed", name, version)
+	}
+	globalInstalled := false
+	if pkg.InstallationInfo != nil {
+		globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled
+	}
+	if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
+		globalInstalled = true
+	}
+	if !globalInstalled {
+		return fmt.Errorf("package %s/%s not globally installed", name, version)
+	}
+	inSpace := pkg.InstallationInfo != nil &&
+		pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
+		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
+
+	if pkg.InstallationInfo != nil && pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]; ok {
+			inSpace = true
+		}
+	}
+	if !inSpace {
+		return fmt.Errorf("package %s/%s not installed in space %s", name, version, spaceID)
+	}
+	return nil
+}
+
 // testAccCheckIntegrationInstalledInSpace queries the Fleet API to verify that
-// the given package version has Kibana assets installed in the specified space.
-func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) resource.TestCheckFunc {
+// the tcp integration fixture is installed in the specified space.
+func testAccCheckIntegrationInstalledInSpace(spaceID string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		fleetClient, err := testAccFleetClient()
 		if err != nil {
 			return err
 		}
-		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, name, version, spaceID)
+		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, testAccTCPIntegrationName, testAccTCPIntegrationVersion, spaceID)
 		if diags.HasError() {
 			return fmt.Errorf("failed to get package: %v", diags)
 		}
-		if pkg == nil {
-			return fmt.Errorf("package %s/%s not installed", name, version)
-		}
-		globalInstalled := false
-		if pkg.InstallationInfo != nil {
-			globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled
-		}
-		if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
-			globalInstalled = true
-		}
-		if !globalInstalled {
-			return fmt.Errorf("package %s/%s not globally installed", name, version)
-		}
-		inSpace := pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
-
-		if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
-			if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]; ok {
-				inSpace = true
-			}
-		}
-		if !inSpace {
-			return fmt.Errorf("package %s/%s not installed in space %s", name, version, spaceID)
-		}
-		return nil
+		return testAccAssertPackageInstalledInSpace(pkg, testAccTCPIntegrationName, testAccTCPIntegrationVersion, spaceID)
 	}
 }
 
@@ -567,8 +580,8 @@ func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "space_id", spaceB),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceA),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceB),
+					testAccCheckIntegrationInstalledInSpace(spaceA),
+					testAccCheckIntegrationInstalledInSpace(spaceB),
 				),
 			},
 		},
@@ -611,7 +624,7 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "space_id", spaceA),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceA),
+					testAccCheckIntegrationInstalledInSpace(spaceA),
 				),
 			},
 		},
