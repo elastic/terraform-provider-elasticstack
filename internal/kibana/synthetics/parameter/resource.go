@@ -18,10 +18,7 @@
 package parameter
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -49,10 +46,6 @@ func newResource() *Resource {
 			},
 		),
 	}
-}
-
-func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
 }
 
 // NewResource returns a synthetics parameter resource with shared bootstrap wiring.

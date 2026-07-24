@@ -20,9 +20,12 @@ package parameter
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -32,7 +35,7 @@ import (
 // endpoint; use DELETE /api/synthetics/params with {"ids":[...]} instead.
 var minKibanaPerIDDeleteVersion = version.Must(version.NewVersion("8.17.0"))
 
-func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, _ string, _ Model) diag.Diagnostics {
+func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	kibanaClient := client.GetKibanaOapiClient()
@@ -50,17 +53,12 @@ func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 
 	if supportsPerID {
 		// Use the per-ID delete endpoint on Kibana >= 8.17.0.
-		deleteResult, err := kibanaClient.API.DeleteParameterWithResponse(ctx, resourceID)
+		deleteResult, err := kibanaClient.API.DeleteParameterWithResponse(ctx, resourceID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
 			diags.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
 			return diags
 		}
-		if deleteResult.StatusCode() != 200 {
-			diags.AddError(
-				fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
-				fmt.Sprintf("API returned status %s", deleteResult.Status()),
-			)
-		}
+		diags.Append(diagutil.HandleStatusResponse(deleteResult.StatusCode(), deleteResult.Body, http.StatusOK)...)
 		return diags
 	}
 
@@ -68,17 +66,14 @@ func deleteParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 	ids := []string{resourceID}
 	deleteResult, err := kibanaClient.API.DeleteSyntheticsParamsWithResponse(ctx, kbapi.DeleteSyntheticsParamsJSONRequestBody{
 		Ids: &ids,
-	})
+	}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		diags.AddError(fmt.Sprintf("Failed to delete parameter `%s`", resourceID), err.Error())
 		return diags
 	}
 
-	if deleteResult.StatusCode() != 200 {
-		diags.AddError(
-			fmt.Sprintf("Unexpected status deleting parameter `%s`", resourceID),
-			fmt.Sprintf("API returned status %s", deleteResult.Status()),
-		)
+	diags.Append(diagutil.HandleStatusResponse(deleteResult.StatusCode(), deleteResult.Body, http.StatusOK)...)
+	if diags.HasError() {
 		return diags
 	}
 

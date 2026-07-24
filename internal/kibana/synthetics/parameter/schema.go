@@ -31,6 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 )
 
 //go:embed resource-description.md
@@ -42,12 +44,13 @@ func getSchema(_ context.Context) schema.Schema {
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Generated id for the parameter.",
+				MarkdownDescription: "The composite ID of the parameter: `<space_id>/<parameter_uuid>`.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"space_id": kbschema.ResourceSpaceIDAttribute(),
 			"key": schema.StringAttribute{
 				Optional:            false,
 				Required:            true,

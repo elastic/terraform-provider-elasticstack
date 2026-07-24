@@ -24,9 +24,9 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createParameter(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
@@ -46,24 +46,18 @@ func createParameter(ctx context.Context, client *clients.KibanaScopedClient, re
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	createResult, err := kibanaClient.API.PostParametersWithBodyWithResponse(ctx, "application/json", bytes.NewReader(inputJSON))
+	createResult, err := kibanaClient.API.PostParametersWithBodyWithResponse(ctx, "application/json", bytes.NewReader(inputJSON), kibanautil.SpaceAwarePathRequestEditor(req.SpaceID))
 	if err != nil {
 		diags.AddError(fmt.Sprintf("Failed to create parameter `%s`", input.Key), err.Error())
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	createResponse, err := createResult.JSON200.AsSyntheticsPostParameterResponse()
-	if err != nil {
-		diags.AddError(fmt.Sprintf("Failed to parse parameter response `%s`", input.Key), err.Error())
-		return entitycore.KibanaWriteResult[Model]{}, diags
+	createResponse, parseDiags := parseCreateParameterResponse(createResult, input.Key)
+	if parseDiags.HasError() {
+		return entitycore.KibanaWriteResult[Model]{}, parseDiags
 	}
 
-	if createResponse.Id == nil {
-		diags.AddError(fmt.Sprintf("Unexpected nil id in create parameter response `%s`", input.Key), "")
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	plan.ID = types.StringValue(*createResponse.Id)
+	plan.setCompositeIdentity(req.SpaceID, *createResponse.Id)
 
 	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
 }
