@@ -33,9 +33,8 @@ resource "elasticstack_elasticsearch_security_user" "test_user" {
 }
 
 # The test_user's role only grants "fleet"/"fleetv2" privileges scoped to
-# test_space (no default-space access). If the post-install status poll in
-# writeIntegration hard-codes the default-space endpoint (issue #4282), this
-# install fails with an HTTP 403 even though space_id is correctly set below.
+# test_space (no default-space access). The post-install status poll must use
+# the same space context as the install call (issue #4282).
 resource "elasticstack_fleet_integration" "test_integration" {
   name     = "tcp"
   version  = "1.16.0"

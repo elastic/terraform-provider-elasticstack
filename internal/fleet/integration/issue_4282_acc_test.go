@@ -18,41 +18,37 @@
 package integration_test
 
 import (
-	"regexp"
+	"context"
+	"fmt"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-// TestAccReproduceIssue4282 reproduces
-// https://github.com/elastic/terraform-provider-elasticstack/issues/4282:
-// when space_id is set on elasticstack_fleet_integration, writeIntegration
-// correctly scopes the install call to that space, but the post-install
-// status-polling call (waitForFleetIntegrationInstalled, invoked from
-// internal/fleet/integration/create.go around line 80) hard-codes spaceID =
-// "" and spaceAware = false, so the poll always queries the default-space
-// endpoint (GET /api/fleet/epm/packages/{name}/{version} with no /s/{space}
-// prefix). An API key/user scoped only to the target space has no read
-// access to the default space and gets a 403 on every poll, causing resource
-// creation to fail even though the install itself succeeded in the correct
-// space.
+// TestAccReproduceIssue4282 is a regression test for
+// https://github.com/elastic/terraform-provider-elasticstack/issues/4282.
+// When space_id is set on elasticstack_fleet_integration, the post-install
+// status poll must use the same space context as the install call. A caller
+// scoped only to the target space must not hit the default-space get-package
+// endpoint during the wait.
 //
 // The test provisions:
 //   - a custom Kibana space
-//   - a Kibana role granting "fleet" feature privileges scoped only to that
+//   - a Kibana role granting Fleet feature privileges scoped only to that
 //     space (no access to the default space)
 //   - a user with that role
 //
 // and then applies elasticstack_fleet_integration with space_id set to the
-// custom space, authenticating as the restricted user. If the bug is
-// present, creation fails with an HTTP 403 surfaced through
-// waitForFleetIntegrationInstalled's "failed to read package installation
-// status" error wrapping.
+// custom space, authenticating as the restricted user.
 func TestAccReproduceIssue4282(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)
 
@@ -83,8 +79,49 @@ func TestAccReproduceIssue4282(t *testing.T) {
 					"password":  config.StringVariable(password),
 					"role_name": config.StringVariable(roleName),
 				}),
-				ExpectError: regexp.MustCompile(`(?s)failed to read package installation status.*HTTP 403|failed to install Fleet integration package`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", spaceID),
+					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceID),
+					testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password),
+				),
 			},
 		},
 	})
+}
+
+// testAccCheckFleetGetPackageDefaultSpaceForbidden verifies that credentials
+// scoped only to a custom space cannot read packages from the default space.
+func testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		endpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+		if endpoint == "" {
+			return fmt.Errorf("KIBANA_ENDPOINT is not set")
+		}
+
+		fleetClient, err := fleet.NewClient(fleet.Config{
+			URL:      endpoint,
+			Username: username,
+			Password: password,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create Fleet client: %w", err)
+		}
+
+		_, diags := fleet.GetPackage(context.Background(), fleetClient, "tcp", "1.16.0", "")
+		if !diags.HasError() {
+			return fmt.Errorf("expected default-space GetPackage to fail with restricted credentials, but succeeded")
+		}
+
+		for _, d := range diags {
+			summary := strings.ToLower(d.Summary())
+			detail := strings.ToLower(d.Detail())
+			if strings.Contains(summary, "http 403") || strings.Contains(detail, "forbidden") {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("expected HTTP 403/forbidden for default-space GetPackage, got: %v", diags)
+	}
 }
