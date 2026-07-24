@@ -60,7 +60,7 @@ test('schema-coverage rotation workflow installs Node from package.json and allo
 test('schema-coverage rotation workflow uses Claude through LiteLLM with secret-backed API key and tool timeout', () => {
   const source = workflowSource();
   assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
-  assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
+  assert.match(source, /model: "?llm-gateway\/claude-sonnet-5"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
   assert.match(source, /tools:[\s\S]*?\n\s+timeout:\s*300/m);
@@ -69,7 +69,7 @@ test('schema-coverage rotation workflow uses Claude through LiteLLM with secret-
 test('schema-coverage rotation source workflow configures engine env with base URL and model', () => {
   const source = workflowSource();
   assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
-  assert.match(source, /model: "?llm-gateway\/claude-sonnet-4-6"?/);
+  assert.match(source, /model: "?llm-gateway\/claude-sonnet-5"?/);
   assert.match(source, /ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/);
   assert.match(source, /ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/);
   assert.match(source, /tools:[\s\S]*?\n\s+timeout:\s*300/m);
