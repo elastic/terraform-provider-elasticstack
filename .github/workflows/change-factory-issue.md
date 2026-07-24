@@ -177,13 +177,24 @@ steps:
       path: /tmp/change-factory-context/
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
+  model: "llm-gateway/claude-sonnet-5"
   args:
     - "--effort"
     - "high"
   env:
     ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+# Disable the per-run AI Credits budget guard. The model alias
+# "llm-gateway/claude-sonnet-5" is a private Elastic LiteLLM alias absent from
+# the AWF api-proxy's built-in pricing table. gh-aw's models.providers
+# frontmatter override does not propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
 permissions:
   contents: read
   issues: read
