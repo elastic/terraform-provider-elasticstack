@@ -8,7 +8,7 @@ on:
   - cron: daily
   steps:
   - name: Checkout repository
-    uses: actions/checkout@v7.0.0
+    uses: actions/checkout@v7.0.1
     with:
       fetch-depth: 1
       persist-credentials: false
@@ -48,6 +48,7 @@ safe-outputs:
 checkout:
   fetch-depth: 0
 description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities
+model: llm-gateway/claude-sonnet-5
 engine:
   args:
   - --effort
@@ -56,7 +57,6 @@ engine:
     ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
     ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
   id: claude
-  model: llm-gateway/claude-sonnet-5
 # Disable the per-run AI Credits budget guard. The model alias
 # "llm-gateway/claude-sonnet-5" is a private Elastic LiteLLM alias absent from
 # the AWF api-proxy's built-in pricing table. gh-aw's models.providers
@@ -82,6 +82,7 @@ tools:
     mode: gh-proxy
     toolsets: [default, issues]
 ---
+
 # Semantic Function Refactor
 
 Analyze Go source organization to identify actionable semantic refactoring opportunities: misplaced functions, duplicate or near-duplicate functions, scattered helpers, and extraction opportunities.
