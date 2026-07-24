@@ -35,7 +35,7 @@ type spaceScope struct {
 }
 
 func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersionEnforceable, spaceID string) (bool, diag.Diagnostics) {
-	if spaceID == "" {
+	if spaceID == "" || spaceID == "default" {
 		return false, nil
 	}
 
@@ -48,7 +48,7 @@ func resolveSpaceScope(ctx context.Context, client clients.MinVersionEnforceable
 	}
 
 	id := spaceID.ValueString()
-	if id == "" {
+	if id == "" || id == "default" {
 		return spaceScope{}
 	}
 
