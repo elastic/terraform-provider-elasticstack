@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Changes
+
+- Add `space_id` support for Kibana Synthetics parameters with composite IDs and space-scoped CRUD and import. ([#4278](https://github.com/elastic/terraform-provider-elasticstack/pull/4278))
+
 ## [0.16.3] - 2026-07-22
 
 ### Breaking changes
