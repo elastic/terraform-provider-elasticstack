@@ -76,15 +76,10 @@ func reconcileVarsJSONFromPrior(
 	if populated.IsNull() {
 		return populated
 	}
-	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, secretReconcileAttrVarsJSON, diags)
-	if !ok || len(priorMap) == 0 {
-		return populated
-	}
-	respMap, ok := secretReconcileJSONToMap(populated, attrPath, secretReconcileAttrVarsJSON, diags)
+	respMap, ok := reconcileVarsMapFromJSON(prior, populated, secretReconcileAttrVarsJSON, attrPath, diags)
 	if !ok {
 		return populated
 	}
-	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
 	return varsJSONFromMap(ctx, respMap, packageName, packageVersion, attrPath, diags)
 }
 
@@ -183,16 +178,24 @@ func reconcileNormalizedVarsFromPrior(prior, populated jsontypes.Normalized, att
 	if prior.IsNull() || prior.IsUnknown() {
 		return populated
 	}
-	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, secretReconcileAttrVars, diags)
-	if !ok || len(priorMap) == 0 {
-		return populated
-	}
-	respMap, ok := secretReconcileJSONToMap(populated, attrPath, secretReconcileAttrVars, diags)
+	respMap, ok := reconcileVarsMapFromJSON(prior, populated, secretReconcileAttrVars, attrPath, diags)
 	if !ok {
 		return populated
 	}
-	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
 	return normalizedVarsFromMap(respMap, attrPath, diags)
+}
+
+func reconcileVarsMapFromJSON(prior, populated secretReconcileJSONString, attrLabel string, attrPath path.Path, diags *diag.Diagnostics) (map[string]any, bool) {
+	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, attrLabel, diags)
+	if !ok || len(priorMap) == 0 {
+		return nil, false
+	}
+	respMap, ok := secretReconcileJSONToMap(populated, attrPath, attrLabel, diags)
+	if !ok {
+		return nil, false
+	}
+	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
+	return respMap, true
 }
 
 func normalizedVarsFromMap(vars map[string]any, attrPath path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
