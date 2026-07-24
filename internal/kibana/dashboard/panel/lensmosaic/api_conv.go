@@ -176,35 +176,22 @@ func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, p
 }
 
 func mosaicConfigToAPI(m *models.MosaicConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, esqlDiags := mosaicConfigToAPIMosaicESQL(m)
-		diags.Append(esqlDiags...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsMosaicESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to create mosaic ES|QL schema", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, noESQLDiags := mosaicConfigToAPINoESQL(m)
-	diags.Append(noESQLDiags...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsMosaicNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to create mosaic schema", err.Error())
-	}
-
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel, diag.Diagnostics) {
+			return mosaicConfigToAPIMosaicESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsMosaicESQLByValuePanel,
+		"Failed to create mosaic ES|QL schema",
+		func() (kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel, diag.Diagnostics) {
+			return mosaicConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsMosaicNoESQLByValuePanel,
+		"Failed to create mosaic schema",
+	)
 }
 
 func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel, diag.Diagnostics) {

@@ -113,34 +113,22 @@ func regionMapConfigFromAPIESQL(
 }
 
 func regionMapConfigToAPI(m *models.RegionMapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, esqlDiags := regionMapConfigToAPIESQL(m)
-		diags.Append(esqlDiags...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsRegionMapESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to create region map ES|QL schema", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, noESQLDiags := regionMapConfigToAPINoESQL(m)
-	diags.Append(noESQLDiags...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsRegionMapNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to create region map schema", err.Error())
-	}
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel, diag.Diagnostics) {
+			return regionMapConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsRegionMapESQLByValuePanel,
+		"Failed to create region map ES|QL schema",
+		func() (kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel, diag.Diagnostics) {
+			return regionMapConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsRegionMapNoESQLByValuePanel,
+		"Failed to create region map schema",
+	)
 }
 
 func regionMapConfigToAPINoESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel, diag.Diagnostics) {
