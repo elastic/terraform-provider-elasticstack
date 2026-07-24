@@ -58,7 +58,10 @@ func TestAccReproduceIssue4282(t *testing.T) {
 	password := "Password123!"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -84,6 +87,7 @@ func TestAccReproduceIssue4282(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", spaceID),
 					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceID),
+					testAccCheckFleetGetPackageTargetSpaceAllowed(username, password, spaceID),
 					testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password),
 				),
 			},
@@ -91,22 +95,53 @@ func TestAccReproduceIssue4282(t *testing.T) {
 	})
 }
 
+func testAccFleetClientForUser(username, password string) (*fleet.Client, error) {
+	endpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+	if endpoint == "" {
+		return nil, fmt.Errorf("KIBANA_ENDPOINT is not set")
+	}
+
+	return fleet.NewClient(fleet.Config{
+		URL:      endpoint,
+		Username: username,
+		Password: password,
+	})
+}
+
+func diagnosticContainsHTTP403(d interface{ Summary() string; Detail() string }) bool {
+	summary := strings.ToLower(d.Summary())
+	detail := strings.ToLower(d.Detail())
+	return strings.Contains(summary, "http 403") || strings.Contains(detail, "http 403")
+}
+
+// testAccCheckFleetGetPackageTargetSpaceAllowed verifies restricted credentials
+// can read packages from the configured target space after apply.
+func testAccCheckFleetGetPackageTargetSpaceAllowed(username, password, spaceID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		fleetClient, err := testAccFleetClientForUser(username, password)
+		if err != nil {
+			return err
+		}
+
+		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, "tcp", "1.16.0", spaceID)
+		if diags.HasError() {
+			return fmt.Errorf("expected target-space GetPackage to succeed with restricted credentials, got: %v", diags)
+		}
+		if pkg == nil {
+			return fmt.Errorf("expected target-space GetPackage to return package info")
+		}
+
+		return nil
+	}
+}
+
 // testAccCheckFleetGetPackageDefaultSpaceForbidden verifies that credentials
 // scoped only to a custom space cannot read packages from the default space.
 func testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		endpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
-		if endpoint == "" {
-			return fmt.Errorf("KIBANA_ENDPOINT is not set")
-		}
-
-		fleetClient, err := fleet.NewClient(fleet.Config{
-			URL:      endpoint,
-			Username: username,
-			Password: password,
-		})
+		fleetClient, err := testAccFleetClientForUser(username, password)
 		if err != nil {
-			return fmt.Errorf("failed to create Fleet client: %w", err)
+			return err
 		}
 
 		_, diags := fleet.GetPackage(context.Background(), fleetClient, "tcp", "1.16.0", "")
@@ -115,13 +150,11 @@ func testAccCheckFleetGetPackageDefaultSpaceForbidden(username, password string)
 		}
 
 		for _, d := range diags {
-			summary := strings.ToLower(d.Summary())
-			detail := strings.ToLower(d.Detail())
-			if strings.Contains(summary, "http 403") || strings.Contains(detail, "forbidden") {
+			if diagnosticContainsHTTP403(d) {
 				return nil
 			}
 		}
 
-		return fmt.Errorf("expected HTTP 403/forbidden for default-space GetPackage, got: %v", diags)
+		return fmt.Errorf("expected HTTP 403 for default-space GetPackage, got: %v", diags)
 	}
 }
