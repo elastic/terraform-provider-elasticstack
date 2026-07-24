@@ -74,31 +74,19 @@ The subsequent `globallyInstalled := fleetPackageInstalled(pkg, "", false)` chec
 
 `readIntegration` and `deleteIntegration` already call `resolveSpaceAware(ctx, client, model.SpaceID, &diags)` and separately receive `spaceID string` as a parameter (from the entitycore read/delete request). Both are updated to build a `spaceScope` via `resolveSpaceScope` and pass it to `fleetPackageInstalled`. `isInstalledInMultipleSpaces` (`delete.go`) and `deleteKibanaAssetsWithFallback` continue to take a plain `spaceID string` (they don't need `aware`), extracted from `scope.id`. This removes the duplicated sentinel/bool convention across the package without changing observable behavior in either function.
 
-### Decision: Acceptance test with a genuinely space-restricted API key
+### Decision: Acceptance test with a genuinely space-restricted caller
 
-Add `TestAccResourceIntegration_SpaceRestrictedKey` in `acc_test.go`, gated by `versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)` (9.1.0+, consistent with the other space-aware tests in the file). The test config (new `testdata/TestAccResourceIntegration_SpaceRestrictedKey/` directory) builds, entirely in Terraform:
+Adapt the existing `TestAccReproduceIssue4282` acceptance test (PR #4300), gated by `versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)` (9.1.0+, consistent with the other space-aware tests in the file). Reuse `testdata/TestAccReproduceIssue4282/`, which builds, entirely in Terraform:
 
 1. An `elasticstack_kibana_space` with a random space ID.
-2. An `elasticstack_elasticsearch_security_api_key` whose `role_descriptors` embeds a Kibana application privilege scoped to only that space:
-   ```json
-   {
-     "fleet_space_only": {
-       "applications": [{
-         "application": "kibana-.kibana",
-         "privileges": ["feature_fleetv2.all", "feature_fleet.all"],
-         "resources": ["space:${space_id}"]
-       }]
-     }
-   }
-   ```
-   The exact privilege set needs empirical confirmation (see Open Questions / Risks) — if too narrow the key would 403 on the scoped path too, which would be a test bug, not a provider bug.
-3. An `elasticstack_fleet_integration` with `space_id = <space_id>` and `kibana_connection { api_key = <encoded key> }` using the restricted key, installing a small fast package (`tcp`/`1.16.0`, matching the existing space tests).
+2. An `elasticstack_kibana_security_role` with Fleet feature privileges scoped only to that space, plus an `elasticstack_elasticsearch_security_user` bound to that role (no default-space access).
+3. An `elasticstack_fleet_integration` with `space_id = <space_id>` and `kibana_connection { username/password = <restricted user> }`, installing a small fast package (`tcp`/`1.16.0`, matching the existing space tests).
 
 **Positive assertion:** the integration installs successfully (pre-fix, this step 403s during the post-install wait); `testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceID)` passes.
 
-**Negative guard:** a `TestCheckFunc` builds a Fleet client from the encoded restricted key and calls `GetPackage(..., "")` (default space, empty space ID), asserting the response is 403/forbidden rather than success. This proves the key genuinely lacks default-space access, so an accidentally over-broad key cannot make the positive assertion pass without actually exercising the fix.
+**Negative guard:** a `TestCheckFunc` builds a Fleet client from the restricted user's credentials and calls `GetPackage(..., "")` (default space, empty space ID), asserting the response is 403/forbidden rather than success. This proves the caller genuinely lacks default-space access, so an accidentally over-broad credential cannot make the positive assertion pass without actually exercising the fix.
 
-Cleanup is handled by Terraform destroy at the end of the test case (space + key + integration are all Terraform-managed).
+Cleanup is handled by Terraform destroy at the end of the test case (space + role + user + integration are all Terraform-managed).
 
 ## Open Questions
 
@@ -108,7 +96,7 @@ Copied verbatim from the issue's automated implementation-research comment:
 - Should the poll's space check and the lines 89-98 `globallyInstalled`/`installedInTargetSpace` check share one helper to avoid duplication?
 - Is there an existing space-scoped-API-key test fixture, or does this need a new unit/acceptance test to reproduce the 403?
 
-Note: this proposal's Option B design directly answers the second question above (yes — both now go through `fleetPackageInstalled` taking a `spaceScope`, with distinct scope values passed explicitly for the "globally installed" vs. "installed in target space" checks) and the third (yes — see the new `TestAccResourceIntegration_SpaceRestrictedKey` acceptance test above). The first question about pre-9.1 `GetPackage` response shape remains open; it is a pre-existing behavior of the code at create.go:96-97 today (unconditional `spaceAware=true` check for `installedInTargetSpace`), not something this change introduces, so it is tracked here rather than blocking this change.
+Note: this proposal's Option B design directly answers the second question above (yes — both now go through `fleetPackageInstalled` taking a `spaceScope`, with distinct scope values passed explicitly for the "globally installed" vs. "installed in target space" checks) and the third (yes — see the adapted `TestAccReproduceIssue4282` acceptance test above). The first question about pre-9.1 `GetPackage` response shape remains open; it is a pre-existing behavior of the code at create.go:96-97 today (unconditional `spaceAware=true` check for `installedInTargetSpace`), not something this change introduces, so it is tracked here rather than blocking this change.
 
 ## Risks / Trade-offs
 
