@@ -6,7 +6,7 @@ Only this first poll is affected — the later poll inside `installInSpace` (`cr
 
 ## What Changes
 
-Per the issue's implementation-research comment (adopted as the authoritative recommendation), consolidate the loosely-coupled `spaceID string` / `spaceAware bool` pair into a single resolved `spaceScope` value inside `internal/fleet/integration/`, and use it everywhere a space context is threaded through create/read/delete. This structurally removes the `"", false` call-site pattern that produced the bug, rather than only patching the one call.
+Per the issue's explicit follow-up direction (Option B), consolidate the loosely-coupled `spaceID string` / `spaceAware bool` pair into a single resolved `spaceScope` value inside `internal/fleet/integration/`, and use it everywhere a space context is threaded through create/read/delete. This structurally removes the `"", false` call-site pattern that produced the bug, rather than only patching the one call.
 
 - Add a `spaceScope` type (`id string`, `aware bool`) and a `resolveSpaceScope` constructor in `space_helpers.go` that folds in the existing `MinVersionSpaceAwareIntegration` (9.1.0) capability check.
 - Change `fleetPackageInstalled` and `waitForFleetIntegrationInstalled` to take a `spaceScope` instead of separate `(spaceID string, spaceAware bool)` parameters.
