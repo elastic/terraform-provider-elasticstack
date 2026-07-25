@@ -21,8 +21,32 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestResolveSpaceID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		spaceID types.String
+		want    string
+	}{
+		{name: "null", spaceID: types.StringNull(), want: ""},
+		{name: "unknown", spaceID: types.StringUnknown(), want: ""},
+		{name: "empty", spaceID: types.StringValue(""), want: ""},
+		{name: "default", spaceID: types.StringValue(defaultSpaceID), want: ""},
+		{name: "custom", spaceID: types.StringValue("target-space"), want: "target-space"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, resolveSpaceID(tt.spaceID))
+		})
+	}
+}
 
 func TestFleetPackageInstalled(t *testing.T) {
 	t.Parallel()

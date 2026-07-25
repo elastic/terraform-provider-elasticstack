@@ -53,10 +53,7 @@ func writeIntegration(
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
 
-	scope := resolveSpaceScope(ctx, client, planModel.SpaceID, &diags)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[integrationModel]{}, diags
-	}
+	scope := spaceScope{id: resolveSpaceID(planModel.SpaceID)}
 
 	installOptions := fleet.InstallPackageOptions{
 		Force:             planModel.Force.ValueBool(),
@@ -101,6 +98,8 @@ func writeIntegration(
 	}
 
 	globallyInstalled := fleetPackageInstalled(pkg, spaceScope{})
+	// This deliberately checks target-space metadata strictly. installInSpace
+	// owns the server-version gate and warning for unsupported Kibana versions.
 	installedInTargetSpace := fleetPackageInstalled(pkg, spaceScope{id: scope.id, aware: true})
 	installedElsewhere := globallyInstalled && scope.id != "" && !installedInTargetSpace
 

@@ -78,7 +78,7 @@ func deleteIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	_ string,
-	spaceID string,
+	_ string,
 	model integrationModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -99,18 +99,18 @@ func deleteIntegration(
 	}
 
 	if scope.aware {
-		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 		diags.Append(getDiags...)
 		if diags.HasError() {
 			return diags
 		}
 
-		if isInstalledInMultipleSpaces(pkg, spaceID) {
-			return deleteKibanaAssetsWithFallback(ctx, fleetClient, name, version, spaceID, force)
+		if isInstalledInMultipleSpaces(pkg, scope.id) {
+			return deleteKibanaAssetsWithFallback(ctx, fleetClient, name, version, scope.id, force)
 		}
 	}
 
-	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
+	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, scope.id, force)
 	diags.Append(uninstallDiags...)
 	return diags
 }

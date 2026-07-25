@@ -30,7 +30,7 @@ func readIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	_ string,
-	spaceID string,
+	_ string,
 	model integrationModel,
 ) (integrationModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -45,7 +45,7 @@ func readIntegration(
 		return model, false, diags
 	}
 
-	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return model, false, diags

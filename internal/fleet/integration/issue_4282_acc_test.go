@@ -83,8 +83,8 @@ func TestAccReproduceIssue4282(t *testing.T) {
 					"role_name": config.StringVariable(roleName),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", testAccTCPIntegrationName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", testAccTCPIntegrationVersion),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "space_id", spaceID),
 					testAccCheckIntegrationInstalledInSpace(spaceID),
 					testAccCheckFleetGetPackageTargetSpaceAllowed(username, password, spaceID),

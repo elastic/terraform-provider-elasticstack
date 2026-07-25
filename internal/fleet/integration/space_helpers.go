@@ -28,6 +28,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const defaultSpaceID = "default"
+
 // spaceScope is the resolved space context for one CRUD operation.
 type spaceScope struct {
 	id    string // "" == default space
@@ -35,20 +37,29 @@ type spaceScope struct {
 }
 
 func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersionEnforceable, spaceID string) (bool, diag.Diagnostics) {
-	if spaceID == "" || spaceID == "default" {
+	if spaceID == "" || spaceID == defaultSpaceID {
 		return false, nil
 	}
 
 	return client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
 }
 
-func resolveSpaceScope(ctx context.Context, client clients.MinVersionEnforceable, spaceID types.String, diags *diag.Diagnostics) spaceScope {
+func resolveSpaceID(spaceID types.String) string {
 	if !typeutils.IsKnown(spaceID) {
-		return spaceScope{}
+		return ""
 	}
 
 	id := spaceID.ValueString()
-	if id == "" || id == "default" {
+	if id == defaultSpaceID {
+		return ""
+	}
+
+	return id
+}
+
+func resolveSpaceScope(ctx context.Context, client clients.MinVersionEnforceable, spaceID types.String, diags *diag.Diagnostics) spaceScope {
+	id := resolveSpaceID(spaceID)
+	if id == "" {
 		return spaceScope{}
 	}
 
