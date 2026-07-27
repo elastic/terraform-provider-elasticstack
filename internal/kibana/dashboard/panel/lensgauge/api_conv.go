@@ -168,34 +168,22 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 }
 
 func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, d := gaugeConfigToAPIESQL(m)
-		diags.Append(d...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsGaugeESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to create gauge ES|QL attributes", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, d := gaugeConfigToAPINoESQL(m)
-	diags.Append(d...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsGaugeNoESQLByValuePanel(noESQL); err != nil {
-		diags.AddError("Failed to create gauge attributes", err.Error())
-	}
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel, diag.Diagnostics) {
+			return gaugeConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsGaugeESQLByValuePanel,
+		"Failed to create gauge ES|QL attributes",
+		func() (kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel, diag.Diagnostics) {
+			return gaugeConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsGaugeNoESQLByValuePanel,
+		"Failed to create gauge attributes",
+	)
 }
 
 func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel, diag.Diagnostics) {
