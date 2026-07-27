@@ -159,6 +159,24 @@ func (e CasesAlertCommentResponsePropertiesType) Valid() bool {
 	}
 }
 
+// Defines values for CasesApplicableFieldsResponseFieldsSource.
+const (
+	CasesApplicableFieldsResponseFieldsSourceGlobal   CasesApplicableFieldsResponseFieldsSource = "global"
+	CasesApplicableFieldsResponseFieldsSourceTemplate CasesApplicableFieldsResponseFieldsSource = "template"
+)
+
+// Valid indicates whether the value is a known member of the CasesApplicableFieldsResponseFieldsSource enum.
+func (e CasesApplicableFieldsResponseFieldsSource) Valid() bool {
+	switch e {
+	case CasesApplicableFieldsResponseFieldsSourceGlobal:
+		return true
+	case CasesApplicableFieldsResponseFieldsSourceTemplate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CasesCaseCloseSyncReason0.
 const (
 	CasesCaseCloseSyncReason0AutomatedClosure CasesCaseCloseSyncReason0 = "automated_closure"
@@ -17991,6 +18009,24 @@ func (e KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingNot
 	}
 }
 
+// Defines values for KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType.
+const (
+	KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdTypeCount      KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType = "count"
+	KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdTypePercentage KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType = "percentage"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType enum.
+func (e KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdTypeCount:
+		return true
+	case KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdTypePercentage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingRuleTypeId.
 const (
 	XpackMlAnomalyDetectionJobsHealth KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingRuleTypeId = "xpack.ml.anomaly_detection_jobs_health"
@@ -20963,13 +20999,13 @@ func (e KibanaHTTPAPIsXyYCountMetricAxis) Valid() bool {
 
 // Defines values for KibanaHTTPAPIsXyYCountMetricOperation.
 const (
-	KibanaHTTPAPIsXyYCountMetricOperationCount KibanaHTTPAPIsXyYCountMetricOperation = "count"
+	Count KibanaHTTPAPIsXyYCountMetricOperation = "count"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsXyYCountMetricOperation enum.
 func (e KibanaHTTPAPIsXyYCountMetricOperation) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsXyYCountMetricOperationCount:
+	case Count:
 		return true
 	default:
 		return false
@@ -22986,6 +23022,21 @@ const (
 func (e SecurityDetectionsAPICloseAlertsByQueryStatus) Valid() bool {
 	switch e {
 	case SecurityDetectionsAPICloseAlertsByQueryStatusClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityDetectionsAPICloseAttacksByIdsStatus.
+const (
+	SecurityDetectionsAPICloseAttacksByIdsStatusClosed SecurityDetectionsAPICloseAttacksByIdsStatus = "closed"
+)
+
+// Valid indicates whether the value is a known member of the SecurityDetectionsAPICloseAttacksByIdsStatus enum.
+func (e SecurityDetectionsAPICloseAttacksByIdsStatus) Valid() bool {
+	switch e {
+	case SecurityDetectionsAPICloseAttacksByIdsStatusClosed:
 		return true
 	default:
 		return false
@@ -28365,6 +28416,111 @@ func (e SecurityOsqueryAPISortOrderOrUndefined) Valid() bool {
 	}
 }
 
+// Defines values for SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus.
+const (
+	SecuritySolutionInitializationAPICreateListIndicesReadyResultStatusReady SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus enum.
+func (e SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus) Valid() bool {
+	switch e {
+	case SecuritySolutionInitializationAPICreateListIndicesReadyResultStatusReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus.
+const (
+	SecuritySolutionInitializationAPIInitializationFlowErrorResultStatusError SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus = "error"
+)
+
+// Valid indicates whether the value is a known member of the SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus enum.
+func (e SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus) Valid() bool {
+	switch e {
+	case SecuritySolutionInitializationAPIInitializationFlowErrorResultStatusError:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecuritySolutionInitializationAPIInitializationFlowId.
+const (
+	CreateListIndices           SecuritySolutionInitializationAPIInitializationFlowId = "create-list-indices"
+	InitAiPrompts               SecuritySolutionInitializationAPIInitializationFlowId = "init-ai-prompts"
+	InitDetectionRuleMonitoring SecuritySolutionInitializationAPIInitializationFlowId = "init-detection-rule-monitoring"
+	InitEndpointProtection      SecuritySolutionInitializationAPIInitializationFlowId = "init-endpoint-protection"
+	InitPrebuiltRules           SecuritySolutionInitializationAPIInitializationFlowId = "init-prebuilt-rules"
+	SecurityDataViews           SecuritySolutionInitializationAPIInitializationFlowId = "security-data-views"
+)
+
+// Valid indicates whether the value is a known member of the SecuritySolutionInitializationAPIInitializationFlowId enum.
+func (e SecuritySolutionInitializationAPIInitializationFlowId) Valid() bool {
+	switch e {
+	case CreateListIndices:
+		return true
+	case InitAiPrompts:
+		return true
+	case InitDetectionRuleMonitoring:
+		return true
+	case InitEndpointProtection:
+		return true
+	case InitPrebuiltRules:
+		return true
+	case SecurityDataViews:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus.
+const (
+	SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatusReady SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus enum.
+func (e SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus) Valid() bool {
+	switch e {
+	case SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatusReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecuritySolutionInitializationAPIPackageInstallReadyResultStatus.
+const (
+	SecuritySolutionInitializationAPIPackageInstallReadyResultStatusReady SecuritySolutionInitializationAPIPackageInstallReadyResultStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the SecuritySolutionInitializationAPIPackageInstallReadyResultStatus enum.
+func (e SecuritySolutionInitializationAPIPackageInstallReadyResultStatus) Valid() bool {
+	switch e {
+	case SecuritySolutionInitializationAPIPackageInstallReadyResultStatusReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus.
+const (
+	SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatusReady SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus = "ready"
+)
+
+// Valid indicates whether the value is a known member of the SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus enum.
+func (e SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus) Valid() bool {
+	switch e {
+	case SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatusReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SecurityTimelineAPIAssociatedFilterType.
 const (
 	SecurityTimelineAPIAssociatedFilterTypeAll                    SecurityTimelineAPIAssociatedFilterType = "all"
@@ -28562,16 +28718,16 @@ func (e SecurityTimelineAPITimelineStatus) Valid() bool {
 
 // Defines values for SecurityTimelineAPITimelineType.
 const (
-	Default  SecurityTimelineAPITimelineType = "default"
-	Template SecurityTimelineAPITimelineType = "template"
+	SecurityTimelineAPITimelineTypeDefault  SecurityTimelineAPITimelineType = "default"
+	SecurityTimelineAPITimelineTypeTemplate SecurityTimelineAPITimelineType = "template"
 )
 
 // Valid indicates whether the value is a known member of the SecurityTimelineAPITimelineType enum.
 func (e SecurityTimelineAPITimelineType) Valid() bool {
 	switch e {
-	case Default:
+	case SecurityTimelineAPITimelineTypeDefault:
 		return true
-	case Template:
+	case SecurityTimelineAPITimelineTypeTemplate:
 		return true
 	default:
 		return false
@@ -28703,8 +28859,9 @@ func (e SyntheticsTcpMonitorFieldsType) Valid() bool {
 
 // Defines values for AuthType.
 const (
-	WebhookAuthenticationBasic AuthType = "webhook-authentication-basic"
-	WebhookAuthenticationSsl   AuthType = "webhook-authentication-ssl"
+	WebhookAuthenticationBasic     AuthType = "webhook-authentication-basic"
+	WebhookAuthenticationSsl       AuthType = "webhook-authentication-ssl"
+	WebhookOauth2ClientCredentials AuthType = "webhook-oauth2-client-credentials"
 )
 
 // Valid indicates whether the value is a known member of the AuthType enum.
@@ -28713,6 +28870,8 @@ func (e AuthType) Valid() bool {
 	case WebhookAuthenticationBasic:
 		return true
 	case WebhookAuthenticationSsl:
+		return true
+	case WebhookOauth2ClientCredentials:
 		return true
 	default:
 		return false
@@ -29423,13 +29582,22 @@ func (e VerificationMode) Valid() bool {
 
 // Defines values for WebhookConfigMethod.
 const (
-	WebhookConfigMethodPost WebhookConfigMethod = "post"
-	WebhookConfigMethodPut  WebhookConfigMethod = "put"
+	WebhookConfigMethodDelete WebhookConfigMethod = "delete"
+	WebhookConfigMethodGet    WebhookConfigMethod = "get"
+	WebhookConfigMethodPatch  WebhookConfigMethod = "patch"
+	WebhookConfigMethodPost   WebhookConfigMethod = "post"
+	WebhookConfigMethodPut    WebhookConfigMethod = "put"
 )
 
 // Valid indicates whether the value is a known member of the WebhookConfigMethod enum.
 func (e WebhookConfigMethod) Valid() bool {
 	switch e {
+	case WebhookConfigMethodDelete:
+		return true
+	case WebhookConfigMethodGet:
+		return true
+	case WebhookConfigMethodPatch:
+		return true
 	case WebhookConfigMethodPost:
 		return true
 	case WebhookConfigMethodPut:
@@ -30656,19 +30824,19 @@ func (e FindCasesDefaultSpaceParamsSortOrder) Valid() bool {
 
 // Defines values for FindCasesDefaultSpaceParamsStatus.
 const (
-	FindCasesDefaultSpaceParamsStatusClosed     FindCasesDefaultSpaceParamsStatus = "closed"
-	FindCasesDefaultSpaceParamsStatusInProgress FindCasesDefaultSpaceParamsStatus = "in-progress"
-	FindCasesDefaultSpaceParamsStatusOpen       FindCasesDefaultSpaceParamsStatus = "open"
+	Closed     FindCasesDefaultSpaceParamsStatus = "closed"
+	InProgress FindCasesDefaultSpaceParamsStatus = "in-progress"
+	Open       FindCasesDefaultSpaceParamsStatus = "open"
 )
 
 // Valid indicates whether the value is a known member of the FindCasesDefaultSpaceParamsStatus enum.
 func (e FindCasesDefaultSpaceParamsStatus) Valid() bool {
 	switch e {
-	case FindCasesDefaultSpaceParamsStatusClosed:
+	case Closed:
 		return true
-	case FindCasesDefaultSpaceParamsStatusInProgress:
+	case InProgress:
 		return true
-	case FindCasesDefaultSpaceParamsStatusOpen:
+	case Open:
 		return true
 	default:
 		return false
@@ -33197,19 +33365,19 @@ func (e PutFleetSettings200JSONResponseBodyItemPreconfiguredFields) Valid() bool
 
 // Defines values for PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus.
 const (
-	Error   PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus = "error"
-	Pending PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus = "pending"
-	Success PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus = "success"
+	PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatusError   PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus = "error"
+	PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatusPending PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus = "pending"
+	PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatusSuccess PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus = "success"
 )
 
 // Valid indicates whether the value is a known member of the PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus enum.
 func (e PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatus) Valid() bool {
 	switch e {
-	case Error:
+	case PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatusError:
 		return true
-	case Pending:
+	case PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatusPending:
 		return true
-	case Success:
+	case PutFleetSettings200JSONResponseBodyItemUseSpaceAwarenessMigrationStatusSuccess:
 		return true
 	default:
 		return false
@@ -36389,6 +36557,50 @@ type CasesAlertResponseProperties struct {
 	Index *string `json:"index,omitempty"`
 }
 
+// CasesApplicableFieldsResponse The fields a caller may apply to a case's `extended_fields`. When no template is in scope, this is the owner's global (library-wide) fields; when a template is applied, it also includes that template's fields. Migrated legacy custom fields appear here as `global` fields, so existing automations can look up the exact key to write.
+type CasesApplicableFieldsResponse struct {
+	Fields []struct {
+		// Control The UI control for the field, such as `INPUT_TEXT`, `INPUT_NUMBER`, `SELECT_BASIC`, `TOGGLE`, or `MARKDOWN`.
+		Control string `json:"control"`
+
+		// DefaultValue The default value, as a string, when the field definition declares one.
+		DefaultValue *string `json:"defaultValue,omitempty"`
+
+		// DisplayOnly When `true` the field is display-only (for example a `MARKDOWN` block): it is returned so the full form shape is visible, but it holds no value and its `key` cannot be written to `extended_fields`.
+		DisplayOnly bool `json:"displayOnly"`
+
+		// IsGlobal Whether the field is a global (library-wide) definition.
+		IsGlobal bool `json:"isGlobal"`
+
+		// Key The storage key to write in the case `extended_fields` map. Follows the `<field_name>_as_<storage_type>` convention (for example `priority_as_keyword`).
+		Key string `json:"key"`
+
+		// Label The human-readable label. Falls back to `name` when no label is authored.
+		Label string `json:"label"`
+
+		// Name The field name as authored in the field definition.
+		Name string `json:"name"`
+
+		// Options The allowed values for `SELECT_BASIC`, `RADIO_GROUP`, and `CHECKBOX_GROUP` fields.
+		Options *[]string `json:"options,omitempty"`
+
+		// Required Whether a value must be supplied at write time.
+		Required bool `json:"required"`
+
+		// RequiredOnClose Whether the field must be filled before the case can be closed.
+		RequiredOnClose bool `json:"requiredOnClose"`
+
+		// Source Where the field comes from: `global` for a library-wide (`isGlobal`) definition writable on any case, or `template` for a field contributed by the applied template.
+		Source CasesApplicableFieldsResponseFieldsSource `json:"source"`
+
+		// Type The storage type: `keyword`, `integer`, `long`, `boolean`, or `date`.
+		Type string `json:"type"`
+	} `json:"fields"`
+}
+
+// CasesApplicableFieldsResponseFieldsSource Where the field comes from: `global` for a library-wide (`isGlobal`) definition writable on any case, or `template` for a field contributed by the applied template.
+type CasesApplicableFieldsResponseFieldsSource string
+
 // CasesAssignees An array containing users that are assigned to the case.
 type CasesAssignees = []struct {
 	// Uid A unique identifier for the user profile. These identifiers can be found by using the suggest user profile API.
@@ -36886,6 +37098,15 @@ type CasesCreateCaseRequest struct {
 
 	// Tags The words and phrases that help categorize cases. It can be an empty array.
 	Tags CasesCaseTags `json:"tags"`
+
+	// Template A case template to create the case from. Requires the `xpack.cases.templates.enabled` setting. The server applies the template's case defaults (severity, category, tags, assignees, settings, connector) and its field defaults into `extended_fields`; any value explicitly provided in the request wins over the template default. When `version` is omitted, the latest version of the template is resolved and pinned on the case. To discover a template's fields before creating a case, use the get case fields API (`GET /api/cases/fields`).
+	Template *struct {
+		// Id The template identifier. Retrieve template ids with `GET /api/cases/templates`.
+		Id string `json:"id"`
+
+		// Version The template version to apply. Omit to use (and pin) the latest version.
+		Version *int `json:"version,omitempty"`
+	} `json:"template,omitempty"`
 
 	// Title A title for the case.
 	Title CasesCaseTitle `json:"title"`
@@ -48827,7 +49048,9 @@ type KibanaHTTPAPIsKbnDataViewReferenceSchemaType string
 
 // KibanaHTTPAPIsKbnDataViewSpecSchema defines model for Kibana_HTTP_APIs_kbn-data-view-spec-schema.
 type KibanaHTTPAPIsKbnDataViewSpecSchema struct {
-	FieldSettings *map[string]KibanaHTTPAPIsKbnFieldSettingsEntry `json:"field_settings,omitempty"`
+	// AllowHiddenIndices When `true`, allows the data view to match hidden indices.
+	AllowHiddenIndices *bool                                           `json:"allow_hidden_indices,omitempty"`
+	FieldSettings      *map[string]KibanaHTTPAPIsKbnFieldSettingsEntry `json:"field_settings,omitempty"`
 
 	// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
 	IndexPattern string `json:"index_pattern"`
@@ -62464,9 +62687,11 @@ type KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlerting struc
 				Enabled *bool `json:"enabled,omitempty"`
 			} `json:"datafeed,omitempty"`
 			DelayedData *struct {
-				DocsCount    *float32 `json:"docsCount,omitempty"`
-				Enabled      *bool    `json:"enabled,omitempty"`
-				TimeInterval *string  `json:"timeInterval,omitempty"`
+				DocsCount           *float32                                                                                                        `json:"docsCount,omitempty"`
+				DocsCountPercentage *float32                                                                                                        `json:"docsCountPercentage,omitempty"`
+				Enabled             *bool                                                                                                           `json:"enabled,omitempty"`
+				ThresholdType       *KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType `json:"thresholdType,omitempty"`
+				TimeInterval        *string                                                                                                         `json:"timeInterval,omitempty"`
 			} `json:"delayedData,omitempty"`
 			ErrorMessages *struct {
 				Enabled *bool `json:"enabled,omitempty"`
@@ -62493,6 +62718,9 @@ type KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlerting struc
 
 // KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingNotifyWhen Indicates how frequently rule actions are triggered. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. You cannot specify `notify_when` at both the rule and action level. The recommended approach is to set it for each action individually. If you set `notify_when` at the rule level and then edit the rule, it will automatically be converted to action-specific values.
 type KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingNotifyWhen string
+
+// KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType defines model for KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlerting.Params.TestsConfig.DelayedData.ThresholdType.
+type KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingParamsTestsConfigDelayedDataThresholdType string
 
 // KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingRuleTypeId defines model for KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlerting.RuleTypeId.
 type KibanaHTTPAPIsXpackMlAnomalyDetectionJobsHealthCreateRuleBodyAlertingRuleTypeId string
@@ -68798,6 +69026,22 @@ type SecurityDetectionsAPICloseAlertsByQueryConflicts string
 // SecurityDetectionsAPICloseAlertsByQueryStatus defines model for SecurityDetectionsAPICloseAlertsByQuery.Status.
 type SecurityDetectionsAPICloseAlertsByQueryStatus string
 
+// SecurityDetectionsAPICloseAttacksByIds defines model for Security_Detections_API_CloseAttacksByIds.
+type SecurityDetectionsAPICloseAttacksByIds struct {
+	// Ids A list of alerts `id`s.
+	Ids SecurityDetectionsAPIAlertIds `json:"ids"`
+
+	// Reason The reason for closing the alerts. Can be one of following predefined reasons: [false_positive, duplicate, true_positive, benign_positive, automated_closure, other] or a custom reason provided by the user through the advanced settings.
+	Reason *SecurityDetectionsAPIReason                 `json:"reason,omitempty"`
+	Status SecurityDetectionsAPICloseAttacksByIdsStatus `json:"status"`
+
+	// UpdateRelatedAlerts When `true`, the change is also applied to detection alerts related to the attacks via `kibana.alert.attack_discovery.alert_ids`.
+	UpdateRelatedAlerts *SecurityDetectionsAPIUpdateRelatedAlerts `json:"update_related_alerts,omitempty"`
+}
+
+// SecurityDetectionsAPICloseAttacksByIdsStatus defines model for SecurityDetectionsAPICloseAttacksByIds.Status.
+type SecurityDetectionsAPICloseAttacksByIdsStatus string
+
 // SecurityDetectionsAPIConcurrentSearches defines model for Security_Detections_API_ConcurrentSearches.
 type SecurityDetectionsAPIConcurrentSearches = int
 
@@ -74440,6 +74684,46 @@ type SecurityDetectionsAPISetAlertsStatusByQueryBase struct {
 // SecurityDetectionsAPISetAlertsStatusByQueryBaseConflicts defines model for SecurityDetectionsAPISetAlertsStatusByQueryBase.Conflicts.
 type SecurityDetectionsAPISetAlertsStatusByQueryBaseConflicts string
 
+// SecurityDetectionsAPISetAttacksAssigneesByIds defines model for Security_Detections_API_SetAttacksAssigneesByIds.
+type SecurityDetectionsAPISetAttacksAssigneesByIds struct {
+	Assignees SecurityDetectionsAPIAlertAssignees `json:"assignees"`
+
+	// Ids A list of alerts `id`s.
+	Ids SecurityDetectionsAPIAlertIds `json:"ids"`
+
+	// UpdateRelatedAlerts When `true`, the change is also applied to detection alerts related to the attacks via `kibana.alert.attack_discovery.alert_ids`.
+	UpdateRelatedAlerts *SecurityDetectionsAPIUpdateRelatedAlerts `json:"update_related_alerts,omitempty"`
+}
+
+// SecurityDetectionsAPISetAttacksStatusByIds defines model for Security_Detections_API_SetAttacksStatusByIds.
+type SecurityDetectionsAPISetAttacksStatusByIds struct {
+	union json.RawMessage
+}
+
+// SecurityDetectionsAPISetAttacksStatusByIdsBase defines model for Security_Detections_API_SetAttacksStatusByIdsBase.
+type SecurityDetectionsAPISetAttacksStatusByIdsBase struct {
+	// Ids A list of alerts `id`s.
+	Ids SecurityDetectionsAPIAlertIds `json:"ids"`
+
+	// Status The status of an alert, which can be `open`, `acknowledged`, `in-progress`, or `closed`.
+	Status SecurityDetectionsAPIAlertStatusExceptClosed `json:"status"`
+
+	// UpdateRelatedAlerts When `true`, the change is also applied to detection alerts related to the attacks via `kibana.alert.attack_discovery.alert_ids`.
+	UpdateRelatedAlerts *SecurityDetectionsAPIUpdateRelatedAlerts `json:"update_related_alerts,omitempty"`
+}
+
+// SecurityDetectionsAPISetAttacksTagsByIds defines model for Security_Detections_API_SetAttacksTagsByIds.
+type SecurityDetectionsAPISetAttacksTagsByIds struct {
+	// Ids A list of alerts `id`s.
+	Ids SecurityDetectionsAPIAlertIds `json:"ids"`
+
+	// Tags Object with list of tags to add and remove.
+	Tags SecurityDetectionsAPISetAlertTags `json:"tags"`
+
+	// UpdateRelatedAlerts When `true`, the change is also applied to detection alerts related to the attacks via `kibana.alert.attack_discovery.alert_ids`.
+	UpdateRelatedAlerts *SecurityDetectionsAPIUpdateRelatedAlerts `json:"update_related_alerts,omitempty"`
+}
+
 // SecurityDetectionsAPISetupGuide Populates the rule’s setup guide with instructions on rule prerequisites such as required integrations, configuration steps, and anything else needed for the rule to work correctly.
 type SecurityDetectionsAPISetupGuide = string
 
@@ -76438,6 +76722,9 @@ type SecurityDetectionsAPITimestampOverrideFallbackDisabled = bool
 
 // SecurityDetectionsAPIUUID A universally unique identifier
 type SecurityDetectionsAPIUUID = openapi_types.UUID
+
+// SecurityDetectionsAPIUpdateRelatedAlerts When `true`, the change is also applied to detection alerts related to the attacks via `kibana.alert.attack_discovery.alert_ids`.
+type SecurityDetectionsAPIUpdateRelatedAlerts = bool
 
 // SecurityDetectionsAPIWarningSchema defines model for Security_Detections_API_WarningSchema.
 type SecurityDetectionsAPIWarningSchema struct {
@@ -78813,16 +79100,21 @@ type SecurityEntityAnalyticsAPIDateRange struct {
 
 // SecurityEntityAnalyticsAPIEntityAnalyticsPrivileges defines model for Security_Entity_Analytics_API_EntityAnalyticsPrivileges.
 type SecurityEntityAnalyticsAPIEntityAnalyticsPrivileges struct {
-	HasAllRequired      bool  `json:"has_all_required"`
-	HasReadPermissions  *bool `json:"has_read_permissions,omitempty"`
-	HasWritePermissions *bool `json:"has_write_permissions,omitempty"`
-	Privileges          struct {
-		Elasticsearch struct {
-			Cluster *map[string]bool            `json:"cluster,omitempty"`
-			Index   *map[string]map[string]bool `json:"index,omitempty"`
-		} `json:"elasticsearch"`
-		Kibana *map[string]bool `json:"kibana,omitempty"`
-	} `json:"privileges"`
+	HasAllRequired        bool                                                       `json:"has_all_required"`
+	HasInstallPermissions *bool                                                      `json:"has_install_permissions,omitempty"`
+	HasReadPermissions    *bool                                                      `json:"has_read_permissions,omitempty"`
+	HasWritePermissions   *bool                                                      `json:"has_write_permissions,omitempty"`
+	InstallPrivileges     *SecurityEntityAnalyticsAPIEntityAnalyticsPrivilegesDetail `json:"install_privileges,omitempty"`
+	Privileges            SecurityEntityAnalyticsAPIEntityAnalyticsPrivilegesDetail  `json:"privileges"`
+}
+
+// SecurityEntityAnalyticsAPIEntityAnalyticsPrivilegesDetail defines model for Security_Entity_Analytics_API_EntityAnalyticsPrivilegesDetail.
+type SecurityEntityAnalyticsAPIEntityAnalyticsPrivilegesDetail struct {
+	Elasticsearch struct {
+		Cluster *map[string]bool            `json:"cluster,omitempty"`
+		Index   *map[string]map[string]bool `json:"index,omitempty"`
+	} `json:"elasticsearch"`
+	Kibana *map[string]bool `json:"kibana,omitempty"`
 }
 
 // SecurityEntityAnalyticsAPIEntityRiskLevels defines model for Security_Entity_Analytics_API_EntityRiskLevels.
@@ -83549,6 +83841,110 @@ type SecurityOsqueryAPIUpdateSavedQueryResponse_Data_Interval struct {
 // SecurityOsqueryAPIVersion Uses the Osquery versions greater than or equal to the specified version string.
 type SecurityOsqueryAPIVersion = string
 
+// SecuritySolutionInitializationAPICreateListIndicesReadyResult defines model for Security_Solution_Initialization_API_CreateListIndicesReadyResult.
+type SecuritySolutionInitializationAPICreateListIndicesReadyResult struct {
+	Status SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus `json:"status"`
+}
+
+// SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus defines model for SecuritySolutionInitializationAPICreateListIndicesReadyResult.Status.
+type SecuritySolutionInitializationAPICreateListIndicesReadyResultStatus string
+
+// SecuritySolutionInitializationAPIDataViewPayload defines model for Security_Solution_Initialization_API_DataViewPayload.
+type SecuritySolutionInitializationAPIDataViewPayload struct {
+	Id          string   `json:"id"`
+	PatternList []string `json:"patternList"`
+	Title       string   `json:"title"`
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowErrorResult defines model for Security_Solution_Initialization_API_InitializationFlowErrorResult.
+type SecuritySolutionInitializationAPIInitializationFlowErrorResult struct {
+	Error  *string                                                              `json:"error,omitempty"`
+	Status SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus `json:"status"`
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus defines model for SecuritySolutionInitializationAPIInitializationFlowErrorResult.Status.
+type SecuritySolutionInitializationAPIInitializationFlowErrorResultStatus string
+
+// SecuritySolutionInitializationAPIInitializationFlowId Identifier for an initialization flow.
+type SecuritySolutionInitializationAPIInitializationFlowId string
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult Per-flow results. Only requested flows appear in the response, so all properties are optional. Each flow is either a typed ready result or an error result.
+type SecuritySolutionInitializationAPIInitializationFlowsResult struct {
+	CreateListIndices           *SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices           `json:"create-list-indices,omitempty"`
+	InitAiPrompts               *SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts               `json:"init-ai-prompts,omitempty"`
+	InitDetectionRuleMonitoring *SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring `json:"init-detection-rule-monitoring,omitempty"`
+	InitEndpointProtection      *SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection      `json:"init-endpoint-protection,omitempty"`
+	InitPrebuiltRules           *SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules           `json:"init-prebuilt-rules,omitempty"`
+	SecurityDataViews           *SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews           `json:"security-data-views,omitempty"`
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices defines model for SecuritySolutionInitializationAPIInitializationFlowsResult.CreateListIndices.
+type SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices struct {
+	union json.RawMessage
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts defines model for SecuritySolutionInitializationAPIInitializationFlowsResult.InitAiPrompts.
+type SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts struct {
+	union json.RawMessage
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring defines model for SecuritySolutionInitializationAPIInitializationFlowsResult.InitDetectionRuleMonitoring.
+type SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring struct {
+	union json.RawMessage
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection defines model for SecuritySolutionInitializationAPIInitializationFlowsResult.InitEndpointProtection.
+type SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection struct {
+	union json.RawMessage
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules defines model for SecuritySolutionInitializationAPIInitializationFlowsResult.InitPrebuiltRules.
+type SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules struct {
+	union json.RawMessage
+}
+
+// SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews defines model for SecuritySolutionInitializationAPIInitializationFlowsResult.SecurityDataViews.
+type SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews struct {
+	union json.RawMessage
+}
+
+// SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult defines model for Security_Solution_Initialization_API_InstallDetectionEngineRuleMonitoringAssetsReadyResult.
+type SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult struct {
+	Status SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus `json:"status"`
+}
+
+// SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus defines model for SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult.Status.
+type SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResultStatus string
+
+// SecuritySolutionInitializationAPIPackageInstallReadyResult defines model for Security_Solution_Initialization_API_PackageInstallReadyResult.
+type SecuritySolutionInitializationAPIPackageInstallReadyResult struct {
+	Payload struct {
+		// InstallStatus Fleet package installation status (e.g., installed, already_installed).
+		InstallStatus string `json:"install_status"`
+		Name          string `json:"name"`
+		Version       string `json:"version"`
+	} `json:"payload"`
+	Status SecuritySolutionInitializationAPIPackageInstallReadyResultStatus `json:"status"`
+}
+
+// SecuritySolutionInitializationAPIPackageInstallReadyResultStatus defines model for SecuritySolutionInitializationAPIPackageInstallReadyResult.Status.
+type SecuritySolutionInitializationAPIPackageInstallReadyResultStatus string
+
+// SecuritySolutionInitializationAPISecurityDataViewsReadyResult defines model for Security_Solution_Initialization_API_SecurityDataViewsReadyResult.
+type SecuritySolutionInitializationAPISecurityDataViewsReadyResult struct {
+	Payload struct {
+		AlertDataView   SecuritySolutionInitializationAPIDataViewPayload   `json:"alertDataView"`
+		AttackDataView  *SecuritySolutionInitializationAPIDataViewPayload  `json:"attackDataView,omitempty"`
+		DefaultDataView SecuritySolutionInitializationAPIDataViewPayload   `json:"defaultDataView"`
+		KibanaDataViews []SecuritySolutionInitializationAPIDataViewPayload `json:"kibanaDataViews"`
+		SignalIndexName string                                             `json:"signalIndexName"`
+	} `json:"payload"`
+	Status SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus `json:"status"`
+}
+
+// SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus defines model for SecuritySolutionInitializationAPISecurityDataViewsReadyResult.Status.
+type SecuritySolutionInitializationAPISecurityDataViewsReadyResultStatus string
+
 // SecurityTimelineAPIAssociatedFilterType How the note is associated with a Timeline saved object and/or an event (`eventId`). `all`: no association-based restriction from this parameter. `document_only`: document-linked notes (non-empty `eventId`) without timeline association in the API's internal sense; post-filtering drops notes without a usable `eventId`. `saved_object_only`: timeline notes with no linked event (`eventId` empty or absent); post-filtering keeps timeline-only notes. `document_and_saved_object`: notes on a timeline and linked to an event; post-filtering enforces a real `eventId`. `orphan`: not on a timeline and `eventId` is empty (stricter than missing `eventId` in some cases).
 type SecurityTimelineAPIAssociatedFilterType string
 
@@ -85149,7 +85545,7 @@ type AgentPolicyGlobalDataTagsItem_Value struct {
 	union json.RawMessage
 }
 
-// AuthType The type of authentication to use: basic, SSL, or none.
+// AuthType The type of authentication to use: basic, SSL, OAuth2 client credentials, or none.
 type AuthType string
 
 // BedrockConfig Defines properties for connectors when type is `.bedrock`.
@@ -85178,7 +85574,7 @@ type Ca = string
 
 // CasesWebhookConfig Defines properties for connectors when type is `.cases-webhook`.
 type CasesWebhookConfig struct {
-	// AuthType The type of authentication to use: basic, SSL, or none.
+	// AuthType The type of authentication to use: basic, SSL, OAuth2 client credentials, or none.
 	AuthType *AuthType `json:"authType,omitempty"`
 
 	// Ca A base64 encoded version of the certificate authority file that the connector can trust to sign and validate certificates. This option is available for all authentication types.
@@ -87042,7 +87438,13 @@ type VerificationMode string
 
 // WebhookConfig Defines properties for connectors when type is `.webhook`.
 type WebhookConfig struct {
-	// AuthType The type of authentication to use: basic, SSL, or none.
+	// AccessTokenUrl The URL used to request an OAuth2 access token. If `hasAuth` is set to `true` and `authType` is `webhook-oauth2-client-credentials`, this property is required.
+	AccessTokenUrl *string `json:"accessTokenUrl,omitempty"`
+
+	// AdditionalFields Additional fields, encoded as a JSON object, sent as part of the OAuth2 access token request body.
+	AdditionalFields *string `json:"additionalFields,omitempty"`
+
+	// AuthType The type of authentication to use: basic, SSL, OAuth2 client credentials, or none.
 	AuthType *AuthType `json:"authType,omitempty"`
 
 	// Ca A base64 encoded version of the certificate authority file that the connector can trust to sign and validate certificates. This option is available for all authentication types.
@@ -87051,14 +87453,20 @@ type WebhookConfig struct {
 	// CertType If the `authType` is `webhook-authentication-ssl`, specifies whether the certificate authentication data is in a CRT and key file format or a PFX file format.
 	CertType *CertType `json:"certType,omitempty"`
 
+	// ClientId The client identifier for OAuth2 authentication. If `hasAuth` is set to `true` and `authType` is `webhook-oauth2-client-credentials`, this property is required.
+	ClientId *string `json:"clientId,omitempty"`
+
 	// HasAuth If true, a username and password for login type authentication must be provided.
 	HasAuth *HasAuth `json:"hasAuth,omitempty"`
 
 	// Headers A set of key-value pairs sent as headers with the request.
 	Headers *map[string]interface{} `json:"headers,omitempty"`
 
-	// Method The HTTP request method, either `post` or `put`.
+	// Method The HTTP request method: `post`, `put`, `patch`, `get`, or `delete`.
 	Method *WebhookConfigMethod `json:"method,omitempty"`
+
+	// Scope The scope requested when acquiring the OAuth2 access token.
+	Scope *string `json:"scope,omitempty"`
 
 	// Url The request URL. If you are using the `xpack.actions.allowedHosts` setting, add the hostname to the allowed hosts.
 	Url *string `json:"url,omitempty"`
@@ -87067,11 +87475,14 @@ type WebhookConfig struct {
 	VerificationMode *VerificationMode `json:"verificationMode,omitempty"`
 }
 
-// WebhookConfigMethod The HTTP request method, either `post` or `put`.
+// WebhookConfigMethod The HTTP request method: `post`, `put`, `patch`, `get`, or `delete`.
 type WebhookConfigMethod string
 
 // WebhookSecrets Defines secrets for connectors when type is `.webhook`.
 type WebhookSecrets struct {
+	// ClientSecret The client secret for OAuth2 authentication. If `hasAuth` is set to `true` and `authType` is `webhook-oauth2-client-credentials`, this property is required.
+	ClientSecret *string `json:"clientSecret,omitempty"`
+
 	// Crt If `authType` is `webhook-authentication-ssl` and `certType` is `ssl-crt-key`, it is a base64 encoded version of the CRT or CERT file.
 	Crt *Crt `json:"crt,omitempty"`
 
@@ -88563,6 +88974,15 @@ type UpdateCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_Default
 // UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType defines parameters for UpdateCaseConfigurationDefaultSpace.
 type UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType string
 
+// GetApplicableFieldsDefaultSpaceParams defines parameters for GetApplicableFieldsDefaultSpace.
+type GetApplicableFieldsDefaultSpaceParams struct {
+	// Owner The application that owns the cases (for example `cases`, `observability`, or `securitySolution`).
+	Owner string `form:"owner" json:"owner"`
+
+	// TemplateId The identifier of a template to include the template's fields in the response.
+	TemplateId *string `form:"templateId,omitempty" json:"templateId,omitempty"`
+}
+
 // GetCaseReportersDefaultSpaceParams defines parameters for GetCaseReportersDefaultSpace.
 type GetCaseReportersDefaultSpaceParams struct {
 	// Owner A filter to limit the response to a specific set of applications. If this parameter is omitted, the response contains information about all the cases that the user has access to read.
@@ -88748,6 +89168,26 @@ type UpdateRuntimeFieldDefaultJSONBody struct {
 	// - `type`
 	// - `script`
 	RuntimeField map[string]interface{} `json:"runtimeField"`
+}
+
+// SetAttacksAssignees400JSONResponseBody defines parameters for SetAttacksAssignees.
+type SetAttacksAssignees400JSONResponseBody struct {
+	union json.RawMessage
+}
+
+// SearchAttacks400JSONResponseBody defines parameters for SearchAttacks.
+type SearchAttacks400JSONResponseBody struct {
+	union json.RawMessage
+}
+
+// SetAttacksStatus400JSONResponseBody defines parameters for SetAttacksStatus.
+type SetAttacksStatus400JSONResponseBody struct {
+	union json.RawMessage
+}
+
+// SetAttacksTags400JSONResponseBody defines parameters for SetAttacksTags.
+type SetAttacksTags400JSONResponseBody struct {
+	union json.RawMessage
 }
 
 // PerformRulesBulkActionJSONBody defines parameters for PerformRulesBulkAction.
@@ -96722,6 +97162,11 @@ type FindPromptsParams struct {
 	PerPage *int `form:"per_page,omitempty" json:"per_page,omitempty"`
 }
 
+// InitializeSecuritySolutionJSONBody defines parameters for InitializeSecuritySolution.
+type InitializeSecuritySolutionJSONBody struct {
+	Flows []SecuritySolutionInitializationAPIInitializationFlowId `json:"flows"`
+}
+
 // PostUrlJSONBody defines parameters for PostUrl.
 type PostUrlJSONBody struct {
 	// HumanReadableSlug When the `slug` parameter is omitted, the API will generate a random human-readable slug if `humanReadableSlug` is set to true.
@@ -98752,6 +99197,18 @@ type SwapDataViewsDefaultJSONRequestBody = DataViewsSwapDataViewRequestObject
 // PreviewSwapDataViewsDefaultJSONRequestBody defines body for PreviewSwapDataViewsDefault for application/json ContentType.
 type PreviewSwapDataViewsDefaultJSONRequestBody = DataViewsSwapDataViewRequestObject
 
+// SetAttacksAssigneesJSONRequestBody defines body for SetAttacksAssignees for application/json ContentType.
+type SetAttacksAssigneesJSONRequestBody = SecurityDetectionsAPISetAttacksAssigneesByIds
+
+// SearchAttacksJSONRequestBody defines body for SearchAttacks for application/json ContentType.
+type SearchAttacksJSONRequestBody = SecurityDetectionsAPIQueryAlertsBodyParams
+
+// SetAttacksStatusJSONRequestBody defines body for SetAttacksStatus for application/json ContentType.
+type SetAttacksStatusJSONRequestBody = SecurityDetectionsAPISetAttacksStatusByIds
+
+// SetAttacksTagsJSONRequestBody defines body for SetAttacksTags for application/json ContentType.
+type SetAttacksTagsJSONRequestBody = SecurityDetectionsAPISetAttacksTagsByIds
+
 // PerformRulesBulkActionJSONRequestBody defines body for PerformRulesBulkAction for application/json ContentType.
 type PerformRulesBulkActionJSONRequestBody PerformRulesBulkActionJSONBody
 
@@ -99249,6 +99706,9 @@ type UpdateKnowledgeBaseEntryJSONRequestBody = SecurityAIAssistantAPIKnowledgeBa
 
 // PerformPromptsBulkActionJSONRequestBody defines body for PerformPromptsBulkAction for application/json ContentType.
 type PerformPromptsBulkActionJSONRequestBody PerformPromptsBulkActionJSONBody
+
+// InitializeSecuritySolutionJSONRequestBody defines body for InitializeSecuritySolution for application/json ContentType.
+type InitializeSecuritySolutionJSONRequestBody InitializeSecuritySolutionJSONBody
 
 // PostUrlJSONRequestBody defines body for PostUrl for application/json ContentType.
 type PostUrlJSONRequestBody PostUrlJSONBody
@@ -168857,6 +169317,95 @@ func (t *SecurityDetectionsAPISetAlertsStatusByQuery) UnmarshalJSON(b []byte) er
 	return err
 }
 
+// AsSecurityDetectionsAPICloseAttacksByIds returns the union data inside the SecurityDetectionsAPISetAttacksStatusByIds as a SecurityDetectionsAPICloseAttacksByIds
+func (t SecurityDetectionsAPISetAttacksStatusByIds) AsSecurityDetectionsAPICloseAttacksByIds() (SecurityDetectionsAPICloseAttacksByIds, error) {
+	var body SecurityDetectionsAPICloseAttacksByIds
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPICloseAttacksByIds overwrites any union data inside the SecurityDetectionsAPISetAttacksStatusByIds as the provided SecurityDetectionsAPICloseAttacksByIds
+func (t *SecurityDetectionsAPISetAttacksStatusByIds) FromSecurityDetectionsAPICloseAttacksByIds(v SecurityDetectionsAPICloseAttacksByIds) error {
+	v.Status = "closed"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPICloseAttacksByIds performs a merge with any union data inside the SecurityDetectionsAPISetAttacksStatusByIds, using the provided SecurityDetectionsAPICloseAttacksByIds
+func (t *SecurityDetectionsAPISetAttacksStatusByIds) MergeSecurityDetectionsAPICloseAttacksByIds(v SecurityDetectionsAPICloseAttacksByIds) error {
+	v.Status = "closed"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISetAttacksStatusByIdsBase returns the union data inside the SecurityDetectionsAPISetAttacksStatusByIds as a SecurityDetectionsAPISetAttacksStatusByIdsBase
+func (t SecurityDetectionsAPISetAttacksStatusByIds) AsSecurityDetectionsAPISetAttacksStatusByIdsBase() (SecurityDetectionsAPISetAttacksStatusByIdsBase, error) {
+	var body SecurityDetectionsAPISetAttacksStatusByIdsBase
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISetAttacksStatusByIdsBase overwrites any union data inside the SecurityDetectionsAPISetAttacksStatusByIds as the provided SecurityDetectionsAPISetAttacksStatusByIdsBase
+func (t *SecurityDetectionsAPISetAttacksStatusByIds) FromSecurityDetectionsAPISetAttacksStatusByIdsBase(v SecurityDetectionsAPISetAttacksStatusByIdsBase) error {
+	v.Status = "Security_Detections_API_SetAttacksStatusByIdsBase"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISetAttacksStatusByIdsBase performs a merge with any union data inside the SecurityDetectionsAPISetAttacksStatusByIds, using the provided SecurityDetectionsAPISetAttacksStatusByIdsBase
+func (t *SecurityDetectionsAPISetAttacksStatusByIds) MergeSecurityDetectionsAPISetAttacksStatusByIdsBase(v SecurityDetectionsAPISetAttacksStatusByIdsBase) error {
+	v.Status = "Security_Detections_API_SetAttacksStatusByIdsBase"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityDetectionsAPISetAttacksStatusByIds) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"status"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SecurityDetectionsAPISetAttacksStatusByIds) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "Security_Detections_API_SetAttacksStatusByIdsBase":
+		return t.AsSecurityDetectionsAPISetAttacksStatusByIdsBase()
+	case "closed":
+		return t.AsSecurityDetectionsAPICloseAttacksByIds()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SecurityDetectionsAPISetAttacksStatusByIds) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityDetectionsAPISetAttacksStatusByIds) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsSecurityDetectionsAPIThresholdField0 returns the union data inside the SecurityDetectionsAPIThresholdField as a SecurityDetectionsAPIThresholdField0
 func (t SecurityDetectionsAPIThresholdField) AsSecurityDetectionsAPIThresholdField0() (SecurityDetectionsAPIThresholdField0, error) {
 	var body SecurityDetectionsAPIThresholdField0
@@ -174294,6 +174843,378 @@ func (t SecurityOsqueryAPIUpdateSavedQueryResponse_Data_Interval) MarshalJSON() 
 }
 
 func (t *SecurityOsqueryAPIUpdateSavedQueryResponse_Data_Interval) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecuritySolutionInitializationAPICreateListIndicesReadyResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices as a SecuritySolutionInitializationAPICreateListIndicesReadyResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) AsSecuritySolutionInitializationAPICreateListIndicesReadyResult() (SecuritySolutionInitializationAPICreateListIndicesReadyResult, error) {
+	var body SecuritySolutionInitializationAPICreateListIndicesReadyResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPICreateListIndicesReadyResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices as the provided SecuritySolutionInitializationAPICreateListIndicesReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) FromSecuritySolutionInitializationAPICreateListIndicesReadyResult(v SecuritySolutionInitializationAPICreateListIndicesReadyResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPICreateListIndicesReadyResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices, using the provided SecuritySolutionInitializationAPICreateListIndicesReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) MergeSecuritySolutionInitializationAPICreateListIndicesReadyResult(v SecuritySolutionInitializationAPICreateListIndicesReadyResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInitializationFlowErrorResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices as a SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) AsSecuritySolutionInitializationAPIInitializationFlowErrorResult() (SecuritySolutionInitializationAPIInitializationFlowErrorResult, error) {
+	var body SecuritySolutionInitializationAPIInitializationFlowErrorResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInitializationFlowErrorResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices as the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) FromSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices, using the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_CreateListIndices) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIPackageInstallReadyResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts as a SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) AsSecuritySolutionInitializationAPIPackageInstallReadyResult() (SecuritySolutionInitializationAPIPackageInstallReadyResult, error) {
+	var body SecuritySolutionInitializationAPIPackageInstallReadyResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIPackageInstallReadyResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts as the provided SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) FromSecuritySolutionInitializationAPIPackageInstallReadyResult(v SecuritySolutionInitializationAPIPackageInstallReadyResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIPackageInstallReadyResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts, using the provided SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) MergeSecuritySolutionInitializationAPIPackageInstallReadyResult(v SecuritySolutionInitializationAPIPackageInstallReadyResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInitializationFlowErrorResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts as a SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) AsSecuritySolutionInitializationAPIInitializationFlowErrorResult() (SecuritySolutionInitializationAPIInitializationFlowErrorResult, error) {
+	var body SecuritySolutionInitializationAPIInitializationFlowErrorResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInitializationFlowErrorResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts as the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) FromSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts, using the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitAiPrompts) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring as a SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) AsSecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult() (SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult, error) {
+	var body SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring as the provided SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) FromSecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult(v SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring, using the provided SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) MergeSecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult(v SecuritySolutionInitializationAPIInstallDetectionEngineRuleMonitoringAssetsReadyResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInitializationFlowErrorResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring as a SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) AsSecuritySolutionInitializationAPIInitializationFlowErrorResult() (SecuritySolutionInitializationAPIInitializationFlowErrorResult, error) {
+	var body SecuritySolutionInitializationAPIInitializationFlowErrorResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInitializationFlowErrorResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring as the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) FromSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring, using the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitDetectionRuleMonitoring) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIPackageInstallReadyResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection as a SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) AsSecuritySolutionInitializationAPIPackageInstallReadyResult() (SecuritySolutionInitializationAPIPackageInstallReadyResult, error) {
+	var body SecuritySolutionInitializationAPIPackageInstallReadyResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIPackageInstallReadyResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection as the provided SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) FromSecuritySolutionInitializationAPIPackageInstallReadyResult(v SecuritySolutionInitializationAPIPackageInstallReadyResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIPackageInstallReadyResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection, using the provided SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) MergeSecuritySolutionInitializationAPIPackageInstallReadyResult(v SecuritySolutionInitializationAPIPackageInstallReadyResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInitializationFlowErrorResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection as a SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) AsSecuritySolutionInitializationAPIInitializationFlowErrorResult() (SecuritySolutionInitializationAPIInitializationFlowErrorResult, error) {
+	var body SecuritySolutionInitializationAPIInitializationFlowErrorResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInitializationFlowErrorResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection as the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) FromSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection, using the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitEndpointProtection) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIPackageInstallReadyResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules as a SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) AsSecuritySolutionInitializationAPIPackageInstallReadyResult() (SecuritySolutionInitializationAPIPackageInstallReadyResult, error) {
+	var body SecuritySolutionInitializationAPIPackageInstallReadyResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIPackageInstallReadyResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules as the provided SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) FromSecuritySolutionInitializationAPIPackageInstallReadyResult(v SecuritySolutionInitializationAPIPackageInstallReadyResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIPackageInstallReadyResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules, using the provided SecuritySolutionInitializationAPIPackageInstallReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) MergeSecuritySolutionInitializationAPIPackageInstallReadyResult(v SecuritySolutionInitializationAPIPackageInstallReadyResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInitializationFlowErrorResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules as a SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) AsSecuritySolutionInitializationAPIInitializationFlowErrorResult() (SecuritySolutionInitializationAPIInitializationFlowErrorResult, error) {
+	var body SecuritySolutionInitializationAPIInitializationFlowErrorResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInitializationFlowErrorResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules as the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) FromSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules, using the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_InitPrebuiltRules) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecuritySolutionInitializationAPISecurityDataViewsReadyResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews as a SecuritySolutionInitializationAPISecurityDataViewsReadyResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) AsSecuritySolutionInitializationAPISecurityDataViewsReadyResult() (SecuritySolutionInitializationAPISecurityDataViewsReadyResult, error) {
+	var body SecuritySolutionInitializationAPISecurityDataViewsReadyResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPISecurityDataViewsReadyResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews as the provided SecuritySolutionInitializationAPISecurityDataViewsReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) FromSecuritySolutionInitializationAPISecurityDataViewsReadyResult(v SecuritySolutionInitializationAPISecurityDataViewsReadyResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPISecurityDataViewsReadyResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews, using the provided SecuritySolutionInitializationAPISecurityDataViewsReadyResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) MergeSecuritySolutionInitializationAPISecurityDataViewsReadyResult(v SecuritySolutionInitializationAPISecurityDataViewsReadyResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecuritySolutionInitializationAPIInitializationFlowErrorResult returns the union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews as a SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) AsSecuritySolutionInitializationAPIInitializationFlowErrorResult() (SecuritySolutionInitializationAPIInitializationFlowErrorResult, error) {
+	var body SecuritySolutionInitializationAPIInitializationFlowErrorResult
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecuritySolutionInitializationAPIInitializationFlowErrorResult overwrites any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews as the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) FromSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult performs a merge with any union data inside the SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews, using the provided SecuritySolutionInitializationAPIInitializationFlowErrorResult
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) MergeSecuritySolutionInitializationAPIInitializationFlowErrorResult(v SecuritySolutionInitializationAPIInitializationFlowErrorResult) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecuritySolutionInitializationAPIInitializationFlowsResult_SecurityDataViews) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -179904,6 +180825,254 @@ func (t GetCaseCommentDefaultSpace200JSONResponseBody) MarshalJSON() ([]byte, er
 }
 
 func (t *GetCaseCommentDefaultSpace200JSONResponseBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIPlatformErrorResponse returns the union data inside the SetAttacksAssignees400JSONResponseBody as a SecurityDetectionsAPIPlatformErrorResponse
+func (t SetAttacksAssignees400JSONResponseBody) AsSecurityDetectionsAPIPlatformErrorResponse() (SecurityDetectionsAPIPlatformErrorResponse, error) {
+	var body SecurityDetectionsAPIPlatformErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIPlatformErrorResponse overwrites any union data inside the SetAttacksAssignees400JSONResponseBody as the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SetAttacksAssignees400JSONResponseBody) FromSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIPlatformErrorResponse performs a merge with any union data inside the SetAttacksAssignees400JSONResponseBody, using the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SetAttacksAssignees400JSONResponseBody) MergeSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISiemErrorResponse returns the union data inside the SetAttacksAssignees400JSONResponseBody as a SecurityDetectionsAPISiemErrorResponse
+func (t SetAttacksAssignees400JSONResponseBody) AsSecurityDetectionsAPISiemErrorResponse() (SecurityDetectionsAPISiemErrorResponse, error) {
+	var body SecurityDetectionsAPISiemErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISiemErrorResponse overwrites any union data inside the SetAttacksAssignees400JSONResponseBody as the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SetAttacksAssignees400JSONResponseBody) FromSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISiemErrorResponse performs a merge with any union data inside the SetAttacksAssignees400JSONResponseBody, using the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SetAttacksAssignees400JSONResponseBody) MergeSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SetAttacksAssignees400JSONResponseBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SetAttacksAssignees400JSONResponseBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIPlatformErrorResponse returns the union data inside the SearchAttacks400JSONResponseBody as a SecurityDetectionsAPIPlatformErrorResponse
+func (t SearchAttacks400JSONResponseBody) AsSecurityDetectionsAPIPlatformErrorResponse() (SecurityDetectionsAPIPlatformErrorResponse, error) {
+	var body SecurityDetectionsAPIPlatformErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIPlatformErrorResponse overwrites any union data inside the SearchAttacks400JSONResponseBody as the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SearchAttacks400JSONResponseBody) FromSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIPlatformErrorResponse performs a merge with any union data inside the SearchAttacks400JSONResponseBody, using the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SearchAttacks400JSONResponseBody) MergeSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISiemErrorResponse returns the union data inside the SearchAttacks400JSONResponseBody as a SecurityDetectionsAPISiemErrorResponse
+func (t SearchAttacks400JSONResponseBody) AsSecurityDetectionsAPISiemErrorResponse() (SecurityDetectionsAPISiemErrorResponse, error) {
+	var body SecurityDetectionsAPISiemErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISiemErrorResponse overwrites any union data inside the SearchAttacks400JSONResponseBody as the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SearchAttacks400JSONResponseBody) FromSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISiemErrorResponse performs a merge with any union data inside the SearchAttacks400JSONResponseBody, using the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SearchAttacks400JSONResponseBody) MergeSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SearchAttacks400JSONResponseBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SearchAttacks400JSONResponseBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIPlatformErrorResponse returns the union data inside the SetAttacksStatus400JSONResponseBody as a SecurityDetectionsAPIPlatformErrorResponse
+func (t SetAttacksStatus400JSONResponseBody) AsSecurityDetectionsAPIPlatformErrorResponse() (SecurityDetectionsAPIPlatformErrorResponse, error) {
+	var body SecurityDetectionsAPIPlatformErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIPlatformErrorResponse overwrites any union data inside the SetAttacksStatus400JSONResponseBody as the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SetAttacksStatus400JSONResponseBody) FromSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIPlatformErrorResponse performs a merge with any union data inside the SetAttacksStatus400JSONResponseBody, using the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SetAttacksStatus400JSONResponseBody) MergeSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISiemErrorResponse returns the union data inside the SetAttacksStatus400JSONResponseBody as a SecurityDetectionsAPISiemErrorResponse
+func (t SetAttacksStatus400JSONResponseBody) AsSecurityDetectionsAPISiemErrorResponse() (SecurityDetectionsAPISiemErrorResponse, error) {
+	var body SecurityDetectionsAPISiemErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISiemErrorResponse overwrites any union data inside the SetAttacksStatus400JSONResponseBody as the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SetAttacksStatus400JSONResponseBody) FromSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISiemErrorResponse performs a merge with any union data inside the SetAttacksStatus400JSONResponseBody, using the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SetAttacksStatus400JSONResponseBody) MergeSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SetAttacksStatus400JSONResponseBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SetAttacksStatus400JSONResponseBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityDetectionsAPIPlatformErrorResponse returns the union data inside the SetAttacksTags400JSONResponseBody as a SecurityDetectionsAPIPlatformErrorResponse
+func (t SetAttacksTags400JSONResponseBody) AsSecurityDetectionsAPIPlatformErrorResponse() (SecurityDetectionsAPIPlatformErrorResponse, error) {
+	var body SecurityDetectionsAPIPlatformErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIPlatformErrorResponse overwrites any union data inside the SetAttacksTags400JSONResponseBody as the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SetAttacksTags400JSONResponseBody) FromSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIPlatformErrorResponse performs a merge with any union data inside the SetAttacksTags400JSONResponseBody, using the provided SecurityDetectionsAPIPlatformErrorResponse
+func (t *SetAttacksTags400JSONResponseBody) MergeSecurityDetectionsAPIPlatformErrorResponse(v SecurityDetectionsAPIPlatformErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPISiemErrorResponse returns the union data inside the SetAttacksTags400JSONResponseBody as a SecurityDetectionsAPISiemErrorResponse
+func (t SetAttacksTags400JSONResponseBody) AsSecurityDetectionsAPISiemErrorResponse() (SecurityDetectionsAPISiemErrorResponse, error) {
+	var body SecurityDetectionsAPISiemErrorResponse
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPISiemErrorResponse overwrites any union data inside the SetAttacksTags400JSONResponseBody as the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SetAttacksTags400JSONResponseBody) FromSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPISiemErrorResponse performs a merge with any union data inside the SetAttacksTags400JSONResponseBody, using the provided SecurityDetectionsAPISiemErrorResponse
+func (t *SetAttacksTags400JSONResponseBody) MergeSecurityDetectionsAPISiemErrorResponse(v SecurityDetectionsAPISiemErrorResponse) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SetAttacksTags400JSONResponseBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SetAttacksTags400JSONResponseBody) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -191704,6 +192873,9 @@ type ClientInterface interface {
 
 	UpdateCaseConfigurationDefaultSpace(ctx context.Context, configurationId CasesConfigurationId, body UpdateCaseConfigurationDefaultSpaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetApplicableFieldsDefaultSpace request
+	GetApplicableFieldsDefaultSpace(ctx context.Context, params *GetApplicableFieldsDefaultSpaceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetCaseReportersDefaultSpace request
 	GetCaseReportersDefaultSpace(ctx context.Context, params *GetCaseReportersDefaultSpaceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -191748,6 +192920,9 @@ type ClientInterface interface {
 	PushCaseDefaultSpaceWithBody(ctx context.Context, caseId CasesCaseId, connectorId CasesConnectorId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PushCaseDefaultSpace(ctx context.Context, caseId CasesCaseId, connectorId CasesConnectorId, body PushCaseDefaultSpaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCaseApplicableFieldsDefaultSpace request
+	GetCaseApplicableFieldsDefaultSpace(ctx context.Context, caseId CasesCaseId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AddCaseFileDefaultSpaceWithBody request with any body
 	AddCaseFileDefaultSpaceWithBody(ctx context.Context, caseId CasesCaseId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -191809,6 +192984,26 @@ type ClientInterface interface {
 	PreviewSwapDataViewsDefaultWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PreviewSwapDataViewsDefault(ctx context.Context, body PreviewSwapDataViewsDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetAttacksAssigneesWithBody request with any body
+	SetAttacksAssigneesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetAttacksAssignees(ctx context.Context, body SetAttacksAssigneesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchAttacksWithBody request with any body
+	SearchAttacksWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SearchAttacks(ctx context.Context, body SearchAttacksJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetAttacksStatusWithBody request with any body
+	SetAttacksStatusWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetAttacksStatus(ctx context.Context, body SetAttacksStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetAttacksTagsWithBody request with any body
+	SetAttacksTagsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetAttacksTags(ctx context.Context, body SetAttacksTagsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteAlertsIndex request
 	DeleteAlertsIndex(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -193192,6 +194387,11 @@ type ClientInterface interface {
 
 	// FindPrompts request
 	FindPrompts(ctx context.Context, params *FindPromptsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// InitializeSecuritySolutionWithBody request with any body
+	InitializeSecuritySolutionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	InitializeSecuritySolution(ctx context.Context, body InitializeSecuritySolutionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PostUrlWithBody request with any body
 	PostUrlWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -195745,6 +196945,18 @@ func (c *Client) UpdateCaseConfigurationDefaultSpace(ctx context.Context, config
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetApplicableFieldsDefaultSpace(ctx context.Context, params *GetApplicableFieldsDefaultSpaceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApplicableFieldsDefaultSpaceRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetCaseReportersDefaultSpace(ctx context.Context, params *GetCaseReportersDefaultSpaceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCaseReportersDefaultSpaceRequest(c.Server, params)
 	if err != nil {
@@ -195927,6 +197139,18 @@ func (c *Client) PushCaseDefaultSpaceWithBody(ctx context.Context, caseId CasesC
 
 func (c *Client) PushCaseDefaultSpace(ctx context.Context, caseId CasesCaseId, connectorId CasesConnectorId, body PushCaseDefaultSpaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPushCaseDefaultSpaceRequest(c.Server, caseId, connectorId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetCaseApplicableFieldsDefaultSpace(ctx context.Context, caseId CasesCaseId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCaseApplicableFieldsDefaultSpaceRequest(c.Server, caseId)
 	if err != nil {
 		return nil, err
 	}
@@ -196203,6 +197427,102 @@ func (c *Client) PreviewSwapDataViewsDefaultWithBody(ctx context.Context, conten
 
 func (c *Client) PreviewSwapDataViewsDefault(ctx context.Context, body PreviewSwapDataViewsDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPreviewSwapDataViewsDefaultRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAttacksAssigneesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAttacksAssigneesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAttacksAssignees(ctx context.Context, body SetAttacksAssigneesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAttacksAssigneesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchAttacksWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchAttacksRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchAttacks(ctx context.Context, body SearchAttacksJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchAttacksRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAttacksStatusWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAttacksStatusRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAttacksStatus(ctx context.Context, body SetAttacksStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAttacksStatusRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAttacksTagsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAttacksTagsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetAttacksTags(ctx context.Context, body SetAttacksTagsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetAttacksTagsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -202359,6 +203679,30 @@ func (c *Client) PerformPromptsBulkAction(ctx context.Context, body PerformPromp
 
 func (c *Client) FindPrompts(ctx context.Context, params *FindPromptsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFindPromptsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InitializeSecuritySolutionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInitializeSecuritySolutionRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InitializeSecuritySolution(ctx context.Context, body InitializeSecuritySolutionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInitializeSecuritySolutionRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -211414,6 +212758,68 @@ func NewUpdateCaseConfigurationDefaultSpaceRequestWithBody(server string, config
 	return req, nil
 }
 
+// NewGetApplicableFieldsDefaultSpaceRequest generates requests for GetApplicableFieldsDefaultSpace
+func NewGetApplicableFieldsDefaultSpaceRequest(server string, params *GetApplicableFieldsDefaultSpaceParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/cases/fields")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner", params.Owner, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.TemplateId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "templateId", *params.TemplateId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetCaseReportersDefaultSpaceRequest generates requests for GetCaseReportersDefaultSpace
 func NewGetCaseReportersDefaultSpaceRequest(server string, params *GetCaseReportersDefaultSpaceParams) (*http.Request, error) {
 	var err error
@@ -212150,6 +213556,40 @@ func NewPushCaseDefaultSpaceRequestWithBody(server string, caseId CasesCaseId, c
 	return req, nil
 }
 
+// NewGetCaseApplicableFieldsDefaultSpaceRequest generates requests for GetCaseApplicableFieldsDefaultSpace
+func NewGetCaseApplicableFieldsDefaultSpaceRequest(server string, caseId CasesCaseId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "caseId", caseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/cases/%s/fields", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAddCaseFileDefaultSpaceRequestWithBody generates requests for AddCaseFileDefaultSpace with any type of body
 func NewAddCaseFileDefaultSpaceRequestWithBody(server string, caseId CasesCaseId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
@@ -212878,6 +214318,166 @@ func NewPreviewSwapDataViewsDefaultRequestWithBody(server string, contentType st
 	}
 
 	operationPath := fmt.Sprintf("/api/data_views/swap_references/_preview")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSetAttacksAssigneesRequest calls the generic SetAttacksAssignees builder with application/json body
+func NewSetAttacksAssigneesRequest(server string, body SetAttacksAssigneesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetAttacksAssigneesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSetAttacksAssigneesRequestWithBody generates requests for SetAttacksAssignees with any type of body
+func NewSetAttacksAssigneesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/detection_engine/attacks/assignees")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSearchAttacksRequest calls the generic SearchAttacks builder with application/json body
+func NewSearchAttacksRequest(server string, body SearchAttacksJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchAttacksRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSearchAttacksRequestWithBody generates requests for SearchAttacks with any type of body
+func NewSearchAttacksRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/detection_engine/attacks/search")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSetAttacksStatusRequest calls the generic SetAttacksStatus builder with application/json body
+func NewSetAttacksStatusRequest(server string, body SetAttacksStatusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetAttacksStatusRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSetAttacksStatusRequestWithBody generates requests for SetAttacksStatus with any type of body
+func NewSetAttacksStatusRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/detection_engine/attacks/status")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSetAttacksTagsRequest calls the generic SetAttacksTags builder with application/json body
+func NewSetAttacksTagsRequest(server string, body SetAttacksTagsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetAttacksTagsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSetAttacksTagsRequestWithBody generates requests for SetAttacksTags with any type of body
+func NewSetAttacksTagsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/detection_engine/attacks/tags")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -232020,6 +233620,46 @@ func NewFindPromptsRequest(server string, params *FindPromptsParams) (*http.Requ
 	return req, nil
 }
 
+// NewInitializeSecuritySolutionRequest calls the generic InitializeSecuritySolution builder with application/json body
+func NewInitializeSecuritySolutionRequest(server string, body InitializeSecuritySolutionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewInitializeSecuritySolutionRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewInitializeSecuritySolutionRequestWithBody generates requests for InitializeSecuritySolution with any type of body
+func NewInitializeSecuritySolutionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/security_solution/initialize")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewPostUrlRequest calls the generic PostUrl builder with application/json body
 func NewPostUrlRequest(server string, body PostUrlJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -241410,6 +243050,9 @@ type ClientWithResponsesInterface interface {
 
 	UpdateCaseConfigurationDefaultSpaceWithResponse(ctx context.Context, configurationId CasesConfigurationId, body UpdateCaseConfigurationDefaultSpaceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCaseConfigurationDefaultSpaceResponse, error)
 
+	// GetApplicableFieldsDefaultSpaceWithResponse request
+	GetApplicableFieldsDefaultSpaceWithResponse(ctx context.Context, params *GetApplicableFieldsDefaultSpaceParams, reqEditors ...RequestEditorFn) (*GetApplicableFieldsDefaultSpaceResponse, error)
+
 	// GetCaseReportersDefaultSpaceWithResponse request
 	GetCaseReportersDefaultSpaceWithResponse(ctx context.Context, params *GetCaseReportersDefaultSpaceParams, reqEditors ...RequestEditorFn) (*GetCaseReportersDefaultSpaceResponse, error)
 
@@ -241454,6 +243097,9 @@ type ClientWithResponsesInterface interface {
 	PushCaseDefaultSpaceWithBodyWithResponse(ctx context.Context, caseId CasesCaseId, connectorId CasesConnectorId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PushCaseDefaultSpaceResponse, error)
 
 	PushCaseDefaultSpaceWithResponse(ctx context.Context, caseId CasesCaseId, connectorId CasesConnectorId, body PushCaseDefaultSpaceJSONRequestBody, reqEditors ...RequestEditorFn) (*PushCaseDefaultSpaceResponse, error)
+
+	// GetCaseApplicableFieldsDefaultSpaceWithResponse request
+	GetCaseApplicableFieldsDefaultSpaceWithResponse(ctx context.Context, caseId CasesCaseId, reqEditors ...RequestEditorFn) (*GetCaseApplicableFieldsDefaultSpaceResponse, error)
 
 	// AddCaseFileDefaultSpaceWithBodyWithResponse request with any body
 	AddCaseFileDefaultSpaceWithBodyWithResponse(ctx context.Context, caseId CasesCaseId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddCaseFileDefaultSpaceResponse, error)
@@ -241515,6 +243161,26 @@ type ClientWithResponsesInterface interface {
 	PreviewSwapDataViewsDefaultWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewSwapDataViewsDefaultResponse, error)
 
 	PreviewSwapDataViewsDefaultWithResponse(ctx context.Context, body PreviewSwapDataViewsDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewSwapDataViewsDefaultResponse, error)
+
+	// SetAttacksAssigneesWithBodyWithResponse request with any body
+	SetAttacksAssigneesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksAssigneesResponse, error)
+
+	SetAttacksAssigneesWithResponse(ctx context.Context, body SetAttacksAssigneesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAttacksAssigneesResponse, error)
+
+	// SearchAttacksWithBodyWithResponse request with any body
+	SearchAttacksWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAttacksResponse, error)
+
+	SearchAttacksWithResponse(ctx context.Context, body SearchAttacksJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAttacksResponse, error)
+
+	// SetAttacksStatusWithBodyWithResponse request with any body
+	SetAttacksStatusWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksStatusResponse, error)
+
+	SetAttacksStatusWithResponse(ctx context.Context, body SetAttacksStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAttacksStatusResponse, error)
+
+	// SetAttacksTagsWithBodyWithResponse request with any body
+	SetAttacksTagsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksTagsResponse, error)
+
+	SetAttacksTagsWithResponse(ctx context.Context, body SetAttacksTagsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAttacksTagsResponse, error)
 
 	// DeleteAlertsIndexWithResponse request
 	DeleteAlertsIndexWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteAlertsIndexResponse, error)
@@ -242898,6 +244564,11 @@ type ClientWithResponsesInterface interface {
 
 	// FindPromptsWithResponse request
 	FindPromptsWithResponse(ctx context.Context, params *FindPromptsParams, reqEditors ...RequestEditorFn) (*FindPromptsResponse, error)
+
+	// InitializeSecuritySolutionWithBodyWithResponse request with any body
+	InitializeSecuritySolutionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InitializeSecuritySolutionResponse, error)
+
+	InitializeSecuritySolutionWithResponse(ctx context.Context, body InitializeSecuritySolutionJSONRequestBody, reqEditors ...RequestEditorFn) (*InitializeSecuritySolutionResponse, error)
 
 	// PostUrlWithBodyWithResponse request with any body
 	PostUrlWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostUrlResponse, error)
@@ -247521,6 +249192,39 @@ func (r UpdateCaseConfigurationDefaultSpaceResponse) ContentType() string {
 	return ""
 }
 
+type GetApplicableFieldsDefaultSpaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *CasesApplicableFieldsResponse
+	JSON400      *CasesResponse4xx
+	JSON401      *CasesResponse4xx
+	JSON403      *CasesResponse4xx
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApplicableFieldsDefaultSpaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApplicableFieldsDefaultSpaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetApplicableFieldsDefaultSpaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetCaseReportersDefaultSpaceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -247922,6 +249626,39 @@ func (r PushCaseDefaultSpaceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PushCaseDefaultSpaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCaseApplicableFieldsDefaultSpaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *CasesApplicableFieldsResponse
+	JSON401      *CasesResponse4xx
+	JSON403      *CasesResponse4xx
+	JSON404      *CasesResponse4xx
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCaseApplicableFieldsDefaultSpaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCaseApplicableFieldsDefaultSpaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCaseApplicableFieldsDefaultSpaceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -248467,6 +250204,138 @@ func (r PreviewSwapDataViewsDefaultResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PreviewSwapDataViewsDefaultResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetAttacksAssigneesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+	JSON400      *SetAttacksAssignees400JSONResponseBody
+	JSON401      *SecurityDetectionsAPIPlatformErrorResponse
+	JSON500      *SecurityDetectionsAPISiemErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SetAttacksAssigneesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetAttacksAssigneesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetAttacksAssigneesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SearchAttacksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+	JSON400      *SearchAttacks400JSONResponseBody
+	JSON401      *SecurityDetectionsAPIPlatformErrorResponse
+	JSON500      *SecurityDetectionsAPISiemErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchAttacksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchAttacksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SearchAttacksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetAttacksStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+	JSON400      *SetAttacksStatus400JSONResponseBody
+	JSON401      *SecurityDetectionsAPIPlatformErrorResponse
+	JSON500      *SecurityDetectionsAPISiemErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SetAttacksStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetAttacksStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetAttacksStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetAttacksTagsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *map[string]interface{}
+	JSON400      *SetAttacksTags400JSONResponseBody
+	JSON401      *SecurityDetectionsAPIPlatformErrorResponse
+	JSON500      *SecurityDetectionsAPISiemErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SetAttacksTagsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetAttacksTagsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetAttacksTagsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -262061,6 +263930,39 @@ func (r FindPromptsResponse) ContentType() string {
 	return ""
 }
 
+type InitializeSecuritySolutionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Flows Per-flow results. Only requested flows appear in the response, so all properties are optional. Each flow is either a typed ready result or an error result.
+		Flows SecuritySolutionInitializationAPIInitializationFlowsResult `json:"flows"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r InitializeSecuritySolutionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InitializeSecuritySolutionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r InitializeSecuritySolutionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type PostUrlResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -268813,6 +270715,15 @@ func (c *ClientWithResponses) UpdateCaseConfigurationDefaultSpaceWithResponse(ct
 	return ParseUpdateCaseConfigurationDefaultSpaceResponse(rsp)
 }
 
+// GetApplicableFieldsDefaultSpaceWithResponse request returning *GetApplicableFieldsDefaultSpaceResponse
+func (c *ClientWithResponses) GetApplicableFieldsDefaultSpaceWithResponse(ctx context.Context, params *GetApplicableFieldsDefaultSpaceParams, reqEditors ...RequestEditorFn) (*GetApplicableFieldsDefaultSpaceResponse, error) {
+	rsp, err := c.GetApplicableFieldsDefaultSpace(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApplicableFieldsDefaultSpaceResponse(rsp)
+}
+
 // GetCaseReportersDefaultSpaceWithResponse request returning *GetCaseReportersDefaultSpaceResponse
 func (c *ClientWithResponses) GetCaseReportersDefaultSpaceWithResponse(ctx context.Context, params *GetCaseReportersDefaultSpaceParams, reqEditors ...RequestEditorFn) (*GetCaseReportersDefaultSpaceResponse, error) {
 	rsp, err := c.GetCaseReportersDefaultSpace(ctx, params, reqEditors...)
@@ -268952,6 +270863,15 @@ func (c *ClientWithResponses) PushCaseDefaultSpaceWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParsePushCaseDefaultSpaceResponse(rsp)
+}
+
+// GetCaseApplicableFieldsDefaultSpaceWithResponse request returning *GetCaseApplicableFieldsDefaultSpaceResponse
+func (c *ClientWithResponses) GetCaseApplicableFieldsDefaultSpaceWithResponse(ctx context.Context, caseId CasesCaseId, reqEditors ...RequestEditorFn) (*GetCaseApplicableFieldsDefaultSpaceResponse, error) {
+	rsp, err := c.GetCaseApplicableFieldsDefaultSpace(ctx, caseId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCaseApplicableFieldsDefaultSpaceResponse(rsp)
 }
 
 // AddCaseFileDefaultSpaceWithBodyWithResponse request with arbitrary body returning *AddCaseFileDefaultSpaceResponse
@@ -269151,6 +271071,74 @@ func (c *ClientWithResponses) PreviewSwapDataViewsDefaultWithResponse(ctx contex
 		return nil, err
 	}
 	return ParsePreviewSwapDataViewsDefaultResponse(rsp)
+}
+
+// SetAttacksAssigneesWithBodyWithResponse request with arbitrary body returning *SetAttacksAssigneesResponse
+func (c *ClientWithResponses) SetAttacksAssigneesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksAssigneesResponse, error) {
+	rsp, err := c.SetAttacksAssigneesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAttacksAssigneesResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetAttacksAssigneesWithResponse(ctx context.Context, body SetAttacksAssigneesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAttacksAssigneesResponse, error) {
+	rsp, err := c.SetAttacksAssignees(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAttacksAssigneesResponse(rsp)
+}
+
+// SearchAttacksWithBodyWithResponse request with arbitrary body returning *SearchAttacksResponse
+func (c *ClientWithResponses) SearchAttacksWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAttacksResponse, error) {
+	rsp, err := c.SearchAttacksWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchAttacksResponse(rsp)
+}
+
+func (c *ClientWithResponses) SearchAttacksWithResponse(ctx context.Context, body SearchAttacksJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAttacksResponse, error) {
+	rsp, err := c.SearchAttacks(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchAttacksResponse(rsp)
+}
+
+// SetAttacksStatusWithBodyWithResponse request with arbitrary body returning *SetAttacksStatusResponse
+func (c *ClientWithResponses) SetAttacksStatusWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksStatusResponse, error) {
+	rsp, err := c.SetAttacksStatusWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAttacksStatusResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetAttacksStatusWithResponse(ctx context.Context, body SetAttacksStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAttacksStatusResponse, error) {
+	rsp, err := c.SetAttacksStatus(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAttacksStatusResponse(rsp)
+}
+
+// SetAttacksTagsWithBodyWithResponse request with arbitrary body returning *SetAttacksTagsResponse
+func (c *ClientWithResponses) SetAttacksTagsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksTagsResponse, error) {
+	rsp, err := c.SetAttacksTagsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAttacksTagsResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetAttacksTagsWithResponse(ctx context.Context, body SetAttacksTagsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAttacksTagsResponse, error) {
+	rsp, err := c.SetAttacksTags(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetAttacksTagsResponse(rsp)
 }
 
 // DeleteAlertsIndexWithResponse request returning *DeleteAlertsIndexResponse
@@ -273612,6 +275600,23 @@ func (c *ClientWithResponses) FindPromptsWithResponse(ctx context.Context, param
 		return nil, err
 	}
 	return ParseFindPromptsResponse(rsp)
+}
+
+// InitializeSecuritySolutionWithBodyWithResponse request with arbitrary body returning *InitializeSecuritySolutionResponse
+func (c *ClientWithResponses) InitializeSecuritySolutionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InitializeSecuritySolutionResponse, error) {
+	rsp, err := c.InitializeSecuritySolutionWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInitializeSecuritySolutionResponse(rsp)
+}
+
+func (c *ClientWithResponses) InitializeSecuritySolutionWithResponse(ctx context.Context, body InitializeSecuritySolutionJSONRequestBody, reqEditors ...RequestEditorFn) (*InitializeSecuritySolutionResponse, error) {
+	rsp, err := c.InitializeSecuritySolution(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInitializeSecuritySolutionResponse(rsp)
 }
 
 // PostUrlWithBodyWithResponse request with arbitrary body returning *PostUrlResponse
@@ -279333,6 +281338,53 @@ func ParseUpdateCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*Upda
 	return response, nil
 }
 
+// ParseGetApplicableFieldsDefaultSpaceResponse parses an HTTP response from a GetApplicableFieldsDefaultSpaceWithResponse call
+func ParseGetApplicableFieldsDefaultSpaceResponse(rsp *http.Response) (*GetApplicableFieldsDefaultSpaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApplicableFieldsDefaultSpaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CasesApplicableFieldsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest CasesResponse4xx
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest CasesResponse4xx
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest CasesResponse4xx
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetCaseReportersDefaultSpaceResponse parses an HTTP response from a GetCaseReportersDefaultSpaceWithResponse call
 func ParseGetCaseReportersDefaultSpaceResponse(rsp *http.Response) (*GetCaseReportersDefaultSpaceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -279754,6 +281806,53 @@ func ParsePushCaseDefaultSpaceResponse(rsp *http.Response) (*PushCaseDefaultSpac
 			return nil, err
 		}
 		response.JSON401 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCaseApplicableFieldsDefaultSpaceResponse parses an HTTP response from a GetCaseApplicableFieldsDefaultSpaceWithResponse call
+func ParseGetCaseApplicableFieldsDefaultSpaceResponse(rsp *http.Response) (*GetCaseApplicableFieldsDefaultSpaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCaseApplicableFieldsDefaultSpaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CasesApplicableFieldsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest CasesResponse4xx
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest CasesResponse4xx
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest CasesResponse4xx
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -280266,6 +282365,194 @@ func ParsePreviewSwapDataViewsDefaultResponse(rsp *http.Response) (*PreviewSwapD
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetAttacksAssigneesResponse parses an HTTP response from a SetAttacksAssigneesWithResponse call
+func ParseSetAttacksAssigneesResponse(rsp *http.Response) (*SetAttacksAssigneesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetAttacksAssigneesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest SetAttacksAssignees400JSONResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest SecurityDetectionsAPIPlatformErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest SecurityDetectionsAPISiemErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSearchAttacksResponse parses an HTTP response from a SearchAttacksWithResponse call
+func ParseSearchAttacksResponse(rsp *http.Response) (*SearchAttacksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchAttacksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest SearchAttacks400JSONResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest SecurityDetectionsAPIPlatformErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest SecurityDetectionsAPISiemErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetAttacksStatusResponse parses an HTTP response from a SetAttacksStatusWithResponse call
+func ParseSetAttacksStatusResponse(rsp *http.Response) (*SetAttacksStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetAttacksStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest SetAttacksStatus400JSONResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest SecurityDetectionsAPIPlatformErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest SecurityDetectionsAPISiemErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetAttacksTagsResponse parses an HTTP response from a SetAttacksTagsWithResponse call
+func ParseSetAttacksTagsResponse(rsp *http.Response) (*SetAttacksTagsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetAttacksTagsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest SetAttacksTags400JSONResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest SecurityDetectionsAPIPlatformErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest SecurityDetectionsAPISiemErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
 
 	}
 
@@ -294067,6 +296354,35 @@ func ParseFindPromptsResponse(rsp *http.Response) (*FindPromptsResponse, error) 
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseInitializeSecuritySolutionResponse parses an HTTP response from a InitializeSecuritySolutionWithResponse call
+func ParseInitializeSecuritySolutionResponse(rsp *http.Response) (*InitializeSecuritySolutionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &InitializeSecuritySolutionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Flows Per-flow results. Only requested flows appear in the response, so all properties are optional. Each flow is either a typed ready result or an error result.
+			Flows SecuritySolutionInitializationAPIInitializationFlowsResult `json:"flows"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
