@@ -18,3 +18,8 @@ variable "kibana_endpoints" {
   description = "Kibana base URLs for the entity-local connection block"
   type        = list(string)
 }
+
+variable "api_key" {
+  type    = string
+  default = ""
+}

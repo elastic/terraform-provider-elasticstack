@@ -57,6 +57,14 @@ func TestAccReproduceIssue4282(t *testing.T) {
 	roleName := "issue4282-role-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	password := "Password123!"
 
+	installVariables := acctest.KibanaConnectionVariables()
+	// Override the helper's administrative credentials explicitly: the install
+	// step must authenticate as the space-restricted user to exercise #4282.
+	installVariables["username"] = config.StringVariable(username)
+	installVariables["password"] = config.StringVariable(password)
+	installVariables["space_id"] = config.StringVariable(spaceID)
+	installVariables["role_name"] = config.StringVariable(roleName)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -76,12 +84,7 @@ func TestAccReproduceIssue4282(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("install"),
-				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
-					"space_id":  config.StringVariable(spaceID),
-					"username":  config.StringVariable(username),
-					"password":  config.StringVariable(password),
-					"role_name": config.StringVariable(roleName),
-				}),
+				ConfigVariables:          installVariables,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", testAccTCPIntegrationName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", testAccTCPIntegrationVersion),
