@@ -52,6 +52,9 @@ func writeIntegration(
 
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
+
+	scope := resolveSpaceScope(planModel.SpaceID)
+
 	installOptions := fleet.InstallPackageOptions{
 		Force:             planModel.Force.ValueBool(),
 		Prerelease:        planModel.Prerelease.ValueBool(),
@@ -66,10 +69,7 @@ func writeIntegration(
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
-	// Pass the requested space through to the Fleet install API.
-	if typeutils.IsKnown(planModel.SpaceID) {
-		installOptions.SpaceID = planModel.SpaceID.ValueString()
-	}
+	installOptions.SpaceID = scope.id
 
 	installDiags := fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 	diags.Append(installDiags...)
@@ -77,7 +77,9 @@ func writeIntegration(
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, "", false)
+	// Poll via the configured space API path but treat global install status only.
+	// Strict target-space detection is deferred to installInSpace's later wait.
+	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, scope)
 	if waitErr != nil {
 		diags.AddError(
 			"Failed to install Fleet integration package",
@@ -86,19 +88,18 @@ func writeIntegration(
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	spaceID := installOptions.SpaceID
-	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	globallyInstalled := fleetPackageInstalled(pkg, "", false)
-	installedInTargetSpace := fleetPackageInstalled(pkg, spaceID, true)
-	installedElsewhere := globallyInstalled && spaceID != "" && !installedInTargetSpace
+	globallyInstalled := fleetPackageInstalledGlobally(pkg)
+	installedInTargetSpace := fleetPackageInstalledInSpace(pkg, scope.id)
+	installedElsewhere := globallyInstalled && scope.id != "" && !installedInTargetSpace
 
 	if installedElsewhere {
-		spaceDiags := installInSpace(ctx, client, fleetClient, name, version, spaceID, planModel.Force.ValueBool())
+		spaceDiags := installInSpace(ctx, client, fleetClient, name, version, scope.id, planModel.Force.ValueBool())
 		diags.Append(spaceDiags...)
 		if diags.HasError() {
 			return entitycore.KibanaWriteResult[integrationModel]{}, diags
@@ -146,7 +147,7 @@ func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, f
 		return diags
 	}
 
-	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, spaceID, true)
+	waitErr := waitForFleetIntegrationInstalledInSpace(ctx, fleetClient, name, version, spaceScope{id: spaceID})
 	if waitErr != nil {
 		diags.AddError(
 			"Failed to install Fleet integration package",
@@ -157,9 +158,25 @@ func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, f
 	return diags
 }
 
-func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Client, name, version, spaceID string, spaceAware bool) error {
+func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
+	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, fleetPackageInstalledGlobally)
+}
+
+func waitForFleetIntegrationInstalledInSpace(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
+	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, func(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
+		return fleetPackageInstalledInSpace(pkg, scope.id)
+	})
+}
+
+func waitForFleetIntegrationInstalledState(
+	ctx context.Context,
+	fleetClient *fleet.Client,
+	name, version string,
+	scope spaceScope,
+	installed func(*kbapi.KibanaHTTPAPIsGetPackageInfo) bool,
+) error {
 	return asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
-		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 		if getDiags.HasError() {
 			return false, fmt.Errorf("failed to read package installation status: %v", getDiags)
 		}
@@ -167,7 +184,7 @@ func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Cl
 			return false, nil
 		}
 
-		if fleetPackageInstalled(pkg, spaceID, spaceAware) {
+		if installed(pkg) {
 			return true, nil
 		}
 
