@@ -89,23 +89,23 @@ on:
         echo "summary<<EOF" >> "$GITHUB_OUTPUT"
         echo "$summary" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
-model: "llm-gateway/DeepSeek-V4-Flash"
+model: "deepseek/deepseek-v4-flash"
 engine:
   id: claude
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-# Disable the per-run AI Credits budget guard. The model alias
-# "llm-gateway/DeepSeek-V4-Flash" is a private Elastic LiteLLM alias absent from
-# the AWF api-proxy's built-in pricing table and the models.dev catalog. gh-aw
-# (v0.81.6) does not expose apiProxy.defaultAiCreditsPricing in frontmatter, so
-# with the guard active the proxy rejects every request with HTTP 400
-# (unknown_model_ai_credits). Setting -1 omits maxAiCredits from the generated
-# AWF config (and disables token steering), letting the agent run. The daily
-# guardrail (max-daily-ai-credits, default 5000/day) still applies.
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "deepseek/deepseek-v4-flash" may be absent from the AWF api-proxy's built-in
+# pricing table and the models.dev catalog. gh-aw (v0.81.6) does not expose
+# apiProxy.defaultAiCreditsPricing in frontmatter, so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config (and disables
+# token steering), letting the agent run. The daily guardrail
+# (max-daily-ai-credits, default 5000/day) still applies.
 max-ai-credits: -1
 models:
   providers:
@@ -142,7 +142,7 @@ safe-outputs:
     max: 1
     report-as-issue: false
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+  allowed: [defaults, node, go, openrouter.ai]
 if: >-
   needs.pre_activation.outputs.found == 'true'
 steps: []

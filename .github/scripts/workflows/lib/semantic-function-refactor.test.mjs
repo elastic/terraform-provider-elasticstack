@@ -81,37 +81,37 @@ test("semantic-function-refactor workflow safe outputs and compiled lock keep se
 	assert.match(lock, /Maximum 3 issue\(s\) can be created/);
 });
 
-test("semantic-function-refactor workflow routes Claude through LiteLLM with secret-backed API key", () => {
+test("semantic-function-refactor workflow routes Claude through OpenRouter with secret-backed API key", () => {
 	const source = workflowSource();
 	assert.match(source, /engine:[\s\S]*?\n\s*id:\s*claude/);
-	assert.match(source, /model: "?llm-gateway\/claude-sonnet-5"?/);
+	assert.match(source, /model: "?anthropic\/claude-sonnet-5"?/);
 	assert.match(
 		source,
-		/ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai"?/,
+		/ANTHROPIC_BASE_URL:\s*"?https:\/\/openrouter\.ai\/api"?/,
 	);
 	assert.match(
 		source,
-		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/,
+		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/,
 	);
 });
 
-test("semantic-function-refactor source workflow configures engine env with base URL and model", () => {
+test("semantic-function-refactor source workflow configures engine env with OpenRouter base URL and model", () => {
 	const source = workflowSource();
 	assert.match(source, /engine:[\s\S]*?\n\s*id:\s*claude/);
-	assert.match(source, /model: "?llm-gateway\/claude-sonnet-5"?/);
+	assert.match(source, /model: "?anthropic\/claude-sonnet-5"?/);
 	assert.match(
 		source,
-		/ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai\/?"?/,
+		/ANTHROPIC_BASE_URL:\s*"?https:\/\/openrouter\.ai\/api"?/,
 	);
 	assert.match(
 		source,
-		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/,
+		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/,
 	);
 });
 
-test("semantic-function-refactor source workflow includes LiteLLM in allowed network domains", () => {
+test("semantic-function-refactor source workflow includes OpenRouter in allowed network domains", () => {
 	const source = workflowSource();
-	assert.match(source, /allowed:[\s\S]*?elastic\.litellm-prod\.ai/);
+	assert.match(source, /allowed:[\s\S]*?openrouter\.ai/);
 });
 
 test("workflow configures Serena MCP server for semantic Go analysis", () => {
@@ -154,14 +154,11 @@ test("workflow configures bash tools for Go source navigation", () => {
 	);
 });
 
-test("compiled lock preserves LiteLLM model and allowed domains", () => {
+test("compiled lock preserves OpenRouter model and allowed domains", () => {
 	const lock = lockSource();
-	assert.match(lock, /llm-gateway\/claude-sonnet-5/);
-	assert.match(lock, /elastic\.litellm-prod\.ai/);
-	assert.match(
-		lock,
-		/GH_AW_INFO_ALLOWED_DOMAINS:[\s\S]*elastic\.litellm-prod\.ai/,
-	);
+	assert.match(lock, /anthropic\/claude-sonnet-5/);
+	assert.match(lock, /openrouter\.ai/);
+	assert.match(lock, /GH_AW_INFO_ALLOWED_DOMAINS:[\s\S]*openrouter\.ai/);
 });
 
 test("workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job", () => {

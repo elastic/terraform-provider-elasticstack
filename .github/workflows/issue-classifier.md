@@ -29,22 +29,22 @@ on:
           await fn({ github, context, core });
 checkout:
   fetch-depth: 0
-model: "llm-gateway/claude-sonnet-5"
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-# Disable the per-run AI Credits budget guard. The model alias
-# "llm-gateway/claude-sonnet-5" is a private Elastic LiteLLM alias absent from
-# the AWF api-proxy's built-in pricing table. gh-aw's models.providers
-# frontmatter override does not propagate to apiProxy.defaultAiCreditsPricing
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
 # https://github.com/github/gh-aw/pull/47571), so with the guard active the
-# proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
 # Setting -1 omits maxAiCredits from the generated AWF config, letting the
 # agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
 # still applies.
@@ -72,7 +72,7 @@ safe-outputs:
     max: 1
     report-as-issue: false
 network:
-  allowed: [defaults, elastic.litellm-prod.ai]
+  allowed: [defaults, openrouter.ai]
 if: >-
   needs.pre_activation.outputs.issue_count != '0'
 jobs:
@@ -104,22 +104,27 @@ The workflow reached this point only because `issue_count` is non-zero. All issu
 For each issue, read its title and body via the GitHub MCP tools. Assign exactly one of the following categories:
 
 ### `needs-research`
+
 A **feature request** — a request for a new Terraform resource, data source, or new functionality on an existing entity or the provider itself. The request must be **sufficiently specific and well-defined** to route to the research-factory pipeline (i.e., there is a named Elastic API or a clear product area with an identifiable scope).
 
 **Examples that qualify**: "Add support for the Elasticsearch Enrich Policy API", "Support for `elasticstack_kibana_saved_object` resource"
 **Examples that do NOT qualify**: "Better support for X", "Improve the provider" (too vague → use `needs-human`)
 
 ### `needs-reproduction`
+
 A **bug report** that contains at least one of: a Terraform configuration demonstrating the problem, an error message or stack trace, or a thorough description of steps to reproduce. Suitable to route to the reproducer-factory pipeline.
 
 **Examples that qualify**: Issue includes a `resource/data/ephemeral "..."` block, a provider error message, or explicit reproduction steps
 **Examples that do NOT qualify**: "Resource X is broken" with no config, no error, and no steps (→ use `needs-human`)
 
 ### `needs-spec`
+
 The issue already contains sufficient detail to describe the solution accurately — both the problem **and** the intended solution design (schema shape, behaviour, acceptance criteria) are clearly articulated in enough detail that an implementer could start coding without further research. Use this category **rarely and only when the bar is unambiguously met**. A feature request that names the API but does not propose the schema or acceptance criteria is `needs-research`, not `needs-spec`. If in doubt, use `needs-research` or `needs-human` instead.
 
 ### `needs-human`
+
 The **catch-all**. Use this when:
+
 - The issue does not clearly fit any other category
 - The request is too vague to route to a factory pipeline
 - The issue needs clarification or additional detail from the reporter
@@ -153,6 +158,7 @@ Repeat for every issue in the list.
 Use a comment like the following as a model for each category. Adapt the language to the specific issue.
 
 **For `needs-research`:**
+
 ```
 <!-- gha-issue-classifier -->
 Thanks for filing this! I've added the **`needs-research`** label to this issue.
@@ -163,6 +169,7 @@ If I've misclassified this or you have additional context, please leave a commen
 ```
 
 **For `needs-reproduction`:**
+
 ```
 <!-- gha-issue-classifier -->
 Thanks for the bug report! I've added the **`needs-reproduction`** label to this issue.
@@ -173,6 +180,7 @@ If I've misclassified this or you have additional context, please leave a commen
 ```
 
 **For `needs-spec`:**
+
 ```
 <!-- gha-issue-classifier -->
 Thanks for this detailed report! I've added the **`needs-spec`** label to this issue.
@@ -183,6 +191,7 @@ If I've misclassified this or you have additional context, please leave a commen
 ```
 
 **For `needs-human`:**
+
 ```
 <!-- gha-issue-classifier -->
 Thanks for filing this! I've added the **`needs-human`** label to this issue.

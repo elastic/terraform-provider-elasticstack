@@ -14,7 +14,7 @@ const lockPath = path.resolve(
 	__dirname,
 	"../../../workflows/openspec-verify-label.lock.yml",
 );
-const claudeModelPattern = /llm-gateway\/claude-opus-4-8/;
+const claudeModelPattern = /anthropic\/claude-opus-5/;
 
 function workflowSource() {
 	return readFileSync(workflowPath, "utf8");
@@ -35,44 +35,41 @@ test("verify-label workflow installs Go from go.mod and exports Go paths for AWF
 	assert.match(lock, /GOMODCACHE=\$\(go env GOMODCACHE\)/);
 	// Network config remains in the source workflow.
 	const source = workflowSource();
-	assert.match(
-		source,
-		/allowed: \[defaults, node, go, elastic\.litellm-prod\.ai\]/,
-	);
+	assert.match(source, /allowed: \[defaults, node, go, openrouter\.ai\]/);
 	assert.match(source, /imports: \[shared\/setup-dev\.md\]/);
 });
 
-test("verify-label workflow routes Claude through LiteLLM with secret-backed API key", () => {
+test("verify-label workflow routes Claude through OpenRouter with secret-backed API key", () => {
 	const source = workflowSource();
 	assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
 	assert.match(source, new RegExp(`model: "?${claudeModelPattern.source}"?`));
 	assert.match(
 		source,
-		/ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai"?/,
+		/ANTHROPIC_BASE_URL:\s*"?https:\/\/openrouter\.ai\/api"?/,
 	);
 	assert.match(
 		source,
-		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/,
+		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/,
 	);
 });
 
-test("verify-label source workflow configures engine env with base URL and model", () => {
+test("verify-label source workflow configures engine env with OpenRouter base URL and model", () => {
 	const source = workflowSource();
 	assert.match(source, /engine:\s*\n\s*id:\s*claude/m);
 	assert.match(source, new RegExp(`model: "?${claudeModelPattern.source}"?`));
 	assert.match(
 		source,
-		/ANTHROPIC_BASE_URL:\s*"?https:\/\/elastic\.litellm-prod\.ai"?/,
+		/ANTHROPIC_BASE_URL:\s*"?https:\/\/openrouter\.ai\/api"?/,
 	);
 	assert.match(
 		source,
-		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.CLAUDE_LITELLM_PROXY_API_KEY\s*\}\}/,
+		/ANTHROPIC_API_KEY:\s*\$\{\{\s*secrets\.OPENROUTER_API_KEY\s*\}\}/,
 	);
 });
 
-test("verify-label source workflow includes LiteLLM in allowed network domains", () => {
+test("verify-label source workflow includes OpenRouter in allowed network domains", () => {
 	const source = workflowSource();
-	assert.match(source, /allowed:.*elastic\.litellm-prod\.ai/);
+	assert.match(source, /allowed:.*openrouter\.ai/);
 });
 
 test("verify-label workflow installs Node from package.json and omits runtimes.go", () => {
