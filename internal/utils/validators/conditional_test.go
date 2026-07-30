@@ -403,6 +403,47 @@ func TestForbiddenIfDependentPathOneOf_Description(t *testing.T) {
 	require.Equal(t, "value cannot be set when protocol is one of [https tls]", description)
 }
 
+func TestForbiddenIfDependentPathOneOf_MultipleAllowedValuesErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"custom_cert": schema.StringAttribute{Optional: true},
+			"protocol":    schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"custom_cert": tftypes.String,
+				"protocol":    tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"custom_cert": tftypes.NewValue(tftypes.String, "cert"),
+			"protocol":    tftypes.NewValue(tftypes.String, "http"),
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := ForbiddenIfDependentPathOneOf(
+		path.Root("protocol"),
+		[]string{"http", "ftp"},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("custom_cert"),
+		ConfigValue: types.StringValue("cert"),
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "cannot be set when protocol is one of [http ftp]")
+}
+
 func TestRequiredIfDependentPathOneOf(t *testing.T) {
 	t.Parallel()
 
@@ -539,6 +580,47 @@ func TestRequiredIfDependentPathOneOf(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRequiredIfDependentPathOneOf_MultipleAllowedValuesErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"ssl_cert":      schema.StringAttribute{Optional: true},
+			"security_mode": schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"ssl_cert":      tftypes.String,
+				"security_mode": tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"ssl_cert":      tftypes.NewValue(tftypes.String, nil),
+			"security_mode": tftypes.NewValue(tftypes.String, "ssl"),
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := RequiredIfDependentPathOneOf(
+		path.Root("security_mode"),
+		[]string{"ssl", "tls"},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("ssl_cert"),
+		ConfigValue: types.StringNull(),
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "must be set when security_mode is one of [ssl tls]")
 }
 
 func TestRequiredIfDependentPathOneOf_Description(t *testing.T) {
