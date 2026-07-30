@@ -411,7 +411,7 @@ safe-outputs:
 
 # Reproducer Factory issue reproduction worker
 
-You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled`reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
+You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
 
 Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced).
 
