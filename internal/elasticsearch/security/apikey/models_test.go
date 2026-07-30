@@ -84,3 +84,51 @@ func TestTfModelGetReadResourceID(t *testing.T) {
 		})
 	}
 }
+
+func TestTfModelOwnerValue(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		model TfModel
+		want  bool
+	}{
+		{
+			name: "defaults_true_when_null",
+			model: TfModel{
+				Owner: types.BoolNull(),
+			},
+			want: true,
+		},
+		{
+			name: "defaults_true_when_unknown",
+			model: TfModel{
+				Owner: types.BoolUnknown(),
+			},
+			want: true,
+		},
+		{
+			name: "returns_configured_true",
+			model: TfModel{
+				Owner: types.BoolValue(true),
+			},
+			want: true,
+		},
+		{
+			name: "returns_configured_false",
+			model: TfModel{
+				Owner: types.BoolValue(false),
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := tt.model.OwnerValue(); got != tt.want {
+				t.Fatalf("OwnerValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+

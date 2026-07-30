@@ -85,13 +85,20 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	return &apiKey, diags
 }
 
-func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
+// DeleteAPIKey invalidates the API key identified by id. owner controls the
+// `owner` flag sent on the Invalidate API Key request: Elasticsearch only
+// authorizes an id-scoped invalidate request under the `manage_own_api_key`
+// cluster privilege when `owner` is `true` (in which case it is understood to
+// target only keys owned by the calling user); invalidating by id with
+// `owner: false` (or omitted) requires the broader `manage_api_key` privilege.
+func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, owner bool) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
-		Ids: []string{id},
+		Ids:   []string{id},
+		Owner: &owner,
 	}).Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {

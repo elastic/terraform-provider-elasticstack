@@ -70,6 +70,7 @@ type TfModel struct {
 	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
 	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
 	Access                  types.Object                                                              `tfsdk:"access"`
+	Owner                   types.Bool                                                                `tfsdk:"owner"`
 	APIKey                  types.String                                                              `tfsdk:"api_key"`
 	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }
@@ -84,6 +85,16 @@ func (model TfModel) GetResourceID() types.String {
 
 func (model TfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
+}
+
+// OwnerValue returns the effective value of the `owner` attribute, defaulting
+// to true (the safe default that only requires `manage_own_api_key`) when the
+// value is null or unknown.
+func (model TfModel) OwnerValue() bool {
+	if !typeutils.IsKnown(model.Owner) || model.Owner.IsNull() {
+		return true
+	}
+	return model.Owner.ValueBool()
 }
 
 // GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read
