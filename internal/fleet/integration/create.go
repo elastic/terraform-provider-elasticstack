@@ -53,7 +53,7 @@ func writeIntegration(
 	name := planModel.Name.ValueString()
 	version := planModel.Version.ValueString()
 
-	scope := spaceScope{id: resolveSpaceID(planModel.SpaceID)}
+	scope := resolveSpaceScope(planModel.SpaceID)
 
 	installOptions := fleet.InstallPackageOptions{
 		Force:             planModel.Force.ValueBool(),
@@ -69,9 +69,7 @@ func writeIntegration(
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
-	if scope.id != "" {
-		installOptions.SpaceID = scope.id
-	}
+	installOptions.SpaceID = scope.id
 
 	installDiags := fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
 	diags.Append(installDiags...)
@@ -81,8 +79,7 @@ func writeIntegration(
 
 	// Poll via the configured space API path but treat global install status only.
 	// Strict target-space detection is deferred to installInSpace's later wait.
-	pollScope := spaceScope{id: scope.id, aware: false}
-	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, pollScope)
+	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, scope)
 	if waitErr != nil {
 		diags.AddError(
 			"Failed to install Fleet integration package",
@@ -97,10 +94,8 @@ func writeIntegration(
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	globallyInstalled := fleetPackageInstalled(pkg, spaceScope{})
-	// This deliberately checks target-space metadata strictly. installInSpace
-	// owns the server-version gate and warning for unsupported Kibana versions.
-	installedInTargetSpace := fleetPackageInstalled(pkg, spaceScope{id: scope.id, aware: true})
+	globallyInstalled := fleetPackageInstalledGlobally(pkg)
+	installedInTargetSpace := fleetPackageInstalledInSpace(pkg, scope.id)
 	installedElsewhere := globallyInstalled && scope.id != "" && !installedInTargetSpace
 
 	if installedElsewhere {
@@ -152,7 +147,7 @@ func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, f
 		return diags
 	}
 
-	waitErr := waitForFleetIntegrationInstalled(ctx, fleetClient, name, version, spaceScope{id: spaceID, aware: true})
+	waitErr := waitForFleetIntegrationInstalledInSpace(ctx, fleetClient, name, version, spaceScope{id: spaceID})
 	if waitErr != nil {
 		diags.AddError(
 			"Failed to install Fleet integration package",
@@ -164,6 +159,22 @@ func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, f
 }
 
 func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
+	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, fleetPackageInstalledGlobally)
+}
+
+func waitForFleetIntegrationInstalledInSpace(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
+	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, func(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
+		return fleetPackageInstalledInSpace(pkg, scope.id)
+	})
+}
+
+func waitForFleetIntegrationInstalledState(
+	ctx context.Context,
+	fleetClient *fleet.Client,
+	name, version string,
+	scope spaceScope,
+	installed func(*kbapi.KibanaHTTPAPIsGetPackageInfo) bool,
+) error {
 	return asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 		if getDiags.HasError() {
@@ -173,7 +184,7 @@ func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Cl
 			return false, nil
 		}
 
-		if fleetPackageInstalled(pkg, scope) {
+		if installed(pkg) {
 			return true, nil
 		}
 

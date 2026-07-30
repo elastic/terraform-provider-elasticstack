@@ -26,7 +26,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,6 +47,18 @@ func newTestFleetClient(t *testing.T, server *httptest.Server) *fleet.Client {
 	client, err := fleet.NewClient(fleet.Config{URL: server.URL})
 	require.NoError(t, err)
 	return client
+}
+
+type testMinVersionClient struct {
+	supported           bool
+	calls               int
+	requestedMinVersion *version.Version
+}
+
+func (c *testMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	c.calls++
+	c.requestedMinVersion = minVersion
+	return c.supported, nil
 }
 
 func assertDiagnosticsDoNotContainInstallSpaceRejection(t *testing.T, diags diag.Diagnostics) {
@@ -179,4 +193,82 @@ func TestDeleteKibanaAssetsWithFallback_successDoesNotCallUninstall(t *testing.T
 
 	assert.False(t, diags.HasError())
 	assert.Equal(t, 0, uninstallCalls)
+}
+
+func TestDeleteIntegration_defaultSpacePreservesMultiSpaceGuard(t *testing.T) {
+	t.Parallel()
+
+	const deleteAssetsPath = testPackageUninstallPath + "/kibana_assets"
+	const packageResponse = `{
+		"item": {
+			"assets": {},
+			"name": "system",
+			"title": "System",
+			"version": "1.0.0",
+			"status": "installed",
+			"installationInfo": {
+				"additional_spaces_installed_kibana": {"other-space": []},
+				"install_source": "registry",
+				"install_status": "installed",
+				"installed_es": [],
+				"installed_kibana": [],
+				"installed_kibana_space_id": "default",
+				"name": "system",
+				"type": "integration",
+				"verification_status": "verified",
+				"version": "1.0.0"
+			}
+		}
+	}`
+
+	var getCalls, deleteAssetsCalls, uninstallCalls int
+	var getPath, deleteAssetsPathSeen string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == testPackageUninstallPath:
+			getCalls++
+			getPath = r.URL.Path
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, packageResponse)
+		case r.Method == http.MethodDelete && r.URL.Path == deleteAssetsPath:
+			deleteAssetsCalls++
+			deleteAssetsPathSeen = r.URL.Path
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, installSpace400Body)
+		case r.Method == http.MethodDelete && r.URL.Path == testPackageUninstallPath:
+			uninstallCalls++
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	versionClient := &testMinVersionClient{supported: true}
+	model := integrationModel{
+		Name:        types.StringValue(testPackageName),
+		Version:     types.StringValue(testPackageVersion),
+		SpaceID:     types.StringValue(testSpaceID),
+		Force:       types.BoolValue(false),
+		SkipDestroy: types.BoolValue(false),
+	}
+
+	diags := deleteIntegrationWithClients(t.Context(), versionClient, newTestFleetClient(t, srv), model)
+
+	require.True(t, diags.HasError())
+	require.Len(t, diags.Errors(), 1)
+	assert.Equal(t, 1, versionClient.calls)
+	require.NotNil(t, versionClient.requestedMinVersion)
+	assert.True(t, versionClient.requestedMinVersion.Equal(MinVersionSpaceAwareIntegration))
+	assert.Equal(t, 1, getCalls)
+	assert.Equal(t, testPackageUninstallPath, getPath)
+	assert.Equal(t, 1, deleteAssetsCalls)
+	assert.Equal(t, deleteAssetsPath, deleteAssetsPathSeen)
+	assert.Equal(t, 0, uninstallCalls, "default-space deletion must not globally uninstall a package used in other spaces")
+	assert.Contains(t, diags.Errors()[0].Detail(), "install space")
+	assert.Contains(t, diags.Errors()[0].Detail(), "force")
+	assert.NotContains(t, diags.Errors()[0].Detail(), `"statusCode":400`)
+	assertDiagnosticsDoNotContainInstallSpaceRejection(t, diags)
 }

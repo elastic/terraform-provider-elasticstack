@@ -28,50 +28,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const defaultSpaceID = "default"
-
-// spaceScope is the resolved space context for one CRUD operation.
+// spaceScope is the Fleet API routing context for one CRUD operation.
 type spaceScope struct {
-	id    string // "" == default space
-	aware bool   // server supports per-space Kibana asset tracking (>= 9.1.0)
+	id string
 }
 
 func supportsSpaceAwareIntegration(ctx context.Context, client clients.MinVersionEnforceable, spaceID string) (bool, diag.Diagnostics) {
-	if spaceID == "" || spaceID == defaultSpaceID {
+	if spaceID == "" {
 		return false, nil
 	}
 
 	return client.EnforceMinVersion(ctx, MinVersionSpaceAwareIntegration)
 }
 
+// resolveSpaceID preserves literal "default": it shares the unscoped API path
+// with "", but remains a configured space ID for capability and metadata checks.
 func resolveSpaceID(spaceID types.String) string {
 	if !typeutils.IsKnown(spaceID) {
 		return ""
 	}
 
-	id := spaceID.ValueString()
-	if id == defaultSpaceID {
-		return ""
-	}
-
-	return id
+	return spaceID.ValueString()
 }
 
-func resolveSpaceScope(ctx context.Context, client clients.MinVersionEnforceable, spaceID types.String, diags *diag.Diagnostics) spaceScope {
-	id := resolveSpaceID(spaceID)
-	if id == "" {
-		return spaceScope{}
-	}
-
-	supported, versionDiags := supportsSpaceAwareIntegration(ctx, client, id)
-	diags.Append(versionDiags...)
-	return spaceScope{id: id, aware: supported}
+func resolveSpaceScope(spaceID types.String) spaceScope {
+	return spaceScope{id: resolveSpaceID(spaceID)}
 }
 
-// fleetPackageInstalled determines whether Fleet reports a package as fully installed.
+// fleetPackageInstalledGlobally determines whether Fleet reports a package as fully installed.
 // Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
 // and status casing can vary.
-func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, scope spaceScope) bool {
+func fleetPackageInstalledGlobally(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
 	if pkg == nil {
 		return false
 	}
@@ -92,11 +79,11 @@ func fleetPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, scope spaceS
 		return false
 	}
 
-	if !scope.aware || scope.id == "" {
-		return true
-	}
+	return true
+}
 
-	return packageInstalledInKibanaSpace(pkg.InstallationInfo, scope.id)
+func fleetPackageInstalledInSpace(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID string) bool {
+	return fleetPackageInstalledGlobally(pkg) && packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID)
 }
 
 func packageInstalledInKibanaSpace(info *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, spaceID string) bool {

@@ -74,6 +74,8 @@ func deleteKibanaAssetsWithFallback(
 	return fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
 }
 
+// deleteIntegration intentionally ignores entitycore's space ID argument because
+// it is derived from model.SpaceID for this resource; the model is the single source.
 func deleteIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -81,9 +83,16 @@ func deleteIntegration(
 	_ string,
 	model integrationModel,
 ) diag.Diagnostics {
-	var diags diag.Diagnostics
+	return deleteIntegrationWithClients(ctx, client, client.GetFleetClient(), model)
+}
 
-	fleetClient := client.GetFleetClient()
+func deleteIntegrationWithClients(
+	ctx context.Context,
+	versionClient clients.MinVersionEnforceable,
+	fleetClient *fleet.Client,
+	model integrationModel,
+) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	name := model.Name.ValueString()
 	version := model.Version.ValueString()
@@ -93,12 +102,14 @@ func deleteIntegration(
 		return diags
 	}
 
-	scope := resolveSpaceScope(ctx, client, model.SpaceID, &diags)
+	scope := resolveSpaceScope(model.SpaceID)
+	spaceAware, versionDiags := supportsSpaceAwareIntegration(ctx, versionClient, scope.id)
+	diags.Append(versionDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	if scope.aware {
+	if spaceAware {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 		diags.Append(getDiags...)
 		if diags.HasError() {

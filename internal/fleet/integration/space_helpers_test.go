@@ -36,7 +36,7 @@ func TestResolveSpaceID(t *testing.T) {
 		{name: "null", spaceID: types.StringNull(), want: ""},
 		{name: "unknown", spaceID: types.StringUnknown(), want: ""},
 		{name: "empty", spaceID: types.StringValue(""), want: ""},
-		{name: "default", spaceID: types.StringValue(defaultSpaceID), want: ""},
+		{name: "default", spaceID: types.StringValue("default"), want: "default"},
 		{name: "custom", spaceID: types.StringValue("target-space"), want: "target-space"},
 	}
 
@@ -58,16 +58,14 @@ func TestFleetPackageInstalled(t *testing.T) {
 	installedStatusStr := "installed"
 
 	tests := []struct {
-		name  string
-		pkg   *kbapi.KibanaHTTPAPIsGetPackageInfo
-		scope spaceScope
-		want  bool
+		name        string
+		pkg         *kbapi.KibanaHTTPAPIsGetPackageInfo
+		spaceID     string
+		wantGlobal  bool
+		wantInSpace bool
 	}{
 		{
-			name:  "nil package",
-			pkg:   nil,
-			scope: spaceScope{},
-			want:  false,
+			name: "nil package",
 		},
 		{
 			name: "install failed via install status",
@@ -76,8 +74,6 @@ func TestFleetPackageInstalled(t *testing.T) {
 					InstallStatus: failedStatus,
 				},
 			},
-			scope: spaceScope{},
-			want:  false,
 		},
 		{
 			name: "globally installed default scope",
@@ -86,52 +82,40 @@ func TestFleetPackageInstalled(t *testing.T) {
 					InstallStatus: installedStatus,
 				},
 			},
-			scope: spaceScope{},
-			want:  true,
+			wantGlobal: true,
 		},
 		{
 			name: "globally installed via status field",
 			pkg: &kbapi.KibanaHTTPAPIsGetPackageInfo{
 				Status: &installedStatusStr,
 			},
-			scope: spaceScope{},
-			want:  true,
+			wantGlobal: true,
 		},
 		{
-			name: "scoped API path with aware false ignores mismatched space metadata",
+			name: "space check rejects primary install in another space",
 			pkg: &kbapi.KibanaHTTPAPIsGetPackageInfo{
 				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
 					InstallStatus:          installedStatus,
 					InstalledKibanaSpaceId: &otherSpace,
 				},
 			},
-			scope: spaceScope{id: targetSpace, aware: false},
-			want:  true,
+			spaceID:    targetSpace,
+			wantGlobal: true,
 		},
 		{
-			name: "strict space aware rejects primary install in another space",
-			pkg: &kbapi.KibanaHTTPAPIsGetPackageInfo{
-				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
-					InstallStatus:          installedStatus,
-					InstalledKibanaSpaceId: &otherSpace,
-				},
-			},
-			scope: spaceScope{id: targetSpace, aware: true},
-			want:  false,
-		},
-		{
-			name: "strict space aware accepts primary install in target space",
+			name: "space check accepts primary install in target space",
 			pkg: &kbapi.KibanaHTTPAPIsGetPackageInfo{
 				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
 					InstallStatus:          installedStatus,
 					InstalledKibanaSpaceId: &targetSpace,
 				},
 			},
-			scope: spaceScope{id: targetSpace, aware: true},
-			want:  true,
+			spaceID:     targetSpace,
+			wantGlobal:  true,
+			wantInSpace: true,
 		},
 		{
-			name: "strict space aware accepts additional space entry",
+			name: "space check accepts additional space entry",
 			pkg: &kbapi.KibanaHTTPAPIsGetPackageInfo{
 				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
 					InstallStatus: installedStatus,
@@ -140,15 +124,17 @@ func TestFleetPackageInstalled(t *testing.T) {
 					},
 				},
 			},
-			scope: spaceScope{id: targetSpace, aware: true},
-			want:  true,
+			spaceID:     targetSpace,
+			wantGlobal:  true,
+			wantInSpace: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, fleetPackageInstalled(tt.pkg, tt.scope))
+			assert.Equal(t, tt.wantGlobal, fleetPackageInstalledGlobally(tt.pkg))
+			assert.Equal(t, tt.wantInSpace, fleetPackageInstalledInSpace(tt.pkg, tt.spaceID))
 		})
 	}
 }
