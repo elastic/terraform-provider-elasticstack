@@ -19,7 +19,6 @@ package agentdownloadsource
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,7 +32,7 @@ var (
 // Resource implements the Fleet Agent Download Source resource.
 type Resource struct {
 	*entitycore.KibanaResource[model]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newResource() *Resource {
@@ -50,7 +49,7 @@ func newResource() *Resource {
 				Update: placeholder,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
 	}
 }
 
