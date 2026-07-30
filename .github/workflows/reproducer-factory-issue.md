@@ -316,22 +316,22 @@ steps:
     with:
       name: reproducer-factory-issue-context
       path: /tmp/reproducer-factory-context/
-model: "llm-gateway/claude-sonnet-5"
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-# Disable the per-run AI Credits budget guard. The model alias
-# "llm-gateway/claude-sonnet-5" is a private Elastic LiteLLM alias absent from
-# the AWF api-proxy's built-in pricing table. gh-aw's models.providers
-# frontmatter override does not propagate to apiProxy.defaultAiCreditsPricing
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
 # https://github.com/github/gh-aw/pull/47571), so with the guard active the
-# proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
 # Setting -1 omits maxAiCredits from the generated AWF config, letting the
 # agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
 # still applies.
@@ -363,7 +363,7 @@ tools:
     mode: gh-proxy
     toolsets: [issues, pull_requests, repos]
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai, www.elastic.co]
+  allowed: [defaults, node, go, openrouter.ai, www.elastic.co]
 mcp-servers:
   elastic-docs:
     url: "https://www.elastic.co/docs/_mcp/"
@@ -411,7 +411,7 @@ safe-outputs:
 
 # Reproducer Factory issue reproduction worker
 
-You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
+You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled`reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
 
 Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced).
 
@@ -503,7 +503,7 @@ The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-fo
 
 Place `### References` **before** the `<details>` metadata block.
 
-3. **Pipeline metadata block** — After `### References`, include exactly one HTML `<details>` element (**no** `open` attribute) with `<summary>🤖 Pipeline metadata</summary>` containing exactly one fenced ```json``` code block. The JSON object MUST match `ci-reproducer-factory-comment-format` (`openspec/specs/ci-reproducer-factory-comment-format/spec.md`):
+1. **Pipeline metadata block** — After `### References`, include exactly one HTML `<details>` element (**no** `open` attribute) with `<summary>🤖 Pipeline metadata</summary>` containing exactly one fenced ```json``` code block. The JSON object MUST match `ci-reproducer-factory-comment-format` (`openspec/specs/ci-reproducer-factory-comment-format/spec.md`):
 
 - `schema_version` (string, required): e.g. `"1.0"`.
 - `outcome` (string, required): `"reproduced"`, `"cannot-reproduce"`, or `"appears-fixed"`.

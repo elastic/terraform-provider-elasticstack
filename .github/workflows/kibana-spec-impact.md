@@ -51,13 +51,13 @@ on:
         name: kibana-spec-impact-report
         path: /tmp/gh-aw/agent/kibana-spec-impact-report.json
         if-no-files-found: error
-model: "llm-gateway/gpt-5.5"
+model: "openai/gpt-5.5"
 engine:
   id: claude
   version: 2.1.98
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 permissions:
   contents: read
   issues: read
@@ -85,7 +85,7 @@ safe-outputs:
     max: 1
     report-as-issue: false
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+  allowed: [defaults, node, go, openrouter.ai]
 checkout:
   fetch-depth: 0
 if: >-

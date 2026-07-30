@@ -64,15 +64,15 @@ if: >-
   needs.pre_activation.outputs.label_verified == 'true' &&
   needs.pre_activation.outputs.selection_status == 'eligible'
 steps: []
-model: "llm-gateway/claude-opus-4-8"
+model: "anthropic/claude-opus-5"
 engine:
   id: claude
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 permissions:
   contents: read
   pull-requests: read
@@ -96,7 +96,7 @@ tools:
     mode: gh-proxy
     toolsets: [repos, pull_requests]
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+  allowed: [defaults, node, go, openrouter.ai]
 checkout:
   fetch-depth: 0
 safe-outputs:

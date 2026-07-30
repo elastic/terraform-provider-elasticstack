@@ -27,22 +27,22 @@ on:
           await fn({ github, context, core });
 checkout:
   fetch-depth: 0
-model: "llm-gateway/claude-sonnet-5"
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-# Disable the per-run AI Credits budget guard. The model alias
-# "llm-gateway/claude-sonnet-5" is a private Elastic LiteLLM alias absent from
-# the AWF api-proxy's built-in pricing table. gh-aw's models.providers
-# frontmatter override does not propagate to apiProxy.defaultAiCreditsPricing
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
 # https://github.com/github/gh-aw/pull/47571), so with the guard active the
-# proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
 # Setting -1 omits maxAiCredits from the generated AWF config, letting the
 # agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
 # still applies.
@@ -71,7 +71,7 @@ safe-outputs:
     labels: [testing, acceptance-tests, schema-coverage, triaged]
     max: 3
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai]
+  allowed: [defaults, node, go, openrouter.ai]
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
 steps: []

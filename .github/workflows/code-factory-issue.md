@@ -274,22 +274,22 @@ steps:
     with:
       name: code-factory-issue-context
       path: /tmp/code-factory-context/
-model: "llm-gateway/claude-sonnet-5"
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-# Disable the per-run AI Credits budget guard. The model alias
-# "llm-gateway/claude-sonnet-5" is a private Elastic LiteLLM alias absent from
-# the AWF api-proxy's built-in pricing table. gh-aw's models.providers
-# frontmatter override does not propagate to apiProxy.defaultAiCreditsPricing
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
 # https://github.com/github/gh-aw/pull/47571), so with the guard active the
-# proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
 # Setting -1 omits maxAiCredits from the generated AWF config, letting the
 # agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
 # still applies.
@@ -323,7 +323,7 @@ tools:
     mode: gh-proxy
     toolsets: [issues, pull_requests, repos]
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai, www.elastic.co]
+  allowed: [defaults, node, go, openrouter.ai, www.elastic.co]
 mcp-servers:
   elastic-docs:
     url: "https://www.elastic.co/docs/_mcp/"
@@ -422,12 +422,14 @@ The pull request body must include all three of the following blocks, in order:
 ### Changelog (required — CI validates this)
 
 Select `Customer impact` based on the nature of the change:
+
 - `fix` — user-visible bug fix
 - `enhancement` — new capability or attribute exposed to users
 - `breaking` — removes or incompatibly changes existing behaviour
 - `none` — internal only (refactoring, test coverage, CI, docs)
 
 Most code-factory issues fall into one of these categories:
+
 - Refactoring / deduplication / test-coverage gaps → `none`
 - User-visible bug fixes → `fix`
 - New resource attributes or resources → `enhancement`
