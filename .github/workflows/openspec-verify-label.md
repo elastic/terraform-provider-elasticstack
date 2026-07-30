@@ -73,6 +73,17 @@ engine:
   env:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-opus-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
 permissions:
   contents: read
   pull-requests: read
