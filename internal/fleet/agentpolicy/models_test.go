@@ -379,8 +379,8 @@ func TestPopulateFromAPI_Description_Null_vs_EmptyString(t *testing.T) {
 	}
 }
 
-// TestComputeFeatureGatedFields verifies the shared helper that both toAPICreateModel and
-// toAPIUpdateModel use for version-gated attribute validation.
+// TestComputeFeatureGatedFields verifies request shaping after version
+// requirements have already been enforced.
 func TestComputeFeatureGatedFields(t *testing.T) {
 	t.Parallel()
 
@@ -411,14 +411,14 @@ func TestComputeFeatureGatedFields(t *testing.T) {
 		assert.Nil(t, gated.spaceIDs)
 	})
 
-	t.Run("is_protected error when tamper protection unsupported and true", func(t *testing.T) {
+	t.Run("is_protected omitted when tamper protection unsupported", func(t *testing.T) {
 		t.Parallel()
 		model := &agentPolicyModel{
 			IsProtected: types.BoolValue(true),
 		}
-		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsTamperProtection: false})
-		assert.True(t, diags.HasError())
-		assert.Contains(t, diags[0].Detail(), MinVersionTamperProtection.String())
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsTamperProtection: false})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.isProtected)
 	})
 
 	t.Run("is_protected nil when tamper protection unsupported and false", func(t *testing.T) {
@@ -442,24 +442,24 @@ func TestComputeFeatureGatedFields(t *testing.T) {
 		assert.Equal(t, &boolTrue, gated.isProtected)
 	})
 
-	t.Run("supports_agentless error when unsupported and set", func(t *testing.T) {
+	t.Run("supports_agentless omitted when unsupported", func(t *testing.T) {
 		t.Parallel()
 		model := &agentPolicyModel{
 			SupportsAgentless: types.BoolValue(true),
 		}
-		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSupportsAgentless: false})
-		assert.True(t, diags.HasError())
-		assert.Contains(t, diags[0].Detail(), MinSupportsAgentlessVersion.String())
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSupportsAgentless: false})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.supportsAgentless)
 	})
 
-	t.Run("inactivity_timeout error when unsupported and set", func(t *testing.T) {
+	t.Run("inactivity_timeout omitted when unsupported", func(t *testing.T) {
 		t.Parallel()
 		model := &agentPolicyModel{
 			InactivityTimeout: customtypes.NewDurationValue("30s"),
 		}
-		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsInactivityTimeout: false})
-		assert.True(t, diags.HasError())
-		assert.Contains(t, diags[0].Detail(), MinVersionInactivityTimeout.String())
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsInactivityTimeout: false})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.inactivityTimeout)
 	})
 
 	t.Run("inactivity_timeout set when supported", func(t *testing.T) {
@@ -473,25 +473,25 @@ func TestComputeFeatureGatedFields(t *testing.T) {
 		assert.InDelta(t, float32(30), *gated.inactivityTimeout, 0.001)
 	})
 
-	t.Run("unenrollment_timeout error when unsupported and set", func(t *testing.T) {
+	t.Run("unenrollment_timeout omitted when unsupported", func(t *testing.T) {
 		t.Parallel()
 		model := &agentPolicyModel{
 			UnenrollmentTimeout: customtypes.NewDurationValue("60s"),
 		}
-		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsUnenrollmentTimeout: false})
-		assert.True(t, diags.HasError())
-		assert.Contains(t, diags[0].Detail(), MinVersionUnenrollmentTimeout.String())
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsUnenrollmentTimeout: false})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.unenrollTimeout)
 	})
 
-	t.Run("space_ids error when unsupported and set", func(t *testing.T) {
+	t.Run("space_ids omitted when unsupported", func(t *testing.T) {
 		t.Parallel()
 		spaceSet, _ := types.SetValue(types.StringType, []attr.Value{types.StringValue("default")})
 		model := &agentPolicyModel{
 			SpaceIDs: spaceSet,
 		}
-		_, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSpaceIDs: false})
-		assert.True(t, diags.HasError())
-		assert.Contains(t, diags[0].Detail(), MinVersionSpaceIDs.String())
+		gated, diags := model.computeFeatureGatedFields(ctx, agentPolicyFeatures{SupportsSpaceIDs: false})
+		assert.False(t, diags.HasError())
+		assert.Nil(t, gated.spaceIDs)
 	})
 
 	t.Run("space_ids set when supported", func(t *testing.T) {

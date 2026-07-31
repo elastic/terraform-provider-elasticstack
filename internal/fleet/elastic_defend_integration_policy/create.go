@@ -21,6 +21,7 @@ import (
 	"context"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,7 +42,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		return
 	}
 
-	resp.Diagnostics.Append(checkAgentPolicyIDsVersionSupport(ctx, client, planModel.AgentPolicyIDs)...)
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &planModel)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

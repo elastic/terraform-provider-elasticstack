@@ -15,20 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package fleet
+package elasticdefendintegrationpolicy
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"context"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
-// VersionGateError returns a single attribute-scoped error diagnostic
-// reporting that the value at attr is not supported by the connected Elastic
-// Stack version. detail should already describe the gated feature and the
-// minimum required version, e.g. "Space IDs are only supported in Elastic
-// Stack 9.1.0 and above".
-func VersionGateError(attr path.Path, detail string) diag.Diagnostics {
-	return diag.Diagnostics{
-		diag.NewAttributeErrorDiagnostic(attr, "Unsupported Elasticsearch version", detail),
+func TestElasticDefendVersionRequirements(t *testing.T) {
+	t.Parallel()
+
+	model := elasticDefendIntegrationPolicyModel{
+		AgentPolicyIDs: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("policy-id")}),
 	}
+	reqs, diags := model.GetVersionRequirements(context.Background())
+	require.False(t, diags.HasError())
+	require.Len(t, reqs, 1)
+	require.Equal(t, MinVersionPolicyIDs.String(), reqs[0].MinVersion.String())
+	require.Equal(t, "agent_policy_ids", reqs[0].AttributePath.String())
 }

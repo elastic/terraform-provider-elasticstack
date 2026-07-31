@@ -21,13 +21,11 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -247,13 +245,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	if typeutils.IsKnown(settings.DownloadTargetDirectory) {
 		result.AgentDownloadTargetDirectory = settings.DownloadTargetDirectory.ValueString()
 	}
-	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) {
-		if !feat.SupportsMonitoringRuntimeExperimental {
-			return nil, fleetutils.VersionGateError(
-				path.Root("advanced_settings").AtName("monitoring_runtime_experimental"),
-				"monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above",
-			)
-		}
+	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) && feat.SupportsMonitoringRuntimeExperimental {
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
 	}
 
