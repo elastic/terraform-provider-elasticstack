@@ -87,16 +87,6 @@ func (model TfModel) GetElasticsearchConnection() types.List {
 	return model.ElasticsearchConnection
 }
 
-// OwnerValue returns the effective value of the `owner` attribute, defaulting
-// to true (the safe default that only requires `manage_own_api_key`) when the
-// value is null or unknown.
-func (model TfModel) OwnerValue() bool {
-	if !typeutils.IsKnown(model.Owner) || model.Owner.IsNull() {
-		return true
-	}
-	return model.Owner.ValueBool()
-}
-
 // GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read
 // identity is the immutable key_id (not the user-supplied Name) because the
 // Elasticsearch Get/Update API key APIs are keyed by id.
