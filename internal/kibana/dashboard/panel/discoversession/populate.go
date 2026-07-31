@@ -313,7 +313,7 @@ func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIsK
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		m.Sort = discoverSessionSortSliceFromAPI0(*api.Sort)
+		m.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if api.Density != nil {
@@ -374,7 +374,7 @@ func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIs
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		m.Sort = discoverSessionSortSliceFromAPI1(*api.Sort)
+		m.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if api.Density != nil {
@@ -404,21 +404,12 @@ func discoverSessionQueryFromKbnAsCode(q *kbapi.KibanaHTTPAPIsKbnAsCodeQuery) mo
 	}
 }
 
-func discoverSessionSortSliceFromAPI0(api []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
-}) []models.DiscoverSessionSortModel {
-	out := make([]models.DiscoverSessionSortModel, len(api))
-	for i, s := range api {
-		out[i].Name = types.StringValue(s.Name)
-		out[i].Direction = types.StringValue(string(s.Direction))
-	}
-	return out
-}
-
-func discoverSessionSortSliceFromAPI1(api []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
+// discoverSessionSortSliceFromAPI converts the API sort shape shared by every generated
+// Direction enum (kbapi emits a distinct named string type per schema branch for what is
+// structurally the same {direction, name} pair) back into sort models.
+func discoverSessionSortSliceFromAPI[D ~string](api []struct {
+	Direction D      `json:"direction"`
+	Name      string `json:"name"`
 }) []models.DiscoverSessionSortModel {
 	out := make([]models.DiscoverSessionSortModel, len(api))
 	for i, s := range api {
@@ -453,12 +444,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		out := make([]models.DiscoverSessionSortModel, len(*api.Sort))
-		for i, s := range *api.Sort {
-			out[i].Name = types.StringValue(s.Name)
-			out[i].Direction = types.StringValue(string(s.Direction))
-		}
-		m.Sort = out
+		m.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if api.Density != nil {
@@ -816,7 +802,7 @@ func discoverSessionMergeDSLTabFromAPI(
 	}
 
 	if len(prior.Sort) > 0 && api.Sort != nil && len(*api.Sort) > 0 {
-		existing.Sort = discoverSessionSortSliceFromAPI0(*api.Sort)
+		existing.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if typeutils.IsKnown(prior.Density) {
@@ -921,7 +907,7 @@ func discoverSessionMergeESQLTabFromAPI(
 	}
 
 	if len(prior.Sort) > 0 && api.Sort != nil && len(*api.Sort) > 0 {
-		existing.Sort = discoverSessionSortSliceFromAPI1(*api.Sort)
+		existing.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if typeutils.IsKnown(prior.Density) {
@@ -995,12 +981,7 @@ func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.
 	}
 
 	if api.Sort != nil && prior != nil && len(prior.Sort) > 0 {
-		out := make([]models.DiscoverSessionSortModel, len(*api.Sort))
-		for i, s := range *api.Sort {
-			out[i].Name = types.StringValue(s.Name)
-			out[i].Direction = types.StringValue(string(s.Direction))
-		}
-		existing.Sort = out
+		existing.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if prior != nil && typeutils.IsKnown(prior.Density) {
