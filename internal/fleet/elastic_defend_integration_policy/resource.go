@@ -19,11 +19,15 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -35,6 +39,30 @@ var (
 var (
 	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
 )
+
+// checkAgentPolicyIDsVersionSupport returns an error diagnostic when
+// agent_policy_ids is configured but the connected Kibana version predates
+// MinVersionPolicyIDs. Both Create and Update must reject the request in
+// that case before sending anything to the API.
+func checkAgentPolicyIDsVersionSupport(ctx context.Context, client *clients.KibanaScopedClient, agentPolicyIDs types.List) diag.Diagnostics {
+	if agentPolicyIDs.IsNull() || agentPolicyIDs.IsUnknown() {
+		return nil
+	}
+
+	var diags diag.Diagnostics
+	supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	if !supported {
+		diags.AddError(
+			"Unsupported Elasticsearch version",
+			fmt.Sprintf("agent_policy_ids requires Elastic Stack >= %s", MinVersionPolicyIDs.String()),
+		)
+	}
+	return diags
+}
 
 type elasticDefendIntegrationPolicyResource struct {
 	*entitycore.ResourceBase

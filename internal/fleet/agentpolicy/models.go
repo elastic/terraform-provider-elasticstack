@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
@@ -320,13 +321,10 @@ func (model *agentPolicyModel) convertRequiredVersions(feat agentPolicyFeatures)
 
 	// Check if required_versions is supported
 	if !feat.SupportsRequiredVersions {
-		return nil, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("required_versions"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Required versions (automatic agent upgrades) are only supported in Elastic Stack %s and above", MinVersionRequiredVersions),
-			),
-		}
+		return nil, fleetutils.VersionGateError(
+			path.Root("required_versions"),
+			fmt.Sprintf("Required versions (automatic agent upgrades) are only supported in Elastic Stack %s and above", MinVersionRequiredVersions),
+		)
 	}
 
 	elements := model.RequiredVersions.Elements()
@@ -424,13 +422,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 			// Only error if user explicitly requests FQDN on unsupported version
 			// Default "hostname" is fine - just don't send agent_features
 			if agentFeature.Enabled {
-				return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-					diag.NewAttributeErrorDiagnostic(
-						path.Root("host_name_format"),
-						"Unsupported Elasticsearch version",
-						fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
-					),
-				}
+				return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, fleetutils.VersionGateError(
+					path.Root("host_name_format"),
+					fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
+				)
 			}
 			// On unsupported version with default "hostname", don't send agent_features
 		} else {
@@ -441,13 +436,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 	// Handle advanced_settings
 	if typeutils.IsKnown(model.AdvancedSettings) {
 		if !feat.SupportsAdvancedSettings {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_settings"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
-				),
-			}
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, fleetutils.VersionGateError(
+				path.Root("advanced_settings"),
+				fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
+			)
 		}
 		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
 		if diags.HasError() {
@@ -459,13 +451,10 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 	// Handle advanced monitoring options
 	if typeutils.IsKnown(model.AdvancedMonitoringOptions) {
 		if !feat.SupportsAdvancedMonitoring {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_monitoring_options"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
-				),
-			}
+			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, fleetutils.VersionGateError(
+				path.Root("advanced_monitoring_options"),
+				fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
+			)
 		}
 
 		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
@@ -553,13 +542,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 			// Only error if user explicitly requests FQDN on unsupported version
 			// Default "hostname" is fine - just don't send agent_features
 			if agentFeature.Enabled {
-				return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-					diag.NewAttributeErrorDiagnostic(
-						path.Root("host_name_format"),
-						"Unsupported Elasticsearch version",
-						fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
-					),
-				}
+				return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, fleetutils.VersionGateError(
+					path.Root("host_name_format"),
+					fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
+				)
 			}
 			// On unsupported version with default "hostname", don't send agent_features
 		} else {
@@ -573,13 +559,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	// Handle advanced_settings
 	if typeutils.IsKnown(model.AdvancedSettings) {
 		if !feat.SupportsAdvancedSettings {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_settings"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
-				),
-			}
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, fleetutils.VersionGateError(
+				path.Root("advanced_settings"),
+				fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
+			)
 		}
 		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
 		if diags.HasError() {
@@ -591,13 +574,10 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	// Handle advanced monitoring options
 	if typeutils.IsKnown(model.AdvancedMonitoringOptions) {
 		if !feat.SupportsAdvancedMonitoring {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_monitoring_options"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
-				),
-			}
+			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, fleetutils.VersionGateError(
+				path.Root("advanced_monitoring_options"),
+				fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
+			)
 		}
 
 		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
@@ -629,13 +609,10 @@ func (model *agentPolicyModel) computeFeatureGatedFields(ctx context.Context, fe
 
 	if typeutils.IsKnown(model.IsProtected) {
 		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
-			return f, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("is_protected"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
-				),
-			}
+			return f, fleetutils.VersionGateError(
+				path.Root("is_protected"),
+				fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
+			)
 		}
 		if feat.SupportsTamperProtection {
 			v := model.IsProtected.ValueBool()
@@ -645,26 +622,20 @@ func (model *agentPolicyModel) computeFeatureGatedFields(ctx context.Context, fe
 
 	if typeutils.IsKnown(model.SupportsAgentless) {
 		if !feat.SupportsSupportsAgentless {
-			return f, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("supports_agentless"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-				),
-			}
+			return f, fleetutils.VersionGateError(
+				path.Root("supports_agentless"),
+				fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
+			)
 		}
 		f.supportsAgentless = model.SupportsAgentless.ValueBoolPointer()
 	}
 
 	if typeutils.IsKnown(model.InactivityTimeout) {
 		if !feat.SupportsInactivityTimeout {
-			return f, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("inactivity_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-				),
-			}
+			return f, fleetutils.VersionGateError(
+				path.Root("inactivity_timeout"),
+				fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
+			)
 		}
 		duration, diags := model.InactivityTimeout.Parse()
 		if diags.HasError() {
@@ -676,13 +647,10 @@ func (model *agentPolicyModel) computeFeatureGatedFields(ctx context.Context, fe
 
 	if typeutils.IsKnown(model.UnenrollmentTimeout) {
 		if !feat.SupportsUnenrollmentTimeout {
-			return f, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("unenrollment_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
-				),
-			}
+			return f, fleetutils.VersionGateError(
+				path.Root("unenrollment_timeout"),
+				fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
+			)
 		}
 		duration, diags := model.UnenrollmentTimeout.Parse()
 		if diags.HasError() {
@@ -694,13 +662,10 @@ func (model *agentPolicyModel) computeFeatureGatedFields(ctx context.Context, fe
 
 	if typeutils.IsKnown(model.SpaceIDs) {
 		if !feat.SupportsSpaceIDs {
-			return f, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("space_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
-				),
-			}
+			return f, fleetutils.VersionGateError(
+				path.Root("space_ids"),
+				fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
+			)
 		}
 		var spaceIDs []string
 		diags := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)

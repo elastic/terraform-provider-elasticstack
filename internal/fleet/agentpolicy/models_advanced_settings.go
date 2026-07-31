@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
@@ -248,13 +249,10 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	}
 	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) {
 		if !feat.SupportsMonitoringRuntimeExperimental {
-			return nil, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_settings").AtName("monitoring_runtime_experimental"),
-					"Unsupported Elasticsearch version",
-					"monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above",
-				),
-			}
+			return nil, fleetutils.VersionGateError(
+				path.Root("advanced_settings").AtName("monitoring_runtime_experimental"),
+				"monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above",
+			)
 		}
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
 	}

@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -220,26 +221,20 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 	// Check if agent_policy_ids is configured and version supports it
 	if typeutils.IsKnown(model.AgentPolicyIDs) {
 		if !feat.SupportsPolicyIDs {
-			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("agent_policy_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIDs),
-				),
-			}
+			return kbapi.PackagePolicyRequest{}, fleetutils.VersionGateError(
+				path.Root("agent_policy_ids"),
+				fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIDs),
+			)
 		}
 	}
 
 	// Check if output_id is configured and version supports it
 	if typeutils.IsKnown(model.OutputID) {
 		if !feat.SupportsOutputID {
-			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("output_id"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputID),
-				),
-			}
+			return kbapi.PackagePolicyRequest{}, fleetutils.VersionGateError(
+				path.Root("output_id"),
+				fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputID),
+			)
 		}
 	}
 
@@ -353,20 +348,18 @@ func (model integrationPolicyModel) validateConditionSupport(feat integrationPol
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
 		if typeutils.IsKnown(di.Model.Condition) {
-			diags.AddAttributeError(
+			diags.Append(fleetutils.VersionGateError(
 				inputPath.AtName("condition"),
-				"Unsupported Elasticsearch version",
 				fmt.Sprintf("Input condition is only supported in Elastic Stack %s and above", MinVersionCondition),
-			)
+			)...)
 		}
 
 		for streamID, streamModel := range di.Streams {
 			if typeutils.IsKnown(streamModel.Condition) {
-				diags.AddAttributeError(
+				diags.Append(fleetutils.VersionGateError(
 					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
-					"Unsupported Elasticsearch version",
 					fmt.Sprintf("Stream condition is only supported in Elastic Stack %s and above", MinVersionCondition),
-				)
+				)...)
 			}
 		}
 	}
