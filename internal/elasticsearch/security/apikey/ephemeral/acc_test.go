@@ -260,7 +260,7 @@ func checkEphemeralAPIKeyExistsInElasticsearch(expectInvalidated bool) resource.
 			return err
 		}
 
-		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, keyID)
+		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, keyID, true)
 		if diags.HasError() {
 			return fmt.Errorf("unable to get API key %q: %v", keyID, diags)
 		}

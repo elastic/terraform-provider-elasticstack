@@ -30,7 +30,10 @@ import (
 func readAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state apikey.TfModel) (apikey.TfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, resourceID)
+	// Scope the read by owner so a key that exists but is owned by a
+	// different user is treated as non-existent, matching the schema intent
+	// of the `owner` attribute.
+	apiKey, apiKeyDiags := elasticsearch.GetAPIKey(ctx, client, resourceID, state.Owner.ValueBool())
 	diags.Append(apiKeyDiags...)
 	if diags.HasError() {
 		return state, false, diags
