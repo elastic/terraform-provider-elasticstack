@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -58,13 +57,13 @@ var MinVersionCondition = policyshape.MinVersionCondition
 
 type integrationPolicyResource struct {
 	*entitycore.ResourceBase
-	*fleetpkg.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newIntegrationPolicyResource() *integrationPolicyResource {
 	return &integrationPolicyResource{
 		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "integration_policy"),
-		SpaceImporter: fleetpkg.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 

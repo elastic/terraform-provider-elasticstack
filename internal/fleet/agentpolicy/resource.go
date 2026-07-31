@@ -19,7 +19,6 @@ package agentpolicy
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -71,13 +70,13 @@ func MonitoringRuntimeExperimentalSupported(v *version.Version) bool {
 
 type agentPolicyResource struct {
 	*entitycore.ResourceBase
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newAgentPolicyResource() *agentPolicyResource {
 	return &agentPolicyResource{
 		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "agent_policy"),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 

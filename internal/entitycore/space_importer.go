@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package fleet
+package entitycore
 
 import (
 	"context"
@@ -26,7 +26,8 @@ import (
 )
 
 // SpaceImporter is an embeddable struct that provides a generic ImportState
-// implementation for Fleet resources that support space-aware composite IDs.
+// implementation for resources that support space-aware composite IDs and
+// expose the space as a "space_ids" list attribute (the Fleet convention).
 //
 // When embedded in a resource struct, Go promotes the ImportState method,
 // satisfying resource.ResourceWithImportState without an explicit method.
@@ -34,13 +35,13 @@ import (
 // Usage:
 //
 //	type myResource struct {
-//	    *fleet.SpaceImporter
+//	    *entitycore.SpaceImporter
 //	    // ...
 //	}
 //
 //	func newMyResource() *myResource {
 //	    return &myResource{
-//	        SpaceImporter: fleet.NewSpaceImporter(path.Root("resource_id")),
+//	        SpaceImporter: entitycore.NewSpaceImporter(path.Root("resource_id")),
 //	    }
 //	}
 type SpaceImporter struct {
@@ -80,5 +81,61 @@ func (s *SpaceImporter) ImportState(ctx context.Context, req resource.ImportStat
 
 	if spaceID != "" {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_ids"), []string{spaceID})...)
+	}
+}
+
+// KibanaSpaceImporter is an embeddable struct that provides a generic
+// ImportState implementation for Kibana resources that support space-aware
+// composite IDs and expose the space as a singular "space_id" string
+// attribute, rather than Fleet's "space_ids" list.
+//
+// Unlike SpaceImporter, the import ID is always required to be a composite
+// "<space_id>/<resource_id>" string; a diagnostic is added and no attributes
+// are set if it is not.
+//
+// Usage:
+//
+//	type myResource struct {
+//	    *entitycore.KibanaSpaceImporter
+//	    // ...
+//	}
+//
+//	func newMyResource() *myResource {
+//	    return &myResource{
+//	        KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(
+//	            path.Root("id"), path.Root("space_id"), path.Root("rule_id"),
+//	        ),
+//	    }
+//	}
+type KibanaSpaceImporter struct {
+	idField          path.Path
+	spaceIDField     path.Path
+	resourceIDFields []path.Path
+}
+
+// NewKibanaSpaceImporter constructs a KibanaSpaceImporter that will set idField
+// to the full import ID, spaceIDField to the space-ID portion of the composite
+// ID, and each of resourceIDFields to the resource-ID portion. At least one
+// resourceIDField is required.
+func NewKibanaSpaceImporter(idField, spaceIDField path.Path, resourceIDFields ...path.Path) *KibanaSpaceImporter {
+	if len(resourceIDFields) == 0 {
+		panic("NewKibanaSpaceImporter: at least one resourceIDField is required")
+	}
+	return &KibanaSpaceImporter{idField: idField, spaceIDField: spaceIDField, resourceIDFields: resourceIDFields}
+}
+
+// ImportState handles import for Kibana resources with required space-aware
+// composite IDs in the format "<space_id>/<resource_id>".
+func (s *KibanaSpaceImporter) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, s.idField, req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, s.spaceIDField, composite.ClusterID)...)
+	for _, f := range s.resourceIDFields {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, f, composite.ResourceID)...)
 	}
 }

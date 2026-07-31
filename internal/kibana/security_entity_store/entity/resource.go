@@ -113,16 +113,16 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.SplitN(req.ID, "/", 2)
-	if len(parts) != 2 {
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	if diags.HasError() {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
 			"Import ID must be in the format <space_id>/<entity_id>",
 		)
 		return
 	}
-	spaceID := parts[0]
-	entityID := parts[1]
+	spaceID := composite.ClusterID
+	entityID := composite.ResourceID
 	if spaceID == "" {
 		spaceID = clients.DefaultSpaceID
 	}

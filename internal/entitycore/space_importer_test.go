@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package fleet
+package entitycore
 
 import (
 	"context"
@@ -29,17 +29,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// fakeResource is a minimal resource.Resource whose schema contains the
-// attributes exercised by SpaceImporter tests: resource_id, extra_id, space_ids.
-type fakeResource struct {
+// fakeSpaceListResource is a minimal resource.Resource whose schema contains
+// the attributes exercised by SpaceImporter tests: resource_id, extra_id, space_ids.
+type fakeSpaceListResource struct {
 	*SpaceImporter
 }
 
-func (f *fakeResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (f *fakeSpaceListResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = "test_fake"
 }
 
-func (f *fakeResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (f *fakeSpaceListResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"resource_id": schema.StringAttribute{Optional: true, Computed: true},
@@ -49,10 +49,13 @@ func (f *fakeResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	}
 }
 
-func (f *fakeResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {}
-func (f *fakeResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse)       {}
-func (f *fakeResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {}
-func (f *fakeResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {}
+func (f *fakeSpaceListResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+}
+func (f *fakeSpaceListResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {}
+func (f *fakeSpaceListResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+}
+func (f *fakeSpaceListResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+}
 
 // TestSpaceImporter_compositeID verifies that a "<space>/<id>" import string
 // splits correctly: idField is set to the resource-ID portion and space_ids
@@ -61,7 +64,7 @@ func TestSpaceImporter_compositeID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	r := &fakeResource{SpaceImporter: NewSpaceImporter(path.Root("resource_id"))}
+	r := &fakeSpaceListResource{SpaceImporter: NewSpaceImporter(path.Root("resource_id"))}
 	st := providerfwtest.EmptyImportState(t, r)
 	resp := &resource.ImportStateResponse{State: st}
 
@@ -90,7 +93,7 @@ func TestSpaceImporter_plainID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	r := &fakeResource{SpaceImporter: NewSpaceImporter(path.Root("resource_id"))}
+	r := &fakeSpaceListResource{SpaceImporter: NewSpaceImporter(path.Root("resource_id"))}
 	st := providerfwtest.EmptyImportState(t, r)
 	resp := &resource.ImportStateResponse{State: st}
 
@@ -114,7 +117,7 @@ func TestSpaceImporter_multipleIDFields(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	r := &fakeResource{
+	r := &fakeSpaceListResource{
 		SpaceImporter: NewSpaceImporter(path.Root("resource_id"), path.Root("extra_id")),
 	}
 	st := providerfwtest.EmptyImportState(t, r)
@@ -138,7 +141,7 @@ func TestSpaceImporter_multipleIDFields_plainID(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	r := &fakeResource{
+	r := &fakeSpaceListResource{
 		SpaceImporter: NewSpaceImporter(path.Root("resource_id"), path.Root("extra_id")),
 	}
 	st := providerfwtest.EmptyImportState(t, r)
@@ -158,4 +161,98 @@ func TestSpaceImporter_multipleIDFields_plainID(t *testing.T) {
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_ids"), &spaceIDs)...)
 	require.False(t, resp.Diagnostics.HasError())
 	require.True(t, spaceIDs.IsNull(), "space_ids should be null for a plain import ID")
+}
+
+// fakeKibanaSpaceResource is a minimal resource.Resource whose schema contains
+// the attributes exercised by KibanaSpaceImporter tests: id, space_id, rule_id.
+type fakeKibanaSpaceResource struct {
+	*KibanaSpaceImporter
+}
+
+func (f *fakeKibanaSpaceResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = "test_fake_kibana"
+}
+
+func (f *fakeKibanaSpaceResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id":       schema.StringAttribute{Optional: true, Computed: true},
+			"space_id": schema.StringAttribute{Optional: true, Computed: true},
+			"rule_id":  schema.StringAttribute{Optional: true, Computed: true},
+			"extra_id": schema.StringAttribute{Optional: true, Computed: true},
+		},
+	}
+}
+
+func (f *fakeKibanaSpaceResource) Create(context.Context, resource.CreateRequest, *resource.CreateResponse) {
+}
+func (f *fakeKibanaSpaceResource) Read(context.Context, resource.ReadRequest, *resource.ReadResponse) {
+}
+func (f *fakeKibanaSpaceResource) Update(context.Context, resource.UpdateRequest, *resource.UpdateResponse) {
+}
+func (f *fakeKibanaSpaceResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {
+}
+
+// TestKibanaSpaceImporter_compositeID verifies that a "<space>/<id>" import
+// string is split into the id, space_id, and resource-ID fields.
+func TestKibanaSpaceImporter_compositeID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := &fakeKibanaSpaceResource{
+		KibanaSpaceImporter: NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")),
+	}
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "my-space/my-rule-id"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID, ruleID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("rule_id"), &ruleID)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "my-space/my-rule-id", id.ValueString())
+	require.Equal(t, "my-space", spaceID.ValueString())
+	require.Equal(t, "my-rule-id", ruleID.ValueString())
+}
+
+// TestKibanaSpaceImporter_plainID verifies that a plain (non-composite) import
+// ID results in an error diagnostic, since Kibana composite IDs are required.
+func TestKibanaSpaceImporter_plainID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := &fakeKibanaSpaceResource{
+		KibanaSpaceImporter: NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")),
+	}
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "plain-rule-id"}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+}
+
+// TestKibanaSpaceImporter_multipleResourceIDFields verifies that when multiple
+// resourceIDFields are configured, all of them receive the resource-ID portion.
+func TestKibanaSpaceImporter_multipleResourceIDFields(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := &fakeKibanaSpaceResource{
+		KibanaSpaceImporter: NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id"), path.Root("extra_id")),
+	}
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "my-space/shared-id"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var ruleID, extraID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("rule_id"), &ruleID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("extra_id"), &extraID)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "shared-id", ruleID.ValueString())
+	require.Equal(t, "shared-id", extraID.ValueString())
 }

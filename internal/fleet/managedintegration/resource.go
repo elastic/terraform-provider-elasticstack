@@ -25,7 +25,6 @@ package managedintegration
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -39,7 +38,7 @@ var (
 // Resource implements the Fleet managed integration resource.
 type Resource struct {
 	*entitycore.KibanaResource[managedIntegrationModel]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newResource() *Resource {
@@ -55,7 +54,7 @@ func newResource() *Resource {
 				Update: updateManagedIntegration,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 
