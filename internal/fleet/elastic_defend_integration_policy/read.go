@@ -34,22 +34,13 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
+	fleetClient, spaceID, diags := fleetutils.ResolveReadDeleteContext(ctx, r.Client(), stateModel.KibanaConnection, req.State)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
-
-	// Use the operational space from STATE to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
 	resp.Diagnostics.Append(diags...)

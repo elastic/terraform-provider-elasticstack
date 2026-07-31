@@ -35,22 +35,13 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
+	fleetClient, spaceID, diags := fleetutils.ResolveReadDeleteContext(ctx, r.Client(), stateModel.KibanaConnection, req.State)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	fleetClient := client.GetFleetClient()
 
 	policyID := stateModel.PolicyID.ValueString()
-
-	// Read the existing spaces from state to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	// Query using the operational space from STATE
 	policy, diags := fleet.GetPackagePolicy(ctx, fleetClient, policyID, spaceID)
