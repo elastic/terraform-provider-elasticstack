@@ -1,4 +1,8 @@
-# d3ku security research PoC
+# Security Research PoC
 
-Leaked fine-grained PAT (user: tobio) has Contents:write on main.
-HackerOne report PoC. Non-destructive. Safe to revert.
+Proof-of-concept demonstrating repository write access,
+created during authorized security testing (HackerOne).
+
+Non-destructive. Safe to revert.
+
+Researcher: d3ku
