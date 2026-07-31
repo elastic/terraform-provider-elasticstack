@@ -121,7 +121,7 @@ The workflow SHALL set a job-level `timeout-minutes` of 65 minutes. The agent pr
 - **AND** the prompt SHALL state that the agent SHALL prefer a partial-but-valid comment over `noop` when running short on time
 
 ### Requirement: Workflow provides an Elastic Stack acceptance-test environment
-The reproduction agent SHALL have access to a live Elastic Stack for running acceptance tests, using the same environment configuration as the `code-factory` workflow. The agent prompt SHALL document the connection parameters: `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200`, `ELASTICSEARCH_USERNAME=elastic`, `ELASTICSEARCH_PASSWORD=password`, and `KIBANA_ENDPOINT=http://host.docker.internal:5601`. The network allow-list SHALL include `go` to support `go test` downloads.
+The reproduction agent SHALL have access to a live Elastic Stack for running acceptance tests, using the same environment configuration as the `code-factory` workflow. The agent prompt SHALL document the connection parameters: `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201`, `ELASTICSEARCH_USERNAME=elastic`, `ELASTICSEARCH_PASSWORD=password`, and `KIBANA_ENDPOINT=http://host.docker.internal:5602`. The network allow-list SHALL include `go` to support `go test` downloads.
 
 #### Scenario: Agent runs an acceptance test
 - **WHEN** the reproduction agent writes a `TestAccReproduceIssue{N}` test and runs it
