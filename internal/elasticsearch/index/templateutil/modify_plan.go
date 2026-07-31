@@ -22,6 +22,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -53,4 +54,41 @@ func ReconcilePlanModelForSemanticDrift[M TemplateModel[M]](
 	}
 	out := plan.WithTemplate(newTpl)
 	return &out, diags
+}
+
+// ModifyPlanForSemanticDrift is a shared ModifyPlan implementation for resources whose
+// model embeds a template block reconciled via ReconcilePlanModelForSemanticDrift.
+func ModifyPlanForSemanticDrift[M TemplateModel[M]](
+	ctx context.Context,
+	req resource.ModifyPlanRequest,
+	resp *resource.ModifyPlanResponse,
+	attrTypes func() map[string]attr.Type,
+) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var plan, state, config M
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	merged, diags := ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, attrTypes)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if merged == nil {
+		return
+	}
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, merged)...)
 }
