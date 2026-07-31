@@ -4,6 +4,11 @@ safe-outputs:
     dispatch-code-factory:
       needs: safe_outputs
       description: "Dispatch code-factory for each created issue"
+      inputs:
+        dispatch:
+          description: "Confirm dispatch of code-factory for issues created in this run"
+          required: true
+          type: boolean
       permissions:
         actions: write
         contents: read
@@ -38,4 +43,5 @@ safe-outputs:
 
 Shared safe-outputs job that dispatches `code-factory-issue.lock.yml` once per issue
 created in the current workflow run. `SOURCE_WORKFLOW` is derived from the calling
-workflow display name (`github.workflow`).
+workflow display name (`github.workflow`). The required `dispatch` confirmation
+input keeps the tool callable through gh-aw versions that intercept empty arguments.
