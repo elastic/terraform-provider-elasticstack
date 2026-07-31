@@ -574,6 +574,48 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.AcceptanceServerInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-07-31T04:14:43.989766035Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingElasticsearchScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-07-31T04:14:43.989766165Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingKibanaScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-07-31T04:14:43.989766276Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewElasticsearchScopedClientForTest",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-07-31T04:14:43.989766345Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.newAcceptanceTestingClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-07-31T04:14:43.989766416Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config.NewFromEnv",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config",
+      "attemptedAt": "2026-07-31T04:14:43.989768469Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi.CreateSecurityEntityStoreEntity",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
+      "attemptedAt": "2026-07-31T04:26:34.871022934Z",
+      "reason": "pr_created"
     }
   ]
 }
