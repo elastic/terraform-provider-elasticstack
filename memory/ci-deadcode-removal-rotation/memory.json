@@ -616,6 +616,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
       "attemptedAt": "2026-07-31T04:26:34.871022934Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi.InstallSecurityEntityStore",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi",
+      "attemptedAt": "2026-08-01T04:25:38.786389437Z",
+      "reason": "pr_created"
     }
   ]
 }
