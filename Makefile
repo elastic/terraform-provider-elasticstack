@@ -206,6 +206,14 @@ workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spe
 	@ go test ./scripts/changelog/... -count=1
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
+.PHONY: skill-generate
+skill-generate: ## Generate the elasticstack-terraform agent skill into dist/skill/
+	@ go run ./scripts/generate-skill -provider-version $(VERSION)
+
+.PHONY: skill-test
+skill-test: ## Run unit tests for the skill generator
+	@ go test ./scripts/generate-skill/... -count=1
+
 .PHONY: gen
 gen: docs-generate ## Generate the code and documentation
 	@ go generate ./...
