@@ -176,6 +176,24 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 				require.Equal(t, "7d", got[attrExpiration])
 			},
 		},
+		{
+			name:  "owner_absent_defaults_to_true",
+			patch: map[string]any{},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, true, got[attrOwner])
+			},
+		},
+		{
+			name: "owner_present_preserved",
+			patch: map[string]any{
+				attrOwner: false,
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, false, got[attrOwner])
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -292,6 +310,24 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 				require.Equal(t, apikey.CrossClusterAPIKeyType, got[attrType])
 			},
 		},
+		{
+			name:  "owner_absent_defaults_to_true",
+			patch: map[string]any{},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, true, got[attrOwner])
+			},
+		},
+		{
+			name: "owner_present_preserved",
+			patch: map[string]any{
+				attrOwner: false,
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, false, got[attrOwner])
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -305,3 +341,44 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 		})
 	}
 }
+
+func TestUpgradeStateV2ToV3(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		patch  map[string]any
+		assert func(t *testing.T, got map[string]any)
+	}{
+		{
+			name:  "owner_absent_defaults_to_true",
+			patch: map[string]any{},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, true, got[attrOwner])
+			},
+		},
+		{
+			name: "owner_present_preserved",
+			patch: map[string]any{
+				attrOwner: false,
+			},
+			assert: func(t *testing.T, got map[string]any) {
+				t.Helper()
+				require.Equal(t, false, got[attrOwner])
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			raw := baseAPIKeyState()
+			maps.Copy(raw, tc.patch)
+
+			got := requireUpgradedJSON(t, runUpgrade(t, 2, raw))
+			tc.assert(t, got)
+		})
+	}
+}
+

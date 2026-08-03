@@ -34,6 +34,7 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 					return
 				}
 				stateutil.NullifyEmptyString(stateMap, attrExpiration, attrMetadata, attrRoleDescriptors)
+				backfillOwnerDefault(stateMap)
 				stateutil.MarshalStateMap(stateMap, resp)
 			},
 		},
@@ -47,8 +48,40 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 				if v, ok := stateMap[attrType]; !ok || v == nil || v == "" {
 					stateMap[attrType] = apikey.DefaultAPIKeyType
 				}
+				backfillOwnerDefault(stateMap)
+				stateutil.MarshalStateMap(stateMap, resp)
+			},
+		},
+		2: {
+			// The `owner` attribute was added without any other schema change,
+			// so states written at version 2 (by this provider prior to the
+			// `owner` attribute existing, or by published releases that
+			// already reached schema version 2) need only have `owner`
+			// backfilled to reach version 3.
+			StateUpgrader: func(_ context.Context, req fwresource.UpgradeStateRequest, resp *fwresource.UpgradeStateResponse) {
+				stateMap := stateutil.UnmarshalStateMap(req, resp)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				backfillOwnerDefault(stateMap)
 				stateutil.MarshalStateMap(stateMap, resp)
 			},
 		},
 	}
 }
+
+// backfillOwnerDefault sets the `owner` attribute to its schema default
+// (true) when it is absent from prior state. The `owner` attribute was added
+// after schema versions 0 and 1 shipped, so any state written before it
+// existed (including states written by published provider versions prior to
+// this change) has no `owner` key at all. Without this backfill, the first
+// plan against such state would compute `owner` via the schema's Default
+// (going from null to `true`), which Terraform treats as an in-place update
+// and triggers a real Update API Key call - unnecessarily, and fatally on
+// Elasticsearch versions older than 8.4 that don't support that endpoint.
+func backfillOwnerDefault(m map[string]any) {
+	if _, ok := m[attrOwner]; !ok {
+		m[attrOwner] = true
+	}
+}
+
