@@ -517,6 +517,16 @@ func checkResourceSecurityAPIKeyDestroy(s *terraform.State) error {
 			return fmt.Errorf("Unable to get API key %v", diags)
 		}
 
+		// GetAPIKey scopes the lookup to owner:true, so a key that has been
+		// invalidated (and is thus no longer owned/visible from this
+		// perspective in some cases) can legitimately come back as nil. That
+		// is equivalent to the key no longer existing/being accessible, so
+		// treat it as successfully destroyed rather than dereferencing a nil
+		// pointer.
+		if apiKey == nil {
+			continue
+		}
+
 		if !apiKey.Invalidated {
 			return fmt.Errorf("API key (%s) has not been invalidated", compID.ResourceID)
 		}
