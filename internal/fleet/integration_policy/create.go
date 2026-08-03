@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,6 +44,11 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	fleetClient := client.GetFleetClient()
+
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	feat, diags := resolveIntegrationPolicyFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)

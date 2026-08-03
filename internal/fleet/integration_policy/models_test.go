@@ -77,7 +77,7 @@ func TestOutputIdHandling(t *testing.T) {
 		require.Equal(t, []any{}, decoded["policy_ids"])
 	})
 
-	t.Run("toAPIModel_unsupported_version", func(t *testing.T) {
+	t.Run("output_id declares version requirement", func(t *testing.T) {
 		model := integrationPolicyModel{
 			Name:               types.StringValue("test-policy"),
 			IntegrationName:    types.StringValue("test-integration"),
@@ -85,15 +85,11 @@ func TestOutputIdHandling(t *testing.T) {
 			OutputID:           types.StringValue("test-output-id"),
 		}
 
-		feat := integrationPolicyFeatures{
-			SupportsPolicyIDs: true,
-			SupportsOutputID:  false, // Simulate unsupported version
-		}
-
-		_, diags := model.toAPIModel(context.Background(), feat)
-		require.Len(t, diags, 1)
-		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
-		require.Contains(t, diags[0].Detail(), "Output ID is only supported in Elastic Stack")
+		reqs, diags := model.GetVersionRequirements(context.Background())
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.Equal(t, MinVersionOutputID.String(), reqs[0].MinVersion.String())
+		require.Equal(t, "output_id", reqs[0].AttributePath.String())
 	})
 }
 
@@ -195,7 +191,7 @@ func TestConditionHandling(t *testing.T) {
 	// it is rejected by Kibana 9.4.x and earlier ("Additional properties are
 	// not allowed" 400), confirmed empirically against a 9.5.0-SNAPSHOT
 	// Kibana. See design.md Open Question 4 resolution and MinVersionCondition.
-	t.Run("toAPIModel rejects input condition when version unsupported", func(t *testing.T) {
+	t.Run("input condition declares version requirement", func(t *testing.T) {
 		model := integrationPolicyModel{
 			Name:               types.StringValue("test-policy"),
 			IntegrationName:    types.StringValue("test-integration"),
@@ -204,14 +200,14 @@ func TestConditionHandling(t *testing.T) {
 			Inputs:             newInputsWithCondition(t, "host.os.family == 'linux'", ""),
 		}
 
-		_, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: false})
-		require.True(t, diags.HasError())
-		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
-		require.Contains(t, diags[0].Detail(), "Input condition is only supported in Elastic Stack")
-		require.Contains(t, diags[0].Detail(), MinVersionCondition.String())
+		reqs, diags := model.GetVersionRequirements(ctx)
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.Equal(t, MinVersionCondition.String(), reqs[0].MinVersion.String())
+		require.Equal(t, `inputs["test-input"].condition`, reqs[0].AttributePath.String())
 	})
 
-	t.Run("toAPIModel rejects stream condition when version unsupported", func(t *testing.T) {
+	t.Run("stream condition declares version requirement", func(t *testing.T) {
 		model := integrationPolicyModel{
 			Name:               types.StringValue("test-policy"),
 			IntegrationName:    types.StringValue("test-integration"),
@@ -220,11 +216,11 @@ func TestConditionHandling(t *testing.T) {
 			Inputs:             newInputsWithCondition(t, "", "data_stream.dataset == 'audit'"),
 		}
 
-		_, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: false})
-		require.True(t, diags.HasError())
-		require.Equal(t, "Unsupported Elasticsearch version", diags[0].Summary())
-		require.Contains(t, diags[0].Detail(), "Stream condition is only supported in Elastic Stack")
-		require.Contains(t, diags[0].Detail(), MinVersionCondition.String())
+		reqs, diags := model.GetVersionRequirements(ctx)
+		require.False(t, diags.HasError())
+		require.Len(t, reqs, 1)
+		require.Equal(t, MinVersionCondition.String(), reqs[0].MinVersion.String())
+		require.Equal(t, `inputs["test-input"].streams["test.stream"].condition`, reqs[0].AttributePath.String())
 	})
 
 	t.Run("toAPIModel allows unset condition when version unsupported", func(t *testing.T) {
