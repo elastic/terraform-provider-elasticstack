@@ -198,7 +198,10 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	}
 
 	var settings advancedSettingsModel
-	model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+	diags := model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return nil, diags
+	}
 
 	// Check if any values are set
 	hasValues := typeutils.IsKnown(settings.LoggingLevel) ||
@@ -249,5 +252,5 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
 	}
 
-	return result, nil
+	return result, diags
 }
