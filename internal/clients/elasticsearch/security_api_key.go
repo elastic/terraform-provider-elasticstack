@@ -20,6 +20,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
@@ -150,17 +151,10 @@ func apiKeyIDInvalidated(res *invalidateapikey.Response, id string) bool {
 	if res == nil {
 		return false
 	}
-	for _, invalidatedID := range res.InvalidatedApiKeys {
-		if invalidatedID == id {
-			return true
-		}
+	if slices.Contains(res.InvalidatedApiKeys, id) {
+		return true
 	}
-	for _, invalidatedID := range res.PreviouslyInvalidatedApiKeys {
-		if invalidatedID == id {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(res.PreviouslyInvalidatedApiKeys, id)
 }
 
 func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createcrossclusterapikey.Request) (*createcrossclusterapikey.Response, fwdiag.Diagnostics) {
