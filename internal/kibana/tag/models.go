@@ -85,9 +85,7 @@ func (m *tagBaseModel) populateFromAPI(spaceID string, detail *kibanaoapi.TagDet
 		return
 	}
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	m.setCompositeIdentity(spaceID, detail.ID)
 	m.Name = types.StringValue(detail.Name)
