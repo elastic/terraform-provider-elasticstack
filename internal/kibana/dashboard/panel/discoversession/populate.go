@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -96,7 +97,7 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		if apiByRef {
 			cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1()
 			if err != nil {
-				return discoverSessionDecodeDiagnostics(err, "by-reference")
+				return iface.UnionDecodeDiagnostics("discover_session", err, "by-reference")
 			}
 			imported, imDiags := discoverSessionConfig1FromAPIImport(ctx, cfg1)
 			if imported != nil {
@@ -106,7 +107,7 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		}
 		cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0()
 		if err != nil {
-			return discoverSessionDecodeDiagnostics(err, "by-value")
+			return iface.UnionDecodeDiagnostics("discover_session", err, "by-value")
 		}
 		var priorTab *models.DiscoverSessionTabModel
 		if tfPanel != nil && tfPanel.DiscoverSessionConfig != nil && tfPanel.DiscoverSessionConfig.ByValue != nil {
@@ -122,27 +123,16 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 	if apiByRef {
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1()
 		if err != nil {
-			return discoverSessionDecodeDiagnostics(err, "by-reference")
+			return iface.UnionDecodeDiagnostics("discover_session", err, "by-reference")
 		}
 		return discoverSessionMergeConfig1FromAPI(ctx, existing, tfPanel, cfg1)
 	}
 
 	cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0()
 	if err != nil {
-		return discoverSessionDecodeDiagnostics(err, "by-value")
+		return iface.UnionDecodeDiagnostics("discover_session", err, "by-value")
 	}
 	return discoverSessionMergeConfig0FromAPI(ctx, existing, tfPanel, cfg0)
-}
-
-// discoverSessionDecodeDiagnostics builds a diagnostic for failed kbapi union decoding so
-// callers do not silently lose state during read/refresh.
-func discoverSessionDecodeDiagnostics(err error, branch string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Failed to decode discover_session API config",
-		"Could not decode the API discover_session "+branch+" config: "+err.Error(),
-	)
-	return diags
 }
 
 func discoverSessionPanelConfigFromAPIImport(
