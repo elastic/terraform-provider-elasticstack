@@ -39,6 +39,7 @@ var (
 
 type Resource struct {
 	*entitycore.KibanaResource[tfModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -54,6 +55,9 @@ func newResource() *Resource {
 				Delete: deleteEntity,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(
+			path.Root("id"), path.Root("space_id"), path.Root("entity_id"),
+		).DefaultSpaceID(clients.DefaultSpaceID),
 	}
 }
 
@@ -113,32 +117,26 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStr(req.ID)
-	if diags.HasError() {
-		resp.Diagnostics.AddError(
-			"Invalid import ID",
-			"Import ID must be in the format <space_id>/<entity_id>",
-		)
+	r.KibanaSpaceImporter.ImportState(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	spaceID := composite.ClusterID
-	entityID := composite.ResourceID
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
+
+	var entityID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
+
 	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
-	entityType := ""
-	if idx := strings.Index(entityID, ":"); idx > 0 {
-		entityType = entityID[:idx]
-	} else {
+	idx := strings.Index(entityID.ValueString(), ":")
+	if idx <= 0 {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
-			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", entityID),
+			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", entityID.ValueString()),
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_id"), entityID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), entityType)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), entityID.ValueString()[:idx])...)
 }

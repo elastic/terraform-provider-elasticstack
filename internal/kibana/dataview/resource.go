@@ -20,7 +20,6 @@ package dataview
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -61,9 +60,8 @@ func NewResource() resource.Resource {
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() {
+	composite := entitycore.ParseCompositeImportID(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -86,6 +84,5 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		KibanaConnection:      providerschema.KibanaConnectionNullList(),
 	}
 
-	diags = resp.State.Set(ctx, stateModel)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, stateModel)...)
 }

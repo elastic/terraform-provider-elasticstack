@@ -108,15 +108,23 @@ func (s *SpaceImporter) ImportState(ctx context.Context, req resource.ImportStat
 //	    }
 //	}
 type KibanaSpaceImporter struct {
-	idField          path.Path
-	spaceIDField     path.Path
-	resourceIDFields []path.Path
+	idField             path.Path
+	spaceIDField        path.Path
+	resourceIDFields    []path.Path
+	requireSpaceID      bool
+	requireSpaceSummary string
+	requireSpaceDetail  string
+	defaultSpaceID      string
 }
 
 // NewKibanaSpaceImporter constructs a KibanaSpaceImporter that will set idField
 // to the full import ID, spaceIDField to the space-ID portion of the composite
 // ID, and each of resourceIDFields to the resource-ID portion. At least one
 // resourceIDField is required.
+//
+// By default, a composite ID whose space portion is empty (e.g. "/my-id")
+// results in spaceIDField being set to an empty string. Use RequireSpaceID or
+// DefaultSpaceID to customize that behavior.
 func NewKibanaSpaceImporter(idField, spaceIDField path.Path, resourceIDFields ...path.Path) *KibanaSpaceImporter {
 	if len(resourceIDFields) == 0 {
 		panic("NewKibanaSpaceImporter: at least one resourceIDField is required")
@@ -124,18 +132,54 @@ func NewKibanaSpaceImporter(idField, spaceIDField path.Path, resourceIDFields ..
 	return &KibanaSpaceImporter{idField: idField, spaceIDField: spaceIDField, resourceIDFields: resourceIDFields}
 }
 
+// RequireSpaceID configures the importer to add an error diagnostic (using
+// the given summary and detail) instead of setting spaceIDField to an empty
+// string when the composite import ID omits a space.
+func (s *KibanaSpaceImporter) RequireSpaceID(summary, detail string) *KibanaSpaceImporter {
+	s.requireSpaceID = true
+	s.requireSpaceSummary = summary
+	s.requireSpaceDetail = detail
+	return s
+}
+
+// DefaultSpaceID configures the importer to fall back to the given space ID
+// instead of an empty string when the composite import ID omits a space.
+func (s *KibanaSpaceImporter) DefaultSpaceID(spaceID string) *KibanaSpaceImporter {
+	s.defaultSpaceID = spaceID
+	return s
+}
+
 // ImportState handles import for Kibana resources with required space-aware
 // composite IDs in the format "<space_id>/<resource_id>".
 func (s *KibanaSpaceImporter) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() {
+	composite := ParseCompositeImportID(req, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	spaceID := composite.ClusterID
+	if spaceID == "" {
+		switch {
+		case s.requireSpaceID:
+			resp.Diagnostics.AddError(s.requireSpaceSummary, s.requireSpaceDetail)
+			return
+		case s.defaultSpaceID != "":
+			spaceID = s.defaultSpaceID
+		}
+	}
+
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, s.idField, req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, s.spaceIDField, composite.ClusterID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, s.spaceIDField, spaceID)...)
 	for _, f := range s.resourceIDFields {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, f, composite.ResourceID)...)
 	}
+}
+
+// ParseCompositeImportID parses a space-aware composite import ID of the form
+// "<space_id>/<resource_id>", appending any diagnostics to resp. Callers must
+// check resp.Diagnostics.HasError() before using the returned value.
+func ParseCompositeImportID(req resource.ImportStateRequest, resp *resource.ImportStateResponse) *clients.CompositeID {
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
+	return composite
 }
