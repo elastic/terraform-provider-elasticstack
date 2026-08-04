@@ -121,11 +121,8 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		)
 		return
 	}
-	spaceID := composite.ClusterID
+	spaceID := clients.EffectiveSpaceID(composite.ClusterID)
 	entityID := composite.ResourceID
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
 	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
 	entityType := ""
 	if idx := strings.Index(entityID, ":"); idx > 0 {
