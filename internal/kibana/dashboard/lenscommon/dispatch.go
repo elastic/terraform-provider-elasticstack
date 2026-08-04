@@ -17,7 +17,12 @@
 
 package lenscommon
 
-import "github.com/hashicorp/terraform-plugin-framework/diag"
+import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+)
 
 // DispatchByQueryMode handles the ESQL/NoESQL dispatcher boilerplate shared across lens panel
 // ConfigToAPI functions. It calls the appropriate builder, appends its diagnostics, and applies
@@ -56,4 +61,45 @@ func DispatchByQueryMode[ESQL, NoESQL any](
 		diags.AddError(noESQLErrSummary, err.Error())
 	}
 	return attrs, diags
+}
+
+// SnapshotAndResetBlock captures a copy of the block currently pointed to by field (or
+// nil if it is unset) as "prior" state, then resets *field to a fresh zero-value block
+// so PopulateFromAttributes implementations can populate it from scratch while their
+// FromAPI helpers still have access to the previous state for value preservation.
+func SnapshotAndResetBlock[TBlock any](field **TBlock) *TBlock {
+	var prior *TBlock
+	if *field != nil {
+		cpy := **field
+		prior = &cpy
+	}
+	*field = new(TBlock)
+	return prior
+}
+
+// PopulateFromNoESQLOrESQL handles the "try the NoESQL variant, optionally guarded by a
+// NoESQL-candidate-is-actually-ESQL sniff, otherwise fall back to the ESQL variant"
+// dispatch shared by every by-value lens chart converter's PopulateFromAttributes.
+//
+// guard may be nil when the chart's NoESQL API shape has no single top-level data
+// source to sniff (e.g. xy charts, where each layer carries its own data source) - in
+// that case only the NoESQL decode error determines the branch.
+func PopulateFromNoESQLOrESQL[TConfig, TNoESQL, TESQL any](
+	ctx context.Context,
+	config *TConfig,
+	prior *TConfig,
+	asNoESQL func() (TNoESQL, error),
+	asESQL func() (TESQL, error),
+	guard func(TNoESQL) bool,
+	fromAPINoESQL func(context.Context, *TConfig, *TConfig, TNoESQL) diag.Diagnostics,
+	fromAPIESQL func(context.Context, *TConfig, *TConfig, TESQL) diag.Diagnostics,
+) diag.Diagnostics {
+	if noESQL, err := asNoESQL(); err == nil && (guard == nil || guard(noESQL)) {
+		return fromAPINoESQL(ctx, config, prior, noESQL)
+	}
+	esql, err := asESQL()
+	if err != nil {
+		return diagutil.FrameworkDiagFromError(err)
+	}
+	return fromAPIESQL(ctx, config, prior, esql)
 }
