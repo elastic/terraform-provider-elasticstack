@@ -49,8 +49,7 @@ func updateExceptionList(
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	if updateResp == nil {
-		diags.AddError("Failed to update exception list", "API returned empty response")
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updateResp, "update", "exception list") {
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
