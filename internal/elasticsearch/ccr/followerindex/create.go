@@ -142,7 +142,8 @@ type followerIndexGetter func(ctx context.Context, indexName string) (*estypes.F
 
 // errFollowerGetFailed is a sentinel returned by the state checker to bail out
 // of the shared poll loop while preserving the original framework diagnostics
-// in a closure-captured variable.
+// in a closure-captured variable. Relies on WaitForStateTransition invoking the
+// checker synchronously from the calling goroutine.
 var errFollowerGetFailed = errors.New("ccr follower index get failed")
 
 // waitForFollowerActive polls GET /_ccr/info until the follower reports an active
@@ -153,23 +154,24 @@ func waitForFollowerActive(
 	client *clients.ElasticsearchScopedClient,
 	indexName string,
 ) (*estypes.FollowerIndex, diag.Diagnostics) {
-	return waitForFollowerActiveWithInterval(ctx, indexName, followerActivePollInterval, func(ctx context.Context, indexName string) (*estypes.FollowerIndex, diag.Diagnostics) {
+	return waitForFollowerActiveWithInterval(ctx, indexName, func(ctx context.Context, indexName string) (*estypes.FollowerIndex, diag.Diagnostics) {
 		return elasticsearch.GetFollowerIndex(ctx, client, indexName)
-	})
+	}, followerActivePollInterval, followerActiveTimeout)
 }
 
-// waitForFollowerActiveWithInterval delegates the poll loop to the shared
-// [asyncutils.WaitForStateTransition] helper. The get failure is surfaced
-// verbatim via a closure-captured variable, and ctx-deadline/cancellation
-// errors are translated into the distinct diagnostics this function has
-// always returned so existing behavior is preserved.
+// waitForFollowerActiveWithInterval polls via the shared
+// [asyncutils.WaitForStateTransition] helper, performing an immediate first
+// check so an already-active follower returns without waiting a poll interval.
+// pollInterval and timeout are parameters so the poll/timeout/cancellation
+// logic is unit-testable without a live cluster or a real two-minute wait.
 func waitForFollowerActiveWithInterval(
 	ctx context.Context,
 	indexName string,
-	pollInterval time.Duration,
 	get followerIndexGetter,
+	pollInterval time.Duration,
+	timeout time.Duration,
 ) (*estypes.FollowerIndex, diag.Diagnostics) {
-	waitCtx, cancel := context.WithTimeout(ctx, followerActiveTimeout)
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	var (
@@ -180,6 +182,9 @@ func waitForFollowerActiveWithInterval(
 	stateChecker := func(checkCtx context.Context) (bool, error) {
 		follower, diags := get(checkCtx, indexName)
 		if diags.HasError() {
+			if checkCtx.Err() != nil {
+				return false, checkCtx.Err()
+			}
 			getDiags = diags
 			return false, errFollowerGetFailed
 		}
@@ -202,18 +207,27 @@ func waitForFollowerActiveWithInterval(
 	case errors.Is(waitErr, errFollowerGetFailed):
 		diags.Append(getDiags...)
 	case errors.Is(waitErr, context.DeadlineExceeded):
-		diags.AddError(
-			"Timed out waiting for CCR follower to start",
-			fmt.Sprintf(
-				"Follower index %q did not begin following within %s. The leader index may be unreachable or ineligible for replication.",
-				indexName,
-				followerActiveTimeout,
-			),
-		)
+		if ctx.Err() != nil {
+			// The parent context expired (e.g. the resource create timeout),
+			// not the dedicated follower wait budget.
+			diags.AddError(
+				"Context canceled while waiting for CCR follower to start",
+				waitErr.Error(),
+			)
+		} else {
+			diags.AddError(
+				"Timed out waiting for CCR follower to start",
+				fmt.Sprintf(
+					"Follower index %q did not begin following within %s. The leader index may be unreachable or ineligible for replication.",
+					indexName,
+					timeout,
+				),
+			)
+		}
 	case errors.Is(waitErr, context.Canceled):
 		diags.AddError(
 			"Context canceled while waiting for CCR follower to start",
-			waitCtx.Err().Error(),
+			waitErr.Error(),
 		)
 	case waitErr != nil:
 		diags.AddError("Failed waiting for CCR follower to start", waitErr.Error())

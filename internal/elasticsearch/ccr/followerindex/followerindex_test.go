@@ -350,7 +350,7 @@ func TestWaitForFollowerActiveWithInterval_becomesActiveAfterPolls(t *testing.T)
 		}, nil
 	}
 
-	follower, diags := waitForFollowerActiveWithInterval(context.Background(), "follower", 5*time.Millisecond, get)
+	follower, diags := waitForFollowerActiveWithInterval(context.Background(), "follower", get, 5*time.Millisecond, 2*time.Second)
 	require.False(t, diags.HasError(), diags)
 	require.NotNil(t, follower)
 	assert.Equal(t, "follower", follower.FollowerIndex)
@@ -373,7 +373,7 @@ func TestWaitForFollowerActiveWithInterval_checksImmediately(t *testing.T) {
 		}, nil
 	}
 
-	follower, diags := waitForFollowerActiveWithInterval(ctx, "follower", time.Hour, get)
+	follower, diags := waitForFollowerActiveWithInterval(ctx, "follower", get, time.Hour, 2*time.Second)
 	require.False(t, diags.HasError(), diags)
 	require.NotNil(t, follower)
 	assert.Equal(t, "follower", follower.FollowerIndex)
@@ -383,18 +383,37 @@ func TestWaitForFollowerActiveWithInterval_checksImmediately(t *testing.T) {
 func TestWaitForFollowerActiveWithInterval_timeout(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	get := func(_ context.Context, _ string) (*estypes.FollowerIndex, diag.Diagnostics) {
+		return &estypes.FollowerIndex{Status: mustFollowerStatus(statusPaused)}, nil
+	}
+
+	// No parent deadline: the dedicated follower wait budget is what expires,
+	// so the message reports the real elapsed duration.
+	follower, diags := waitForFollowerActiveWithInterval(context.Background(), "hung-follower", get, 5*time.Millisecond, 50*time.Millisecond)
+	require.True(t, diags.HasError())
+	require.Len(t, diags.Errors(), 1)
+	assert.Equal(t, "Timed out waiting for CCR follower to start", diags.Errors()[0].Summary())
+	assert.Contains(t, diags.Errors()[0].Detail(), "hung-follower")
+	assert.Contains(t, diags.Errors()[0].Detail(), "50ms")
+	require.NotNil(t, follower)
+	assert.Equal(t, statusPaused, follower.Status.String())
+}
+
+func TestWaitForFollowerActiveWithInterval_parentDeadlineExpires(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
 
 	get := func(_ context.Context, _ string) (*estypes.FollowerIndex, diag.Diagnostics) {
 		return &estypes.FollowerIndex{Status: mustFollowerStatus(statusPaused)}, nil
 	}
 
-	follower, diags := waitForFollowerActiveWithInterval(ctx, "hung-follower", 5*time.Millisecond, get)
+	// The parent context (not the 2-minute follower budget) expires first.
+	follower, diags := waitForFollowerActiveWithInterval(ctx, "hung-follower", get, 5*time.Millisecond, 2*time.Minute)
 	require.True(t, diags.HasError())
 	require.Len(t, diags.Errors(), 1)
-	assert.Equal(t, "Timed out waiting for CCR follower to start", diags.Errors()[0].Summary())
-	assert.Contains(t, diags.Errors()[0].Detail(), "hung-follower")
+	assert.Equal(t, "Context canceled while waiting for CCR follower to start", diags.Errors()[0].Summary())
 	require.NotNil(t, follower)
 	assert.Equal(t, statusPaused, follower.Status.String())
 }
@@ -409,7 +428,7 @@ func TestWaitForFollowerActiveWithInterval_contextCanceled(t *testing.T) {
 		return &estypes.FollowerIndex{Status: mustFollowerStatus(statusPaused)}, nil
 	}
 
-	follower, diags := waitForFollowerActiveWithInterval(ctx, "canceled-follower", 5*time.Millisecond, get)
+	follower, diags := waitForFollowerActiveWithInterval(ctx, "canceled-follower", get, 5*time.Millisecond, 2*time.Second)
 	require.True(t, diags.HasError())
 	require.Len(t, diags.Errors(), 1)
 	assert.Equal(t, "Context canceled while waiting for CCR follower to start", diags.Errors()[0].Summary())
@@ -431,7 +450,7 @@ func TestWaitForFollowerActiveWithInterval_propagatesGetDiagnostics(t *testing.T
 		return nil, diags
 	}
 
-	follower, diags := waitForFollowerActiveWithInterval(ctx, "broken-follower", 5*time.Millisecond, get)
+	follower, diags := waitForFollowerActiveWithInterval(ctx, "broken-follower", get, 5*time.Millisecond, 2*time.Second)
 	require.True(t, diags.HasError())
 	require.Len(t, diags.Errors(), 1)
 	assert.Equal(t, wantSummary, diags.Errors()[0].Summary())
@@ -442,15 +461,14 @@ func TestWaitForFollowerActiveWithInterval_propagatesGetDiagnostics(t *testing.T
 func TestWaitForFollowerActiveWithInterval_returnsLastObservedOnTimeout(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-	defer cancel()
-
 	last := &estypes.FollowerIndex{FollowerIndex: "last-seen", Status: mustFollowerStatus(statusPaused)}
 	get := func(_ context.Context, _ string) (*estypes.FollowerIndex, diag.Diagnostics) {
 		return last, nil
 	}
 
-	follower, diags := waitForFollowerActiveWithInterval(ctx, "hung-follower", 5*time.Millisecond, get)
+	// No parent deadline: the dedicated follower wait budget expires, so the
+	// last observed follower is returned alongside the timeout diagnostic.
+	follower, diags := waitForFollowerActiveWithInterval(context.Background(), "hung-follower", get, 5*time.Millisecond, 30*time.Millisecond)
 	require.True(t, diags.HasError())
 	require.NotNil(t, follower)
 	assert.Equal(t, "last-seen", follower.FollowerIndex)
