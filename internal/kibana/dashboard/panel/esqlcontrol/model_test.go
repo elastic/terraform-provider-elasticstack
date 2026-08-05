@@ -35,11 +35,18 @@ func mustWrapStaticEsqlConfig(t *testing.T, sv kbapi.KibanaHTTPAPIsKbnControlsSc
 	return cfg
 }
 
+func mustStaticVariableType(t *testing.T) kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues_VariableType {
+	t.Helper()
+	variableType, err := esqlControlStaticVariableType("values")
+	require.NoError(t, err)
+	return variableType
+}
+
 func minimalEsqlAPIConfig(t *testing.T) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl_Config {
 	return mustWrapStaticEsqlConfig(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
-		VariableType:    kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		VariableType:    mustStaticVariableType(t),
 		ControlType:     kbapi.STATICVALUES,
 	})
 }
@@ -50,7 +57,7 @@ func Test_PopulateFromAPI_import_populatesAllFields(t *testing.T) {
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions:  []string{"opt_a"},
 		VariableName:     "my_var",
-		VariableType:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		VariableType:     mustStaticVariableType(t),
 		ControlType:      kbapi.STATICVALUES,
 		Title:            new("My Control"),
 		SingleSelect:     new(true),
@@ -133,7 +140,7 @@ func Test_PopulateFromAPI_nullOptionalFields_preserved(t *testing.T) {
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
-		VariableType:    kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		VariableType:    mustStaticVariableType(t),
 		ControlType:     kbapi.STATICVALUES,
 		Title:           new("API Title"),
 		SingleSelect:    new(true),
@@ -162,7 +169,7 @@ func Test_PopulateFromAPI_nilDisplaySettings_preserved(t *testing.T) {
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
-		VariableType:    kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		VariableType:    mustStaticVariableType(t),
 		ControlType:     kbapi.STATICVALUES,
 		DisplaySettings: &struct {
 			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
@@ -196,7 +203,7 @@ func Test_PopulateFromAPI_displaySettings_nullFieldsPreserved(t *testing.T) {
 	cfg := mustWrapStaticEsqlConfig(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: []string{"opt_a"},
 		VariableName:    "my_var",
-		VariableType:    kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues,
+		VariableType:    mustStaticVariableType(t),
 		ControlType:     kbapi.STATICVALUES,
 		DisplaySettings: &struct {
 			HideActionBar *bool   `json:"hide_action_bar,omitempty"`
@@ -238,7 +245,7 @@ func Test_BuildConfig_requiredFields(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"opt1", "opt2"}, sv.SelectedOptions)
 	assert.Equal(t, "my_var", sv.VariableName)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableTypeValues, sv.VariableType)
+	assert.Equal(t, mustStaticVariableType(t), sv.VariableType)
 	assert.Equal(t, kbapi.STATICVALUES, sv.ControlType)
 	assert.Nil(t, sv.Title)
 	assert.Nil(t, sv.SingleSelect)

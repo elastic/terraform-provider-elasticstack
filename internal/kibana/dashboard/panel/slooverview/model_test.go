@@ -18,6 +18,7 @@
 package slooverview
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -62,7 +63,8 @@ func Test_sloSingleToAPI_basic(t *testing.T) {
 	assert.True(t, *api.HideTitle)
 	require.NotNil(t, api.Drilldowns)
 	require.Len(t, *api.Drilldowns, 1)
-	dd := (*api.Drilldowns)[0]
+	dd, err := (*api.Drilldowns)[0].AsKibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldowns0()
+	require.NoError(t, err)
 	assert.Equal(t, "https://example.com", dd.Url)
 	assert.Equal(t, "Open dashboard", dd.Label)
 	require.NotNil(t, dd.EncodeUrl)
@@ -114,7 +116,9 @@ func Test_sloGroupsToAPI_with_group_filters(t *testing.T) {
 	assert.Equal(t, "Groups Overview", *api.Title)
 	require.NotNil(t, api.GroupFilters)
 	require.NotNil(t, api.GroupFilters.GroupBy)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupByStatus, *api.GroupFilters.GroupBy)
+	groupBy, err := sloGroupByFromAPI(*api.GroupFilters.GroupBy)
+	require.NoError(t, err)
+	assert.Equal(t, "status", groupBy)
 	require.NotNil(t, api.GroupFilters.KqlQuery)
 	assert.Equal(t, "slo.name: my-*", *api.GroupFilters.KqlQuery)
 }
@@ -153,20 +157,11 @@ func Test_sloSingleFromAPI_roundtrip(t *testing.T) {
 }
 
 func Test_sloGroupsFromAPI_roundtrip(t *testing.T) {
-	groupBy := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupByStatus
-	kql := "slo.name: *"
 	apiGroups := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable{
 		OverviewMode: kbapi.Groups,
-		GroupFilters: &struct {
-			Filters  *[]kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
-			GroupBy  *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
-			Groups   *[]string                                                                   `json:"groups,omitempty"`
-			KqlQuery *string                                                                     `json:"kql_query,omitempty"`
-		}{
-			GroupBy:  &groupBy,
-			KqlQuery: &kql,
-		},
 	}
+	groupFiltersJSON := []byte(`{"group_filters":{"group_by":"status","kql_query":"slo.name: *"}}`)
+	require.NoError(t, json.Unmarshal(groupFiltersJSON, &apiGroups))
 
 	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
 	require.NoError(t, config.FromKibanaHTTPAPIsSloGroupOverviewEmbeddable(apiGroups))
@@ -347,5 +342,7 @@ func Test_sloOverview_handlerToAPI_groups(t *testing.T) {
 	assert.Equal(t, kbapi.Groups, groups.OverviewMode)
 	require.NotNil(t, groups.GroupFilters)
 	require.NotNil(t, groups.GroupFilters.GroupBy)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBySloTags, *groups.GroupFilters.GroupBy)
+	groupBy, err := sloGroupByFromAPI(*groups.GroupFilters.GroupBy)
+	require.NoError(t, err)
+	assert.Equal(t, "slo.tags", groupBy)
 }

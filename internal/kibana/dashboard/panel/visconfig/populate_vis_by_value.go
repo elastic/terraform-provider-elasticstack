@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -53,84 +52,84 @@ func seedLensChartPriorIntoBlocks(tfPanel *models.PanelModel, dest *models.LensB
 	}
 	prior := lensByValueChartBlocksFromPanel(tfPanel)
 	switch vizType {
-	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy):
+	case "xy":
 		if prior != nil && prior.XYChartConfig != nil {
 			cpy := *prior.XYChartConfig
 			dest.XYChartConfig = &cpy
 		} else {
 			dest.XYChartConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap):
+	case "treemap":
 		if prior != nil && prior.TreemapConfig != nil {
 			cpy := *prior.TreemapConfig
 			dest.TreemapConfig = &cpy
 		} else {
 			dest.TreemapConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic):
+	case "mosaic":
 		if prior != nil && prior.MosaicConfig != nil {
 			cpy := *prior.MosaicConfig
 			dest.MosaicConfig = &cpy
 		} else {
 			dest.MosaicConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable):
+	case "data_table":
 		if prior != nil && prior.DatatableConfig != nil {
 			cpy := *prior.DatatableConfig
 			dest.DatatableConfig = &cpy
 		} else {
 			dest.DatatableConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud):
+	case "tag_cloud":
 		if prior != nil && prior.TagcloudConfig != nil {
 			cpy := *prior.TagcloudConfig
 			dest.TagcloudConfig = &cpy
 		} else {
 			dest.TagcloudConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap):
+	case "heatmap":
 		if prior != nil && prior.HeatmapConfig != nil {
 			cpy := *prior.HeatmapConfig
 			dest.HeatmapConfig = &cpy
 		} else {
 			dest.HeatmapConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap):
+	case "region_map":
 		if prior != nil && prior.RegionMapConfig != nil {
 			cpy := *prior.RegionMapConfig
 			dest.RegionMapConfig = &cpy
 		} else {
 			dest.RegionMapConfig = nil
 		}
-	case string(kbapi.LegacyMetric):
+	case "legacy_metric":
 		if prior != nil && prior.LegacyMetricConfig != nil {
 			cpy := *prior.LegacyMetricConfig
 			dest.LegacyMetricConfig = &cpy
 		} else {
 			dest.LegacyMetricConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric):
+	case "metric":
 		if prior != nil && prior.MetricChartConfig != nil {
 			cpy := *prior.MetricChartConfig
 			dest.MetricChartConfig = &cpy
 		} else {
 			dest.MetricChartConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie):
+	case "pie":
 		if prior != nil && prior.PieChartConfig != nil {
 			cpy := *prior.PieChartConfig
 			dest.PieChartConfig = &cpy
 		} else {
 			dest.PieChartConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge):
+	case "gauge":
 		if prior != nil && prior.GaugeConfig != nil {
 			cpy := *prior.GaugeConfig
 			dest.GaugeConfig = &cpy
 		} else {
 			dest.GaugeConfig = nil
 		}
-	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle):
+	case "waffle":
 	default:
 	}
 }
@@ -139,11 +138,11 @@ func populateLensVisByValueFromTypedChartAPI(
 	ctx context.Context,
 	tfPanel *models.PanelModel,
 	blocks *models.LensByValueChartBlocks,
-	config0 lenscommon.VisByValueConfig0,
+	config lenscommon.LensByValueConfig,
 	unknownTypeAddsError bool,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-	visType := lenscommon.DetectVizType(config0)
+	visType := lenscommon.DetectVizType(config.Chart)
 	if visType == "" {
 		if unknownTypeAddsError {
 			diags.AddError(
@@ -167,6 +166,6 @@ func populateLensVisByValueFromTypedChartAPI(
 	}
 	seedWaffleLensByValueChartFromPriorPanel(blocks, tfPanel)
 	seedLensChartPriorIntoBlocks(tfPanel, blocks, visType)
-	diags.Append(conv.PopulateFromAttributes(ctx, blocks, config0)...)
+	diags.Append(conv.PopulateFromAttributes(ctx, blocks, config)...)
 	return diags
 }

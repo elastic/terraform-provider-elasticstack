@@ -64,10 +64,10 @@ func pieChartConfigPopulateCommonFields(
 }
 
 func pieChartConfigFromAPINoESQL(
-	ctx context.Context,
+	_ context.Context,
 	m *models.PieChartConfigModel,
-	prior *models.PieChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel,
+	_ *models.PieChartConfigModel,
+	apiChart kbapi.KibanaHTTPAPIsPieNoESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -75,12 +75,10 @@ func pieChartConfigFromAPINoESQL(
 	var labelPosition *string
 	if apiChart.Styling != nil {
 		if apiChart.Styling.DonutHole != nil {
-			s := string(*apiChart.Styling.DonutHole)
-			donutHole = &s
+			donutHole = pieUnionString(apiChart.Styling.DonutHole)
 		}
 		if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
-			s := string(*apiChart.Styling.Labels.Position)
-			labelPosition = &s
+			labelPosition = pieUnionString(apiChart.Styling.Labels.Position)
 		}
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
@@ -127,21 +125,14 @@ func pieChartConfigFromAPINoESQL(
 		}
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(
-		ctx, &m.LensChartPresentationTFModel, prior, apiChart.TimeRange,
-		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
-	) {
-		return diags
-	}
-
 	return diags
 }
 
 func pieChartConfigFromAPIESQL(
-	ctx context.Context,
+	_ context.Context,
 	m *models.PieChartConfigModel,
-	prior *models.PieChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsPieESQLByValuePanel,
+	_ *models.PieChartConfigModel,
+	apiChart kbapi.KibanaHTTPAPIsPieESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -149,12 +140,10 @@ func pieChartConfigFromAPIESQL(
 	var labelPosition *string
 	if apiChart.Styling != nil {
 		if apiChart.Styling.DonutHole != nil {
-			s := string(*apiChart.Styling.DonutHole)
-			donutHole = &s
+			donutHole = pieUnionString(apiChart.Styling.DonutHole)
 		}
 		if apiChart.Styling.Labels != nil && apiChart.Styling.Labels.Position != nil {
-			s := string(*apiChart.Styling.Labels.Position)
-			labelPosition = &s
+			labelPosition = pieUnionString(apiChart.Styling.Labels.Position)
 		}
 	}
 	datasetBytes, datasetErr := json.Marshal(apiChart.DataSource)
@@ -200,13 +189,6 @@ func pieChartConfigFromAPIESQL(
 		}
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(
-		ctx, &m.LensChartPresentationTFModel, prior, apiChart.TimeRange,
-		apiChart.HideTitle, apiChart.HideBorder, apiChart.References, apiChart.Drilldowns, &diags,
-	) {
-		return diags
-	}
-
 	return diags
 }
 
@@ -214,36 +196,46 @@ func pieChartConfigFromAPIESQL(
 // position, and legend fields onto styling. It avoids callers duplicating this setup across
 // NoESQL and ESQL branches.
 func populatePieStyling(m *models.PieChartConfigModel, styling **kbapi.KibanaHTTPAPIsPieStyling, legend **kbapi.KibanaHTTPAPIsPieLegend) {
-	defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
 	*styling = &kbapi.KibanaHTTPAPIsPieStyling{
-		Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
+		Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: pieValueDisplayMode("percentage")},
 	}
 
 	if !m.DonutHole.IsNull() {
-		val := kbapi.KibanaHTTPAPIsPieStylingDonutHole(m.DonutHole.ValueString())
+		val := kbapi.KibanaHTTPAPIsPieStyling_DonutHole{}
+		if err := pieSetUnionString(&val, m.DonutHole.ValueString()); err != nil {
+			return
+		}
 		(*styling).DonutHole = &val
 	}
 
 	if !m.LabelPosition.IsNull() {
-		pos := kbapi.KibanaHTTPAPIsPieStylingLabelsPosition(m.LabelPosition.ValueString())
+		pos := kbapi.KibanaHTTPAPIsPieStyling_Labels_Position{}
+		if err := pieSetUnionString(&pos, m.LabelPosition.ValueString()); err != nil {
+			return
+		}
 		(*styling).Labels = &struct {
-			Position *kbapi.KibanaHTTPAPIsPieStylingLabelsPosition `json:"position,omitempty"`
-			Visible  *bool                                         `json:"visible,omitempty"`
+			Position *kbapi.KibanaHTTPAPIsPieStyling_Labels_Position `json:"position,omitempty"`
+			Visible  *bool                                           `json:"visible,omitempty"`
 		}{Position: &pos}
 	}
 
 	if m.Legend != nil {
 		*legend = lenscommon.PartitionLegendToPieLegend(m.Legend)
 	}
-	if *legend != nil && ((*legend).Size == nil || *(*legend).Size == "") {
-		size := kbapi.KibanaHTTPAPIsLegendSizeAuto
-		(*legend).Size = &size
+	if *legend != nil {
+		sizeValue := pieUnionString((*legend).Size)
+		if sizeValue == nil || *sizeValue == "" {
+			size := kbapi.KibanaHTTPAPIsLegendSize{}
+			if err := pieSetUnionString(&size, "auto"); err == nil {
+				(*legend).Size = &size
+			}
+		}
 	}
 }
 
-func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel, diag.Diagnostics) {
+func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPIsPieNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var chart kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel
+	var chart kbapi.KibanaHTTPAPIsPieNoESQL
 
 	chart.Title, chart.Description, chart.IgnoreGlobalFilters, chart.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -262,43 +254,51 @@ func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPA
 	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
+		metrics := make([]json.RawMessage, len(m.Metrics))
 		for i, metric := range m.Metrics {
-			if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
-				diags.AddError("Failed to unmarshal metric", err.Error())
+			metrics[i] = json.RawMessage(metric.Config.ValueString())
+			if !json.Valid(metrics[i]) {
+				diags.AddError("Invalid metric", "metric configuration must be valid JSON")
 			}
 		}
-		chart.Metrics = metrics
+		raw, err := json.Marshal(struct {
+			Metrics []json.RawMessage `json:"metrics"`
+		}{Metrics: metrics})
+		if err == nil {
+			err = json.Unmarshal(raw, &chart)
+		}
+		if err != nil {
+			diags.AddError("Failed to unmarshal metrics", err.Error())
+		}
 	}
 
 	if len(m.GroupBy) > 0 {
-		groupBy := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_GroupBy_Item, len(m.GroupBy))
+		groupBy := make([]json.RawMessage, len(m.GroupBy))
 		for i, grp := range m.GroupBy {
-			if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
-				diags.AddError("Failed to unmarshal group_by", err.Error())
+			groupBy[i] = json.RawMessage(grp.Config.ValueString())
+			if !json.Valid(groupBy[i]) {
+				diags.AddError("Invalid group_by", "group_by configuration must be valid JSON")
 			}
 		}
-		chart.GroupBy = &groupBy
+		raw, err := json.Marshal(struct {
+			GroupBy []json.RawMessage `json:"group_by"`
+		}{GroupBy: groupBy})
+		if err == nil {
+			err = json.Unmarshal(raw, &chart)
+		}
+		if err != nil {
+			diags.AddError("Failed to unmarshal group_by", err.Error())
+		}
 	}
 
-	chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return chart, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Drilldowns_Item](
-		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-	)...)
+	chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLTypePie
 
 	return chart, diags
 }
 
-func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPIsPieESQLByValuePanel, diag.Diagnostics) {
+func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPIsPieESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var chart kbapi.KibanaHTTPAPIsPieESQLByValuePanel
+	var chart kbapi.KibanaHTTPAPIsPieESQL
 
 	chart.Title, chart.Description, chart.IgnoreGlobalFilters, chart.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -317,10 +317,10 @@ func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPI
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]struct {
-			Color  *kbapi.KibanaHTTPAPIsPieESQLByValuePanel_Metrics_Color `json:"color,omitempty"`
-			Column string                                                 `json:"column"`
-			Format *kbapi.KibanaHTTPAPIsFormatType                        `json:"format,omitempty"`
-			Label  *string                                                `json:"label,omitempty"`
+			Color  *kbapi.KibanaHTTPAPIsPieESQL_Metrics_Color `json:"color,omitempty"`
+			Column string                                     `json:"column"`
+			Format *kbapi.KibanaHTTPAPIsFormatType            `json:"format,omitempty"`
+			Label  *string                                    `json:"label,omitempty"`
 		}, len(m.Metrics))
 		for i, metric := range m.Metrics {
 			if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
@@ -348,36 +348,93 @@ func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPI
 		lenscommon.SetEsqlGroupByOnAPI(rawEntries, &chart.GroupBy, &diags)
 	}
 
-	chart.Type = kbapi.KibanaHTTPAPIsPieESQLByValuePanelTypePie
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return chart, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieESQLByValuePanel_Drilldowns_Item](
-		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-	)...)
+	chart.Type = kbapi.KibanaHTTPAPIsPieESQLTypePie
 
 	return chart, diags
 }
 
-func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var result lenscommon.LensByValueConfig
+	var diags diag.Diagnostics
 	if m == nil {
-		return lenscommon.VisByValueConfig0{}, nil
+		return result, diags
 	}
-	return lenscommon.DispatchByQueryMode(
-		lenscommon.ConfigUsesESQL(m.Query),
-		func() (kbapi.KibanaHTTPAPIsPieESQLByValuePanel, diag.Diagnostics) {
-			return pieChartConfigToAPIESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsPieESQLByValuePanel,
-		"Failed to create PieESQL schema",
-		func() (kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel, diag.Diagnostics) {
-			return pieChartConfigToAPINoESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsPieNoESQLByValuePanel,
-		"Failed to create PieNoESQL schema",
-	)
+
+	if lenscommon.ConfigUsesESQL(m.Query) {
+		chart, chartDiags := pieChartConfigToAPIESQL(m)
+		diags.Append(chartDiags...)
+		if chartDiags.HasError() {
+			return result, diags
+		}
+		var err error
+		result.Chart, err = pieChartToLensAPI(chart)
+		if err != nil {
+			diags.AddError("Failed to create Lens chart config", err.Error())
+			return result, diags
+		}
+	} else {
+		chart, chartDiags := pieChartConfigToAPINoESQL(m)
+		diags.Append(chartDiags...)
+		if chartDiags.HasError() {
+			return result, diags
+		}
+		var err error
+		result.Chart, err = pieChartToLensAPI(chart)
+		if err != nil {
+			diags.AddError("Failed to create Lens chart config", err.Error())
+			return result, diags
+		}
+	}
+	if err := preservePieRawDimensions(&result.Chart, m); err != nil {
+		diags.AddError("Failed to preserve pie chart dimensions", err.Error())
+		return result, diags
+	}
+
+	writes, presentationDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
+	diags.Append(presentationDiags...)
+	if presentationDiags.HasError() {
+		return result, diags
+	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_0_Drilldowns_Item](
+		writes, &result.Presentation.TimeRange, &result.Presentation.HideTitle, &result.Presentation.HideBorder,
+		&result.Presentation.References, &result.Presentation.Drilldowns,
+	)...)
+
+	return result, diags
+}
+
+func preservePieRawDimensions(chart *kbapi.KibanaHTTPAPIsLensApiConfig, m *models.PieChartConfigModel) error {
+	raw, err := json.Marshal(chart)
+	if err != nil {
+		return err
+	}
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return err
+	}
+	if len(m.Metrics) > 0 {
+		metrics := make([]json.RawMessage, len(m.Metrics))
+		for i, metric := range m.Metrics {
+			metrics[i] = json.RawMessage(metric.Config.ValueString())
+		}
+		payload["metrics"], err = json.Marshal(metrics)
+		if err != nil {
+			return err
+		}
+	}
+	if len(m.GroupBy) > 0 {
+		groupBy := make([]json.RawMessage, len(m.GroupBy))
+		for i, dimension := range m.GroupBy {
+			groupBy[i] = json.RawMessage(dimension.Config.ValueString())
+		}
+		payload["group_by"], err = json.Marshal(groupBy)
+		if err != nil {
+			return err
+		}
+	}
+	raw, err = json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(raw, chart)
 }

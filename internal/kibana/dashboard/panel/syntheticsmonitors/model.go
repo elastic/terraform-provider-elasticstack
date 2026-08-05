@@ -18,6 +18,8 @@
 package syntheticsmonitors
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
@@ -36,7 +38,12 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&panel.Config.Title, &panel.Config.Description, &panel.Config.HideTitle, &panel.Config.HideBorder)
 	if typeutils.IsKnown(cfg.View) {
-		view := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView(cfg.View.ValueString())
+		view, err := syntheticsMonitorsViewAPIValue(cfg.View.ValueString())
+		if err != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid synthetics monitors view", err.Error())
+			return diags
+		}
 		panel.Config.View = &view
 	}
 
@@ -279,9 +286,27 @@ func fromSyntheticsAPIItems(items *[]struct {
 	return result
 }
 
-func syntheticsMonitorsViewValue(view *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView) types.String {
+func syntheticsMonitorsViewValue(view *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors_Config_View) types.String {
 	if view == nil {
 		return types.StringNull()
 	}
-	return types.StringValue(string(*view))
+	value, err := view.MarshalJSON()
+	if err != nil {
+		return types.StringNull()
+	}
+	var result string
+	if err := json.Unmarshal(value, &result); err != nil {
+		return types.StringNull()
+	}
+	return types.StringValue(result)
+}
+
+func syntheticsMonitorsViewAPIValue(value string) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors_Config_View, error) {
+	var result kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors_Config_View
+	if value == "cardView" {
+		err := result.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView0("cardView")
+		return result, err
+	}
+	err := result.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView1("compactView")
+	return result, err
 }

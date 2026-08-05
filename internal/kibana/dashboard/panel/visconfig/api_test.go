@@ -35,10 +35,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mustVisPanelItem(t *testing.T, cfg0 lenscommon.VisByValueConfig0) kbapi.DashboardPanelItem {
+func mustVisPanelItem(t *testing.T, configJSON string) kbapi.DashboardPanelItem {
 	t.Helper()
 	var cfg kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
-	require.NoError(t, cfg.FromKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0(cfg0))
+	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
 	w, h := float32(24), float32(12)
 	id := "panel-id"
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis{
@@ -73,9 +73,7 @@ func TestHandler_FromAPI_byValue_metric(t *testing.T) {
 		"query": { "expression": "*", "language": "kql" },
 		"metrics": []
 	}`
-	var cfg0 lenscommon.VisByValueConfig0
-	require.NoError(t, json.Unmarshal([]byte(inner), &cfg0))
-	item := mustVisPanelItem(t, cfg0)
+	item := mustVisPanelItem(t, inner)
 
 	var pm models.PanelModel
 	diags := visconfig.Handler{}.FromAPI(ctx, &pm, nil, item)
@@ -92,11 +90,7 @@ func TestHandler_FromAPI_byValue_datatable(t *testing.T) {
 		`"rows":[{"column":"r","collapse_by":"avg","format":{"type":"number"}}],` +
 		`"styling":{"density":{"mode":"default","height":{"header":{"type":"auto"},"value":{"type":"auto"}}}},` +
 		`"time_range":{"from":"now-7d","to":"now"}}`
-	var api kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-	var cfg0 lenscommon.VisByValueConfig0
-	require.NoError(t, cfg0.FromKibanaHTTPAPIsDatatableESQLByValuePanel(api))
-	item := mustVisPanelItem(t, cfg0)
+	item := mustVisPanelItem(t, apiJSON)
 
 	var pm models.PanelModel
 	diags := visconfig.Handler{}.FromAPI(ctx, &pm, nil, item)
@@ -209,9 +203,7 @@ func TestHandler_ToAPI_byValue_xy_roundTripGrid(t *testing.T) {
 		"query": { "expression": "*", "language": "kql" },
 		"layers": [{"type": "line", "y": [{"operation": "count", "axis": "left"}]}]
 	}`
-	var cfg0 lenscommon.VisByValueConfig0
-	require.NoError(t, json.Unmarshal([]byte(inner), &cfg0))
-	item := mustVisPanelItem(t, cfg0)
+	item := mustVisPanelItem(t, inner)
 
 	var pm models.PanelModel
 	require.False(t, visconfig.Handler{}.FromAPI(ctx, &pm, nil, item).HasError())

@@ -58,6 +58,31 @@ func configMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {
 	return cfg
 }
 
+func patternAnalysisAPI(t *testing.T, config string) kbapi.KibanaHTTPAPIsAiopsPatternAnalysis {
+	t.Helper()
+	var api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis
+	require.NoError(t, json.Unmarshal([]byte(config), &api))
+	return api
+}
+
+func unionString(t *testing.T, value any) string {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	require.NoError(t, err)
+	var result string
+	require.NoError(t, json.Unmarshal(raw, &result))
+	return result
+}
+
+func unionFloat32(t *testing.T, value any) float32 {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	require.NoError(t, err)
+	var result float32
+	require.NoError(t, json.Unmarshal(raw, &result))
+	return result
+}
+
 func diagSummary(diags diag.Diagnostics) string {
 	if diags == nil {
 		return ""
@@ -151,11 +176,11 @@ func TestBuildConfig_allOptional(t *testing.T) {
 	require.Equal(t, "logs-*", panel.Config.DataViewId)
 	require.Equal(t, "message", panel.Config.FieldName)
 	require.NotNil(t, panel.Config.MinimumTimeRange)
-	require.Equal(t, "1_week", string(*panel.Config.MinimumTimeRange))
+	require.Equal(t, "1_week", unionString(t, panel.Config.MinimumTimeRange))
 	require.NotNil(t, panel.Config.RandomSamplerMode)
-	require.Equal(t, "on_manual", string(*panel.Config.RandomSamplerMode))
+	require.Equal(t, "on_manual", unionString(t, panel.Config.RandomSamplerMode))
 	require.NotNil(t, panel.Config.RandomSamplerProbability)
-	require.InDelta(t, 0.01, float64(*panel.Config.RandomSamplerProbability), 1e-6)
+	require.InDelta(t, 0.01, float64(unionFloat32(t, panel.Config.RandomSamplerProbability)), 1e-6)
 	require.NotNil(t, panel.Config.TimeRange)
 	require.Equal(t, "now-15m", panel.Config.TimeRange.From)
 }
@@ -163,15 +188,13 @@ func TestBuildConfig_allOptional(t *testing.T) {
 func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 	t.Parallel()
 
-	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("1_week")
-	rsm := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode("on_automatic")
-	api := kbapi.KibanaHTTPAPIsAiopsPatternAnalysis{
-		DataViewId:               "logs-*",
-		FieldName:                "message",
-		MinimumTimeRange:         &mtr,
-		RandomSamplerMode:        &rsm,
-		RandomSamplerProbability: new(float32(0.02)),
-	}
+	api := patternAnalysisAPI(t, `{
+		"data_view_id": "logs-*",
+		"field_name": "message",
+		"minimum_time_range": "1_week",
+		"random_sampler_mode": "on_automatic",
+		"random_sampler_probability": 0.02
+	}`)
 
 	prior := &models.PanelModel{
 		AiopsPatternAnalysisConfig: &models.AiopsPatternAnalysisConfigModel{
@@ -208,12 +231,11 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 func TestPopulateFromAPI_import(t *testing.T) {
 	t.Parallel()
 
-	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("1_month")
-	api := kbapi.KibanaHTTPAPIsAiopsPatternAnalysis{
-		DataViewId:       "logs-*",
-		FieldName:        "message",
-		MinimumTimeRange: &mtr,
-	}
+	api := patternAnalysisAPI(t, `{
+		"data_view_id": "logs-*",
+		"field_name": "message",
+		"minimum_time_range": "1_month"
+	}`)
 
 	pm := &models.PanelModel{}
 	diags := aiopspatternanalysis.PopulateFromAPI(pm, nil, api)
@@ -233,15 +255,13 @@ func TestPopulateFromAPI_import(t *testing.T) {
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	t.Parallel()
 
-	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("1_week")
 	from, to := "now-30m", "now"
-	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
-	api := kbapi.KibanaHTTPAPIsAiopsPatternAnalysis{
-		DataViewId:       "logs-*",
-		FieldName:        "message",
-		MinimumTimeRange: &mtr,
-		TimeRange:        &tr,
-	}
+	api := patternAnalysisAPI(t, `{
+		"data_view_id": "logs-*",
+		"field_name": "message",
+		"minimum_time_range": "1_week",
+		"time_range": {"from": "now-30m", "to": "now"}
+	}`)
 
 	// pm has no config (panel type changed away from this type in the plan)
 	// but prior still has the config block.

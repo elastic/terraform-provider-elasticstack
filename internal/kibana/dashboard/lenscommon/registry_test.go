@@ -63,12 +63,12 @@ func (fakeConverter) SchemaAttribute() schema.Attribute {
 	return schema.StringAttribute{Optional: true}
 }
 
-func (fakeConverter) PopulateFromAttributes(context.Context, *models.LensByValueChartBlocks, VisByValueConfig0) diag.Diagnostics {
+func (fakeConverter) PopulateFromAttributes(context.Context, *models.LensByValueChartBlocks, LensByValueConfig) diag.Diagnostics {
 	return nil
 }
 
-func (fakeConverter) BuildAttributes(*models.LensByValueChartBlocks) (VisByValueConfig0, diag.Diagnostics) {
-	return VisByValueConfig0{}, nil
+func (fakeConverter) BuildAttributes(*models.LensByValueChartBlocks) (LensByValueConfig, diag.Diagnostics) {
+	return LensByValueConfig{}, nil
 }
 
 func (fakeConverter) AlignStateFromPlan(context.Context, *models.LensByValueChartBlocks, *models.LensByValueChartBlocks) {

@@ -76,7 +76,15 @@ func PopulatePartitionEsqlGroupByFromAPI(src []EsqlGroupByAPIFields, diags *diag
 	for i, gb := range src {
 		collapseBy := ""
 		if gb.CollapseBy != nil {
-			collapseBy = string(*gb.CollapseBy)
+			collapseByBytes, err := json.Marshal(gb.CollapseBy)
+			if err != nil {
+				diags.AddError("Failed to marshal esql group_by collapse_by", err.Error())
+				continue
+			}
+			if err := json.Unmarshal(collapseByBytes, &collapseBy); err != nil {
+				diags.AddError("Failed to unmarshal esql group_by collapse_by", err.Error())
+				continue
+			}
 		}
 		out[i].Column = types.StringValue(gb.Column)
 		out[i].CollapseBy = types.StringValue(collapseBy)
@@ -110,7 +118,16 @@ func BuildPartitionEsqlGroupByForAPI(src []models.PartitionEsqlGroupByModel, dia
 	out := make([]EsqlGroupByAPIFields, len(src))
 	for i, eg := range src {
 		out[i].Column = eg.Column.ValueString()
-		collapseBy := kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
+		var collapseBy kbapi.KibanaHTTPAPIsCollapseBy
+		collapseByBytes, err := json.Marshal(eg.CollapseBy.ValueString())
+		if err != nil {
+			diags.AddError("Failed to marshal esql group_by collapse_by", err.Error())
+			return out
+		}
+		if err := json.Unmarshal(collapseByBytes, &collapseBy); err != nil {
+			diags.AddError("Failed to unmarshal esql group_by collapse_by", err.Error())
+			return out
+		}
 		out[i].CollapseBy = &collapseBy
 
 		var color kbapi.KibanaHTTPAPIsColorMapping

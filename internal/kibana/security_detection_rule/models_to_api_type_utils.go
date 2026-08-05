@@ -33,6 +33,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+const (
+	endpointCommandKillProcess    = "kill-process"
+	endpointCommandSuspendProcess = "suspend-process"
+)
+
 const kqlQueryLanguageKuery = "kuery"
 
 // getKQLQueryLanguage maps language string to kbapi.SecurityDetectionsAPIKqlQueryLanguage
@@ -142,34 +147,47 @@ func (d Data) buildEndpointResponseAction(ctx context.Context, params ResponseAc
 				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
 			}
 
-		case "kill-process", "suspend-process":
-			// Use ProcessesParams for process commands
-			processesParams := kbapi.SecurityDetectionsAPIProcessesParams{
-				Command: kbapi.SecurityDetectionsAPIProcessesParamsCommand(command),
-			}
-			if typeutils.IsKnown(params.Comment) {
-				processesParams.Comment = params.Comment.ValueStringPointer()
-			}
-
-			// Set config if provided
+		case endpointCommandKillProcess, endpointCommandSuspendProcess:
+			var field string
+			var overwrite *bool
 			if typeutils.IsKnown(params.Config) {
 				config := typeutils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
 					func(item EndpointProcessConfigModel, _ typeutils.ObjectMeta) EndpointProcessConfigModel {
 						return item
 					})
 
-				processesParams.Config = struct {
-					Field     string `json:"field"`
-					Overwrite *bool  `json:"overwrite,omitempty"`
-				}{
-					Field: config.Field.ValueString(),
-				}
+				field = config.Field.ValueString()
 				if typeutils.IsKnown(config.Overwrite) {
-					processesParams.Config.Overwrite = config.Overwrite.ValueBoolPointer()
+					overwrite = config.Overwrite.ValueBoolPointer()
 				}
 			}
 
-			err := endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processesParams)
+			var err error
+			if command == endpointCommandKillProcess {
+				processesParams := kbapi.SecurityDetectionsAPIKillProcessParams{}
+				processesParams.Config.Field = field
+				processesParams.Config.Overwrite = overwrite
+				if typeutils.IsKnown(params.Comment) {
+					processesParams.Comment = params.Comment.ValueStringPointer()
+				}
+				var processParams kbapi.SecurityDetectionsAPIProcessesParams
+				err = processParams.FromSecurityDetectionsAPIKillProcessParams(processesParams)
+				if err == nil {
+					err = endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processParams)
+				}
+			} else {
+				processesParams := kbapi.SecurityDetectionsAPISuspendProcessParams{}
+				processesParams.Config.Field = field
+				processesParams.Config.Overwrite = overwrite
+				if typeutils.IsKnown(params.Comment) {
+					processesParams.Comment = params.Comment.ValueStringPointer()
+				}
+				var processParams kbapi.SecurityDetectionsAPIProcessesParams
+				err = processParams.FromSecurityDetectionsAPISuspendProcessParams(processesParams)
+				if err == nil {
+					err = endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processParams)
+				}
+			}
 			if err != nil {
 				diags.AddError("Error setting endpoint processes params", err.Error())
 				return kbapi.SecurityDetectionsAPIResponseAction{}, diags

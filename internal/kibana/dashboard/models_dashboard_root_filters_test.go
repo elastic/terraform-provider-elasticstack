@@ -45,9 +45,9 @@ func rootFiltersListEmpty(ctx context.Context, t *testing.T) types.List {
 	return l
 }
 
-func mustUnmarshalFilterItem(t *testing.T, rawJSON string) kbapi.DashboardFilters_Item {
+func mustUnmarshalFilterItem(t *testing.T, rawJSON string) kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema {
 	t.Helper()
-	var item kbapi.DashboardFilters_Item
+	var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 	require.NoError(t, json.Unmarshal([]byte(rawJSON), &item))
 	return item
 }
@@ -83,7 +83,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 
 	t.Run("API Filters pointer to empty slice", func(t *testing.T) {
 		m := &models.DashboardModel{Filters: rootFiltersListNull()}
-		empty := []kbapi.DashboardFilters_Item{}
+		empty := []kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema{}
 		var diags diag.Diagnostics
 		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KibanaHTTPAPIsKbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
@@ -102,7 +102,7 @@ func Test_mapDashboardFiltersFromAPI_nullPreserved_whenAPINilOrEmpty(t *testing.
 
 	t.Run("known empty list stays empty when API empty slice", func(t *testing.T) {
 		m := &models.DashboardModel{Filters: rootFiltersListEmpty(ctx, t)}
-		empty := []kbapi.DashboardFilters_Item{}
+		empty := []kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema{}
 		var diags diag.Diagnostics
 		dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KibanaHTTPAPIsKbnDashboardData{Filters: &empty}, &diags)
 		require.False(t, diags.HasError())
@@ -118,7 +118,7 @@ func Test_mapDashboardFiltersFromAPI_orderPreserved(t *testing.T) {
 		`{"type":"condition","condition":{"field":"service.name","operator":"is","value":"b"}}`,
 		`{"type":"condition","condition":{"field":"kubernetes.pod.name","operator":"is","value":"c"}}`,
 	}
-	items := make([]kbapi.DashboardFilters_Item, len(raws))
+	items := make([]kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema, len(raws))
 	for i, r := range raws {
 		items[i] = mustUnmarshalFilterItem(t, r)
 	}
@@ -141,7 +141,7 @@ func Test_mapDashboardFiltersFromAPI_normalizesKeyOrder(t *testing.T) {
 	item := mustUnmarshalFilterItem(t, reordered)
 	m := &models.DashboardModel{Filters: rootFiltersListNull()}
 	var diags diag.Diagnostics
-	dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KibanaHTTPAPIsKbnDashboardData{Filters: &[]kbapi.DashboardFilters_Item{item}}, &diags)
+	dashboardMapDashboardFiltersFromAPI(ctx, m, &kbapi.KibanaHTTPAPIsKbnDashboardData{Filters: &[]kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema{item}}, &diags)
 	require.False(t, diags.HasError())
 
 	elems := typeutils.ListTypeAs[models.ChartFilterJSONModel](ctx, m.Filters, path.Root("filters"), &diags)

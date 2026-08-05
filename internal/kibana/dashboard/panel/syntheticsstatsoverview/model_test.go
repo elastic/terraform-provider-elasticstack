@@ -111,12 +111,11 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns(t *testing.T) {
 
 	require.NotNil(t, panel.Config.Drilldowns)
 	require.Len(t, *panel.Config.Drilldowns, 1)
-	ddr := (*panel.Config.Drilldowns)[0]
+	ddr, err := (*panel.Config.Drilldowns)[0].AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0()
+	require.NoError(t, err)
 	assert.Equal(t, "https://example.com/{{context.panel.title}}", ddr.Url)
 	assert.Equal(t, "View details", ddr.Label)
-	// trigger and type are always hardcoded constants.
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown, ddr.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0Type("url_drilldown"), ddr.Type)
 	assert.Nil(t, ddr.EncodeUrl)
 	assert.Nil(t, ddr.OpenInNewTab)
 }
@@ -139,7 +138,8 @@ func Test_buildSyntheticsStatsOverviewConfig_withDrilldowns_optionalBoolsSet(t *
 	require.False(t, bdc.HasError(), "%v", bdc)
 
 	require.NotNil(t, panel.Config.Drilldowns)
-	ddr := (*panel.Config.Drilldowns)[0]
+	ddr, err := (*panel.Config.Drilldowns)[0].AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0()
+	require.NoError(t, err)
 	require.NotNil(t, ddr.EncodeUrl)
 	assert.True(t, *ddr.EncodeUrl)
 	require.NotNil(t, ddr.OpenInNewTab)
@@ -327,23 +327,19 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 	panel := makeSyntheticsAPIConfig()
 	encodeURL := true
 	openInNewTab := true
-	panel.Config.Drilldowns = &[]struct {
-		EncodeUrl    *bool                                                                                   `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                                  `json:"label"`
-		OpenInNewTab *bool                                                                                   `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
-		Url          string                                                                                  `json:"url"` //nolint:revive
-	}{
-		{
-			Url:          "https://example.com",
-			Label:        "View",
-			Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTypeUrlDrilldown,
-			EncodeUrl:    &encodeURL,
-			OpenInNewTab: &openInNewTab,
-		},
+	var trigger kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview_Config_Drilldowns_0_Trigger
+	require.NoError(t, trigger.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0Trigger0("on_open_panel_menu"))
+	drilldown := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0{
+		Url:          "https://example.com",
+		Label:        "View",
+		Trigger:      trigger,
+		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0Type("url_drilldown"),
+		EncodeUrl:    &encodeURL,
+		OpenInNewTab: &openInNewTab,
 	}
+	var drilldownItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview_Config_Drilldowns_Item
+	require.NoError(t, drilldownItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0(drilldown))
+	panel.Config.Drilldowns = &[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview_Config_Drilldowns_Item{drilldownItem}
 
 	diag := PopulateFromAPI(pm, tfPanel, panel)
 	require.False(t, diag.HasError(), "%v", diag)

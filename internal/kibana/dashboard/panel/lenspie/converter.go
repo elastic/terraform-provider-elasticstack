@@ -19,11 +19,13 @@ package lenspie
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -41,7 +43,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie)
+	return string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -111,25 +113,43 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("pie_chart_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "pie_chart_config"); diags.HasError() {
 		return diags
 	}
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.PieChartConfig)
-	return lenscommon.PopulateFromNoESQLOrESQL(
+	diags := lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.PieChartConfig, prior,
-		attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsPieESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel) bool {
+		func() (kbapi.KibanaHTTPAPIsPieNoESQL, error) {
+			var chart kbapi.KibanaHTTPAPIsPieNoESQL
+			return chart, pieChartFromLensAPI(attrs.Chart, &chart)
+		},
+		func() (kbapi.KibanaHTTPAPIsPieESQL, error) {
+			var chart kbapi.KibanaHTTPAPIsPieESQL
+			return chart, pieChartFromLensAPI(attrs.Chart, &chart)
+		},
+		func(v kbapi.KibanaHTTPAPIsPieNoESQL) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		pieChartConfigFromAPINoESQL,
 		pieChartConfigFromAPIESQL,
 	)
+	if diags.HasError() {
+		return diags
+	}
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &blocks.PieChartConfig.LensChartPresentationTFModel, prior,
+		attrs.Presentation.TimeRange, attrs.Presentation.HideTitle, attrs.Presentation.HideBorder,
+		attrs.Presentation.References, attrs.Presentation.Drilldowns, &diags,
+	) {
+		return diags
+	}
+	diags.Append(populatePieRawDimensions(blocks.PieChartConfig, attrs.Chart)...)
+	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
@@ -143,4 +163,34 @@ func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.Len
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {
 	return populatePieLensAttributes(attrs)
+}
+
+func populatePieRawDimensions(m *models.PieChartConfigModel, chart kbapi.KibanaHTTPAPIsLensApiConfig) diag.Diagnostics {
+	var diags diag.Diagnostics
+	raw, err := json.Marshal(chart)
+	if err != nil {
+		diags.AddError("Failed to marshal pie chart", err.Error())
+		return diags
+	}
+	var payload struct {
+		Metrics []json.RawMessage `json:"metrics"`
+		GroupBy []json.RawMessage `json:"group_by"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		diags.AddError("Failed to decode pie chart dimensions", err.Error())
+		return diags
+	}
+	if payload.Metrics != nil {
+		m.Metrics = make([]models.PieMetricModel, len(payload.Metrics))
+		for i, metric := range payload.Metrics {
+			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(string(metric), lenscommon.PopulatePieChartMetricDefaults)
+		}
+	}
+	if payload.GroupBy != nil {
+		m.GroupBy = make([]models.PieGroupByModel, len(payload.GroupBy))
+		for i, groupBy := range payload.GroupBy {
+			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(string(groupBy), lenscommon.PopulateLensGroupByDefaults)
+		}
+	}
+	return diags
 }

@@ -131,8 +131,13 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	// Map access control
 	var accessMode *string
 	if data.Data.AccessControl != nil && data.Data.AccessControl.AccessMode != nil {
-		s := string(*data.Data.AccessControl.AccessMode)
-		accessMode = &s
+		if mode, err := data.Data.AccessControl.AccessMode.AsKibanaHTTPAPIsKbnDashboardAccessControlAccessMode0(); err == nil && mode.Valid() {
+			s := string(mode)
+			accessMode = &s
+		} else if mode, err := data.Data.AccessControl.AccessMode.AsKibanaHTTPAPIsKbnDashboardAccessControlAccessMode1(); err == nil && mode.Valid() {
+			s := string(mode)
+			accessMode = &s
+		}
 	}
 	m.AccessControl = newAccessControlFromAPI(accessMode)
 
@@ -356,7 +361,7 @@ func dashboardBuildDashboardFiltersForAPI(ctx context.Context, m *models.Dashboa
 	}
 	items := make(kbapi.DashboardFilters, 0, len(elems))
 	for _, el := range elems {
-		var item kbapi.DashboardFilters_Item
+		var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 		fd := lenscommon.DecodeChartFilterJSON(el.FilterJSON, &item)
 		diags.Append(fd...)
 		if fd.HasError() {

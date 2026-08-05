@@ -307,7 +307,7 @@ func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIsK
 	}
 
 	if api.Density != nil {
-		m.Density = types.StringValue(string(*api.Density))
+		m.Density = discoverSessionStringUnionFromAPI(api.Density)
 	} else {
 		m.Density = types.StringNull()
 	}
@@ -327,7 +327,7 @@ func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIsK
 	}
 
 	if api.ViewMode != nil {
-		m.ViewMode = types.StringValue(string(*api.ViewMode))
+		m.ViewMode = discoverSessionStringUnionFromAPI(api.ViewMode)
 	} else {
 		m.ViewMode = types.StringNull()
 	}
@@ -368,7 +368,7 @@ func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIs
 	}
 
 	if api.Density != nil {
-		m.Density = types.StringValue(string(*api.Density))
+		m.Density = discoverSessionStringUnionFromAPI(api.Density)
 	} else {
 		m.Density = types.StringNull()
 	}
@@ -394,6 +394,18 @@ func discoverSessionQueryFromKbnAsCode(q *kbapi.KibanaHTTPAPIsKbnAsCodeQuery) mo
 	}
 }
 
+func discoverSessionStringUnionFromAPI(value any) types.String {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return types.StringNull()
+	}
+	var result string
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return types.StringNull()
+	}
+	return types.StringValue(result)
+}
+
 // discoverSessionSortSliceFromAPI converts the API sort shape shared by every generated
 // Direction enum (kbapi emits a distinct named string type per schema branch for what is
 // structurally the same {direction, name} pair) back into sort models.
@@ -414,7 +426,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 	ColumnSettings *map[string]struct {
 		Width *float32 `json:"width,omitempty"`
 	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
+	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_Density         `json:"density,omitempty"`
 	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
 	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
 	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
@@ -438,7 +450,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 	}
 
 	if api.Density != nil {
-		m.Density = types.StringValue(string(*api.Density))
+		m.Density = discoverSessionStringUnionFromAPI(api.Density)
 	} else {
 		m.Density = types.StringNull()
 	}
@@ -571,53 +583,47 @@ func discoverSessionOverridesRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboar
 }
 
 func readDiscoverSessionDrilldownsFromConfig0(
-	api *[]struct {
-		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                           `json:"label"`
-		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
-		Url          string                                                                           `json:"url"` //nolint:revive
-	},
+	api *[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Drilldowns_Item,
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := make([]panelkit.URLDrilldownAPIItemData, 0, len(*api))
+	for _, item := range *api {
+		d, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Drilldowns0()
+		if err != nil {
+			continue
+		}
+		items = append(items, panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
-		}
+		})
 	}
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 
 func readDiscoverSessionDrilldownsFromConfig1(
-	api *[]struct {
-		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                           `json:"label"`
-		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
-		Url          string                                                                           `json:"url"` //nolint:revive
-	},
+	api *[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Drilldowns_Item,
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
 	if api == nil || len(*api) == 0 {
 		return nil
 	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := make([]panelkit.URLDrilldownAPIItemData, 0, len(*api))
+	for _, item := range *api {
+		d, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1Drilldowns0()
+		if err != nil {
+			continue
+		}
+		items = append(items, panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
-		}
+		})
 	}
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
@@ -797,7 +803,7 @@ func discoverSessionMergeDSLTabFromAPI(
 
 	if typeutils.IsKnown(prior.Density) {
 		if api.Density != nil {
-			existing.Density = types.StringValue(string(*api.Density))
+			existing.Density = discoverSessionStringUnionFromAPI(api.Density)
 		}
 	}
 
@@ -817,7 +823,7 @@ func discoverSessionMergeDSLTabFromAPI(
 
 	if typeutils.IsKnown(prior.ViewMode) {
 		if api.ViewMode != nil {
-			existing.ViewMode = types.StringValue(string(*api.ViewMode))
+			existing.ViewMode = discoverSessionStringUnionFromAPI(api.ViewMode)
 		}
 	}
 
@@ -902,7 +908,7 @@ func discoverSessionMergeESQLTabFromAPI(
 
 	if typeutils.IsKnown(prior.Density) {
 		if api.Density != nil {
-			existing.Density = types.StringValue(string(*api.Density))
+			existing.Density = discoverSessionStringUnionFromAPI(api.Density)
 		}
 	}
 
@@ -950,7 +956,7 @@ func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.
 	ColumnSettings *map[string]struct {
 		Width *float32 `json:"width,omitempty"`
 	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
+	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_Density         `json:"density,omitempty"`
 	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
 	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
 	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
@@ -976,7 +982,7 @@ func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.
 
 	if prior != nil && typeutils.IsKnown(prior.Density) {
 		if api.Density != nil {
-			existing.Density = types.StringValue(string(*api.Density))
+			existing.Density = discoverSessionStringUnionFromAPI(api.Density)
 		}
 	}
 

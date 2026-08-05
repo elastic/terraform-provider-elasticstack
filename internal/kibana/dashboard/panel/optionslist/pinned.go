@@ -39,7 +39,8 @@ func newPinnedHandler() pinnedHandler {
 		},
 		BuildPanel: func() kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {
 			return kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
-				Grid: kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+				Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+				Grid:   kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
 			}
 		},
 		PopulateFromAPI: func(_ context.Context, pm *models.PanelModel, prior *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {

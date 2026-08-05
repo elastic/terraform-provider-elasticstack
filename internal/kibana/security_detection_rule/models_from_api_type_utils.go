@@ -548,28 +548,49 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 				}
 				paramsModel.Config = types.ObjectNull(getEndpointProcessConfigType())
 			}
-		case "kill-process", "suspend-process":
+		case endpointCommandKillProcess, endpointCommandSuspendProcess:
 			processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams()
 			if err != nil {
 				diags.AddError("Failed to parse endpoint processes params", fmt.Sprintf("Error: %s", err.Error()))
 			} else {
-				paramsModel.Command = types.StringValue(string(processesParams.Command))
-				if processesParams.Comment != nil {
-					paramsModel.Comment = types.StringPointerValue(processesParams.Comment)
-				} else {
-					paramsModel.Comment = types.StringNull()
+				command, commandErr := processesParams.Discriminator()
+				if commandErr != nil {
+					diags.AddError("Failed to identify endpoint process command", commandErr.Error())
+					break
 				}
 
-				// Convert config
+				var (
+					comment   *string
+					field     string
+					overwrite *bool
+				)
+				switch command {
+				case endpointCommandKillProcess:
+					params, err := processesParams.AsSecurityDetectionsAPIKillProcessParams()
+					if err != nil {
+						diags.AddError("Failed to parse kill-process params", err.Error())
+						break
+					}
+					comment = params.Comment
+					field = params.Config.Field
+					overwrite = params.Config.Overwrite
+				case "suspend-process":
+					params, err := processesParams.AsSecurityDetectionsAPISuspendProcessParams()
+					if err != nil {
+						diags.AddError("Failed to parse suspend-process params", err.Error())
+						break
+					}
+					comment = params.Comment
+					field = params.Config.Field
+					overwrite = params.Config.Overwrite
+				}
+
+				paramsModel.Command = types.StringValue(command)
+				paramsModel.Comment = types.StringPointerValue(comment)
 				configModel := EndpointProcessConfigModel{
-					Field: types.StringValue(processesParams.Config.Field),
+					Field:     types.StringValue(field),
+					Overwrite: types.BoolPointerValue(overwrite),
 				}
-				if processesParams.Config.Overwrite != nil {
-					configModel.Overwrite = types.BoolPointerValue(processesParams.Config.Overwrite)
-				} else {
-					configModel.Overwrite = types.BoolNull()
-				}
-
 				configObjectValue, configDiags := types.ObjectValueFrom(ctx, getEndpointProcessConfigType(), configModel)
 				if configDiags.HasError() {
 					diags.Append(configDiags...)

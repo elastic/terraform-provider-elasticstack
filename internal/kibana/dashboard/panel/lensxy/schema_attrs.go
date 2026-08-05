@@ -51,7 +51,7 @@ func xyAxisSchemaAttrs() map[string]schema.Attribute {
 					Optional:            true,
 					Computed:            true,
 				},
-				"grid": schema.BoolAttribute{
+				legendLayoutGrid: schema.BoolAttribute{
 					MarkdownDescription: "Whether to show grid lines for this axis.",
 					Optional:            true,
 					Computed:            true,
@@ -100,7 +100,7 @@ func xyYAxisAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Whether to show tick marks on the axis.",
 			Optional:            true,
 		},
-		"grid": schema.BoolAttribute{
+		legendLayoutGrid: schema.BoolAttribute{
 			MarkdownDescription: "Whether to show grid lines for this axis.",
 			Optional:            true,
 		},
@@ -212,7 +212,7 @@ func xyLegendSchemaAttrs() map[string]schema.Attribute {
 			MarkdownDescription: "Maximum lines before truncating legend items (1-10).",
 			Optional:            true,
 		},
-		"inside": schema.BoolAttribute{
+		legendPlacementInside: schema.BoolAttribute{
 			MarkdownDescription: "Position legend inside the chart. When true, use 'columns' and 'alignment'. When false or omitted, use 'position' and 'size'.",
 			Optional:            true,
 			Computed:            true,

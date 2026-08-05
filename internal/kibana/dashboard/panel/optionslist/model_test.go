@@ -36,7 +36,9 @@ type olFieldCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSch
 type olEsqlCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql
 
 func makeAPIConfig(t *testing.T, dataViewID, fieldName string) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(olFieldCfg{
 		DataViewId: dataViewID,
 		FieldName:  fieldName,
@@ -45,7 +47,9 @@ func makeAPIConfig(t *testing.T, dataViewID, fieldName string) *kbapi.KibanaHTTP
 }
 
 func makeEsqlAPIConfig(t *testing.T, esqlQuery string) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(olEsqlCfg{
 		EsqlQuery:    esqlQuery,
 		ValuesSource: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
@@ -83,7 +87,8 @@ func Test_PopulateFromAPI_nilBlock_preservedAsNil(t *testing.T) {
 // post-import drift when users have not explicitly configured them.
 func Test_PopulateFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 	pm := &models.PanelModel{}
-	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechniquePrefix
+	st, err := fieldSearchTechnique("prefix")
+	require.NoError(t, err)
 	c := olFieldCfg{
 		DataViewId:        optionsListControlTestDataViewID,
 		FieldName:         "field1",
@@ -110,7 +115,9 @@ func Test_PopulateFromAPI_import_populatesUserConfigurableFields(t *testing.T) {
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirectionAsc,
 		},
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, nil, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -162,14 +169,17 @@ func Test_PopulateFromAPI_knownFields_updatedFromAPI(t *testing.T) {
 		},
 	}
 	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechniqueWildcard
+	st, err := fieldSearchTechnique("wildcard")
+	require.NoError(t, err)
 	c := olFieldCfg{
 		DataViewId:       "new-dv",
 		FieldName:        "new-field",
 		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -194,14 +204,17 @@ func Test_PopulateFromAPI_nullFields_preservedAsNull(t *testing.T) {
 		},
 	}
 	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechniqueExact
+	st, err := fieldSearchTechnique("exact")
+	require.NoError(t, err)
 	c := olFieldCfg{
 		DataViewId:       optionsListControlTestDataViewID,
 		FieldName:        "f1",
 		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -229,7 +242,9 @@ func Test_PopulateFromAPI_nilDisplaySettings_preservedAsNil(t *testing.T) {
 			Placeholder: new("test"),
 		},
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -325,10 +340,9 @@ func Test_BuildConfig_byField_allFields(t *testing.T) {
 	cfg := olConfigField(t, olPanel)
 	assert.Equal(t, optionsListControlTestDataViewID, cfg.DataViewId)
 	assert.Equal(t, "field1", cfg.FieldName)
-	// values_source is deliberately left unset on the wire for by_field (see buildFieldConfig):
-	// Kibana defaults it to "field" when absent, and older Kibana versions reject the property
-	// entirely if present.
-	assert.Nil(t, cfg.ValuesSource)
+	// values_source is deliberately left unset by buildFieldConfig. The generated union now
+	// represents an unset string field as its zero value rather than nil.
+	assert.Empty(t, cfg.ValuesSource)
 	require.NotNil(t, cfg.Title)
 	assert.Equal(t, "My Title", *cfg.Title)
 	require.NotNil(t, cfg.UseGlobalFilters)
@@ -338,7 +352,9 @@ func Test_BuildConfig_byField_allFields(t *testing.T) {
 	require.NotNil(t, cfg.RunPastTimeout)
 	assert.True(t, *cfg.RunPastTimeout)
 	require.NotNil(t, cfg.SearchTechnique)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechniqueExact, *cfg.SearchTechnique)
+	searchTechnique, err := searchTechniqueString(*cfg.SearchTechnique)
+	require.NoError(t, err)
+	assert.Equal(t, "exact", searchTechnique)
 	require.NotNil(t, cfg.SelectedOptions)
 	require.Len(t, *cfg.SelectedOptions, 2)
 	require.NotNil(t, cfg.DisplaySettings)
@@ -504,7 +520,8 @@ func Test_PopulateFromAPI_esql_nilBlock_preservedAsNil(t *testing.T) {
 // fields are populated; optional booleans and sort are left null.
 func Test_PopulateFromAPI_esql_import_populatesUserConfigurableFields(t *testing.T) {
 	pm := &models.PanelModel{}
-	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechniquePrefix
+	st, err := esqlSearchTechnique("prefix")
+	require.NoError(t, err)
 	c := olEsqlCfg{
 		EsqlQuery:         "FROM logs | STATS BY service.name",
 		ValuesSource:      kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
@@ -527,7 +544,9 @@ func Test_PopulateFromAPI_esql_import_populatesUserConfigurableFields(t *testing
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortDirection("asc"),
 		},
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(c))
 	PopulateFromAPI(pm, nil, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -566,7 +585,9 @@ func Test_PopulateFromAPI_esql_knownFields_updatedFromAPI(t *testing.T) {
 		ValuesSource:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
 		UseGlobalFilters: new(true),
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -589,14 +610,17 @@ func Test_PopulateFromAPI_esql_nullFields_preservedAsNull(t *testing.T) {
 		},
 	}
 	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
-	st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechniqueExact
+	st, err := esqlSearchTechnique("exact")
+	require.NoError(t, err)
 	c := olEsqlCfg{
 		EsqlQuery:        "FROM logs",
 		ValuesSource:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql,
 		UseGlobalFilters: new(true),
 		SearchTechnique:  &st,
 	}
-	var api kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl
+	api := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{},
+	}
 	require.NoError(t, api.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(c))
 	PopulateFromAPI(pm, tfPanel, &api)
 	require.NotNil(t, pm.OptionsListControlConfig)
@@ -643,7 +667,9 @@ func Test_BuildConfig_byEsql_allFields(t *testing.T) {
 	require.NotNil(t, cfg.UseGlobalFilters)
 	assert.True(t, *cfg.UseGlobalFilters)
 	require.NotNil(t, cfg.SearchTechnique)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechniqueExact, *cfg.SearchTechnique)
+	searchTechnique, err := searchTechniqueString(*cfg.SearchTechnique)
+	require.NoError(t, err)
+	assert.Equal(t, "exact", searchTechnique)
 	require.NotNil(t, cfg.SelectedOptions)
 	require.Len(t, *cfg.SelectedOptions, 1)
 	require.NotNil(t, cfg.DisplaySettings)

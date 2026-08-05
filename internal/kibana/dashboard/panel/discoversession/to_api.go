@@ -102,7 +102,10 @@ func discoverSessionByValueToAPI(
 	}
 	api.TimeRange = tr
 
-	discoverSessionApplyEnvelopeToConfig0(cfg, &api)
+	diags.Append(discoverSessionApplyEnvelopeToConfig0(cfg, &api)...)
+	if diags.HasError() {
+		return api, diags
+	}
 	tabItem, d := discoverSessionTabToAPI(ctx, cfg.ByValue.Tab)
 	diags.Append(d...)
 	if diags.HasError() {
@@ -143,64 +146,26 @@ func discoverSessionByReferenceToAPI(
 		api.Overrides = &o
 	}
 
-	discoverSessionApplyEnvelopeToConfig1(cfg, &api)
+	diags.Append(discoverSessionApplyEnvelopeToConfig1(cfg, &api)...)
 	return api, diags
 }
 
-func discoverSessionApplyEnvelopeToConfig0(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0) {
+func discoverSessionApplyEnvelopeToConfig0(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0) diag.Diagnostics {
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 	if len(cfg.Drilldowns) > 0 {
-		dd := make([]struct {
-			EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                           `json:"label"`
-			OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
-			Url          string                                                                           `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-		for i, x := range cfg.Drilldowns {
-			dd[i].Url = x.URL.ValueString()
-			dd[i].Label = x.Label.ValueString()
-			dd[i].Trigger = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTriggerOnOpenPanelMenu
-			dd[i].Type = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(x.EncodeURL) {
-				dd[i].EncodeUrl = x.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(x.OpenInNewTab) {
-				dd[i].OpenInNewTab = x.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		api.Drilldowns = &dd
+		return discoverSessionInjectDrilldownsJSON(api, cfg.Drilldowns)
 	}
+	return nil
 }
 
-func discoverSessionApplyEnvelopeToConfig1(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1) {
+func discoverSessionApplyEnvelopeToConfig1(cfg *models.DiscoverSessionPanelConfigModel, api *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1) diag.Diagnostics {
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 	if len(cfg.Drilldowns) > 0 {
-		dd := make([]struct {
-			EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                                           `json:"label"`
-			OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
-			Url          string                                                                           `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-		for i, x := range cfg.Drilldowns {
-			dd[i].Url = x.URL.ValueString()
-			dd[i].Label = x.Label.ValueString()
-			dd[i].Trigger = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTriggerOnOpenPanelMenu
-			dd[i].Type = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(x.EncodeURL) {
-				dd[i].EncodeUrl = x.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(x.OpenInNewTab) {
-				dd[i].OpenInNewTab = x.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		api.Drilldowns = &dd
+		return discoverSessionInjectDrilldownsJSON(api, cfg.Drilldowns)
 	}
+	return nil
 }
 
 func discoverSessionResolveTimeRange(panelTR *models.TimeRangeModel, dashTR *models.TimeRangeModel) (*kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema, diag.Diagnostics) {
@@ -274,8 +239,12 @@ func discoverSessionDSLTabToAPI(ctx context.Context, m models.DiscoverSessionDSL
 	}
 
 	if typeutils.IsKnown(m.Density) {
-		d := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density(m.Density.ValueString())
-		api.Density = &d
+		d, err := discoverSessionStringUnionToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_Density](m.Density.ValueString())
+		if err != nil {
+			diags.AddError("Failed to marshal discover_session tab.dsl.density", err.Error())
+		} else {
+			api.Density = d
+		}
 	}
 
 	hdr, dHdr := discoverSessionDSLHeaderRowHeightToAPI(m.HeaderRowHeight)
@@ -300,8 +269,12 @@ func discoverSessionDSLTabToAPI(ctx context.Context, m models.DiscoverSessionDSL
 	}
 
 	if typeutils.IsKnown(m.ViewMode) {
-		vm := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode(m.ViewMode.ValueString())
-		api.ViewMode = &vm
+		vm, err := discoverSessionStringUnionToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_ViewMode](m.ViewMode.ValueString())
+		if err != nil {
+			diags.AddError("Failed to marshal discover_session tab.dsl.view_mode", err.Error())
+		} else {
+			api.ViewMode = vm
+		}
 	}
 
 	if m.Query != nil {
@@ -316,9 +289,9 @@ func discoverSessionDSLTabToAPI(ctx context.Context, m models.DiscoverSessionDSL
 	}
 
 	if len(m.Filters) > 0 {
-		filters := make([]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_Filters_Item, 0, len(m.Filters))
+		filters := make([]kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema, 0, len(m.Filters))
 		for _, f := range m.Filters {
-			var item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_Filters_Item
+			var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 			fd := lenscommon.DecodeChartFilterJSON(f.FilterJSON, &item)
 			diags.Append(fd...)
 			if fd.HasError() {
@@ -351,8 +324,12 @@ func discoverSessionESQLTabToAPI(ctx context.Context, m models.DiscoverSessionES
 	}
 
 	if typeutils.IsKnown(m.Density) {
-		d := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density(m.Density.ValueString())
-		api.Density = &d
+		d, err := discoverSessionStringUnionToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_Density](m.Density.ValueString())
+		if err != nil {
+			diags.AddError("Failed to marshal discover_session tab.esql.density", err.Error())
+		} else {
+			api.Density = d
+		}
 	}
 
 	hdr, dHdr := discoverSessionESQLHeaderRowHeightToAPI(m.HeaderRowHeight)
@@ -382,7 +359,7 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 	ColumnSettings *map[string]struct {
 		Width *float32 `json:"width,omitempty"`
 	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
+	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_Density         `json:"density,omitempty"`
 	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
 	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
 	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
@@ -398,7 +375,7 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 		ColumnSettings *map[string]struct {
 			Width *float32 `json:"width,omitempty"`
 		} `json:"column_settings,omitempty"`
-		Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
+		Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_Density         `json:"density,omitempty"`
 		HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
 		RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
 		RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
@@ -424,8 +401,12 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 	}
 
 	if typeutils.IsKnown(m.Density) {
-		d := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity(m.Density.ValueString())
-		api.Density = &d
+		d, err := discoverSessionStringUnionToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_Density](m.Density.ValueString())
+		if err != nil {
+			diags.AddError("Failed to marshal discover_session overrides.density", err.Error())
+		} else {
+			api.Density = d
+		}
 	}
 
 	hdr, dHdr := discoverSessionOverridesHeaderRowHeightToAPI(m.HeaderRowHeight)
@@ -480,6 +461,63 @@ func discoverSessionQueryToKbnAsCode(m models.FilterSimpleModel) *kbapi.KibanaHT
 		q.Language = kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguageKql
 	}
 	return q
+}
+
+func discoverSessionStringUnionToAPI[T any](value string) (*T, error) {
+	var result T
+	if err := json.Unmarshal([]byte(strconv.Quote(value)), &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func discoverSessionInjectDrilldownsJSON(api any, drilldowns []models.DiscoverSessionPanelDrilldown) diag.Diagnostics {
+	type drilldownWire struct {
+		EncodeURL    *bool  `json:"encode_url,omitempty"`
+		Label        string `json:"label"`
+		OpenInNewTab *bool  `json:"open_in_new_tab,omitempty"`
+		Trigger      string `json:"trigger"`
+		Type         string `json:"type"`
+		URL          string `json:"url"`
+	}
+
+	wire := make([]drilldownWire, len(drilldowns))
+	for i, drilldown := range drilldowns {
+		wire[i] = drilldownWire{
+			URL:     drilldown.URL.ValueString(),
+			Label:   drilldown.Label.ValueString(),
+			Trigger: "on_open_panel_menu",
+			Type:    "url_drilldown",
+		}
+		if typeutils.IsKnown(drilldown.EncodeURL) {
+			wire[i].EncodeURL = drilldown.EncodeURL.ValueBoolPointer()
+		}
+		if typeutils.IsKnown(drilldown.OpenInNewTab) {
+			wire[i].OpenInNewTab = drilldown.OpenInNewTab.ValueBoolPointer()
+		}
+	}
+
+	drilldownsJSON, err := json.Marshal(wire)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal discover_session drilldowns", err.Error())}
+	}
+	base, err := json.Marshal(api)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal discover_session config", err.Error())}
+	}
+	var config map[string]json.RawMessage
+	if err := json.Unmarshal(base, &config); err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal discover_session config", err.Error())}
+	}
+	config["drilldowns"] = drilldownsJSON
+	merged, err := json.Marshal(config)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to re-marshal discover_session config", err.Error())}
+	}
+	if err := json.Unmarshal(merged, api); err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to apply discover_session drilldowns", err.Error())}
+	}
+	return nil
 }
 
 func discoverSessionColumnSettingsToAPI(ctx context.Context, m types.Map, diags *diag.Diagnostics) *map[string]struct {

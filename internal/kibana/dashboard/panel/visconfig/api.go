@@ -114,6 +114,12 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		return diags
 	}
 
+	chart, presentation, lensConfigErr := lensConfigJSON(configBytes)
+	if lensConfigErr != nil {
+		diags.AddError("Invalid visualization panel configuration on read", lensConfigErr.Error())
+		return diags
+	}
+
 	visPrior := configPriorForVisRead(prior, pm)
 
 	switch classifyLensConfigFromRoot(root) {
@@ -126,25 +132,19 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		diags.Append(populateVisByReferenceFromAPI(ctx, visPrior, pm, cfg1)...)
 
 	case lensConfigClassByValueChart:
-		config0, err0 := visPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0()
-		if err0 != nil {
-			diags.AddError("Invalid visualization panel configuration on read", err0.Error())
-			break
-		}
 		pm.VisConfig = &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{},
 		}
-		diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0, true)...)
+		diags.Append(populateLensVisByValueFromTypedChartAPI(ctx, prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, lenscommon.LensByValueConfig{
+			Chart:        chart,
+			Presentation: presentation,
+		}, true)...)
 
 	default:
 		if visPrior != nil && visPrior.ByReference != nil {
 			break
 		}
-		config0, err0 := visPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0()
-		if err0 != nil {
-			break
-		}
-		visType := lenscommon.DetectVizType(config0)
+		visType := lenscommon.DetectVizType(chart)
 		if visType == "" {
 			break
 		}
@@ -165,7 +165,10 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 		}
 		seedWaffleLensByValueChartFromPriorPanel(&pm.VisConfig.ByValue.LensByValueChartBlocks, prior)
 		seedLensChartPriorIntoBlocks(prior, &pm.VisConfig.ByValue.LensByValueChartBlocks, visType)
-		diags.Append(conv.PopulateFromAttributes(ctx, &pm.VisConfig.ByValue.LensByValueChartBlocks, config0)...)
+		diags.Append(conv.PopulateFromAttributes(ctx, &pm.VisConfig.ByValue.LensByValueChartBlocks, lenscommon.LensByValueConfig{
+			Chart:        chart,
+			Presentation: presentation,
+		})...)
 	}
 
 	return diags
@@ -211,13 +214,13 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 			diags.AddError("Invalid `vis_config.by_value`", "The typed chart block could not be resolved to a Lens visualization converter.")
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		config0, d := conv.BuildAttributes(blocks)
+		attrs, d := conv.BuildAttributes(blocks)
 		diags.Append(d...)
 		if d.HasError() {
 			return kbapi.DashboardPanelItem{}, diags
 		}
-		var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
-		if err := config.FromKibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0(config0); err != nil {
+		config, err := composeLensVisConfig(attrs.Chart, attrs.Presentation)
+		if err != nil {
 			diags.AddError("Failed to create visualization panel config", err.Error())
 			return kbapi.DashboardPanelItem{}, diags
 		}

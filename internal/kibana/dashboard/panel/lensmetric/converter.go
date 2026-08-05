@@ -34,7 +34,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric)
+	return string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -45,7 +45,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("metric_chart_config", metricChartSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "metric_chart_config"); diags.HasError() {
 		return diags
 	}
@@ -56,18 +56,34 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.MetricChartConfig, priorConfig,
-		attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsMetricESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel) bool {
+		func() (kbapi.KibanaHTTPAPIsMetricNoESQL, error) {
+			chart, err := attrs.Chart.AsKibanaHTTPAPIsMetricChart()
+			if err != nil {
+				return kbapi.KibanaHTTPAPIsMetricNoESQL{}, err
+			}
+			return chart.AsKibanaHTTPAPIsMetricNoESQL()
+		},
+		func() (kbapi.KibanaHTTPAPIsMetricESQL, error) {
+			chart, err := attrs.Chart.AsKibanaHTTPAPIsMetricChart()
+			if err != nil {
+				return kbapi.KibanaHTTPAPIsMetricESQL{}, err
+			}
+			return chart.AsKibanaHTTPAPIsMetricESQL()
+		},
+		func(v kbapi.KibanaHTTPAPIsMetricNoESQL) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
-		metricChartConfigFromAPIVariant0,
-		metricChartConfigFromAPIVariant1,
+		func(ctx context.Context, m *models.MetricChartConfigModel, prior *models.MetricChartConfigModel, api kbapi.KibanaHTTPAPIsMetricNoESQL) diag.Diagnostics {
+			return metricChartConfigFromAPIVariant0(ctx, m, prior, api, attrs.Presentation)
+		},
+		func(ctx context.Context, m *models.MetricChartConfigModel, prior *models.MetricChartConfigModel, api kbapi.KibanaHTTPAPIsMetricESQL) diag.Diagnostics {
+			return metricChartConfigFromAPIVariant1(ctx, m, prior, api, attrs.Presentation)
+		},
 	)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

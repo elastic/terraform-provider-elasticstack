@@ -18,40 +18,33 @@
 package dashboard
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 	tests := []struct {
-		name     string
-		apiQuery kbapi.KibanaHTTPAPIsFilterSimple
-		expected *models.FilterSimpleModel
+		name         string
+		apiQueryJSON string
+		expected     *models.FilterSimpleModel
 	}{
 		{
-			name: "all fields populated",
-			apiQuery: kbapi.KibanaHTTPAPIsFilterSimple{
-				Expression: "test query",
-				Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
-					l := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
-					return &l
-				}(),
-			},
+			name:         "all fields populated",
+			apiQueryJSON: `{"expression":"test query","language":"kql"}`,
 			expected: &models.FilterSimpleModel{
 				Expression: types.StringValue("test query"),
 				Language:   types.StringValue("kql"),
 			},
 		},
 		{
-			name: "only required field",
-			apiQuery: kbapi.KibanaHTTPAPIsFilterSimple{
-				Expression: "simple query",
-				Language:   nil,
-			},
+			name:         "only required field",
+			apiQueryJSON: `{"expression":"simple query"}`,
 			expected: &models.FilterSimpleModel{
 				Expression: types.StringValue("simple query"),
 				Language:   types.StringValue("kql"),
@@ -61,17 +54,30 @@ func Test_filterSimpleModel_fromAPI_toAPI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var inputQuery kbapi.KibanaHTTPAPIsFilterSimple
+			require.NoError(t, json.Unmarshal([]byte(tt.apiQueryJSON), &inputQuery))
+
 			// Test fromAPI
 			model := &models.FilterSimpleModel{}
-			filterSimpleFromAPI(model, &tt.apiQuery)
+			filterSimpleFromAPI(model, &inputQuery)
 
 			assert.Equal(t, tt.expected.Expression, model.Expression)
 			assert.Equal(t, tt.expected.Language, model.Language)
 
 			// Test toAPI
-			apiQuery := filterSimpleToAPI(model)
-			assert.Equal(t, tt.apiQuery.Expression, apiQuery.Expression)
-			assert.Equal(t, tt.expected.Language.ValueString(), string(*apiQuery.Language))
+			outputQuery := filterSimpleToAPI(model)
+			assert.Equal(t, inputQuery.Expression, outputQuery.Expression)
+			require.NotNil(t, outputQuery.Language)
+			var language string
+			require.NoError(t, json.Unmarshal(mustMarshalJSON(t, outputQuery.Language), &language))
+			assert.Equal(t, tt.expected.Language.ValueString(), language)
 		})
 	}
+}
+
+func mustMarshalJSON(t *testing.T, value any) []byte {
+	t.Helper()
+	b, err := json.Marshal(value)
+	require.NoError(t, err)
+	return b
 }

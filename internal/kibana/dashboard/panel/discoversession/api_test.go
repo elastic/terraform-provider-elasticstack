@@ -56,6 +56,8 @@ func TestHandler_roundTrip_byValue_dsl(t *testing.T) {
 			},
 			Tab: models.DiscoverSessionTabModel{
 				DSL: &models.DiscoverSessionDSLTabModel{
+					Density:  types.StringValue("compact"),
+					ViewMode: types.StringValue("documents"),
 					ColumnOrder: types.ListValueMust(types.StringType, []attr.Value{
 						types.StringValue("@timestamp"),
 						types.StringValue("message"),
@@ -94,6 +96,8 @@ func TestHandler_roundTrip_byValue_dsl(t *testing.T) {
 	assert.Equal(t, "@timestamp", co[0].(types.String).ValueString())
 	assert.Equal(t, "message", co[1].(types.String).ValueString())
 	assert.Equal(t, `host.name : "web-01"`, dsl.Query.Expression.ValueString())
+	assert.Equal(t, "compact", dsl.Density.ValueString())
+	assert.Equal(t, "documents", dsl.ViewMode.ValueString())
 	dsJSONEq, d := dsl.DataSourceJSON.StringSemanticEquals(ctxSE, jsontypes.NewNormalizedValue(`{"type":"data_view_reference","id":"logs-*"}`))
 	require.False(t, d.HasError())
 	assert.True(t, dsJSONEq)
@@ -111,6 +115,7 @@ func TestHandler_roundTrip_byValue_esql(t *testing.T) {
 			},
 			Tab: models.DiscoverSessionTabModel{
 				ESQL: &models.DiscoverSessionESQLTabModel{
+					Density:        types.StringValue("expanded"),
 					DataSourceJSON: jsontypes.NewNormalizedValue(`{"query":"FROM logs-*","type":"esql"}`),
 				},
 			},
@@ -127,6 +132,7 @@ func TestHandler_roundTrip_byValue_esql(t *testing.T) {
 	require.Nil(t, next.DiscoverSessionConfig.ByValue.Tab.DSL)
 	require.NotNil(t, next.DiscoverSessionConfig.ByValue.Tab.ESQL)
 	esql := next.DiscoverSessionConfig.ByValue.Tab.ESQL
+	assert.Equal(t, "expanded", esql.Density.ValueString())
 	dsJSONEq, d := esql.DataSourceJSON.StringSemanticEquals(ctx, jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-*"}`))
 	require.False(t, d.HasError())
 	assert.True(t, dsJSONEq)
@@ -138,6 +144,14 @@ func TestHandler_roundTrip_byReference(t *testing.T) {
 	pm.DiscoverSessionConfig = &models.DiscoverSessionPanelConfigModel{
 		Title:       types.StringValue("Discover link"),
 		Description: types.StringValue("linked panel"),
+		Drilldowns: []models.DiscoverSessionPanelDrilldown{
+			{
+				URL:          types.StringValue("https://example.test/linked"),
+				Label:        types.StringValue("Linked drill"),
+				EncodeURL:    types.BoolValue(false),
+				OpenInNewTab: types.BoolValue(true),
+			},
+		},
 		ByReference: &models.DiscoverSessionPanelByRefModel{
 			TimeRange: &models.TimeRangeModel{
 				From: types.StringValue("now-1h"),
@@ -171,6 +185,10 @@ func TestHandler_roundTrip_byReference(t *testing.T) {
 	assert.Equal(t, "tab-explicit", br.SelectedTabID.ValueString())
 	require.NotNil(t, br.Overrides)
 	assert.Equal(t, "compact", br.Overrides.Density.ValueString())
+	require.Len(t, next.DiscoverSessionConfig.Drilldowns, 1)
+	assert.Equal(t, "https://example.test/linked", next.DiscoverSessionConfig.Drilldowns[0].URL.ValueString())
+	assert.False(t, next.DiscoverSessionConfig.Drilldowns[0].EncodeURL.ValueBool())
+	assert.True(t, next.DiscoverSessionConfig.Drilldowns[0].OpenInNewTab.ValueBool())
 
 	item2, diags2 := discoversession.Handler{}.ToAPI(next, nil)
 	require.False(t, diags2.HasError(), "%s", diags2)

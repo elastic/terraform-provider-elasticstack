@@ -32,7 +32,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel) diag.Diagnostics {
+func gaugeConfigFromAPI(
+	ctx context.Context,
+	m *models.GaugeConfigModel,
+	prior *models.GaugeConfigModel,
+	api kbapi.KibanaHTTPAPIsGaugeNoESQL,
+	presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
@@ -49,7 +55,7 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateGaugeMetricDefaults, &diags)
 	if !ok {
 		return diags
@@ -69,14 +75,20 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentationFromAPI(ctx, &m.LensChartPresentationTFModel, prior, presentation, &diags) {
 		return diags
 	}
 
 	return diags
 }
 
-func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel) diag.Diagnostics {
+func gaugeConfigFromAPIESQL(
+	ctx context.Context,
+	m *models.GaugeConfigModel,
+	prior *models.GaugeConfigModel,
+	api kbapi.KibanaHTTPAPIsGaugeESQL,
+	presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	datasetBytes, datasetErr := json.Marshal(api.DataSource)
@@ -135,7 +147,17 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 	if api.Metric.Ticks != nil {
 		em.Ticks = &models.GaugeEsqlTicks{}
 		if api.Metric.Ticks.Mode != nil {
-			em.Ticks.Mode = types.StringValue(string(*api.Metric.Ticks.Mode))
+			modeBytes, err := api.Metric.Ticks.Mode.MarshalJSON()
+			if err != nil {
+				diags.AddError("Failed to marshal esql metric tick mode", err.Error())
+				return diags
+			}
+			var mode string
+			if err := json.Unmarshal(modeBytes, &mode); err != nil {
+				diags.AddError("Failed to decode esql metric tick mode", err.Error())
+				return diags
+			}
+			em.Ticks.Mode = types.StringValue(mode)
 		} else {
 			em.Ticks.Mode = types.StringNull()
 		}
@@ -160,37 +182,49 @@ func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, pri
 		m.Styling.ShapeJSON = jsontypes.NewNormalizedNull()
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentationFromAPI(ctx, &m.LensChartPresentationTFModel, prior, presentation, &diags) {
 		return diags
 	}
 
 	return diags
 }
 
-func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func gaugeConfigToAPI(m *models.GaugeConfigModel) (lenscommon.LensByValueConfig, diag.Diagnostics) {
 	if m == nil {
-		return lenscommon.VisByValueConfig0{}, nil
+		return lenscommon.LensByValueConfig{}, nil
 	}
-	return lenscommon.DispatchByQueryMode(
-		lenscommon.ConfigUsesESQL(m.Query),
-		func() (kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel, diag.Diagnostics) {
-			return gaugeConfigToAPIESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsGaugeESQLByValuePanel,
-		"Failed to create gauge ES|QL attributes",
-		func() (kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel, diag.Diagnostics) {
-			return gaugeConfigToAPINoESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsGaugeNoESQLByValuePanel,
-		"Failed to create gauge attributes",
-	)
+	var result lenscommon.LensByValueConfig
+	var diags diag.Diagnostics
+	var chart kbapi.KibanaHTTPAPIsGaugeChart
+	if lenscommon.ConfigUsesESQL(m.Query) {
+		api, apiDiags := gaugeConfigToAPIESQL(m)
+		diags.Append(apiDiags...)
+		if err := chart.FromKibanaHTTPAPIsGaugeESQL(api); err != nil {
+			diags.AddError("Failed to create gauge ES|QL chart", err.Error())
+		}
+	} else {
+		api, apiDiags := gaugeConfigToAPINoESQL(m)
+		diags.Append(apiDiags...)
+		if err := chart.FromKibanaHTTPAPIsGaugeNoESQL(api); err != nil {
+			diags.AddError("Failed to create gauge chart", err.Error())
+		}
+	}
+	if diags.HasError() {
+		return result, diags
+	}
+	if err := result.Chart.FromKibanaHTTPAPIsGaugeChart(chart); err != nil {
+		diags.AddError("Failed to create Lens gauge chart", err.Error())
+		return result, diags
+	}
+	result.Presentation, diags = lenscommon.LensChartPresentationToAPI(m.LensChartPresentationTFModel)
+	return result, diags
 }
 
-func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel, diag.Diagnostics) {
+func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel
+	var api kbapi.KibanaHTTPAPIsGaugeNoESQL
 
-	api.Type = kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge
+	api.Type = kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -230,23 +264,13 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGau
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
-
 	return api, diags
 }
 
-func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel, diag.Diagnostics) {
+func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGaugeESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel
-	api.Type = kbapi.KibanaHTTPAPIsGaugeESQLByValuePanelTypeGauge
+	var api kbapi.KibanaHTTPAPIsGaugeESQL
+	api.Type = kbapi.KibanaHTTPAPIsGaugeESQLTypeGauge
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -275,7 +299,7 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 		api.Metric.Label = &l
 	}
 	if typeutils.IsKnown(m.EsqlMetric.ColorJSON) {
-		var color kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel_Metric_Color
+		var color kbapi.KibanaHTTPAPIsGaugeESQL_Metric_Color
 		if err := json.Unmarshal([]byte(m.EsqlMetric.ColorJSON.ValueString()), &color); err != nil {
 			diags.AddError("Failed to unmarshal esql_metric.color_json", err.Error())
 			return api, diags
@@ -318,11 +342,15 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 	}
 	if m.EsqlMetric.Ticks != nil {
 		api.Metric.Ticks = &struct {
-			Mode    *kbapi.KibanaHTTPAPIsGaugeESQLByValuePanelMetricTicksMode `json:"mode,omitempty"`
-			Visible *bool                                                     `json:"visible,omitempty"`
+			Mode    *kbapi.KibanaHTTPAPIsGaugeESQL_Metric_Ticks_Mode `json:"mode,omitempty"`
+			Visible *bool                                            `json:"visible,omitempty"`
 		}{}
 		if typeutils.IsKnown(m.EsqlMetric.Ticks.Mode) {
-			mode := kbapi.KibanaHTTPAPIsGaugeESQLByValuePanelMetricTicksMode(m.EsqlMetric.Ticks.Mode.ValueString())
+			var mode kbapi.KibanaHTTPAPIsGaugeESQL_Metric_Ticks_Mode
+			if err := json.Unmarshal([]byte(`"`+m.EsqlMetric.Ticks.Mode.ValueString()+`"`), &mode); err != nil {
+				diags.AddError("Failed to unmarshal esql metric tick mode", err.Error())
+				return api, diags
+			}
 			api.Metric.Ticks.Mode = &mode
 		}
 		if typeutils.IsKnown(m.EsqlMetric.Ticks.Visible) {
@@ -356,16 +384,6 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 			api.Styling.Shape = &shape
 		}
 	}
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
 
 	return api, diags
 }

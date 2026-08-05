@@ -19,6 +19,7 @@ package image
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -61,7 +62,9 @@ func Test_imagePanelToAPI_fileSrc(t *testing.T) {
 	require.NotNil(t, img.Config.ImageConfig.AltText)
 	assert.Equal(t, "diagram", *img.Config.ImageConfig.AltText)
 	require.NotNil(t, img.Config.ImageConfig.ObjectFit)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitCover, *img.Config.ImageConfig.ObjectFit)
+	objectFit, err := imageObjectFitFromAPI(*img.Config.ImageConfig.ObjectFit)
+	require.NoError(t, err)
+	assert.Equal(t, "cover", objectFit)
 }
 
 func Test_imagePanelToAPI_urlSrc(t *testing.T) {
@@ -122,7 +125,9 @@ func Test_imagePanelToAPI_drilldowns(t *testing.T) {
 
 	dd1, err := (*img.Config.Drilldowns)[1].AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnOpenPanelMenu, dd1.Trigger)
+	trigger, err := imageURLDrilldownTriggerFromAPI(dd1.Trigger)
+	require.NoError(t, err)
+	assert.Equal(t, "on_open_panel_menu", trigger)
 	require.NotNil(t, dd1.EncodeUrl)
 	assert.False(t, *dd1.EncodeUrl)
 }
@@ -132,7 +137,8 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 	tr := false
 	tab := false
 	encode := true
-	objFit := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
+	objFit, err := imageObjectFitToAPI("contain")
+	require.NoError(t, err)
 
 	apiPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{}
 	title := "t"
@@ -141,28 +147,24 @@ func Test_populateImagePanelFromAPI_nullPreservation(t *testing.T) {
 	src := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
 	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
 
-	d0 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0{
-		DashboardId:  "d1",
+	dashItem := mustImageDashboardDrilldownItem(t, imageDashboardDrilldownWire{
+		DashboardID:  "d1",
 		Label:        "l",
-		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
-		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
+		Trigger:      "on_click_image",
+		Type:         "dashboard_drilldown",
 		UseFilters:   &useF,
 		UseTimeRange: &tr,
 		OpenInNewTab: &tab,
-	}
-	var dashItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, dashItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
+	})
 
-	d1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1{
-		Url:          "https://example.com",
+	urlItem := mustImageURLDrilldownItem(t, imageURLDrilldownWire{
+		URL:          "https://example.com",
 		Label:        "u",
-		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
-		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
-		EncodeUrl:    &encode,
+		Trigger:      "on_click_image",
+		Type:         "url_drilldown",
+		EncodeURL:    &encode,
 		OpenInNewTab: &tab,
-	}
-	var urlItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, urlItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
+	})
 
 	items := []kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
 	apiPanel.Config.Drilldowns = &items
@@ -219,35 +221,32 @@ func Test_populateImagePanelFromAPI_import_drilldownDefaultsAndObjectFitNull(t *
 	tr := false
 	tab := false
 	encode := true
-	objFit := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigObjectFitContain
+	objFit, err := imageObjectFitToAPI("contain")
+	require.NoError(t, err)
 
 	apiPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{}
 	apiPanel.Config.ImageConfig.ObjectFit = &objFit
 	src := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0{Type: kbapi.File, FileId: "img-1"}
 	require.NoError(t, apiPanel.Config.ImageConfig.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc0(src))
 
-	d0 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0{
-		DashboardId:  "d1",
+	dashItem := mustImageDashboardDrilldownItem(t, imageDashboardDrilldownWire{
+		DashboardID:  "d1",
 		Label:        "l",
-		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TriggerOnClickImage,
-		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0TypeDashboardDrilldown,
+		Trigger:      "on_click_image",
+		Type:         "dashboard_drilldown",
 		UseFilters:   &useF,
 		UseTimeRange: &tr,
 		OpenInNewTab: &tab,
-	}
-	var dashItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, dashItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns0(d0))
+	})
 
-	d1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1{
-		Url:          "https://example.com",
+	urlItem := mustImageURLDrilldownItem(t, imageURLDrilldownWire{
+		URL:          "https://example.com",
 		Label:        "u",
-		Trigger:      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TriggerOnClickImage,
-		Type:         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1TypeUrlDrilldown,
-		EncodeUrl:    &encode,
+		Trigger:      "on_click_image",
+		Type:         "url_drilldown",
+		EncodeURL:    &encode,
 		OpenInNewTab: &tab,
-	}
-	var urlItem kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
-	require.NoError(t, urlItem.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigDrilldowns1(d1))
+	})
 
 	apiPanel.Config.Drilldowns = &[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item{dashItem, urlItem}
 
@@ -353,4 +352,27 @@ func Test_imagePanel_dashboardDrilldownTriggerValidator(t *testing.T) {
 		Path:        path.Root("trigger"),
 	}, &resp)
 	require.True(t, resp.Diagnostics.HasError())
+}
+
+func mustImageDashboardDrilldownItem(t *testing.T, wire imageDashboardDrilldownWire) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item {
+	t.Helper()
+	var item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, unmarshalImageDrilldown(wire, &item))
+	return item
+}
+
+func mustImageURLDrilldownItem(t *testing.T, wire imageURLDrilldownWire) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item {
+	t.Helper()
+	var item kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_Item
+	require.NoError(t, unmarshalImageDrilldown(wire, &item))
+	return item
+}
+
+func imageURLDrilldownTriggerFromAPI(value kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_Drilldowns_1_Trigger) (string, error) {
+	raw, err := value.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	var result string
+	return result, json.Unmarshal(raw, &result)
 }

@@ -19,6 +19,7 @@ package rangeslider
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
@@ -39,7 +40,7 @@ import (
 // tfPanel is the prior TF state/plan panel, or nil on import. When nil, the function populates all
 // API-returned fields unconditionally (no prior intent to preserve).
 func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, tfPanel *models.PanelModel, rs *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
-	if rs == nil {
+	if rs == nil || rs.Config == nil {
 		return nil
 	}
 
@@ -243,6 +244,9 @@ func BuildConfig(pm models.PanelModel, rsPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	if cfg == nil {
 		return nil
 	}
+	if rsPanel.Config == nil {
+		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
+	}
 
 	switch {
 	case cfg.ByField != nil:
@@ -287,7 +291,13 @@ func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi
 		c.Step = &v
 	}
 
-	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c); err != nil {
+	payload, err := json.Marshal(c)
+	if err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build range slider control config", err.Error())
+		return diags
+	}
+	if err := rsPanel.Config.UnmarshalJSON(payload); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build range slider control config", err.Error())
 		return diags

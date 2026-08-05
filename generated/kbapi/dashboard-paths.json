@@ -298,7 +298,6 @@
                   "pinned_panels": {
                     "type": "array",
                     "description": "An array of control panels and their state in the control group.",
-                    "default": [],
                     "maxItems": 100,
                     "items": {
                       "oneOf": [
@@ -335,21 +334,7 @@
                     "description": "Filters applied across all panels, including pinned panels.",
                     "maxItems": 500,
                     "items": {
-                      "description": "A filter applied to query results. Can be a field condition (`condition`), a logical group of conditions (`group`), a raw Elasticsearch DSL query (`dsl`), or a geo spatial query (`spatial`).",
-                      "anyOf": [
-                        {
-                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeConditionFilterSchema"
-                        },
-                        {
-                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeGroupFilterSchema"
-                        },
-                        {
-                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeDSLFilterSchema"
-                        },
-                        {
-                          "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeSpatialFilterSchema"
-                        }
-                      ]
+                      "$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-as-code-filters-schema_asCodeFilterSchema"
                     }
                   },
                   "options": {
@@ -358,7 +343,6 @@
                   "panels": {
                     "type": "array",
                     "description": "Panels and sections in the dashboard. Each entry is either a panel (with a `type` and `config`) or a collapsible section (with a `title`, `collapsed` state, and nested `panels`).",
-                    "default": [],
                     "maxItems": 1000,
                     "items": {
                       "anyOf": [

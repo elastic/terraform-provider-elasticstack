@@ -652,6 +652,93 @@ func TestFixSecurityEntityStoreEntityTypeParams(t *testing.T) {
 	}
 }
 
+func TestFixDashboardPanelItemRefsUsesUpstreamOneOf(t *testing.T) {
+	panelRef := Map{"$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-vis"}
+	discriminator := Map{
+		"propertyName": "type",
+		"mapping": Map{
+			"vis": panelRef["$ref"],
+		},
+	}
+	schema := &Schema{
+		Components: Map{
+			"schemas": Map{
+				"Kibana_HTTP_APIs_kbn-dashboard-data": Map{
+					"properties": Map{
+						"panels": Map{
+							"items": Map{
+								"anyOf": Slice{
+									Map{
+										"discriminator": discriminator,
+										"oneOf":         Slice{panelRef},
+									},
+									Map{"$ref": "#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-section"},
+								},
+							},
+						},
+						"filters":       Map{"type": "array"},
+						"pinned_panels": Map{"type": "array"},
+					},
+				},
+				"Kibana_HTTP_APIs_kbn-dashboard-section": Map{
+					"properties": Map{
+						"panels": Map{
+							"items": Map{
+								"discriminator": discriminator,
+								"oneOf":         Slice{panelRef},
+							},
+						},
+					},
+				},
+			},
+		},
+		Paths: map[string]*Path{
+			"/api/dashboards/{id}": {
+				Put: Map{
+					"requestBody": Map{
+						"content": Map{
+							"application/json": Map{
+								"schema": Map{
+									"properties": Map{
+										"panels": Map{
+											"items": Map{
+												"anyOf": Slice{
+													Map{"anyOf": Slice{panelRef}},
+												},
+											},
+										},
+										"filters":       Map{"type": "array"},
+										"pinned_panels": Map{"type": "array"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	fixDashboardPanelItemRefs(schema)
+
+	wantRef := Map{"$ref": "#/components/schemas/dashboard_panel_item"}
+	if got := schema.Components.MustGet("schemas.dashboard_panel_item"); !reflect.DeepEqual(got, Map{
+		"discriminator": discriminator,
+		"oneOf":         Slice{panelRef},
+	}) {
+		t.Fatalf("dashboard_panel_item = %#v", got)
+	}
+	if got := schema.Components.MustGet("schemas.Kibana_HTTP_APIs_kbn-dashboard-data.properties.panels.items.anyOf.0"); !reflect.DeepEqual(got, wantRef) {
+		t.Fatalf("dashboard data panel branch = %#v, want %#v", got, wantRef)
+	}
+	if got := schema.Components.MustGet("schemas.Kibana_HTTP_APIs_kbn-dashboard-section.properties.panels.items"); !reflect.DeepEqual(got, wantRef) {
+		t.Fatalf("dashboard section panels = %#v, want %#v", got, wantRef)
+	}
+	if got := schema.MustGetPath("/api/dashboards/{id}").Put.MustGet("requestBody.content.application/json.schema.properties.panels.items.anyOf.0"); !reflect.DeepEqual(got, wantRef) {
+		t.Fatalf("dashboard PUT panel branch = %#v, want %#v", got, wantRef)
+	}
+}
+
 // deepCopyMap creates a deep copy of a Map for testing purposes
 func deepCopyMap(m Map) Map {
 	result := make(Map)

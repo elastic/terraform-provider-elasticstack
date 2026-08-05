@@ -71,6 +71,22 @@ func configMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {
 	return cfg
 }
 
+func changePointAPI(t *testing.T, config string) kbapi.KibanaHTTPAPIsAiopsChangePointChart {
+	t.Helper()
+	var api kbapi.KibanaHTTPAPIsAiopsChangePointChart
+	require.NoError(t, json.Unmarshal([]byte(config), &api))
+	return api
+}
+
+func unionString(t *testing.T, value any) string {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	require.NoError(t, err)
+	var result string
+	require.NoError(t, json.Unmarshal(raw, &result))
+	return result
+}
+
 func diagSummary(diags diag.Diagnostics) string {
 	if diags == nil {
 		return ""
@@ -164,31 +180,29 @@ func TestBuildConfig_allOptional(t *testing.T) {
 	require.Equal(t, "metrics-*", panel.Config.DataViewId)
 	require.Equal(t, "system.cpu.total.pct", panel.Config.MetricField)
 	require.NotNil(t, panel.Config.AggregationFunction)
-	require.Equal(t, "avg", string(*panel.Config.AggregationFunction))
+	require.Equal(t, "avg", unionString(t, panel.Config.AggregationFunction))
 	require.NotNil(t, panel.Config.SplitField)
 	require.Equal(t, "host.name", *panel.Config.SplitField)
 	require.NotNil(t, panel.Config.Partitions)
 	require.ElementsMatch(t, []string{"host-a", "host-b"}, *panel.Config.Partitions)
 	require.NotNil(t, panel.Config.MaxSeriesToPlot)
-	require.InDelta(t, 6, float64(*panel.Config.MaxSeriesToPlot), 1e-6)
+	require.Equal(t, 6, *panel.Config.MaxSeriesToPlot)
 	require.NotNil(t, panel.Config.ViewType)
-	require.Equal(t, "charts", string(*panel.Config.ViewType))
+	require.Equal(t, "charts", unionString(t, panel.Config.ViewType))
 }
 
 func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 	t.Parallel()
 
-	agg := kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction("avg")
-	vt := kbapi.KibanaHTTPAPIsAiopsChangePointChartViewType("charts")
-	api := kbapi.KibanaHTTPAPIsAiopsChangePointChart{
-		DataViewId:          "metrics-*",
-		MetricField:         "system.cpu.total.pct",
-		AggregationFunction: &agg,
-		SplitField:          new("host.name"),
-		Partitions:          &[]string{"host-a", "host-b"},
-		MaxSeriesToPlot:     new(float32(6)),
-		ViewType:            &vt,
-	}
+	api := changePointAPI(t, `{
+		"data_view_id": "metrics-*",
+		"metric_field": "system.cpu.total.pct",
+		"aggregation_function": "avg",
+		"split_field": "host.name",
+		"partitions": ["host-a", "host-b"],
+		"max_series_to_plot": 6,
+		"view_type": "charts"
+	}`)
 
 	prior := &models.PanelModel{
 		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
@@ -232,13 +246,12 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 func TestPopulateFromAPI_import(t *testing.T) {
 	t.Parallel()
 
-	agg := kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction("sum")
-	api := kbapi.KibanaHTTPAPIsAiopsChangePointChart{
-		DataViewId:          "metrics-*",
-		MetricField:         "system.cpu.total.pct",
-		AggregationFunction: &agg,
-		Partitions:          &[]string{"host-a"},
-	}
+	api := changePointAPI(t, `{
+		"data_view_id": "metrics-*",
+		"metric_field": "system.cpu.total.pct",
+		"aggregation_function": "sum",
+		"partitions": ["host-a"]
+	}`)
 
 	pm := &models.PanelModel{}
 	diags := aiopschangepointchart.PopulateFromAPI(pm, nil, api)
@@ -257,17 +270,14 @@ func TestPopulateFromAPI_import(t *testing.T) {
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	t.Parallel()
 
-	agg := kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction("avg")
-	vt := kbapi.KibanaHTTPAPIsAiopsChangePointChartViewType("charts")
 	from, to := "now-15m", "now"
-	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
-	api := kbapi.KibanaHTTPAPIsAiopsChangePointChart{
-		DataViewId:          "logs-*",
-		MetricField:         "system.memory.used.pct",
-		AggregationFunction: &agg,
-		ViewType:            &vt,
-		TimeRange:           &tr,
-	}
+	api := changePointAPI(t, `{
+		"data_view_id": "logs-*",
+		"metric_field": "system.memory.used.pct",
+		"aggregation_function": "avg",
+		"view_type": "charts",
+		"time_range": {"from": "now-15m", "to": "now"}
+	}`)
 
 	// pm has no config (panel type changed away from this type in the plan)
 	// but prior still has the config block with known optional fields.

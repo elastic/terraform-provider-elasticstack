@@ -111,7 +111,7 @@ func LensChartDrilldownListItemAttributes() map[string]schema.Attribute {
 			MarkdownDescription: "Navigate to another dashboard using current filters/time range.",
 			Optional:            true,
 			Attributes: map[string]schema.Attribute{
-				"dashboard_id": schema.StringAttribute{
+				attrDashboardID: schema.StringAttribute{
 					MarkdownDescription: "Target dashboard id.",
 					Required:            true,
 				},

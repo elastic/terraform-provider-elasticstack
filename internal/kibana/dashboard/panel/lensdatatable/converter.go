@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable)
+	return string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("datatable_config", getDatatableSchema(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "datatable_config"); diags.HasError() {
 		return diags
 	}
@@ -64,52 +64,78 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.DatatableConfig = &models.DatatableConfigModel{}
 
-	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(datatableNoESQL.DataSource) {
-		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
-		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, priorNo, datatableNoESQL)
+	chart, chartErr := attrs.Chart.AsKibanaHTTPAPIsDatatableChart()
+	if chartErr != nil {
+		return diagutil.FrameworkDiagFromError(chartErr)
 	}
-	datatableESQL, err := attrs.AsKibanaHTTPAPIsDatatableESQLByValuePanel()
+	if datatableNoESQL, err := chart.AsKibanaHTTPAPIsDatatableNoESQL(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(datatableNoESQL.DataSource) {
+		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
+		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, priorNo, datatableNoESQL, attrs.Presentation)
+	}
+	datatableESQL, err := chart.AsKibanaHTTPAPIsDatatableESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 
 	blocks.DatatableConfig.ESQL = &models.DatatableESQLConfigModel{}
-	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, priorEsql, datatableESQL)
+	return datatableESQLConfigFromAPI(ctx, blocks.DatatableConfig.ESQL, priorEsql, datatableESQL, attrs.Presentation)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if blocks == nil || blocks.DatatableConfig == nil {
-		return lenscommon.VisByValueConfig0{}, diags
+		return lenscommon.LensByValueConfig{}, diags
 	}
 
-	var attrs lenscommon.VisByValueConfig0
+	var attrs lenscommon.LensByValueConfig
 
 	switch {
 	case blocks.DatatableConfig.NoESQL != nil:
 		noESQL, noDiags := datatableNoESQLConfigToAPI(blocks.DatatableConfig.NoESQL)
 		diags.Append(noDiags...)
 		if diags.HasError() {
-			return lenscommon.VisByValueConfig0{}, diags
+			return lenscommon.LensByValueConfig{}, diags
 		}
 
-		if err := attrs.FromKibanaHTTPAPIsDatatableNoESQLByValuePanel(noESQL); err != nil {
+		var chart kbapi.KibanaHTTPAPIsDatatableChart
+		if err := chart.FromKibanaHTTPAPIsDatatableNoESQL(noESQL); err != nil {
 			diags.AddError("Failed to convert datatable no-esql config", err.Error())
-			return lenscommon.VisByValueConfig0{}, diags
+			return lenscommon.LensByValueConfig{}, diags
 		}
+		if err := attrs.Chart.FromKibanaHTTPAPIsDatatableChart(chart); err != nil {
+			diags.AddError("Failed to convert datatable no-esql chart", err.Error())
+			return lenscommon.LensByValueConfig{}, diags
+		}
+		presentation, presentationDiags := lenscommon.LensChartPresentationToAPI(blocks.DatatableConfig.NoESQL.LensChartPresentationTFModel)
+		diags.Append(presentationDiags...)
+		if presentationDiags.HasError() {
+			return lenscommon.LensByValueConfig{}, diags
+		}
+		attrs.Presentation = presentation
 	case blocks.DatatableConfig.ESQL != nil:
 		esql, esqlDiags := datatableESQLConfigToAPI(blocks.DatatableConfig.ESQL)
 		diags.Append(esqlDiags...)
 		if diags.HasError() {
-			return lenscommon.VisByValueConfig0{}, diags
+			return lenscommon.LensByValueConfig{}, diags
 		}
 
-		if err := attrs.FromKibanaHTTPAPIsDatatableESQLByValuePanel(esql); err != nil {
+		var chart kbapi.KibanaHTTPAPIsDatatableChart
+		if err := chart.FromKibanaHTTPAPIsDatatableESQL(esql); err != nil {
 			diags.AddError("Failed to convert datatable esql config", err.Error())
-			return lenscommon.VisByValueConfig0{}, diags
+			return lenscommon.LensByValueConfig{}, diags
 		}
+		if err := attrs.Chart.FromKibanaHTTPAPIsDatatableChart(chart); err != nil {
+			diags.AddError("Failed to convert datatable esql chart", err.Error())
+			return lenscommon.LensByValueConfig{}, diags
+		}
+		presentation, presentationDiags := lenscommon.LensChartPresentationToAPI(blocks.DatatableConfig.ESQL.LensChartPresentationTFModel)
+		diags.Append(presentationDiags...)
+		if presentationDiags.HasError() {
+			return lenscommon.LensByValueConfig{}, diags
+		}
+		attrs.Presentation = presentation
 	default:
-		return lenscommon.VisByValueConfig0{}, diags
+		return lenscommon.LensByValueConfig{}, diags
 	}
 
 	return attrs, diags

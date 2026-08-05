@@ -18,7 +18,6 @@
 package lensxy
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -101,7 +100,7 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Grid, &state.Grid, true)
 	lenscommon.PreserveNullBoolIfStateEquals(plan.Ticks, &state.Ticks, true)
 	lenscommon.PreserveNullStringIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, "horizontal")
-	lenscommon.PreserveNullStringIfStateEquals(plan.Scale, &state.Scale, string(kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleOrdinal))
+	lenscommon.PreserveNullStringIfStateEquals(plan.Scale, &state.Scale, "ordinal")
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Grid, &state.Grid)
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Ticks, &state.Ticks)
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.LabelOrientation, &state.LabelOrientation)

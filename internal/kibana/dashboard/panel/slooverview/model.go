@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -141,11 +140,8 @@ func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroup
 	}
 
 	if m.GroupFilters != nil {
-		gf, d := groupFiltersToAPI(m.GroupFilters)
+		d := setGroupFiltersOnAPI(&api, m.GroupFilters)
 		diags.Append(d...)
-		if !diags.HasError() {
-			api.GroupFilters = gf
-		}
 	}
 
 	return api, diags
@@ -155,23 +151,12 @@ func setDrilldownsOnGroups(api *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, 
 	return panelkit.InjectDrilldownsJSON(api, drilldowns)
 }
 
-func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
-	Filters  *[]kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
-	GroupBy  *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
-	Groups   *[]string                                                                   `json:"groups,omitempty"`
-	KqlQuery *string                                                                     `json:"kql_query,omitempty"`
-}, diag.Diagnostics) {
+func setGroupFiltersOnAPI(api *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, m *models.SloGroupFiltersModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	gf := &struct {
-		Filters  *[]kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item `json:"filters,omitempty"`
-		GroupBy  *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy          `json:"group_by,omitempty"`
-		Groups   *[]string                                                                   `json:"groups,omitempty"`
-		KqlQuery *string                                                                     `json:"kql_query,omitempty"`
-	}{}
+	gf := sloGroupFiltersWire{}
 
 	if typeutils.IsKnown(m.GroupBy) {
-		gb := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableGroupFiltersGroupBy(m.GroupBy.ValueString())
-		gf.GroupBy = &gb
+		gf.GroupBy = m.GroupBy.ValueStringPointer()
 	}
 
 	if len(m.Groups) > 0 {
@@ -183,19 +168,46 @@ func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
 	}
 
 	if typeutils.IsKnown(m.KQLQuery) {
-		gf.KqlQuery = m.KQLQuery.ValueStringPointer()
+		gf.KQLQuery = m.KQLQuery.ValueStringPointer()
 	}
 
 	if typeutils.IsKnown(m.FiltersJSON) && !m.FiltersJSON.IsNull() {
-		var filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item
+		var filters []json.RawMessage
 		if err := json.Unmarshal([]byte(m.FiltersJSON.ValueString()), &filters); err != nil {
 			diags.AddError("Failed to unmarshal filters_json", err.Error())
-			return nil, diags
+			return diags
 		}
 		gf.Filters = &filters
 	}
 
-	return gf, diags
+	if diags.HasError() {
+		return diags
+	}
+	raw, err := json.Marshal(gf)
+	if err != nil {
+		diags.AddError("Failed to marshal SLO group filters", err.Error())
+		return diags
+	}
+	base, err := json.Marshal(api)
+	if err != nil {
+		diags.AddError("Failed to marshal SLO groups overview config", err.Error())
+		return diags
+	}
+	var config map[string]json.RawMessage
+	if err := json.Unmarshal(base, &config); err != nil {
+		diags.AddError("Failed to unmarshal SLO groups overview config", err.Error())
+		return diags
+	}
+	config["group_filters"] = raw
+	merged, err := json.Marshal(config)
+	if err != nil {
+		diags.AddError("Failed to re-marshal SLO groups overview config", err.Error())
+		return diags
+	}
+	if err := json.Unmarshal(merged, api); err != nil {
+		diags.AddError("Failed to apply SLO group filters", err.Error())
+	}
+	return diags
 }
 
 // PopulateFromAPI maps an SLO overview API panel into Terraform panel state. prior is TF plan/state (nil on import).
@@ -368,7 +380,12 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 			priorGroupBy = priorGroups.GroupFilters.GroupBy
 		}
 		if api.GroupFilters.GroupBy != nil {
-			gf.GroupBy = types.StringValue(string(*api.GroupFilters.GroupBy))
+			groupBy, err := sloGroupByFromAPI(*api.GroupFilters.GroupBy)
+			if err != nil {
+				diags.AddError("Failed to read SLO group filter group_by", err.Error())
+				return diags
+			}
+			gf.GroupBy = types.StringValue(groupBy)
 		} else {
 			gf.GroupBy = sloStringFromAPIOrPrior(nil, priorGroupBy)
 		}
@@ -422,6 +439,27 @@ func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
 	return result
 }
 
-func populateFiltersJSONFromAPI(filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item, out *jsontypes.Normalized) diag.Diagnostics {
-	return lenscommon.PopulateFilterJSONFromMarshaled(filters, out)
+type sloGroupFiltersWire struct {
+	Filters  *[]json.RawMessage `json:"filters,omitempty"`
+	GroupBy  *string            `json:"group_by,omitempty"`
+	Groups   *[]string          `json:"groups,omitempty"`
+	KQLQuery *string            `json:"kql_query,omitempty"`
+}
+
+func sloGroupByFromAPI(value kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_GroupBy) (string, error) {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+	var result string
+	return result, json.Unmarshal(raw, &result)
+}
+
+func populateFiltersJSONFromAPI(filters []kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema, out *jsontypes.Normalized) diag.Diagnostics {
+	raw, err := json.Marshal(filters)
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal SLO group filters", err.Error())}
+	}
+	*out = jsontypes.NewNormalizedValue(string(raw))
+	return nil
 }

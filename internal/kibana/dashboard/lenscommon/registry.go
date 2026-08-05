@@ -28,6 +28,11 @@ var (
 	sortedConverters []VizConverter // cached sorted snapshot returned by All; rebuilt on (Un)Register
 )
 
+const (
+	legacyVizTypeTagcloud  = "tagcloud"
+	legacyVizTypeDatatable = "datatable"
+)
+
 // UnregisterVizConverter removes the converter registered for vizType and returns it (nil if none).
 // Intended for tests that need to simulate a missing chart implementation.
 func UnregisterVizConverter(vizType string) VizConverter {
@@ -70,9 +75,9 @@ func rebuildSortedConverters() {
 // panel config_json attributes["type"] to the kbapi discriminator strings used as registry keys.
 func canonicalVizTypeForOpaqueAttrs(vizType string) string {
 	switch vizType {
-	case "tagcloud":
+	case legacyVizTypeTagcloud:
 		return "tag_cloud"
-	case "datatable":
+	case legacyVizTypeDatatable:
 		return "data_table"
 	default:
 		return vizType

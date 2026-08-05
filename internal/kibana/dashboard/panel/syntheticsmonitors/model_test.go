@@ -100,7 +100,9 @@ func Test_buildSyntheticsMonitorsPanel_withDisplaySettings(t *testing.T) {
 	assert.Equal(t, "Shows the production monitors", *panel.Config.Description)
 	assert.True(t, *panel.Config.HideTitle)
 	assert.False(t, *panel.Config.HideBorder)
-	assert.Equal(t, kbapi.CompactView, *panel.Config.View)
+	view, err := panel.Config.View.AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitorsConfigView1()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.CompactView, view)
 }
 
 func Test_buildSyntheticsMonitorsPanel_withFilters(t *testing.T) {
@@ -225,7 +227,8 @@ func Test_populateSyntheticsMonitorsFromAPI_import_withDisplaySettings(t *testin
 	description := "Shows the production monitors"
 	hideTitle := true
 	hideBorder := false
-	view := kbapi.CompactView
+	view, err := syntheticsMonitorsViewAPIValue("compactView")
+	require.NoError(t, err)
 	apiPanel.Config.Title = &title
 	apiPanel.Config.Description = &description
 	apiPanel.Config.HideTitle = &hideTitle

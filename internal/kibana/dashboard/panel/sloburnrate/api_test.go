@@ -120,8 +120,8 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Len(t, ddB, len(ddA))
 	require.Equal(t, ddA[0]["url"], ddB[0]["url"])
 	require.Equal(t, ddA[0]["label"], ddB[0]["label"])
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu), ddB[0]["trigger"])
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown), ddB[0]["type"])
+	require.Equal(t, "on_open_panel_menu", ddB[0]["trigger"])
+	require.Equal(t, "url_drilldown", ddB[0]["type"])
 
 	// null state → omit from API payload (no encode_url or open_in_new_tab keys in output).
 	require.Nil(t, drillsFromConfig(cfg1)[1]["encode_url"])

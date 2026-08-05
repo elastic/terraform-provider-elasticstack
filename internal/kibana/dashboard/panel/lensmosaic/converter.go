@@ -37,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic)
+	return string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -98,25 +98,42 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("mosaic_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "mosaic_config"); diags.HasError() {
 		return diags
 	}
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.MosaicConfig)
-	return lenscommon.PopulateFromNoESQLOrESQL(
+	diags := lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.MosaicConfig, prior,
-		attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsMosaicESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel) bool {
+		func() (kbapi.KibanaHTTPAPIsMosaicNoESQL, error) {
+			var chart kbapi.KibanaHTTPAPIsMosaicNoESQL
+			return chart, mosaicChartFromLensAPI(attrs.Chart, &chart)
+		},
+		func() (kbapi.KibanaHTTPAPIsMosaicESQL, error) {
+			var chart kbapi.KibanaHTTPAPIsMosaicESQL
+			return chart, mosaicChartFromLensAPI(attrs.Chart, &chart)
+		},
+		func(v kbapi.KibanaHTTPAPIsMosaicNoESQL) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		mosaicConfigFromAPINoESQL,
 		mosaicConfigFromAPIESQL,
 	)
+	if diags.HasError() {
+		return diags
+	}
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &blocks.MosaicConfig.LensChartPresentationTFModel, prior,
+		attrs.Presentation.TimeRange, attrs.Presentation.HideTitle, attrs.Presentation.HideBorder,
+		attrs.Presentation.References, attrs.Presentation.Drilldowns, &diags,
+	) {
+		return diags
+	}
+	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

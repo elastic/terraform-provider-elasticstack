@@ -93,7 +93,11 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		}
 
 		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
-		for i, d := range *apiConfig.Drilldowns {
+		for i, item := range *apiConfig.Drilldowns {
+			d, err := item.AsKibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0()
+			if err != nil {
+				continue
+			}
 			dm := models.URLDrilldownModel{
 				URL:   types.StringValue(d.Url),
 				Label: types.StringValue(d.Label),

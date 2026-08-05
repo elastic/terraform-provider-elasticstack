@@ -63,7 +63,7 @@ func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -107,9 +107,12 @@ func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
 	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in})
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel()
+	xyChart, err := attrs.Chart.AsKibanaHTTPAPIsXyChart()
 	require.NoError(t, err)
-	assert.Nil(t, out.TimeRange)
+	out, err := xyChart.AsKibanaHTTPAPIsXyChartNoESQL()
+	require.NoError(t, err)
+	assert.Nil(t, attrs.Presentation.TimeRange)
+	_ = out
 }
 
 func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
@@ -138,11 +141,13 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 		"styling": { "line": { "curve": "linear" } },
 		"time_range": { "from": "now-7d", "to": "now" }
 	}`
-	var chart kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel
+	var chart kbapi.KibanaHTTPAPIsXyChartESQL
 	require.NoError(t, json.Unmarshal([]byte(xyESQLJSON), &chart))
 
-	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsXyChartESQLByValuePanel(chart))
+	var xyChart kbapi.KibanaHTTPAPIsXyChart
+	require.NoError(t, xyChart.FromKibanaHTTPAPIsXyChartESQL(chart))
+	var attrs lenscommon.LensByValueConfig
+	require.NoError(t, attrs.Chart.FromKibanaHTTPAPIsXyChart(xyChart))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -154,9 +159,11 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQLByValuePanel()
+	xyChart, err := attrs2.Chart.AsKibanaHTTPAPIsXyChart()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsXyChartESQLByValuePanelTypeXy, out.Type)
+	out, err := xyChart.AsKibanaHTTPAPIsXyChartESQL()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsXyChartESQLTypeXy, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "XY ESQL RT", *out.Title)
 	require.Len(t, out.Layers, 1)

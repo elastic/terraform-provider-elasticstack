@@ -31,10 +31,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func xyReferenceLineLayerTypeFromTF(tfType string) kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQLType {
-	return kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQLType(tfType)
-}
-
 // fromAPILayersNoESQL populates the layer model from a DSL (non-ES|QL) XY layer union value.
 func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayersNoESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -81,7 +77,11 @@ func xyLayerFromAPILayersNoESQL(ctx context.Context, m *models.XYLayerModel, api
 
 // fromAPILayerESQL populates the layer model from an ES|QL XY data layer.
 func xyLayerFromAPILayerESQL(ctx context.Context, m *models.XYLayerModel, apiLayer kbapi.KibanaHTTPAPIsXyLayerESQL) diag.Diagnostics {
-	m.Type = types.StringValue(string(apiLayer.Type))
+	if layerType, ok := lensUnionStringValue(apiLayer.Type); ok {
+		m.Type = types.StringValue(layerType)
+	} else {
+		m.Type = types.StringNull()
+	}
 	m.DataLayer = &models.DataLayerModel{}
 	return dataLayerFromAPIESql(ctx, m.DataLayer, apiLayer)
 }
@@ -235,49 +235,63 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 // toAPIXyLayerNoESQL converts a data layer model to the typed non-ES|QL API layer.
 func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	layer := kbapi.KibanaHTTPAPIsXyLayerNoESQL{Type: kbapi.KibanaHTTPAPIsXyLayerNoESQLType(layerType)}
+	var zero kbapi.KibanaHTTPAPIsXyLayerNoESQL
+	layer := map[string]any{
+		attrType: layerType,
+	}
 
 	if typeutils.IsKnown(m.DataSourceJSON) {
-		diags.Append(m.DataSourceJSON.Unmarshal(&layer.DataSource)...)
+		var dataSource any
+		diags.Append(m.DataSourceJSON.Unmarshal(&dataSource)...)
+		layer["data_source"] = dataSource
 	}
 
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		layer.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
 	if typeutils.IsKnown(m.Sampling) {
-		s := float32(m.Sampling.ValueFloat64())
-		layer.Sampling = &s
+		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
 	if typeutils.IsKnown(m.XJSON) {
-		var x kbapi.KibanaHTTPAPIsXyLayerNoESQL_X
+		var x any
 		diags.Append(m.XJSON.Unmarshal(&x)...)
-		if !diags.HasError() {
-			layer.X = &x
-		}
+		layer["x"] = x
 	}
 
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var bb kbapi.KibanaHTTPAPIsXyLayerNoESQL_BreakdownBy
-		diags.Append(m.BreakdownByJSON.Unmarshal(&bb)...)
-		if !diags.HasError() {
-			layer.BreakdownBy = &bb
-		}
+		var breakdownBy any
+		diags.Append(m.BreakdownByJSON.Unmarshal(&breakdownBy)...)
+		layer["breakdown_by"] = breakdownBy
 	}
 
 	if len(m.Y) > 0 {
-		layer.Y = make([]kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item, 0, len(m.Y))
+		yMetrics := make([]any, 0, len(m.Y))
 		for _, y := range m.Y {
 			if !typeutils.IsKnown(y.ConfigJSON) {
 				continue
 			}
-			var item kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item
-			diags.Append(y.ConfigJSON.Unmarshal(&item)...)
-			layer.Y = append(layer.Y, item)
+			var metric any
+			diags.Append(y.ConfigJSON.Unmarshal(&metric)...)
+			yMetrics = append(yMetrics, metric)
 		}
+		layer["y"] = yMetrics
 	}
 
-	return layer, diags
+	if diags.HasError() {
+		return zero, diags
+	}
+	raw, err := json.Marshal(layer)
+	if err != nil {
+		diags.AddError("Failed to marshal data layer", err.Error())
+		return zero, diags
+	}
+	var out kbapi.KibanaHTTPAPIsXyLayerNoESQL
+	if err := json.Unmarshal(raw, &out); err != nil {
+		diags.AddError("Failed to decode data layer", err.Error())
+		return zero, diags
+	}
+	return out, diags
 }
 
 // toAPIXyLayerESQL converts a data layer model to the typed ES|QL API layer.
@@ -399,23 +413,25 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 // toAPIXyReferenceLineLayerNoESQL converts a reference line layer model to the typed API layer.
 func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLayerModel, layerType string) (kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	layer := kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL{
-		Type: xyReferenceLineLayerTypeFromTF(layerType),
+	var zero kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL
+	layer := map[string]any{
+		attrType: layerType,
 	}
 
 	if typeutils.IsKnown(m.DataSourceJSON) {
-		diags.Append(m.DataSourceJSON.Unmarshal(&layer.DataSource)...)
+		var dataSource any
+		diags.Append(m.DataSourceJSON.Unmarshal(&dataSource)...)
+		layer["data_source"] = dataSource
 	}
 	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		layer.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
+		layer["ignore_global_filters"] = m.IgnoreGlobalFilters.ValueBool()
 	}
 	if typeutils.IsKnown(m.Sampling) {
-		s := float32(m.Sampling.ValueFloat64())
-		layer.Sampling = &s
+		layer["sampling"] = m.Sampling.ValueFloat64()
 	}
 
 	if len(m.Thresholds) > 0 {
-		items := make([]kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item, 0, len(m.Thresholds))
+		items := make([]any, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			if typeutils.IsKnown(t.ValueJSON) {
 				var op any
@@ -424,17 +440,7 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 				if valueDiags.HasError() {
 					continue
 				}
-				opBytes, err := json.Marshal(op)
-				if err != nil {
-					diags.AddError("Failed to marshal reference line threshold", err.Error())
-					continue
-				}
-				var item kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item
-				if err := item.UnmarshalJSON(opBytes); err != nil {
-					diags.AddError("Failed to decode reference line threshold", err.Error())
-					continue
-				}
-				items = append(items, item)
+				items = append(items, op)
 				continue
 			}
 
@@ -443,22 +449,25 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 			if tDiags.HasError() {
 				continue
 			}
-			thBytes, err := json.Marshal(thresholdMap)
-			if err != nil {
-				diags.AddError("Failed to marshal reference line threshold", err.Error())
-				continue
-			}
-			var item kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item
-			if err := item.UnmarshalJSON(thBytes); err != nil {
-				diags.AddError("Failed to decode reference line threshold", err.Error())
-				continue
-			}
-			items = append(items, item)
+			items = append(items, thresholdMap)
 		}
-		layer.Thresholds = items
+		layer["thresholds"] = items
 	}
 
-	return layer, diags
+	if diags.HasError() {
+		return zero, diags
+	}
+	raw, err := json.Marshal(layer)
+	if err != nil {
+		diags.AddError("Failed to marshal reference line layer", err.Error())
+		return zero, diags
+	}
+	var out kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL
+	if err := json.Unmarshal(raw, &out); err != nil {
+		diags.AddError("Failed to decode reference line layer", err.Error())
+		return zero, diags
+	}
+	return out, diags
 }
 
 // fromAPIJSON populates threshold from JSON

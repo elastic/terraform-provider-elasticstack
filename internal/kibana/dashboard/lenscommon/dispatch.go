@@ -20,24 +20,25 @@ package lenscommon
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // DispatchByQueryMode handles the ESQL/NoESQL dispatcher boilerplate shared across lens panel
 // ConfigToAPI functions. It calls the appropriate builder, appends its diagnostics, and applies
-// the result to a VisByValueConfig0 via the provided From* setter. Nil-guard and any
+// the result to a LensApiConfig via the provided From* setter. Nil-guard and any
 // panel-specific pre-validation must be done by the caller before invoking this function.
 func DispatchByQueryMode[ESQL, NoESQL any](
 	usesESQL bool,
 	buildESQL func() (ESQL, diag.Diagnostics),
-	applyESQL func(*VisByValueConfig0, ESQL) error,
+	applyESQL func(*kbapi.KibanaHTTPAPIsLensApiConfig, ESQL) error,
 	esqlErrSummary string,
 	buildNoESQL func() (NoESQL, diag.Diagnostics),
-	applyNoESQL func(*VisByValueConfig0, NoESQL) error,
+	applyNoESQL func(*kbapi.KibanaHTTPAPIsLensApiConfig, NoESQL) error,
 	noESQLErrSummary string,
-) (VisByValueConfig0, diag.Diagnostics) {
-	var attrs VisByValueConfig0
+) (kbapi.KibanaHTTPAPIsLensApiConfig, diag.Diagnostics) {
+	var attrs kbapi.KibanaHTTPAPIsLensApiConfig
 	var diags diag.Diagnostics
 
 	if usesESQL {

@@ -27,11 +27,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-// VisByValueConfig0 is the vis panel inline (by-value) config union from the Kibana Dashboard API.
-type VisByValueConfig0 = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0
-
 // CMReferenceSchema is a Kibana content-management reference entry.
 type CMReferenceSchema = kbapi.KibanaHTTPAPIsKbnContentManagementUtilsReferenceSchema
+
+// LensByValueConfig separates the Lens chart union from the presentation fields
+// which share its dashboard wire object. The generated API exposes these as two
+// distinct models, so converters must preserve both when reading and writing.
+type LensByValueConfig struct {
+	Chart        kbapi.KibanaHTTPAPIsLensApiConfig
+	Presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0
+}
 
 // VizConverter converts one Lens chart kind between Terraform models and kbapi vis config.
 type VizConverter interface {
@@ -41,14 +46,14 @@ type VizConverter interface {
 	// SchemaAttribute returns the SingleNestedAttribute for this chart kind inside vis_config.by_value.
 	SchemaAttribute() schema.Attribute
 
-	// PopulateFromAttributes reads the typed API chart payload from attrs and writes the result into the
+	// PopulateFromAttributes reads the typed API chart and presentation payloads from attrs and writes the result into the
 	// matching blocks.<Chart>Config field. The caller MUST seed blocks.<Chart>Config from prior state
 	// (for example existing Terraform state) before invoking the converter so prior-dependent merge logic
 	// (drilldowns, presentation, JSON defaults preservation) sees the pre-existing values. After this
 	// method returns successfully, blocks.<Chart>Config points to the freshly populated model.
 	// Implementations may copy blocks.<Chart>Config into a local prior variable before reconstruction.
-	PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs VisByValueConfig0) diag.Diagnostics
-	BuildAttributes(blocks *models.LensByValueChartBlocks) (VisByValueConfig0, diag.Diagnostics)
+	PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs LensByValueConfig) diag.Diagnostics
+	BuildAttributes(blocks *models.LensByValueChartBlocks) (LensByValueConfig, diag.Diagnostics)
 	AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks)
 	PopulateJSONDefaults(attrs map[string]any) map[string]any
 }

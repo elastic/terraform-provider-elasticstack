@@ -18,6 +18,7 @@
 package optionslist
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -49,7 +50,7 @@ type displaySettingsAPI = struct {
 //
 // tfPanel is the prior TF state/plan panel, or nil on import.
 func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) diag.Diagnostics {
-	if ol == nil {
+	if ol == nil || ol.Config == nil {
 		return nil
 	}
 
@@ -125,7 +126,10 @@ func sharedAPIFieldsFromField(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOp
 		DisplaySettings:   apiConfig.DisplaySettings,
 	}
 	if apiConfig.SearchTechnique != nil {
-		st := string(*apiConfig.SearchTechnique)
+		st, err := searchTechniqueString(*apiConfig.SearchTechnique)
+		if err != nil {
+			return f
+		}
 		f.SearchTechnique = &st
 	}
 	if apiConfig.SelectedOptions != nil {
@@ -152,7 +156,10 @@ func sharedAPIFieldsFromEsql(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOpt
 		DisplaySettings:   apiConfig.DisplaySettings,
 	}
 	if apiConfig.SearchTechnique != nil {
-		st := string(*apiConfig.SearchTechnique)
+		st, err := searchTechniqueString(*apiConfig.SearchTechnique)
+		if err != nil {
+			return f
+		}
 		f.SearchTechnique = &st
 	}
 	if apiConfig.SelectedOptions != nil {
@@ -311,7 +318,9 @@ func newOptionsListFieldFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbn
 		m.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
 	}
 	if apiConfig.SearchTechnique != nil {
-		m.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
+		if st, err := searchTechniqueString(*apiConfig.SearchTechnique); err == nil {
+			m.SearchTechnique = types.StringValue(st)
+		}
 	}
 	if apiConfig.SelectedOptions != nil {
 		m.SelectedOptions = selectedOptionsFieldToList(*apiConfig.SelectedOptions)
@@ -340,7 +349,9 @@ func newOptionsListEsqlFromRequiredAndPresent(apiConfig kbapi.KibanaHTTPAPIsKbnC
 		m.SingleSelect = types.BoolValue(*apiConfig.SingleSelect)
 	}
 	if apiConfig.SearchTechnique != nil {
-		m.SearchTechnique = types.StringValue(string(*apiConfig.SearchTechnique))
+		if st, err := searchTechniqueString(*apiConfig.SearchTechnique); err == nil {
+			m.SearchTechnique = types.StringValue(st)
+		}
 	}
 	if apiConfig.SelectedOptions != nil {
 		m.SelectedOptions = selectedOptionsEsqlToList(*apiConfig.SelectedOptions)
@@ -452,6 +463,9 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	if cfg == nil {
 		return nil
 	}
+	if olPanel.Config == nil {
+		olPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{}
+	}
 
 	switch {
 	case cfg.ByField != nil:
@@ -501,7 +515,12 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.SearchTechnique) {
-		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique(cfg.SearchTechnique.ValueString())
+		st, err := fieldSearchTechnique(cfg.SearchTechnique.ValueString())
+		if err != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid options list search technique", err.Error())
+			return diags
+		}
 		c.SearchTechnique = &st
 	}
 	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
@@ -519,7 +538,13 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirection(cfg.Sort.Direction.ValueString()),
 		}
 	}
-	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c); err != nil {
+	payload, err := json.Marshal(c)
+	if err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Failed to build options list control config", err.Error())
+		return diags
+	}
+	if err := olPanel.Config.UnmarshalJSON(payload); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build options list control config", err.Error())
 		return diags
@@ -558,7 +583,12 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
 	}
 	if typeutils.IsKnown(cfg.SearchTechnique) {
-		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique(cfg.SearchTechnique.ValueString())
+		st, err := esqlSearchTechnique(cfg.SearchTechnique.ValueString())
+		if err != nil {
+			var diags diag.Diagnostics
+			diags.AddError("Invalid options list search technique", err.Error())
+			return diags
+		}
 		c.SearchTechnique = &st
 	}
 	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
@@ -636,6 +666,46 @@ func buildSelectedOptionsEsql(list types.List) *[]kbapi.KibanaHTTPAPIsKbnControl
 		}
 	}
 	return &items
+}
+
+func searchTechniqueString(value interface{ MarshalJSON() ([]byte, error) }) (string, error) {
+	var result string
+	bytes, err := value.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(bytes, &result)
+	return result, err
+}
+
+func fieldSearchTechnique(value string) (kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SearchTechnique, error) {
+	var result kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField_SearchTechnique
+	switch value {
+	case "prefix":
+		err := result.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique0("prefix")
+		return result, err
+	case "wildcard":
+		err := result.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique1("wildcard")
+		return result, err
+	default:
+		err := result.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique2("exact")
+		return result, err
+	}
+}
+
+func esqlSearchTechnique(value string) (kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql_SearchTechnique, error) {
+	var result kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql_SearchTechnique
+	switch value {
+	case "prefix":
+		err := result.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique0("prefix")
+		return result, err
+	case "wildcard":
+		err := result.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique1("wildcard")
+		return result, err
+	default:
+		err := result.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique2("exact")
+		return result, err
+	}
 }
 
 func displaySettingsFromAPI(api *displaySettingsAPI) *models.OptionsListControlDisplaySettingsModel {
