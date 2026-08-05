@@ -18,25 +18,53 @@
 package lenscommon
 
 import (
+	"encoding/json"
+	"strconv"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const defaultFilterSimpleLanguage = "kql"
+
+// stringUnionFromAPI extracts a string represented by a generated union.
+func stringUnionFromAPI(value json.Marshaler) string {
+	b, err := value.MarshalJSON()
+	if err != nil {
+		return ""
+	}
+
+	var result string
+	if err := json.Unmarshal(b, &result); err != nil {
+		return ""
+	}
+	return result
+}
+
+// stringUnionToAPI builds a generated string union from its wire value.
+func stringUnionToAPI[T any](value string) *T {
+	var result T
+	if err := json.Unmarshal([]byte(strconv.Quote(value)), &result); err != nil {
+		return nil
+	}
+	return &result
+}
+
 // FilterSimpleFromAPI maps kbapi.KibanaHTTPAPIsFilterSimple into FilterSimpleModel.
 func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery *kbapi.KibanaHTTPAPIsFilterSimple) {
 	if apiQuery == nil {
 		m.Expression = types.StringValue("")
-		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql))
+		m.Language = types.StringValue(defaultFilterSimpleLanguage)
 		return
 	}
 	m.Expression = types.StringValue(apiQuery.Expression)
 	if apiQuery.Language == nil {
-		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql))
+		m.Language = types.StringValue(defaultFilterSimpleLanguage)
 		return
 	}
-	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
+	m.Language = types.StringValue(stringUnionFromAPI(apiQuery.Language))
 }
 
 // ConfigUsesESQL reports whether a config's query field indicates an ES|QL data source.
@@ -59,8 +87,7 @@ func FilterSimpleToAPI(m *models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsFilterS
 		Expression: m.Expression.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {
-		lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage(m.Language.ValueString())
-		query.Language = &lang
+		query.Language = stringUnionToAPI[kbapi.KibanaHTTPAPIsFilterSimple_Language](m.Language.ValueString())
 	}
 	return query
 }

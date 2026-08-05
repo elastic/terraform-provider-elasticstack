@@ -40,6 +40,49 @@ type LensChartPresentationWrites struct {
 	DrilldownsRaw [][]byte
 }
 
+// PopulateLensChartPresentationFromAPI reads the shared dashboard presentation
+// fields that accompany every by-value Lens chart.
+func PopulateLensChartPresentationFromAPI[Prior lensChartPresentationProvider](
+	ctx context.Context,
+	out *models.LensChartPresentationTFModel,
+	prior Prior,
+	presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0,
+	diags *diag.Diagnostics,
+) bool {
+	return PopulateLensChartPresentation(
+		ctx,
+		out,
+		prior,
+		presentation.TimeRange,
+		presentation.HideTitle,
+		presentation.HideBorder,
+		presentation.References,
+		presentation.Drilldowns,
+		diags,
+	)
+}
+
+// LensChartPresentationToAPI builds the dashboard presentation model that
+// accompanies a by-value Lens chart in the vis config wire payload.
+func LensChartPresentationToAPI(
+	in models.LensChartPresentationTFModel,
+) (kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0, diag.Diagnostics) {
+	var presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0
+	writes, diags := LensChartPresentationWritesFor(in)
+	if diags.HasError() {
+		return presentation, diags
+	}
+	diags.Append(ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_0_Drilldowns_Item](
+		writes,
+		&presentation.TimeRange,
+		&presentation.HideTitle,
+		&presentation.HideBorder,
+		&presentation.References,
+		&presentation.Drilldowns,
+	)...)
+	return presentation, diags
+}
+
 // LensChartPresentationWritesFor builds API presentation fields from Terraform chart-root attributes.
 func LensChartPresentationWritesFor(in models.LensChartPresentationTFModel) (LensChartPresentationWrites, diag.Diagnostics) {
 	var writes LensChartPresentationWrites
@@ -192,7 +235,7 @@ func LensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int)
 		obj := map[string]any{
 			attrType:         drilldownTypeDashboard,
 			attrTrigger:      LensDrilldownTriggerOnApplyFilter,
-			"dashboard_id":   dd.DashboardID.ValueString(),
+			attrDashboardID:  dd.DashboardID.ValueString(),
 			attrLabel:        dd.Label.ValueString(),
 			"use_filters":    optionalBoolForDrilldownJSON(dd.UseFilters, true),
 			"use_time_range": optionalBoolForDrilldownJSON(dd.UseTimeRange, true),

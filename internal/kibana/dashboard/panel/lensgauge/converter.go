@@ -36,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge)
+	return string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -149,25 +149,41 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("gauge_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "gauge_config"); diags.HasError() {
 		return diags
 	}
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.GaugeConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.GaugeConfig, prior,
-		attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsGaugeESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel) bool {
+		func() (kbapi.KibanaHTTPAPIsGaugeNoESQL, error) {
+			chart, err := attrs.Chart.AsKibanaHTTPAPIsGaugeChart()
+			if err != nil {
+				return kbapi.KibanaHTTPAPIsGaugeNoESQL{}, err
+			}
+			return chart.AsKibanaHTTPAPIsGaugeNoESQL()
+		},
+		func() (kbapi.KibanaHTTPAPIsGaugeESQL, error) {
+			chart, err := attrs.Chart.AsKibanaHTTPAPIsGaugeChart()
+			if err != nil {
+				return kbapi.KibanaHTTPAPIsGaugeESQL{}, err
+			}
+			return chart.AsKibanaHTTPAPIsGaugeESQL()
+		},
+		func(v kbapi.KibanaHTTPAPIsGaugeNoESQL) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
-		gaugeConfigFromAPI,
-		gaugeConfigFromAPIESQL,
+		func(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeNoESQL) diag.Diagnostics {
+			return gaugeConfigFromAPI(ctx, m, prior, api, attrs.Presentation)
+		},
+		func(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQL) diag.Diagnostics {
+			return gaugeConfigFromAPIESQL(ctx, m, prior, api, attrs.Presentation)
+		},
 	)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

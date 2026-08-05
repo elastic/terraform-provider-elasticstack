@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle)
+	return string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -46,7 +46,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("waffle_config", waffleSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "waffle_config"); diags.HasError() {
 		return diags
 	}
@@ -59,7 +59,7 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 		prior = &cpy
 	}
 
-	raw, err := attrs.MarshalJSON()
+	raw, err := attrs.Chart.MarshalJSON()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -71,24 +71,34 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	blocks.WaffleConfig = &models.WaffleConfigModel{}
 	var diags diag.Diagnostics
 	if esql {
-		wESQL, err := attrs.AsKibanaHTTPAPIsWaffleESQLByValuePanel()
-		if err != nil {
+		var wESQL kbapi.KibanaHTTPAPIsWaffleESQL
+		if err := waffleChartFromLensAPI(attrs.Chart, &wESQL); err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
 		diags = waffleConfigFromAPIESQL(ctx, blocks.WaffleConfig, prior, wESQL)
 	} else {
-		wNoESQL, err := attrs.AsKibanaHTTPAPIsWaffleNoESQLByValuePanel()
-		if err != nil {
+		var wNoESQL kbapi.KibanaHTTPAPIsWaffleNoESQL
+		if err := waffleChartFromLensAPI(attrs.Chart, &wNoESQL); err != nil {
 			return diagutil.FrameworkDiagFromError(err)
 		}
 		diags = waffleConfigFromAPINoESQL(ctx, blocks.WaffleConfig, prior, wNoESQL)
 	}
 	mergeWaffleConfigFromPlanSeed(blocks.WaffleConfig, seed)
+	if diags.HasError() {
+		return diags
+	}
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &blocks.WaffleConfig.LensChartPresentationTFModel, prior,
+		attrs.Presentation.TimeRange, attrs.Presentation.HideTitle, attrs.Presentation.HideBorder,
+		attrs.Presentation.References, attrs.Presentation.Drilldowns, &diags,
+	) {
+		return diags
+	}
 	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

@@ -33,50 +33,52 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// buildLensPanelForTest maps a vis config through the current generated unions.
+func buildLensPanelForTest(t *testing.T, id string, grid models.PanelGridModel, configJSON string) models.PanelModel {
+	t.Helper()
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config
+	require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+
+	visPanel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis{
+		Config: config,
+		Type:   kbapi.Vis,
+	}
+	var item kbapi.DashboardPanelItem
+	require.NoError(t, item.FromKibanaHTTPAPIsKbnDashboardPanelTypeVis(visPanel))
+
+	panel, diags := dashboardMapPanelFromAPI(t.Context(), nil, nil, item)
+	require.False(t, diags.HasError())
+	panel.ID = types.StringValue(id)
+	panel.Grid = grid
+	return panel
+}
+
 // buildLensMosaicPanelForTest creates a panel model with MosaicConfig for panelsToAPI tests.
 func buildLensMosaicPanelForTest(t *testing.T) models.PanelModel {
-	t.Helper()
 	groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],` +
 		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]`
 	groupBreakdownBy := `[{"operation":"terms","collapse_by":"avg","fields":["service.name"],` +
 		`"color":{"mode":"categorical","palette":"default","mapping":[],"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]`
-	apiJSON := `{
+	return buildLensPanelForTest(t, "mosaic-1", models.PanelGridModel{
+		X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6),
+	}, `{
 		"type": "mosaic",
 		"title": "Lens Mosaic",
 		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metric": {"operation":"count"},
-		"group_by": ` + groupBy + `,
-		"group_breakdown_by": ` + groupBreakdownBy + `
-	}`
-	var api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-
-	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsMosaicNoESQLByValuePanel(api))
-
-	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic))
-	require.NotNil(t, c)
-	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-
-	return models.PanelModel{
-		Type: types.StringValue("vis"),
-		ID:   types.StringValue("mosaic-1"),
-		Grid: models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		VisConfig: &models.VisConfigModel{
-			ByValue: &visBv,
-		},
-		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
-	}
+		"group_by": `+groupBy+`,
+		"group_breakdown_by": `+groupBreakdownBy+`
+	}`)
 }
 
 // buildLensTreemapPanelForTest creates a panel model with TreemapConfig for panelsToAPI tests.
 func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
-	t.Helper()
-	apiJSON := `{
+	return buildLensPanelForTest(t, "treemap-1", models.PanelGridModel{
+		X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6),
+	}, `{
 		"type": "treemap",
 		"title": "Lens Treemap",
 		"data_source": {"type":"dataView","id":"metrics-*"},
@@ -84,62 +86,21 @@ func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
-	}`
-	var api kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-
-	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsTreemapNoESQLByValuePanel(api))
-
-	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap))
-	require.NotNil(t, c)
-	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-
-	return models.PanelModel{
-		Type: types.StringValue("vis"),
-		ID:   types.StringValue("treemap-1"),
-		Grid: models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(6), H: types.Int64Value(6)},
-		VisConfig: &models.VisConfigModel{
-			ByValue: &visBv,
-		},
-		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
-	}
+	}`)
 }
 
 // buildLensWafflePanelForTest creates a panel model with WaffleConfig for panelsToAPI tests.
 func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
-	t.Helper()
-	apiJSON := `{
+	return buildLensPanelForTest(t, "waffle-1", models.PanelGridModel{
+		X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10),
+	}, `{
 		"type": "waffle",
 		"title": "Lens Waffle",
 		"data_source": {"type":"dataView","id":"metrics-*"},
 		"query": {"language":"kql","expression":""},
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}]
-	}`
-	var api kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel
-	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
-
-	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQLByValuePanel(api))
-
-	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle))
-	require.NotNil(t, c)
-	visBv := models.VisByValueModel{}
-	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
-	require.False(t, diags.HasError())
-
-	return models.PanelModel{
-		Type: types.StringValue("vis"),
-		ID:   types.StringValue("waffle-1"),
-		Grid: models.PanelGridModel{X: types.Int64Value(0), Y: types.Int64Value(0), W: types.Int64Value(8), H: types.Int64Value(10)},
-		VisConfig: &models.VisConfigModel{
-			ByValue: &visBv,
-		},
-		ConfigJSON: customtypes.NewJSONWithDefaultsNull(populatePanelConfigJSONDefaults),
-	}
+	}`)
 }
 
 func Test_resolveChartTimeRange_omitWhenUnset(t *testing.T) {
@@ -537,7 +498,6 @@ func Test_panelsToAPI(t *testing.T) {
 					"config": {
 						"content": "some content",
                         "hide_title": true,
-						"settings": {},
 						"title": "My Panel"
 					}
 				}
@@ -595,8 +555,8 @@ func Test_panelsToAPI(t *testing.T) {
 						"filters": [],
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
-						"metrics": [{"operation":"count"}],
-						"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
+						"metrics": [{}],
+						"group_by": [{"collapse_by":"avg"}]
 					}
 				}
 			]`,
@@ -625,12 +585,10 @@ func Test_panelsToAPI(t *testing.T) {
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
 						"metric": {"operation":"count"},
-						"group_by": [{"operation":"terms","collapse_by":"avg","fields":["host.name"],
+						"group_by": [{"collapse_by":"avg",
 							"color":{"mode":"categorical","palette":"default","mapping":[],
 							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}],
-						"group_breakdown_by": [{"operation":"terms","collapse_by":"avg","fields":["service.name"],
-							"color":{"mode":"categorical","palette":"default","mapping":[],
-							"unassigned":{"type":"color_code","value":"#D3DAE6"}}}]
+						"group_breakdown_by": [{"collapse_by":"avg"}]
 					}
 				}
 			]`,
@@ -658,7 +616,7 @@ func Test_panelsToAPI(t *testing.T) {
 						"filters": [],
 						"query": {"language":"kql","expression":""},
 						"legend": {"size":"small"},
-						"metrics": [{"operation":"count"}],
+						"metrics": [{}],
 						"styling": {"values": {"mode": "percentage"}}
 					}
 				}
@@ -698,7 +656,7 @@ func Test_panelsToAPI(t *testing.T) {
 					"collapsed": true,
 					"grid": {"y": 50},
 					"panels": [
-						{"grid":{"h":5,"w":5,"x":0,"y":0},"type":"markdown","config":{"content":"","settings":{},"title":"Inner Text"}}
+						{"grid":{"h":5,"w":5,"x":0,"y":0},"type":"markdown","config":{"content":"","title":"Inner Text"}}
 					]
 				}
 			]`,

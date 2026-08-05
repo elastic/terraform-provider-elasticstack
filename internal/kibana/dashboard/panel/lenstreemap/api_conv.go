@@ -31,10 +31,10 @@ import (
 )
 
 func treemapConfigFromAPINoESQL(
-	ctx context.Context,
+	_ context.Context,
 	m *models.TreemapConfigModel,
-	prior *models.TreemapConfigModel,
-	api kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel,
+	_ *models.TreemapConfigModel,
+	api kbapi.KibanaHTTPAPIsTreemapNoESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -83,16 +83,13 @@ func treemapConfigFromAPINoESQL(
 		m.ValueDisplay = nil
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
-		return diags
-	}
 	m.EsqlMetrics = nil
 	m.EsqlGroupBy = nil
 
 	return diags
 }
 
-func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, prior *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel) diag.Diagnostics {
+func treemapConfigFromAPIESQL(_ context.Context, m *models.TreemapConfigModel, _ *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQL) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// ES|QL charts don't have a query block. Clear it to avoid carrying over
@@ -157,36 +154,59 @@ func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel,
 		m.ValueDisplay = nil
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
-		return diags
-	}
-
 	return diags
 }
 
-func treemapConfigToAPI(m *models.TreemapConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func treemapConfigToAPI(m *models.TreemapConfigModel) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var result lenscommon.LensByValueConfig
+	var diags diag.Diagnostics
 	if m == nil {
-		return lenscommon.VisByValueConfig0{}, nil
+		return result, diags
 	}
-	return lenscommon.DispatchByQueryMode(
-		lenscommon.ConfigUsesESQL(m.Query),
-		func() (kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel, diag.Diagnostics) {
-			return treemapConfigToAPITreemapESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTreemapESQLByValuePanel,
-		"Failed to create treemap ES|QL schema",
-		func() (kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel, diag.Diagnostics) {
-			return treemapConfigToAPINoESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTreemapNoESQLByValuePanel,
-		"Failed to create treemap schema",
-	)
+
+	if lenscommon.ConfigUsesESQL(m.Query) {
+		chart, chartDiags := treemapConfigToAPITreemapESQL(m)
+		diags.Append(chartDiags...)
+		if chartDiags.HasError() {
+			return result, diags
+		}
+		var err error
+		result.Chart, err = treemapChartToLensAPI(chart)
+		if err != nil {
+			diags.AddError("Failed to create Lens chart config", err.Error())
+			return result, diags
+		}
+	} else {
+		chart, chartDiags := treemapConfigToAPINoESQL(m)
+		diags.Append(chartDiags...)
+		if chartDiags.HasError() {
+			return result, diags
+		}
+		var err error
+		result.Chart, err = treemapChartToLensAPI(chart)
+		if err != nil {
+			diags.AddError("Failed to create Lens chart config", err.Error())
+			return result, diags
+		}
+	}
+
+	writes, presentationDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
+	diags.Append(presentationDiags...)
+	if presentationDiags.HasError() {
+		return result, diags
+	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_0_Drilldowns_Item](
+		writes, &result.Presentation.TimeRange, &result.Presentation.HideTitle, &result.Presentation.HideBorder,
+		&result.Presentation.References, &result.Presentation.Drilldowns,
+	)...)
+
+	return result, diags
 }
 
-func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel, diag.Diagnostics) {
+func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel
-	api.Type = kbapi.KibanaHTTPAPIsTreemapESQLByValuePanelTypeTreemap
+	var api kbapi.KibanaHTTPAPIsTreemapESQL
+	api.Type = kbapi.KibanaHTTPAPIsTreemapESQLTypeTreemap
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing data_source_json", "treemap_config.data_source_json must be provided")
@@ -210,10 +230,10 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 	}
 
 	api.Metrics = make([]struct {
-		Color  *kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel_Metrics_Color `json:"color,omitempty"`
-		Column string                                                     `json:"column"`
-		Format *kbapi.KibanaHTTPAPIsFormatType                            `json:"format,omitempty"`
-		Label  *string                                                    `json:"label,omitempty"`
+		Color  *kbapi.KibanaHTTPAPIsTreemapESQL_Metrics_Color `json:"color,omitempty"`
+		Column string                                         `json:"column"`
+		Format *kbapi.KibanaHTTPAPIsFormatType                `json:"format,omitempty"`
+		Label  *string                                        `json:"label,omitempty"`
 	}, len(m.EsqlMetrics))
 	for i, em := range m.EsqlMetrics {
 		api.Metrics[i].Column = em.Column.ValueString()
@@ -235,7 +255,7 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 			Type:  kbapi.KibanaHTTPAPIsStaticColorType(em.Color.Type.ValueString()),
 			Color: em.Color.Color.ValueString(),
 		}
-		var color kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel_Metrics_Color
+		var color kbapi.KibanaHTTPAPIsTreemapESQL_Metrics_Color
 		if err := color.FromKibanaHTTPAPIsStaticColor(staticColor); err != nil {
 			diags.AddError("Failed to marshal metric color", err.Error())
 			return api, diags
@@ -261,29 +281,18 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 	if m.ValueDisplay != nil {
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
-		defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{
-			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
+			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: treemapValueDisplayMode("percentage")},
 		}
 	}
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
 
 	return api, diags
 }
 
-func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel, diag.Diagnostics) {
+func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPIsTreemapNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel{
-		Type: kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap,
+	api := kbapi.KibanaHTTPAPIsTreemapNoESQL{
+		Type: kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap,
 	}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
@@ -301,31 +310,27 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPI
 		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
 		return api, diags
 	}
-	var groupBy []kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_GroupBy_Item
-	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
+	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &api.GroupBy); err != nil {
 		diags.AddError("Failed to unmarshal group_by", err.Error())
 		return api, diags
 	}
-	if len(groupBy) == 0 {
+	if api.GroupBy == nil || len(*api.GroupBy) == 0 {
 		diags.AddError("Invalid group_by_json", "treemap_config.group_by_json must contain at least one item")
 		return api, diags
 	}
-	api.GroupBy = &groupBy
 
 	if m.Metrics.IsNull() {
 		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
 		return api, diags
 	}
-	var metrics []kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_Metrics_Item
-	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &metrics); err != nil {
+	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &api.Metrics); err != nil {
 		diags.AddError("Failed to unmarshal metrics", err.Error())
 		return api, diags
 	}
-	if len(metrics) == 0 {
+	if len(api.Metrics) == 0 {
 		diags.AddError("Invalid metrics_json", "treemap_config.metrics_json must contain at least one item")
 		return api, diags
 	}
-	api.Metrics = metrics
 
 	if m.Query == nil {
 		diags.AddError("Missing query", "treemap_config.query is required for non-ES|QL treemap charts")
@@ -344,16 +349,6 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPI
 	if m.ValueDisplay != nil {
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
 
 	return api, diags
 }

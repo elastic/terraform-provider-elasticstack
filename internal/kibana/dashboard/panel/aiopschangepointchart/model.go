@@ -39,8 +39,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panel.Config.MetricField = cfg.MetricField.ValueString()
 
 	if typeutils.IsKnown(cfg.AggregationFunction) {
-		v := kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction(cfg.AggregationFunction.ValueString())
-		panel.Config.AggregationFunction = &v
+		panel.Config.AggregationFunction = changePointAggregationFunctionAPIValue(cfg.AggregationFunction.ValueString())
 	}
 	if typeutils.IsKnown(cfg.SplitField) {
 		panel.Config.SplitField = cfg.SplitField.ValueStringPointer()
@@ -54,12 +53,11 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		panel.Config.Partitions = &items
 	}
 	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
-		v := cfg.MaxSeriesToPlot.ValueFloat32()
+		v := int(cfg.MaxSeriesToPlot.ValueFloat32())
 		panel.Config.MaxSeriesToPlot = &v
 	}
 	if typeutils.IsKnown(cfg.ViewType) {
-		v := kbapi.KibanaHTTPAPIsAiopsChangePointChartViewType(cfg.ViewType.ValueString())
-		panel.Config.ViewType = &v
+		panel.Config.ViewType = changePointViewTypeAPIValue(cfg.ViewType.ValueString())
 	}
 
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
@@ -103,7 +101,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	if typeutils.IsKnown(existing.ViewType) {
 		existing.ViewType = changePointViewTypeValue(api.ViewType)
 	}
-	existing.MaxSeriesToPlot = panelkit.PreserveFloat32(existing.MaxSeriesToPlot, api.MaxSeriesToPlot)
+	existing.MaxSeriesToPlot = panelkit.PreserveFloat32(existing.MaxSeriesToPlot, changePointMaxSeriesToPlotValue(api.MaxSeriesToPlot))
 
 	// Partitions set: null-preserve. When the practitioner omitted it (null/unknown in state), keep null
 	// regardless of API-returned values; otherwise refresh from the API set (order-insensitive).
@@ -139,7 +137,7 @@ func aiopsChangePointChartConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsChang
 		HideTitle:           types.BoolPointerValue(api.HideTitle),
 		HideBorder:          types.BoolPointerValue(api.HideBorder),
 	}
-	cfg.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
+	cfg.MaxSeriesToPlot = types.Float32PointerValue(changePointMaxSeriesToPlotValue(api.MaxSeriesToPlot))
 	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 	return cfg
 }
@@ -160,18 +158,64 @@ func aiopsChangePointChartPreserveNullIntentFromPrior(prior, existing *models.Ai
 	}
 }
 
-func changePointAggregationFunctionValue(v *kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction) types.String {
-	if v == nil {
-		return types.StringNull()
+func changePointAggregationFunctionAPIValue(value string) *kbapi.KibanaHTTPAPIsAiopsChangePointChart_AggregationFunction {
+	v := &kbapi.KibanaHTTPAPIsAiopsChangePointChart_AggregationFunction{}
+	switch value {
+	case "avg":
+		_ = v.FromKibanaHTTPAPIsAiopsChangePointChartAggregationFunction0(kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction0Avg)
+	case "sum":
+		_ = v.FromKibanaHTTPAPIsAiopsChangePointChartAggregationFunction1(kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction1Sum)
+	case "min":
+		_ = v.FromKibanaHTTPAPIsAiopsChangePointChartAggregationFunction2(kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction2Min)
+	case "max":
+		_ = v.FromKibanaHTTPAPIsAiopsChangePointChartAggregationFunction3(kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction3Max)
+	default:
+		return nil
 	}
-	return types.StringValue(string(*v))
+	return v
 }
 
-func changePointViewTypeValue(v *kbapi.KibanaHTTPAPIsAiopsChangePointChartViewType) types.String {
+func changePointAggregationFunctionValue(v *kbapi.KibanaHTTPAPIsAiopsChangePointChart_AggregationFunction) types.String {
 	if v == nil {
 		return types.StringNull()
 	}
-	return types.StringValue(string(*v))
+	value, err := v.AsKibanaHTTPAPIsAiopsChangePointChartAggregationFunction0()
+	if err != nil {
+		return types.StringNull()
+	}
+	return types.StringValue(string(value))
+}
+
+func changePointViewTypeAPIValue(value string) *kbapi.KibanaHTTPAPIsAiopsChangePointChart_ViewType {
+	v := &kbapi.KibanaHTTPAPIsAiopsChangePointChart_ViewType{}
+	switch value {
+	case "charts":
+		_ = v.FromKibanaHTTPAPIsAiopsChangePointChartViewType0(kbapi.Charts)
+	case "table":
+		_ = v.FromKibanaHTTPAPIsAiopsChangePointChartViewType1(kbapi.Table)
+	default:
+		return nil
+	}
+	return v
+}
+
+func changePointViewTypeValue(v *kbapi.KibanaHTTPAPIsAiopsChangePointChart_ViewType) types.String {
+	if v == nil {
+		return types.StringNull()
+	}
+	value, err := v.AsKibanaHTTPAPIsAiopsChangePointChartViewType0()
+	if err != nil {
+		return types.StringNull()
+	}
+	return types.StringValue(string(value))
+}
+
+func changePointMaxSeriesToPlotValue(v *int) *float32 {
+	if v == nil {
+		return nil
+	}
+	value := float32(*v)
+	return &value
 }
 
 // changePointPartitionsFromAPI builds a types.Set from the API *[]string. Returns a null set when

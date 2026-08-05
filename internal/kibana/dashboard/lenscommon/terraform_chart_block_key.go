@@ -24,29 +24,29 @@ import "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 // Returns "" if vizType is not one of the supported Lens chart kinds.
 func TerraformChartBlockKey(vizType string) string {
 	switch vizType {
-	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy):
+	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy):
 		return "xy_chart_config"
-	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable):
+	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable):
 		return "datatable_config"
-	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud):
+	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud):
 		return "tagcloud_config"
-	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap):
+	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap):
 		return "region_map_config"
-	case string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie):
+	case string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie):
 		return "pie_chart_config"
-	case string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric):
+	case string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric):
 		return "metric_chart_config"
 	case string(kbapi.LegacyMetric):
 		return "legacy_metric_config"
-	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge):
+	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge):
 		return "gauge_config"
-	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap):
+	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap):
 		return "heatmap_config"
-	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic):
+	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic):
 		return "mosaic_config"
-	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap):
+	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap):
 		return "treemap_config"
-	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle):
+	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle):
 		return "waffle_config"
 	default:
 		return ""

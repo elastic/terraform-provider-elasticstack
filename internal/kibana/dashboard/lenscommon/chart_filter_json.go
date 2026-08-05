@@ -120,7 +120,7 @@ func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagn
 
 	items := make(kbapi.KibanaHTTPAPIsLensPanelFilters, 0, len(filters))
 	for _, f := range filters {
-		var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
+		var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 		fd := DecodeChartFilterJSON(f.FilterJSON, &item)
 		diags.Append(fd...)
 		if !fd.HasError() {

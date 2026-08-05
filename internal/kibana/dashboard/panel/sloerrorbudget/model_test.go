@@ -18,6 +18,7 @@
 package sloerrorbudget
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -57,35 +58,31 @@ func sebWithHideBorder(v bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddabl
 	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
 }
 
-func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+func withSloDrilldown(t *testing.T, url, label string, encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+	t.Helper()
 	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
-		d := struct {
-			EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                        `json:"label"`
-			OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                        `json:"url"` //nolint:revive
-		}{
+		d := kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0{
 			Url:          url,
 			Label:        label,
-			Trigger:      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown,
+			Trigger:      mustSloErrorBudgetDrilldownTrigger(t),
+			Type:         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0Type("url_drilldown"),
 			EncodeUrl:    encodeURL,
 			OpenInNewTab: openInNewTab,
 		}
+		var item kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable_Drilldowns_Item
+		require.NoError(t, item.FromKibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0(d))
 		if c.Drilldowns == nil {
-			c.Drilldowns = &[]struct {
-				EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
-				Label        string                                                        `json:"label"`
-				OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
-				Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
-				Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-				Url          string                                                        `json:"url"` //nolint:revive
-			}{}
+			c.Drilldowns = &[]kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable_Drilldowns_Item{}
 		}
-		*c.Drilldowns = append(*c.Drilldowns, d)
+		*c.Drilldowns = append(*c.Drilldowns, item)
 	}
+}
+
+func mustSloErrorBudgetDrilldownTrigger(t *testing.T) kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable_Drilldowns_0_Trigger {
+	t.Helper()
+	var trigger kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable_Drilldowns_0_Trigger
+	require.NoError(t, trigger.FromKibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0Trigger0("on_open_panel_menu"))
+	return trigger
 }
 
 // ---- buildSloErrorBudgetConfig ----
@@ -177,11 +174,14 @@ func Test_buildSloErrorBudgetConfig_withDrilldowns(t *testing.T) {
 	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
 	require.Len(t, *sebPanel.Config.Drilldowns, 1)
-	ddr := (*sebPanel.Config.Drilldowns)[0]
+	ddr, err := (*sebPanel.Config.Drilldowns)[0].AsKibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0()
+	require.NoError(t, err)
 	assert.Equal(t, "https://example.com", ddr.Url)
 	assert.Equal(t, "Open in example", ddr.Label)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu, ddr.Trigger)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown, ddr.Type)
+	triggerJSON, err := json.Marshal(ddr.Trigger)
+	require.NoError(t, err)
+	assert.JSONEq(t, `"on_open_panel_menu"`, string(triggerJSON))
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0Type("url_drilldown"), ddr.Type)
 	require.NotNil(t, ddr.EncodeUrl)
 	assert.True(t, *ddr.EncodeUrl)
 	require.NotNil(t, ddr.OpenInNewTab)
@@ -206,7 +206,8 @@ func Test_buildSloErrorBudgetConfig_drilldownsWithNullOptionalBools(t *testing.T
 	bdc := BuildConfig(pm, &sebPanel)
 	require.False(t, bdc.HasError(), "%v", bdc)
 	require.NotNil(t, sebPanel.Config.Drilldowns)
-	ddr := (*sebPanel.Config.Drilldowns)[0]
+	ddr, err := (*sebPanel.Config.Drilldowns)[0].AsKibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldowns0()
+	require.NoError(t, err)
 	assert.Nil(t, ddr.EncodeUrl)
 	assert.Nil(t, ddr.OpenInNewTab)
 }
@@ -332,7 +333,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	}
 	// Kibana returns default true for encode_url and open_in_new_tab
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+		withSloDrilldown(t, "https://example.com", "Go", new(true), new(true)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
@@ -377,7 +378,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 	}
 	// API returns false for both (non-default)
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(false), new(false)),
+		withSloDrilldown(t, "https://example.com", "Go", new(false), new(false)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
@@ -418,7 +419,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 		},
 	}
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+		withSloDrilldown(t, "https://example.com", "Go", new(true), new(true)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)

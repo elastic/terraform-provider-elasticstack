@@ -38,7 +38,8 @@ func legacyMetricConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.LegacyMetricConfigModel,
 	prior *models.LegacyMetricConfigModel,
-	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQL,
+	presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
@@ -54,23 +55,23 @@ func legacyMetricConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateLegacyMetricMetricDefaults, &diags)
 	if !ok {
 		return diags
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentationFromAPI(ctx, &m.LensChartPresentationTFModel, prior, presentation, &diags) {
 		return diags
 	}
 
 	return diags
 }
 
-func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.LensByValueConfig, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var result lenscommon.VisByValueConfig0
+	var result lenscommon.LensByValueConfig
 
 	if m == nil {
 		diags.AddError("Legacy metric config is nil", "Legacy metric configuration is required")
@@ -85,7 +86,7 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 
 	switch datasetType {
 	case datasetTypeDataViewReference, datasetTypeDataViewSpec:
-		api := kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel{
+		api := kbapi.KibanaHTTPAPIsLegacyMetricNoESQL{
 			Type: kbapi.LegacyMetric,
 		}
 
@@ -116,24 +117,38 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 			return result, diags
 		}
 
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-		diags.Append(presDiags...)
-		if presDiags.HasError() {
-			return result, diags
-		}
-
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel_Drilldowns_Item](
-			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-		)...)
-
-		if err := result.FromKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel(api); err != nil {
+		if err := result.Chart.FromKibanaHTTPAPIsLegacyMetricNoESQL(api); err != nil {
 			diags.AddError("Failed to marshal legacy metric", err.Error())
 		}
+		if err := preserveLegacyMetricRawDimension(&result.Chart, m); err != nil {
+			diags.AddError("Failed to preserve legacy metric dimension", err.Error())
+			return result, diags
+		}
+		presentation, presDiags := lenscommon.LensChartPresentationToAPI(m.LensChartPresentationTFModel)
+		diags.Append(presDiags...)
+		result.Presentation = presentation
 		return result, diags
 	default:
 		diags.AddError("Unsupported legacy metric dataset", "Legacy metric dataset type must be one of data_view_reference or data_view_spec")
 		return result, diags
 	}
+}
+
+func preserveLegacyMetricRawDimension(chart *kbapi.KibanaHTTPAPIsLensApiConfig, m *models.LegacyMetricConfigModel) error {
+	raw, err := json.Marshal(chart)
+	if err != nil {
+		return err
+	}
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return err
+	}
+	payload["metric"] = json.RawMessage(m.MetricJSON.ValueString())
+	raw, err = json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(raw, chart)
 }
 
 func legacyMetricConfigDatasetType(m *models.LegacyMetricConfigModel) (string, diag.Diagnostics) {

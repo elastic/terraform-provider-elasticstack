@@ -61,6 +61,38 @@ func withHideBorder(v bool) func(*kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) {
 	return func(c *kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) { c.HideBorder = new(v) }
 }
 
+func asSloBurnRateDrilldown(t *testing.T, item kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable_Drilldowns_Item) kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0 {
+	t.Helper()
+
+	drilldown, err := item.AsKibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0()
+	require.NoError(t, err)
+
+	return drilldown
+}
+
+func makeSloBurnRateDrilldown(t *testing.T, url, label string, encodeURL, openInNewTab *bool) kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable_Drilldowns_Item {
+	t.Helper()
+
+	var trigger kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable_Drilldowns_0_Trigger
+	require.NoError(t, trigger.FromKibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0Trigger0(
+		kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0Trigger0OnOpenPanelMenu,
+	))
+
+	var item kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable_Drilldowns_Item
+	require.NoError(t, item.FromKibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0(
+		kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0{
+			EncodeUrl:    encodeURL,
+			Label:        label,
+			OpenInNewTab: openInNewTab,
+			Trigger:      trigger,
+			Type:         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0TypeUrlDrilldown,
+			Url:          url,
+		},
+	))
+
+	return item
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // buildSloBurnRateConfig tests
 // ─────────────────────────────────────────────────────────────────────────────
@@ -140,11 +172,13 @@ func Test_buildSloBurnRateConfig_withDrilldowns(t *testing.T) {
 
 	require.NotNil(t, panel.Config.Drilldowns)
 	require.Len(t, *panel.Config.Drilldowns, 1)
-	d := (*panel.Config.Drilldowns)[0]
+	d := asSloBurnRateDrilldown(t, (*panel.Config.Drilldowns)[0])
 	assert.Equal(t, "https://example.com", d.Url)
 	assert.Equal(t, "View details", d.Label)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown, d.Type)
+	trigger, err := d.Trigger.AsKibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0Trigger0()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0Trigger0OnOpenPanelMenu, trigger)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldowns0TypeUrlDrilldown, d.Type)
 	assert.Nil(t, d.EncodeUrl)
 	assert.Nil(t, d.OpenInNewTab)
 }
@@ -169,7 +203,7 @@ func Test_buildSloBurnRateConfig_withDrilldowns_optionalBoolsSet(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	require.NotNil(t, panel.Config.Drilldowns)
-	d := (*panel.Config.Drilldowns)[0]
+	d := asSloBurnRateDrilldown(t, (*panel.Config.Drilldowns)[0])
 	require.NotNil(t, d.EncodeUrl)
 	assert.True(t, *d.EncodeUrl)
 	require.NotNil(t, d.OpenInNewTab)
@@ -351,22 +385,8 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolNullPreservation(t *
 	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
 	// API returns drilldown with encode_url and open_in_new_tab set to true
-	apiDrilldowns := &[]struct {
-		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                     `json:"label"`
-		OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                                     `json:"url"` //nolint:revive
-	}{
-		{
-			Url:          "https://example.com",
-			Label:        "View",
-			Trigger:      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown,
-			EncodeUrl:    new(true),
-			OpenInNewTab: new(true),
-		},
+	apiDrilldowns := &[]kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable_Drilldowns_Item{
+		makeSloBurnRateDrilldown(t, "https://example.com", "View", new(true), new(true)),
 	}
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "6d")
 	apiCfg.Drilldowns = apiDrilldowns
@@ -397,22 +417,8 @@ func Test_populateSloBurnRateFromAPI_drilldowns_optionalBoolsExplicit_roundTrip(
 	pm := &models.PanelModel{SloBurnRateConfig: existing}
 	tfPanel := &models.PanelModel{SloBurnRateConfig: existing}
 
-	apiDrilldowns := &[]struct {
-		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                     `json:"label"`
-		OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                                     `json:"url"` //nolint:revive
-	}{
-		{
-			Url:          "https://example.com",
-			Label:        "View",
-			Trigger:      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu,
-			Type:         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown,
-			EncodeUrl:    new(true),
-			OpenInNewTab: new(false),
-		},
+	apiDrilldowns := &[]kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable_Drilldowns_Item{
+		makeSloBurnRateDrilldown(t, "https://example.com", "View", new(true), new(false)),
 	}
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "6d")
 	apiCfg.Drilldowns = apiDrilldowns

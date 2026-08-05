@@ -18,6 +18,8 @@
 package esqlcontrol
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
@@ -49,14 +51,54 @@ type esqlControlAPIData struct {
 	ok               bool
 }
 
+// The generated client represents variable_type as a union of five string
+// enums. Adapt it through its JSON representation so the Terraform model can
+// continue using a single string value.
+func esqlControlVariableTypeString(variableType any) (string, error) {
+	data, err := json.Marshal(variableType)
+	if err != nil {
+		return "", err
+	}
+
+	var value string
+	if err := json.Unmarshal(data, &value); err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+func esqlControlStaticVariableType(value string) (kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues_VariableType, error) {
+	var variableType kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues_VariableType
+	data, err := json.Marshal(value)
+	if err != nil {
+		return variableType, err
+	}
+	err = json.Unmarshal(data, &variableType)
+	return variableType, err
+}
+
+func esqlControlQueryVariableType(value string) (kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery_VariableType, error) {
+	var variableType kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery_VariableType
+	data, err := json.Marshal(value)
+	if err != nil {
+		return variableType, err
+	}
+	err = json.Unmarshal(data, &variableType)
+	return variableType, err
+}
+
 func esqlControlAPIDataFromConfig(cfg kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl_Config) esqlControlAPIData {
 	// Prefer static-values first: the VALUES_FROM_QUERY union branch is permissive enough that it
 	// can incorrectly match some STATIC_VALUES payloads, dropping fields like available_options.
 	if sv, err := cfg.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(); err == nil {
+		variableType, err := esqlControlVariableTypeString(sv.VariableType)
+		if err != nil {
+			return esqlControlAPIData{}
+		}
 		return esqlControlAPIData{
 			SelectedOptions:  sv.SelectedOptions,
 			VariableName:     sv.VariableName,
-			VariableType:     string(sv.VariableType),
+			VariableType:     variableType,
 			EsqlQuery:        "",
 			ControlType:      string(sv.ControlType),
 			Title:            sv.Title,
@@ -67,10 +109,14 @@ func esqlControlAPIDataFromConfig(cfg kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeE
 		}
 	}
 	if vq, err := cfg.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(); err == nil {
+		variableType, err := esqlControlVariableTypeString(vq.VariableType)
+		if err != nil {
+			return esqlControlAPIData{}
+		}
 		return esqlControlAPIData{
 			SelectedOptions: vq.SelectedOptions,
 			VariableName:    vq.VariableName,
-			VariableType:    string(vq.VariableType),
+			VariableType:    variableType,
 			EsqlQuery:       vq.EsqlQuery,
 			ControlType:     string(vq.ControlType),
 			Title:           vq.Title,
@@ -254,14 +300,17 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 
 	ct := cfg.ControlType.ValueString()
 	if kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryControlType(ct) == kbapi.VALUESFROMQUERY {
+		variableType, err := esqlControlQueryVariableType(cfg.VariableType.ValueString())
+		if err != nil {
+			diags.AddError("Failed to build esql control values_from_query config", err.Error())
+			return diags
+		}
 		vq := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery{
 			SelectedOptions: typeutils.ListToStringsMust(cfg.SelectedOptions),
 			VariableName:    cfg.VariableName.ValueString(),
-			VariableType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQueryVariableType(
-				cfg.VariableType.ValueString(),
-			),
-			EsqlQuery:   cfg.EsqlQuery.ValueString(),
-			ControlType: kbapi.VALUESFROMQUERY,
+			VariableType:    variableType,
+			EsqlQuery:       cfg.EsqlQuery.ValueString(),
+			ControlType:     kbapi.VALUESFROMQUERY,
 		}
 		if typeutils.IsKnown(cfg.Title) {
 			vq.Title = cfg.Title.ValueStringPointer()
@@ -276,13 +325,16 @@ func BuildConfig(pm models.PanelModel, esqlPanel *kbapi.KibanaHTTPAPIsKbnDashboa
 		return diags
 	}
 
+	variableType, err := esqlControlStaticVariableType(cfg.VariableType.ValueString())
+	if err != nil {
+		diags.AddError("Failed to build esql control static_values config", err.Error())
+		return diags
+	}
 	sv := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues{
 		SelectedOptions: typeutils.ListToStringsMust(cfg.SelectedOptions),
 		VariableName:    cfg.VariableName.ValueString(),
-		VariableType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesVariableType(
-			cfg.VariableType.ValueString(),
-		),
-		ControlType: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesControlType(ct),
+		VariableType:    variableType,
+		ControlType:     kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValuesControlType(ct),
 	}
 	if typeutils.IsKnown(cfg.Title) {
 		sv.Title = cfg.Title.ValueStringPointer()

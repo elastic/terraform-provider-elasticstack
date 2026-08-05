@@ -19,12 +19,14 @@ package lenslegacymetric
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
@@ -59,8 +61,8 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("legacy_metric_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
-	legacyMetric, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel()
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
+	legacyMetric, err := attrs.Chart.AsKibanaHTTPAPIsLegacyMetricNoESQL()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -74,11 +76,16 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 		prior = &cpy
 	}
 	blocks.LegacyMetricConfig = &models.LegacyMetricConfigModel{}
-	return legacyMetricConfigFromAPINoESQL(ctx, blocks.LegacyMetricConfig, prior, legacyMetric)
+	diags := legacyMetricConfigFromAPINoESQL(ctx, blocks.LegacyMetricConfig, prior, legacyMetric, attrs.Presentation)
+	if diags.HasError() {
+		return diags
+	}
+	diags.Append(populateLegacyMetricRawDimension(blocks.LegacyMetricConfig, attrs.Chart)...)
+	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
@@ -92,4 +99,24 @@ func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.Len
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {
 	return populateLegacyMetricLensAttributes(attrs)
+}
+
+func populateLegacyMetricRawDimension(m *models.LegacyMetricConfigModel, chart kbapi.KibanaHTTPAPIsLensApiConfig) diag.Diagnostics {
+	var diags diag.Diagnostics
+	raw, err := json.Marshal(chart)
+	if err != nil {
+		diags.AddError("Failed to marshal legacy metric chart", err.Error())
+		return diags
+	}
+	var payload struct {
+		Metric json.RawMessage `json:"metric"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		diags.AddError("Failed to decode legacy metric dimension", err.Error())
+		return diags
+	}
+	if payload.Metric != nil {
+		m.MetricJSON = customtypes.NewJSONWithDefaultsValue(string(payload.Metric), lenscommon.PopulateLegacyMetricMetricDefaults)
+	}
+	return diags
 }

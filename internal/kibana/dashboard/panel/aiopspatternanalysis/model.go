@@ -38,16 +38,16 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panel.Config.FieldName = cfg.FieldName.ValueString()
 
 	if typeutils.IsKnown(cfg.MinimumTimeRange) {
-		v := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange(cfg.MinimumTimeRange.ValueString())
-		panel.Config.MinimumTimeRange = &v
+		panel.Config.MinimumTimeRange = patternAnalysisMinimumTimeRangeAPIValue(cfg.MinimumTimeRange.ValueString())
 	}
 	if typeutils.IsKnown(cfg.RandomSamplerMode) {
-		v := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode(cfg.RandomSamplerMode.ValueString())
-		panel.Config.RandomSamplerMode = &v
+		panel.Config.RandomSamplerMode = patternAnalysisRandomSamplerModeAPIValue(cfg.RandomSamplerMode.ValueString())
 	}
 	if typeutils.IsKnown(cfg.RandomSamplerProbability) {
 		v := cfg.RandomSamplerProbability.ValueFloat32()
-		panel.Config.RandomSamplerProbability = &v
+		probability := &kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_RandomSamplerProbability{}
+		_ = probability.FromKibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerProbability0(v)
+		panel.Config.RandomSamplerProbability = probability
 	}
 
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
@@ -90,7 +90,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.
 	if typeutils.IsKnown(existing.RandomSamplerMode) {
 		existing.RandomSamplerMode = patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode)
 	}
-	existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, api.RandomSamplerProbability)
+	existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, patternAnalysisRandomSamplerProbabilityValue(api.RandomSamplerProbability))
 
 	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
 		api.Title, api.Description, api.HideTitle, api.HideBorder)
@@ -118,7 +118,7 @@ func aiopsPatternAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsPatter
 		HideTitle:         types.BoolPointerValue(api.HideTitle),
 		HideBorder:        types.BoolPointerValue(api.HideBorder),
 	}
-	cfg.RandomSamplerProbability = types.Float32PointerValue(api.RandomSamplerProbability)
+	cfg.RandomSamplerProbability = types.Float32PointerValue(patternAnalysisRandomSamplerProbabilityValue(api.RandomSamplerProbability))
 	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 	return cfg
 }
@@ -137,16 +137,69 @@ func aiopsPatternAnalysisPreserveNullIntentFromPrior(prior, existing *models.Aio
 	}
 }
 
-func patternAnalysisMinimumTimeRangeValue(v *kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange) types.String {
-	if v == nil {
-		return types.StringNull()
+func patternAnalysisMinimumTimeRangeAPIValue(value string) *kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_MinimumTimeRange {
+	v := &kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_MinimumTimeRange{}
+	switch value {
+	case "no_minimum":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange0(kbapi.NoMinimum)
+	case "1_week":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange1(kbapi.N1Week)
+	case "1_month":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange2(kbapi.N1Month)
+	case "3_months":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange3(kbapi.N3Months)
+	case "6_months":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange4(kbapi.N6Months)
+	default:
+		return nil
 	}
-	return types.StringValue(string(*v))
+	return v
 }
 
-func patternAnalysisRandomSamplerModeValue(v *kbapi.KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode) types.String {
+func patternAnalysisMinimumTimeRangeValue(v *kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_MinimumTimeRange) types.String {
 	if v == nil {
 		return types.StringNull()
 	}
-	return types.StringValue(string(*v))
+	value, err := v.AsKibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange0()
+	if err != nil {
+		return types.StringNull()
+	}
+	return types.StringValue(string(value))
+}
+
+func patternAnalysisRandomSamplerModeAPIValue(value string) *kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_RandomSamplerMode {
+	v := &kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_RandomSamplerMode{}
+	switch value {
+	case "on_automatic":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode0(kbapi.OnAutomatic)
+	case "on_manual":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode1(kbapi.OnManual)
+	case "off":
+		_ = v.FromKibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode2(kbapi.KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode2Off)
+	default:
+		return nil
+	}
+	return v
+}
+
+func patternAnalysisRandomSamplerModeValue(v *kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_RandomSamplerMode) types.String {
+	if v == nil {
+		return types.StringNull()
+	}
+	value, err := v.AsKibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode0()
+	if err != nil {
+		return types.StringNull()
+	}
+	return types.StringValue(string(value))
+}
+
+func patternAnalysisRandomSamplerProbabilityValue(v *kbapi.KibanaHTTPAPIsAiopsPatternAnalysis_RandomSamplerProbability) *float32 {
+	if v == nil {
+		return nil
+	}
+	value, err := v.AsKibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerProbability0()
+	if err != nil {
+		return nil
+	}
+	return &value
 }

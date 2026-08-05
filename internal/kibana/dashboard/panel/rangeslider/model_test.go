@@ -36,7 +36,9 @@ func apiRangeSliderFieldConfig(t *testing.T, opts ...func(*rsFieldCfg)) *kbapi.K
 	for _, o := range opts {
 		o(&c)
 	}
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{},
+	}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c))
 	return p
 }
@@ -49,7 +51,9 @@ func apiRangeSliderEsqlConfig(t *testing.T, opts ...func(*rsEsqlCfg)) *kbapi.Kib
 	for _, o := range opts {
 		o(&c)
 	}
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{},
+	}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(c))
 	return p
 }
@@ -363,10 +367,9 @@ func Test_BuildConfig_byField_knownFields(t *testing.T) {
 	cfg := rsConfigField(t, rsPanel)
 	assert.Equal(t, "dv-1", cfg.DataViewId)
 	assert.Equal(t, "bytes", cfg.FieldName)
-	// values_source is deliberately left unset on the wire for by_field (see buildFieldConfig):
-	// Kibana defaults it to "field" when absent, and older Kibana versions reject the property
-	// entirely if present.
-	assert.Nil(t, cfg.ValuesSource)
+	// values_source is deliberately left unset by buildFieldConfig. The generated union now
+	// represents an unset string field as its zero value rather than nil.
+	assert.Empty(t, cfg.ValuesSource)
 	require.NotNil(t, cfg.Title)
 	assert.Equal(t, "My Slider", *cfg.Title)
 	require.NotNil(t, cfg.UseGlobalFilters)

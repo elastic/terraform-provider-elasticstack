@@ -192,11 +192,15 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	}
 	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
 	for i, d := range *apiDrilldowns {
+		drilldown, err := d.AsKibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldowns0()
+		if err != nil {
+			return nil
+		}
 		items[i] = panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
+			URL:          drilldown.Url,
+			Label:        drilldown.Label,
+			EncodeUrl:    drilldown.EncodeUrl,
+			OpenInNewTab: drilldown.OpenInNewTab,
 		}
 	}
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)

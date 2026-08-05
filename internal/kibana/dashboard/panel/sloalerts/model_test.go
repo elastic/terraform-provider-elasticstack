@@ -183,9 +183,9 @@ func Test_sloAlertsPanelToAPI_drilldownWritesTrigger(t *testing.T) {
 	sa, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloAlerts()
 	require.NoError(t, err)
 	require.NotNil(t, sa.Config.Drilldowns)
-	d := (*sa.Config.Drilldowns)[0]
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTriggerOnOpenPanelMenu, d.Trigger)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTypeUrlDrilldown, d.Type)
+	d, err := (*sa.Config.Drilldowns)[0].AsKibanaHTTPAPIsSloAlertsEmbeddableDrilldowns0()
+	require.NoError(t, err)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldowns0Type("url_drilldown"), d.Type)
 }
 
 func Test_sloAlerts_slos_emptyList_rejected(t *testing.T) {

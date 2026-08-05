@@ -28,16 +28,20 @@ import (
 func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsPieLegend) {
 	if api == nil {
 		m.Nested = types.BoolNull()
-		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsLegendSizeAuto))
+		m.Size = types.StringValue("auto")
 		m.TruncateAfterLine = types.Int64Null()
-		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsPieLegendVisibilityAuto))
+		m.Visible = types.StringValue("auto")
 		return
 	}
 	m.Nested = types.BoolPointerValue(api.Nested)
-	if api.Size != nil && *api.Size != "" {
-		m.Size = types.StringValue(string(*api.Size))
+	size := ""
+	if api.Size != nil {
+		size = stringUnionFromAPI(api.Size)
+	}
+	if size != "" {
+		m.Size = types.StringValue(size)
 	} else {
-		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsLegendSizeAuto))
+		m.Size = types.StringValue("auto")
 	}
 	if api.TruncateAfterLines != nil {
 		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
@@ -45,17 +49,18 @@ func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api *kbapi.Kib
 		m.TruncateAfterLine = types.Int64Null()
 	}
 	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
+		m.Visible = types.StringValue(stringUnionFromAPI(api.Visibility))
 	} else {
 		// Align with pie_chart_config.legend schema default (visible = auto) when Kibana omits the field.
-		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsPieLegendVisibilityAuto))
+		m.Visible = types.StringValue("auto")
 	}
 }
 
 // PartitionLegendToPieLegend maps Terraform partition legend model to API pie legend.
 func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsPieLegend {
-	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-	legend := &kbapi.KibanaHTTPAPIsPieLegend{Size: &size}
+	legend := &kbapi.KibanaHTTPAPIsPieLegend{
+		Size: stringUnionToAPI[kbapi.KibanaHTTPAPIsLegendSize](m.Size.ValueString()),
+	}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -63,8 +68,7 @@ func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTT
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsPieLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
+		legend.Visibility = stringUnionToAPI[kbapi.KibanaHTTPAPIsPieLegend_Visibility](m.Visible.ValueString())
 	}
 	return legend
 }
@@ -80,7 +84,7 @@ func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi
 	}
 	m.Nested = types.BoolPointerValue(api.Nested)
 	if api.Size != nil {
-		m.Size = types.StringValue(string(*api.Size))
+		m.Size = types.StringValue(stringUnionFromAPI(api.Size))
 	} else {
 		m.Size = types.StringNull()
 	}
@@ -90,7 +94,7 @@ func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi
 		m.TruncateAfterLine = types.Int64Null()
 	}
 	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
+		m.Visible = types.StringValue(stringUnionFromAPI(api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -107,7 +111,7 @@ func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.
 	}
 	m.Nested = types.BoolPointerValue(api.Nested)
 	if api.Size != nil {
-		m.Size = types.StringValue(string(*api.Size))
+		m.Size = types.StringValue(stringUnionFromAPI(api.Size))
 	} else {
 		m.Size = types.StringNull()
 	}
@@ -117,7 +121,7 @@ func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.
 		m.TruncateAfterLine = types.Int64Null()
 	}
 	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
+		m.Visible = types.StringValue(stringUnionFromAPI(api.Visibility))
 	} else {
 		m.Visible = types.StringNull()
 	}
@@ -125,8 +129,9 @@ func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.
 
 // PartitionLegendToTreemapLegend maps Terraform partition legend model to API treemap legend.
 func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsTreemapLegend {
-	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-	legend := &kbapi.KibanaHTTPAPIsTreemapLegend{Size: &size}
+	legend := &kbapi.KibanaHTTPAPIsTreemapLegend{
+		Size: stringUnionToAPI[kbapi.KibanaHTTPAPIsLegendSize](m.Size.ValueString()),
+	}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -134,16 +139,16 @@ func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.Kiban
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsTreemapLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
+		legend.Visibility = stringUnionToAPI[kbapi.KibanaHTTPAPIsTreemapLegend_Visibility](m.Visible.ValueString())
 	}
 	return legend
 }
 
 // PartitionLegendToMosaicLegend maps Terraform partition legend model to API mosaic legend.
 func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsMosaicLegend {
-	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-	legend := &kbapi.KibanaHTTPAPIsMosaicLegend{Size: &size}
+	legend := &kbapi.KibanaHTTPAPIsMosaicLegend{
+		Size: stringUnionToAPI[kbapi.KibanaHTTPAPIsLegendSize](m.Size.ValueString()),
+	}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -151,8 +156,7 @@ func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) *kbapi.Kibana
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsMosaicLegendVisibility(m.Visible.ValueString())
-		legend.Visibility = &v
+		legend.Visibility = stringUnionToAPI[kbapi.KibanaHTTPAPIsMosaicLegend_Visibility](m.Visible.ValueString())
 	}
 	return legend
 }
@@ -164,7 +168,11 @@ func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api *kbapi.Ki
 		m.PercentDecimals = types.Float64Null()
 		return
 	}
-	m.Mode = typeutils.StringishPointerValue(api.Mode)
+	if api.Mode != nil {
+		m.Mode = types.StringValue(stringUnionFromAPI(api.Mode))
+	} else {
+		m.Mode = types.StringNull()
+	}
 	if api.PercentDecimals != nil {
 		m.PercentDecimals = types.Float64Value(float64(*api.PercentDecimals))
 	} else {
@@ -176,8 +184,7 @@ func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api *kbapi.Ki
 func PartitionValueDisplayToAPI(m *models.PartitionValueDisplay) *kbapi.KibanaHTTPAPIsValueDisplay {
 	vd := &kbapi.KibanaHTTPAPIsValueDisplay{}
 	if typeutils.IsKnown(m.Mode) {
-		mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.Mode.ValueString())
-		vd.Mode = &mode
+		vd.Mode = stringUnionToAPI[kbapi.KibanaHTTPAPIsValueDisplay_Mode](m.Mode.ValueString())
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {
 		vd.PercentDecimals = new(float32(m.PercentDecimals.ValueFloat64()))

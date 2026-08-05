@@ -34,7 +34,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap)
+	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -45,25 +45,33 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("heatmap_config", heatmapSchemaAttrs(true))
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "heatmap_config"); diags.HasError() {
 		return diags
 	}
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.HeatmapConfig)
+	chart, err := attrs.Chart.AsKibanaHTTPAPIsHeatmapChart()
+	if err != nil {
+		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to decode heatmap chart", err.Error())}
+	}
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.HeatmapConfig, prior,
-		attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsHeatmapESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel) bool {
+		chart.AsKibanaHTTPAPIsHeatmapNoESQL,
+		chart.AsKibanaHTTPAPIsHeatmapESQL,
+		func(v kbapi.KibanaHTTPAPIsHeatmapNoESQL) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
-		heatmapConfigFromAPINoESQL,
-		heatmapConfigFromAPIESQL,
+		func(ctx context.Context, m, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapNoESQL) diag.Diagnostics {
+			return heatmapConfigFromAPINoESQL(ctx, m, prior, api, attrs.Presentation)
+		},
+		func(ctx context.Context, m, prior *models.HeatmapConfigModel, api kbapi.KibanaHTTPAPIsHeatmapESQL) diag.Diagnostics {
+			return heatmapConfigFromAPIESQL(ctx, m, prior, api, attrs.Presentation)
+		},
 	)
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags

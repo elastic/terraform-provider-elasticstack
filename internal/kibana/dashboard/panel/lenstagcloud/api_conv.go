@@ -96,11 +96,10 @@ func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.K
 func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
-	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel,
+	_ *models.TagcloudConfigModel,
+	api kbapi.KibanaHTTPAPIsTagcloudNoESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-	_ = ctx
 
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
 	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
@@ -124,7 +123,7 @@ func tagcloudConfigFromAPI(
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	tagByBytes, err := api.TagBy.MarshalJSON()
+	tagByBytes, err := json.Marshal(api.TagBy)
 	tv, ok := lenscommon.MarshalToJSONWithDefaults(tagByBytes, err, "tag_by", lenscommon.PopulateTagcloudTagByDefaults, &diags)
 	if !ok {
 		return diags
@@ -134,18 +133,14 @@ func tagcloudConfigFromAPI(
 	m.EsqlMetric = nil
 	m.EsqlTagBy = nil
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
-		return diags
-	}
-
 	return diags
 }
 
 func tagcloudConfigFromAPIESQL(
-	ctx context.Context,
+	_ context.Context,
 	m *models.TagcloudConfigModel,
-	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel,
+	_ *models.TagcloudConfigModel,
+	api kbapi.KibanaHTTPAPIsTagcloudESQL,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -193,37 +188,60 @@ func tagcloudConfigFromAPIESQL(
 	tb.Label = typeutils.StringishPointerValue(api.TagBy.Label)
 	m.EsqlTagBy = tb
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
-		return diags
-	}
-
 	return diags
 }
 
-func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var result lenscommon.LensByValueConfig
+	var diags diag.Diagnostics
 	if m == nil {
-		return lenscommon.VisByValueConfig0{}, nil
+		return result, diags
 	}
-	return lenscommon.DispatchByQueryMode(
-		lenscommon.ConfigUsesESQL(m.Query),
-		func() (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
-			return tagcloudConfigToAPIESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudESQLByValuePanel,
-		"Failed to create tagcloud ES|QL attributes",
-		func() (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
-			return tagcloudConfigToAPINoESQL(m)
-		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel,
-		"Failed to create tagcloud attributes",
-	)
+
+	if lenscommon.ConfigUsesESQL(m.Query) {
+		chart, chartDiags := tagcloudConfigToAPIESQL(m)
+		diags.Append(chartDiags...)
+		if chartDiags.HasError() {
+			return result, diags
+		}
+		var err error
+		result.Chart, err = tagcloudChartToLensAPI(chart)
+		if err != nil {
+			diags.AddError("Failed to create Lens chart config", err.Error())
+			return result, diags
+		}
+	} else {
+		chart, chartDiags := tagcloudConfigToAPINoESQL(m)
+		diags.Append(chartDiags...)
+		if chartDiags.HasError() {
+			return result, diags
+		}
+		var err error
+		result.Chart, err = tagcloudChartToLensAPI(chart)
+		if err != nil {
+			diags.AddError("Failed to create Lens chart config", err.Error())
+			return result, diags
+		}
+	}
+
+	writes, presentationDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
+	diags.Append(presentationDiags...)
+	if presentationDiags.HasError() {
+		return result, diags
+	}
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_0_Drilldowns_Item](
+		writes, &result.Presentation.TimeRange, &result.Presentation.HideTitle, &result.Presentation.HideBorder,
+		&result.Presentation.References, &result.Presentation.Drilldowns,
+	)...)
+
+	return result, diags
 }
 
-func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
+func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel
+	var api kbapi.KibanaHTTPAPIsTagcloudNoESQL
 
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud
+	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -262,23 +280,13 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
-
 	return api, diags
 }
 
-func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
+func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanelTypeTagCloud
+	var api kbapi.KibanaHTTPAPIsTagcloudESQL
+	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLTypeTagCloud
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -326,16 +334,6 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		s := m.EsqlTagBy.Label.ValueString()
 		api.TagBy.Label = &s
 	}
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
 
 	return api, diags
 }

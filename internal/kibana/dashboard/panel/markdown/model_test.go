@@ -27,6 +27,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func markdownSettings(openLinksInNewTab *bool) *struct {
+	OpenLinksInNewTab *bool `json:"open_links_in_new_tab,omitempty"`
+} {
+	return &struct {
+		OpenLinksInNewTab *bool `json:"open_links_in_new_tab,omitempty"`
+	}{OpenLinksInNewTab: openLinksInNewTab}
+}
+
 func Test_populateFromAPIByValue_mapsAllFields(t *testing.T) {
 	content := "hello"
 	description := "desc"
@@ -40,7 +48,7 @@ func Test_populateFromAPIByValue_mapsAllFields(t *testing.T) {
 		HideTitle:   &hideTitle,
 		Title:       &title,
 	}
-	cfg.Settings.OpenLinksInNewTab = &openLinks
+	cfg.Settings = markdownSettings(&openLinks)
 	cfg.HideBorder = &hideFalse
 
 	pm := &models.PanelModel{}
@@ -61,7 +69,7 @@ func Test_populateFromAPIByValue_mapsAllFields(t *testing.T) {
 func Test_populateFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTrue(t *testing.T) {
 	apiTrue := true
 	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
-	cfg.Settings.OpenLinksInNewTab = &apiTrue
+	cfg.Settings = markdownSettings(&apiTrue)
 
 	tfPanel := &models.PanelModel{
 		MarkdownConfig: &models.MarkdownConfigModel{

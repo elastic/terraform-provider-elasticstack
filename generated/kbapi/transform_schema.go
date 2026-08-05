@@ -604,6 +604,10 @@ var transformers = []TransformFunc{
 	removeDuplicateOneOfRefs,
 	transformRemoveAnyOfWhenOneOfPresent,
 	fixDashboardPanelItemRefs,
+	fixDataVisualizerFieldStats,
+	fixDashboardDrilldownDefaults,
+	fixControlsDiscriminatorMappings,
+	fixTimeRangeMode,
 	fixSyntheticsMonitorModels,
 	fixSyntheticsMonitorParams,
 	fixAlertingRuleBody,
@@ -1094,11 +1098,9 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 		dashboardSectionSchema = "schemas.Kibana_HTTP_APIs_kbn-dashboard-section"
 	)
 
-	schema.Components.Move(dashboardDataSchema+".properties.panels.items.anyOf.0.anyOf", dashboardDataSchema+".properties.panels.items.anyOf.0.oneOf")
-	schema.Components.Set(
-		dashboardDataSchema+".properties.panels.items.anyOf.0.discriminator",
-		schema.Components.MustGetMap(dashboardSectionSchema+".properties.panels.items.discriminator"),
-	)
+	// The upstream dashboard panel branch now supplies a oneOf and
+	// discriminator directly. Retain it when extracting the branch into the
+	// named component below so oapi-codegen emits DashboardPanelItem helpers.
 	schema.Components.CreateRef(schema, "dashboard_panel_item", dashboardDataSchema+".properties.panels.items.anyOf.0")
 	schema.Components.Set(dashboardSectionSchema+".properties.panels.items", Map{"$ref": "#/components/schemas/dashboard_panel_item"})
 	schema.Components.CreateRef(schema, "dashboard_panels", dashboardDataSchema+".properties.panels")
@@ -1141,6 +1143,71 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 		"propertyName": "type",
 		"mapping":      panelTypeMapping,
 	})
+}
+
+func fixDataVisualizerFieldStats(schema *Schema) {
+	const (
+		fieldStatsSchema = "schemas.Kibana_HTTP_APIs_data_visualizer_field_stats"
+		dataviewSchema   = "Kibana_HTTP_APIs_data_visualizer_field_stats_0"
+		esqlSchema       = "Kibana_HTTP_APIs_data_visualizer_field_stats_1"
+	)
+
+	schema.Components.CreateRef(schema, dataviewSchema, fieldStatsSchema+".oneOf.0")
+	schema.Components.CreateRef(schema, esqlSchema, fieldStatsSchema+".oneOf.1")
+	schema.Components.Set(fieldStatsSchema+".discriminator.mapping", Map{
+		"dataview": "#/components/schemas/" + dataviewSchema,
+		"esql":     "#/components/schemas/" + esqlSchema,
+	})
+}
+
+func fixDashboardDrilldownDefaults(schema *Schema) {
+	// oapi-codegen cannot merge an object-level default with defaults on the
+	// same allOf branch. The object default is redundant because each property
+	// retains its own default.
+	componentSchemas := schema.Components.MustGetMap("schemas")
+	componentSchemas.Iterate(func(key string, node Map) {
+		if !strings.Contains(key, ".properties.drilldowns.items.anyOf.") {
+			return
+		}
+		allOf, ok := node.GetSlice("allOf")
+		if !ok {
+			return
+		}
+		for _, branch := range allOf {
+			if branch, ok := branch.(Map); ok {
+				branch.Delete("default")
+			}
+		}
+	})
+}
+
+func fixControlsDiscriminatorMappings(schema *Schema) {
+	const (
+		optionsListControl = "schemas.Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-options-list-control"
+		rangeSliderControl = "schemas.Kibana_HTTP_APIs_kbn-controls-schemas-controls-group-schema-range-slider-control"
+	)
+
+	schema.Components.Set(optionsListControl+".properties.config.discriminator.mapping.field", "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-options-list-dsl-control-schema-field")
+	schema.Components.Set(rangeSliderControl+".properties.config.discriminator.mapping.field", "#/components/schemas/Kibana_HTTP_APIs_kbn-controls-schemas-range-slider-control-schema-field")
+
+	for _, fieldSchema := range []string{
+		"schemas.Kibana_HTTP_APIs_kbn-controls-schemas-options-list-dsl-control-schema-field",
+		"schemas.Kibana_HTTP_APIs_kbn-controls-schemas-range-slider-control-schema-field",
+	} {
+		valuesSource := fieldSchema + ".properties.values_source"
+		schema.Components.Delete(valuesSource + ".anyOf")
+		schema.Components.Set(valuesSource+".type", "string")
+		schema.Components.Set(valuesSource+".enum", Slice{"field"})
+		schema.Components.Set(fieldSchema+".required", Slice{"data_view_id", "field_name", "values_source"})
+	}
+}
+
+func fixTimeRangeMode(schema *Schema) {
+	const mode = "schemas.Kibana_HTTP_APIs_kbn-es-query-server-timeRangeSchema.properties.mode"
+
+	schema.Components.Delete(mode + ".anyOf")
+	schema.Components.Set(mode+".type", "string")
+	schema.Components.Set(mode+".enum", Slice{"absolute", "relative"})
 }
 
 func fixSecurityExceptionListItems(schema *Schema) {

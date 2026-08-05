@@ -34,7 +34,8 @@ func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,
 	prior *models.DatatableNoESQLConfigModel,
-	api kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsDatatableNoESQL,
+	presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -93,16 +94,16 @@ func datatableNoESQLConfigFromAPI(
 		}
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentationFromAPI(ctx, &m.LensChartPresentationTFModel, prior, presentation, &diags) {
 		return diags
 	}
 
 	return diags
 }
 
-func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
+func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable}
+	api := kbapi.KibanaHTTPAPIsDatatableNoESQL{Type: kbapi.KibanaHTTPAPIsDatatableNoESQLTypeDataTable}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -129,7 +130,17 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
+		metrics := make([]struct {
+			Alignment    *kbapi.KibanaHTTPAPIsDatatableNoESQLMetricsAlignment      `json:"alignment,omitempty"`
+			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableNoESQL_Metrics_ApplyColorTo `json:"apply_color_to,omitempty"`
+			Color        *kbapi.KibanaHTTPAPIsDatatableNoESQL_Metrics_Color        `json:"color,omitempty"`
+			Summary      *struct {
+				Label *string                                                  `json:"label,omitempty"`
+				Type  kbapi.KibanaHTTPAPIsDatatableNoESQL_Metrics_Summary_Type `json:"type"`
+			} `json:"summary,omitempty"`
+			Visible *bool    `json:"visible,omitempty"`
+			Width   *float32 `json:"width,omitempty"`
+		}, len(m.Metrics))
 		for i, metricModel := range m.Metrics {
 			if typeutils.IsKnown(metricModel.ConfigJSON) {
 				if err := json.Unmarshal([]byte(metricModel.ConfigJSON.ValueString()), &metrics[i]); err != nil {
@@ -142,7 +153,15 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	}
 
 	if len(m.Rows) > 0 {
-		rows := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Rows_Item, len(m.Rows))
+		rows := make([]struct {
+			Alignment    *kbapi.KibanaHTTPAPIsDatatableNoESQLRowsAlignment      `json:"alignment,omitempty"`
+			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableNoESQL_Rows_ApplyColorTo `json:"apply_color_to,omitempty"`
+			ClickFilter  *bool                                                  `json:"click_filter,omitempty"`
+			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                        `json:"collapse_by,omitempty"`
+			Color        *kbapi.KibanaHTTPAPIsDatatableNoESQL_Rows_Color        `json:"color,omitempty"`
+			Visible      *bool                                                  `json:"visible,omitempty"`
+			Width        *float32                                               `json:"width,omitempty"`
+		}, len(m.Rows))
 		for i, rowModel := range m.Rows {
 			if typeutils.IsKnown(rowModel.ConfigJSON) {
 				if err := json.Unmarshal([]byte(rowModel.ConfigJSON.ValueString()), &rows[i]); err != nil {
@@ -155,7 +174,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	}
 
 	if len(m.SplitMetricsBy) > 0 {
-		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_SplitMetricsBy_Item, len(m.SplitMetricsBy))
+		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQL_SplitMetricsBy_Item, len(m.SplitMetricsBy))
 		for i, splitModel := range m.SplitMetricsBy {
 			if typeutils.IsKnown(splitModel.ConfigJSON) {
 				if err := json.Unmarshal([]byte(splitModel.ConfigJSON.ValueString()), &splits[i]); err != nil {
@@ -167,16 +186,6 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
-
 	return api, diags
 }
 
@@ -184,7 +193,8 @@ func datatableESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableESQLConfigModel,
 	prior *models.DatatableESQLConfigModel,
-	api kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsDatatableESQL,
+	presentation kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig0,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -240,16 +250,16 @@ func datatableESQLConfigFromAPI(
 		}
 	}
 
-	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
+	if !lenscommon.PopulateLensChartPresentationFromAPI(ctx, &m.LensChartPresentationTFModel, prior, presentation, &diags) {
 		return diags
 	}
 
 	return diags
 }
 
-func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel, diag.Diagnostics) {
+func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableESQL, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelTypeDataTable}
+	api := kbapi.KibanaHTTPAPIsDatatableESQL{Type: kbapi.KibanaHTTPAPIsDatatableESQLTypeDataTable}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -286,16 +296,16 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 
 	if len(m.Rows) > 0 {
 		rows := make([]struct {
-			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsAlignment    `json:"alignment,omitempty"`
-			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsApplyColorTo `json:"apply_color_to,omitempty"`
-			ClickFilter  *bool                                                          `json:"click_filter,omitempty"`
-			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                                `json:"collapse_by,omitempty"`
-			Color        *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Rows_Color      `json:"color,omitempty"`
-			Column       string                                                         `json:"column"`
-			Format       *kbapi.KibanaHTTPAPIsFormatType                                `json:"format,omitempty"`
-			Label        *string                                                        `json:"label,omitempty"`
-			Visible      *bool                                                          `json:"visible,omitempty"`
-			Width        *float32                                                       `json:"width,omitempty"`
+			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLRowsAlignment      `json:"alignment,omitempty"`
+			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQL_Rows_ApplyColorTo `json:"apply_color_to,omitempty"`
+			ClickFilter  *bool                                                `json:"click_filter,omitempty"`
+			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                      `json:"collapse_by,omitempty"`
+			Color        *kbapi.KibanaHTTPAPIsDatatableESQL_Rows_Color        `json:"color,omitempty"`
+			Column       string                                               `json:"column"`
+			Format       *kbapi.KibanaHTTPAPIsFormatType                      `json:"format,omitempty"`
+			Label        *string                                              `json:"label,omitempty"`
+			Visible      *bool                                                `json:"visible,omitempty"`
+			Width        *float32                                             `json:"width,omitempty"`
 		}, len(m.Rows))
 		for i, rowModel := range m.Rows {
 			if typeutils.IsKnown(rowModel.ConfigJSON) {
@@ -325,16 +335,6 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
-
 	return api, diags
 }
 
@@ -361,7 +361,17 @@ func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaH
 	}
 
 	if api.Paging != nil {
-		m.Paging = types.Int64Value(int64(*api.Paging))
+		var paging float32
+		raw, err := json.Marshal(api.Paging)
+		if err != nil {
+			diags.AddError("Failed to marshal paging", err.Error())
+			return diags
+		}
+		if err := json.Unmarshal(raw, &paging); err != nil {
+			diags.AddError("Failed to unmarshal paging", err.Error())
+			return diags
+		}
+		m.Paging = types.Int64Value(int64(paging))
 	} else {
 		m.Paging = types.Int64Null()
 	}
@@ -396,7 +406,16 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAP
 	}
 
 	if typeutils.IsKnown(m.Paging) {
-		paging := kbapi.KibanaHTTPAPIsDatatableStylingPaging(m.Paging.ValueInt64())
+		var paging kbapi.KibanaHTTPAPIsDatatableStyling_Paging
+		raw, err := json.Marshal(m.Paging.ValueInt64())
+		if err != nil {
+			diags.AddError("Failed to marshal paging", err.Error())
+			return styling, diags
+		}
+		if err := json.Unmarshal(raw, &paging); err != nil {
+			diags.AddError("Failed to unmarshal paging", err.Error())
+			return styling, diags
+		}
 		styling.Paging = &paging
 	}
 
@@ -409,7 +428,21 @@ func datatableDensityFromAPI(m *models.DatatableDensityModel, api *kbapi.KibanaH
 		return diags
 	}
 
-	m.Mode = typeutils.StringishPointerValue(api.Mode)
+	if api.Mode != nil {
+		var mode string
+		raw, err := json.Marshal(api.Mode)
+		if err != nil {
+			diags.AddError("Failed to marshal density mode", err.Error())
+			return diags
+		}
+		if err := json.Unmarshal(raw, &mode); err != nil {
+			diags.AddError("Failed to unmarshal density mode", err.Error())
+			return diags
+		}
+		m.Mode = types.StringValue(mode)
+	} else {
+		m.Mode = types.StringNull()
+	}
 
 	if api.Height != nil {
 		m.Height = &models.DatatableDensityHeightModel{}
@@ -429,7 +462,16 @@ func datatableDensityToAPI(m *models.DatatableDensityModel) (*kbapi.KibanaHTTPAP
 	density := &kbapi.KibanaHTTPAPIsDatatableDensity{}
 
 	if typeutils.IsKnown(m.Mode) {
-		mode := kbapi.KibanaHTTPAPIsDatatableDensityMode(m.Mode.ValueString())
+		var mode kbapi.KibanaHTTPAPIsDatatableDensity_Mode
+		raw, err := json.Marshal(m.Mode.ValueString())
+		if err != nil {
+			diags.AddError("Failed to marshal density mode", err.Error())
+			return density, diags
+		}
+		if err := json.Unmarshal(raw, &mode); err != nil {
+			diags.AddError("Failed to unmarshal density mode", err.Error())
+			return density, diags
+		}
 		density.Mode = &mode
 	}
 

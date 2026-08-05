@@ -30,7 +30,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -63,11 +63,13 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
 	}`
-	var api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel
+	var api kbapi.KibanaHTTPAPIsMosaicNoESQL
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
-	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsMosaicNoESQLByValuePanel(api))
+	var chart kbapi.KibanaHTTPAPIsMosaicChart
+	require.NoError(t, chart.FromKibanaHTTPAPIsMosaicNoESQL(api))
+	var attrs lenscommon.LensByValueConfig
+	require.NoError(t, attrs.Chart.FromKibanaHTTPAPIsMosaicChart(chart))
 
 	var c converter
 	blocks := &models.LensByValueChartBlocks{}
@@ -78,8 +80,10 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	noESQL2, err := attrs2.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel()
+	chart, err := attrs2.Chart.AsKibanaHTTPAPIsMosaicChart()
+	require.NoError(t, err)
+	noESQL2, err := chart.AsKibanaHTTPAPIsMosaicNoESQL()
 	require.NoError(t, err)
 	assert.Equal(t, "Mosaic NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic, noESQL2.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic, noESQL2.Type)
 }

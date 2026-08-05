@@ -19,11 +19,13 @@ package lensregionmap
 
 import (
 	"context"
+	"encoding/json"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -36,7 +38,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap)
+	return string(kbapi.KibanaHTTPAPIsRegionMapNoESQLTypeRegionMap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -65,25 +67,43 @@ func (converter) SchemaAttribute() schema.Attribute {
 	return lenscommon.ByValueChartNestedAttribute("region_map_config", attrs)
 }
 
-func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
+func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.LensByValueConfig) diag.Diagnostics {
 	if diags := lenscommon.ValidateLensBlocks(blocks, "region_map_config"); diags.HasError() {
 		return diags
 	}
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.RegionMapConfig)
-	return lenscommon.PopulateFromNoESQLOrESQL(
+	diags := lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.RegionMapConfig, prior,
-		attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsRegionMapESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel) bool {
+		func() (kbapi.KibanaHTTPAPIsRegionMapNoESQL, error) {
+			var chart kbapi.KibanaHTTPAPIsRegionMapNoESQL
+			return chart, regionMapChartFromLensAPI(attrs.Chart, &chart)
+		},
+		func() (kbapi.KibanaHTTPAPIsRegionMapESQL, error) {
+			var chart kbapi.KibanaHTTPAPIsRegionMapESQL
+			return chart, regionMapChartFromLensAPI(attrs.Chart, &chart)
+		},
+		func(v kbapi.KibanaHTTPAPIsRegionMapNoESQL) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		regionMapConfigFromAPINoESQL,
 		regionMapConfigFromAPIESQL,
 	)
+	if diags.HasError() {
+		return diags
+	}
+	if !lenscommon.PopulateLensChartPresentation(
+		ctx, &blocks.RegionMapConfig.LensChartPresentationTFModel, prior,
+		attrs.Presentation.TimeRange, attrs.Presentation.HideTitle, attrs.Presentation.HideBorder,
+		attrs.Presentation.References, attrs.Presentation.Drilldowns, &diags,
+	) {
+		return diags
+	}
+	diags.Append(populateRegionMapRawDimensions(blocks.RegionMapConfig, attrs.Chart)...)
+	return diags
 }
 
-func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
+func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.LensByValueConfig, diag.Diagnostics) {
+	var attrs lenscommon.LensByValueConfig
 	var diags diag.Diagnostics
 	if blocks == nil {
 		return attrs, diags
@@ -97,4 +117,28 @@ func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.Len
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {
 	return populateRegionMapLensAttributes(attrs)
+}
+
+func populateRegionMapRawDimensions(m *models.RegionMapConfigModel, chart kbapi.KibanaHTTPAPIsLensApiConfig) diag.Diagnostics {
+	var diags diag.Diagnostics
+	raw, err := json.Marshal(chart)
+	if err != nil {
+		diags.AddError("Failed to marshal region map chart", err.Error())
+		return diags
+	}
+	var payload struct {
+		Metric json.RawMessage `json:"metric"`
+		Region json.RawMessage `json:"region"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		diags.AddError("Failed to decode region map dimensions", err.Error())
+		return diags
+	}
+	if payload.Metric != nil {
+		m.MetricJSON = customtypes.NewJSONWithDefaultsValue(string(payload.Metric), lenscommon.PopulateRegionMapMetricDefaults)
+	}
+	if payload.Region != nil {
+		m.RegionJSON = jsontypes.NewNormalizedValue(string(payload.Region))
+	}
+	return diags
 }

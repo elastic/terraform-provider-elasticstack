@@ -32,7 +32,16 @@ func accessControlValueToCreateAPI(m *models.AccessControlValue) *kbapi.KibanaHT
 	}
 
 	if typeutils.IsKnown(m.AccessMode) {
-		mode := kbapi.KibanaHTTPAPIsKbnDashboardAccessControlAccessMode(m.AccessMode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsKbnDashboardAccessControl_AccessMode{}
+		if m.AccessMode.ValueString() == string(kbapi.WriteRestricted) {
+			if err := mode.FromKibanaHTTPAPIsKbnDashboardAccessControlAccessMode0(kbapi.WriteRestricted); err != nil {
+				return result
+			}
+		} else {
+			if err := mode.FromKibanaHTTPAPIsKbnDashboardAccessControlAccessMode1(kbapi.KibanaHTTPAPIsKbnDashboardAccessControlAccessMode1(m.AccessMode.ValueString())); err != nil {
+				return result
+			}
+		}
 		result.AccessMode = &mode
 	}
 

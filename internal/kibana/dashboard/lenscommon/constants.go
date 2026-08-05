@@ -25,6 +25,7 @@ const (
 	attrType          = "type"
 	attrURL           = "url"
 	attrLabel         = "label"
+	attrDashboardID   = "dashboard_id"
 	attrValue         = "value"
 	attrVisible       = "visible"
 	attrMode          = "mode"

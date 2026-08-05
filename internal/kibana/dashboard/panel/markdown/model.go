@@ -201,7 +201,7 @@ func panelHasTypedConfig(pm *models.PanelModel) bool {
 func populateFromAPIByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0) {
 	byValue := func(m *models.MarkdownConfigModel) *models.MarkdownConfigByValueModel { return m.ByValue }
 	settings := &models.MarkdownConfigSettingsModel{
-		OpenLinksInNewTab: byValueOpenLinksFromAPI(config.Settings.OpenLinksInNewTab, tfPanel),
+		OpenLinksInNewTab: byValueOpenLinksFromAPI(openLinksInNewTabFromAPI(config), tfPanel),
 	}
 	pm.MarkdownConfig = &models.MarkdownConfigModel{
 		ByValue: &models.MarkdownConfigByValueModel{
@@ -285,6 +285,13 @@ func boolFromAPI[M any](
 	return types.BoolNull()
 }
 
+func openLinksInNewTabFromAPI(config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0) *bool {
+	if config.Settings == nil {
+		return nil
+	}
+	return config.Settings.OpenLinksInNewTab
+}
+
 func byValueOpenLinksFromAPI(api *bool, tfPanel *models.PanelModel) types.Bool {
 	if api != nil {
 		var prior types.Bool
@@ -321,7 +328,11 @@ func BuildConfigByValue(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPa
 		Title:       typeutils.OptionalString(bv.Title),
 	}
 	if bv.Settings != nil && typeutils.IsKnown(bv.Settings.OpenLinksInNewTab) {
-		config.Settings.OpenLinksInNewTab = bv.Settings.OpenLinksInNewTab.ValueBoolPointer()
+		config.Settings = &struct {
+			OpenLinksInNewTab *bool `json:"open_links_in_new_tab,omitempty"`
+		}{
+			OpenLinksInNewTab: bv.Settings.OpenLinksInNewTab.ValueBoolPointer(),
+		}
 	}
 	return config
 }

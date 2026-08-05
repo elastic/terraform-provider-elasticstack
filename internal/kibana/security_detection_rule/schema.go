@@ -560,7 +560,7 @@ func GetSchema() schema.Schema {
 									MarkdownDescription: "Command to run (endpoint only). Valid values: isolate, kill-process, suspend-process.",
 									Optional:            true,
 									Validators: []validator.String{
-										stringvalidator.OneOf("isolate", "kill-process", "suspend-process"),
+										stringvalidator.OneOf("isolate", endpointCommandKillProcess, endpointCommandSuspendProcess),
 									},
 								},
 								"comment": schema.StringAttribute{
