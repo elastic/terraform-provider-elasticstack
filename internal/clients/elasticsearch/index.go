@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -50,10 +51,10 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		call = call.WaitForActiveShards(params.WaitForActiveShards)
 	}
 	if params.MasterTimeout > 0 {
-		call = call.MasterTimeout(durationToMsString(params.MasterTimeout))
+		call = call.MasterTimeout(typeutils.DurationToElasticsearchTimeoutString(params.MasterTimeout))
 	}
 	if params.Timeout > 0 {
-		call = call.Timeout(durationToMsString(params.Timeout))
+		call = call.Timeout(typeutils.DurationToElasticsearchTimeoutString(params.Timeout))
 	}
 
 	// For date-math index names we must build the request manually and set
