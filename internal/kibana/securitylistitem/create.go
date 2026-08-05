@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
@@ -46,16 +45,12 @@ func createSecurityListItem(ctx context.Context, client *clients.KibanaScopedCli
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	if createdListItem == nil {
-		diags.AddError("Failed to create security list item", "API returned empty response")
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createdListItem, "create", "security list item") {
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
 	m.ListItemID = typeutils.StringishValue(createdListItem.Id)
-	m.ID = types.StringValue((&clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: createdListItem.Id,
-	}).String())
+	m.ID = entitycore.KibanaResourceID(req.SpaceID, createdListItem.Id)
 
 	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
 }

@@ -44,8 +44,7 @@ func updateSecurityList(ctx context.Context, client *clients.KibanaScopedClient,
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	if updatedList == nil {
-		diags.AddError("Failed to update security list", "API returned empty response")
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updatedList, "update", "security list") {
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 

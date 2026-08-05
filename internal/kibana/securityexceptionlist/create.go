@@ -49,8 +49,7 @@ func createExceptionList(
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
-	if createResp == nil {
-		diags.AddError("Failed to create exception list", "API returned empty response")
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createResp, "create", "exception list") {
 		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
 	}
 
@@ -58,10 +57,7 @@ func createExceptionList(
 		m.NamespaceType = types.StringValue(string(createResp.NamespaceType))
 	}
 
-	m.ID = types.StringValue((&clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: createResp.Id,
-	}).String())
+	m.ID = entitycore.KibanaResourceID(req.SpaceID, createResp.Id)
 
 	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
 }
