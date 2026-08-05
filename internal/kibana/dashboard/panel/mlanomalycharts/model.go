@@ -62,9 +62,16 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	return nil
 }
 
-// PopulateFromAPI maps Kibana ML anomaly charts config into Terraform panel state while preserving prior null intent.
+// PopulateFromAPI maps Kibana ML anomaly charts config into Terraform panel state while preserving
+// prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with MlAnomalyChartsConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.MlAnomalyChartsConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsMlAnomalyCharts) diag.Diagnostics {
-	if prior == nil {
+	if prior == nil || prior.MlAnomalyChartsConfig == nil {
 		cfg, diags := mlAnomalyChartsConfigFromAPIImport(apiConfig)
 		if diags.HasError() {
 			return diags
@@ -73,21 +80,17 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		return nil
 	}
 
-	if pm.MlAnomalyChartsConfig == nil && prior.MlAnomalyChartsConfig != nil {
-		cfg, diags := mlAnomalyChartsConfigFromAPIImport(apiConfig)
-		if diags.HasError() {
-			return diags
-		}
-		pm.MlAnomalyChartsConfig = cfg
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing, diags := mlAnomalyChartsConfigFromAPIImport(apiConfig)
+	if diags.HasError() {
+		return diags
 	}
-
-	existing := pm.MlAnomalyChartsConfig
-	if existing == nil {
-		return nil
+	if diags := mlAnomalyChartsMergeOptionalFromAPI(existing, prior.MlAnomalyChartsConfig, apiConfig); diags.HasError() {
+		return diags
 	}
-
-	existing.JobIDs = typeutils.StringSliceValue(apiConfig.JobIds)
-	return mlAnomalyChartsMergeOptionalFromAPI(existing, prior.MlAnomalyChartsConfig, apiConfig)
+	pm.MlAnomalyChartsConfig = existing
+	return nil
 }
 
 func mlAnomalyChartsConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsMlAnomalyCharts) (*models.MlAnomalyChartsConfigModel, diag.Diagnostics) {

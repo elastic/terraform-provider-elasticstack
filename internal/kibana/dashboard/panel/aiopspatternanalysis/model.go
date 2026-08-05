@@ -59,51 +59,24 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 
 // PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
 // prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with AiopsPatternAnalysisConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.AiopsPatternAnalysisConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsPatternAnalysis) diag.Diagnostics {
-	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
-	if prior == nil {
+	if prior == nil || prior.AiopsPatternAnalysisConfig == nil {
 		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
 		return nil
 	}
 
-	// Type-change recovery: the plan dropped this config block but prior still has it.
-	// Rebuild entirely from the API and skip null-preservation, since there is no
-	// current-plan null intent to honor.
-	if pm.AiopsPatternAnalysisConfig == nil && prior.AiopsPatternAnalysisConfig != nil {
-		pm.AiopsPatternAnalysisConfig = aiopsPatternAnalysisConfigFromAPIImport(api)
-		return nil
-	}
-
-	existing := pm.AiopsPatternAnalysisConfig
-	if existing == nil {
-		return nil
-	}
-
-	// Required fields always update from the API.
-	existing.DataViewID = types.StringValue(api.DataViewId)
-	existing.FieldName = types.StringValue(api.FieldName)
-
-	// Optional enum/float fields: only update from API when already known in state (REQ-009 null-preservation).
-	if typeutils.IsKnown(existing.MinimumTimeRange) {
-		existing.MinimumTimeRange = patternAnalysisMinimumTimeRangeValue(api.MinimumTimeRange)
-	}
-	if typeutils.IsKnown(existing.RandomSamplerMode) {
-		existing.RandomSamplerMode = patternAnalysisRandomSamplerModeValue(api.RandomSamplerMode)
-	}
-	existing.RandomSamplerProbability = panelkit.PreserveFloat32(existing.RandomSamplerProbability, api.RandomSamplerProbability)
-
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		api.Title, api.Description, api.HideTitle, api.HideBorder)
-
-	var priorTR *models.TimeRangeModel
-	if prior.AiopsPatternAnalysisConfig != nil {
-		priorTR = prior.AiopsPatternAnalysisConfig.TimeRange
-	}
-	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
-
-	if prior.AiopsPatternAnalysisConfig != nil {
-		aiopsPatternAnalysisPreserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
-	}
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := aiopsPatternAnalysisConfigFromAPIImport(api)
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, prior.AiopsPatternAnalysisConfig.TimeRange)
+	aiopsPatternAnalysisPreserveNullIntentFromPrior(prior.AiopsPatternAnalysisConfig, existing)
+	pm.AiopsPatternAnalysisConfig = existing
 	return nil
 }
 
