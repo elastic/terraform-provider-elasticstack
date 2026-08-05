@@ -24,12 +24,12 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
@@ -42,8 +42,7 @@ func readSlm(ctx context.Context, client *esclients.ElasticsearchScopedClient, r
 	}
 
 	if slm == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`SLM policy "%s" not found, removing from state`, resourceID))
-		return state, false, diags
+		return diagutil.WarnNotFoundAndKeepState(ctx, "SLM policy", resourceID, state, diags)
 	}
 
 	data, diags := mapSlmToData(ctx, slm, resourceID, state)

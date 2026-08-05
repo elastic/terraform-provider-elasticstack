@@ -19,12 +19,11 @@ package transform
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // readTransform fetches the transform definition and stats and returns a
@@ -39,8 +38,7 @@ func readTransform(ctx context.Context, client *clients.ElasticsearchScopedClien
 	}
 
 	if transform == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Transform "%s" not found, removing from state`, resourceID))
-		return state, false, diags
+		return diagutil.WarnNotFoundAndKeepState(ctx, "Transform", resourceID, state, diags)
 	}
 
 	stats, statsDiags := elasticsearch.GetTransformStats(ctx, client, &resourceID)

@@ -19,13 +19,12 @@ package componenttemplate
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // readComponentTemplate is the envelope read callback.
@@ -42,8 +41,7 @@ func readComponentTemplate(ctx context.Context, client *clients.ElasticsearchSco
 	}
 
 	if tpl == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Component template "%s" not found`, resourceID))
-		return state, false, diags
+		return diagutil.WarnNotFoundAndKeepState(ctx, "Component template", resourceID, state, diags)
 	}
 
 	result, d := flattenToData(ctx, tpl, state)

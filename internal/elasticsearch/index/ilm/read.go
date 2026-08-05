@@ -22,8 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // readILM is the envelope read callback. It fetches the ILM policy from Elasticsearch,
@@ -35,8 +35,7 @@ func readILM(ctx context.Context, client *clients.ElasticsearchScopedClient, pol
 		return tfModel{}, false, diags
 	}
 	if ilmDef == nil {
-		tflog.Warn(ctx, "ILM policy not found during read, removing from state", map[string]any{"policy_name": policyName})
-		return tfModel{}, false, diags
+		return diagutil.WarnNotFoundAndKeepState(ctx, "ILM policy", policyName, tfModel{}, diags)
 	}
 
 	out, diags := readPolicyIntoModel(ctx, ilmDef, &prior, policyName)

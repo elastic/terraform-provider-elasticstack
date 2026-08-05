@@ -23,10 +23,10 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // strSettingNullWithFallback returns the API value for key if present, otherwise
@@ -54,8 +54,7 @@ func readSnapshotRepository(ctx context.Context, client *esclients.Elasticsearch
 	}
 
 	if repo == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Snapshot repository "%s" not found, removing from state`, resourceID))
-		return state, false, diags
+		return diagutil.WarnNotFoundAndKeepState(ctx, "Snapshot repository", resourceID, state, diags)
 	}
 
 	data := state

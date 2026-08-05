@@ -19,16 +19,15 @@ package logstash
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func readLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScopedClient, pipelineID string, state Data) (Data, bool, diag.Diagnostics) {
@@ -41,8 +40,7 @@ func readLogstashPipeline(ctx context.Context, client *clients.ElasticsearchScop
 	}
 
 	if pipeline == nil {
-		tflog.Warn(ctx, fmt.Sprintf(`Logstash pipeline "%s" not found, removing from state`, pipelineID))
-		return state, false, diags
+		return diagutil.WarnNotFoundAndKeepState(ctx, "Logstash pipeline", pipelineID, state, diags)
 	}
 
 	var data Data
