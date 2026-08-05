@@ -79,7 +79,7 @@ func TestQueryRuleActionsValidator_skipsWhenNestedValuesUnknown(t *testing.T) {
 	}
 
 	var resp validator.ObjectResponse
-	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
 		Path:        path.Root("actions"),
 		ConfigValue: actionsObj,
 	}, &resp)
@@ -104,7 +104,7 @@ func TestQueryRuleActionsValidator_requiresExactlyOne(t *testing.T) {
 	}
 
 	var resp validator.ObjectResponse
-	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
 		Path:        path.Root("actions"),
 		ConfigValue: actionsObj,
 	}, &resp)
@@ -134,7 +134,7 @@ func TestQueryRuleActionsValidator_acceptsOnlyIDs(t *testing.T) {
 	}
 
 	var resp validator.ObjectResponse
-	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
 		Path:        path.Root("actions"),
 		ConfigValue: actionsObj,
 	}, &resp)
@@ -175,7 +175,7 @@ func TestQueryRuleActionsValidator_acceptsOnlyDocs(t *testing.T) {
 	}
 
 	var resp validator.ObjectResponse
-	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
 		Path:        path.Root("actions"),
 		ConfigValue: actionsObj,
 	}, &resp)
@@ -221,7 +221,7 @@ func TestQueryRuleActionsValidator_rejectsBothIDsAndDocs(t *testing.T) {
 	}
 
 	var resp validator.ObjectResponse
-	queryRuleActionsValidator{}.ValidateObject(context.Background(), validator.ObjectRequest{
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
 		Path:        path.Root("actions"),
 		ConfigValue: actionsObj,
 	}, &resp)

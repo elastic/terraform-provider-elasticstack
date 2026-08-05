@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,43 +31,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type queryRuleActionsValidator struct{}
-
-func (queryRuleActionsValidator) Description(_ context.Context) string {
-	return "Exactly one of ids or docs must be set in actions"
-}
-
-func (v queryRuleActionsValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (v queryRuleActionsValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	attrs := req.ConfigValue.Attributes()
-	if attrs["ids"].IsUnknown() || attrs["docs"].IsUnknown() {
-		return
-	}
-
-	idsSet := listAttributeIsSet(attrs["ids"])
-	docsSet := listAttributeIsSet(attrs["docs"])
-
-	switch {
-	case idsSet && docsSet:
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid actions configuration",
-			"Exactly one of `ids` or `docs` must be set in `actions`; both cannot be set.",
-		)
-	case !idsSet && !docsSet:
-		resp.Diagnostics.AddAttributeError(
-			req.Path,
-			"Invalid actions configuration",
-			"Exactly one of `ids` or `docs` must be set in `actions`.",
-		)
-	}
+// queryRuleActionsValidator returns an object validator that enforces exactly
+// one of `ids` or `docs` being set on a query rule's `actions` block.
+func queryRuleActionsValidator() validator.Object {
+	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
+		AttrNames:     []string{queryRuleActionsIDsAttrName, queryRuleActionsDocsAttrName},
+		Summary:       "Invalid actions configuration",
+		MissingDetail: "Exactly one of `ids` or `docs` must be set in `actions`.",
+		TooManyDetail: "Exactly one of `ids` or `docs` must be set in `actions`; both cannot be set.",
+		Description:   "Exactly one of ids or docs must be set in actions",
+	})
 }
 
 type queryRuleCriteriaValidator struct{}
@@ -165,19 +139,6 @@ func criteriaValuesJSONDiagnostic(p path.Path) diag.Diagnostic {
 	)
 }
 
-func listAttributeIsSet(val attr.Value) bool {
-	if val == nil || val.IsNull() || val.IsUnknown() {
-		return false
-	}
-
-	list, ok := val.(types.List)
-	if !ok {
-		return true
-	}
-
-	return len(list.Elements()) > 0
-}
-
 func stringAttributeValue(val attr.Value) string {
 	if val == nil || val.IsNull() || val.IsUnknown() {
 		return ""
@@ -206,7 +167,6 @@ func valuesAttributeIsSet(val attr.Value) bool {
 
 // Ensure validators satisfy interfaces at compile time.
 var (
-	_ validator.Object = queryRuleActionsValidator{}
 	_ validator.Object = queryRuleCriteriaValidator{}
 	_ validator.String = criteriaValuesJSONValidator{}
 )

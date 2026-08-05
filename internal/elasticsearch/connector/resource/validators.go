@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -50,23 +51,7 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 		return
 	}
 
-	setCount := 0
-	unknownCount := 0
-	var setBranches []string
-
-	for _, name := range connector.ConfigurationValueBranchAttrNames {
-		val, ok := attrs[name]
-		if !ok {
-			continue
-		}
-		switch {
-		case configurationValueBranchIsSet(val):
-			setCount++
-			setBranches = append(setBranches, name)
-		case val.IsUnknown():
-			unknownCount++
-		}
-	}
+	setCount, unknownCount, setBranches := validators.CountNestedAttrs(attrs, connector.ConfigurationValueBranchAttrNames, configurationValueBranchIsSet)
 
 	switch {
 	case setCount == 0 && unknownCount == 1:

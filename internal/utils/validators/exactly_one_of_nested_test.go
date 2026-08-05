@@ -106,3 +106,50 @@ func TestExactlyOneOfNestedAttrsValidator(t *testing.T) {
 		require.Equal(t, "custom desc", v3.Description(context.Background()))
 	})
 }
+
+func TestCountNestedAttrs(t *testing.T) {
+	isAlwaysSet := func(attr.Value) bool { return true }
+
+	t.Run("counts set, unknown, and null attributes", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"a": types.StringValue("x"),
+			"b": types.StringUnknown(),
+			"c": types.StringNull(),
+		}
+
+		setCount, unknownCount, setNames := validators.CountNestedAttrs(attrs, []string{"a", "b", "c"}, isAlwaysSet)
+
+		require.Equal(t, 1, setCount)
+		require.Equal(t, 1, unknownCount)
+		require.Equal(t, []string{"a"}, setNames)
+	})
+
+	t.Run("missing attribute names are skipped", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"a": types.StringValue("x"),
+		}
+
+		setCount, unknownCount, setNames := validators.CountNestedAttrs(attrs, []string{"a", "missing"}, isAlwaysSet)
+
+		require.Equal(t, 1, setCount)
+		require.Equal(t, 0, unknownCount)
+		require.Equal(t, []string{"a"}, setNames)
+	})
+
+	t.Run("isSet callback can treat a known value as unset", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"a": types.ListValueMust(types.StringType, nil),
+		}
+
+		isNonEmptyList := func(v attr.Value) bool {
+			list, ok := v.(types.List)
+			return ok && len(list.Elements()) > 0
+		}
+
+		setCount, unknownCount, setNames := validators.CountNestedAttrs(attrs, []string{"a"}, isNonEmptyList)
+
+		require.Equal(t, 0, setCount)
+		require.Equal(t, 0, unknownCount)
+		require.Empty(t, setNames)
+	})
+}
