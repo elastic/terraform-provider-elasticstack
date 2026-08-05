@@ -255,15 +255,6 @@ jobs:
         env:
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
-      - id: setup-fleet
-        name: Setup Fleet
-        if: matrix.version == '8.10.4' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10' || matrix.version == '9.0.8' || matrix.version == '9.1.10' || matrix.version == '9.2.8' || matrix.version == '9.3.6' || matrix.version == '9.5.0' || endsWith(matrix.version, '-SNAPSHOT')
-        run: |-
-          make setup-kibana-fleet
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          FLEET_NAME: "fleet"
-
       - id: force-install-synthetics
         name: Force install synthetics
         if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10'
