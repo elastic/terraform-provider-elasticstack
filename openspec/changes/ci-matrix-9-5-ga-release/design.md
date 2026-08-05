@@ -130,8 +130,10 @@ against earlier GA versions:
    added for the analogous `time_field` case, extended rather than duplicated.
 3. **`ml_anomaly_charts_config.severity_threshold` raw range.** Confirmed via CI run history that an
    arbitrary (non-canonical) `min`/`max` range passed against `9.5.0-SNAPSHOT` on `main` hours before
-   this promotion landed, but the released `9.5.0` GA image rejects it with HTTP 400 unless `min`
-   equals one of five fixed canonical band boundaries. This is a genuine Kibana-side API change
+   this promotion landed, but the released `9.5.0` GA image rejects it with HTTP 400 unless the
+   `{min, max}` pair exactly matches one of five fixed canonical pairs (the generated client models
+   `severity_threshold` as a 5-member union pinning both `min` and `max` together, not `min` alone).
+   This is a genuine Kibana-side API change
    between the pre-GA snapshot and the GA release, not a provider defect — the provider already
    faithfully passes through the configured range. Since `ml_anomaly_charts` requires Kibana
    `>=9.5.0-SNAPSHOT` (no earlier supported version), there is no fallback version this scenario
