@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with ML anomaly charts panel (raw range)"
+  description = "Dashboard with ML anomaly charts panel (non-canonical raw range)"
 
   time_range = {
     from = "now-15m"

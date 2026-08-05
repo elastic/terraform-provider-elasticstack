@@ -75,7 +75,7 @@ func AlignStandardPartitionChartStateFromPlan(
 	stateValueDisplay **models.PartitionValueDisplay,
 ) {
 	AlignTitleAndDescriptionFromPlan(planTitle, planDescription, stateTitle, stateDescription)
-	PreservePlanJSONIfStateAddsOptionalKeys(planDataSourceJSON, stateDataSourceJSON, "time_field")
+	PreservePlanJSONIfStateAddsOptionalKeys(planDataSourceJSON, stateDataSourceJSON, "time_field", "name")
 	PreserveKnownTfValueIfStateNull(planIgnoreGlobalFilters, stateIgnoreGlobalFilters)
 	PreserveKnownTfValueIfStateNull(planSampling, stateSampling)
 	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planGroupBy, stateGroupBy)
