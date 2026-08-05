@@ -16,6 +16,10 @@
       synthetics installation SHALL run only for configured version subsets" to remove the Fleet-setup
       clause (no per-version Fleet setup step exists anymore) while keeping the forced-synthetics
       clause unchanged.
+- [x] 2.2 In the same requirement (and the "Provider change runs stack and tests" scenario), drop the
+      stale preflight/`should_run=true` gating clause so the acceptance job is documented as executing
+      only when `provider_changes=true`, matching `.github/workflows/provider.yml`. Leave the broader
+      stale Preflight gate requirement elsewhere in the file for a follow-up sweep.
 - [x] 2.2 In the same requirement (and its "Provider change runs stack and tests" scenario), remove the
       obsolete preflight/`should_run=true` gating clause so execution conditions match Provider CI
       (`provider_changes=true` only). Leave other stale preflight requirements in this capability for a

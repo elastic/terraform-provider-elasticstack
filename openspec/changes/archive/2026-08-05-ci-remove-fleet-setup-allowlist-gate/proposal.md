@@ -36,6 +36,11 @@ promotion in #4403/#4404) stop needing to remember to update this list at all.
 - Update the `ci-build-lint-test` capability to stop describing Fleet setup as running "only for
   configured version subsets" for the acceptance test job, since the job no longer has a per-version
   Fleet setup step.
+- Align the acceptance test job structure requirement with the actual Provider CI gate: the matrix
+  `test` job runs only when change-classification reports `provider_changes=true`. Drop the stale
+  `preflight` / `should_run=true` clause from that requirement (and its "Provider change runs stack
+  and tests" scenario). Broader stale preflight wording elsewhere in `ci-build-lint-test` is out of
+  scope here and should be swept in a follow-up change.
 - While editing that same acceptance-job-structure requirement, drop the obsolete clause that the
   matrix `test` job also waits on a preflight gate `should_run=true` output. Provider CI has no such
   gate; the job is conditioned only on `needs.classify.outputs.provider_changes == 'true'`. Broader
