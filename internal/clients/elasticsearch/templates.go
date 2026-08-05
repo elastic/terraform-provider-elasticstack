@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -63,11 +62,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find component template on cluster"); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to find component template on cluster"); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -88,13 +83,7 @@ func GetComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchS
 func DeleteComponentTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Cluster.DeleteComponentTemplate(templateName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }
 
 func PutIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, template *models.IndexTemplate) fwdiags.Diagnostics {
@@ -128,11 +117,7 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find index template on cluster"); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to find index template on cluster"); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -156,11 +141,5 @@ func GetIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScope
 func DeleteIndexTemplate(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, templateName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.DeleteIndexTemplate(templateName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }

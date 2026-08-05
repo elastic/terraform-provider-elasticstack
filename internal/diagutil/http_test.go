@@ -18,12 +18,45 @@
 package diagutil
 
 import (
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCheckHTTPErrorOrNotFound(t *testing.T) {
+	t.Run("reports not found for 404 without touching the body", func(t *testing.T) {
+		res := &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(strings.NewReader("ignored"))}
+
+		notFound, diags := CheckHTTPErrorOrNotFound(res, "Unable to find thing on cluster")
+
+		assert.True(t, notFound)
+		assert.False(t, diags.HasError())
+	})
+
+	t.Run("returns no error for a successful response", func(t *testing.T) {
+		res := &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}
+
+		notFound, diags := CheckHTTPErrorOrNotFound(res, "Unable to find thing on cluster")
+
+		assert.False(t, notFound)
+		assert.False(t, diags.HasError())
+	})
+
+	t.Run("wraps other error statuses via CheckHTTPErrorFromFW", func(t *testing.T) {
+		res := &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(strings.NewReader("boom"))}
+
+		notFound, diags := CheckHTTPErrorOrNotFound(res, "Unable to find thing on cluster")
+
+		assert.False(t, notFound)
+		require.True(t, diags.HasError())
+		assert.Equal(t, "Unable to find thing on cluster", diags[0].Summary())
+		assert.Equal(t, "Failed with: boom", diags[0].Detail())
+	})
+}
 
 func TestUnwrapJSON200(t *testing.T) {
 	t.Run("returns value when non-nil", func(t *testing.T) {

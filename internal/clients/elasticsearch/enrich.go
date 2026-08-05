@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/enrich/getpolicy"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/enrichpolicyphase"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -34,12 +35,11 @@ import (
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
+	res, diags := CallOrNotFound(func() (*getpolicy.Response, error) {
+		return typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
+	})
+	if diags.HasError() || res == nil {
+		return nil, diags
 	}
 
 	if len(res.Policies) == 0 {
@@ -139,14 +139,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	return DiagsOrNotFound(err)
 }
 
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {

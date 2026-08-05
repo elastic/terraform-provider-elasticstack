@@ -114,15 +114,9 @@ func GetConnector(
 ) (*getconnector.Response, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Connector.Get(connectorID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return res, nil
+	return CallOrNotFound(func() (*getconnector.Response, error) {
+		return typedClient.Connector.Get(connectorID).Do(ctx)
+	})
 }
 
 // DeleteConnector deletes the connector by id. Returns nil on 404 (idempotent).
@@ -134,14 +128,7 @@ func DeleteConnector(
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Connector.Delete(connectorID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	return DiagsOrNotFound(err)
 }
 
 // UpdateConnectorName updates the connector name and description.
