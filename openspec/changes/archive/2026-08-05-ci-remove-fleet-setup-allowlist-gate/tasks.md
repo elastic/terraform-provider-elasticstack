@@ -16,12 +16,17 @@
       synthetics installation SHALL run only for configured version subsets" to remove the Fleet-setup
       clause (no per-version Fleet setup step exists anymore) while keeping the forced-synthetics
       clause unchanged.
+- [x] 2.2 In the same requirement (and its "Provider change runs stack and tests" scenario), remove the
+      obsolete preflight/`should_run=true` gating clause so execution conditions match Provider CI
+      (`provider_changes=true` only). Leave other stale preflight requirements in this capability for a
+      follow-up sweep.
 
 ## 3. Verify
 
 - [x] 3.1 Run
       `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate ci-remove-fleet-setup-allowlist-gate --type change`
       and resolve any reported issues.
-- [ ] 3.2 After merge, confirm a `Provider CI` matrix run completes successfully for a representative
+- [x] 3.2 After merge, confirm a `Provider CI` matrix run completes successfully for a representative
       version (e.g. one previously in the allowlist and one previously excluded, such as `9.4.2`)
       without the `setup-fleet` step, and that Fleet-dependent acceptance tests still pass.
+      (Confirmed on PR #4419 matrix for head `1e3d75556`, including `9.4.2` shards.)
