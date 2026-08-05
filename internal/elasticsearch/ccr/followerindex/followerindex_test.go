@@ -357,6 +357,29 @@ func TestWaitForFollowerActiveWithInterval_becomesActiveAfterPolls(t *testing.T)
 	assert.GreaterOrEqual(t, calls, 2)
 }
 
+func TestWaitForFollowerActiveWithInterval_checksImmediately(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	var calls int
+	get := func(_ context.Context, _ string) (*estypes.FollowerIndex, diag.Diagnostics) {
+		calls++
+		return &estypes.FollowerIndex{
+			FollowerIndex: "follower",
+			Status:        mustFollowerStatus(statusActive),
+			Parameters:    &estypes.FollowerIndexParameters{},
+		}, nil
+	}
+
+	follower, diags := waitForFollowerActiveWithInterval(ctx, "follower", time.Hour, get)
+	require.False(t, diags.HasError(), diags)
+	require.NotNil(t, follower)
+	assert.Equal(t, "follower", follower.FollowerIndex)
+	assert.Equal(t, 1, calls)
+}
+
 func TestWaitForFollowerActiveWithInterval_timeout(t *testing.T) {
 	t.Parallel()
 

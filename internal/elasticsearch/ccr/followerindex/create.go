@@ -192,7 +192,10 @@ func waitForFollowerActiveWithInterval(
 		return false, nil
 	}
 
-	waitErr := asyncutils.WaitForStateTransition(waitCtx, "ccr follower index", indexName, stateChecker, asyncutils.WithPollInterval(pollInterval))
+	isActive, waitErr := stateChecker(waitCtx)
+	if waitErr == nil && !isActive {
+		waitErr = asyncutils.WaitForStateTransition(waitCtx, "ccr follower index", indexName, stateChecker, asyncutils.WithPollInterval(pollInterval))
+	}
 
 	var diags diag.Diagnostics
 	switch {
