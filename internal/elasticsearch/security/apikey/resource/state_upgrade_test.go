@@ -177,11 +177,11 @@ func TestUpgradeStateV0ToV1(t *testing.T) {
 			},
 		},
 		{
-			name:  "owner_absent_defaults_to_true",
+			name:  "owner_absent_defaults_to_false",
 			patch: map[string]any{},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Equal(t, true, got[attrOwner])
+				require.Equal(t, false, got[attrOwner])
 			},
 		},
 		{
@@ -311,11 +311,11 @@ func TestUpgradeStateV1ToV2(t *testing.T) {
 			},
 		},
 		{
-			name:  "owner_absent_defaults_to_true",
+			name:  "owner_absent_defaults_to_false",
 			patch: map[string]any{},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Equal(t, true, got[attrOwner])
+				require.Equal(t, false, got[attrOwner])
 			},
 		},
 		{
@@ -351,11 +351,11 @@ func TestUpgradeStateV2ToV3(t *testing.T) {
 		assert func(t *testing.T, got map[string]any)
 	}{
 		{
-			name:  "owner_absent_defaults_to_true",
+			name:  "owner_absent_defaults_to_false",
 			patch: map[string]any{},
 			assert: func(t *testing.T, got map[string]any) {
 				t.Helper()
-				require.Equal(t, true, got[attrOwner])
+				require.Equal(t, false, got[attrOwner])
 			},
 		},
 		{
@@ -381,4 +381,3 @@ func TestUpgradeStateV2ToV3(t *testing.T) {
 		})
 	}
 }
-

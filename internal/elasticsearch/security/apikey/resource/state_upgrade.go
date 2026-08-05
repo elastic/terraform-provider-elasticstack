@@ -71,17 +71,16 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 }
 
 // backfillOwnerDefault sets the `owner` attribute to its schema default
-// (true) when it is absent from prior state. The `owner` attribute was added
+// (false) when it is absent from prior state. The `owner` attribute was added
 // after schema versions 0 and 1 shipped, so any state written before it
 // existed (including states written by published provider versions prior to
 // this change) has no `owner` key at all. Without this backfill, the first
 // plan against such state would compute `owner` via the schema's Default
-// (going from null to `true`), which Terraform treats as an in-place update
+// (going from null to `false`), which Terraform treats as an in-place update
 // and triggers a real Update API Key call - unnecessarily, and fatally on
 // Elasticsearch versions older than 8.4 that don't support that endpoint.
 func backfillOwnerDefault(m map[string]any) {
 	if _, ok := m[attrOwner]; !ok {
-		m[attrOwner] = true
+		m[attrOwner] = false
 	}
 }
-

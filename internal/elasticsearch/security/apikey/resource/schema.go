@@ -136,7 +136,7 @@ func getSchema(version int64) schema.Schema {
 				Description: apikey.OwnerDescription,
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
+				Default:     booldefault.StaticBool(false),
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
