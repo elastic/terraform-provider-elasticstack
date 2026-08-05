@@ -71,6 +71,41 @@ func TestAccDataSourceIngestProcessorReroute(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteOnFailure),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("dataset_only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "dataset", "metrics"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "namespace"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteDatasetOnly),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("namespace_only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "namespace", "staging"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "dataset"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteNamespaceOnly),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination", "logs-multi-default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.0", `{"set":{"field":"error.message","value":"reroute failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.1", `{"set":{"field":"error.type","value":"reroute"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteMultiOnFailure),
+				),
+			},
 		},
 	})
 }
@@ -106,5 +141,40 @@ const expectedJSONRerouteOnFailure = `{
 			}
 		],
 		"destination": "logs-fallback-default"
+	}
+}`
+
+const expectedJSONRerouteDatasetOnly = `{
+	"reroute": {
+		"ignore_failure": false,
+		"dataset": "metrics"
+	}
+}`
+
+const expectedJSONRerouteNamespaceOnly = `{
+	"reroute": {
+		"ignore_failure": false,
+		"namespace": "staging"
+	}
+}`
+
+const expectedJSONRerouteMultiOnFailure = `{
+	"reroute": {
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "reroute failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "reroute"
+				}
+			}
+		],
+		"destination": "logs-multi-default"
 	}
 }`
