@@ -30,7 +30,7 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapC
 		return
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
 	alignHeatmapAxisStateFromPlan(plan.Axis, state.Axis)
 	alignHeatmapStylingStateFromPlan(plan.Styling, state.Styling)
