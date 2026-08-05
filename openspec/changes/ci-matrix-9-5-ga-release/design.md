@@ -88,6 +88,18 @@ Alternatives considered:
   that would be a larger refactor of the workflow's conditional structure, not a version bump, and
   risks changing behavior for versions not part of this issue.
 
+Merge-order note: follow-up issue #4415 (filed by this change for the pre-existing `9.4.2` gap)
+prompted an automated proposal, `ci-remove-fleet-setup-allowlist-gate` (PR #4418, merged as
+proposal-only), suggesting the `setup-fleet` step's allowlist be removed entirely rather than
+patched — Fleet bootstrap already happens via `make docker-fleet` / `acctest.PreCheck` and the
+allowlist tracks no real stack-capability boundary. If that proposal is implemented after this
+change merges, the line this Decision touches will already be gone, and `ci-build-lint-test`'s
+requirement (added by this change, "added to every per-version step condition such as Fleet
+setup") will read as describing a step that no longer exists. That is expected staleness from the
+second change superseding this one, not a spec regression in either change — whoever implements
+`ci-remove-fleet-setup-allowlist-gate` should update `ci-build-lint-test`'s requirement text
+accordingly rather than treat the mismatch as a bug.
+
 ### 3. Record the promotion checklist as an OpenSpec requirement
 
 Add a `ci-build-lint-test` requirement describing the snapshot-to-GA promotion contract: rewrite the
@@ -122,6 +134,16 @@ against earlier GA versions:
    correctly distinguishes "this panel was already this type" (honor null intent) from "this panel
    just became this type" (no prior intent to honor) — `pm`'s own state can't make that
    distinction because it never carries it into `PopulateFromAPI` in the first place.
+
+   Audit boundary: this sweep covers the 10 packages with the literal `pm.<Type>Config == nil`
+   type-change branch. `sloerrorbudget` derives its null-preservation decisions from a freshly
+   zero-valued `existing` (`internal/kibana/dashboard/panel/sloerrorbudget/model.go`) in a different
+   shape — an inverse-direction instance of the same root problem, where `title`/`description`/
+   `hide_title`/`hide_border` are never populated from the API on a same-type update because the
+   `typeutils.IsKnown(existing.Title)`-style checks read the fresh zero value instead of
+   `prior.SloErrorBudgetConfig`. It goes undetected today because no `sloerrorbudget` testdata sets
+   those fields, and `9.5.0` passes without fixing it, so it is out of scope for this change (it is
+   not one of the three regressions this promotion surfaced). Filed as follow-up issue #4423.
 2. **`data_source_json` `name` key.** Kibana 9.5.0 GA started echoing a `name` key in
    `data_view_spec` payloads for `data_source_json` that earlier versions omitted, breaking
    apply-consistency for every Lens by-value chart type. Fixed by adding `"name"` alongside the
@@ -137,11 +159,15 @@ against earlier GA versions:
    between the pre-GA snapshot and the GA release, not a provider defect — the provider already
    faithfully passes through the configured range. Since `ml_anomaly_charts` requires Kibana
    `>=9.5.0-SNAPSHOT` (no earlier supported version), there is no fallback version this scenario
-   could target instead. Removed the now-permanently-failing
-   `TestAccResourceDashboardMlAnomalyChartsRawRange` test (kept
-   `TestAccResourceDashboardMlAnomalyChartsRawRangeCanonicalCoincidence`, which covers a passing
-   raw-range case) and updated the `kibana-dashboard` capability's REQ-053 to document the
-   canonical-boundary constraint (see the `kibana-dashboard` delta spec in this change).
+   could target instead. Rewrote the now-permanently-failing
+   `TestAccResourceDashboardMlAnomalyChartsRawRange` test in place as
+   `TestAccResourceDashboardMlAnomalyChartsNonCanonicalRangeRejected` — same non-canonical
+   `{min = 10, max = 20}` config and `raw_range/` testdata, now asserting the HTTP 400 rejection via
+   `ExpectError` instead of a successful round-trip — so the rejection scenario keeps acceptance
+   coverage rather than losing it (kept `TestAccResourceDashboardMlAnomalyChartsRawRangeCanonicalCoincidence`
+   unchanged, which covers a passing raw-range case) and updated the `kibana-dashboard` capability's
+   REQ-053 to document the canonical-boundary constraint (see the `kibana-dashboard` delta spec in
+   this change).
 
 Why:
 - All three are direct, causally-required consequences of Decision 1: the `test` job cannot pass for

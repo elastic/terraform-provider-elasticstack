@@ -14,6 +14,6 @@
 - [x] 2.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate ci-matrix-9-5-ga-release --type change`
       and resolve any reported issues.
 - [x] 2.2 Confirm the `9.5.0` matrix job in `Provider CI` runs Fleet setup and is blocking (not
-      `continue-on-error`). Verified on PR #4404 at head `58bcda53`: both `Matrix Acceptance Test
+      `continue-on-error`). Verified on PR #4404 at head `731b87f2`: both `Matrix Acceptance Test
       (9.5.0, 0)` and `(9.5.0, 1)` ran `Setup Fleet: success` and passed as blocking checks (not
       `continue-on-error`); the snapshot-failure PR warning step did not fire.

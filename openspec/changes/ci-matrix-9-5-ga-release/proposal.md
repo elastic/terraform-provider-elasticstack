@@ -32,11 +32,13 @@ should be held to the same blocking bar as every other released stack version in
     field the practitioner left unset.
   - Kibana 9.5.0 GA now echoes a `name` key in `data_source_json` `data_view_spec` payloads that
     earlier versions omitted, breaking apply-consistency for Lens by-value chart types.
-  - Kibana 9.5.0 GA rejects `ml_anomaly_charts_config.severity_threshold` raw ranges whose `min`
-    does not match one of five canonical band boundaries — a genuine Kibana-side API change between
+  - Kibana 9.5.0 GA rejects `ml_anomaly_charts_config.severity_threshold` raw `{min, max}` pairs
+    that do not exactly match one of five canonical pairs — a genuine Kibana-side API change between
     the pre-GA snapshot and GA release, not a provider defect. The now-permanently-failing
-    `TestAccResourceDashboardMlAnomalyChartsRawRange` test was removed and the `kibana-dashboard`
-    capability's `severity_threshold` requirement updated to match.
+    `TestAccResourceDashboardMlAnomalyChartsRawRange` test was rewritten in place as
+    `TestAccResourceDashboardMlAnomalyChartsNonCanonicalRangeRejected` (same non-canonical config,
+    now asserting the HTTP 400 rejection) and the `kibana-dashboard` capability's `severity_threshold`
+    requirement updated to match.
 
 ## Capabilities
 
@@ -50,9 +52,11 @@ should be held to the same blocking bar as every other released stack version in
 ## Impact
 
 - `.github/workflows/provider.yml`: `test` job matrix, Fleet setup step condition.
-- Provider Go code: 20 non-test files across `internal/kibana/dashboard/` fixing the three
-  regressions above (10 panel `model.go` files for null-preservation; 11 `alignment.go` call sites
-  plus one shared `lenscommon` helper for the `data_source_json` `name` key; `mlanomalycharts`
-  schema/test changes for `severity_threshold`), plus their corresponding test files.
+- Provider Go code: 21 non-test files across `internal/kibana/dashboard/` fixing the three
+  regressions above (10 panel `model.go` files for null-preservation; 11 files / 12 call sites for
+  the `data_source_json` `name` key — 10 under `panel/lens*/` plus the shared
+  `lenscommon/partition_alignment.go` helper, one of the 11 with two call sites), plus their
+  corresponding test files and the `mlanomalycharts` acceptance-test rewrite for
+  `severity_threshold`.
 - CI acceptance coverage: `9.5.0` acceptance failures start blocking the `test` job and
   `Test Validation` (previously non-blocking under the snapshot label).
