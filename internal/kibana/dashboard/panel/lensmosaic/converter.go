@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -103,22 +102,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "mosaic_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.MosaicConfigModel
-	if blocks.MosaicConfig != nil {
-		cpy := *blocks.MosaicConfig
-		prior = &cpy
-	}
-	blocks.MosaicConfig = &models.MosaicConfigModel{}
-
-	if noESQL, err := attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
-		return mosaicConfigFromAPINoESQL(ctx, blocks.MosaicConfig, prior, noESQL)
-	}
-
-	esql, err := attrs.AsKibanaHTTPAPIsMosaicESQLByValuePanel()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return mosaicConfigFromAPIESQL(ctx, blocks.MosaicConfig, prior, esql)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.MosaicConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.MosaicConfig, prior,
+		attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsMosaicESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		mosaicConfigFromAPINoESQL,
+		mosaicConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

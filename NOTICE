@@ -4143,12 +4143,12 @@ Exhibit B - “Incompatible With Secondary Licenses” Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/hashicorp/terraform-plugin-log
-Version: v0.10.0
+Version: v0.11.0
 Licence type (autodetected): MPL-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-log@v0.10.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/hashicorp/terraform-plugin-log@v0.11.0/LICENSE:
 
-Copyright (c) 2021 HashiCorp, Inc.
+Copyright IBM Corp. 2021, 2026
 
 Mozilla Public License, version 2.0
 

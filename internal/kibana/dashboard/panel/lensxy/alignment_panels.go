@@ -55,7 +55,7 @@ func alignXYChartStateFromPlan(plan, state *models.XYChartConfigModel) {
 	alignXYDecorationsStateFromPlan(plan.Decorations, state.Decorations)
 	alignXYFittingStateFromPlan(plan.Fitting, state.Fitting)
 	if plan.Legend != nil && (state.Legend == nil || xyLegendEffectivelyUnset(state.Legend)) {
-		state.Legend = cloneXYLegendModel(plan.Legend)
+		state.Legend = lenscommon.CloneModel(plan.Legend)
 	} else {
 		alignXYLegendStateFromPlan(plan.Legend, state.Legend)
 	}
@@ -228,7 +228,7 @@ func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **mod
 		return
 	}
 	if *state == nil {
-		*state = cloneAxisTitleModel(plan)
+		*state = lenscommon.CloneModel(plan)
 		return
 	}
 
@@ -236,20 +236,12 @@ func preserveKnownAxisTitleIfStateBlank(plan *models.AxisTitleModel, state **mod
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Visible, &(*state).Visible)
 }
 
-func cloneAxisTitleModel(model *models.AxisTitleModel) *models.AxisTitleModel {
-	if model == nil {
-		return nil
-	}
-	cloned := *model
-	return &cloned
-}
-
 func cloneYAxisConfigModel(model *models.YAxisConfigModel) *models.YAxisConfigModel {
 	if model == nil {
 		return nil
 	}
-	cloned := *model
-	cloned.Title = cloneAxisTitleModel(model.Title)
+	cloned := *lenscommon.CloneModel(model)
+	cloned.Title = lenscommon.CloneModel(model.Title)
 	return &cloned
 }
 
@@ -265,12 +257,4 @@ func xyLegendEffectivelyUnset(m *models.XYLegendModel) bool {
 		!typeutils.IsKnown(m.Columns) &&
 		!typeutils.IsKnown(m.TruncateAfterLines) &&
 		(m.Statistics.IsNull() || m.Statistics.IsUnknown())
-}
-
-func cloneXYLegendModel(model *models.XYLegendModel) *models.XYLegendModel {
-	if model == nil {
-		return nil
-	}
-	cloned := *model
-	return &cloned
 }

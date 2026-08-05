@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createExceptionItem(
@@ -52,17 +51,12 @@ func createExceptionItem(
 		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
-	if createResp == nil {
-		diags.AddError("Failed to create exception item", "API returned empty response")
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createResp, "create", "exception item") {
 		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
 	}
 
 	m.ItemID = typeutils.StringishValue(createResp.ItemId)
-	compID := clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: createResp.Id,
-	}
-	m.ID = types.StringValue(compID.String())
+	m.ID = entitycore.KibanaResourceID(req.SpaceID, createResp.Id)
 
 	return entitycore.KibanaWriteResult[ExceptionItemModel]{Model: m}, diags
 }

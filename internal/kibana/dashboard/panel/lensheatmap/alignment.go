@@ -77,7 +77,7 @@ func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **mo
 		return
 	}
 	if *state == nil || heatmapLegendEffectivelyUnset(*state) {
-		*state = cloneHeatmapLegendModel(plan)
+		*state = lenscommon.CloneModel(plan)
 		return
 	}
 	// Kibana renders the legend by default; preserve the null plan when the
@@ -93,12 +93,4 @@ func heatmapLegendEffectivelyUnset(m *models.HeatmapLegendModel) bool {
 		return true
 	}
 	return !typeutils.IsKnown(m.Visibility) && !typeutils.IsKnown(m.Size) && !typeutils.IsKnown(m.TruncateAfterLines)
-}
-
-func cloneHeatmapLegendModel(model *models.HeatmapLegendModel) *models.HeatmapLegendModel {
-	if model == nil {
-		return nil
-	}
-	cloned := *model
-	return &cloned
 }
