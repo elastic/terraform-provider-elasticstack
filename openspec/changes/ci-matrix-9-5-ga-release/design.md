@@ -46,7 +46,13 @@ explicit list in the same change.
 - Any change to `force-install-synthetics` gating — that step's explicit version list
   (`8.14.3, 8.15.5, 8.16.6, 8.17.10`) does not include any 9.x version today and is unaffected by this
   promotion.
-- Any Terraform provider code, generated client, or documentation change.
+- Provider Go code changes *unrelated to* making the newly-blocking `9.5.0` entry pass. This was
+  scoped as a Non-Goal when the design was first written, before the promotion had actually run
+  against real Kibana 9.5.0 GA. In practice, making `9.5.0` blocking surfaced three real acceptance
+  regressions against the GA image (see Decision 4 below); fixing those *is* in scope, since they are
+  the direct, causally-required consequence of this promotion — the `test` job cannot pass without
+  them, and leaving them failing would defeat the purpose of removing `continue-on-error`. Provider
+  code changes unrelated to those three regressions remain out of scope.
 
 ## Decisions
 
@@ -82,6 +88,18 @@ Alternatives considered:
   that would be a larger refactor of the workflow's conditional structure, not a version bump, and
   risks changing behavior for versions not part of this issue.
 
+Merge-order note: follow-up issue #4415 (filed by this change for the pre-existing `9.4.2` gap)
+prompted an automated proposal, `ci-remove-fleet-setup-allowlist-gate` (PR #4418, merged as
+proposal-only), suggesting the `setup-fleet` step's allowlist be removed entirely rather than
+patched — Fleet bootstrap already happens via `make docker-fleet` / `acctest.PreCheck` and the
+allowlist tracks no real stack-capability boundary. If that proposal is implemented after this
+change merges, the line this Decision touches will already be gone, and `ci-build-lint-test`'s
+requirement (added by this change, "added to every per-version step condition such as Fleet
+setup") will read as describing a step that no longer exists. That is expected staleness from the
+second change superseding this one, not a spec regression in either change — whoever implements
+`ci-remove-fleet-setup-allowlist-gate` should update `ci-build-lint-test`'s requirement text
+accordingly rather than treat the mismatch as a bug.
+
 ### 3. Record the promotion checklist as an OpenSpec requirement
 
 Add a `ci-build-lint-test` requirement describing the snapshot-to-GA promotion contract: rewrite the
@@ -97,6 +115,72 @@ Why:
 Alternatives considered:
 - Leave this as an unwritten convention: rejected — it already produced one silent coverage gap
   (`9.4.2`), and codifying the checklist is cheap.
+
+### 4. Fix the three acceptance regressions this promotion surfaced, in this same change
+
+Making `9.5.0` blocking (Decision 1) surfaced three real failures against the released Kibana 9.5.0
+GA image, none of which are CI-matrix or workflow issues — all three are provider bugs or a genuine
+Kibana-side API behavior change, confirmed by comparing CI history against `9.5.0-SNAPSHOT` and
+against earlier GA versions:
+
+1. **Null-preservation bug (10 panel types).** `PopulateFromAPI`'s "type-change recovery" branch
+   checked `pm.<Type>Config == nil`, but callers (`dashboardMapPanelFromAPI` in `models_panels.go`)
+   always pass a zero-valued `PanelModel` deliberately, to avoid aliasing plan pointers — so that
+   check is always true and the branch fired on every same-type update, not just genuine type
+   changes, skipping REQ-009 null-preservation entirely. Invisible while Kibana never returned a
+   concrete value for an unset field; Kibana 9.5.0 GA started doing so for several enum-shaped
+   fields (e.g. `aiops_pattern_analysis_config.minimum_time_range`), producing `Provider produced
+   inconsistent result after apply`. Fixed by keying on `prior.<Type>Config` instead, which
+   correctly distinguishes "this panel was already this type" (honor null intent) from "this panel
+   just became this type" (no prior intent to honor) — `pm`'s own state can't make that
+   distinction because it never carries it into `PopulateFromAPI` in the first place.
+
+   Audit boundary: this sweep covers the 10 packages with the literal `pm.<Type>Config == nil`
+   type-change branch. `sloerrorbudget` derives its null-preservation decisions from a freshly
+   zero-valued `existing` (`internal/kibana/dashboard/panel/sloerrorbudget/model.go`) in a different
+   shape — an inverse-direction instance of the same root problem, where `title`/`description`/
+   `hide_title`/`hide_border` are never populated from the API on a same-type update because the
+   `typeutils.IsKnown(existing.Title)`-style checks read the fresh zero value instead of
+   `prior.SloErrorBudgetConfig`. It goes undetected today because no `sloerrorbudget` testdata sets
+   those fields, and `9.5.0` passes without fixing it, so it is out of scope for this change (it is
+   not one of the three regressions this promotion surfaced). Filed as follow-up issue #4423.
+2. **`data_source_json` `name` key.** Kibana 9.5.0 GA started echoing a `name` key in
+   `data_view_spec` payloads for `data_source_json` that earlier versions omitted, breaking
+   apply-consistency for every Lens by-value chart type. Fixed by adding `"name"` alongside the
+   existing `"time_field"` entry in the already-established
+   `lenscommon.PreservePlanJSONIfStateAddsOptionalKeys` call sites — the same mechanism previously
+   added for the analogous `time_field` case, extended rather than duplicated.
+3. **`ml_anomaly_charts_config.severity_threshold` raw range.** Confirmed via CI run history that an
+   arbitrary (non-canonical) `min`/`max` range passed against `9.5.0-SNAPSHOT` on `main` hours before
+   this promotion landed, but the released `9.5.0` GA image rejects it with HTTP 400 unless the
+   `{min, max}` pair exactly matches one of five fixed canonical pairs (the generated client models
+   `severity_threshold` as a 5-member union pinning both `min` and `max` together, not `min` alone).
+   This is a genuine Kibana-side API change
+   between the pre-GA snapshot and the GA release, not a provider defect — the provider already
+   faithfully passes through the configured range. Since `ml_anomaly_charts` requires Kibana
+   `>=9.5.0-SNAPSHOT` (no earlier supported version), there is no fallback version this scenario
+   could target instead. Rewrote the now-permanently-failing
+   `TestAccResourceDashboardMlAnomalyChartsRawRange` test in place as
+   `TestAccResourceDashboardMlAnomalyChartsNonCanonicalRangeRejected` — same non-canonical
+   `{min = 10, max = 20}` config and `raw_range/` testdata, now asserting the HTTP 400 rejection via
+   `ExpectError` instead of a successful round-trip — so the rejection scenario keeps acceptance
+   coverage rather than losing it (kept `TestAccResourceDashboardMlAnomalyChartsRawRangeCanonicalCoincidence`
+   unchanged, which covers a passing raw-range case) and updated the `kibana-dashboard` capability's
+   REQ-053 to document the canonical-boundary constraint (see the `kibana-dashboard` delta spec in
+   this change).
+
+Why:
+- All three are direct, causally-required consequences of Decision 1: the `test` job cannot pass for
+  `9.5.0` without them, and re-adding `continue-on-error` to work around them would defeat the entire
+  purpose of this promotion.
+- Deferring them to a follow-up PR would mean landing this change with `9.5.0` still red, which is a
+  worse outcome than fixing them now that they've been found and verified against a real 9.5.0 stack.
+
+Alternatives considered:
+- Land the CI-matrix change alone and file follow-up issues for the three regressions: rejected — the
+  promotion's entire purpose is to make `9.5.0` failures blocking, so landing it while still red
+  contradicts that purpose without a compelling reason to delay (the fixes were already found,
+  understood, and verified before this decision was made).
 
 ## Risks / Trade-offs
 
@@ -117,11 +201,13 @@ Alternatives considered:
    does).
 3. Land the change; the next CI run against the `9.5.0` entry exercises the full blocking path.
 
-## Open Questions
+## Open Questions (resolved)
 
 - Should the pre-existing `9.4.2` Fleet-setup-list gap be fixed as part of this change, or tracked as
-  a separate follow-up issue? This design treats it as out of scope (Non-Goals) since it predates and
-  is independent of the 9.5 promotion, but a reviewer may prefer to fix it opportunistically in the
-  same PR.
+  a separate follow-up issue? **Resolved: tracked separately**, not fixed here. It predates and is
+  independent of the 9.5 promotion (Non-Goals), and this change already has three in-scope regression
+  fixes (Decision 4); bundling an unrelated pre-existing gap risks conflating review of the two.
+  Filed as follow-up issue #4415.
 - When should a `9.6.0-SNAPSHOT` (or later) entry be added to resume tracking the next in-development
-  line? Left as a future, independently-timed change per Non-Goals.
+  line? **Resolved: deferred**, per Non-Goals — a separate, independently-timed change once a `9.6`
+  snapshot build exists and is worth testing. No action taken in this change.

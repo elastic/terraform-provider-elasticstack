@@ -21,9 +21,7 @@ import (
 	"errors"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -93,22 +91,4 @@ func CallOrNotFound[T any](fn func() (T, error)) (T, fwdiags.Diagnostics) {
 		return zero, DiagsOrNotFound(err)
 	}
 	return result, nil
-}
-
-// durationToMsString formats a time.Duration as a millisecond string (e.g. "5000ms")
-// for use with typed API builder methods that accept a string timeout.
-func durationToMsString(d time.Duration) string {
-	return strconv.FormatInt(d.Milliseconds(), 10) + "ms"
-}
-
-// formatDuration converts a time.Duration to an Elasticsearch timeout string.
-// Sub-millisecond values are expressed in nanoseconds (e.g. "500nanos"); all
-// other values are expressed in milliseconds (e.g. "5000ms"), matching the
-// legacy esapi behavior. Use durationToMsString when sub-ms precision is not
-// needed.
-func formatDuration(d time.Duration) string {
-	if d < time.Millisecond {
-		return strconv.FormatInt(int64(d), 10) + "nanos"
-	}
-	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
 }

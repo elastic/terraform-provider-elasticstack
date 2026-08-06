@@ -986,7 +986,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `max_series_to_plot` (Number) Maximum number of anomaly series to plot.
-- `severity_threshold` (Attributes List) Severity bands to display. Each item sets either a named `severity` shortcut or a raw numeric `min`/`max` range, never both. (see [below for nested schema](#nestedatt--panels--ml_anomaly_charts_config--severity_threshold))
+- `severity_threshold` (Attributes List) Severity bands to display. Each item sets either a named `severity` shortcut or its equivalent numeric `min`/`max` pair, never both. `min`/`max` is not a general custom range: Kibana only accepts the five canonical pairs (see `severity`'s enum values) and rejects any other pair with an HTTP error at apply time. (see [below for nested schema](#nestedatt--panels--ml_anomaly_charts_config--severity_threshold))
 - `time_range` (Attributes) Optional panel-level time range (`from`, `to`, and optional `mode`). (see [below for nested schema](#nestedatt--panels--ml_anomaly_charts_config--time_range))
 - `title` (String) Optional panel title shown in the panel header.
 
@@ -995,8 +995,8 @@ Optional:
 
 Optional:
 
-- `max` (Number) Upper bound of a raw severity range. Valid only with `min` when `severity` is unset.
-- `min` (Number) Lower bound of a raw severity range. Required when `severity` is omitted.
+- `max` (Number) Numeric spelling of a canonical severity band's upper bound. Valid only with `min` when `severity` is unset and the pair matches a canonical band.
+- `min` (Number) Numeric spelling of a canonical severity band's lower bound. Required when `severity` is omitted. Kibana rejects a non-canonical value at apply time; not validated client-side.
 - `severity` (String) Named severity shortcut (`low`, `warning`, `minor`, `major`, `critical`).
 
 
@@ -4961,7 +4961,7 @@ Optional:
 - `hide_border` (Boolean) When true, hides the panel border.
 - `hide_title` (Boolean) When true, hides the panel title.
 - `max_series_to_plot` (Number) Maximum number of anomaly series to plot.
-- `severity_threshold` (Attributes List) Severity bands to display. Each item sets either a named `severity` shortcut or a raw numeric `min`/`max` range, never both. (see [below for nested schema](#nestedatt--sections--panels--ml_anomaly_charts_config--severity_threshold))
+- `severity_threshold` (Attributes List) Severity bands to display. Each item sets either a named `severity` shortcut or its equivalent numeric `min`/`max` pair, never both. `min`/`max` is not a general custom range: Kibana only accepts the five canonical pairs (see `severity`'s enum values) and rejects any other pair with an HTTP error at apply time. (see [below for nested schema](#nestedatt--sections--panels--ml_anomaly_charts_config--severity_threshold))
 - `time_range` (Attributes) Optional panel-level time range (`from`, `to`, and optional `mode`). (see [below for nested schema](#nestedatt--sections--panels--ml_anomaly_charts_config--time_range))
 - `title` (String) Optional panel title shown in the panel header.
 
@@ -4970,8 +4970,8 @@ Optional:
 
 Optional:
 
-- `max` (Number) Upper bound of a raw severity range. Valid only with `min` when `severity` is unset.
-- `min` (Number) Lower bound of a raw severity range. Required when `severity` is omitted.
+- `max` (Number) Numeric spelling of a canonical severity band's upper bound. Valid only with `min` when `severity` is unset and the pair matches a canonical band.
+- `min` (Number) Numeric spelling of a canonical severity band's lower bound. Required when `severity` is omitted. Kibana rejects a non-canonical value at apply time; not validated client-side.
 - `severity` (String) Named severity shortcut (`low`, `warning`, `minor`, `major`, `critical`).
 
 

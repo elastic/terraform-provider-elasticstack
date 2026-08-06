@@ -58,47 +58,45 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	return diags
 }
 
-// PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while preserving prior null intent.
+// PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while
+// preserving prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with SloBurnRateConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.SloBurnRateConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) diag.Diagnostics {
-	// On import (prior == nil) populate from API unconditionally.
-	if prior == nil {
+	if prior == nil || prior.SloBurnRateConfig == nil {
 		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
 		return nil
 	}
 
-	if pm.SloBurnRateConfig == nil && prior.SloBurnRateConfig != nil {
-		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
-	}
-
-	existing := pm.SloBurnRateConfig
-	if existing == nil {
-		return nil
-	}
-
-	// Block exists in state — update required fields always, optional fields using null-preservation.
-	existing.SloID = types.StringValue(apiConfig.SloId)
-	existing.Duration = types.StringValue(apiConfig.Duration)
-
-	// slo_instance_id null-preservation: if state is null (practitioner omitted it), keep null
-	// regardless of what the API returns — the API echoes "*" for all-instances which has no
-	// meaningful TF representation.
-	existing.SloInstanceID = panelkit.PreserveString(existing.SloInstanceID, apiConfig.SloInstanceId)
-
-	// Optional fields: only update from API when they were already known in state.
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
-
-	var priorDrilldowns []models.URLDrilldownModel
-	if prior != nil && prior.SloBurnRateConfig != nil {
-		priorDrilldowns = prior.SloBurnRateConfig.Drilldowns
-	}
-	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
-
-	if prior != nil && prior.SloBurnRateConfig != nil {
-		sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
-	}
-
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := sloBurnRateConfigFromAPIImport(apiConfig)
+	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, prior.SloBurnRateConfig.Drilldowns)
+	// sloBurnRateConfigFromAPIImport always normalizes the API's "*" (all-instances) sentinel to
+	// null, which is the right default when there is no prior value to consult (creation/import).
+	// On an update, a practitioner who explicitly set slo_instance_id = "*" must see it round-trip
+	// as "*" rather than be silently nulled, so recompute it from the raw API value using prior
+	// knowledge instead of the unconditionally-normalized import value.
+	existing.SloInstanceID = sloBurnRateInstanceIDFromAPI(apiConfig.SloInstanceId, prior.SloBurnRateConfig.SloInstanceID)
+	sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
+	pm.SloBurnRateConfig = existing
 	return nil
+}
+
+// sloBurnRateInstanceIDFromAPI computes slo_instance_id for a same-type update: if the prior state
+// never had a known value (practitioner omitted it), the field stays null regardless of what the
+// API echoes back (the API's "*" all-instances sentinel has no meaningful null-free TF value).
+// Otherwise the practitioner is explicitly managing this field, so it round-trips the raw API value
+// (including "*") without the import path's blanket normalization.
+func sloBurnRateInstanceIDFromAPI(api *string, prior types.String) types.String {
+	if !typeutils.IsKnown(prior) {
+		return types.StringNull()
+	}
+	return types.StringPointerValue(api)
 }
 
 func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) *models.SloBurnRateConfigModel {

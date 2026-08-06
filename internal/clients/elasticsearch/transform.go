@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -45,7 +46,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 
 	_, err = typedClient.Transform.PutTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(formatDuration(timeout)).
+		Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
@@ -159,7 +160,7 @@ func UpdateTransform(
 
 	_, err = typedClient.Transform.UpdateTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(formatDuration(timeout)).
+		Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
@@ -202,7 +203,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 
-	_, err := typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
+	_, err := typedClient.Transform.StartTransform(transformName).Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).Do(ctx)
 	if err != nil {
 		return fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to start transform: %s", transformName), err.Error()),
@@ -215,7 +216,7 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 
-	_, err := typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
+	_, err := typedClient.Transform.StopTransform(transformName).Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).Do(ctx)
 	if err != nil {
 		return fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to stop transform: %s", transformName), err.Error()),
