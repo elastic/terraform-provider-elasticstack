@@ -70,6 +70,7 @@ type TfModel struct {
 	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
 	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
 	Access                  types.Object                                                              `tfsdk:"access"`
+	Owner                   types.Bool                                                                `tfsdk:"owner"`
 	APIKey                  types.String                                                              `tfsdk:"api_key"`
 	Encoded                 types.String                                                              `tfsdk:"encoded"`
 }

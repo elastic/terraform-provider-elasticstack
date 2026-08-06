@@ -29,6 +29,6 @@ import (
 // deleteAPIKey is the package-level delete callback passed to the
 // ElasticsearchResource envelope. The envelope handles state removal after a
 // successful delete.
-func deleteAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ apikey.TfModel) diag.Diagnostics {
-	return elasticsearch.DeleteAPIKey(ctx, client, resourceID)
+func deleteAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state apikey.TfModel) diag.Diagnostics {
+	return elasticsearch.DeleteAPIKey(ctx, client, resourceID, state.Owner.ValueBool())
 }
