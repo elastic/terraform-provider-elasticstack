@@ -46,15 +46,9 @@ func PutQueryRuleset(ctx context.Context, apiClient *clients.ElasticsearchScoped
 func GetQueryRuleset(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, rulesetID string) (*getruleset.Response, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.QueryRules.GetRuleset(rulesetID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-
-	return res, nil
+	return CallOrNotFound(func() (*getruleset.Response, error) {
+		return typedClient.QueryRules.GetRuleset(rulesetID).Do(ctx)
+	})
 }
 
 // DeleteQueryRuleset deletes a query ruleset. Returns nil on 404 (idempotent).
@@ -62,12 +56,5 @@ func DeleteQueryRuleset(ctx context.Context, apiClient *clients.ElasticsearchSco
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.QueryRules.DeleteRuleset(rulesetID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	return DiagsOrNotFound(err)
 }

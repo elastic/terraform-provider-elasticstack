@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -80,11 +79,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get watch from cluster."); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to get watch from cluster."); notFound || d.HasError() {
 		return nil, d
 	}
 

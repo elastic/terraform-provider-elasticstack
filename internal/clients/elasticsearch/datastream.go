@@ -21,8 +21,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/getdatastream"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -42,12 +42,11 @@ func PutDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 
 func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) (*types.DataStream, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
+	res, diags := CallOrNotFound(func() (*getdatastream.Response, error) {
+		return typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
+	})
+	if diags.HasError() || res == nil {
+		return nil, diags
 	}
 	if len(res.DataStreams) == 0 {
 		return nil, nil
@@ -59,13 +58,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }
 
 func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
@@ -121,10 +114,7 @@ func GetDataStreamLifecycle(
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get data stream lifecycle"); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to get data stream lifecycle"); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -163,11 +153,5 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticse
 		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
 	_, err := builder.Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }

@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -79,10 +78,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); notFound || d.HasError() {
 		return nil, d
 	}
 

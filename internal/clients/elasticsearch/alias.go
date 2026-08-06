@@ -33,13 +33,7 @@ import (
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, aliases []string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.DeleteAlias(index, strings.Join(aliases, ",")).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }
 
 func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
@@ -57,14 +51,9 @@ func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScope
 
 func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, aliasName string) (map[string]types.IndexAliases, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Indices.GetAlias().Name(aliasName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return res, nil
+	return CallOrNotFound(func() (map[string]types.IndexAliases, error) {
+		return typedClient.Indices.GetAlias().Name(aliasName).Do(ctx)
+	})
 }
 
 // AliasAction represents a single action in an atomic alias update operation
