@@ -24,48 +24,23 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var stateModel integrationPolicyModel
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	fleetClient, policyID, spaceID, policy, ok := fleetutils.ReadPolicyEnvelope(
+		ctx, req, resp, r.Client(), &stateModel,
+		func(m *integrationPolicyModel) types.List { return m.KibanaConnection },
+		func(m *integrationPolicyModel) string { return m.PolicyID.ValueString() },
+		fleet.GetPackagePolicy,
+	)
+	if !ok {
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := client.GetFleetClient()
-
-	policyID := stateModel.PolicyID.ValueString()
-
-	// Read the existing spaces from state to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Query using the operational space from STATE
-	policy, diags := fleet.GetPackagePolicy(ctx, fleetClient, policyID, spaceID)
-
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if policy == nil {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	diags = HandleRespSecrets(ctx, policy, resp.Private)
+	diags := HandleRespSecrets(ctx, policy, resp.Private)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

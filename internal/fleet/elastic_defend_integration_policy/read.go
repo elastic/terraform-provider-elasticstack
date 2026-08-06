@@ -23,42 +23,19 @@ import (
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var stateModel elasticDefendIntegrationPolicyModel
 
-	diags := req.State.Get(ctx, &stateModel)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := client.GetFleetClient()
-
-	policyID := stateModel.PolicyID.ValueString()
-
-	// Use the operational space from STATE to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if policy == nil {
-		resp.State.RemoveResource(ctx)
+	_, _, _, policy, ok := fleetutils.ReadPolicyEnvelope(
+		ctx, req, resp, r.Client(), &stateModel,
+		func(m *elasticDefendIntegrationPolicyModel) types.List { return m.KibanaConnection },
+		func(m *elasticDefendIntegrationPolicyModel) string { return m.PolicyID.ValueString() },
+		fleetclient.GetDefendPackagePolicy,
+	)
+	if !ok {
 		return
 	}
 
@@ -70,7 +47,7 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 	}
 
 	// Populate the model from the API response
-	diags = populateModelFromAPI(ctx, &stateModel, policy)
+	diags := populateModelFromAPI(ctx, &stateModel, policy)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
