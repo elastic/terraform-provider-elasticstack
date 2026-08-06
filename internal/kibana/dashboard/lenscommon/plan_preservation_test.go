@@ -20,6 +20,7 @@ package lenscommon
 import (
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -199,4 +200,50 @@ func TestPreservePlanJSONIfStateAddsOptionalKeys(t *testing.T) {
 			assert.JSONEq(t, tc.wantState, state.ValueString())
 		})
 	}
+}
+
+func TestAlignTitleDescriptionAndDataSourceFromPlan(t *testing.T) {
+	t.Parallel()
+
+	planTitle := types.StringValue("my title")
+	planDescription := types.StringValue("my description")
+	stateTitle := types.StringNull()
+	stateDescription := types.StringNull()
+	planDataSourceJSON := jsontypes.NewNormalizedValue(`{"index_pattern":"metrics-*","type":"data_view_spec"}`)
+	stateDataSourceJSON := jsontypes.NewNormalizedValue(`{"index_pattern":"metrics-*","type":"data_view_spec","time_field":"@timestamp"}`)
+
+	AlignTitleDescriptionAndDataSourceFromPlan(
+		planTitle, planDescription, &stateTitle, &stateDescription,
+		planDataSourceJSON, &stateDataSourceJSON,
+	)
+
+	assert.Equal(t, planTitle, stateTitle)
+	assert.Equal(t, planDescription, stateDescription)
+	assert.JSONEq(t, `{"index_pattern":"metrics-*","type":"data_view_spec"}`, stateDataSourceJSON.ValueString())
+}
+
+func TestAlignSingleMetricPanelStateFromPlan(t *testing.T) {
+	t.Parallel()
+
+	planTitle := types.StringValue("my title")
+	planDescription := types.StringValue("my description")
+	stateTitle := types.StringNull()
+	stateDescription := types.StringNull()
+	planDataSourceJSON := jsontypes.NewNormalizedValue(`{"index_pattern":"metrics-*","type":"data_view_spec"}`)
+	stateDataSourceJSON := jsontypes.NewNormalizedValue(`{"index_pattern":"metrics-*","type":"data_view_spec","time_field":"@timestamp"}`)
+	identityDefaults := func(m map[string]any) map[string]any { return m }
+	planMetricJSON := customtypes.NewJSONWithDefaultsValue[map[string]any](`{"operation":"count","empty_as_null":false}`, identityDefaults)
+	stateMetricJSON := customtypes.NewJSONWithDefaultsValue[map[string]any](`{"empty_as_null":false,"operation":"count"}`, identityDefaults)
+
+	AlignSingleMetricPanelStateFromPlan(
+		t.Context(),
+		planTitle, planDescription, &stateTitle, &stateDescription,
+		planDataSourceJSON, &stateDataSourceJSON,
+		planMetricJSON, &stateMetricJSON,
+	)
+
+	assert.Equal(t, planTitle, stateTitle)
+	assert.Equal(t, planDescription, stateDescription)
+	assert.JSONEq(t, `{"index_pattern":"metrics-*","type":"data_view_spec"}`, stateDataSourceJSON.ValueString())
+	assert.Equal(t, planMetricJSON.ValueString(), stateMetricJSON.ValueString())
 }

@@ -52,9 +52,12 @@ func alignTagcloudConfigStateFromPlan(ctx context.Context, plan, state *models.T
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignSingleMetricPanelStateFromPlan(
+		ctx,
+		plan.Title, plan.Description, &state.Title, &state.Description,
+		plan.DataSourceJSON, &state.DataSourceJSON,
+		plan.MetricJSON, &state.MetricJSON,
+	)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
 	// Kibana materializes server-side defaults when the practitioner omits these fields.

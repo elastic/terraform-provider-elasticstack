@@ -56,6 +56,32 @@ func AlignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 	PreserveKnownStringIfStateBlank(planDescription, stateDescription)
 }
 
+// AlignTitleDescriptionAndDataSourceFromPlan applies AlignTitleAndDescriptionFromPlan and then
+// preserves the plan's data-source JSON when state only adds the optional "time_field"/"name"
+// keys. Shared by Lens panel alignment functions whose title/description/data-source
+// reconciliation is identical but whose remaining fields diverge per panel type.
+func AlignTitleDescriptionAndDataSourceFromPlan(
+	planTitle, planDescription types.String, stateTitle, stateDescription *types.String,
+	planDataSourceJSON jsontypes.Normalized, stateDataSourceJSON *jsontypes.Normalized,
+) {
+	AlignTitleAndDescriptionFromPlan(planTitle, planDescription, stateTitle, stateDescription)
+	PreservePlanJSONIfStateAddsOptionalKeys(planDataSourceJSON, stateDataSourceJSON, "time_field", "name")
+}
+
+// AlignSingleMetricPanelStateFromPlan applies AlignTitleDescriptionAndDataSourceFromPlan and then
+// preserves the plan's metric JSON when it is semantically equal to state. Shared by
+// single-metric Lens panel config models (gauge, heatmap, legacy_metric, region_map, tagcloud)
+// whose title/description/data-source/metric reconciliation is byte-for-byte identical.
+func AlignSingleMetricPanelStateFromPlan(
+	ctx context.Context,
+	planTitle, planDescription types.String, stateTitle, stateDescription *types.String,
+	planDataSourceJSON jsontypes.Normalized, stateDataSourceJSON *jsontypes.Normalized,
+	planMetricJSON customtypes.JSONWithDefaultsValue[map[string]any], stateMetricJSON *customtypes.JSONWithDefaultsValue[map[string]any],
+) {
+	AlignTitleDescriptionAndDataSourceFromPlan(planTitle, planDescription, stateTitle, stateDescription, planDataSourceJSON, stateDataSourceJSON)
+	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetricJSON, stateMetricJSON)
+}
+
 // PreservePlanJSONWithDefaultsIfSemanticallyEqual replaces *state with plan when both are known
 // and StringSemanticEquals reports them equal. Lets practitioners keep their plan formatting
 // when only whitespace or default-key ordering differs from the API response.

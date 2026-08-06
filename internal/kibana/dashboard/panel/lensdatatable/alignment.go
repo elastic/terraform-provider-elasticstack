@@ -34,8 +34,7 @@ func alignDatatableNoESQLStateFromPlan(plan, state *models.DatatableNoESQLConfig
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
+	lenscommon.AlignTitleDescriptionAndDataSourceFromPlan(plan.Title, plan.Description, &state.Title, &state.Description, plan.DataSourceJSON, &state.DataSourceJSON)
 	// Kibana re-emits metric/row/split_by config_json with default keys (color,
 	// empty_as_null, format.{decimals,compact}). Treat as semantically equal.
 	n := min(len(plan.Metrics), len(state.Metrics))

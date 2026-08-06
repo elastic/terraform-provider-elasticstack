@@ -36,8 +36,7 @@ func alignPieConfigStateFromPlan(ctx context.Context, plan, state *models.PieCha
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
+	lenscommon.AlignTitleDescriptionAndDataSourceFromPlan(plan.Title, plan.Description, &state.Title, &state.Description, plan.DataSourceJSON, &state.DataSourceJSON)
 	// Kibana materializes label_position="outside" when the practitioner omits it.
 	lenscommon.PreserveNullStringIfStateEquals(plan.LabelPosition, &state.LabelPosition, "outside")
 	// Pie group_by/metrics config_json are re-emitted with default keys (color,

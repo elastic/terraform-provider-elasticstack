@@ -27,8 +27,7 @@ func alignMetricStateFromPlan(plan, state *models.MetricChartConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
+	lenscommon.AlignTitleDescriptionAndDataSourceFromPlan(plan.Title, plan.Description, &state.Title, &state.Description, plan.DataSourceJSON, &state.DataSourceJSON)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.BreakdownByJSON, &state.BreakdownByJSON, "rank_by")
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
