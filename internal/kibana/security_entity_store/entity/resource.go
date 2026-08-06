@@ -137,7 +137,7 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		return
 	}
 
-	r.KibanaSpaceImporter.SeedState(ctx, resp, req.ID, composite)
+	r.SeedState(ctx, resp, req.ID, composite)
 	if resp.Diagnostics.HasError() {
 		return
 	}
