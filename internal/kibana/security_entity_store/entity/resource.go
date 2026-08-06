@@ -117,26 +117,30 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	r.KibanaSpaceImporter.ImportState(ctx, req, resp)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var entityID types.String
-	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
-	idx := strings.Index(entityID.ValueString(), ":")
-	if idx <= 0 {
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	if diags.HasError() {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
-			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", entityID.ValueString()),
+			"Import ID must be in the format <space_id>/<entity_id>",
 		)
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), entityID.ValueString()[:idx])...)
+	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
+	// before writing any attributes so failed imports leave state untouched.
+	idx := strings.Index(composite.ResourceID, ":")
+	if idx <= 0 {
+		resp.Diagnostics.AddError(
+			"Invalid import ID",
+			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", composite.ResourceID),
+		)
+		return
+	}
+
+	r.KibanaSpaceImporter.SeedState(ctx, resp, req.ID, composite)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), composite.ResourceID[:idx])...)
 }

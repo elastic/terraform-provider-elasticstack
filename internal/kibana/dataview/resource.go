@@ -20,6 +20,7 @@ package dataview
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -60,7 +61,8 @@ func NewResource() resource.Resource {
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite := entitycore.ParseCompositeImportID(req, resp)
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -75,10 +77,14 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		return
 	}
 
+	// Align with schema default for space_id and keep id consistent with space_id.
+	spaceID := clients.EffectiveSpaceID(composite.ClusterID)
+	id := (&clients.CompositeID{ClusterID: spaceID, ResourceID: composite.ResourceID}).String()
+
 	stateModel := dataViewModel{
 		ResourceTimeoutsField: entitycore.ResourceTimeoutsField{Timeouts: timeoutsValue},
-		ID:                    types.StringValue(req.ID),
-		SpaceID:               types.StringValue(composite.ClusterID),
+		ID:                    types.StringValue(id),
+		SpaceID:               types.StringValue(spaceID),
 		Override:              types.BoolValue(false),
 		DataView:              types.ObjectUnknown(getDataViewAttrTypes(ctx)),
 		KibanaConnection:      providerschema.KibanaConnectionNullList(),

@@ -304,7 +304,7 @@ func TestKibanaSpaceImporter_requireSpaceID_errorsOnEmptySpaceSegment(t *testing
 
 // TestKibanaSpaceImporter_defaultSpaceID_fallsBackOnEmptySpaceSegment verifies
 // that DefaultSpaceID substitutes the configured space ID when the composite
-// ID's space segment is empty.
+// ID's space segment is empty, and rewrites id to the canonical form.
 func TestKibanaSpaceImporter_defaultSpaceID_fallsBackOnEmptySpaceSegment(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -319,8 +319,43 @@ func TestKibanaSpaceImporter_defaultSpaceID_fallsBackOnEmptySpaceSegment(t *test
 	r.ImportState(ctx, resource.ImportStateRequest{ID: "/my-rule-id"}, resp)
 	require.False(t, resp.Diagnostics.HasError())
 
-	var spaceID types.String
+	var id, spaceID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
 	require.False(t, resp.Diagnostics.HasError())
 	require.Equal(t, "default", spaceID.ValueString())
+	require.Equal(t, "default/my-rule-id", id.ValueString())
+}
+
+func TestKibanaSpaceImporter_requireAndDefaultSpaceID_mutuallyExclusive(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default then require", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			require.NotNil(t, recover())
+		}()
+		NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			DefaultSpaceID("default").
+			RequireSpaceID("summary", "detail")
+	})
+
+	t.Run("require then default", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			require.NotNil(t, recover())
+		}()
+		NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			RequireSpaceID("summary", "detail").
+			DefaultSpaceID("default")
+	})
+
+	t.Run("empty default", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			require.NotNil(t, recover())
+		}()
+		NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			DefaultSpaceID("")
+	})
 }

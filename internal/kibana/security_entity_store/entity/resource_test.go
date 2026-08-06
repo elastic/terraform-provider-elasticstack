@@ -145,13 +145,17 @@ func TestResource_importState_defaultsEmptySpaceSegment(t *testing.T) {
 	r.ImportState(ctx, resource.ImportStateRequest{ID: "/host:web-02"}, resp)
 	require.False(t, resp.Diagnostics.HasError())
 
-	var spaceID, entityID types.String
+	var id, spaceID, entityID, entityType types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_type"), &entityType)...)
 	require.False(t, resp.Diagnostics.HasError())
 
+	assert.Equal(t, clients.DefaultSpaceID+"/host:web-02", id.ValueString())
 	assert.Equal(t, clients.DefaultSpaceID, spaceID.ValueString())
 	assert.Equal(t, "host:web-02", entityID.ValueString())
+	assert.Equal(t, "host", entityType.ValueString())
 }
 
 func TestResource_importState_rejectsMissingEntityTypePrefix(t *testing.T) {
@@ -166,7 +170,12 @@ func TestResource_importState_rejectsMissingEntityTypePrefix(t *testing.T) {
 
 	r.ImportState(ctx, resource.ImportStateRequest{ID: "production/web-01"}, resp)
 	require.True(t, resp.Diagnostics.HasError())
+	assert.Equal(t, "Invalid import ID", resp.Diagnostics.Errors()[0].Summary())
 	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "type prefix")
+
+	var entityID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
+	assert.True(t, entityID.IsNull() || entityID.ValueString() == "")
 }
 
 func TestResource_importState_rejectsMissingSlash(t *testing.T) {
@@ -181,4 +190,6 @@ func TestResource_importState_rejectsMissingSlash(t *testing.T) {
 
 	r.ImportState(ctx, resource.ImportStateRequest{ID: "host-web-01"}, resp)
 	require.True(t, resp.Diagnostics.HasError())
+	assert.Equal(t, "Invalid import ID", resp.Diagnostics.Errors()[0].Summary())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "<space_id>/<entity_id>")
 }
