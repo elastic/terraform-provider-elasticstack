@@ -196,6 +196,39 @@ func TestNonEmptyStringPtr(t *testing.T) {
 	})
 }
 
+func TestPtrEqual(t *testing.T) {
+	t.Parallel()
+
+	t.Run("both nil returns true", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.PtrEqual[bool](nil, nil))
+		require.True(t, typeutils.PtrEqual[string](nil, nil))
+	})
+
+	t.Run("one nil returns false", func(t *testing.T) {
+		t.Parallel()
+		tr := true
+		require.False(t, typeutils.PtrEqual(&tr, nil))
+		require.False(t, typeutils.PtrEqual(nil, &tr))
+	})
+
+	t.Run("both non-nil compares values", func(t *testing.T) {
+		t.Parallel()
+		a, b := 1, 1
+		require.True(t, typeutils.PtrEqual(&a, &b))
+		c := 2
+		require.False(t, typeutils.PtrEqual(&a, &c))
+	})
+
+	t.Run("string pointers", func(t *testing.T) {
+		t.Parallel()
+		a, b := "hello", "hello"
+		require.True(t, typeutils.PtrEqual(&a, &b))
+		c := "world"
+		require.False(t, typeutils.PtrEqual(&a, &c))
+	})
+}
+
 func TestDerefOrElse(t *testing.T) {
 	t.Parallel()
 

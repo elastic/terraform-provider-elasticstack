@@ -100,6 +100,8 @@ func isDashboardOptionsDefaultSet(options *kbapi.KibanaHTTPAPIsKbnDashboardOptio
 		boolPtrEqualsOrOmitted(options.HidePanelBorders, false)
 }
 
+// boolPtrEqualsOrOmitted reports whether value equals expected, treating a nil value (an omitted
+// field) as matching any expected default.
 func boolPtrEqualsOrOmitted(value *bool, expected bool) bool {
 	if value == nil {
 		return true
@@ -108,5 +110,5 @@ func boolPtrEqualsOrOmitted(value *bool, expected bool) bool {
 }
 
 func boolPtrEquals(value *bool, expected bool) bool {
-	return value != nil && *value == expected
+	return typeutils.PtrEqual(value, &expected)
 }
