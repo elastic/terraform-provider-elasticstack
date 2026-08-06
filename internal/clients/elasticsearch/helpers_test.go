@@ -21,56 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestFormatDuration(t *testing.T) {
-	tests := []struct {
-		name     string
-		d        time.Duration
-		expected string
-	}{
-		{
-			name:     "zero duration",
-			d:        0,
-			expected: "0nanos",
-		},
-		{
-			name:     "sub-millisecond duration returns nanos",
-			d:        500 * time.Nanosecond,
-			expected: "500nanos",
-		},
-		{
-			name:     "exactly one millisecond",
-			d:        time.Millisecond,
-			expected: "1ms",
-		},
-		{
-			name:     "whole milliseconds",
-			d:        5000 * time.Millisecond,
-			expected: "5000ms",
-		},
-		{
-			name:     "one second",
-			d:        time.Second,
-			expected: "1000ms",
-		},
-		{
-			name:     "one minute",
-			d:        time.Minute,
-			expected: "60000ms",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, formatDuration(tc.d))
-		})
-	}
-}
 
 func TestIsNotFoundElasticsearchError(t *testing.T) {
 	tests := []struct {
@@ -120,4 +74,45 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 			assert.Equal(t, tc.expected, IsNotFoundElasticsearchError(tc.err))
 		})
 	}
+}
+
+func TestDiagsOrNotFound(t *testing.T) {
+	t.Run("nil error returns no diagnostics", func(t *testing.T) {
+		assert.False(t, DiagsOrNotFound(nil).HasError())
+	})
+
+	t.Run("404 error returns no diagnostics", func(t *testing.T) {
+		assert.False(t, DiagsOrNotFound(&types.ElasticsearchError{Status: 404}).HasError())
+	})
+
+	t.Run("other error is wrapped into diagnostics", func(t *testing.T) {
+		diags := DiagsOrNotFound(&types.ElasticsearchError{Status: 500})
+		assert.True(t, diags.HasError())
+	})
+}
+
+func TestCallOrNotFound(t *testing.T) {
+	t.Run("returns the result on success", func(t *testing.T) {
+		result, diags := CallOrNotFound(func() (string, error) {
+			return "value", nil
+		})
+		assert.False(t, diags.HasError())
+		assert.Equal(t, "value", result)
+	})
+
+	t.Run("returns zero value and no diagnostics on 404", func(t *testing.T) {
+		result, diags := CallOrNotFound(func() (string, error) {
+			return "ignored", &types.ElasticsearchError{Status: 404}
+		})
+		assert.False(t, diags.HasError())
+		assert.Empty(t, result)
+	})
+
+	t.Run("returns zero value and diagnostics on other errors", func(t *testing.T) {
+		result, diags := CallOrNotFound(func() (string, error) {
+			return "ignored", &types.ElasticsearchError{Status: 500}
+		})
+		assert.True(t, diags.HasError())
+		assert.Empty(t, result)
+	})
 }

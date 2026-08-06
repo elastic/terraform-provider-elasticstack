@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
@@ -91,10 +90,7 @@ func GetIndicesWithILMPolicy(ctx context.Context, apiClient *clients.Elasticsear
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to fetch ILM policy"); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to fetch ILM policy"); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -141,11 +137,5 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ilm.DeleteLifecycle(policyName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }

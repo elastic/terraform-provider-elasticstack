@@ -176,11 +176,9 @@ func TestPopulateFromAPI_environmentServerDefault_readPath(t *testing.T) {
 	})
 
 	t.Run("prior null API ENVIRONMENT_ALL stays null", func(t *testing.T) {
-		pm := &models.PanelModel{
-			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-				Environment: types.StringNull(),
-			},
-		}
+		// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never
+		// pre-populated with a value to merge against, only `prior` (the plan/state) carries intent.
+		pm := &models.PanelModel{}
 		prior := &models.PanelModel{
 			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 				Environment: types.StringNull(),
@@ -308,11 +306,9 @@ func TestPopulateFromAPI_environmentServerDefault_importPath(t *testing.T) {
 }
 
 func TestPopulateFromAPI_nullPreservation_scalars(t *testing.T) {
-	pm := &models.PanelModel{
-		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-			Environment: types.StringNull(),
-		},
-	}
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never pre-populated
+	// with a value to merge against, only `prior` (the plan/state) carries intent.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			Environment: types.StringNull(),
@@ -424,12 +420,9 @@ func TestPopulateFromAPI_filterSet_emptySetPreservedAcrossRead(t *testing.T) {
 
 func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
 	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
-	pm := &models.PanelModel{
-		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-			Environment: types.StringNull(),
-			TimeRange:   nil,
-		},
-	}
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never pre-populated
+	// with a value to merge against, only `prior` (the plan/state) carries intent.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			Environment: types.StringNull(),
@@ -451,6 +444,34 @@ func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
 
 	require.NotNil(t, pm.ApmServiceMapConfig)
 	assert.Nil(t, pm.ApmServiceMapConfig.TimeRange)
+}
+
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.ApmServiceMapConfig is nil, e.g. prior held a different
+// type's config), there is no null intent to honor and the config is rebuilt entirely from the
+// API rather than left nil.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	env := "production"
+	serviceName := "checkout"
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+		Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+			Environment: &env,
+			ServiceName: &serviceName,
+		},
+	}
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: types.StringValue("ml_anomaly_charts"),
+	}
+
+	diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	cfg := pm.ApmServiceMapConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	assert.Equal(t, "production", cfg.Environment.ValueString())
+	assert.Equal(t, "checkout", cfg.ServiceName.ValueString())
 }
 
 func Test_mapOrientationValidator_rejectsInvalidValue(t *testing.T) {

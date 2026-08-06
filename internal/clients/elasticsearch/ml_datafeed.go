@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -236,7 +237,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		AllowNoMatch(true)
 
 	if timeout > 0 {
-		req.Timeout(durationToMsString(timeout))
+		req.Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout))
 	}
 
 	_, err := req.Do(ctx)
@@ -265,7 +266,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	}
 
 	if timeout > 0 {
-		req.Timeout(durationToMsString(timeout))
+		req.Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout))
 	}
 
 	_, err := req.Do(ctx)

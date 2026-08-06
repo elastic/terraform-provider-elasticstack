@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -50,10 +51,10 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		call = call.WaitForActiveShards(params.WaitForActiveShards)
 	}
 	if params.MasterTimeout > 0 {
-		call = call.MasterTimeout(durationToMsString(params.MasterTimeout))
+		call = call.MasterTimeout(typeutils.DurationToElasticsearchTimeoutString(params.MasterTimeout))
 	}
 	if params.Timeout > 0 {
-		call = call.Timeout(durationToMsString(params.Timeout))
+		call = call.Timeout(typeutils.DurationToElasticsearchTimeoutString(params.Timeout))
 	}
 
 	// For date-math index names we must build the request manually and set
@@ -108,13 +109,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Delete(name).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }
 
 // GetIndex retrieves a single index by its concrete name.  The caller is responsible
@@ -136,14 +131,9 @@ func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 
 func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (map[string]types.IndexState, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return res, nil
+	return CallOrNotFound(func() (map[string]types.IndexState, error) {
+		return typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
+	})
 }
 
 func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, settings map[string]any) fwdiags.Diagnostics {

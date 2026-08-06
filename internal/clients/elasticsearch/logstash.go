@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -69,11 +68,7 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find logstash pipeline on cluster."); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to find logstash pipeline on cluster."); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -109,13 +104,6 @@ func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.Elasticsearc
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to delete logstash pipeline"); d.HasError() {
-		return d
-	}
-
-	return nil
+	_, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to delete logstash pipeline")
+	return d
 }

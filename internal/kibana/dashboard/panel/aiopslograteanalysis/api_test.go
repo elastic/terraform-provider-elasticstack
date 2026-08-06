@@ -138,16 +138,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 		},
 	}
 
-	pm := &models.PanelModel{
-		AiopsLogRateAnalysisConfig: &models.AiopsLogRateAnalysisConfigModel{
-			DataViewID:  stringVal("logs-*"),
-			Title:       stringNull(),
-			Description: stringNull(),
-			HideTitle:   boolNull(),
-			HideBorder:  boolNull(),
-			TimeRange:   nil,
-		},
-	}
+	pm := &models.PanelModel{}
 
 	diags := aiopslograteanalysis.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
@@ -184,8 +175,10 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
-// TestPopulateFromAPI_typeChangeRecovery verifies the type-change path (pm has no config but
-// prior does) initialises config from the API including TimeRange.
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.AiopsLogRateAnalysisConfig is nil, e.g. prior held a
+// different type's config), there is no null intent to honor and the config is rebuilt entirely
+// from the API, including TimeRange.
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	t.Parallel()
 
@@ -198,13 +191,8 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	}
 
 	pm := &models.PanelModel{}
-	// Prior has known Title so that null-preservation doesn't wipe it out after
-	// the type-change init falls through to the merge path.
 	prior := &models.PanelModel{
-		AiopsLogRateAnalysisConfig: &models.AiopsLogRateAnalysisConfigModel{
-			DataViewID: stringVal("old-dv"),
-			Title:      stringVal("old-title"),
-		},
+		Type: stringVal("ml_anomaly_charts"),
 	}
 
 	diags := aiopslograteanalysis.PopulateFromAPI(pm, prior, api)
@@ -213,7 +201,6 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	cfg := pm.AiopsLogRateAnalysisConfig
 	require.NotNil(t, cfg, "type-change path should populate config from API")
 	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
-	// Title was known in prior so it gets updated from the API.
 	require.Equal(t, "Recovered title", cfg.Title.ValueString())
 	require.NotNil(t, cfg.TimeRange)
 	require.Equal(t, from, cfg.TimeRange.From.ValueString())

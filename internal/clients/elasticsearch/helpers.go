@@ -21,11 +21,11 @@ import (
 	"errors"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // DateMathIndexNameRe matches plain Elasticsearch date math index name expressions.
@@ -69,20 +69,26 @@ func IsNotFoundElasticsearchError(err error) bool {
 	return esErr.Status == 404
 }
 
-// durationToMsString formats a time.Duration as a millisecond string (e.g. "5000ms")
-// for use with typed API builder methods that accept a string timeout.
-func durationToMsString(d time.Duration) string {
-	return strconv.FormatInt(d.Milliseconds(), 10) + "ms"
+// DiagsOrNotFound converts err into framework diagnostics, treating an
+// Elasticsearch 404 as a successful no-op rather than an error. Use this for
+// typed-client calls made via .Do(ctx) whose return type is only
+// fwdiags.Diagnostics (e.g. delete operations).
+func DiagsOrNotFound(err error) fwdiags.Diagnostics {
+	if err == nil || IsNotFoundElasticsearchError(err) {
+		return nil
+	}
+	return diagutil.FrameworkDiagFromError(err)
 }
 
-// formatDuration converts a time.Duration to an Elasticsearch timeout string.
-// Sub-millisecond values are expressed in nanoseconds (e.g. "500nanos"); all
-// other values are expressed in milliseconds (e.g. "5000ms"), matching the
-// legacy esapi behavior. Use durationToMsString when sub-ms precision is not
-// needed.
-func formatDuration(d time.Duration) string {
-	if d < time.Millisecond {
-		return strconv.FormatInt(int64(d), 10) + "nanos"
+// CallOrNotFound runs fn and applies the standard 404-as-not-found convention
+// for typed-client calls made via .Do(ctx): a 404 is swallowed into a zero
+// value with no error (signalling "does not exist" to the caller), and any
+// other error is wrapped into framework diagnostics.
+func CallOrNotFound[T any](fn func() (T, error)) (T, fwdiags.Diagnostics) {
+	result, err := fn()
+	if err != nil {
+		var zero T
+		return zero, DiagsOrNotFound(err)
 	}
-	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
+	return result, nil
 }

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/snapshot/getrepository"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -141,10 +140,7 @@ func GetSnapshotRepository(ctx context.Context, apiClient *clients.Elasticsearch
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get snapshot repository"); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to get snapshot repository"); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -268,11 +264,5 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Snapshot.DeleteRepository(name).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DiagsOrNotFound(err)
 }
