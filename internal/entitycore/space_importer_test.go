@@ -256,3 +256,106 @@ func TestKibanaSpaceImporter_multipleResourceIDFields(t *testing.T) {
 	require.Equal(t, "shared-id", ruleID.ValueString())
 	require.Equal(t, "shared-id", extraID.ValueString())
 }
+
+// TestKibanaSpaceImporter_emptySpaceSegment_defaultsToEmptyString verifies
+// that, absent RequireSpaceID/DefaultSpaceID, a composite ID with an empty
+// space segment (e.g. "/my-id") sets spaceIDField to an empty string rather
+// than erroring.
+func TestKibanaSpaceImporter_emptySpaceSegment_defaultsToEmptyString(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := &fakeKibanaSpaceResource{
+		KibanaSpaceImporter: NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")),
+	}
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "/my-rule-id"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var spaceID, ruleID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("rule_id"), &ruleID)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Empty(t, spaceID.ValueString())
+	require.Equal(t, "my-rule-id", ruleID.ValueString())
+}
+
+// TestKibanaSpaceImporter_requireSpaceID_errorsOnEmptySpaceSegment verifies
+// that RequireSpaceID turns an empty space segment into an error diagnostic
+// using the configured summary/detail.
+func TestKibanaSpaceImporter_requireSpaceID_errorsOnEmptySpaceSegment(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := &fakeKibanaSpaceResource{
+		KibanaSpaceImporter: NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			RequireSpaceID("Wrong resource ID.", "Import ID must include a Kibana space in the form `<space_id>/<rule_id>`."),
+	}
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "/my-rule-id"}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	require.Equal(t, "Wrong resource ID.", resp.Diagnostics.Errors()[0].Summary())
+	require.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "<space_id>/<rule_id>")
+}
+
+// TestKibanaSpaceImporter_defaultSpaceID_fallsBackOnEmptySpaceSegment verifies
+// that DefaultSpaceID substitutes the configured space ID when the composite
+// ID's space segment is empty, and rewrites id to the canonical form.
+func TestKibanaSpaceImporter_defaultSpaceID_fallsBackOnEmptySpaceSegment(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	r := &fakeKibanaSpaceResource{
+		KibanaSpaceImporter: NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			DefaultSpaceID("default"),
+	}
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "/my-rule-id"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, "default", spaceID.ValueString())
+	require.Equal(t, "default/my-rule-id", id.ValueString())
+}
+
+func TestKibanaSpaceImporter_requireAndDefaultSpaceID_mutuallyExclusive(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default then require", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			require.NotNil(t, recover())
+		}()
+		NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			DefaultSpaceID("default").
+			RequireSpaceID("summary", "detail")
+	})
+
+	t.Run("require then default", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			require.NotNil(t, recover())
+		}()
+		NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			RequireSpaceID("summary", "detail").
+			DefaultSpaceID("default")
+	})
+
+	t.Run("empty default", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			require.NotNil(t, recover())
+		}()
+		NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")).
+			DefaultSpaceID("")
+	})
+}

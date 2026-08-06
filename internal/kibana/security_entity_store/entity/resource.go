@@ -39,6 +39,7 @@ var (
 
 type Resource struct {
 	*entitycore.KibanaResource[tfModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -54,6 +55,9 @@ func newResource() *Resource {
 				Delete: deleteEntity,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(
+			path.Root("id"), path.Root("space_id"), path.Root("entity_id"),
+		).DefaultSpaceID(clients.DefaultSpaceID),
 	}
 }
 
@@ -121,21 +125,22 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		)
 		return
 	}
-	spaceID := clients.EffectiveSpaceID(composite.ClusterID)
-	entityID := composite.ResourceID
+
 	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
-	entityType := ""
-	if idx := strings.Index(entityID, ":"); idx > 0 {
-		entityType = entityID[:idx]
-	} else {
+	// before writing any attributes so failed imports leave state untouched.
+	idx := strings.Index(composite.ResourceID, ":")
+	if idx <= 0 {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
-			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", entityID),
+			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", composite.ResourceID),
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_id"), entityID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), entityType)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+
+	r.SeedState(ctx, resp, req.ID, composite)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), composite.ResourceID[:idx])...)
 }
