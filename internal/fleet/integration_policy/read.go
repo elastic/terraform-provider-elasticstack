@@ -21,8 +21,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -45,22 +47,16 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 
 	policyID := stateModel.PolicyID.ValueString()
 
-	// Read the existing spaces from state to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Query using the operational space from STATE
-	policy, diags := fleet.GetPackagePolicy(ctx, fleetClient, policyID, spaceID)
-
+	policy, spaceID, removed, diags := fleetutils.ReadSpaceScopedPolicy(ctx, req.State, func(spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+		return fleet.GetPackagePolicy(ctx, fleetClient, policyID, spaceID)
+	})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if policy == nil {
+	if removed {
 		resp.State.RemoveResource(ctx)
 		return
 	}

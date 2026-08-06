@@ -22,6 +22,7 @@ import (
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -45,15 +46,10 @@ func (r *elasticDefendIntegrationPolicyResource) Delete(ctx context.Context, req
 	policyID := stateModel.PolicyID.ValueString()
 	force := stateModel.Force.ValueBool()
 
-	// Use the operational space from STATE to determine where to delete
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Re-use the generic DeletePackagePolicy helper since delete doesn't need
-	// the typed input format.
-	diags = fleetclient.DeletePackagePolicy(ctx, fleetClient, policyID, spaceID, force)
+	// Use the operational space from STATE to determine where to delete. Re-use the generic
+	// DeletePackagePolicy helper since delete doesn't need the typed input format.
+	diags = fleetutils.DeleteSpaceScopedPolicy(ctx, req.State, func(spaceID string) diag.Diagnostics {
+		return fleetclient.DeletePackagePolicy(ctx, fleetClient, policyID, spaceID, force)
+	})
 	resp.Diagnostics.Append(diags...)
 }

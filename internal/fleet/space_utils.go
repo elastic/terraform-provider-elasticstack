@@ -86,3 +86,40 @@ func GetOperationalSpaceFromState(ctx context.Context, state tfsdk.State) (strin
 	// This is where the resource currently exists in the API
 	return spaceIDs[0], nil
 }
+
+// ReadSpaceScopedPolicy resolves the operational space from state and invokes fetch to
+// retrieve a space-scoped Fleet package policy in that space. It reports whether the caller
+// should remove the resource from state (fetch returned a nil policy, i.e. not found).
+//
+// This centralizes the "resolve operational space from state, then perform a space-scoped
+// fetch, then treat a nil result as not-found" idiom shared by space-scoped Fleet resources.
+func ReadSpaceScopedPolicy[T any](ctx context.Context, state tfsdk.State, fetch func(spaceID string) (*T, diag.Diagnostics)) (policy *T, spaceID string, removed bool, diags diag.Diagnostics) {
+	spaceID, diags = GetOperationalSpaceFromState(ctx, state)
+	if diags.HasError() {
+		return nil, spaceID, false, diags
+	}
+
+	policy, fetchDiags := fetch(spaceID)
+	diags.Append(fetchDiags...)
+	if diags.HasError() {
+		return nil, spaceID, false, diags
+	}
+
+	if policy == nil {
+		return nil, spaceID, true, diags
+	}
+
+	return policy, spaceID, false, diags
+}
+
+// DeleteSpaceScopedPolicy resolves the operational space from state and invokes remove to
+// delete a space-scoped Fleet package policy in that space.
+func DeleteSpaceScopedPolicy(ctx context.Context, state tfsdk.State, remove func(spaceID string) diag.Diagnostics) diag.Diagnostics {
+	spaceID, diags := GetOperationalSpaceFromState(ctx, state)
+	if diags.HasError() {
+		return diags
+	}
+
+	diags.Append(remove(spaceID)...)
+	return diags
+}

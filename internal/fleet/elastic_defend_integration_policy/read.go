@@ -20,8 +20,10 @@ package elasticdefendintegrationpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -45,19 +47,15 @@ func (r *elasticDefendIntegrationPolicyResource) Read(ctx context.Context, req r
 	policyID := stateModel.PolicyID.ValueString()
 
 	// Use the operational space from STATE to determine where to query
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	policy, _, removed, diags := fleetutils.ReadSpaceScopedPolicy(ctx, req.State, func(spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+		return fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
+	})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	policy, diags := fleetclient.GetDefendPackagePolicy(ctx, fleetClient, policyID, spaceID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if policy == nil {
+	if removed {
 		resp.State.RemoveResource(ctx)
 		return
 	}

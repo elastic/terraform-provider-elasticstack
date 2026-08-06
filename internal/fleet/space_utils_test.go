@@ -24,9 +24,48 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
+
+// spaceIDsStateModel is a minimal state model used to build fixtures for
+// helpers that read the operational space from state.
+type spaceIDsStateModel struct {
+	SpaceIDs types.Set `tfsdk:"space_ids"`
+}
+
+// newStateWithSpaceIDs builds a minimal tfsdk.State with a `space_ids` set
+// attribute, for exercising helpers that read the operational space from state.
+func newStateWithSpaceIDs(t *testing.T, spaceIDs []string) tfsdk.State {
+	t.Helper()
+
+	sch := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"space_ids": schema.SetAttribute{ElementType: types.StringType, Optional: true},
+		},
+	}
+
+	var spaceIDsSet types.Set
+	if spaceIDs == nil {
+		spaceIDsSet = types.SetNull(types.StringType)
+	} else {
+		var diags diag.Diagnostics
+		spaceIDsSet = typeutils.SetValueFrom(t.Context(), spaceIDs, basetypes.StringType{}, path.Root("space_ids"), &diags)
+		if diags.HasError() {
+			t.Fatalf("build space_ids set: %v", diags)
+		}
+	}
+
+	state := tfsdk.State{Schema: sch}
+	diags := state.Set(t.Context(), &spaceIDsStateModel{SpaceIDs: spaceIDsSet})
+	if diags.HasError() {
+		t.Fatalf("set state: %v", diags)
+	}
+
+	return state
+}
 
 // TestSpaceIDFromSet tests the helper that extracts the create-time space from a space_ids set.
 func TestSpaceIDFromSet(t *testing.T) {
@@ -173,4 +212,108 @@ func TestGetOperationalSpaceFromState(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestReadSpaceScopedPolicy tests the shared "resolve operational space, then fetch,
+// then treat nil as not-found" helper used by space-scoped Fleet resource Read methods.
+func TestReadSpaceScopedPolicy(t *testing.T) {
+	type policy struct {
+		ID string
+	}
+
+	t.Run("found policy returns it with the resolved space and removed=false", func(t *testing.T) {
+		state := newStateWithSpaceIDs(t, []string{"custom-space"})
+
+		var gotSpaceID string
+		result, spaceID, removed, diags := ReadSpaceScopedPolicy(t.Context(), state, func(spaceID string) (*policy, diag.Diagnostics) {
+			gotSpaceID = spaceID
+			return &policy{ID: "policy-1"}, nil
+		})
+
+		if diags.HasError() {
+			t.Fatalf("unexpected diagnostics: %v", diags)
+		}
+		if removed {
+			t.Fatalf("expected removed=false, got true")
+		}
+		if spaceID != "custom-space" || gotSpaceID != "custom-space" {
+			t.Fatalf("expected spaceID %q, got resolved=%q passed=%q", "custom-space", spaceID, gotSpaceID)
+		}
+		if result == nil || result.ID != "policy-1" {
+			t.Fatalf("expected policy-1, got %+v", result)
+		}
+	})
+
+	t.Run("nil policy from fetch reports removed=true", func(t *testing.T) {
+		state := newStateWithSpaceIDs(t, nil)
+
+		result, _, removed, diags := ReadSpaceScopedPolicy(t.Context(), state, func(_ string) (*policy, diag.Diagnostics) {
+			return nil, nil
+		})
+
+		if diags.HasError() {
+			t.Fatalf("unexpected diagnostics: %v", diags)
+		}
+		if !removed {
+			t.Fatalf("expected removed=true, got false")
+		}
+		if result != nil {
+			t.Fatalf("expected nil policy, got %+v", result)
+		}
+	})
+
+	t.Run("fetch error is propagated without removing the resource", func(t *testing.T) {
+		state := newStateWithSpaceIDs(t, nil)
+
+		result, _, removed, diags := ReadSpaceScopedPolicy(t.Context(), state, func(_ string) (*policy, diag.Diagnostics) {
+			var fetchDiags diag.Diagnostics
+			fetchDiags.AddError("fetch failed", "boom")
+			return nil, fetchDiags
+		})
+
+		if !diags.HasError() {
+			t.Fatalf("expected diagnostics error to be propagated")
+		}
+		if removed {
+			t.Fatalf("expected removed=false on fetch error, got true")
+		}
+		if result != nil {
+			t.Fatalf("expected nil policy on fetch error, got %+v", result)
+		}
+	})
+}
+
+// TestDeleteSpaceScopedPolicy tests the shared "resolve operational space, then delete"
+// helper used by space-scoped Fleet resource Delete methods.
+func TestDeleteSpaceScopedPolicy(t *testing.T) {
+	t.Run("resolves the space from state and invokes remove", func(t *testing.T) {
+		state := newStateWithSpaceIDs(t, []string{"space-a", "default"})
+
+		var gotSpaceID string
+		diags := DeleteSpaceScopedPolicy(t.Context(), state, func(spaceID string) diag.Diagnostics {
+			gotSpaceID = spaceID
+			return nil
+		})
+
+		if diags.HasError() {
+			t.Fatalf("unexpected diagnostics: %v", diags)
+		}
+		if gotSpaceID != "space-a" {
+			t.Fatalf("expected remove to be called with %q, got %q", "space-a", gotSpaceID)
+		}
+	})
+
+	t.Run("delete error is propagated", func(t *testing.T) {
+		state := newStateWithSpaceIDs(t, nil)
+
+		diags := DeleteSpaceScopedPolicy(t.Context(), state, func(_ string) diag.Diagnostics {
+			var deleteDiags diag.Diagnostics
+			deleteDiags.AddError("delete failed", "boom")
+			return deleteDiags
+		})
+
+		if !diags.HasError() {
+			t.Fatalf("expected diagnostics error to be propagated")
+		}
+	})
 }
