@@ -152,4 +152,44 @@ func TestCountNestedAttrs(t *testing.T) {
 		require.Equal(t, 0, unknownCount)
 		require.Empty(t, setNames)
 	})
+
+	t.Run("isSet is not invoked for null or unknown values", func(t *testing.T) {
+		calls := 0
+		isSet := func(attr.Value) bool { calls++; return true }
+		attrs := map[string]attr.Value{
+			"a": types.StringNull(),
+			"b": types.StringUnknown(),
+		}
+
+		setCount, unknownCount, setNames := validators.CountNestedAttrs(attrs, []string{"a", "b"}, isSet)
+
+		require.Equal(t, 0, calls, "isSet must not run for null or unknown values")
+		require.Equal(t, 0, setCount)
+		require.Equal(t, 1, unknownCount)
+		require.Empty(t, setNames)
+	})
+
+	t.Run("nil value in attribute map is skipped", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"a": types.StringValue("x"),
+			"b": nil,
+		}
+
+		setCount, unknownCount, setNames := validators.CountNestedAttrs(attrs, []string{"a", "b"}, isAlwaysSet)
+
+		require.Equal(t, 1, setCount)
+		require.Equal(t, 0, unknownCount)
+		require.Equal(t, []string{"a"}, setNames)
+	})
+
+	t.Run("setNames follows attrNames order", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"a": types.StringValue("x"),
+			"b": types.StringValue("y"),
+		}
+
+		_, _, setNames := validators.CountNestedAttrs(attrs, []string{"b", "a"}, isAlwaysSet)
+
+		require.Equal(t, []string{"b", "a"}, setNames)
+	})
 }

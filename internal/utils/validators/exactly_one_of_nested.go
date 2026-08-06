@@ -28,6 +28,11 @@ import (
 type ExactlyOneOfNestedAttrsOpts struct {
 	// AttrNames lists the mutually exclusive nested attribute names; must contain at least two.
 	AttrNames []string
+	// IsSet reports whether a known, non-null attribute value counts as set. It is only
+	// invoked for values already known to be non-null and non-unknown, so callers only need
+	// to decide whether a definite value counts as set (e.g. to treat an empty list as
+	// unset). A nil IsSet means every known, non-null value counts as set.
+	IsSet func(attr.Value) bool
 	// Summary is the error summary used for both "missing" and "too many" diagnostics.
 	Summary string
 	// MissingDetail is the diagnostic detail when zero of AttrNames are set.
@@ -65,7 +70,7 @@ func (v exactlyOneOfNestedAttrsValidator) ValidateObject(_ context.Context, req 
 		return
 	}
 	attrs := req.ConfigValue.Attributes()
-	setCount, unknownCount, _ := CountNestedAttrs(attrs, v.opts.AttrNames, func(attr.Value) bool { return true })
+	setCount, unknownCount, _ := CountNestedAttrs(attrs, v.opts.AttrNames, v.isSet())
 	if setCount > 1 {
 		resp.Diagnostics.AddAttributeError(req.Path, v.opts.Summary, v.opts.TooManyDetail)
 		return
@@ -102,4 +107,13 @@ func CountNestedAttrs(attrs map[string]attr.Value, attrNames []string, isSet fun
 		}
 	}
 	return setCount, unknownCount, setNames
+}
+
+// isSet returns the configured IsSet predicate, defaulting to one that counts every known,
+// non-null value as set.
+func (v exactlyOneOfNestedAttrsValidator) isSet() func(attr.Value) bool {
+	if v.opts.IsSet != nil {
+		return v.opts.IsSet
+	}
+	return func(attr.Value) bool { return true }
 }

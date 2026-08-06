@@ -71,20 +71,14 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 	}
 }
 
+// configurationValueBranchIsSet reports whether a configuration-value branch attribute is set.
+// CountNestedAttrs only invokes it for known, non-null values, so the predicate only needs
+// to decide whether a definite value counts as set; unexpected attribute types are treated
+// as unset to avoid hiding schema drift.
 func configurationValueBranchIsSet(val attr.Value) bool {
-	if val == nil || val.IsNull() || val.IsUnknown() {
-		return false
-	}
-
-	switch v := val.(type) {
-	case types.String:
+	switch val.(type) {
+	case types.String, types.Number, types.Bool, jsontypes.Normalized:
 		return true
-	case types.Number:
-		return true
-	case types.Bool:
-		return true
-	case jsontypes.Normalized:
-		return !v.IsNull() && !v.IsUnknown()
 	default:
 		// Unexpected attribute types are treated as unset to avoid hiding schema drift.
 		return false

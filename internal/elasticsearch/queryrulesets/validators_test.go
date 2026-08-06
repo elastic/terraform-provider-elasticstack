@@ -112,6 +112,81 @@ func TestQueryRuleActionsValidator_requiresExactlyOne(t *testing.T) {
 	if !resp.Diagnostics.HasError() {
 		t.Fatal("expected validation error when neither ids nor docs is set")
 	}
+	if !containsDiagnosticSummary(resp.Diagnostics, "Invalid actions configuration") {
+		t.Fatalf("expected error summary, got %v", resp.Diagnostics)
+	}
+	if !containsDiagnosticSummary(resp.Diagnostics, "Exactly one of `ids` or `docs` must be set in `actions`.") {
+		t.Fatalf("expected missing detail, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleActionsValidator_rejectsEmptyIDsList(t *testing.T) {
+	t.Parallel()
+
+	actionsObj, diags := types.ObjectValue(
+		queryRuleActionsModelAttrTypes(),
+		map[string]attr.Value{
+			"ids":  types.ListValueMust(types.StringType, []attr.Value{}),
+			"docs": types.ListNull(types.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}),
+		},
+	)
+	if diags.HasError() {
+		t.Fatalf("building actions object: %v", diags)
+	}
+
+	var resp validator.ObjectResponse
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
+		Path:        path.Root("actions"),
+		ConfigValue: actionsObj,
+	}, &resp)
+
+	if !resp.Diagnostics.HasError() {
+		t.Fatal("expected validation error when ids is an empty list (empty list must count as unset)")
+	}
+	if !containsDiagnosticSummary(resp.Diagnostics, "Exactly one of `ids` or `docs` must be set in `actions`.") {
+		t.Fatalf("expected missing detail, got %v", resp.Diagnostics)
+	}
+}
+
+func TestQueryRuleActionsValidator_acceptsDocsWhenIDsListEmpty(t *testing.T) {
+	t.Parallel()
+
+	docObj, docDiags := types.ObjectValue(
+		queryRuleActionDocModelAttrTypes(),
+		map[string]attr.Value{
+			"_index": types.StringValue("my-index"),
+			"_id":    types.StringValue("42"),
+		},
+	)
+	if docDiags.HasError() {
+		t.Fatalf("building doc object: %v", docDiags)
+	}
+
+	docs, listDiags := types.ListValue(types.ObjectType{AttrTypes: queryRuleActionDocModelAttrTypes()}, []attr.Value{docObj})
+	if listDiags.HasError() {
+		t.Fatalf("building docs list: %v", listDiags)
+	}
+
+	actionsObj, objDiags := types.ObjectValue(
+		queryRuleActionsModelAttrTypes(),
+		map[string]attr.Value{
+			"ids":  types.ListValueMust(types.StringType, []attr.Value{}),
+			"docs": docs,
+		},
+	)
+	if objDiags.HasError() {
+		t.Fatalf("building actions object: %v", objDiags)
+	}
+
+	var resp validator.ObjectResponse
+	queryRuleActionsValidator().ValidateObject(context.Background(), validator.ObjectRequest{
+		Path:        path.Root("actions"),
+		ConfigValue: actionsObj,
+	}, &resp)
+
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("expected no error when ids is empty and docs is set, got %v", resp.Diagnostics)
+	}
 }
 
 func TestQueryRuleActionsValidator_acceptsOnlyIDs(t *testing.T) {
@@ -228,6 +303,9 @@ func TestQueryRuleActionsValidator_rejectsBothIDsAndDocs(t *testing.T) {
 
 	if !resp.Diagnostics.HasError() {
 		t.Fatal("expected validation error when both ids and docs are set")
+	}
+	if !containsDiagnosticSummary(resp.Diagnostics, "both cannot be set") {
+		t.Fatalf("expected too-many detail, got %v", resp.Diagnostics)
 	}
 }
 

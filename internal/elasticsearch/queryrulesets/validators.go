@@ -35,7 +35,17 @@ import (
 // one of `ids` or `docs` being set on a query rule's `actions` block.
 func queryRuleActionsValidator() validator.Object {
 	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{queryRuleActionsIDsAttrName, queryRuleActionsDocsAttrName},
+		AttrNames: []string{queryRuleActionsIDsAttrName, queryRuleActionsDocsAttrName},
+		// ids and docs are both list-typed; an empty known list (e.g. `ids = []`)
+		// must count as unset to match the prior hand-rolled validator's
+		// `len(list.Elements()) > 0` rule. Non-list attribute types are treated as set.
+		IsSet: func(v attr.Value) bool {
+			list, ok := v.(types.List)
+			if !ok {
+				return true
+			}
+			return len(list.Elements()) > 0
+		},
 		Summary:       "Invalid actions configuration",
 		MissingDetail: "Exactly one of `ids` or `docs` must be set in `actions`.",
 		TooManyDetail: "Exactly one of `ids` or `docs` must be set in `actions`; both cannot be set.",
