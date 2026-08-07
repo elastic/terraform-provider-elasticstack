@@ -53,8 +53,8 @@
 
 ## 4. Spec and validation
 
-- [ ] 4.1 Confirm the `openspec/changes/slo-error-budget-null-preservation-fix/specs/kibana-dashboard/spec.md`
+- [x] 4.1 Confirm the `openspec/changes/slo-error-budget-null-preservation-fix/specs/kibana-dashboard/spec.md`
       delta in this change directory accurately reflects the implemented behavior once 1-3 are done
       (update wording if the implementation deviates from what is currently drafted).
-- [ ] 4.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate
+- [x] 4.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate
       slo-error-budget-null-preservation-fix --type change` and resolve any reported issues.
