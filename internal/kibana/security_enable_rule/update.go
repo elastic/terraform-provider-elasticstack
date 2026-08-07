@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -62,7 +63,7 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 		model.DisableOnDestroy = types.BoolValue(true)
 	}
 
-	model.ID = types.StringValue(fmt.Sprintf("%s/%s:%s", spaceID, key, value))
+	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: fmt.Sprintf("%s:%s", key, value)}).String())
 
 	diags.Append(kibanaoapi.EnableRulesByTag(ctx, client, spaceID, key, value)...)
 	if diags.HasError() {
