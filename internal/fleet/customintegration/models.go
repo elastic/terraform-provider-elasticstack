@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,7 +53,7 @@ func (m customIntegrationModel) GetID() types.String {
 		return m.ID
 	}
 	spaceID := m.GetSpaceID().ValueString()
-	return types.StringValue(fmt.Sprintf("%s/%s", spaceID, rawID))
+	return types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: rawID}).String())
 }
 
 func (m customIntegrationModel) GetResourceID() types.String {
