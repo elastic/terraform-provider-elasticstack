@@ -237,6 +237,47 @@ func Test_sloInstanceID_null_preservation(t *testing.T) {
 	assert.True(t, pm.SloOverviewConfig.Single.SloInstanceID.IsNull())
 }
 
+func Test_sloInstanceID_unconfigured_prior_does_not_adopt_concrete_api_value(t *testing.T) {
+	instanceID := "instance-drift"
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode:  kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
+		SloId:         "slo-999",
+		SloInstanceId: &instanceID,
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid: struct {
+			H *float32 `json:"h,omitempty"`
+			W *float32 `json:"w,omitempty"`
+			X float32  `json:"x"`
+			Y float32  `json:"y"`
+		}{X: 0, Y: 0},
+		Type: kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
+				SloID:         types.StringValue("slo-999"),
+				SloInstanceID: types.StringNull(),
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	*pm = *tfPanel
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig.Single)
+	assert.True(t, pm.SloOverviewConfig.Single.SloInstanceID.IsNull(),
+		"REQ-009: an unconfigured slo_instance_id must not adopt drift from a concrete API value")
+}
+
 func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 	instanceID := "instance-1"
 	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{

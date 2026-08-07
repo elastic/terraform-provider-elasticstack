@@ -76,27 +76,14 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	// optional field the plan/state had not set (REQ-009 null-preservation).
 	existing := sloBurnRateConfigFromAPIImport(apiConfig)
 	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, prior.SloBurnRateConfig.Drilldowns)
-	// sloBurnRateConfigFromAPIImport always normalizes the API's "*" (all-instances) sentinel to
-	// null, which is the right default when there is no prior value to consult (creation/import).
-	// On an update, a practitioner who explicitly set slo_instance_id = "*" must see it round-trip
-	// as "*" rather than be silently nulled, so recompute it from the raw API value using prior
-	// knowledge instead of the unconditionally-normalized import value.
-	existing.SloInstanceID = sloBurnRateInstanceIDFromAPI(apiConfig.SloInstanceId, prior.SloBurnRateConfig.SloInstanceID)
+	// sloBurnRateConfigFromAPIImport computes slo_instance_id assuming there is no prior value to
+	// consult (creation/import). On an update there is a prior value, so recompute it using that
+	// knowledge instead: this is the only way a practitioner who explicitly set slo_instance_id =
+	// "*" sees it round-trip as "*" rather than be silently nulled.
+	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, true, prior.SloBurnRateConfig.SloInstanceID)
 	sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
 	pm.SloBurnRateConfig = existing
 	return nil
-}
-
-// sloBurnRateInstanceIDFromAPI computes slo_instance_id for a same-type update: if the prior state
-// never had a known value (practitioner omitted it), the field stays null regardless of what the
-// API echoes back (the API's "*" all-instances sentinel has no meaningful null-free TF value).
-// Otherwise the practitioner is explicitly managing this field, so it round-trips the raw API value
-// (including "*") without the import path's blanket normalization.
-func sloBurnRateInstanceIDFromAPI(api *string, prior types.String) types.String {
-	if !typeutils.IsKnown(prior) {
-		return types.StringNull()
-	}
-	return types.StringPointerValue(api)
 }
 
 func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) *models.SloBurnRateConfigModel {
@@ -104,12 +91,7 @@ func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmb
 		SloID:    types.StringValue(apiConfig.SloId),
 		Duration: types.StringValue(apiConfig.Duration),
 	}
-	// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
-	if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-		cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-	} else {
-		cfg.SloInstanceID = types.StringNull()
-	}
+	cfg.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, false, types.StringNull())
 	cfg.Title = types.StringPointerValue(apiConfig.Title)
 	cfg.Description = types.StringPointerValue(apiConfig.Description)
 	cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
@@ -122,7 +104,7 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	if prior == nil || existing == nil {
 		return
 	}
-	panelkit.NullPreserveStringFromPrior(prior.SloInstanceID, &existing.SloInstanceID)
+	// SloInstanceID's null intent is already applied by panelkit.PreserveSloInstanceID above.
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
