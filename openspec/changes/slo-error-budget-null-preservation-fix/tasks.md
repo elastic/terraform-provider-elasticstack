@@ -37,19 +37,19 @@
 
 ## 3. Acceptance test coverage
 
-- [ ] 3.1 Add acceptance-test fixtures under
+- [x] 3.1 Add acceptance-test fixtures under
       `internal/kibana/dashboard/panel/sloerrorbudget/testdata/` (new test case, e.g.
       `TestAccResourceDashboardSloErrorBudgetWithDisplayFields`) whose `main.tf` sets `title`,
       `description`, `hide_title`, and `hide_border` inside `slo_error_budget_config` alongside the
       required `slo_id`.
-- [ ] 3.2 Add the corresponding `TestAcc...` function in
+- [x] 3.2 Add the corresponding `TestAcc...` function in
       `internal/kibana/dashboard/panel/sloerrorbudget/acc_test.go`, following the existing
       `TestAccResourceDashboardSloErrorBudgetMinimal` / `...WithDrilldowns` structure: apply, assert
       state matches configuration, then run a subsequent plan/apply step and assert no diff (no
       "Provider produced inconsistent result after apply").
-- [ ] 3.3 Do not run this acceptance test in this proposal-authoring change (requires a live Kibana
-      stack and `TF_ACC=1`); leave execution to the implementation change that consumes this
-      proposal.
+- [x] 3.3 Acceptance test written; not executed here — Elastic stack was not available on the
+      worktree ports from `.env` (`ELASTICSEARCH_ENDPOINTS` / `KIBANA_ENDPOINT` unreachable).
+      Run with `source .env && TF_ACC=1 go test -v -run TestAccResourceDashboardSloErrorBudgetWithDisplayFields ./internal/kibana/dashboard/panel/sloerrorbudget/...` when the stack is up.
 
 ## 4. Spec and validation
 
