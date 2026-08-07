@@ -1,6 +1,6 @@
 ## 1. Fix `PopulateFromAPI`
 
-- [ ] 1.1 In `internal/kibana/dashboard/panel/sloerrorbudget/model.go`, replace the four
+- [x] 1.1 In `internal/kibana/dashboard/panel/sloerrorbudget/model.go`, replace the four
       `if (prior == nil || typeutils.IsKnown(existing.Title)) && apiConfig.Title != nil { ... }`-shaped
       conditionals (for `Title`, `Description`, `HideTitle`, `HideBorder`) with:
       - Unconditional adoption from the API pointer (e.g.
@@ -10,10 +10,10 @@
         `prior != nil && prior.SloErrorBudgetConfig != nil`, passing
         `prior.SloErrorBudgetConfig.Title` / `.Description` / `.HideTitle` / `.HideBorder` and
         `&existing.Title` / `&existing.Description` / `&existing.HideTitle` / `&existing.HideBorder`.
-- [ ] 1.2 Confirm the `panelkit` import in this file already covers `NullPreservePresentationFromPrior`
+- [x] 1.2 Confirm the `panelkit` import in this file already covers `NullPreservePresentationFromPrior`
       (it is in the same package as `BuildPresentationConfig`, already imported) — no new import
       needed.
-- [ ] 1.3 Leave `SloID`, `SloInstanceID`, and `Drilldowns` handling unchanged.
+- [x] 1.3 Leave `SloID`, `SloInstanceID`, and `Drilldowns` handling unchanged.
 
 ## 2. Unit test coverage
 
