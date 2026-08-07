@@ -91,11 +91,11 @@ func isDashboardOptionsDefaultSet(options *kbapi.KibanaHTTPAPIsKbnDashboardOptio
 	// OpenAPI examples use auto_apply_filters=true and hide_panel_borders=false as defaults.
 	// When those pointers are omitted on GET, treat them as matching defaults so an omitted
 	// Terraform `options` block stays null in state (REQ-009).
-	return boolPtrEquals(options.HidePanelTitles, false) &&
-		boolPtrEquals(options.UseMargins, true) &&
-		boolPtrEquals(options.SyncColors, false) &&
-		boolPtrEquals(options.SyncTooltips, false) &&
-		boolPtrEquals(options.SyncCursor, true) &&
+	return typeutils.PtrEqual(options.HidePanelTitles, new(false)) &&
+		typeutils.PtrEqual(options.UseMargins, new(true)) &&
+		typeutils.PtrEqual(options.SyncColors, new(false)) &&
+		typeutils.PtrEqual(options.SyncTooltips, new(false)) &&
+		typeutils.PtrEqual(options.SyncCursor, new(true)) &&
 		boolPtrEqualsOrOmitted(options.AutoApplyFilters, true) &&
 		boolPtrEqualsOrOmitted(options.HidePanelBorders, false)
 }
@@ -107,8 +107,4 @@ func boolPtrEqualsOrOmitted(value *bool, expected bool) bool {
 		return true
 	}
 	return *value == expected
-}
-
-func boolPtrEquals(value *bool, expected bool) bool {
-	return typeutils.PtrEqual(value, &expected)
 }
