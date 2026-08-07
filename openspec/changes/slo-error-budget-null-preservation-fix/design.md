@@ -35,7 +35,7 @@ field on the struct just allocated on this same call (or, if `pm.SloErrorBudgetC
 non-nil, still not the prior's field) — it is never the prior plan/state's `Title`. Since a fresh
 `&models.SloErrorBudgetConfigModel{}`'s `Title` zero value is `types.StringNull()`,
 `typeutils.IsKnown(existing.Title)` is always `false`, so the only way `apiConfig.Title` is ever
-adopted is `prior == nil` (creation or import). On every same-type update (`prior != nil`), all four
+adopted is `prior == nil` (import). On every same-type update (`prior != nil`), all four
 fields are skipped unconditionally — they stay at whatever `existing` already held, which for the
 always-zero-valued `pm.SloErrorBudgetConfig` case is always null.
 
