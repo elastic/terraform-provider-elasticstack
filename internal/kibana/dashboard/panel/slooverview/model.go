@@ -261,22 +261,12 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 
 	m.SloID = types.StringValue(api.SloId)
 
-	if api.SloInstanceId != nil {
-		switch {
-		case priorSingle == nil && *api.SloInstanceId == "*":
-			m.SloInstanceID = types.StringNull()
-		case priorSingle != nil && priorSingle.SloInstanceID.IsNull() && *api.SloInstanceId == "*":
-			m.SloInstanceID = types.StringNull()
-		default:
-			m.SloInstanceID = types.StringPointerValue(api.SloInstanceId)
-		}
-	} else {
-		if priorSingle != nil && typeutils.IsKnown(priorSingle.SloInstanceID) {
-			m.SloInstanceID = priorSingle.SloInstanceID
-		} else {
-			m.SloInstanceID = types.StringNull()
-		}
+	hasPriorSingle := priorSingle != nil
+	var priorInstanceID types.String
+	if hasPriorSingle {
+		priorInstanceID = priorSingle.SloInstanceID
 	}
+	m.SloInstanceID = panelkit.PreserveSloInstanceID(api.SloInstanceId, hasPriorSingle, priorInstanceID)
 
 	var priorRemoteName types.String
 	if priorSingle != nil {
