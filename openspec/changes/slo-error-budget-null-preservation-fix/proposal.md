@@ -39,8 +39,8 @@ No `sloerrorbudget` acceptance testdata currently sets `title`, `description`, `
   `prior.SloErrorBudgetConfig`'s corresponding field instead of from the freshly-allocated
   `existing` struct — matching the `prior.<Type>Config`-keyed null-preservation contract already
   documented for other typed panel config blocks under REQ-009, and using the same
-  `panelkit.ApplyPresentationFromAPI` / `panelkit.NullPreservePresentationFromPrior` helpers already
-  adopted by `sloburnrate` and other panel types for this exact field group.
+  direct `types.StringPointerValue` / `types.BoolPointerValue` adoption +
+  `panelkit.NullPreservePresentationFromPrior` pattern already adopted by `sloburnrate` and other panel types for this exact field group.
 - Extend the `kibana-dashboard` capability's REQ-031 (SLO error budget panel behavior) with an
   explicit null-preservation requirement for `title`, `description`, `hide_title`, and
   `hide_border`, plus a scenario covering the create-then-refresh round trip that is currently
