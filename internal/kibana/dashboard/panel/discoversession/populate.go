@@ -633,19 +633,13 @@ func discoverSessionMergeConfig0FromAPI(
 	if prior == nil || prior.ByValue == nil {
 		return diags
 	}
+	// Snapshot prior's known-ness before any mutation below: existing and prior may be the
+	// same underlying model (e.g. contract-test harnesses alias pm/tfPanel), so reading
+	// prior.Title etc. after existing has been mutated would observe the new value instead.
+	priorTitle, priorDescription, priorHideTitle, priorHideBorder := prior.Title, prior.Description, prior.HideTitle, prior.HideBorder
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(cfg0.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(cfg0.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(cfg0.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(cfg0.HideBorder)
-	}
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		cfg0.Title, cfg0.Description, cfg0.HideTitle, cfg0.HideBorder)
 
 	existing.Drilldowns = readDiscoverSessionDrilldownsFromConfig0(cfg0.Drilldowns, existing.Drilldowns)
 
@@ -660,26 +654,9 @@ func discoverSessionMergeConfig0FromAPI(
 		diags.Append(discoverSessionMergeTabFromAPI(ctx, &existing.ByValue.Tab, prior.ByValue.Tab, cfg0.Tabs[0])...)
 	}
 
-	discoverSessionPreserveEnvelopeNullIntent(existing, prior)
+	panelkit.NullPreservePresentationFromPrior(priorTitle, priorDescription, priorHideTitle, priorHideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	return diags
-}
-
-func discoverSessionPreserveEnvelopeNullIntent(existing, prior *models.DiscoverSessionPanelConfigModel) {
-	if prior == nil || existing == nil {
-		return
-	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = prior.Title
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = prior.Description
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = prior.HideTitle
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = prior.HideBorder
-	}
 }
 
 func discoverSessionMergeConfig1FromAPI(
@@ -693,19 +670,13 @@ func discoverSessionMergeConfig1FromAPI(
 	if prior == nil || prior.ByReference == nil {
 		return diags
 	}
+	// Snapshot prior's known-ness before any mutation below: existing and prior may be the
+	// same underlying model (e.g. contract-test harnesses alias pm/tfPanel), so reading
+	// prior.Title etc. after existing has been mutated would observe the new value instead.
+	priorTitle, priorDescription, priorHideTitle, priorHideBorder := prior.Title, prior.Description, prior.HideTitle, prior.HideBorder
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(cfg1.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(cfg1.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(cfg1.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(cfg1.HideBorder)
-	}
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		cfg1.Title, cfg1.Description, cfg1.HideTitle, cfg1.HideBorder)
 
 	existing.Drilldowns = readDiscoverSessionDrilldownsFromConfig1(cfg1.Drilldowns, prior.Drilldowns)
 
@@ -737,7 +708,8 @@ func discoverSessionMergeConfig1FromAPI(
 		discoverSessionPreserveOverridesNullIntent(existing.ByReference.Overrides, prior.ByReference.Overrides)
 	}
 
-	discoverSessionPreserveEnvelopeNullIntent(existing, prior)
+	panelkit.NullPreservePresentationFromPrior(priorTitle, priorDescription, priorHideTitle, priorHideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	return diags
 }
 
