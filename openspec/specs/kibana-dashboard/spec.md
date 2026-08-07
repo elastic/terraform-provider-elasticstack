@@ -1092,6 +1092,8 @@ On write, the provider SHALL map all configured fields from `slo_error_budget_co
 
 On read, the provider SHALL repopulate `slo_error_budget_config` from the API response. For `slo_instance_id`, the provider SHALL preserve the prior Terraform state value when the prior value was null: if the practitioner did not configure `slo_instance_id`, the provider SHALL NOT write the API-returned default `"*"` into state. For `encode_url` and `open_in_new_tab` drilldown fields, the provider SHALL normalize the API default value of `true` so that practitioners who omit those fields do not observe spurious drift after apply. On import, the provider SHALL populate API-returned optional display fields such as `title`, `description`, `hide_title`, and `hide_border`.
 
+For `title`, `description`, `hide_title`, and `hide_border`, the provider SHALL apply REQ-009 null-preservation on every read (create read-back, update read-back, and refresh): the null-intent decision for each field SHALL key on the corresponding field of `prior.SloErrorBudgetConfig` (the prior plan on create/update read-back, or prior state on refresh), not on the panel model under construction. On import (`prior == nil`), each field SHALL be populated directly from the API response when the API supplies a value. On a same-type update or refresh (`prior.SloErrorBudgetConfig != nil`), each field SHALL first be populated from the API response and then, if the corresponding prior field was null or unknown (the practitioner never configured it), reset to null in state rather than left at the API-supplied value.
+
 `drilldowns` SHALL be represented as a list of typed objects. Each drilldown object SHALL contain required `url` (string) and `label` (string), and optional `encode_url` (bool, default `true`) and `open_in_new_tab` (bool, default `true`). On write, the provider SHALL set Kibana's fixed `trigger = "on_open_panel_menu"` and `type = "url_drilldown"` values in the API request.
 
 #### Scenario: Minimal slo_error_budget panel with only slo_id
@@ -1115,6 +1117,22 @@ On read, the provider SHALL repopulate `slo_error_budget_config` from the API re
 - THEN the provider SHALL round-trip the typed drilldown fields
 - AND SHALL apply default normalization for `encode_url` and `open_in_new_tab` so that omitting them in configuration does not produce drift
 - AND SHALL write Kibana's fixed `trigger` and `type` values into the API request
+
+#### Scenario: title, description, hide_title, and hide_border survive a refresh after create
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` setting `title`, `description`, `hide_title`, and `hide_border` to explicit practitioner-configured values
+- WHEN the dashboard is created, read back, and then refreshed in a subsequent plan/apply cycle
+- THEN state SHALL contain the practitioner-configured values for all four fields after every read
+- AND the provider SHALL NOT report "Provider produced inconsistent result after apply" on the refresh
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: title, description, hide_title, and hide_border null-preservation on refresh
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` that omits `title`, `description`, `hide_title`, and `hide_border` (prior state: null for all four)
+- WHEN the dashboard is refreshed and Kibana's read-back response includes concrete values for one or more of these fields
+- THEN the provider SHALL key the null-preservation decision on `prior.SloErrorBudgetConfig`'s corresponding field, not on the panel model under construction
+- AND SHALL keep each field null in state because the prior value was null
+- AND a subsequent plan SHALL show no changes
 
 ### Requirement: ES|QL control panel behavior (REQ-026)
 
