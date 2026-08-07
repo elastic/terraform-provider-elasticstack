@@ -235,22 +235,13 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 	}
 
 	if typeutils.IsKnown(model.Alias) {
-		apiModel.Aliases = map[string]models.IndexAlias{}
-
-		var planAliases []aliasutil.AliasModel
-		diags.Append(model.Alias.ElementsAs(ctx, &planAliases, true)...)
+		aliases, aliasDiags := aliasutil.ExpandAliasSet(ctx, model.Alias)
+		diags.Append(aliasDiags...)
 		if diags.HasError() {
 			return models.Index{}, diags
 		}
 
-		for _, planAlias := range planAliases {
-			apiAlias, diags := aliasToAPIModel(planAlias)
-			if diags.HasError() {
-				return models.Index{}, diags
-			}
-
-			apiModel.Aliases[apiAlias.Name] = apiAlias
-		}
+		apiModel.Aliases = aliases
 	}
 
 	settings, diags := model.toIndexSettings(ctx)
@@ -506,25 +497,6 @@ func analysisNormalizedFieldTargets(model *tfModel) map[string]*jsontypes.Normal
 		attrFilter:    &model.AnalysisFilter,
 		"normalizer":  &model.AnalysisNormalizer,
 	}
-}
-
-func aliasToAPIModel(model aliasutil.AliasModel) (models.IndexAlias, diag.Diagnostics) {
-	apiModel := models.IndexAlias{
-		Name:          model.Name.ValueString(),
-		IndexRouting:  model.IndexRouting.ValueString(),
-		IsHidden:      model.IsHidden.ValueBool(),
-		IsWriteIndex:  model.IsWriteIndex.ValueBool(),
-		Routing:       model.Routing.ValueString(),
-		SearchRouting: model.SearchRouting.ValueString(),
-	}
-
-	if typeutils.IsKnown(model.Filter) {
-		if diags := model.Filter.Unmarshal(&apiModel.Filter); diags.HasError() {
-			return models.IndexAlias{}, diags
-		}
-	}
-
-	return apiModel, nil
 }
 
 func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics) {
