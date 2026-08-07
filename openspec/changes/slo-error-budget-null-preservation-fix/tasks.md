@@ -17,22 +17,22 @@
 
 ## 2. Unit test coverage
 
-- [ ] 2.1 In `internal/kibana/dashboard/panel/sloerrorbudget/model_test.go`, add a test asserting
+- [x] 2.1 In `internal/kibana/dashboard/panel/sloerrorbudget/model_test.go`, add a test asserting
       that on a same-type update (non-nil `prior` with `prior.SloErrorBudgetConfig` set and
       `title`/`description`/`hide_title`/`hide_border` known), `PopulateFromAPI` adopts the API's
       values for all four fields — the scenario currently broken. Follow the existing helper style
       (`sebWithSloTitle`, `sebWithSloDescription`, `sebWithHideTitle`, `sebWithHideBorder` already
       exist in this file) and existing test naming
       (`Test_populateSloErrorBudgetFromAPI_<behavior>`).
-- [ ] 2.2 Add a test asserting null-preservation: when `prior.SloErrorBudgetConfig`'s
+- [x] 2.2 Add a test asserting null-preservation: when `prior.SloErrorBudgetConfig`'s
       `title`/`description`/`hide_title`/`hide_border` are null (practitioner never configured them)
       and the API returns concrete values for them, `PopulateFromAPI` keeps them null in the
       resulting state — mirroring `Test_populateSloErrorBudgetFromAPI_sloInstanceID_nullPreservation`
       for the presentation fields.
-- [ ] 2.3 Confirm `Test_populateSloErrorBudgetFromAPI_import_populatesAll` (creation/import,
+- [x] 2.3 Confirm `Test_populateSloErrorBudgetFromAPI_import_populatesAll` (creation/import,
       `prior == nil`) still passes unchanged — it already exercises unconditional adoption and must
       keep doing so.
-- [ ] 2.4 Run `go test ./internal/kibana/dashboard/panel/sloerrorbudget/...` and confirm all tests
+- [x] 2.4 Run `go test ./internal/kibana/dashboard/panel/sloerrorbudget/...` and confirm all tests
       pass.
 
 ## 3. Acceptance test coverage
