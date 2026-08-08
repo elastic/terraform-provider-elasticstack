@@ -1,3 +1,12 @@
+## [Unreleased]
+
+### Changes
+
+- Preserve slo_error_budget panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh. ([#4450](https://github.com/elastic/terraform-provider-elasticstack/pull/4450))
+- Promotes the 9.5.0-SNAPSHOT acceptance-matrix entry to GA 9.5.0, and fixes three regressions this surfaced against the Kibana 9.5.0 GA API (dashboard panel null-preservation, Lens data_source_json "name" key, ml_anomaly_charts severity_threshold). ([#4404](https://github.com/elastic/terraform-provider-elasticstack/pull/4404))
+- Fix Fleet integration installation with credentials restricted to a non-default Kibana space. ([#4300](https://github.com/elastic/terraform-provider-elasticstack/pull/4300))
+- Add `space_id` support for Kibana Synthetics parameters with composite IDs and space-scoped CRUD and import. ([#4278](https://github.com/elastic/terraform-provider-elasticstack/pull/4278))
+
 ## [0.16.3] - 2026-07-22
 
 ### Breaking changes
