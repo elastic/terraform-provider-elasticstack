@@ -708,6 +708,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
       "attemptedAt": "2026-08-08T03:45:46.143416332Z",
       "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard.filterSimpleFromAPI",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard",
+      "attemptedAt": "2026-08-09T03:40:42.522211822Z",
+      "reason": "verification_timeout",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
