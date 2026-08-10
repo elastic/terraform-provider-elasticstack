@@ -57,6 +57,7 @@ The `gate` job SHALL fail when any of the following is true:
 
 * Any of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `failure` or `cancelled`
 * The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports an unexpected `skipped` result
+* Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
 
 The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint` checks.
 

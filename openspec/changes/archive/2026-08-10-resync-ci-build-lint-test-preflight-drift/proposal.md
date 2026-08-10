@@ -40,8 +40,9 @@ capability no longer describes a mechanism that does not exist.
 - Rename `### Requirement: Test validation job (REQ-034–REQ-036)` to a name matching the real terminal
   job, `Provider Gate` (job id `gate`), and rewrite its pass/fail rule to match `gateProvider()`:
   passes when `classify=false` and every one of `build`/`lint`/`golangci-lint`/`test` is `skipped`, or
-  when `classify=true` and all four succeed; fails on any `failure`/`cancelled` result, or on an
-  unexpected `skipped` result when `classify=true`. This also surfaces `golangci-lint` as a gate input,
+  when all four succeed (regardless of classify result); fails on any `failure`/`cancelled` result, on
+  an unexpected `skipped` result when `classify=true`, or on any other leftover combination including
+  an unrecognised classify or job result value. This also surfaces `golangci-lint` as a gate input,
   which the current spec omits entirely.
 - Rewrite `### Requirement: Auto-approve job (REQ-018–REQ-021)` to depend on the renamed gate
   requirement instead of `Test Validation`, and drop the `ready_for_review`/preflight-skip carve-out:

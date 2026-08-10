@@ -83,8 +83,9 @@ job" reference becomes "change-classification job" (`classify`).
 Why: `@tobio` explicitly resolved this ("Rename it") rather than asking for a name-agnostic
 description. The renamed gate requirement's pass/fail rule is rewritten from the current
 disjunction-of-three-cases prose to mirror `gateProvider()`'s actual branches (classify-false-all-
-skipped, classify-true-all-success, any-failure-or-cancelled, unexpected-skip-when-classify-true), and
-gains `golangci-lint` as a fourth gate input, which the current spec omits.
+skipped, all-success regardless of classify, any-failure-or-cancelled, unexpected-skip-when-
+classify-true, and a defensive fail for unrecognised classify/job results or leftover combinations),
+and gains `golangci-lint` as a fourth gate input, which the current spec omits.
 
 Alternatives considered: keep the `Test Validation` name as a stable, implementation-agnostic label for
 whatever job is terminal - rejected per `@tobio`'s explicit direction, and because a name detached from
@@ -161,9 +162,9 @@ This is a documentation-only change with no runtime migration. Sequence:
 - Non-blocking: this repo's convention for `REQ-NNN` ID stability after deletions (renumber vs. leave
   gaps) — check `ci-pr-auto-approve` before drafting the diff.
 
-Resolution recorded for the second question (non-blocking, but settled while drafting this change; see
-Decision 5 above): `ci-pr-auto-approve` already tolerates non-contiguous and unnumbered requirements,
-so this change leaves gaps rather than renumbering.
+Resolution recorded for the REQ-NNN convention question (non-blocking, but settled while drafting this
+change; see Decision 5 above): `ci-pr-auto-approve` already tolerates non-contiguous and unnumbered
+requirements, so this change leaves gaps rather than renumbering.
 
 Note: the former open question about stale `test.yml` pointer / `Build/Lint/Test` name / push-branch
 scope / Schema YAML was resolved during apply — those are aligned with `provider.yml` in the
