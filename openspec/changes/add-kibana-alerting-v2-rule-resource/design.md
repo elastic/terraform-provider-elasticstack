@@ -1,8 +1,10 @@
+> **Status.** `elasticstack_kibana_rule` ships as an **experimental** technical-preview resource: registered via `experimentalResources()`, gated by `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`, no generated registry docs. Graduation is [rna-program#678](https://github.com/elastic/rna-program/issues/678).
+
 ## Context
 
 See `proposal.md` — Why, for motivation, and the naming and release-path decisions. This document covers how the resource maps onto the API and why each mapping choice was made. Requirements are in `specs/kibana-rule/spec.md`; this file does not restate them.
 
-**Source of truth.** Alerting v2 is not yet in Kibana's published OAS bundle on `main`. Every schema claim here is taken from the zod schemas in `x-pack/platform/packages/shared/response-ops/alerting-v2-schemas/src/` (principally `rule_data_schema.ts`, `common.ts`, `constants.ts`) and the route and client code in `x-pack/platform/plugins/shared/alerting_v2/server/`, and cross-checked against the OAS bundle on the branch of [kibana#279519](https://github.com/elastic/kibana/pull/279519). Where a claim comes from server behaviour rather than the schema — for example how `PUT` treats `enabled` — it is attributed to `lib/rules_client/rules_client.ts`.
+**Source of truth.** Alerting v2 is not yet in Kibana's published OAS bundle on `main`. Field shapes come from the zod schemas in `x-pack/platform/packages/shared/response-ops/alerting-v2-schemas/src/` (principally `rule_data_schema.ts`), cross-checked against the OAS on [kibana#279519](https://github.com/elastic/kibana/pull/279519); artifact `data` follows [kibana#281751](https://github.com/elastic/kibana/pull/281751).
 
 **Provider mechanics assumed.** The resource follows the current Plugin Framework pattern: a package under `internal/kibana/` wiring `entitycore.NewKibanaResource[Model]`, with the envelope owning `Metadata`, `Configure`, `Schema` (injecting `kibana_connection` and `timeouts`), and the CRUD orchestration, and the concrete resource supplying a schema factory, a model, four lifecycle callbacks, and `ImportState`. `internal/kibana/maintenance_window/` is the closest recent example. API calls go through a wrapper in `internal/clients/kibanaoapi/` that returns `diag.Diagnostics` rather than `error`.
 
@@ -10,7 +12,7 @@ See `proposal.md` — Why, for motivation, and the naming and release-path decis
 
 **Goals**
 
-- A mapping in which every rule field is a typed Terraform attribute, and every statically checkable API constraint is a schema validator.
+- A mapping in which every rule field is a typed Terraform attribute (with `artifacts[].data` as the sole JSON object string; see D10), and every statically checkable API constraint is a schema validator.
 - One write path for create and update, so a re-apply after a partial failure converges.
 - Volatile server fields that never produce a diff on an unchanged configuration.
 - A design that survives graduation ([#678](https://github.com/elastic/rna-program/issues/678)) without a schema, API, or state change.
@@ -20,7 +22,7 @@ See `proposal.md` — Why, for motivation, and the naming and release-path decis
 - Modelling action policies (a separate future resource, not part of this change).
 - Modelling the v2 alert lifecycle (`/alerts`, alert actions), execution history, bulk operations, `_run`, or the find and `_tags` endpoints. Some of these are natural future data sources or Terraform actions; none is in scope here.
 - Any migration path from a v1 rule to a v2 rule. None exists server side.
-- Reading or writing the `alerting:v2:enabled` advanced setting. The resource detects the disabled state and reports it (spec REQ-013); it cannot fix it.
+- Reading or writing the `alerting:v2:enabled` advanced setting. The setting defaults on in the next Kibana release; the resource still detects a disabled state and reports it (spec REQ-013) but does not manage the setting.
 
 ## Decisions
 
@@ -67,7 +69,7 @@ Option 2 keeps the constraints in the schema. `composed_query.base` and `compose
 
 The `breach` / `recovery` / `no_data` wrapper objects are preserved as nested single blocks rather than flattened to `breach_segment` and friends. Each currently holds exactly one field, so flattening would read better today, but the wrappers exist precisely so the API can add fields to them; flattening now means a schema break later.
 
-Cross-field rules that genuinely span attributes — the seven refinements in spec REQ-007 — cannot be expressed in the schema and go in `ValidateConfig`, guarded on known values.
+Cross-field validation that genuinely spans attributes — the seven refinements in spec REQ-007 — cannot be expressed in the schema and go in `ValidateConfig`, guarded on known values.
 
 ### D4. Volatile field handling
 
@@ -151,9 +153,17 @@ Cost: one extra `GET` per update, which is what azurerm pays on every full-updat
 
 The advisory `kibana-spec-impact` workflow also fires on pushes touching `generated/kbapi/**` and would likely flag the entity. It runs post-merge, caps issues per run, and summarises through an LLM, so it is a useful backstop but not a guard.
 
+### D10. Artifact `data` is a JSON object string, not typed nested attributes
+
+[kibana#281751](https://github.com/elastic/kibana/pull/281751) replaced `artifacts[].value: string` with `artifacts[].data: Record<string, unknown>`. The framework stays type-agnostic: new artifact types need no schema or SO-mapping change. Per-type required fields (`runbook` → `content`, `dashboard` → `dashboardId`) are opt-in refinements in `ARTIFACT_DATA_SCHEMAS`, not a closed union.
+
+Terraform cannot express an open record as typed attributes without either (a) hard-coding every known type as its own block, which breaks the agnostic contract the API is designed around, or (b) a free-form bag. Option (b) matches how this provider already handles open objects (`params`, inference `service_settings`, ILM `metadata`): a JSON object string on the otherwise typed `{ id, type, data }` block.
+
+Plan-time validation covers what is statically knowable today — JSON object shape, ≤32 keys, key-length bounds, and the two registered type schemas — and leaves unregistered-type field limits to the server so new types do not force a provider release.
+
 ## Risks / Trade-offs
 
-- **[Risk] The schema is designed against an experimental API that can still change.** The rule body has a snapshot test upstream (`rule_data_schema.test.ts`) that fails when a top-level field is added, so additions are visible in review — but they will still land as provider schema changes. → **Mitigation:** ship behind `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL`, where schema changes are acceptable, and treat graduation ([#678](https://github.com/elastic/rna-program/issues/678)) as the freeze point. Land contingent changes 1 and 3, the two that would force schema changes, before then.
+- **[Risk] The schema is designed against an experimental API that can still change.** The rule body has a snapshot test upstream (`rule_data_schema.test.ts`) that fails when a top-level field is added, so additions are visible in review — but they will still land as provider schema changes. → **Mitigation:** ship behind `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL`, where schema changes are acceptable, and treat graduation ([#678](https://github.com/elastic/rna-program/issues/678)) as the freeze point. Land contingent change 3 (the two `version` fields) before then — it is the only contingent ask that would force a Terraform schema rename. Contingent change 1 (`enabled`) changes apply semantics but not the schema.
 
 - **[Risk] `PUT` is last-write-wins.** A rule modified in the Kibana UI between Terraform's refresh and its write is silently overwritten. → **Mitigation:** this is standard Terraform behaviour and standard for this provider; document it in the resource description rather than reaching for `PATCH` and inheriting its problems (D1).
 
@@ -161,9 +171,9 @@ The advisory `kibana-spec-impact` workflow also fires on pushes touching `genera
 
 - **[Risk] The non-atomic `enabled` reconciliation can leave a rule enabled when configuration says otherwise,** so a briefly live rule can fire notifications. → **Mitigation:** report the partial state explicitly (spec REQ-011) rather than failing silently, and pursue contingent change 1.
 
-- **[Risk] Acceptance tests cannot run until `alerting:v2:enabled` can be turned on in CI,** and there is no Terraform resource for advanced settings (contingent change 5). → **Mitigation:** an implementation task to determine how the shared CI stack enables it; tests skip cleanly when it is off. Plan-time validation coverage (spec REQ-016) does not need a stack, so a meaningful share of the suite runs regardless.
-
 - **[Trade-off] Two top-level query blocks diverge from the API's single `query` object,** so the mapping is not one-to-one and the spec needs a mapping table. → Accepted: the alternative pushes required-field validation out of the schema (D3), which is the specific defect this change exists to avoid.
+
+- **[Trade-off] `artifacts[].data` is a JSON object string** while the rest of the rule body is typed attributes. → Accepted: the API keeps `data` as an open record so new artifact types need no framework change (D10); hard-coding per-type nested attributes would fight that.
 
 - **[Trade-off] Preserving the `breach` / `recovery` / `no_data` wrapper blocks costs a nesting level** for objects that hold one field each today. → Accepted for forward compatibility; flattening later would be a breaking schema change, unflattening would not have been needed.
 

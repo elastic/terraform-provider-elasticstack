@@ -1,12 +1,20 @@
 # `elasticstack_kibana_rule` — Schema and Functional Requirements
 
+> **Status.** Ships as an **experimental** technical-preview resource: registered via `experimentalResources()`, gated by `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`, no generated registry docs. Graduation is [rna-program#678](https://github.com/elastic/rna-program/issues/678). Normative detail: REQ-001.
+
 Resource implementation (future): `internal/kibana/rule`
 
 ## Purpose
 
-Define the Terraform schema and runtime behaviour for the `elasticstack_kibana_rule` resource, which manages **Kibana Alerting v2** rules through `/api/alerting/v2/rules`. Covers: typed modelling of the ES|QL query union and the recovery / no-data / state-transition configuration, endpoint selection for each CRUD operation, composite space-aware identity and import, handling of server-owned and volatile fields (`metadata.version`, `version`, `created_*`, `updated_*`, `enabled`), plan-time enforcement of the cross-field rules the API enforces at runtime, behaviour when the v2 engine is administratively disabled, and registration as an experimental resource.
+Define the Terraform schema and runtime behaviour for the `elasticstack_kibana_rule` resource, which manages **Kibana Alerting v2** rules through `/api/alerting/v2/rules`.
 
-This capability is distinct from `kibana-alerting-rule`, which covers the classic (v1) alerting resource. The two share no schema, no saved object type, and no identifier space.
+In scope:
+
+- **Schema** — typed attributes for the closed v2 rule body (ES|QL query union, schedule, recovery / no-data / state-transition, grouping, artifacts)
+- **Lifecycle** — CRUD endpoints, space-aware identity and import, server-owned and volatile fields
+- **Gates** — plan-time cross-field validation, disabled-engine diagnostics, experimental registration
+
+This capability is distinct from `kibana-alerting-rule` (classic / v1). The two share no schema, no saved object type, and no identifier space.
 
 ## Schema
 
@@ -28,7 +36,7 @@ resource "elasticstack_kibana_rule" "example" {
     owner        = <optional, string>         # <=256
     tags         = <optional, set(string)>    # non-empty when set
     builder_type = <optional, string>         # <=64
-    version      = <computed, int64>          # configuration revision counter
+    version      = <computed, int64>          # server-managed revision; response-only, not accepted on create/update
   }
 
   schedule {                                  # required, single nested block
@@ -66,9 +74,9 @@ resource "elasticstack_kibana_rule" "example" {
   }
 
   artifacts {                                 # optional, list nested block, <=100 entries
-    id    = <required, string>                # 1..256
-    type  = <required, string>                # 1..128
-    value = <required, string>                # 1..50000; per-type limit enforced server side
+    id   = <required, string>                 # 1..256
+    type = <required, string>                 # 1..128
+    data = <required, json object string>     # Record<string, unknown>; <=32 keys, each key 1..256
   }
 
   # Server-owned
@@ -85,6 +93,7 @@ Notes:
 - `kibana_connection` and `timeouts` are injected by the `entitycore` Kibana resource envelope and are not declared in the resource's own schema factory.
 - The API's `query` object is a discriminated union on `format`. The Terraform schema does not expose `format`; it is derived from which of `composed_query` / `standalone_query` is configured. See REQ-006.
 - `no_data_strategy` deliberately omits the API's `"emit"` value: it is a valid stored value but is rejected by the create and update APIs. See REQ-014.
+- `artifacts[].data` is an open record in the API ([kibana#281751](https://github.com/elastic/kibana/pull/281751)); Terraform exposes it as a JSON object string. See REQ-012.
 
 ## ADDED Requirements
 
@@ -214,15 +223,18 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 
 ### Requirement: Typed rule configuration, not an opaque JSON blob (REQ-005)
 
-Every field of the rule create body SHALL be expressed as a typed Terraform attribute or nested block, as laid out in the **Schema** section. The resource SHALL NOT expose a JSON-string attribute (an equivalent of the v1 resource's `params`) as the means of configuring rule behaviour, and SHALL NOT require practitioners to call `jsonencode` to configure any part of the rule.
+Every field of the rule create body SHALL be expressed as a typed Terraform attribute or nested block, as laid out in the **Schema** section. The resource SHALL NOT expose a single JSON-string attribute (an equivalent of the v1 resource's `params`) as the means of configuring the whole rule.
+
+The sole exception is `artifacts[].data`, which SHALL be a JSON object string because the API models it as an open `Record<string, unknown>` (see REQ-012 and `design.md` D10). All other rule fields SHALL be ordinary typed attributes or blocks and SHALL NOT require `jsonencode`.
 
 Constraints the API declares — enum membership, string length bounds, integer ranges, collection size limits, and duration format — SHALL be enforced by schema-level validators so they surface during `terraform validate` and `terraform plan` rather than as an HTTP 400 during apply.
 
-#### Scenario: No JSON encoding required
+#### Scenario: Rule body is typed outside of artifact data
 
 - **GIVEN** a configuration exercising `metadata`, `schedule`, a query block, `state_transition`, `grouping`, and `artifacts`
 - **WHEN** the configuration is written
-- **THEN** it SHALL contain no `jsonencode` call and no JSON string literal for rule configuration
+- **THEN** every rule field other than `artifacts[].data` SHALL be a typed attribute or block, with no `jsonencode` call
+- **AND** each `artifacts` entry's `data` MAY be supplied via `jsonencode` (or an equivalent JSON object string)
 
 #### Scenario: Bound violation caught before apply
 
@@ -471,9 +483,16 @@ If the API later accepts `enabled` in the `PUT` body (see `proposal.md`, conting
 
 ### Requirement: `artifacts` mapping (REQ-012)
 
-`artifacts` SHALL be an optional list nested block of at most 100 entries, each with required `id` (1–256 characters), `type` (1–128), and `value` (1–50000) string attributes, mapping directly onto the API's `artifacts` array.
+`artifacts` SHALL be an optional list nested block of at most 100 entries. Each entry SHALL have required `id` (1–256 characters), `type` (1–128), and `data` attributes, mapping onto the API's `{ id, type, data }[]` shape from [kibana#281751](https://github.com/elastic/kibana/pull/281751) (`value: string` → `data: Record<string, unknown>`).
 
-The API applies a per-`type` maximum length to `value` (50000 for `runbook`, 1024 by default) that the provider cannot know statically. The schema SHALL enforce only the global 50000 bound; a per-type violation SHALL surface as the server's error.
+`data` SHALL be a JSON object string (normalized on read). Plan-time validation SHALL reject non-objects, more than 32 keys (`MAX_ARTIFACT_DATA_FIELDS`), and key names outside 1–256 characters (`MAX_FIELD_NAME_LENGTH`). The provider SHALL NOT treat `data` as an opaque string blob that skips JSON parsing.
+
+For types registered in the API's `ARTIFACT_DATA_SCHEMAS`, plan-time validation SHALL mirror the server rules:
+
+- `runbook` — `data.content` is a required non-blank string of at most 50000 characters (`RUNBOOK_CONTENT_LIMIT`)
+- `dashboard` — `data.dashboardId` is a required non-blank string of at most 1024 characters (`DEFAULT_ARTIFACT_DATA_FIELD_LIMIT`)
+
+Unregistered types SHALL accept any `data` object at plan time; per-field size limits (default 1024 characters for string fields, or for the JSON serialization of structured values) SHALL surface as the server's rejection rather than a hardcoded provider table, so new artifact types do not require a provider schema change.
 
 Because the resource uses full-replace `PUT`, omitting the `artifacts` block SHALL remove all artifacts from the rule. The provider SHALL NOT implement the "omit the key so the server preserves the existing value" behaviour that the classic resource needs for `flapping` and `artifacts` on `PUT`.
 
@@ -481,9 +500,9 @@ This shape is unrelated to the classic alerting rule's `artifacts` object, which
 
 #### Scenario: Artifacts round-trip
 
-- **GIVEN** a rule applied with two `artifacts` entries
+- **GIVEN** a rule applied with a `runbook` artifact (`data = jsonencode({ content = "# Steps" })`) and a `dashboard` artifact (`data = jsonencode({ dashboardId = "abc" })`)
 - **WHEN** state is read after apply
-- **THEN** both entries SHALL be present with the configured `id`, `type`, and `value`
+- **THEN** both entries SHALL be present with the configured `id`, `type`, and equivalent `data` JSON
 
 #### Scenario: Removing the block clears artifacts
 
@@ -491,19 +510,25 @@ This shape is unrelated to the classic alerting rule's `artifacts` object, which
 - **WHEN** update runs and the rule is read back
 - **THEN** the rule SHALL have no artifacts and the following plan SHALL be empty
 
-#### Scenario: Per-type limit surfaced from the server
+#### Scenario: Known-type required field rejected at plan time
 
-- **GIVEN** an artifact of a type whose server-side limit is 1024, with a `value` of 2000 characters
+- **GIVEN** an artifact with `type = "runbook"` and `data = jsonencode({})`
+- **WHEN** plan runs
+- **THEN** the provider SHALL return a plan-time validation error naming `data.content`
+
+#### Scenario: Unregistered-type field limit surfaced from the server
+
+- **GIVEN** an artifact with `type = "host"` and a `data` field whose string value exceeds 1024 characters
 - **WHEN** apply runs
-- **THEN** the provider SHALL surface the server's rejection as an error diagnostic naming the type and limit
+- **THEN** the provider SHALL surface the server's rejection as an error diagnostic naming the field and limit
 
 ### Requirement: Engine-disabled diagnostic (REQ-013)
 
-Every v2 route responds HTTP 503 with error code `ALERTING_DISABLED` while the Kibana advanced setting `alerting:v2:enabled` is off, which is the default. On receiving a 503 with that code from any operation, the provider SHALL return an error diagnostic that names the `alerting:v2:enabled` advanced setting and states that it must be turned on in the target space's Kibana, rather than surfacing a bare HTTP status.
+Every v2 route responds HTTP 503 with error code `ALERTING_DISABLED` while the Kibana advanced setting `alerting:v2:enabled` is off (the setting defaults on in the next Kibana release, but can still be disabled). On receiving a 503 with that code from any operation, the provider SHALL return an error diagnostic that names the `alerting:v2:enabled` advanced setting and states that it must be turned on in the target space's Kibana, rather than surfacing a bare HTTP status.
 
 #### Scenario: Actionable diagnostic when the engine is off
 
-- **GIVEN** a target Kibana with `alerting:v2:enabled` unset or false
+- **GIVEN** a target Kibana with `alerting:v2:enabled` set to false
 - **WHEN** any CRUD operation on the resource runs
 - **THEN** the provider SHALL return an error diagnostic naming `alerting:v2:enabled`
 
@@ -555,7 +580,7 @@ The acceptance test suite for `elasticstack_kibana_rule` SHALL cover:
 6. Import via `<space_id>/<rule_id>`, and a non-default `space_id`.
 7. A no-op re-plan after apply asserting an empty plan, which exercises the volatile-field handling in REQ-010.
 
-Every test SHALL be skipped when the target stack does not meet the minimum version determined for this resource, and when `alerting:v2:enabled` cannot be turned on in the test environment. Tests SHALL follow the repository's acceptance-test isolation conventions so parallel runs do not collide on rule ids or tags.
+Every test SHALL be skipped when the target stack does not meet the minimum version determined for this resource. Tests SHALL follow the repository's acceptance-test isolation conventions so parallel runs do not collide on rule ids or tags.
 
 Plan-time validation requirements (REQ-006, REQ-007, REQ-014) SHALL additionally be covered by unit tests or `ExpectError` plan-only test steps, so they do not depend on a live stack.
 
