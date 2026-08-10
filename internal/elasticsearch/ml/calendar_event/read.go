@@ -20,7 +20,6 @@ package calendar_event
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -31,12 +30,12 @@ import (
 )
 
 func parseCalendarEventFullCompositeID(id string) (calendarID, eventID string, diags fwdiags.Diagnostics) {
-	parts := strings.SplitN(id, "/", 2)
-	if len(parts) != 2 {
-		diags.AddError("Invalid ID format", "Expected format: <cluster_uuid>/<calendar_id>/<event_id>")
+	compID, compDiags := clients.CompositeIDFromStr(id)
+	diags.Append(compDiags...)
+	if diags.HasError() {
 		return "", "", diags
 	}
-	return ml.SplitCalendarResourcePath(parts[1], "<event_id>")
+	return ml.SplitCalendarResourcePath(compID.ResourceID, "<event_id>")
 }
 
 func calendarEventWireWindowRFC3339(w calendarEventWire) (start string, end string, ok bool) {

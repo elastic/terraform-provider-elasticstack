@@ -19,7 +19,6 @@ package alertingrule
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -63,7 +62,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 			if rid, ok := stateMap["rule_id"].(string); ok && rid != "" {
 				ruleID = rid
 			}
-			stateMap["id"] = fmt.Sprintf("%s/%s", spaceID, ruleID)
+			stateMap["id"] = (&clients.CompositeID{ClusterID: spaceID, ResourceID: ruleID}).String()
 		}
 	}
 
