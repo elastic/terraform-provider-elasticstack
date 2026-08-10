@@ -23,12 +23,6 @@ func populateMetricChartLensAttributes(attrs map[string]any) map[string]any {
 	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
 	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = lenscommon.PopulateMetricChartMetricDefaults(metricMap)
-			}
-		}
-	}
+	lenscommon.PopulateMapSliceDefaults(attrs, "metrics", lenscommon.PopulateMetricChartMetricDefaults)
 	return attrs
 }
