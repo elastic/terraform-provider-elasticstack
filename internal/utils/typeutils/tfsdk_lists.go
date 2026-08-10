@@ -180,3 +180,26 @@ func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags
 func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
 	return collectionValueFrom(ctx, value, elemType, p, diags, types.ListValueFrom)
 }
+
+// StringListElements extracts the string values from a types.List of strings
+// without requiring a context.Context. Returns nil for null/unknown lists and
+// appends an error diagnostic for non-string or unknown elements.
+func StringListElements(list types.List, diags *diag.Diagnostics) []string {
+	if list.IsNull() || list.IsUnknown() {
+		return nil
+	}
+	elems := make([]string, 0, len(list.Elements()))
+	for _, elem := range list.Elements() {
+		str, ok := elem.(types.String)
+		if !ok || str.IsUnknown() {
+			if !ok {
+				diags.AddError("Invalid list element type", "expected types.String")
+			} else {
+				diags.AddError("Unknown list element", "list elements cannot be unknown")
+			}
+			continue
+		}
+		elems = append(elems, str.ValueString())
+	}
+	return elems
+}
