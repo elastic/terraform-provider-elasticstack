@@ -3,5 +3,6 @@ provider "elasticstack" {
 }
 
 data "elasticstack_elasticsearch_ingest_processor_uri_parts" "test" {
-  field = "input_field"
+  field        = "updated_field"
+  target_field = "updated_url"
 }
