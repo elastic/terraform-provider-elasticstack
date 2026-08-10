@@ -1,6 +1,6 @@
 # `build-lint-test` — Workflow Requirements
 
-Workflow implementation: `.github/workflows/test.yml`
+Workflow implementation: `.github/workflows/provider.yml`
 
 ## Purpose
 
@@ -11,12 +11,9 @@ Define the main CI workflow: build, lint (including OpenSpec validation), matrix
 ```yaml
 on:
   push:
-    branches: ['**']
-    tags-ignore: ['v*']
-    paths-ignore: ['README.md', 'CHANGELOG.md']
+    branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore: ['README.md', 'CHANGELOG.md']
+    types: [opened, synchronize, reopened]
   workflow_dispatch: {}
 
 permissions:
@@ -27,9 +24,9 @@ permissions:
 
 The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
 
-#### Scenario: Push to feature branch
+#### Scenario: Push to main
 
-- GIVEN a push that is not a `v*` tag and not only ignored paths
+- GIVEN a `push` to `main`
 - WHEN the change-classification job reports `provider_changes=true`
 - THEN build, lint, and test jobs MAY run per other requirements
 
@@ -168,9 +165,9 @@ The change-classification job SHALL request the minimum permissions required to 
 
 ### Requirement: Change classification gate (REQ-032–REQ-033)
 
-The workflow SHALL evaluate whether matrix acceptance tests are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For `push` events, the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
+The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push` and `workflow_dispatch`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
 
-When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether acceptance coverage is required.
+When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether those jobs are required.
 
 #### Scenario: OpenSpec-only change set
 
@@ -184,9 +181,9 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 - **WHEN** the change-classification job evaluates the diff
 - **THEN** it SHALL report `provider_changes=true`
 
-#### Scenario: Push event always classifies as provider-impacting
+#### Scenario: Non-pull_request event always classifies as provider-impacting
 
-- **GIVEN** a `push` event triggering the workflow
+- **GIVEN** a non-`pull_request` event triggering the workflow (including `push` or `workflow_dispatch`)
 - **WHEN** the change-classification job runs
 - **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
 
@@ -197,7 +194,7 @@ The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a 
 The `gate` job SHALL succeed when either of the following is true:
 
 * The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job are all intentionally skipped
-* The change-classification job reports `provider_changes=true` and `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job all complete successfully
+* `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job all complete successfully (regardless of the classify result)
 
 The `gate` job SHALL fail when any of the following is true:
 
