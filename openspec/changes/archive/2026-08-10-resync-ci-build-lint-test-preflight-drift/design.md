@@ -145,7 +145,8 @@ also churn every downstream cross-reference to the surviving `REQ-NNN` ids for n
 
 This is a documentation-only change with no runtime migration. Sequence:
 
-1. Edit `openspec/specs/ci-build-lint-test/spec.md` per the nine edits enumerated in `tasks.md`.
+1. Edit `openspec/specs/ci-build-lint-test/spec.md` per the twelve edits enumerated in `tasks.md`
+   (1.1–1.3 plus 2.1–2.9).
 2. Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate resync-ci-build-lint-test-preflight-drift --type change`
    and resolve any reported issues.
 3. Land the change; no code, workflow, or script file changes accompany it.
@@ -154,6 +155,9 @@ This is a documentation-only change with no runtime migration. Sequence:
 
 - Non-blocking: open a follow-up for a standalone `golangci-lint` job-behavior requirement (setup,
   version, args), or wait for a separate issue?
+- Non-blocking: open a follow-up to resync `### Requirement: Build and lint jobs
+  (REQ-007–REQ-008, REQ-031)` with the real `build`/`lint` jobs (and the separate `golangci-lint`
+  job) in `.github/workflows/provider.yml` — left untouched by this change's Goals.
 - Non-blocking: this repo's convention for `REQ-NNN` ID stability after deletions (renumber vs. leave
   gaps) — check `ci-pr-auto-approve` before drafting the diff.
 

@@ -49,8 +49,10 @@
       `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate resync-ci-build-lint-test-preflight-drift --type change`
       and resolve any reported issues.
 - [x] 3.2 After sync, confirm `openspec/specs/ci-build-lint-test/spec.md` no longer contains the
-      strings "preflight", "should_run", or "Test Validation", and that every remaining requirement
-      matches an actual job, script, or condition in `.github/workflows/provider.yml` and its
-      `.github/scripts/workflows/` scripts.
+      strings "preflight", "should_run", or "Test Validation", and that every requirement modified
+      by this change matches an actual job, script, or condition in `.github/workflows/provider.yml`
+      and its `.github/scripts/workflows/` scripts. Untouched residual drift in
+      `### Requirement: Build and lint jobs (REQ-007–REQ-008, REQ-031)` is out of scope here and
+      recorded as a follow-up candidate in `design.md` Open questions.
 - [x] 3.3 Confirm `openspec/specs/ci-pr-auto-approve/spec.md` is unchanged by this change — the
       `generated-changelog` requirements there remain the sole owner of that bypass behavior.
