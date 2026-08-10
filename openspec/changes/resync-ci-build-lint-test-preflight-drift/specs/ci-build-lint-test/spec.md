@@ -14,7 +14,7 @@ The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to br
 
 The change-classification job SHALL request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`). The acceptance test job SHALL request `contents: read`, `issues: write`, and `pull-requests: write` permissions.
 
-#### Scenario: Preflight permissions
+#### Scenario: Change-classification permissions
 
 - GIVEN the change-classification job definition
 - WHEN permissions are evaluated

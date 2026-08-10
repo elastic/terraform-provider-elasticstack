@@ -53,13 +53,9 @@ real terminal job rather than keep a name-agnostic placeholder.
 - Any change to `openspec/specs/ci-pr-auto-approve/spec.md`. Its `generated-changelog` requirements
   already correctly describe the bypass; this change only stops `ci-build-lint-test` from also
   claiming ownership of it via a nonexistent preflight skip path.
-- Fixing workflow-identity drift that is unreachable from the preflight/gate/classification/
-  changelog-bypass cluster: the stale `test.yml` workflow-implementation pointer and `Build/Lint/Test`
-  workflow name, the push branch scope (`['**']` vs. the real `[main]`), the stale `Schema` YAML block,
-  and a missing standalone `golangci-lint` job-behavior requirement. These are named in the Open
-  Questions below as a candidate follow-up, not fixed here.
 - A standalone `golangci-lint` job-behavior requirement (setup, version, args). It is only referenced
-  as one of the four inputs to the rewritten gate requirement.
+  as one of the four inputs to the rewritten gate requirement; documenting that job end-to-end remains
+  a candidate follow-up.
 
 ## Decisions
 
@@ -156,12 +152,15 @@ This is a documentation-only change with no runtime migration. Sequence:
 
 ## Open questions
 
-- Non-blocking: open a follow-up now for excluded workflow-identity drift (stale `test.yml` pointer,
-  `Build/Lint/Test` name, push branch scope `['**']` vs `[main]`, stale `Schema` YAML block, missing
-  standalone `golangci-lint` job requirement), or wait for a third issue?
+- Non-blocking: open a follow-up for a standalone `golangci-lint` job-behavior requirement (setup,
+  version, args), or wait for a separate issue?
 - Non-blocking: this repo's convention for `REQ-NNN` ID stability after deletions (renumber vs. leave
   gaps) — check `ci-pr-auto-approve` before drafting the diff.
 
 Resolution recorded for the second question (non-blocking, but settled while drafting this change; see
 Decision 5 above): `ci-pr-auto-approve` already tolerates non-contiguous and unnumbered requirements,
 so this change leaves gaps rather than renumbering.
+
+Note: the former open question about stale `test.yml` pointer / `Build/Lint/Test` name / push-branch
+scope / Schema YAML was resolved during apply — those are aligned with `provider.yml` in the
+canonical spec.

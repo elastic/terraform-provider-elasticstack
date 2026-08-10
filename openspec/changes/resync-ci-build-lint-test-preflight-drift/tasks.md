@@ -14,9 +14,9 @@
 - [x] 2.3 Apply the `## REMOVED Requirements` entry for "Ready-for-review behavior (REQ-030)": delete
       the requirement and its scenario.
 - [x] 2.4 Apply the `## MODIFIED Requirements` block for "Job permissions (REQ-028–REQ-029)": rename
-      "preflight gate job" to "change-classification job" in the requirement text (the "Preflight
-      permissions" scenario title is kept unchanged; only its `GIVEN` clause now names the
-      change-classification job).
+      "preflight gate job" to "change-classification job" in the requirement text, and rename the
+      scenario title from "Preflight permissions" to "Change-classification permissions" (its
+      `GIVEN` clause names the change-classification job).
 - [x] 2.5 Apply the `## MODIFIED Requirements` block for "Change classification gate
       (REQ-032–REQ-033)": drop `should_run` conditioning, state the full non-impacting-path list
       (`CHANGELOG.md`, `openspec/`, `.agents/`, `.github/` except `provider.yml` itself), and add the

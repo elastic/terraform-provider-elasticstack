@@ -157,7 +157,7 @@ Third-party actions in the workflow SHALL be pinned by commit SHA.
 
 The change-classification job SHALL request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`). The acceptance test job SHALL request `contents: read`, `issues: write`, and `pull-requests: write` permissions.
 
-#### Scenario: Preflight permissions
+#### Scenario: Change-classification permissions
 
 - GIVEN the change-classification job definition
 - WHEN permissions are evaluated
