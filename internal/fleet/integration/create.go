@@ -20,7 +20,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
@@ -94,7 +93,7 @@ func writeIntegration(
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	globallyInstalled := fleetPackageInstalledGlobally(pkg)
+	globallyInstalled := fleet.IsPackageInstalled(pkg)
 	installedInTargetSpace := fleetPackageInstalledInSpace(pkg, scope.id)
 	installedElsewhere := globallyInstalled && scope.id != "" && !installedInTargetSpace
 
@@ -159,7 +158,7 @@ func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, f
 }
 
 func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
-	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, fleetPackageInstalledGlobally)
+	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, fleet.IsPackageInstalled)
 }
 
 func waitForFleetIntegrationInstalledInSpace(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
@@ -188,10 +187,7 @@ func waitForFleetIntegrationInstalledState(
 			return true, nil
 		}
 
-		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed {
-			return false, fmt.Errorf("package %s/%s installation failed", name, version)
-		}
-		if pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {
+		if fleet.IsPackageInstallFailed(pkg) {
 			return false, fmt.Errorf("package %s/%s installation failed", name, version)
 		}
 

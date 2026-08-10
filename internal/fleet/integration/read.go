@@ -54,7 +54,7 @@ func readIntegration(
 	if diags.HasError() {
 		return model, false, diags
 	}
-	installed := fleetPackageInstalledGlobally(pkg)
+	installed := fleet.IsPackageInstalled(pkg)
 	if spaceAware {
 		installed = fleetPackageInstalledInSpace(pkg, scope.id)
 	}
