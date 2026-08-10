@@ -26,7 +26,3 @@ import (
 func filterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery *kbapi.KibanaHTTPAPIsFilterSimple) {
 	lenscommon.FilterSimpleFromAPI(m, apiQuery)
 }
-
-func filterSimpleToAPI(m *models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsFilterSimple {
-	return lenscommon.FilterSimpleToAPI(m)
-}
