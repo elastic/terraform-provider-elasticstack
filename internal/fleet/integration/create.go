@@ -20,7 +20,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
@@ -188,10 +187,7 @@ func waitForFleetIntegrationInstalledState(
 			return true, nil
 		}
 
-		if pkg.InstallationInfo != nil && pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed {
-			return false, fmt.Errorf("package %s/%s installation failed", name, version)
-		}
-		if pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {
+		if fleet.IsPackageInstallFailed(pkg) {
 			return false, fmt.Errorf("package %s/%s installation failed", name, version)
 		}
 

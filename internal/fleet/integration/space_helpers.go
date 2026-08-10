@@ -19,10 +19,10 @@ package integration
 
 import (
 	"context"
-	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -59,27 +59,7 @@ func resolveSpaceScope(spaceID types.String) spaceScope {
 // Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
 // and status casing can vary.
 func fleetPackageInstalledGlobally(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
-	if pkg == nil {
-		return false
-	}
-
-	globalInstalled := false
-	if pkg.InstallationInfo != nil {
-		switch pkg.InstallationInfo.InstallStatus {
-		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
-			globalInstalled = true
-		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
-			return false
-		}
-	}
-	if !globalInstalled && pkg.Status != nil {
-		globalInstalled = strings.EqualFold(*pkg.Status, "installed")
-	}
-	if !globalInstalled {
-		return false
-	}
-
-	return true
+	return fleet.IsPackageInstalled(pkg)
 }
 
 func fleetPackageInstalledInSpace(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID string) bool {
