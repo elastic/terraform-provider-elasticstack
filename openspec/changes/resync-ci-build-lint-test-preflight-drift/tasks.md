@@ -5,6 +5,14 @@
       cannot express a `## Purpose` change for an existing capability (the delta's own `## Purpose` is
       ignored at sync time), so this edit must be made directly on the canonical spec file when this
       change is applied/synced, alongside applying the delta below.
+- [x] 1.2 In `openspec/specs/ci-build-lint-test/spec.md`, update the workflow implementation pointer
+      from `.github/workflows/test.yml` to `.github/workflows/provider.yml`. This is prose outside
+      requirement/scenario blocks, so it is not delta-representable and must be edited on the
+      canonical spec directly.
+- [x] 1.3 In `openspec/specs/ci-build-lint-test/spec.md`'s `## Schema` YAML block, align triggers with
+      `.github/workflows/provider.yml`: `push.branches: [main]` (drop `tags-ignore` /
+      `paths-ignore` and the prior `branches: ['**']`), and `pull_request.types` without
+      `ready_for_review`. Like 1.1/1.2, the schema block is not delta-representable.
 
 ## 2. Apply the delta spec to the canonical `ci-build-lint-test` capability
 
