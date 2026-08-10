@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -721,6 +722,140 @@ func TestAccResourceAlertingRuleFlapping(t *testing.T) {
 					// Omitting flapping on update does not clear it in Kibana; refresh repopulates state from the API.
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.look_back_window", "20"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "flapping.status_change_threshold", "5"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
+	minSupportedArtifactsVersion := version.Must(version.NewSemver("9.1.0"))
+	// Kibana only returns artifacts from the GET API starting 9.5.0
+	// (elastic/kibana#247279). Steps that assert an API round-trip (blob
+	// normalisation, import) are gated at this version; write-side steps stay at
+	// 9.1.0.
+	minReadBackVersion := version.Must(version.NewSemver("9.5.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	// Prepare a file used by the content_path step and mutate it between steps
+	// to exercise checksum drift detection.
+	guideFile := filepath.Join(t.TempDir(), "investigation_guide.md")
+	writeGuide := func(t *testing.T, body string) {
+		t.Helper()
+		if err := os.WriteFile(guideFile, []byte(body), 0o600); err != nil {
+			t.Fatalf("failed to write guide file: %s", err)
+		}
+	}
+	writeGuide(t, "# Investigation Guide\nInitial file content.")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			// Inline content: create.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+					"content": config.StringVariable("# Runbook\nInitial inline guide."),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", "# Runbook\nInitial inline guide."),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content_path"),
+				),
+			},
+			// Blob-normalisation probe (Kibana 9.5.0+): confirms Kibana stores/returns
+			// the investigation-guide blob verbatim. If this fails, normalise in the read
+			// path (or treat the blob as opaque) to avoid perpetual drift for
+			// inline-content users. Only meaningful where GET returns artifacts, so the
+			// asserted round-trip actually exercises the stored value rather than state
+			// preservation.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minReadBackVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+					"content": config.StringVariable("# Runbook\r\nStep 1.\n"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", "# Runbook\r\nStep 1.\n"),
+				),
+			},
+			// Inline content: update the text.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+					"content": config.StringVariable("# Runbook\nUpdated inline guide."),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content", "# Runbook\nUpdated inline guide."),
+				),
+			},
+			// Import (Kibana 9.5.0+, elastic/kibana#247279): import starts from an empty
+			// model, so this is the flow that actually proves the GET round-trip for
+			// inline content (the inline assertions above also pass on 9.1-9.4 from state
+			// preservation). Placed after the inline steps so the prior state is inline
+			// content (a content_path prior state would not match, since GET returns the
+			// blob as content, not a path).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minReadBackVersion),
+				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+					"content": config.StringVariable("# Runbook\nUpdated inline guide."),
+				},
+			},
+			// File-based content: switch to content_path; checksum should be set.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_path_create"),
+				ConfigVariables: config.Variables{
+					"name":         config.StringVariable(ruleName),
+					"rule_id":      config.StringVariable(ruleID),
+					"content_path": config.StringVariable(guideFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content_path", guideFile),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
+				),
+			},
+			// Mutate the file out-of-band, then assert a non-empty plan is produced.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
+				PreConfig:                func() { writeGuide(t, "# Investigation Guide\nEdited file content.") },
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_path_create"),
+				ConfigVariables: config.Variables{
+					"name":         config.StringVariable(ruleName),
+					"rule_id":      config.StringVariable(ruleID),
+					"content_path": config.StringVariable(guideFile),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("elasticstack_kibana_alerting_rule.test_rule", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
 				),
 			},
 		},

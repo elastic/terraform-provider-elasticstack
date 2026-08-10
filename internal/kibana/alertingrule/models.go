@@ -19,7 +19,11 @@ package alertingrule
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -55,7 +59,20 @@ type alertingRuleModel struct {
 	LastExecutionDate   types.String                       `tfsdk:"last_execution_date"`
 	AlertDelay          types.Int64                        `tfsdk:"alert_delay"`
 	Flapping            types.Object                       `tfsdk:"flapping"`
+	Artifacts           types.Object                       `tfsdk:"artifacts"`
 	Actions             types.List                         `tfsdk:"actions"`
+}
+
+// artifactsModel is the Terraform model for the rule's linked artifacts.
+type artifactsModel struct {
+	InvestigationGuide types.Object `tfsdk:"investigation_guide"`
+}
+
+// investigationGuideModel is the Terraform model for an investigation guide.
+type investigationGuideModel struct {
+	Content     types.String `tfsdk:"content"`
+	ContentPath types.String `tfsdk:"content_path"`
+	Checksum    types.String `tfsdk:"checksum"`
 }
 
 // actionModel is the Terraform model for a rule action.
@@ -197,6 +214,12 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.Flapping = types.ObjectNull(getFlappingAttrTypes())
 	}
 
+	// Artifacts (investigation guide)
+	diags.Append(m.populateArtifactsFromAPI(ctx, rule)...)
+	if diags.HasError() {
+		return diags
+	}
+
 	// Actions
 	if len(rule.Actions) > 0 {
 		actionsList, d := convertActionsFromAPI(ctx, rule.Actions)
@@ -206,6 +229,86 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.Actions = types.ListNull(types.ObjectType{AttrTypes: getActionsAttrTypes()})
 	}
 
+	return diags
+}
+
+// priorInvestigationGuide returns the investigation guide currently held by the
+// model (plan on the write path, prior state on read), or nil when unset.
+func (m alertingRuleModel) priorInvestigationGuide(ctx context.Context) (*investigationGuideModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
+		return nil, diags
+	}
+	var am artifactsModel
+	diags.Append(m.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+		return nil, diags
+	}
+	var ig investigationGuideModel
+	diags.Append(am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return &ig, diags
+}
+
+// populateArtifactsFromAPI maps the API investigation guide back into the model
+// while preserving the practitioner's chosen source. The API returns only the
+// blob, never a checksum, so for the file-based (`content_path`) case the prior
+// path and checksum are preserved and the blob is not surfaced as `content`.
+func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *models.AlertingRule) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	artifactsAttrTypes := getArtifactsAttrTypes()
+
+	priorIG, d := m.priorInvestigationGuide(ctx)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+
+	apiHasIG := rule.Artifacts != nil && rule.Artifacts.InvestigationGuide != nil
+
+	if !apiHasIG {
+		// Nothing returned by the API. When nothing was configured either, ensure
+		// the object resolves to null rather than lingering unknown.
+		if priorIG == nil && m.Artifacts.IsUnknown() {
+			m.Artifacts = types.ObjectNull(artifactsAttrTypes)
+		}
+		return diags
+	}
+
+	blob := rule.Artifacts.InvestigationGuide.Blob
+
+	ig := investigationGuideModel{}
+	if priorIG != nil && typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
+		// File-based source: preserve path + checksum, do not surface blob.
+		ig.Content = types.StringNull()
+		ig.ContentPath = priorIG.ContentPath
+		ig.Checksum = priorIG.Checksum
+	} else {
+		// Inline content (or first read / import): store the blob as content.
+		ig.Content = types.StringValue(blob)
+		ig.ContentPath = types.StringNull()
+		ig.Checksum = types.StringNull()
+	}
+
+	igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), ig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+
+	artObj, d := types.ObjectValueFrom(ctx, artifactsAttrTypes, artifactsModel{InvestigationGuide: igObj})
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+
+	m.Artifacts = artObj
 	return diags
 }
 
@@ -326,6 +429,7 @@ var (
 	alertDelayMinSupportedVersion      = version.Must(version.NewVersion("8.13.0"))
 	flappingMinSupportedVersion        = version.Must(version.NewVersion("8.16.0"))
 	flappingEnabledMinSupportedVersion = version.Must(version.NewVersion("9.3.0"))
+	artifactsMinSupportedVersion       = version.Must(version.NewVersion("9.1.0"))
 )
 
 func (m alertingRuleModel) GetID() types.String             { return m.ID }
@@ -396,6 +500,14 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 				ErrorMessage: "flapping.enabled is only supported for Elastic Stack 9.3 or higher",
 			})
 		}
+	}
+
+	// 9.1.0 when Artifacts (investigation guide) is set
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *artifactsMinSupportedVersion,
+			ErrorMessage: "artifacts (investigation guide) is only supported for Elastic Stack 9.1 or higher",
+		})
 	}
 
 	return reqs, diags
@@ -494,6 +606,16 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 		}
 	}
 
+	// Artifacts (investigation guide)
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		artifacts, d := m.artifactsToAPI(ctx)
+		diags.Append(d...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
+		}
+		rule.Artifacts = artifacts
+	}
+
 	// Actions
 	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
 		actions, d := convertActionsToAPI(ctx, m.Actions)
@@ -502,6 +624,87 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 	}
 
 	return rule, diags
+}
+
+// artifactsToAPI converts the model's artifacts object into the API model. For
+// the file-based investigation guide the file at `content_path` is read at
+// apply time and its contents are sent as the blob.
+func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.AlertingRuleArtifacts, diag.Diagnostics) {
+	ig, diags := m.priorInvestigationGuide(ctx)
+	if diags.HasError() || ig == nil {
+		return nil, diags
+	}
+
+	var blob string
+	switch {
+	case typeutils.IsKnown(ig.Content) && !ig.Content.IsNull():
+		blob = ig.Content.ValueString()
+	case typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull():
+		data, err := os.ReadFile(ig.ContentPath.ValueString())
+		if err != nil {
+			diags.AddError(
+				"Cannot read investigation guide file",
+				fmt.Sprintf("Failed to read content_path %q: %s", ig.ContentPath.ValueString(), err),
+			)
+			return nil, diags
+		}
+		blob = string(data)
+	default:
+		return nil, diags
+	}
+
+	return &models.AlertingRuleArtifacts{
+		InvestigationGuide: &models.AlertingRuleInvestigationGuide{Blob: blob},
+	}, diags
+}
+
+// applyInvestigationGuideChecksum recomputes and stores the SHA-256 checksum of
+// the file referenced by `content_path`. For the inline `content` case the
+// checksum is cleared. It is invoked from Create/Update after a successful API
+// write so the computed `checksum` in state reflects the applied file, and
+// mirrors the drift detection performed by ModifyPlan.
+func (m *alertingRuleModel) applyInvestigationGuideChecksum(ctx context.Context) diag.Diagnostics {
+	ig, diags := m.priorInvestigationGuide(ctx)
+	if diags.HasError() || ig == nil {
+		return diags
+	}
+
+	if typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull() {
+		sum, err := fileSHA256(ig.ContentPath.ValueString())
+		if err != nil {
+			diags.AddError(
+				"Cannot read investigation guide file",
+				fmt.Sprintf("Failed to compute checksum of content_path %q: %s", ig.ContentPath.ValueString(), err),
+			)
+			return diags
+		}
+		ig.Checksum = types.StringValue(sum)
+	} else {
+		ig.Checksum = types.StringNull()
+	}
+
+	igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), *ig)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	artObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{InvestigationGuide: igObj})
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	m.Artifacts = artObj
+	return diags
+}
+
+// fileSHA256 returns the hex-encoded SHA-256 digest of the file at path.
+func fileSHA256(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 // convertActionsFromAPI converts API actions to Terraform list.
