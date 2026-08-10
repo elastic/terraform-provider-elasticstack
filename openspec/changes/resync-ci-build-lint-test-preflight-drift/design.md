@@ -25,13 +25,11 @@ by reading the workflow and its scripts directly:
   when any changed file falls outside that set, or the file list is empty. For `push` events, the
   classifier script skips file inspection entirely and unconditionally sets `provider_changes=true`
   (`.github/scripts/workflows/provider/classify-changes.js`).
-- The `generated-changelog` CI-bypass behavior described in the current
-  `ci-build-lint-test/spec.md` (branch name, author, file-allowlist gates for reaching auto-approve
-  without full CI) is implemented entirely as auto-approve category-routing logic in
-  `scripts/auto-approve` and documented in `openspec/specs/ci-pr-auto-approve/spec.md` under
-  "Generated changelog selector" / "Generated changelog commit authors" / "Generated changelog file
-  allowlist". Nothing in `provider.yml` special-cases this branch/author/file combination as a
-  preflight or gate skip path.
+- The `generated-changelog` CI-bypass behavior described in the current `ci-build-lint-test/spec.md`
+  (branch name, author, file-allowlist gates for reaching auto-approve without full CI) is not
+  implemented by `provider.yml` itself: nothing in the workflow special-cases this combination as a
+  preflight or gate skip path. If a generated-changelog bypass is intended, it should be owned (and
+  implemented) under the `ci-pr-auto-approve` capability rather than duplicated here.
 
 `@tobio` resolved both prior blocking questions on this issue in comments: delete the two
 changelog-bypass requirements from `ci-build-lint-test` outright (ownership stays fully in

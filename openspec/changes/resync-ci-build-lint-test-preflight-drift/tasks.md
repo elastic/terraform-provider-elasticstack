@@ -8,10 +8,7 @@
 
 ## 2. Apply the delta spec to the canonical `ci-build-lint-test` capability
 
-- [ ] 2.1 Apply the `## MODIFIED Requirements` block for "Workflow identity and triggers
-      (REQ-001–REQ-006)": reword the "Push to feature branch" scenario's `WHEN` clause from "the
-      preflight gate allows execution" to "the change-classification job reports
-      `provider_changes=true`".
+- [ ] 2.1 Apply the `## MODIFIED Requirements` block for "Workflow identity and triggers (REQ-001–REQ-006)": update the workflow name/triggers to match `.github/workflows/provider.yml` (name `Provider CI`, `push` on `main`, `pull_request` types `[opened, synchronize, reopened]`, no `ready_for_review`/path-based exclusions), and reword the push scenario to reference the change-classification job instead of a preflight gate.
 - [ ] 2.2 Apply the `## REMOVED Requirements` entry for "Preflight gate (REQ-023–REQ-027)": delete the
       requirement and its three scenarios.
 - [ ] 2.3 Apply the `## REMOVED Requirements` entry for "Ready-for-review behavior (REQ-030)": delete

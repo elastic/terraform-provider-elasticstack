@@ -2,7 +2,7 @@
 
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
-The workflow name SHALL be `Build/Lint/Test`. The workflow SHALL run on `push` to any branch, excluding tag refs matching `v*` and excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request`, excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request` events of type `ready_for_review` (in addition to default types `opened`, `synchronize`, `reopened`). The workflow SHALL support manual execution via `workflow_dispatch`.
+The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
 
 #### Scenario: Push to feature branch
 
@@ -183,16 +183,12 @@ The `Build/Lint/Test` workflow SHALL allow same-repository pull requests from br
 - **AND** auto-merge SHALL NOT be enabled if the auto-approve gates reject the PR
 
 **Reason**: This requirement's mechanism (a preflight gate that sets `should_run=false` to bypass full
-CI for `generated-changelog` PRs) does not exist in `provider.yml`. The actual bypass is auto-approve
-category routing: `scripts/auto-approve`'s `generated-changelog` category matches this exact
-branch/author/file-allowlist combination and is fully documented in
-`openspec/specs/ci-pr-auto-approve/spec.md` ("Generated changelog selector", "Generated changelog
-commit authors", "Generated changelog file allowlist"). Keeping a second, preflight-shaped description
-of the same behavior here duplicates ownership and is what allowed this capability to drift.
+CI for `generated-changelog` PRs) does not exist in `provider.yml`, and `scripts/auto-approve` does not
+currently implement a `generated-changelog` selector/category either. This requirement is therefore
+stale documentation and is removed to avoid implying a bypass that does not exist.
 
-**Migration**: See `openspec/specs/ci-pr-auto-approve/spec.md`'s "Generated changelog selector" /
-"Generated changelog commit authors" / "Generated changelog file allowlist" requirements, which already
-correctly own this behavior.
+**Migration**: None. If a generated-changelog bypass is required in the future, implement it in
+`scripts/auto-approve` and document it in the `ci-pr-auto-approve` capability.
 
 ### Requirement: Changelog-only bypass remains narrowly scoped
 The `Build/Lint/Test` workflow SHALL keep the changelog-only bypass narrowly scoped to the generated changelog automation shape. Other changelog-only pull requests SHALL NOT gain the same bypass unless they satisfy all three repository-authored generated-changelog conditions: branch name `generated-changelog`, PR author `github-actions[bot]`, and files limited to `CHANGELOG.md`.
@@ -209,12 +205,9 @@ The `Build/Lint/Test` workflow SHALL keep the changelog-only bypass narrowly sco
 - **WHEN** the workflow evaluates bypass conditions
 - **THEN** it SHALL run full CI rather than skipping to the auto-approve path
 
-**Reason**: Same as "Generated changelog pull requests can reach auto-approve without full CI" above —
-this capability's `Build/Lint/Test` workflow has no preflight-gate-based bypass to scope narrowly in the
-first place. The narrow-scoping behavior these scenarios describe is already covered by
-`ci-pr-auto-approve`'s category-selector, commit-author, and file-allowlist requirements, which only
-match the exact `generated-changelog` shape and fail closed otherwise.
+**Reason**: `provider.yml` has no preflight-gate-based bypass for generated-changelog pull requests, so
+there is no bypass to scope narrowly in this workflow today. This requirement is stale documentation
+and is removed.
 
-**Migration**: See `openspec/specs/ci-pr-auto-approve/spec.md`'s "Generated changelog selector" /
-"Generated changelog commit authors" / "Generated changelog file allowlist" requirements for the
-narrow-scoping behavior, which already correctly own it.
+**Migration**: None. If a generated-changelog bypass is required in the future, implement it in
+`scripts/auto-approve` and document it in the `ci-pr-auto-approve` capability.

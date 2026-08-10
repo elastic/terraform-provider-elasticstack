@@ -5,9 +5,9 @@
 a changelog-only CI bypass on that output. `.github/workflows/provider.yml` has no such job: there is
 no `preflight` job and no `should_run` output anywhere in the workflow. The real terminal job is
 `gate` ("Provider Gate"), which evaluates `classify`/`build`/`lint`/`golangci-lint`/`test` via
-`gateProvider()` in `.github/scripts/workflows/lib/gate-provider.js`, and the changelog-only CI bypass
-described in the spec lives entirely in `ci-pr-auto-approve` (the `generated-changelog` category), not
-in this workflow. #4419 already aligned the "Acceptance test job structure" requirement with reality;
+`gateProvider()` in `.github/scripts/workflows/lib/gate-provider.js`. The changelog-only CI bypass
+described in the current spec is not implemented by `provider.yml` itself (there is no preflight/gate
+skip path for `generated-changelog`). #4419 already aligned the "Acceptance test job structure" requirement with reality;
 this change resolves the remaining preflight/`should_run` drift called out in issue #4420 so the
 capability no longer describes a mechanism that does not exist.
 
