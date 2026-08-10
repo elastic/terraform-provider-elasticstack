@@ -4,9 +4,9 @@
 
 The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
 
-#### Scenario: Push to feature branch
+#### Scenario: Push to main
 
-- GIVEN a push that is not a `v*` tag and not only ignored paths
+- GIVEN a `push` to `main`
 - WHEN the change-classification job reports `provider_changes=true`
 - THEN build, lint, and test jobs MAY run per other requirements
 
@@ -14,7 +14,7 @@ The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to br
 
 The change-classification job SHALL request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`). The acceptance test job SHALL request `contents: read`, `issues: write`, and `pull-requests: write` permissions.
 
-#### Scenario: Preflight permissions
+#### Scenario: Change-classification permissions
 
 - GIVEN the change-classification job definition
 - WHEN permissions are evaluated
@@ -22,9 +22,9 @@ The change-classification job SHALL request the minimum permissions required to 
 
 ### Requirement: Change classification gate (REQ-032–REQ-033)
 
-The workflow SHALL evaluate whether matrix acceptance tests are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For `push` events, the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
+The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push` and `workflow_dispatch`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
 
-When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether acceptance coverage is required.
+When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether those jobs are required.
 
 #### Scenario: OpenSpec-only change set
 
@@ -38,9 +38,9 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 - **WHEN** the change-classification job evaluates the diff
 - **THEN** it SHALL report `provider_changes=true`
 
-#### Scenario: Push event always classifies as provider-impacting
+#### Scenario: Non-pull_request event always classifies as provider-impacting
 
-- **GIVEN** a `push` event triggering the workflow
+- **GIVEN** a non-`pull_request` event triggering the workflow (including `push` or `workflow_dispatch`)
 - **WHEN** the change-classification job runs
 - **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
 
@@ -51,12 +51,13 @@ The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a 
 The `gate` job SHALL succeed when either of the following is true:
 
 * The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job are all intentionally skipped
-* The change-classification job reports `provider_changes=true` and `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job all complete successfully
+* `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job all complete successfully (regardless of the classify result)
 
 The `gate` job SHALL fail when any of the following is true:
 
 * Any of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `failure` or `cancelled`
 * The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports an unexpected `skipped` result
+* Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
 
 The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint` checks.
 
@@ -182,13 +183,14 @@ The `Build/Lint/Test` workflow SHALL allow same-repository pull requests from br
 - **THEN** auto-merge SHALL only be enabled if the auto-approve script determined `ShouldApprove` or `AlreadyApproved` is true (reported via a `GITHUB_OUTPUT` step output)
 - **AND** auto-merge SHALL NOT be enabled if the auto-approve gates reject the PR
 
-**Reason**: This requirement's mechanism (a preflight gate that sets `should_run=false` to bypass full
-CI for `generated-changelog` PRs) does not exist in `provider.yml`, and `scripts/auto-approve` does not
-currently implement a `generated-changelog` selector/category either. This requirement is therefore
-stale documentation and is removed to avoid implying a bypass that does not exist.
+**Reason**: This requirement describes a preflight-gate CI bypass for `generated-changelog` PRs that
+does not exist in `provider.yml`. Generated-changelog auto-approve policy is already owned and
+documented by the `ci-pr-auto-approve` capability; keeping a duplicate (and inaccurate) CI-skip claim
+here is harmful.
 
-**Migration**: None. If a generated-changelog bypass is required in the future, implement it in
-`scripts/auto-approve` and document it in the `ci-pr-auto-approve` capability.
+**Migration**: None for this capability. Refer to `openspec/specs/ci-pr-auto-approve/spec.md` for the
+generated-changelog selector, commit-author, and file-allowlist requirements. Script implementation
+parity with those specs is out of scope for this change.
 
 ### Requirement: Changelog-only bypass remains narrowly scoped
 The `Build/Lint/Test` workflow SHALL keep the changelog-only bypass narrowly scoped to the generated changelog automation shape. Other changelog-only pull requests SHALL NOT gain the same bypass unless they satisfy all three repository-authored generated-changelog conditions: branch name `generated-changelog`, PR author `github-actions[bot]`, and files limited to `CHANGELOG.md`.
@@ -205,9 +207,11 @@ The `Build/Lint/Test` workflow SHALL keep the changelog-only bypass narrowly sco
 - **WHEN** the workflow evaluates bypass conditions
 - **THEN** it SHALL run full CI rather than skipping to the auto-approve path
 
-**Reason**: `provider.yml` has no preflight-gate-based bypass for generated-changelog pull requests, so
-there is no bypass to scope narrowly in this workflow today. This requirement is stale documentation
-and is removed.
+**Reason**: `provider.yml` has no preflight-gate-based changelog CI bypass to scope narrowly.
+Generated-changelog auto-approve policy remains owned by `ci-pr-auto-approve`, which already
+documents the selector requirements; this duplicate scoping claim is removed from
+`ci-build-lint-test`.
 
-**Migration**: None. If a generated-changelog bypass is required in the future, implement it in
-`scripts/auto-approve` and document it in the `ci-pr-auto-approve` capability.
+**Migration**: None for this capability. Refer to `openspec/specs/ci-pr-auto-approve/spec.md` for
+generated-changelog policy. Script implementation parity with those specs is out of scope for this
+change.

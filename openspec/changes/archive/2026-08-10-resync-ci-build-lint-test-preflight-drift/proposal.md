@@ -14,6 +14,11 @@ capability no longer describes a mechanism that does not exist.
 ## What Changes
 
 - Purpose text: drop the "preflight gate" phrase from the capability overview.
+- Canonical workflow-implementation pointer: update prose from `.github/workflows/test.yml` to
+  `.github/workflows/provider.yml` (not delta-representable; edited on the canonical spec directly).
+- Canonical `## Schema` YAML block: align triggers with `.github/workflows/provider.yml`
+  (`push.branches: [main]`, drop `tags-ignore`/`paths-ignore` and prior `branches: ['**']`, and
+  `pull_request.types` without `ready_for_review`) — also not delta-representable.
 - Workflow identity scenario ("Push to feature branch"): reword away from "the preflight gate allows
   execution" to a phrasing that does not assume a gate job.
 - Delete `### Requirement: Preflight gate (REQ-023–REQ-027)` and its three scenarios — no such job or
@@ -29,13 +34,15 @@ capability no longer describes a mechanism that does not exist.
   conditioning (the `classify` job runs unconditionally in `provider.yml`) and to accurately state the
   non-impacting-path rule implemented by `classifyChanges()`: `CHANGELOG.md`, any path under
   `openspec/`, any path under `.agents/`, and any path under `.github/` except
-  `.github/workflows/provider.yml` itself — not just paths under `openspec/`. Also state that `push`
-  events skip file inspection entirely and hardcode `provider_changes=true`.
+  `.github/workflows/provider.yml` itself — not just paths under `openspec/`. Also state that
+  non-`pull_request` events (`push` and `workflow_dispatch`) skip file inspection entirely and
+  hardcode `provider_changes=true`.
 - Rename `### Requirement: Test validation job (REQ-034–REQ-036)` to a name matching the real terminal
   job, `Provider Gate` (job id `gate`), and rewrite its pass/fail rule to match `gateProvider()`:
   passes when `classify=false` and every one of `build`/`lint`/`golangci-lint`/`test` is `skipped`, or
-  when `classify=true` and all four succeed; fails on any `failure`/`cancelled` result, or on an
-  unexpected `skipped` result when `classify=true`. This also surfaces `golangci-lint` as a gate input,
+  when all four succeed (regardless of classify result); fails on any `failure`/`cancelled` result, on
+  an unexpected `skipped` result when `classify=true`, or on any other leftover combination including
+  an unrecognised classify or job result value. This also surfaces `golangci-lint` as a gate input,
   which the current spec omits entirely.
 - Rewrite `### Requirement: Auto-approve job (REQ-018–REQ-021)` to depend on the renamed gate
   requirement instead of `Test Validation`, and drop the `ready_for_review`/preflight-skip carve-out:
