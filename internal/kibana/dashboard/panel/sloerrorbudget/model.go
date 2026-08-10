@@ -55,8 +55,6 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	var priorSloInstanceID types.String
 	if prior != nil && prior.SloErrorBudgetConfig != nil {
 		priorSloInstanceID = prior.SloErrorBudgetConfig.SloInstanceID
-	} else if prior == nil {
-		priorSloInstanceID = types.StringValue("*")
 	}
 
 	if existing == nil {
@@ -68,10 +66,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	}
 
 	existing.SloID = types.StringValue(apiConfig.SloId)
-
-	if typeutils.IsKnown(priorSloInstanceID) && apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-		existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-	}
+	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, prior != nil, priorSloInstanceID)
 
 	existing.Title = types.StringPointerValue(apiConfig.Title)
 	existing.Description = types.StringPointerValue(apiConfig.Description)

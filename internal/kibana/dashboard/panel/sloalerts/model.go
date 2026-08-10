@@ -117,23 +117,12 @@ func readSlosFromAPI(
 	for i, apiSlo := range apiSlos {
 		out[i].SloID = types.StringValue(apiSlo.SloId)
 
-		var prior *models.SloAlertsPanelSloModel
-		if i < len(priorSlos) {
-			prior = &priorSlos[i]
+		hasPrior := i < len(priorSlos)
+		var priorInstanceID types.String
+		if hasPrior {
+			priorInstanceID = priorSlos[i].SloInstanceID
 		}
-
-		switch {
-		case prior == nil:
-			if apiSlo.SloInstanceId != nil && *apiSlo.SloInstanceId != "*" {
-				out[i].SloInstanceID = types.StringValue(*apiSlo.SloInstanceId)
-			} else {
-				out[i].SloInstanceID = types.StringNull()
-			}
-		case typeutils.IsKnown(prior.SloInstanceID):
-			out[i].SloInstanceID = types.StringPointerValue(apiSlo.SloInstanceId)
-		default:
-			out[i].SloInstanceID = types.StringNull()
-		}
+		out[i].SloInstanceID = panelkit.PreserveSloInstanceID(apiSlo.SloInstanceId, hasPrior, priorInstanceID)
 	}
 	return out
 }
