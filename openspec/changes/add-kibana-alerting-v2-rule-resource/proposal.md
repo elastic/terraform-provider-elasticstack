@@ -14,7 +14,7 @@ There is a second reason to do this now, while the API is still experimental. Th
 - Register the resource in `experimentalResources()` behind `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL`, as a technical preview with no generated registry documentation. Graduation is [rna-program#678](https://github.com/elastic/rna-program/issues/678) and is designed to need no schema, API, or state change at that point.
 - Record a set of **contingent API changes** to request from the Alerting v2 team (see below). One of them — writable `enabled` — materially changes the resource's apply semantics, so it is called out as a decision the design depends on rather than a wish list.
 
-**Not in this change:** any Go code, `generated/kbapi` regeneration, an action-policy resource, or the rename of the v1 resource (the last is argued in Decision 2; delivered separately).
+**Not in this change:** any Go code, `generated/kbapi` regeneration, an action-policy resource, or any change to the classic v1 resource type name (Decision 2: that rename is not viable).
 
 ### Decision 1 — a separate resource type, not a discriminator on the existing one
 
@@ -29,20 +29,22 @@ There is a fifth, structural cost: a discriminated resource forces every attribu
 
 ### Decision 2 — naming
 
-| Object | Proposed Terraform type |
-|--------|-------------------------|
-| v2 rule | `elasticstack_kibana_rule` |
-| v1 rule (rename, future) | `elasticstack_kibana_alerting_rule_classic` |
+| Object | Terraform type |
+|--------|----------------|
+| v2 rule (this change) | `elasticstack_kibana_rule` |
+| v1 / classic rule | `elasticstack_kibana_alerting_rule` (unchanged; rename is not viable — see below) |
 
-Three arguments against carrying the version into the type name (`…_v2`):
+Three arguments against carrying the version into the new type name (`…_v2`):
 
-- **`_v2` names age badly.** The version suffix is meaningful only while both engines exist. Once classic alerting is retired, the provider is left with a resource permanently called `_v2` and no `_v1`, and renaming it then is a second breaking change.
+- **`_v2` names age badly.** The version suffix is meaningful only while both engines exist. Once classic alerting is retired, the provider is left with a resource permanently called `_v2` and no `_v1`, and renaming it then would be a second breaking change.
 - **Dropping the `alerting_` prefix has precedent.** `elasticstack_kibana_maintenance_window` is an alerting-framework object and does not carry the prefix. More importantly, not every v2 rule produces an alert: `kind = "signal"` is a first-class rule kind that emits signals rather than alerts, so baking `alerting` into the type name is inaccurate for part of the resource's surface.
-- **The product itself is renaming.** Classic alerting is becoming "classic"; `elasticstack_kibana_alerting_rule_classic` tracks that, and leaves the unqualified noun for the thing that is simply "a rule" going forward.
+- **The product's own name for the v2 object is "rule".** That leaves the unqualified noun for the thing that is simply "a rule" going forward, while classic keeps the historical `alerting_rule` type name it already ships under.
 
-**Two main objections.** First, **"rule" is overloaded in this provider** — `elasticstack_kibana_security_detection_rule`, `elasticstack_kibana_install_prebuilt_rules`, `elasticstack_elasticsearch_query_ruleset`, plus `elasticstack_kibana_security_enable_rule`. Those are *qualified* nouns (security detection rules, query rulesets) and none claims the bare term. Alerting v2 is the platform-level alerting implementation in Kibana going forward, so it is the component that should take the bare name even though "rule" is overloaded elsewhere. Second, **"rule" alone may not carry enough product meaning** for practitioners who think in terms of an "alerting" product and expect that word in the type name. The counter is that the product's own name for the object is just "rule", and that `kind = "signal"` makes a permanent `alerting_` qualifier inaccurate. Reviewers who disagree should say so now: this is the cheapest moment to change it.
+**Classic rename is not viable.** Renaming `elasticstack_kibana_alerting_rule` would be a breaking change for customers. Classic therefore **keeps** that type name. Product docs may still say "classic"; the Terraform type name does not follow.
 
-**Do not reuse `elasticstack_kibana_alerting_rule` for v2.** Renaming v1 vacates the name, but reclaiming it is not safe. A practitioner who upgrades the provider without editing configuration would have Terraform read existing v1 state against the v2 schema. Renaming v1 is a supported *address* move — `terraform-plugin-framework` v1.19.0 (in `go.mod`) provides `resource.ResourceWithMoveState`, and the repo pins Terraform 1.15.8, well past the 1.8 floor for cross-type `moved` blocks — so v1 state can be carried to the new address with a `moved` block and no destroy. Reusing the vacated name is a *schema* substitution and has no such mechanism.
+**Two main objections to the v2 name.** First, **"rule" is overloaded in this provider** — `elasticstack_kibana_security_detection_rule`, `elasticstack_kibana_install_prebuilt_rules`, `elasticstack_elasticsearch_query_ruleset`, plus `elasticstack_kibana_security_enable_rule`. Those are *qualified* nouns (security detection rules, query rulesets) and none claims the bare term. Alerting v2 is the platform-level alerting implementation in Kibana going forward, so it is the component that should take the bare name even though "rule" is overloaded elsewhere. Second, **"rule" alone may not carry enough product meaning** for practitioners who think in terms of an "alerting" product and expect that word in the type name. The counter is that the product's own name for the object is just "rule", and that `kind = "signal"` makes a permanent `alerting_` qualifier inaccurate. Reviewers who disagree should say so now: this is the cheapest moment to change it.
+
+**Do not reuse `elasticstack_kibana_alerting_rule` for v2.** That name stays with classic. Putting v2 behind it would be a *schema* substitution: a practitioner who upgrades the provider without editing configuration would have Terraform read existing v1 state against the v2 schema. There is no safe mechanism for that, and this change does not need the classic name — it introduces a new type alongside it.
 
 ### Decision 3 — release path
 
@@ -78,7 +80,7 @@ It's important to note that zod `.nullable()` becomes `anyOf: [T, {nullable: tru
 
 ### Modified Capabilities
 
-- _(none)_ — the v1 `kibana-alerting-rule` capability is untouched. Renaming that resource to `elasticstack_kibana_alerting_rule_classic` is argued in Decision 2 but delivered by a separate change.
+- _(none)_ — the v1 `kibana-alerting-rule` capability is untouched. Its Terraform type name stays `elasticstack_kibana_alerting_rule`; Decision 2 records why a rename is not viable.
 
 ## Impact
 

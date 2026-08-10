@@ -103,7 +103,7 @@ The provider SHALL expose a managed resource with type name **`elasticstack_kiba
 
 Because `make docs-generate` runs `tfplugindocs` with `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false`, the change SHALL NOT add a generated page under `docs/resources/`.
 
-The resource SHALL NOT reuse or reclaim the type name `elasticstack_kibana_alerting_rule`, which belongs to the classic alerting resource and has an incompatible schema.
+The resource SHALL NOT reuse or reclaim the type name `elasticstack_kibana_alerting_rule`, which belongs to the classic alerting resource, has an incompatible schema, and is not being renamed (a classic type rename would be a breaking change for customers).
 
 #### Scenario: Resource is present only on the experimental surface
 

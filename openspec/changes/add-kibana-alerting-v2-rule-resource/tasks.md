@@ -11,7 +11,7 @@
 
 - [ ] 2.1 Get sign-off on the resource name `elasticstack_kibana_rule` (`proposal.md`, Decision 2), explicitly resolving the overload and product-meaning objections.
 - [ ] 2.2 Get sign-off on `PUT`-only writes (`design.md` D1) and on the two-block query mapping (`design.md` D3) — these are the two decisions that are expensive to reverse after implementation starts.
-- [ ] 2.3 Open a separate OpenSpec change for renaming the classic resource to `elasticstack_kibana_alerting_rule_classic` via `resource.ResourceWithMoveState`. It does not block this change.
+- [ ] 2.3 Confirm Decision 2 naming sign-off includes the settled stance that classic stays `elasticstack_kibana_alerting_rule` (rename is not viable; do not open a follow-up rename change).
 - [ ] 2.4 Validate the change: `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate add-kibana-alerting-v2-rule-resource --type change`.
 
 ## 3. Generated client

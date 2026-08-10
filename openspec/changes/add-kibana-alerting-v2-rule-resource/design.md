@@ -183,7 +183,7 @@ Not applicable in the usual sense: this is a new resource with no prior state, n
 
 Two adjacent migrations are worth recording because they are frequently confused with this one:
 
-- **Renaming the classic resource** to `elasticstack_kibana_alerting_rule_classic` (`proposal.md`, Decision 2) is a separate change. It is a state address move: `terraform-plugin-framework` v1.19.0 provides `resource.ResourceWithMoveState`, and the repo's pinned Terraform 1.15.8 is well past the 1.8 floor for cross-type `moved` blocks, so practitioners can move without a destroy. Sequencing does not constrain this change, because this change does not claim the v1 name.
+- **Renaming the classic resource is not viable.** Renaming `elasticstack_kibana_alerting_rule` would be a breaking change for customers. Classic keeps its type name. See `proposal.md` Decision 2.
 - **v1 → v2 rule migration** is a server-side concern and has no Terraform path. See Open Questions.
 
 ## Open Questions
