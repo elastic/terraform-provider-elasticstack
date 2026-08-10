@@ -55,15 +55,8 @@ func resolveSpaceScope(spaceID types.String) spaceScope {
 	return spaceScope{id: resolveSpaceID(spaceID)}
 }
 
-// fleetPackageInstalledGlobally determines whether Fleet reports a package as fully installed.
-// Newer Kibana versions may populate InstallationInfo.install_status instead of (or in addition to) status,
-// and status casing can vary.
-func fleetPackageInstalledGlobally(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
-	return fleet.IsPackageInstalled(pkg)
-}
-
 func fleetPackageInstalledInSpace(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, spaceID string) bool {
-	return fleetPackageInstalledGlobally(pkg) && packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID)
+	return fleet.IsPackageInstalled(pkg) && packageInstalledInKibanaSpace(pkg.InstallationInfo, spaceID)
 }
 
 func packageInstalledInKibanaSpace(info *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, spaceID string) bool {

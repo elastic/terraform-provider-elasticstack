@@ -93,7 +93,7 @@ func writeIntegration(
 		return entitycore.KibanaWriteResult[integrationModel]{}, diags
 	}
 
-	globallyInstalled := fleetPackageInstalledGlobally(pkg)
+	globallyInstalled := fleet.IsPackageInstalled(pkg)
 	installedInTargetSpace := fleetPackageInstalledInSpace(pkg, scope.id)
 	installedElsewhere := globallyInstalled && scope.id != "" && !installedInTargetSpace
 
@@ -158,7 +158,7 @@ func installInSpace(ctx context.Context, client clients.MinVersionEnforceable, f
 }
 
 func waitForFleetIntegrationInstalled(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
-	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, fleetPackageInstalledGlobally)
+	return waitForFleetIntegrationInstalledState(ctx, fleetClient, name, version, scope, fleet.IsPackageInstalled)
 }
 
 func waitForFleetIntegrationInstalledInSpace(ctx context.Context, fleetClient *fleet.Client, name, version string, scope spaceScope) error {
