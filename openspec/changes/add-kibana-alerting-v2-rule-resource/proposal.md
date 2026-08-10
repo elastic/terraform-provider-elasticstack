@@ -14,7 +14,7 @@ There is a second reason to do this now, while the API is still experimental. Th
 - Register the resource in `experimentalResources()` behind `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL`, as a technical preview with no generated registry documentation. Graduation is [rna-program#678](https://github.com/elastic/rna-program/issues/678) and is designed to need no schema, API, or state change at that point.
 - Record a set of **contingent API changes** to request from the Alerting v2 team (see below). One of them — writable `enabled` — materially changes the resource's apply semantics, so it is called out as a decision the design depends on rather than a wish list.
 
-**Not in this change:** any Go code, `generated/kbapi` regeneration, an action-policy resource, or any change to the classic v1 resource type name (Decision 2: that rename is not viable).
+**Not in this change:** any Go code, `generated/kbapi` regeneration, an action-policy resource.
 
 ### Decision 1 — a separate resource type, not a discriminator on the existing one
 
@@ -70,7 +70,7 @@ The provider already carries the scar tissue from this pattern twice: `internal/
 
 v2 OAS lands via [kibana#279519](https://github.com/elastic/kibana/pull/279519); implementation ([#676](https://github.com/elastic/rna-program/issues/676)) regenerates `kbapi` from that bundle. Schema claims in this change are taken from the zod sources today and do not block on the PR merging.
 
-It's important to note that zod `.nullable()` becomes `anyOf: [T, {nullable: true}]` in OAS, and `oapi-codegen` emits a `json.RawMessage` union wrapper instead of `*T`. So `RuleResponse.CreatedBy` is not a `*string` — mappers cannot assign it directly; they must go through a typed accessor (and re-wrap on write). On this resource's `PUT` + GET path that hits four fields: `created_by`, `updated_by`, and `state_transition` (read and write). The Terraform schema is unaffected (`created_by`/`updated_by` stay nullable computed strings; `state_transition` stays an optional block); the cost is noisy mapping code in the client wrapper unless codegen collapses the wrappers first. `design.md` D6 prefers a `transform_schema.go` fix (turns them into ordinary pointers) with per-field unwrap as fallback. Choosing `PUT` over `PATCH` also avoids eight more of these wrappers on the write path.
+It's important to note that zod `.nullable()` becomes `anyOf: [T, {nullable: true}]` in OAS, and `oapi-codegen` emits a `json.RawMessage` union wrapper instead of `*T`. So `RuleResponse.CreatedBy` is not a `*string` — mappers cannot assign it directly; they must go through a typed accessor (and re-wrap on write). On this resource's `PUT` + GET path that hits four fields: `created_by`, `updated_by`, and `state_transition` (read and write). The Terraform schema is unaffected (`created_by`/`updated_by` stay nullable computed strings; `state_transition` stays an optional block); the cost is noisy mapping code in the client wrapper unless codegen collapses the wrappers first. `design.md` D6 prefers a `transform_schema.go` fix (turns them into ordinary pointers) with per-field unwrap as fallback.
 
 ## Capabilities
 

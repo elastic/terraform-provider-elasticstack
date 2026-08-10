@@ -20,9 +20,6 @@ See `proposal.md` — Why, for motivation, and the naming and release-path decis
 **Non-Goals**
 
 - Modelling action policies (a separate future resource, not part of this change).
-- Modelling the v2 alert lifecycle (`/alerts`, alert actions), execution history, bulk operations, `_run`, or the find and `_tags` endpoints. Some of these are natural future data sources or Terraform actions; none is in scope here.
-- Any migration path from a v1 rule to a v2 rule. None exists server side.
-- Reading or writing the `alerting:v2:enabled` advanced setting. The setting defaults on in the next Kibana release; the resource still detects a disabled state and reports it (spec REQ-013) but does not manage the setting.
 
 ## Decisions
 
@@ -39,8 +36,6 @@ This design uses `PUT` for both create and update.
 **Why not `PATCH`.** Terraform configs describe the whole object, not a list of edits. If a practitioner deletes a block from their `.tf` file, the next apply should remove it from the rule. With `PUT`, that happens for free — you send the config as the new body and anything missing is gone. With `PATCH`, the provider has to notice each removed field and send an explicit `null` for it, and the API treats "field not sent" and "field sent as null" as different things on nearly every attribute. Getting that translation wrong is how you end up with perpetual diffs and "omit this key so Kibana doesn't wipe the value" special cases — both of which the classic v1 resource already carries. `PUT` does not have that class of bug.
 
 **Why not `POST` for create.** If an apply is interrupted after the rule is created but before Terraform records the id, a retry with `POST` fails with "already exists". `PUT` to the same id just replaces the rule and converges. That only works when we know the id up front, which is D2.
-
-**A side benefit.** The generated Go types for the `PATCH` body wrap eight nullable fields in awkward union types (see D6). The `PUT` body has one. Choosing `PUT` means less unwrapping on every write.
 
 **The cost.** `PUT` does not take a concurrency token, so two writers racing will overwrite each other. That is last-write-wins, which is how the rest of this provider already behaves and what Terraform assumes: the configuration owns the object. Getting conflict detection would mean switching to `PATCH`, storing the token in state, and handling 409s — including from the provider's own enable/disable calls, which bump the token. Not worth it.
 
