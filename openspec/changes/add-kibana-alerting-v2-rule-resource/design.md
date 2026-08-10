@@ -62,6 +62,76 @@ Option 1 is rejected for the same reason `proposal.md` rejects an `engine` discr
 
 Option 2 keeps the constraints in the schema. `composed_query.base` and `composed_query.breach.segment` are genuinely `Required`; so is `standalone_query.breach.query`. Exactly-one-of is a single object validator at the top level. `format` is not exposed — the provider derives it, since it is fully determined by which block is present, and a user-set `format` that disagreed with the configured fields would just be a new error case to validate.
 
+**Composed — API**
+
+```json
+{
+  "query": {
+    "format": "composed",
+    "base": "FROM metrics | WHERE host.name IS NOT NULL",
+    "breach": {
+      "segment": "| WHERE cpu > 90"
+    },
+    "recovery": {
+      "segment": "| WHERE cpu < 70"
+    }
+  }
+}
+```
+
+**Composed — Terraform**
+
+```hcl
+composed_query {
+  base = "FROM metrics | WHERE host.name IS NOT NULL"
+
+  breach {
+    segment = "| WHERE cpu > 90"
+  }
+
+  recovery {
+    segment = "| WHERE cpu < 70"
+  }
+}
+```
+
+**Standalone — API**
+
+```json
+{
+  "query": {
+    "format": "standalone",
+    "breach": {
+      "query": "FROM metrics | WHERE cpu > 90"
+    },
+    "recovery": {
+      "query": "FROM metrics | WHERE cpu < 70"
+    },
+    "no_data": {
+      "query": "FROM metrics | STATS count()"
+    }
+  }
+}
+```
+
+**Standalone — Terraform**
+
+```hcl
+standalone_query {
+  breach {
+    query = "FROM metrics | WHERE cpu > 90"
+  }
+
+  recovery {
+    query = "FROM metrics | WHERE cpu < 70"
+  }
+
+  no_data {
+    query = "FROM metrics | STATS count()"
+  }
+}
+```
+
 The `breach` / `recovery` / `no_data` wrapper objects are preserved as nested single blocks rather than flattened to `breach_segment` and friends. Each currently holds exactly one field, so flattening would read better today, but the wrappers exist precisely so the API can add fields to them; flattening now means a schema break later.
 
 Cross-field validation that genuinely spans attributes — the seven refinements in spec REQ-007 — cannot be expressed in the schema and go in `ValidateConfig`, guarded on known values.
