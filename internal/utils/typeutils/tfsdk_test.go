@@ -955,10 +955,12 @@ func TestStringListElements(t *testing.T) {
 		want      []string
 		wantDiags bool
 	}{
-		{name: "returns nil for unknown list", input: stringListUnk, want: nil},
-		{name: "returns nil for null list", input: stringListNil, want: nil},
-		{name: "returns empty slice for empty list", input: stringListEmpty, want: []string{}},
-		{name: "extracts string elements", input: stringListFull, want: []string{"v1", "v2", "v3"}},
+		{name: "returns nil for unknown list", input: stringListUnk, want: nil, wantDiags: false},
+		{name: "returns nil for null list", input: stringListNil, want: nil, wantDiags: false},
+		{name: "returns empty slice for empty list", input: stringListEmpty, want: []string{}, wantDiags: false},
+		{name: "extracts string elements", input: stringListFull, want: []string{"v1", "v2", "v3"}, wantDiags: false},
+		{name: "adds diag for null element", input: types.ListValueMust(types.StringType, []attr.Value{types.StringNull()}), want: []string{}, wantDiags: true},
+		{name: "adds diag for unknown element", input: types.ListValueMust(types.StringType, []attr.Value{types.StringUnknown()}), want: []string{}, wantDiags: true},
 	}
 
 	for _, tt := range tests {
@@ -966,7 +968,7 @@ func TestStringListElements(t *testing.T) {
 			var diags diag.Diagnostics
 			got := typeutils.StringListElements(tt.input, &diags)
 			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
+			require.Equal(t, tt.wantDiags, diags.HasError())
 		})
 	}
 }
