@@ -57,22 +57,7 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if typeutils.IsKnown(m.InternalNetworks) {
-		elems := make([]string, 0, len(m.InternalNetworks.Elements()))
-		for _, elem := range m.InternalNetworks.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid internal_networks element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown internal_networks element", "internal_networks elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.InternalNetworks = elems
-	}
+	body.InternalNetworks = typeutils.StringSetElements(m.InternalNetworks, &diags)
 	if typeutils.IsKnown(m.InternalNetworksField) {
 		body.InternalNetworksField = m.InternalNetworksField.ValueString()
 	}

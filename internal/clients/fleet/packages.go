@@ -444,37 +444,97 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	}
 }
 
-func waitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
-	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+// isInstalledStatus reports whether the given installation-info/status pair indicates a package
+// is fully installed. It checks the newer InstallationInfo.InstallStatus enum first, falling back
+// to the legacy Status string field when the enum is absent or inconclusive. Both
+// [kbapi.KibanaHTTPAPIsGetPackageInfo] and [kbapi.KibanaHTTPAPIsPackageListItem] expose these same
+// two fields, so this helper serves both the package-info and packages-list response shapes.
+func isInstalledStatus(installationInfo *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, status *string) bool {
+	if installationInfo != nil {
+		switch installationInfo.InstallStatus {
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
+			return true
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
+			return false
+		}
+	}
+	return status != nil && strings.EqualFold(*status, "installed")
+}
+
+// isInstallFailedStatus is the failure-side counterpart to [isInstalledStatus].
+func isInstallFailedStatus(installationInfo *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, status *string) bool {
+	if installationInfo != nil {
+		switch installationInfo.InstallStatus {
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
+			return true
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
+			return false
+		}
+	}
+	return status != nil && strings.EqualFold(*status, "install_failed")
+}
+
+// IsPackageInstalled reports whether pkg's installation status indicates it is fully installed.
+func IsPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
+	if pkg == nil {
+		return false
+	}
+	return isInstalledStatus(pkg.InstallationInfo, pkg.Status)
+}
+
+// IsPackageInstallFailed reports whether pkg's installation status indicates installation failed.
+func IsPackageInstallFailed(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
+	if pkg == nil {
+		return false
+	}
+	return isInstallFailedStatus(pkg.InstallationInfo, pkg.Status)
+}
+
+// WaitForPackageInstalled polls Fleet until packageName/packageVersion reports an installed status
+// in spaceID, or timeout elapses. When fallbackToListScan is true and the package-info endpoint has
+// not yet reported a conclusive status, the packages list is also scanned for a matching
+// name/version entry; this is needed by upload flows where the packages list can reflect the
+// resolved status before the package-info endpoint does.
+func WaitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string, timeout time.Duration, fallbackToListScan bool) error {
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	waitErr := asyncutils.WaitForStateTransition(waitCtx, "fleet custom integration", fmt.Sprintf("%s/%s", packageName, packageVersion), func(ctx context.Context) (bool, error) {
+	return asyncutils.WaitForStateTransition(waitCtx, "fleet package", fmt.Sprintf("%s/%s", packageName, packageVersion), func(ctx context.Context) (bool, error) {
 		pkg, diags := GetPackage(ctx, client, packageName, packageVersion, spaceID)
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to read package installation status: %s", diags[0].Summary())
 		}
-		if pkg == nil {
+		if IsPackageInstalled(pkg) {
+			return true, nil
+		}
+		if IsPackageInstallFailed(pkg) {
+			return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
+		}
+		if !fallbackToListScan {
 			return false, nil
 		}
-		if pkg.InstallationInfo != nil {
-			switch pkg.InstallationInfo.InstallStatus {
-			case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
-				return true, nil
-			case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
-				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
-			}
+
+		packages, diags := GetPackages(ctx, client, true, spaceID)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to list packages during verification: %s", diags[0].Summary())
 		}
-		if pkg.Status != nil {
-			if strings.EqualFold(*pkg.Status, "installed") {
+		for _, candidate := range packages {
+			if candidate.Name != packageName || candidate.Version != packageVersion {
+				continue
+			}
+			if isInstalledStatus(candidate.InstallationInfo, candidate.Status) {
 				return true, nil
 			}
-			if strings.EqualFold(*pkg.Status, "install_failed") {
+			if isInstallFailedStatus(candidate.InstallationInfo, candidate.Status) {
 				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
 			}
 		}
 		return false, nil
 	})
-	if waitErr != nil {
+}
+
+func waitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
+	if waitErr := WaitForPackageInstalled(ctx, client, packageName, packageVersion, spaceID, 30*time.Second, false); waitErr != nil {
 		return diag.Diagnostics{
 			diag.NewErrorDiagnostic(
 				"Package not ready after upload",

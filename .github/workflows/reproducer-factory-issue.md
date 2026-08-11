@@ -305,6 +305,7 @@ on:
           await fn({ github, context, core });
 env:
   REPRODUCER_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+  CHECKPOINT_DISABLE: "1"
 concurrency:
   group: reproducer-factory-issue-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
@@ -454,6 +455,7 @@ ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
 ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
 KIBANA_ENDPOINT=http://host.docker.internal:5602 \
+CHECKPOINT_DISABLE=1 \
 TF_ACC=1 \
 go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
 ```

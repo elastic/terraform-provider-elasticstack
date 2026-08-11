@@ -10,18 +10,11 @@ provider "elasticstack" {
 resource "elasticstack_elasticsearch_security_role_mapping" "test" {
   name    = var.name
   enabled = true
-  roles = [
-    "admin",
-  ]
+  roles   = ["admin"]
 
   rules = jsonencode({
-    any = [
-      { field = { username = "esadmin" } },
-      { field = { groups = "cn=admins,dc=example,dc=com" } },
-    ]
+    field = { groups = ["project1"] }
   })
-
-  metadata = jsonencode({ version = 1 })
 }
 
 data "elasticstack_elasticsearch_security_role_mapping" "test" {

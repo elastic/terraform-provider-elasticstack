@@ -50,22 +50,7 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if typeutils.IsKnown(m.Fields) {
-		elems := make([]string, 0, len(m.Fields.Elements()))
-		for _, elem := range m.Fields.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid fields element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown fields element", "fields elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Fields = elems
-	}
+	body.Fields = typeutils.StringListElements(m.Fields, &diags)
 	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
 		m.TargetField = types.StringValue("fingerprint")
 		body.TargetField = "fingerprint"

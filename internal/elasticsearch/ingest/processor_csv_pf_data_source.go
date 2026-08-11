@@ -54,22 +54,7 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if typeutils.IsKnown(m.TargetFields) {
-		elems := make([]string, 0, len(m.TargetFields.Elements()))
-		for _, elem := range m.TargetFields.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid target_fields element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown target_fields element", "target_fields elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.TargetFields = elems
-	}
+	body.TargetFields = typeutils.StringListElements(m.TargetFields, &diags)
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
 		m.IgnoreMissing = types.BoolValue(false)
 		body.IgnoreMissing = false

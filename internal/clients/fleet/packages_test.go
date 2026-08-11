@@ -18,9 +18,16 @@
 package fleet
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsManifestYAML(t *testing.T) {
@@ -164,4 +171,152 @@ func TestContainsInstallSpaceDeleteRejection(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsPackageInstalled(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  *kbapi.KibanaHTTPAPIsGetPackageInfo
+		want bool
+	}{
+		{"nil package", nil, false},
+		{"no installation info, no status", &kbapi.KibanaHTTPAPIsGetPackageInfo{}, false},
+		{
+			"enum installed",
+			&kbapi.KibanaHTTPAPIsGetPackageInfo{
+				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
+					InstallStatus: kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled,
+				},
+			},
+			true,
+		},
+		{
+			"enum install_failed short-circuits even with legacy status installed",
+			&kbapi.KibanaHTTPAPIsGetPackageInfo{
+				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
+					InstallStatus: kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed,
+				},
+				Status: new("installed"),
+			},
+			false,
+		},
+		{
+			"enum installing falls back to legacy status installed",
+			&kbapi.KibanaHTTPAPIsGetPackageInfo{
+				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
+					InstallStatus: kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalling,
+				},
+				Status: new("Installed"),
+			},
+			true,
+		},
+		{"legacy status only, case-insensitive", &kbapi.KibanaHTTPAPIsGetPackageInfo{Status: new("INSTALLED")}, true},
+		{"legacy status install_failed", &kbapi.KibanaHTTPAPIsGetPackageInfo{Status: new("install_failed")}, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, IsPackageInstalled(tc.pkg))
+		})
+	}
+}
+
+func TestIsPackageInstallFailed(t *testing.T) {
+	tests := []struct {
+		name string
+		pkg  *kbapi.KibanaHTTPAPIsGetPackageInfo
+		want bool
+	}{
+		{"nil package", nil, false},
+		{"no installation info, no status", &kbapi.KibanaHTTPAPIsGetPackageInfo{}, false},
+		{
+			"enum install_failed",
+			&kbapi.KibanaHTTPAPIsGetPackageInfo{
+				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
+					InstallStatus: kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed,
+				},
+			},
+			true,
+		},
+		{
+			"enum installed short-circuits even with legacy status install_failed",
+			&kbapi.KibanaHTTPAPIsGetPackageInfo{
+				InstallationInfo: &kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo{
+					InstallStatus: kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled,
+				},
+				Status: new("install_failed"),
+			},
+			false,
+		},
+		{"legacy status install_failed, case-insensitive", &kbapi.KibanaHTTPAPIsGetPackageInfo{Status: new("INSTALL_FAILED")}, true},
+		{"legacy status installed", &kbapi.KibanaHTTPAPIsGetPackageInfo{Status: new("installed")}, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, IsPackageInstallFailed(tc.pkg))
+		})
+	}
+}
+
+func newTestPackagesClient(t *testing.T, server *httptest.Server) *Client {
+	t.Helper()
+	client, err := NewClient(Config{URL: server.URL})
+	require.NoError(t, err)
+	return client
+}
+
+func TestWaitForPackageInstalled_succeedsFromPackageInfo(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"item":{"assets":{},"name":"system","title":"System","version":"1.0.0","status":"installed"}}`)
+	}))
+	defer srv.Close()
+
+	err := WaitForPackageInstalled(t.Context(), newTestPackagesClient(t, srv), "system", "1.0.0", "", 10*time.Second, false)
+	require.NoError(t, err)
+}
+
+func TestWaitForPackageInstalled_installFailedReturnsError(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"item":{"assets":{},"name":"system","title":"System","version":"1.0.0","status":"install_failed"}}`)
+	}))
+	defer srv.Close()
+
+	err := WaitForPackageInstalled(t.Context(), newTestPackagesClient(t, srv), "system", "1.0.0", "", 10*time.Second, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "installation failed")
+}
+
+func TestWaitForPackageInstalled_fallbackToListScan(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/fleet/epm/packages" {
+			fmt.Fprint(w, `{"items":[{"id":"system","name":"system","title":"System","version":"1.0.0","status":"installed"}]}`)
+			return
+		}
+		// The package-info endpoint has not caught up yet.
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	err := WaitForPackageInstalled(t.Context(), newTestPackagesClient(t, srv), "system", "1.0.0", "", 10*time.Second, true)
+	require.NoError(t, err)
+}
+
+func TestWaitForPackageInstalled_noFallbackTimesOut(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	err := WaitForPackageInstalled(t.Context(), newTestPackagesClient(t, srv), "system", "1.0.0", "", 2500*time.Millisecond, false)
+	require.Error(t, err)
 }

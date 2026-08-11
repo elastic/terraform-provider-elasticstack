@@ -937,6 +937,42 @@ func TestStringSetElements(t *testing.T) {
 	}
 }
 
+func TestStringListElements(t *testing.T) {
+	t.Parallel()
+
+	stringListUnk := types.ListUnknown(types.StringType)
+	stringListNil := types.ListNull(types.StringType)
+	stringListEmpty := types.ListValueMust(types.StringType, []attr.Value{})
+	stringListFull := types.ListValueMust(types.StringType, []attr.Value{
+		types.StringValue("v1"),
+		types.StringValue("v2"),
+		types.StringValue("v3"),
+	})
+
+	tests := []struct {
+		name      string
+		input     types.List
+		want      []string
+		wantDiags bool
+	}{
+		{name: "returns nil for unknown list", input: stringListUnk, want: nil, wantDiags: false},
+		{name: "returns nil for null list", input: stringListNil, want: nil, wantDiags: false},
+		{name: "returns empty slice for empty list", input: stringListEmpty, want: []string{}, wantDiags: false},
+		{name: "extracts string elements", input: stringListFull, want: []string{"v1", "v2", "v3"}, wantDiags: false},
+		{name: "adds diag for null element", input: types.ListValueMust(types.StringType, []attr.Value{types.StringNull()}), want: []string{}, wantDiags: true},
+		{name: "adds diag for unknown element", input: types.ListValueMust(types.StringType, []attr.Value{types.StringUnknown()}), want: []string{}, wantDiags: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			got := typeutils.StringListElements(tt.input, &diags)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.wantDiags, diags.HasError())
+		})
+	}
+}
+
 func TestSetValueFrom(t *testing.T) {
 	t.Parallel()
 

@@ -52,22 +52,7 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Field = m.Field.ValueString()
 	}
 
-	if typeutils.IsKnown(m.Value) {
-		elems := make([]string, 0, len(m.Value.Elements()))
-		for _, elem := range m.Value.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid value element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown value element", "value elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Value = elems
-	}
+	body.Value = typeutils.StringListElements(m.Value, &diags)
 
 	if m.AllowDuplicates.IsNull() || m.AllowDuplicates.IsUnknown() {
 		m.AllowDuplicates = types.BoolValue(true)

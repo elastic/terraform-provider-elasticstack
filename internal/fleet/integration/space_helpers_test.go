@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -133,7 +134,7 @@ func TestFleetPackageInstalled(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.wantGlobal, fleetPackageInstalledGlobally(tt.pkg))
+			assert.Equal(t, tt.wantGlobal, fleet.IsPackageInstalled(tt.pkg))
 			assert.Equal(t, tt.wantInSpace, fleetPackageInstalledInSpace(tt.pkg, tt.spaceID))
 		})
 	}
