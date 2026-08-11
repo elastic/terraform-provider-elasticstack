@@ -14,7 +14,7 @@
 
 ## 4. Acceptance tests
 
-- [ ] 4.1 Add an acceptance test in `internal/elasticsearch/index/index/acc_test.go` that creates an index, then in a second step adds a field to `mappings` and applies, asserting via a direct read (or `TestCheckResourceAttrWith` against the refreshed `mappings` state) that the new field is present after apply — the regression test for `elastic/protections-cloud#19769`.
+- [ ] 4.1 Add an acceptance test in `internal/elasticsearch/index/index/acc_test.go` that creates an index, then in a second step adds a field to `mappings` and applies, asserting via a direct Elasticsearch read that the new field is present in the live cluster after apply — the regression test for `elastic/protections-cloud#19769`. Do not rely only on the refreshed Terraform `mappings` state, which can preserve the planned field even when the API update was skipped.
 - [ ] 4.2 Extend `use_existing` adoption acceptance coverage (near `TestAccResourceIndexUseExistingAdopt`) with a config that both adds a field absent from the live mapping and omits a field present only in the live mapping, asserting the added field is written and the omitted field is retained.
 
 ## 5. Spec sync

@@ -69,9 +69,7 @@ return !MappingsSemanticallyEqual(planMap, stateMap), diags
 non-drifting superset of `userMappings`. Calling it with `userMappings = planMap`,
 `apiMappings = stateMap` asks "does state already have everything plan wants?" — true means state
 covers the plan (no write needed); negating it gives "the plan wants something state doesn't have"
-(write needed). This is the opposite argument order from the bidirectional `StringSemanticEquals`
-check and is the crux of the fix — care is needed here since a swapped argument order would
-silently reintroduce the original bug.
+`MappingsSemanticallyEqual(planMap, stateMap)` is the required order: it asks whether state covers plan. `StringSemanticEquals` has no single contrasting order because it evaluates both directions. Swapping these arguments would silently reintroduce the original bug.
 
 Null/unknown handling, matching `StringSemanticEquals`'s existing guards:
 
