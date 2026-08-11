@@ -69,3 +69,13 @@ coverage.out
 /progress.md
 ci-deadcode-removal-rotation
 .pi-subagents/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+
+# Gas City
+.beads/*
+!.beads/identity.toml

@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -87,9 +88,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		return
 	}
 
-	resp.Diagnostics.Append(r.updateMappings(ctx, client, concreteName, planModel.Mappings, stateModel.Mappings)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if typeutils.IsKnown(planModel.Mappings) {
+		resp.Diagnostics.Append(r.updateMappings(ctx, client, concreteName, planModel.Mappings, stateModel.Mappings)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	finalModel, found, diags := readIndex(ctx, client, concreteName, planModel, false)
@@ -191,12 +194,12 @@ func (r *Resource) updateMappings(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	areEqual, diags := planMappings.StringSemanticEquals(ctx, stateMappings)
+	requiresUpdate, diags := planMappings.RequiresMappingsUpdate(ctx, stateMappings)
 	if diags.HasError() {
 		return diags
 	}
 
-	if areEqual {
+	if !requiresUpdate {
 		return nil
 	}
 

@@ -1087,6 +1087,127 @@ func TestAccResourceIndexImport(t *testing.T) {
 	})
 }
 
+// TestAccResourceIndexMappingsUpdateRegression is a regression test for
+// elastic/protections-cloud#19769: adding a field to mappings must issue a
+// Put Mapping API call so the new field is written to the live cluster.
+func TestAccResourceIndexMappingsUpdateRegression(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test", "name", indexName),
+					// Verify via direct ES API read that field2 was actually written to the
+					// live cluster — Terraform state can reflect planned fields even when
+					// the Put Mapping API call was skipped (which is the bug this test pins).
+					checkIndexHasField("elasticstack_elasticsearch_index.test", "field2"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceIndexUseExistingAdoptMappings verifies that adoption via
+// use_existing applies the unidirectional Put Mapping decision: a field added
+// by the plan (new_field) is written to the live cluster, while a field present
+// only in the existing live mapping (legacy_field) is retained, not deleted.
+func TestAccResourceIndexUseExistingAdoptMappings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					createElasticsearchIndexOOB(t, indexName, `{
+						"mappings": {
+							"properties": {
+								"legacy_field": { "type": "keyword" }
+							}
+						}
+					}`)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index.test_adopt_mappings", "name", indexName),
+					// new_field from the plan must be present in the live cluster.
+					checkIndexHasField("elasticstack_elasticsearch_index.test_adopt_mappings", "new_field"),
+					// legacy_field from the pre-existing mapping must still be present.
+					checkIndexHasField("elasticstack_elasticsearch_index.test_adopt_mappings", "legacy_field"),
+				),
+			},
+		},
+	})
+}
+
+// checkIndexHasField returns a TestCheckFunc that verifies the named field is
+// present in the live Elasticsearch index mapping via a direct API read.
+// This is independent of Terraform state and catches the case where a Put Mapping
+// call was skipped but the planned field appears in the refreshed state anyway.
+func checkIndexHasField(resourceName, fieldName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+		compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("parse composite id %q: %s", rs.Primary.ID, diags[0].Detail())
+		}
+
+		idxState, err := getElasticsearchIndexStateByName(compID.ResourceID)
+		if err != nil {
+			return fmt.Errorf("direct ES API read for %q: %v", compID.ResourceID, err)
+		}
+		if idxState.Mappings == nil || idxState.Mappings.Properties == nil {
+			return fmt.Errorf("index %q has no mappings properties in live cluster", compID.ResourceID)
+		}
+		if _, ok := idxState.Mappings.Properties[fieldName]; !ok {
+			return fmt.Errorf("index %q: field %q is absent from live cluster mapping (PUT was skipped)", compID.ResourceID, fieldName)
+		}
+		return nil
+	}
+}
+
+func getElasticsearchIndexStateByName(indexName string) (types.IndexState, error) {
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return types.IndexState{}, err
+	}
+	typedClient := client.GetESClient()
+	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
+	if err != nil {
+		return types.IndexState{}, err
+	}
+	state, ok := resp[indexName]
+	if !ok {
+		return types.IndexState{}, fmt.Errorf("index %q not present in response", indexName)
+	}
+	return state, nil
+}
+
 func checkResourceIndexDestroy(s *terraform.State) error {
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
