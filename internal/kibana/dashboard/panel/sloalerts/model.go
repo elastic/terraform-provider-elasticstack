@@ -127,28 +127,26 @@ func readSlosFromAPI(
 	return out
 }
 
+type sloAlertsAPIDrilldown = struct {
+	EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                   `json:"label"`
+	OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                   `json:"url"` //nolint:revive
+}
+
 func readDrilldownsFromAPI(
-	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                   `json:"label"`
-		OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                                   `json:"url"` //nolint:revive
-	},
+	apiDrilldowns *[]sloAlertsAPIDrilldown,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
-	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloAlertsAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
