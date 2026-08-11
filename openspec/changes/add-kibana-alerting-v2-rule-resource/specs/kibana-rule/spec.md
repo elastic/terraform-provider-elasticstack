@@ -225,7 +225,7 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 
 Every field of the rule create body SHALL be expressed as a typed Terraform attribute or nested block, as laid out in the **Schema** section. The resource SHALL NOT expose a single JSON-string attribute (an equivalent of the v1 resource's `params`) as the means of configuring the whole rule.
 
-The sole exception is `artifacts[].data`, which SHALL be a JSON object string because the API models it as an open `Record<string, unknown>` (see REQ-012 and `design.md` D10). All other rule fields SHALL be ordinary typed attributes or blocks and SHALL NOT require `jsonencode`.
+The sole exception is `artifacts[].data`, which SHALL be a JSON object string because the API models it as an open `Record<string, unknown>` (see REQ-012). All other rule fields SHALL be ordinary typed attributes or blocks and SHALL NOT require `jsonencode`.
 
 Constraints the API declares — enum membership, string length bounds, integer ranges, collection size limits, and duration format — SHALL be enforced by schema-level validators so they surface during `terraform validate` and `terraform plan` rather than as an HTTP 400 during apply.
 

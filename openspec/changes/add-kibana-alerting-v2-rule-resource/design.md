@@ -12,7 +12,7 @@ See `proposal.md` — Why, for motivation, and the naming and release-path decis
 
 **Goals**
 
-- A mapping in which every rule field is a typed Terraform attribute (with `artifacts[].data` as the sole JSON object string; see D10), and every statically checkable API constraint is a schema validator.
+- A mapping in which every rule field is a typed Terraform attribute (with `artifacts[].data` as the sole JSON object string), and every statically checkable API constraint is a schema validator.
 - One write path for create and update, so a re-apply after a partial failure converges.
 - Volatile server fields that never produce a diff on an unchanged configuration.
 - A design that survives graduation ([#678](https://github.com/elastic/rna-program/issues/678)) without a schema, API, or state change.
@@ -200,7 +200,9 @@ The value is not yet knowable; see Open Questions. Until it is, the read path mu
 
 Under D1 every write sends the whole object, so a writable field missing from the request body is reset to its server-side default. Today no such field exists — the schema in `specs/kibana-rule/spec.md` covers all of `createRuleDataSchema`. The design has to hold when that stops being true.
 
-`generated/kbapi/Makefile` pins a Kibana commit, and Renovate bumps it periodically, regenerating `kibana.gen.go` in the same PR; the most recent bump changed roughly 2,400 lines. A new field on `createRuleDataBaseSchema` arrives in that diff. Nobody reviewing 2,400 lines of generated code is going to connect one new optional field to "our `PUT` now clears it on every apply for every managed rule" — and the practitioner sees nothing, because Terraform does not know the field exists. The failure mode is silent data loss.
+Without that protection, every apply that touches a managed rule would send only the fields Terraform knows about. If Kibana later adds a writable field that the schema does not yet model — or if someone set that field in the UI — the next apply clears it. Terraform's plan is empty, because from its point of view nothing changed; the practitioner sees the loss only when the rule behaves differently in production. Silent data loss is the failure mode.
+
+That miss is also easy for maintainers: `generated/kbapi/Makefile` pins a Kibana commit, Renovate bumps it and regenerates `kibana.gen.go` in the same PR (the most recent bump was roughly 2,400 lines), and a new optional field on `createRuleDataBaseSchema` lands somewhere in that diff with no obvious link to "every managed rule now gets this wiped on apply."
 
 So the write path reads first: `GET` the rule, populate the request struct from the response, overwrite the fields Terraform owns, `PUT` the merged body. Fields the generated client knows about but the schema does not model survive untouched.
 
@@ -208,23 +210,11 @@ The overwrite must be unconditional for every modeled field, nulls included. Ski
 
 Seeding the request from the response means copying between the response and request types, which strengthens the case for the D6 transformer: with it both sides are plain pointers and the copy is mechanical, whereas hand-unwrapping means going through a union accessor on the read side and re-wrapping on the write side for every field carried across.
 
-This is the settled convention for full-replace APIs rather than a local invention. AzureRM's [contributor best practices](https://hashicorp.github.io/terraform-provider-azurerm/topics/best-practices/) split APIs into partial and full updates and prescribe exactly this for the latter — "retrieve the existing object from the API and then patch it" — and `azurerm_storage_account` was refactored onto it in [hashicorp/terraform-provider-azurerm#23935](https://github.com/hashicorp/terraform-provider-azurerm/issues/23935). This repository already does it too: `internal/fleet/agentpolicy/update.go` reads the live policy before writing, specifically to preserve the `AgentFeatures` it does not model.
+This is the usual pattern for full-replace APIs ([AzureRM best practices](https://hashicorp.github.io/terraform-provider-azurerm/topics/best-practices/); this repo already does it in `internal/fleet/agentpolicy/update.go`). Cost: one extra `GET` per update; create is unaffected. The wider read-to-write window is more last-write-wins exposure, which D1 already accepts.
 
-**What it does not cover.** A field present on the running Kibana but absent from the pinned generated client cannot survive a typed round-trip, because the struct has nowhere to hold it. Nothing available closes that gap; it argues for keeping the Renovate cadence tight rather than for a different write strategy.
+It only preserves fields the pinned generated client knows about — a field on a newer Kibana that is not yet in `kibana.gen.go` still cannot round-trip. Keep Renovate cadence tight; that gap is not a reason to switch write strategies.
 
-**Pair it with a fail-closed test,** because read-before-write preserves the unknown field forever and never prompts anyone to support it properly. A unit test reflects over the `PUT` body struct's JSON tags and compares them against a checked-in list of fields the schema maps plus fields explicitly waived. A new upstream field then fails the Renovate PR by name, and the author has to either model it or waive it with a stated reason. The upstream snapshot test in `rule_data_schema.test.ts` catches the same additions on the Kibana side, but nothing carries that signal across the repository boundary.
-
-Cost: one extra `GET` per update, which is what azurerm pays on every full-update resource. Create is unaffected — the rule does not exist, and the 404-tolerant get is one the resource already needs. The read-to-write window is more last-write-wins exposure, which D1 already accepts.
-
-The advisory `kibana-spec-impact` workflow also fires on pushes touching `generated/kbapi/**` and would likely flag the entity. It runs post-merge, caps issues per run, and summarises through an LLM, so it is a useful backstop but not a guard.
-
-### D10. Artifact `data` is a JSON object string, not typed nested attributes
-
-[kibana#281751](https://github.com/elastic/kibana/pull/281751) replaced `artifacts[].value: string` with `artifacts[].data: Record<string, unknown>`. The framework stays type-agnostic: new artifact types need no schema or SO-mapping change. Per-type required fields (`runbook` → `content`, `dashboard` → `dashboardId`) are opt-in refinements in `ARTIFACT_DATA_SCHEMAS`, not a closed union.
-
-Terraform cannot express an open record as typed attributes without either (a) hard-coding every known type as its own block, which breaks the agnostic contract the API is designed around, or (b) a free-form bag. Option (b) matches how this provider already handles open objects (`params`, inference `service_settings`, ILM `metadata`): a JSON object string on the otherwise typed `{ id, type, data }` block.
-
-Plan-time validation covers what is statically knowable today — JSON object shape, ≤32 keys, key-length bounds, and the two registered type schemas — and leaves unregistered-type field limits to the server so new types do not force a provider release.
+Read-before-write alone would quietly preserve unknown fields forever and never force anyone to model them. Pair it with a fail-closed unit test that compares the `PUT` body's JSON tags against a checked-in allowlist (modeled + explicitly waived). A new upstream field then fails the Renovate PR by name until someone models or waives it.
 
 ## Risks / Trade-offs
 
@@ -237,8 +227,6 @@ Plan-time validation covers what is statically knowable today — JSON object sh
 - **[Risk] The non-atomic `enabled` reconciliation can leave a rule enabled when configuration says otherwise,** so a briefly live rule can fire notifications. → **Mitigation:** report the partial state explicitly (spec REQ-011) rather than failing silently, and pursue contingent change 1.
 
 - **[Trade-off] Two top-level query blocks diverge from the API's single `query` object,** so the mapping is not one-to-one and the spec needs a mapping table. → Accepted: the alternative pushes required-field validation out of the schema (D3), which is the specific defect this change exists to avoid.
-
-- **[Trade-off] `artifacts[].data` is a JSON object string** while the rest of the rule body is typed attributes. → Accepted: the API keeps `data` as an open record so new artifact types need no framework change (D10); hard-coding per-type nested attributes would fight that.
 
 - **[Trade-off] Preserving the `breach` / `recovery` / `no_data` wrapper blocks costs a nesting level** for objects that hold one field each today. → Accepted for forward compatibility; flattening later would be a breaking schema change, unflattening would not have been needed.
 
