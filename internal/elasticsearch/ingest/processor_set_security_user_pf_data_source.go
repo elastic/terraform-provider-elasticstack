@@ -47,22 +47,7 @@ func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if typeutils.IsKnown(m.Properties) {
-		elems := make([]string, 0, len(m.Properties.Elements()))
-		for _, elem := range m.Properties.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid properties element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown properties element", "properties elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Properties = elems
-	}
+	body.Properties = typeutils.StringSetElements(m.Properties, &diags)
 
 	return body, diags
 }

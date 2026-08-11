@@ -60,22 +60,7 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.DateRounding) {
 		body.DateRounding = m.DateRounding.ValueString()
 	}
-	if typeutils.IsKnown(m.DateFormats) {
-		elems := make([]string, 0, len(m.DateFormats.Elements()))
-		for _, elem := range m.DateFormats.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid date_formats element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown date_formats element", "date_formats elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.DateFormats = elems
-	}
+	body.DateFormats = typeutils.StringListElements(m.DateFormats, &diags)
 	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
 		m.Timezone = types.StringValue("UTC")
 		body.Timezone = "UTC"

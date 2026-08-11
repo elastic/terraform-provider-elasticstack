@@ -54,22 +54,7 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if typeutils.IsKnown(m.Patterns) {
-		elems := make([]string, 0, len(m.Patterns.Elements()))
-		for _, elem := range m.Patterns.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid patterns element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown patterns element", "patterns elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Patterns = elems
-	}
+	body.Patterns = typeutils.StringListElements(m.Patterns, &diags)
 	if typeutils.IsKnown(m.PatternDefinitions) {
 		defs := make(map[string]string, len(m.PatternDefinitions.Elements()))
 		for k, v := range m.PatternDefinitions.Elements() {

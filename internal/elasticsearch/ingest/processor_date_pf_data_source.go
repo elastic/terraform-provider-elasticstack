@@ -59,22 +59,7 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if typeutils.IsKnown(m.Formats) {
-		elems := make([]string, 0, len(m.Formats.Elements()))
-		for _, elem := range m.Formats.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid formats element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown formats element", "formats elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Formats = elems
-	}
+	body.Formats = typeutils.StringListElements(m.Formats, &diags)
 	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
 		m.Timezone = types.StringValue("UTC")
 		body.Timezone = "UTC"

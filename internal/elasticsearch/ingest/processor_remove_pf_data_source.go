@@ -44,22 +44,7 @@ func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if typeutils.IsKnown(m.Field) {
-		elems := make([]string, 0, len(m.Field.Elements()))
-		for _, elem := range m.Field.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid field element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown field element", "field elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Field = elems
-	}
+	body.Field = typeutils.StringSetElements(m.Field, &diags)
 	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
 		m.IgnoreMissing = types.BoolValue(false)
 		body.IgnoreMissing = false
