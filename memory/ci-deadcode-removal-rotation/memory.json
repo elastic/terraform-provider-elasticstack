@@ -728,6 +728,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard.lensDrilldownItemFromAPIJSON",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard",
+      "attemptedAt": "2026-08-11T03:43:51.352768695Z",
+      "reason": "verification_timeout",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
