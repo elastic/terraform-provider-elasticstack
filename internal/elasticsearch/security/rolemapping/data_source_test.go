@@ -37,7 +37,7 @@ func TestAccDataSourceSecurityRoleMapping(t *testing.T) {
 	}
 
 	for _, roleMappingName := range names {
-		idPattern := regexp.MustCompile(`^[^/]*/` + regexp.QuoteMeta(roleMappingName) + `$`)
+		idPattern := regexp.MustCompile(`^[^/]+/` + regexp.QuoteMeta(roleMappingName) + `$`)
 
 		resource.Test(t, resource.TestCase{
 			PreCheck: func() { acctest.PreCheck(t) },
