@@ -80,9 +80,13 @@ for a variable the agent's shell needs to inherit.
 
 ## Open questions
 
-- Was the PR #4470 sandbox run that produced the quoted firewall message actually on a checkout
-  that predates commit `2162bb4c` (2026-07-31)? If so, the `host.docker.internal` portion of this
-  issue is already closed by that commit and only the checkpoint-domain gap remains.
+- ~~Was the PR #4470 sandbox run that produced the quoted firewall message actually on a checkout
+  that predates commit `2162bb4c` (2026-07-31)?~~ Resolved: commit `2162bb4c` landed on `main` at
+  2026-07-31, and PR #4470 was opened 2026-08-08 (branched from `main` after that commit), so its
+  sandbox run necessarily included `2162bb4c`. The `host.docker.internal` portion of this issue was
+  already closed by that commit before PR #4470's run; only the checkpoint-domain gap remained, and
+  this change addresses it. Live confirmation of both is tracked in
+  [#4505](https://github.com/elastic/terraform-provider-elasticstack/issues/4505).
 - Should `CHECKPOINT_DISABLE` also be set for the non-sandboxed `provider.yml` CI acceptance-test
   job (outside the GH-AW workflows), for consistency and to trim unnecessary egress there too, or
   is that out of scope for this issue?
