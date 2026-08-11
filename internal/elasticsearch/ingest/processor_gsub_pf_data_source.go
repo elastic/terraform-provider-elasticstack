@@ -59,14 +59,6 @@ func (m *processorGsubModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorGsubDataSource returns a PF data source for the gsub processor.
 func NewProcessorGsubDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to apply the replacement to.",
 			Required:    true,

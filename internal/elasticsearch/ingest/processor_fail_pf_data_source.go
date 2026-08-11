@@ -57,14 +57,6 @@ func (m *processorFailModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorFailDataSource returns a PF data source for the fail processor.
 func NewProcessorFailDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"message": schema.StringAttribute{
 			Description: "The error message thrown by the processor.",
 			Required:    true,

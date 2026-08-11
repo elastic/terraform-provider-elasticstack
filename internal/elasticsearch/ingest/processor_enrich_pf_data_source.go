@@ -73,14 +73,6 @@ func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorEnrichDataSource returns a PF data source for the enrich processor.
 func NewProcessorEnrichDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field in the input document that matches the policies match_field used to retrieve the enrichment data.",
 			Required:    true,

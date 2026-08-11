@@ -78,14 +78,6 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorNetworkDirectionDataSource returns a PF data source for the network_direction processor.
 func NewProcessorNetworkDirectionDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"source_ip": schema.StringAttribute{
 			Description: "Field containing the source IP address.",
 			Optional:    true,

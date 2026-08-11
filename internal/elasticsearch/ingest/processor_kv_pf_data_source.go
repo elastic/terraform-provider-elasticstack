@@ -82,14 +82,6 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorKVDataSource returns a PF data source for the kv processor.
 func NewProcessorKVDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to be parsed. Supports template snippets.",
 			Required:    true,

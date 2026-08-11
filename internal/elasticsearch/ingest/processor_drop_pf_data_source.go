@@ -45,16 +45,7 @@ func (m *processorDropModel) MarshalBody() (any, diag.Diagnostics) {
 
 // NewProcessorDropDataSource returns a PF data source for the drop processor.
 func NewProcessorDropDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-	}
+	attrs := map[string]schema.Attribute{}
 
 	// Merge common attributes
 	maps.Copy(attrs, CommonProcessorSchemaAttributes())

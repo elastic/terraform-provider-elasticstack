@@ -62,14 +62,6 @@ func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorRemoveDataSource returns a PF data source for the remove processor.
 func NewProcessorRemoveDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.SetAttribute{
 			Description: "Fields to be removed.",
 			Required:    true,

@@ -55,14 +55,6 @@ func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorSetSecurityUserDataSource returns a PF data source for the set_security_user processor.
 func NewProcessorSetSecurityUserDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to store the user information into.",
 			Required:    true,

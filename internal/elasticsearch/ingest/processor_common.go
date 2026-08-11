@@ -174,14 +174,6 @@ func newSimpleIgnorableTargetFieldDataSource(cfg simpleProcessorConfig) datasour
 	}
 
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: cfg.fieldDesc,
 			Required:    true,
@@ -209,6 +201,14 @@ func newSimpleIgnorableTargetFieldDataSource(cfg simpleProcessorConfig) datasour
 // to all ingest processor data sources.
 func CommonProcessorSchemaAttributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: descIdentifierWithPeriod,
+			Computed:    true,
+		},
+		attrJSON: schema.StringAttribute{
+			Description: descJSONDataSource,
+			Computed:    true,
+		},
 		"description": schema.StringAttribute{
 			Description: "Description of the processor.",
 			Optional:    true,

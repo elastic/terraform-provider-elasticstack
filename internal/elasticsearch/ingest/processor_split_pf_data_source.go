@@ -62,14 +62,6 @@ func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorSplitDataSource returns a PF data source for the split processor.
 func NewProcessorSplitDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to split",
 			Required:    true,

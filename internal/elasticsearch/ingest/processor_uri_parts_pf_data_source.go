@@ -71,14 +71,6 @@ func (m *processorURIPartsModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorURIPartsDataSource returns a PF data source for the uri_parts processor.
 func NewProcessorURIPartsDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "Field containing the URI string.",
 			Required:    true,
