@@ -1,6 +1,6 @@
 ## 1. Disable checkpoint telemetry for `code-factory`
 
-- [ ] 1.1 Add a workflow-level `env: CHECKPOINT_DISABLE: "1"` block to `.github/workflows/code-factory-issue.md` (it has none today; add one at the workflow-frontmatter level, alongside where `network:`/`concurrency:` are declared).
+- [ ] 1.1 Add a workflow-level `env: CHECKPOINT_DISABLE: "1"` block to `.github/workflows/code-factory-issue.md` (it has none today; add one at the workflow-frontmatter level, alongside where `network:` is declared).
 - [ ] 1.2 Update the "Test environment" `go test` example in `.github/workflows/code-factory-issue.md` to include `CHECKPOINT_DISABLE=1` alongside `ELASTICSEARCH_ENDPOINTS`, `ELASTICSEARCH_USERNAME`, `ELASTICSEARCH_PASSWORD`, `KIBANA_ENDPOINT`, and `TF_ACC`.
 - [ ] 1.3 Recompile the workflow and confirm the compiled `.github/workflows/code-factory-issue.lock.yml` carries `CHECKPOINT_DISABLE` into the agent job's environment.
 

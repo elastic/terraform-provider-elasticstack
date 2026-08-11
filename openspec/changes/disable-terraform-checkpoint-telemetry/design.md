@@ -47,8 +47,7 @@ Why:
 - It removes the outbound call entirely instead of routing around the firewall — no new domain to
   keep matching squid's SNI/Host-based ACL as HashiCorp rotates IPs behind that hostname, and no
   telemetry egress from CI at all.
-- It also silences the same call for contributors running `make docker-testacc` locally who don't
-  want the network hop, without requiring a docker-compose change in this proposal's scope.
+- It also avoids the same checkpoint call for developers running acceptance tests locally **if they opt in** by setting `CHECKPOINT_DISABLE=1`, without requiring a docker-compose change in this proposal's scope.
 - A job-level `env:` var applies no matter what `go test -run ...` invocation the agent types,
   whereas fixing only the documented example snippet would leave the gap open if the agent
   constructs its own command.
