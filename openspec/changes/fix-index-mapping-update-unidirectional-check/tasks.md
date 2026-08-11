@@ -11,7 +11,7 @@
 - [x] 2.2 Confirm `internal/elasticsearch/index/index/create.go`'s `adoptExistingIndexOnCreate` (which calls the same `updateMappings` helper) picks up the fix with no code change; no separate call site to update.
 - [x] 2.3 Add an acceptance test in `internal/elasticsearch/index/index/acc_test.go` that creates an index, then in a second step adds a field to `mappings` and applies, asserting via a direct Elasticsearch read that the new field is present in the live cluster after apply — the regression test for `elastic/protections-cloud#19769`. Do not rely only on the refreshed Terraform `mappings` state, which can preserve the planned field even when the API update was skipped.
 - [x] 2.4 Extend `use_existing` adoption acceptance coverage (near `TestAccResourceIndexUseExistingAdopt`) with a config that both adds a field absent from the live mapping and omits a field present only in the live mapping, asserting the added field is written and the omitted field is retained.
-- [ ] 2.5 Run `TF_ACC=1 go test ./internal/elasticsearch/index/index/...` against a live Elastic Stack (see `dev-docs/high-level/testing.md`) and confirm the regression test and adoption test pass.
+- [x] 2.5 Run `TF_ACC=1 go test ./internal/elasticsearch/index/index/...` against a live Elastic Stack (see `dev-docs/high-level/testing.md`) and confirm the regression test and adoption test pass.
 
 ## 3. Spec sync
 

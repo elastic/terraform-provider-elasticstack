@@ -1178,7 +1178,7 @@ func checkIndexHasField(resourceName, fieldName string) resource.TestCheckFunc {
 
 		idxState, err := getElasticsearchIndexStateByName(compID.ResourceID)
 		if err != nil {
-			return fmt.Errorf("direct ES API read for %q: %v", compID.ResourceID, err)
+			return fmt.Errorf("direct ES API read for %q: %w", compID.ResourceID, err)
 		}
 		if idxState.Mappings == nil || idxState.Mappings.Properties == nil {
 			return fmt.Errorf("index %q has no mappings properties in live cluster", compID.ResourceID)
