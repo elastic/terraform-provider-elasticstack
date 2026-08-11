@@ -570,55 +570,51 @@ func discoverSessionOverridesRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboar
 	)
 }
 
+type discoverSessionConfig0APIDrilldown = struct {
+	EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                                           `json:"label"`
+	OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
+	Url          string                                                                           `json:"url"` //nolint:revive
+}
+
 func readDiscoverSessionDrilldownsFromConfig0(
-	api *[]struct {
-		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                           `json:"label"`
-		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
-		Url          string                                                                           `json:"url"` //nolint:revive
-	},
+	api *[]discoverSessionConfig0APIDrilldown,
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
-	if api == nil || len(*api) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig0APIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 
+type discoverSessionConfig1APIDrilldown = struct {
+	EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                                           `json:"label"`
+	OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
+	Url          string                                                                           `json:"url"` //nolint:revive
+}
+
 func readDiscoverSessionDrilldownsFromConfig1(
-	api *[]struct {
-		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                           `json:"label"`
-		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
-		Url          string                                                                           `json:"url"` //nolint:revive
-	},
+	api *[]discoverSessionConfig1APIDrilldown,
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
-	if api == nil || len(*api) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig1APIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 

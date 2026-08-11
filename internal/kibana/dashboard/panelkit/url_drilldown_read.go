@@ -40,6 +40,22 @@ const (
 	drilldownURLOpenInNewTabDefault = false
 )
 
+// BuildURLDrilldownItems converts a pointer to a slice of a panel's generated
+// drilldown struct into []URLDrilldownAPIItemData, sharing the nil/empty guard and
+// make+loop shape that would otherwise be duplicated in every panel package. extract
+// maps a single generated element to the four scalar fields ReadURLDrilldownsFromAPI
+// needs; the generated element type differs per embeddable, so it must stay generic.
+func BuildURLDrilldownItems[T any](apiDrilldowns *[]T, extract func(T) URLDrilldownAPIItemData) []URLDrilldownAPIItemData {
+	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
+		return nil
+	}
+	items := make([]URLDrilldownAPIItemData, len(*apiDrilldowns))
+	for i, d := range *apiDrilldowns {
+		items[i] = extract(d)
+	}
+	return items
+}
+
 // ReadURLDrilldownsFromAPI builds a []models.URLDrilldownModel from a slice of
 // URLDrilldownAPIItemData, applying null-preservation against the prior Terraform
 // state. When prior is nil (import), DrilldownBoolImportPreserving is used so that
