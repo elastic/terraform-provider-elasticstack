@@ -92,10 +92,8 @@ func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmb
 		Duration: types.StringValue(apiConfig.Duration),
 	}
 	cfg.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, false, types.StringNull())
-	cfg.Title = types.StringPointerValue(apiConfig.Title)
-	cfg.Description = types.StringPointerValue(apiConfig.Description)
-	cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-	cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+	panelkit.CopyPresentationFromAPI(&cfg.Title, &cfg.Description, &cfg.HideTitle, &cfg.HideBorder,
+		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
 	cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
 	return cfg
 }

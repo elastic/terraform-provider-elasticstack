@@ -68,10 +68,8 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	existing.SloID = types.StringValue(apiConfig.SloId)
 	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, prior != nil, priorSloInstanceID)
 
-	existing.Title = types.StringPointerValue(apiConfig.Title)
-	existing.Description = types.StringPointerValue(apiConfig.Description)
-	existing.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-	existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+	panelkit.CopyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
 	if prior != nil && prior.SloErrorBudgetConfig != nil {
 		panelkit.NullPreservePresentationFromPrior(
 			prior.SloErrorBudgetConfig.Title,

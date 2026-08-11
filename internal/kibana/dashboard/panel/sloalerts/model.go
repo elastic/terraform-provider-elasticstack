@@ -93,12 +93,9 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, apiPanel
 }
 
 func sloAlertsPanelConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsSloAlertsEmbeddable) *models.SloAlertsPanelConfigModel {
-	cfg := &models.SloAlertsPanelConfigModel{
-		Title:       types.StringPointerValue(apiCfg.Title),
-		Description: types.StringPointerValue(apiCfg.Description),
-		HideTitle:   types.BoolPointerValue(apiCfg.HideTitle),
-		HideBorder:  types.BoolPointerValue(apiCfg.HideBorder),
-	}
+	cfg := &models.SloAlertsPanelConfigModel{}
+	panelkit.CopyPresentationFromAPI(&cfg.Title, &cfg.Description, &cfg.HideTitle, &cfg.HideBorder,
+		apiCfg.Title, apiCfg.Description, apiCfg.HideTitle, apiCfg.HideBorder)
 	if apiCfg.Slos != nil {
 		cfg.Slos = readSlosFromAPI(*apiCfg.Slos, nil)
 	}

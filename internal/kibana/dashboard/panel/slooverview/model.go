@@ -244,10 +244,8 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 	}
 	m.RemoteName = sloStringFromAPIOrPrior(api.RemoteName, priorRemoteName)
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.HideTitle = types.BoolPointerValue(api.HideTitle)
-	m.HideBorder = types.BoolPointerValue(api.HideBorder)
+	panelkit.CopyPresentationFromAPI(&m.Title, &m.Description, &m.HideTitle, &m.HideBorder,
+		api.Title, api.Description, api.HideTitle, api.HideBorder)
 	if priorSingle != nil {
 		panelkit.NullPreservePresentationFromPrior(
 			priorSingle.Title, priorSingle.Description, priorSingle.HideTitle, priorSingle.HideBorder,
@@ -276,10 +274,8 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 
 	m := &models.SloOverviewGroupsModel{}
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.HideTitle = types.BoolPointerValue(api.HideTitle)
-	m.HideBorder = types.BoolPointerValue(api.HideBorder)
+	panelkit.CopyPresentationFromAPI(&m.Title, &m.Description, &m.HideTitle, &m.HideBorder,
+		api.Title, api.Description, api.HideTitle, api.HideBorder)
 	if priorGroups != nil {
 		panelkit.NullPreservePresentationFromPrior(
 			priorGroups.Title, priorGroups.Description, priorGroups.HideTitle, priorGroups.HideBorder,

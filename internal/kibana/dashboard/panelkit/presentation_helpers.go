@@ -41,6 +41,26 @@ func ApplyPresentationFromAPI(
 	*existingHideBorder = PreserveBool(*existingHideBorder, apiHideBorder)
 }
 
+// CopyPresentationFromAPI unconditionally copies the four standard optional presentation fields
+// (title, description, hide_title, hide_border) from API pointer values into Terraform state.
+// Unlike ApplyPresentationFromAPI, this performs a plain copy with no null-preservation semantics
+// — use it for "no prior state to preserve" construction paths (import, fresh create).
+func CopyPresentationFromAPI(
+	existingTitle *types.String,
+	existingDescription *types.String,
+	existingHideTitle *types.Bool,
+	existingHideBorder *types.Bool,
+	apiTitle *string,
+	apiDescription *string,
+	apiHideTitle *bool,
+	apiHideBorder *bool,
+) {
+	*existingTitle = types.StringPointerValue(apiTitle)
+	*existingDescription = types.StringPointerValue(apiDescription)
+	*existingHideTitle = types.BoolPointerValue(apiHideTitle)
+	*existingHideBorder = types.BoolPointerValue(apiHideBorder)
+}
+
 // NullPreservePresentationFromPrior applies null-intent preservation for the four standard
 // presentation fields (title, description, hide_title, hide_border): if a field was null/unknown
 // in the prior state, it is reset to null in existing.
