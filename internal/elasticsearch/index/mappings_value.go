@@ -148,7 +148,9 @@ func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 
 	// Semantic equality for mappings is bidirectional: two mapping values are
 	// semantically equal when one is a non-drifting superset of the other.
-	// This handles both planning (plan vs prior state) and apply (state vs plan).
+	// Use this for plan-time drift suppression only. Do NOT use it to decide
+	// whether to call Put Mapping at apply time — that gate is
+	// RequiresMappingsUpdate (unidirectional: plan content absent from state).
 	return MappingsSemanticallyEqual(vMap, newMap) || MappingsSemanticallyEqual(newMap, vMap), diags
 }
 
@@ -164,7 +166,7 @@ func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 //
 // Null/unknown rules: plan null or unknown → false (nothing planned to add);
 // state null or unknown with plan known → true (state has nothing, plan adds everything).
-func (v MappingsValue) RequiresMappingsUpdate(ctx context.Context, state MappingsValue) (bool, diag.Diagnostics) {
+func (v MappingsValue) RequiresMappingsUpdate(_ context.Context, state MappingsValue) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if !typeutils.IsKnown(v) {
