@@ -286,6 +286,21 @@ func buildArtifactsObject(ctx context.Context, am artifactsModel) (types.Object,
 	return types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), am)
 }
 
+// resolveArtifactsUnknowns replaces any unknown nested artifacts attribute with
+// its null value. Because `investigation_guide` and `dashboards` are both
+// Optional+Computed, the one the practitioner did not configure is unknown in
+// the plan; on stacks that do not return artifacts on read the value would
+// otherwise remain unknown in state after apply.
+func resolveArtifactsUnknowns(am artifactsModel) artifactsModel {
+	if am.InvestigationGuide.IsUnknown() {
+		am.InvestigationGuide = types.ObjectNull(getInvestigationGuideAttrTypes())
+	}
+	if am.Dashboards.IsUnknown() {
+		am.Dashboards = types.ListNull(getDashboardsElementType())
+	}
+	return am
+}
+
 // populateArtifactsFromAPI maps the API artifacts (investigation guide and
 // dashboards) back into the model while preserving the practitioner's chosen
 // investigation-guide source. The API returns only the blob, never a checksum,
@@ -315,11 +330,26 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 
 	if !apiHasIG && !apiHasDashboards {
 		// Nothing returned by the API (nothing configured, or a pre-9.5.0 stack
-		// that does not return artifacts). When nothing was configured either,
-		// resolve the computed object to null rather than lingering unknown.
-		if prior == nil && m.Artifacts.IsUnknown() {
-			m.Artifacts = types.ObjectNull(artifactsAttrTypes)
+		// that does not return artifacts).
+		if prior == nil {
+			// Nothing configured: resolve a lingering unknown object to null.
+			if m.Artifacts.IsUnknown() {
+				m.Artifacts = types.ObjectNull(artifactsAttrTypes)
+			}
+			return diags
 		}
+		// Artifacts were configured but the API returned none (write-only on
+		// pre-9.5.0 stacks). Preserve the configured values, but resolve any
+		// nested attribute the practitioner did not set (which is Computed and
+		// therefore unknown in the plan) to null so state has no unknown after
+		// apply.
+		resolved := resolveArtifactsUnknowns(*prior)
+		artObj, d := buildArtifactsObject(ctx, resolved)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		m.Artifacts = artObj
 		return diags
 	}
 

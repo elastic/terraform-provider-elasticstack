@@ -432,3 +432,30 @@ func Test_validateArtifactsNotEmpty(t *testing.T) {
 		require.False(t, diags.HasError())
 	})
 }
+
+// On pre-9.5.0 stacks, a rule that configures only dashboards has an unknown
+// (Computed) investigation_guide in the plan; after apply the API returns no
+// artifacts, so the read path must resolve the unknown guide to null (and keep
+// dashboards) rather than leaving an unknown value in state.
+func Test_populateArtifactsFromAPI_resolvesUnknownSiblingWhenAPIOmits(t *testing.T) {
+	ctx := context.Background()
+
+	m := baseModel()
+	m.Artifacts = artifactsObjectWith(ctx, t,
+		types.ObjectUnknown(getInvestigationGuideAttrTypes()),
+		dashboardsList(ctx, t, "d1"),
+	)
+
+	// API returns nothing (older stack).
+	diags := m.populateArtifactsFromAPI(ctx, &models.AlertingRule{})
+	require.False(t, diags.HasError())
+
+	am, d := m.artifactsModelFrom(ctx)
+	require.False(t, d.HasError())
+	require.NotNil(t, am)
+	require.True(t, am.InvestigationGuide.IsNull(), "unknown guide must resolve to null")
+	var dashboards []dashboardModel
+	require.False(t, am.Dashboards.ElementsAs(ctx, &dashboards, false).HasError())
+	require.Len(t, dashboards, 1)
+	require.Equal(t, "d1", dashboards[0].ID.ValueString())
+}
