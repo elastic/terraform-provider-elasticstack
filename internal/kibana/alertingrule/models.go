@@ -65,6 +65,7 @@ type alertingRuleModel struct {
 
 // artifactsModel is the Terraform model for the rule's linked artifacts.
 type artifactsModel struct {
+	Dashboards         types.List   `tfsdk:"dashboards"`
 	InvestigationGuide types.Object `tfsdk:"investigation_guide"`
 }
 
@@ -73,6 +74,11 @@ type investigationGuideModel struct {
 	Content     types.String `tfsdk:"content"`
 	ContentPath types.String `tfsdk:"content_path"`
 	Checksum    types.String `tfsdk:"checksum"`
+}
+
+// dashboardModel is the Terraform model for a single linked dashboard.
+type dashboardModel struct {
+	ID types.String `tfsdk:"id"`
 }
 
 // actionModel is the Terraform model for a rule action.
@@ -232,9 +238,9 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	return diags
 }
 
-// investigationGuideFrom returns the investigation guide nested under
-// m.Artifacts (from plan or state, depending on the caller), or nil when unset.
-func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investigationGuideModel, diag.Diagnostics) {
+// artifactsModelFrom decodes the full artifacts nested object from m.Artifacts
+// (from plan or state, depending on the caller), or nil when unset/unknown.
+func (m alertingRuleModel) artifactsModelFrom(ctx context.Context) (*artifactsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
 		return nil, diags
@@ -244,65 +250,128 @@ func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investi
 	if diags.HasError() {
 		return nil, diags
 	}
-	if !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+	return &am, diags
+}
+
+// investigationGuideFrom returns the investigation guide nested under
+// m.Artifacts (from plan or state, depending on the caller), or nil when unset.
+func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investigationGuideModel, diag.Diagnostics) {
+	am, diags := m.artifactsModelFrom(ctx)
+	if diags.HasError() || am == nil {
 		return nil, diags
+	}
+	ig := investigationGuideFromArtifacts(ctx, am, &diags)
+	return ig, diags
+}
+
+// investigationGuideFromArtifacts decodes the investigation_guide nested object
+// from an already-decoded artifactsModel, or nil when unset.
+func investigationGuideFromArtifacts(ctx context.Context, am *artifactsModel, diags *diag.Diagnostics) *investigationGuideModel {
+	if am == nil || !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+		return nil
 	}
 	var ig investigationGuideModel
 	diags.Append(am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})...)
 	if diags.HasError() {
-		return nil, diags
+		return nil
 	}
-	return &ig, diags
+	return &ig
 }
 
-// populateArtifactsFromAPI maps the API investigation guide back into the model
-// while preserving the practitioner's chosen source. The API returns only the
-// blob, never a checksum, so for the file-based (`content_path`) case the prior
-// path and checksum are preserved and the blob is not surfaced as `content`.
+// buildArtifactsObject builds the artifacts nested object from an artifactsModel,
+// ensuring every field (dashboards + investigation_guide) is preserved. Callers
+// that only touch one field must read the current artifactsModel first so the
+// other field is carried through unchanged.
+func buildArtifactsObject(ctx context.Context, am artifactsModel) (types.Object, diag.Diagnostics) {
+	return types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), am)
+}
+
+// populateArtifactsFromAPI maps the API artifacts (investigation guide and
+// dashboards) back into the model while preserving the practitioner's chosen
+// investigation-guide source. The API returns only the blob, never a checksum,
+// so for the file-based (`content_path`) case the prior path and checksum are
+// preserved and the blob is not surfaced as `content`.
+//
+// On stacks older than 9.5.0 the Kibana GET API does not return artifacts
+// (elastic/kibana#247279); in that case the prior (plan/state) value is
+// preserved so write-only management does not thrash state.
 func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *models.AlertingRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	artifactsAttrTypes := getArtifactsAttrTypes()
 
-	priorIG, d := m.investigationGuideFrom(ctx)
+	prior, d := m.artifactsModelFrom(ctx)
 	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	priorIG := investigationGuideFromArtifacts(ctx, prior, &diags)
 	if diags.HasError() {
 		return diags
 	}
 
 	apiHasIG := rule.Artifacts != nil && rule.Artifacts.InvestigationGuide != nil
+	apiHasDashboards := rule.Artifacts != nil && len(rule.Artifacts.Dashboards) > 0
 
-	if !apiHasIG {
-		// Nothing returned by the API. When nothing was configured either, ensure
-		// the object resolves to null rather than lingering unknown.
-		if priorIG == nil && m.Artifacts.IsUnknown() {
+	if !apiHasIG && !apiHasDashboards {
+		// Nothing returned by the API (nothing configured, or a pre-9.5.0 stack
+		// that does not return artifacts). When nothing was configured either,
+		// resolve the computed object to null rather than lingering unknown.
+		if prior == nil && m.Artifacts.IsUnknown() {
 			m.Artifacts = types.ObjectNull(artifactsAttrTypes)
 		}
 		return diags
 	}
 
-	blob := rule.Artifacts.InvestigationGuide.Blob
-
-	ig := investigationGuideModel{}
-	if priorIG != nil && typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
-		// File-based source: preserve path + checksum, do not surface blob.
-		ig.Content = types.StringNull()
-		ig.ContentPath = priorIG.ContentPath
-		ig.Checksum = priorIG.Checksum
-	} else {
-		// Inline content (or first read / import): store the blob as content.
-		ig.Content = types.StringValue(blob)
-		ig.ContentPath = types.StringNull()
-		ig.Checksum = types.StringNull()
+	am := artifactsModel{
+		InvestigationGuide: types.ObjectNull(getInvestigationGuideAttrTypes()),
+		Dashboards:         types.ListNull(getDashboardsElementType()),
 	}
 
-	igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), ig)
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
+	// Investigation guide.
+	if apiHasIG {
+		blob := rule.Artifacts.InvestigationGuide.Blob
+		ig := investigationGuideModel{}
+		if priorIG != nil && typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
+			// File-based source: preserve path + checksum, do not surface blob.
+			ig.Content = types.StringNull()
+			ig.ContentPath = priorIG.ContentPath
+			ig.Checksum = priorIG.Checksum
+		} else {
+			// Inline content (or first read / import): store the blob as content.
+			ig.Content = types.StringValue(blob)
+			ig.ContentPath = types.StringNull()
+			ig.Checksum = types.StringNull()
+		}
+		igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), ig)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		am.InvestigationGuide = igObj
+	} else if prior != nil && typeutils.IsKnown(prior.InvestigationGuide) {
+		// API omitted the guide but one was configured: preserve prior value.
+		am.InvestigationGuide = prior.InvestigationGuide
 	}
 
-	artObj, d := types.ObjectValueFrom(ctx, artifactsAttrTypes, artifactsModel{InvestigationGuide: igObj})
+	// Dashboards.
+	if apiHasDashboards {
+		dashboards := make([]dashboardModel, len(rule.Artifacts.Dashboards))
+		for i, dash := range rule.Artifacts.Dashboards {
+			dashboards[i] = dashboardModel{ID: types.StringValue(dash.ID)}
+		}
+		dashList, d := types.ListValueFrom(ctx, getDashboardsElementType(), dashboards)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		am.Dashboards = dashList
+	} else if prior != nil && typeutils.IsKnown(prior.Dashboards) {
+		// API omitted dashboards but some were configured: preserve prior value.
+		am.Dashboards = prior.Dashboards
+	}
+
+	artObj, d := buildArtifactsObject(ctx, am)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
@@ -506,7 +575,7 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
 		reqs = append(reqs, entitycore.VersionRequirement{
 			MinVersion:   *artifactsMinSupportedVersion,
-			ErrorMessage: "artifacts (investigation guide) is only supported for Elastic Stack 9.1 or higher",
+			ErrorMessage: "artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
 		})
 	}
 
@@ -628,34 +697,55 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 
 // artifactsToAPI converts the model's artifacts object into the API model. For
 // the file-based investigation guide the file at `content_path` is read at
-// apply time and its contents are sent as the blob.
+// apply time and its contents are sent as the blob. Returns nil when neither an
+// investigation guide nor any dashboards are configured.
 func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.AlertingRuleArtifacts, diag.Diagnostics) {
-	ig, diags := m.investigationGuideFrom(ctx)
-	if diags.HasError() || ig == nil {
+	am, diags := m.artifactsModelFrom(ctx)
+	if diags.HasError() || am == nil {
 		return nil, diags
 	}
 
-	var blob string
-	switch {
-	case typeutils.IsKnown(ig.Content) && !ig.Content.IsNull():
-		blob = ig.Content.ValueString()
-	case typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull():
-		data, err := os.ReadFile(ig.ContentPath.ValueString())
-		if err != nil {
-			diags.AddError(
-				"Cannot read investigation guide file",
-				fmt.Sprintf("Failed to read content_path %q: %s", ig.ContentPath.ValueString(), err),
-			)
+	out := &models.AlertingRuleArtifacts{}
+
+	if ig := investigationGuideFromArtifacts(ctx, am, &diags); ig != nil {
+		if diags.HasError() {
 			return nil, diags
 		}
-		blob = string(data)
-	default:
-		return nil, diags
+		var blob string
+		switch {
+		case typeutils.IsKnown(ig.Content) && !ig.Content.IsNull():
+			blob = ig.Content.ValueString()
+		case typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull():
+			data, err := os.ReadFile(ig.ContentPath.ValueString())
+			if err != nil {
+				diags.AddError(
+					"Cannot read investigation guide file",
+					fmt.Sprintf("Failed to read content_path %q: %s", ig.ContentPath.ValueString(), err),
+				)
+				return nil, diags
+			}
+			blob = string(data)
+		}
+		if blob != "" {
+			out.InvestigationGuide = &models.AlertingRuleInvestigationGuide{Blob: blob}
+		}
 	}
 
-	return &models.AlertingRuleArtifacts{
-		InvestigationGuide: &models.AlertingRuleInvestigationGuide{Blob: blob},
-	}, diags
+	if typeutils.IsKnown(am.Dashboards) && !am.Dashboards.IsNull() {
+		var dashboards []dashboardModel
+		diags.Append(am.Dashboards.ElementsAs(ctx, &dashboards, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, d := range dashboards {
+			out.Dashboards = append(out.Dashboards, models.AlertingRuleArtifactDashboard{ID: d.ID.ValueString()})
+		}
+	}
+
+	if out.InvestigationGuide == nil && len(out.Dashboards) == 0 {
+		return nil, diags
+	}
+	return out, diags
 }
 
 // applyInvestigationGuideChecksum recomputes and stores the SHA-256 checksum of
@@ -664,7 +754,11 @@ func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.Alerting
 // write so the computed `checksum` in state reflects the applied file, and
 // mirrors the drift detection performed by ModifyPlan.
 func (m *alertingRuleModel) applyInvestigationGuideChecksum(ctx context.Context) diag.Diagnostics {
-	ig, diags := m.investigationGuideFrom(ctx)
+	am, diags := m.artifactsModelFrom(ctx)
+	if diags.HasError() || am == nil {
+		return diags
+	}
+	ig := investigationGuideFromArtifacts(ctx, am, &diags)
 	if diags.HasError() || ig == nil {
 		return diags
 	}
@@ -688,7 +782,8 @@ func (m *alertingRuleModel) applyInvestigationGuideChecksum(ctx context.Context)
 	if diags.HasError() {
 		return diags
 	}
-	artObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{InvestigationGuide: igObj})
+	am.InvestigationGuide = igObj
+	artObj, d := buildArtifactsObject(ctx, *am)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags

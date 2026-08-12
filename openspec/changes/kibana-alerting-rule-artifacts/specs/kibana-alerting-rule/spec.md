@@ -1,23 +1,31 @@
 ## ADDED Requirements
 
-### Requirement: Schema — `artifacts` block (REQ-045)
+### Requirement: Schema — `artifacts` attribute (REQ-045)
 
-The `elasticstack_kibana_alerting_rule` resource SHALL expose an optional **`artifacts`** single nested block at the rule level. When configured, it MAY contain:
+The `elasticstack_kibana_alerting_rule` resource SHALL expose an optional **`artifacts`** single nested **attribute** (not a nested block; HCL uses attribute-assignment syntax `artifacts = { … }`) at the rule level. When configured, it MAY contain:
 
-- A **`dashboards`** list nested block (zero or more entries, each with a required `id` string attribute).
-- An **`investigation_guide`** single nested block with optional `content` (string), optional `content_path` (string), and computed `checksum` (string).
+- A **`dashboards`** list nested attribute (zero or more entries, each with a required `id` string attribute), `Optional`+`Computed` with `UseStateForUnknown()`.
+- An **`investigation_guide`** single nested attribute with optional `content` (string), optional `content_path` (string), and computed `checksum` (string).
 
-The `artifacts` block SHALL be entirely optional. When absent from configuration, the provider SHALL treat it as unconfigured and SHALL omit the `artifacts` key from create and update request bodies (allowing Kibana to preserve any previously stored artifact values).
+When `artifacts` is present in configuration, **at least one** of `investigation_guide` or `dashboards` SHALL be set; an empty `artifacts = {}` SHALL be rejected at validate time (object validators cannot express "at least one nested attribute", so this is enforced in `ValidateConfig`).
+
+The `artifacts` attribute SHALL be entirely optional. When absent from configuration, the provider SHALL treat it as unconfigured and SHALL omit the `artifacts` key from create and update request bodies (allowing Kibana to preserve any previously stored artifact values).
 
 #### Scenario: Rule with dashboards
 
-- GIVEN an `artifacts` block with one or more `dashboards` entries each specifying an `id`
+- GIVEN an `artifacts` attribute with one or more `dashboards` entries each specifying an `id`
 - WHEN Terraform validates configuration
 - THEN the provider SHALL accept the configuration and store each `id` in state
 
+#### Scenario: Empty artifacts rejected
+
+- GIVEN a configuration that sets `artifacts = {}` with neither `investigation_guide` nor `dashboards`
+- WHEN Terraform validates configuration
+- THEN the provider SHALL return a validation diagnostic requiring at least one of `investigation_guide` or `dashboards`
+
 #### Scenario: Rule without artifacts
 
-- GIVEN no `artifacts` block in configuration
+- GIVEN no `artifacts` attribute in configuration
 - WHEN the provider executes create or update
 - THEN the request body SHALL NOT include an `artifacts` key
 
@@ -55,7 +63,7 @@ When the practitioner configures an `investigation_guide` block, **exactly one**
 
 When the practitioner configures `artifacts`, the create and update request bodies sent to Kibana SHALL include an `artifacts` JSON object whose structure mirrors the configured values:
 
-- `artifacts.dashboards`: JSON array of `{"id": "<id>"}` objects, one per configured `dashboards` entry.
+- `artifacts.dashboards`: JSON array of `{"id": "<id>"}` objects, one per configured `dashboards` entry. When only `dashboards` is configured, the request SHALL omit `investigation_guide` (and vice versa).
 - `artifacts.investigation_guide.blob`: the investigation guide content. When `content` is configured, `blob` SHALL equal the `content` string. When `content_path` is configured, the provider SHALL read the file at that path and send its content as `blob`.
 
 When the practitioner does **not** configure `artifacts`, the provider SHALL **omit** the `artifacts` key from the update request body so Kibana does not alter existing rule-level artifact state for that field.

@@ -35,6 +35,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -52,6 +53,7 @@ var (
 	cachedFlappingTypes           map[string]attr.Type
 	cachedArtifactsTypes          map[string]attr.Type
 	cachedInvestigationGuideTypes map[string]attr.Type
+	cachedDashboardTypes          map[string]attr.Type
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -206,13 +208,29 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: artifactsDescription,
 				Optional:            true,
 				Computed:            true,
-				Validators: []validator.Object{
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrInvestigationGuide)),
-				},
+				// At least one of investigation_guide / dashboards must be set when
+				// artifacts is present; this is enforced in ValidateConfig because
+				// object validators cannot express "at least one nested attribute".
 				PlanModifiers: []planmodifier.Object{
 					objectplanmodifier.UseStateForUnknown(),
 				},
 				Attributes: map[string]schema.Attribute{
+					attrDashboards: schema.ListNestedAttribute{
+						MarkdownDescription: dashboardsDescription,
+						Optional:            true,
+						Computed:            true,
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.UseStateForUnknown(),
+						},
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									MarkdownDescription: "The Kibana dashboard saved-object id.",
+									Required:            true,
+								},
+							},
+						},
+					},
 					attrInvestigationGuide: schema.SingleNestedAttribute{
 						MarkdownDescription: investigationGuideDescription,
 						Optional:            true,
@@ -382,6 +400,9 @@ func initAttrTypes() {
 
 	investigationGuideAttr := artifactsAttr.Attributes[attrInvestigationGuide].(schema.SingleNestedAttribute)
 	cachedInvestigationGuideTypes = investigationGuideAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	dashboardsAttr := artifactsAttr.Attributes[attrDashboards].(schema.ListNestedAttribute)
+	cachedDashboardTypes = dashboardsAttr.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
@@ -425,4 +446,16 @@ func getArtifactsAttrTypes() map[string]attr.Type {
 func getInvestigationGuideAttrTypes() map[string]attr.Type {
 	attrTypesOnce.Do(initAttrTypes)
 	return cachedInvestigationGuideTypes
+}
+
+// getDashboardAttrTypes returns the attribute types for a single dashboards
+// list element.
+func getDashboardAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedDashboardTypes
+}
+
+// getDashboardsElementType returns the object type of a dashboards list element.
+func getDashboardsElementType() types.ObjectType {
+	return types.ObjectType{AttrTypes: getDashboardAttrTypes()}
 }

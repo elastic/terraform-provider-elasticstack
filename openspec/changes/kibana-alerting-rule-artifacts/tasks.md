@@ -1,4 +1,4 @@
-> **Implementation scope note:** This pass implements the **investigation_guide** portion only (inline `content`, file-based `content_path` with computed `checksum`, create/update/read mapping, checksum drift detection, and version gating). The **`artifacts.dashboards`** portion (REQ-045 dashboards scenario, REQ-047 dashboards mapping) is intentionally deferred and remains unchecked below.
+> **Implementation scope note:** The **investigation_guide** portion shipped in PR #4489. This follow-up completes the **`artifacts.dashboards`** portion (REQ-045 dashboards, REQ-047 dashboards mapping): a `dashboards` list nested attribute, request/response mapping, read-back preservation, at-least-one validation, and tests. All deferred items below are now implemented.
 
 ## 1. Spec
 
@@ -17,17 +17,17 @@
 - [x] 2.7 Added embedded descriptions (`descriptions/artifacts.md`, `descriptions/investigation_guide.md`) and schema `MarkdownDescription` for the `artifacts` and `investigation_guide` blocks; regenerated `docs/resources/kibana_alerting_rule.md`.
 - [x] 2.8 Added a version gate in `GetVersionRequirements` requiring Elastic Stack `>= 9.1.0` when `artifacts` is set, with a clear diagnostic.
 
-### Deferred (dashboards)
+### Dashboards (this follow-up)
 
-- [ ] 2.1d Add `AlertingRuleArtifactDashboard` model type and dashboards mapping in the client builders.
-- [ ] 2.3d Add the `dashboards` list nested block (required `id` string) to the schema.
-- [ ] 2.4d Add `dashboardModel` and dashboards conversion in `models.go`.
+- [x] 2.1d Added `AlertingRuleArtifactDashboard` model type and dashboards mapping in the client builders (`artifactsWire.Dashboards` on the request; `ConvertResponseToModel` reads `artifacts.dashboards[].id`).
+- [x] 2.3d Added the `dashboards` list nested **attribute** (required `id` string) to the schema, `Optional`+`Computed` with `listplanmodifier.UseStateForUnknown()`. Consistent with the attribute-based `artifacts` (no revert to blocks needed). The `artifacts` object validator was relaxed from `AlsoRequires(investigation_guide)` to a `ValidateConfig` "at least one of investigation_guide or dashboards" check.
+- [x] 2.4d Added `dashboardModel` and dashboards conversion in `models.go`; refactored the artifacts rebuild sites (`populateArtifactsFromAPI`, `artifactsToAPI`, `applyInvestigationGuideChecksum`, `setInvestigationGuideChecksumUnknown`) onto a shared `buildArtifactsObject` helper so touching one field never drops the other. Read path preserves prior dashboards when the API omits artifacts (pre-9.5.0).
 
 ## 3. Testing
 
-- [ ] 3.1 (Deferred with dashboards) Acceptance test(s) for `artifacts.dashboards`.
+- [x] 3.1 Added `TestAccResourceAlertingRuleArtifactsDashboards`: create with two linked dashboards, update the list (add/remove), and a 9.5.0-gated import step that proves the GET round-trip. Plus unit tests for dashboards request/response mapping and model conversion, and `validateArtifactsNotEmpty`.
 - [x] 3.2 Added `TestAccResourceAlertingRuleInvestigationGuide` inline-`content` steps (create + update text; asserts state stores/updates the text). Gated at Stack `>= 9.1.0`.
 - [x] 3.3 Added `TestAccResourceAlertingRuleInvestigationGuide` `content_path` steps: writes a temp file, creates the rule, asserts `checksum` is set, mutates the file via `PreConfig`, and asserts a non-empty (update) plan via `plancheck.ExpectResourceAction`.
-- [ ] 3.4 (Deferred with dashboards) Acceptance test for clearing `artifacts` / dashboards.
+- [x] 3.4 The dashboards acceptance test's update step exercises replacing the dashboards list; unit tests cover the empty-`artifacts` rejection and dashboards preservation when the API omits artifacts.
 - [x] 3.5 Added unit tests for `content` vs `content_path` request-body construction in `internal/clients/kibanaoapi/alerting_rule_artifacts_body_test.go`. (Version gating verified via `GetVersionRequirements`.)
 - [x] 3.6 Added unit tests for read-path mapping in `internal/kibana/alertingrule/models_artifacts_test.go`: blob → `content` when prior used `content`; no overwrite when prior used `content_path`.

@@ -134,3 +134,51 @@ func Test_ConvertResponseToModel_nilArtifactsWhenAbsent(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.Nil(t, model.Artifacts)
 }
+
+func Test_buildRequestBody_includesDashboards(t *testing.T) {
+	rule := models.AlertingRule{
+		Name:       "rule",
+		Consumer:   "alerts",
+		RuleTypeID: ".index-threshold",
+		Schedule:   models.AlertingRuleSchedule{Interval: "1m"},
+		Params:     map[string]any{},
+		Artifacts: &models.AlertingRuleArtifacts{
+			Dashboards: []models.AlertingRuleArtifactDashboard{{ID: "dash-1"}, {ID: "dash-2"}},
+		},
+	}
+	body, err := buildCreateRequestBody(rule)
+	require.NoError(t, err)
+	raw, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(raw), `"artifacts"`)
+	require.Contains(t, string(raw), `"dashboards"`)
+	require.Contains(t, string(raw), `"id":"dash-1"`)
+	require.Contains(t, string(raw), `"id":"dash-2"`)
+	// investigation_guide must be omitted when only dashboards are set.
+	require.NotContains(t, string(raw), `"investigation_guide"`)
+}
+
+func Test_ConvertResponseToModel_readsDashboards(t *testing.T) {
+	resp := map[string]any{
+		"id":           "r1",
+		"name":         "rule",
+		"consumer":     "alerts",
+		"rule_type_id": ".index-threshold",
+		"schedule":     map[string]any{"interval": "1m"},
+		"params":       map[string]any{},
+		"artifacts": map[string]any{
+			"dashboards": []any{
+				map[string]any{"id": "dash-1"},
+				map[string]any{"id": "dash-2"},
+			},
+		},
+	}
+
+	model, diags := ConvertResponseToModel("default", resp)
+	require.False(t, diags.HasError())
+	require.NotNil(t, model.Artifacts)
+	require.Nil(t, model.Artifacts.InvestigationGuide)
+	require.Len(t, model.Artifacts.Dashboards, 2)
+	require.Equal(t, "dash-1", model.Artifacts.Dashboards[0].ID)
+	require.Equal(t, "dash-2", model.Artifacts.Dashboards[1].ID)
+}

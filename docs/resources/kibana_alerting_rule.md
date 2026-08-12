@@ -63,7 +63,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
-- `artifacts` (Attributes) Linked assets for the alerting rule. Currently supports attaching an investigation guide so that runbooks and context are co-located with the alert configuration as code. Requires Elastic Stack 9.1 or higher to write; on stacks older than 9.5.0 the Kibana GET API does not return artifacts (elastic/kibana#247279), so `terraform import` will not populate this attribute and external changes to the guide made outside Terraform will not be detected by refresh. When `artifacts` is omitted from configuration on update, Terraform retains the previous value, so existing server-side artifacts are not cleared by that omission. (see [below for nested schema](#nestedatt--artifacts))
+- `artifacts` (Attributes) Linked assets for the alerting rule: an investigation guide and/or references to related dashboards, so that runbooks and context are co-located with the alert configuration as code. At least one of `investigation_guide` or `dashboards` must be set. Requires Elastic Stack 9.1 or higher to write; on stacks older than 9.5.0 the Kibana GET API does not return artifacts (elastic/kibana#247279), so `terraform import` will not populate this block and external changes to artifacts made outside Terraform will not be detected by refresh. Omitting this block does not clear artifacts already stored on the rule in Kibana. (see [below for nested schema](#nestedatt--artifacts))
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
 - `flapping` (Attributes) Rule-level [flapping detection](https://www.elastic.co/guide/en/kibana/master/alerting-settings.html) (Kibana **8.16** or higher). When this object is set in configuration, `look_back_window` and `status_change_threshold` are required. The optional `enabled` attribute is supported only from **Elastic Stack 9.3** onward; configuring it against an older stack returns an error. When `flapping` is omitted from configuration on update, Terraform retains the previous value, so existing server-side flapping settings are not cleared by that omission. (see [below for nested schema](#nestedatt--flapping))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
@@ -133,7 +133,16 @@ Optional:
 
 Optional:
 
+- `dashboards` (Attributes List) A list of Kibana dashboards linked to the rule, each referenced by its saved-object `id`. Links related dashboards alongside the alert configuration as code. (see [below for nested schema](#nestedatt--artifacts--dashboards))
 - `investigation_guide` (Attributes) An investigation guide attached to the rule. Provide the guide either inline via `content`, or from a local file via `content_path` (in which case the provider tracks a SHA-256 `checksum` of the file to detect external changes). Exactly one of `content` or `content_path` must be set. Requires Elastic Stack 9.1 or higher to write; inline-`content` round-trips from the API and `terraform import` require 9.5.0+ (elastic/kibana#247279). (see [below for nested schema](#nestedatt--artifacts--investigation_guide))
+
+<a id="nestedatt--artifacts--dashboards"></a>
+### Nested Schema for `artifacts.dashboards`
+
+Required:
+
+- `id` (String) The Kibana dashboard saved-object id.
+
 
 <a id="nestedatt--artifacts--investigation_guide"></a>
 ### Nested Schema for `artifacts.investigation_guide`
