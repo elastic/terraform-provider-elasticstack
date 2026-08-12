@@ -133,7 +133,7 @@ Optional:
 
 Optional:
 
-- `dashboards` (Attributes List) A list of Kibana dashboards linked to the rule, each referenced by its saved-object `id`. Links related dashboards alongside the alert configuration as code. (see [below for nested schema](#nestedatt--artifacts--dashboards))
+- `dashboards` (Attributes List) A list of Kibana dashboards linked to the rule, each referenced by its saved-object `id`. Links related dashboards alongside the alert configuration as code. Requires Elastic Stack 9.1 or higher to write; the linked ids round-trip from the API and `terraform import` populates them only on 9.5.0+ (elastic/kibana#247279). Order is significant (this is an ordered list). (see [below for nested schema](#nestedatt--artifacts--dashboards))
 - `investigation_guide` (Attributes) An investigation guide attached to the rule. Provide the guide either inline via `content`, or from a local file via `content_path` (in which case the provider tracks a SHA-256 `checksum` of the file to detect external changes). Exactly one of `content` or `content_path` must be set. Requires Elastic Stack 9.1 or higher to write; inline-`content` round-trips from the API and `terraform import` require 9.5.0+ (elastic/kibana#247279). (see [below for nested schema](#nestedatt--artifacts--investigation_guide))
 
 <a id="nestedatt--artifacts--dashboards"></a>

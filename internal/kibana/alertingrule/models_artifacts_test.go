@@ -459,3 +459,25 @@ func Test_populateArtifactsFromAPI_resolvesUnknownSiblingWhenAPIOmits(t *testing
 	require.Len(t, dashboards, 1)
 	require.Equal(t, "d1", dashboards[0].ID.ValueString())
 }
+
+func Test_GetVersionRequirements_dashboardsSetRequires91(t *testing.T) {
+	ctx := context.Background()
+
+	m := baseModel()
+	m.Artifacts = artifactsObjectWith(ctx, t,
+		types.ObjectNull(getInvestigationGuideAttrTypes()),
+		dashboardsList(ctx, t, "d1"),
+	)
+
+	reqs, diags := m.GetVersionRequirements(ctx)
+	require.False(t, diags.HasError())
+
+	want := version.Must(version.NewVersion("9.1.0"))
+	var found bool
+	for _, r := range reqs {
+		if r.MinVersion.Equal(want) {
+			found = true
+		}
+	}
+	require.True(t, found, "dashboards-only artifacts must still gate at >= 9.1.0, got %+v", reqs)
+}
