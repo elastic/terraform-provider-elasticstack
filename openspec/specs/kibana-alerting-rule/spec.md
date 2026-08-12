@@ -34,6 +34,16 @@ resource "elasticstack_kibana_alerting_rule" "example" {
     look_back_window       = <optional, computed, int64>
     status_change_threshold = <optional, computed, int64>
   }
+  # artifacts is a SingleNestedAttribute (attribute assignment), not a block.
+  # Write support >= 9.1.0; Kibana GET returns artifacts only from 9.5.0 (elastic/kibana#247279).
+  artifacts = {                             # optional, computed; UseStateForUnknown; AlsoRequires investigation_guide
+    investigation_guide = {                 # optional, computed; UseStateForUnknown
+      content      = <optional, string>     # mutually exclusive with content_path (ExactlyOneOf)
+      content_path = <optional, string>     # mutually exclusive with content
+      checksum     = <computed, string>     # SHA-256 of file at content_path; UseStateForUnknown; ModifyPlan marks unknown on file change
+    }
+  }
+  # artifacts.dashboards is not yet exposed by this resource.
 
   # Read-only from API
   scheduled_task_id     = <computed, string> # UseStateForUnknown; preserved when API omits on re-read
@@ -545,6 +555,196 @@ If existing tests only cover `flapping` together with `enabled`, additional test
 - WHEN acceptance tests that configure `flapping.enabled` are evaluated
 - THEN those steps SHALL be skipped (and integer-only coverage from scenario “Integer-only flapping on 8.16+” SHALL still apply where applicable)
 
+### Requirement: Schema — `artifacts` attribute (REQ-045)
+
+The `elasticstack_kibana_alerting_rule` resource SHALL expose an optional **`artifacts`** single nested **attribute** (not a nested block) at the rule level. HCL SHALL use attribute-assignment syntax (`artifacts = { … }`). Nested blocks are unsuitable: an omitted `SingleNestedBlock` still materialises as a non-null object and would fire nested validators when `artifacts` is absent.
+
+When configured, `artifacts` SHALL contain an **`investigation_guide`** single nested attribute with:
+
+- optional `content` (string) — inline investigation guide (Markdown);
+- optional `content_path` (string) — path to a local file whose contents are sent as the guide;
+- computed `checksum` (string) — SHA-256 hex digest of the file at `content_path` (only meaningful with `content_path`).
+
+`artifacts` and `investigation_guide` SHALL be **Optional** and **Computed**, each with `UseStateForUnknown()`, matching the `flapping` pattern so omitting them from configuration after they were previously set does not produce a provider inconsistent-result error when Kibana preserves or returns the guide. `checksum` SHALL be **Computed** with `UseStateForUnknown()` so unrelated updates do not show `checksum: (known after apply)` noise; `ModifyPlan` (REQ-050) still overrides it to unknown when the file changes.
+
+When `artifacts` is present in configuration, `investigation_guide` SHALL be required (for example via `objectvalidator.AlsoRequires`). The provider does **not** yet expose `artifacts.dashboards`; that capability is deferred.
+
+Embedded schema descriptions SHALL document the write floor (**9.1**), the GET read-back floor (**9.5.0**, elastic/kibana#247279), and that omitting `artifacts` from configuration on update retains the previous Terraform value and does not clear server-side artifacts.
+
+#### Scenario: Attribute assignment accepted
+
+- GIVEN a configuration that sets `artifacts = { investigation_guide = { content = "…" } }`
+- WHEN Terraform validates configuration
+- THEN the provider SHALL accept the configuration
+
+#### Scenario: Empty artifacts object rejected
+
+- GIVEN a configuration that sets `artifacts = {}` without `investigation_guide`
+- WHEN Terraform validates configuration
+- THEN the provider SHALL return a validation diagnostic requiring `investigation_guide`
+
+#### Scenario: Omitting artifacts retains prior state
+
+- GIVEN prior state has a known non-null `artifacts.investigation_guide` and a new configuration that omits `artifacts`
+- WHEN Terraform plans an update
+- THEN the planned `artifacts` value SHALL be the prior known value (via `UseStateForUnknown`), producing no provider inconsistency after apply
+
+### Requirement: Validation — `investigation_guide` mutual exclusion (REQ-046)
+
+When the practitioner configures `investigation_guide`, **exactly one** of `content` or `content_path` MUST be set. Setting both, or neither, SHALL be invalid. The provider SHALL enforce this at plan/validate time (for example via `stringvalidator.ExactlyOneOf` on those attributes).
+
+`checksum` is computed by the provider and SHALL NOT be set by the practitioner; it is only meaningful when `content_path` is used.
+
+#### Scenario: Both content and content_path set
+
+- GIVEN `investigation_guide` with both `content` and `content_path` set to non-null values
+- WHEN Terraform validates configuration
+- THEN the provider SHALL return a validation diagnostic describing the mutual exclusion constraint
+
+#### Scenario: Neither content nor content_path set
+
+- GIVEN `investigation_guide` with both `content` and `content_path` null or absent
+- WHEN Terraform validates configuration
+- THEN the provider SHALL return a validation diagnostic
+
+#### Scenario: Only content set
+
+- GIVEN `investigation_guide` with `content` set and `content_path` absent
+- WHEN Terraform validates configuration
+- THEN the provider SHALL accept the configuration
+
+#### Scenario: Only content_path set
+
+- GIVEN `investigation_guide` with `content_path` set and `content` absent
+- WHEN Terraform validates configuration
+- THEN the provider SHALL accept the configuration
+
+### Requirement: Compatibility — `artifacts` (REQ-047)
+
+When the stack version is strictly below **9.1.0**, if `artifacts` is known and non-null, create and update SHALL fail with a diagnostic that states `artifacts` (investigation guide) is only supported for Elastic Stack **9.1** or higher (or equivalent wording naming the minimum version the provider enforces). The provider SHALL enforce this via `GetVersionRequirements` (or equivalent) when `artifacts` is set.
+
+#### Scenario: Artifacts on pre-9.1 stack
+
+- GIVEN server version &lt; 9.1.0 and a configured `artifacts` object with known values
+- WHEN create or update runs
+- THEN the provider SHALL return an artifacts unsupported error
+
+### Requirement: Write path — `artifacts` on create and update (REQ-048)
+
+When the planned model has a known non-null `artifacts` value (including values retained from prior state by `UseStateForUnknown` after the practitioner omits `artifacts` from configuration), create and update request bodies sent to Kibana SHALL include an `artifacts` JSON object with:
+
+- `artifacts.investigation_guide.blob`: when `content` is set, `blob` SHALL equal the `content` string; when `content_path` is set, the provider SHALL read the file at that path and send its contents as `blob`.
+
+When the planned `artifacts` value is null, the provider SHALL **omit** the `artifacts` key from the request body so Kibana does not clear existing rule-level artifact state. Omitting `artifacts` from configuration after it was previously set does **not** clear server-side artifacts: Terraform retains the prior value in the plan (REQ-045), and Kibana preserves artifacts when the key is omitted.
+
+#### Scenario: Create with investigation guide content
+
+- GIVEN a configured `artifacts.investigation_guide.content` and stack version ≥ 9.1.0
+- WHEN create runs
+- THEN the create request body SHALL include `artifacts.investigation_guide.blob` equal to the configured content
+
+#### Scenario: Create with content_path sends file content as blob
+
+- GIVEN a configured `investigation_guide.content_path` pointing to a readable file and stack version ≥ 9.1.0
+- WHEN create runs
+- THEN the create request body SHALL include `artifacts.investigation_guide.blob` equal to the file's contents
+
+#### Scenario: Update omits artifacts when planned value is null
+
+- GIVEN an update where the planned `artifacts` value is null
+- WHEN update runs
+- THEN the update request body SHALL NOT include an `artifacts` key
+
+### Requirement: Read path — `artifacts` state mapping (REQ-049)
+
+After a successful create or update (and on refresh reads), the provider SHALL map API `artifacts` into state as follows:
+
+- When prior state used `content` (`content_path` null): set `investigation_guide.content` from the API-returned `blob`; leave `content_path` and `checksum` null.
+- When prior state used `content_path` (`content` null): leave `content` null; preserve `content_path` and `checksum` from prior state (the API returns only `blob`, never a path or checksum).
+- On import or first read with no prior investigation guide: store the API `blob` as `content`.
+
+If the API response omits `artifacts` and the prior state value was unknown, the provider SHALL set `artifacts` to null. If the API omits `artifacts` and the prior state had a known non-null value, the provider SHALL keep the prior known value (preserve-on-partial-response), which covers stacks **9.1.0–9.4.x** where Kibana accepts `artifacts` on write but does not return them on GET (elastic/kibana#247279). Inline-`content` round-trips from the API and `terraform import` of the guide therefore require **9.5.0+**.
+
+Kibana stores and returns the investigation-guide blob verbatim (no provider-side normalisation of whitespace or line endings).
+
+#### Scenario: Read maps blob to content when prior state used content
+
+- GIVEN prior state has `investigation_guide.content` set and `content_path` null, and the API returns a blob
+- WHEN the provider reads the rule from Kibana
+- THEN `investigation_guide.content` SHALL be set from the API `blob` value
+
+#### Scenario: Read preserves content_path when prior state used content_path
+
+- GIVEN prior state has `investigation_guide.content_path` set and `content` null, and the API returns a blob
+- WHEN the provider reads the rule from Kibana
+- THEN `investigation_guide.content_path` and `checksum` SHALL remain unchanged and `content` SHALL remain null
+
+#### Scenario: API omits artifacts on pre-9.5 stack
+
+- GIVEN prior state has a known non-null `artifacts` value and the API response omits `artifacts` (stack &lt; 9.5.0)
+- WHEN the provider reads the rule
+- THEN state SHALL keep the prior known `artifacts` value
+
+### Requirement: `content_path` checksum and drift detection (REQ-050)
+
+When `investigation_guide.content_path` is configured with a known path, the provider SHALL implement a `ModifyPlan` hook that:
+
+1. At plan time, reads the file at `content_path` and computes its SHA-256 hex digest.
+2. Compares that digest to the prior state `checksum` (when present).
+3. If the digests differ, or there is no prior state (create), marks `checksum` as unknown so Terraform shows a non-empty plan and triggers apply.
+
+After a successful create or update, the provider SHALL write the concrete SHA-256 digest to `checksum` in state (`applyInvestigationGuideChecksum`).
+
+If `content_path` is unknown at plan time (for example derived from another resource not yet applied), or the guide uses inline `content` instead, the provider SHALL NOT attempt to read a file for drift detection. `UseStateForUnknown` on `checksum` (REQ-045) runs before `ModifyPlan` and is still overridden when the file digest changes.
+
+#### Scenario: File unchanged between plans
+
+- GIVEN `content_path` pointing to a file and `checksum` in state equal to the SHA-256 of that file
+- WHEN `terraform plan` runs
+- THEN the plan SHALL be empty for `artifacts.investigation_guide.checksum`
+
+#### Scenario: File changed between plans
+
+- GIVEN `content_path` pointing to a file whose contents have changed since the last apply
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show a non-empty diff for `artifacts.investigation_guide.checksum` (marked unknown)
+
+#### Scenario: Unknown content_path skips checksum computation
+
+- GIVEN `content_path` is unknown at plan time
+- WHEN the plan modifier runs
+- THEN the provider SHALL NOT attempt to open or read any file for checksum drift detection
+
+### Requirement: Acceptance tests — `artifacts` (REQ-053)
+
+The acceptance test suite for `elasticstack_kibana_alerting_rule` SHALL include a test (or steps) for investigation guides that:
+
+1. Configures **`artifacts.investigation_guide`** with inline **`content`**, asserts create and update succeed and state stores the text, skipped when the stack is strictly below **9.1.0**.
+2. On stacks **9.5.0+**, writes content containing CRLF and a trailing newline and asserts read-back `content` equals that string verbatim (blob-normalisation probe).
+3. On stacks **9.5.0+**, imports the rule with `ImportStateVerify` while configured with inline `content` (proves GET round-trip; inline assertions alone can pass on 9.1–9.4 from state preservation).
+4. Configures **`content_path`**, asserts `checksum` equals the SHA-256 hex digest of the file contents after create, mutates the file, and asserts a non-empty update plan and an updated checksum digest; skipped below **9.1.0**.
+5. On stacks **9.5.0+**, omits `artifacts` from configuration after it was set and asserts Terraform retains the prior investigation-guide values in state (no provider inconsistent-result error).
+
+`artifacts.dashboards` acceptance coverage is deferred until that attribute is implemented.
+
+#### Scenario: Inline content round-trip
+
+- GIVEN a stack at **9.1.0** or newer and a rule created with `artifacts.investigation_guide.content` set to a known string
+- WHEN state is read after apply
+- THEN `artifacts.investigation_guide.content` SHALL equal the configured string
+
+#### Scenario: File-based content triggers re-apply on change
+
+- GIVEN a stack at **9.1.0** or newer and a rule applied with `content_path` pointing to a file
+- WHEN the file's content is modified and `terraform plan` runs
+- THEN the plan SHALL show an update for the rule and, after apply, `checksum` SHALL equal the SHA-256 of the new file contents
+
+#### Scenario: Omit artifacts retains prior guide on 9.5+
+
+- GIVEN a stack at **9.5.0** or newer and prior state with a known investigation guide
+- WHEN a configuration that omits `artifacts` is applied
+- THEN state SHALL still contain the prior `artifacts.investigation_guide` values and the apply SHALL NOT fail with an inconsistent-result error
+
 ### Requirement: `xpack.uptime.alerts.monitorStatus` primary params struct (REQ-043)
 
 The plan-time `params` validator for `rule_type_id = "xpack.uptime.alerts.monitorStatus"` SHALL use the **Uptime**-namespace generated struct (`kbapi.KibanaHTTPAPIsXpackUptimeAlertsMonitorstatusCreateRuleBodyAlerting`) as the container for `mustNewParamsSchemaSpecFromContainer`. Using the Synthetics-namespace struct (`kbapi.KibanaHTTPAPIsXpackSyntheticsAlertsMonitorstatusCreateRuleBodyAlerting`) is incorrect and SHALL NOT be used for this rule type.
@@ -637,8 +837,10 @@ The override table SHALL NOT include incorrect rule type IDs that do not exist i
 | Schema | `schema.go` |
 | Metadata / Configure / Import | `resource.go` |
 | CRUD orchestration | `create.go`, `read.go`, `update.go`, `delete.go` |
-| Model mapping, version gates, params normalization | `models.go` |
+| Model mapping, version gates, params normalization, artifacts read/write | `models.go` |
+| Investigation-guide `content_path` checksum drift (`ModifyPlan`) | `plan_modifier.go` |
 | Params validate config | `validate.go` |
 | State upgrade | `state_upgrade.go` |
-| HTTP client, enable/disable, response parsing, `flapping` request/response mapping | `internal/clients/kibanaoapi/alerting_rule.go` |
+| Embedded attribute descriptions | `descriptions/*.md` (including `artifacts.md`, `investigation_guide.md`) |
+| HTTP client, enable/disable, response parsing, `flapping` / `artifacts` request/response mapping | `internal/clients/kibanaoapi/alerting_rule.go`, `alerting_rule_builders.go` |
 | Composite id parsing | `internal/clients/api_client.go` (`CompositeID`, `CompositeIDFromStr`, `CompositeIDFromStrFw`) |
