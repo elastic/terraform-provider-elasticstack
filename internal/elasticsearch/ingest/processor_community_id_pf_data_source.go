@@ -105,14 +105,6 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorCommunityIDDataSource returns a PF data source for the community_id processor.
 func NewProcessorCommunityIDDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"source_ip": schema.StringAttribute{
 			Description: "Field containing the source IP address.",
 			Optional:    true,

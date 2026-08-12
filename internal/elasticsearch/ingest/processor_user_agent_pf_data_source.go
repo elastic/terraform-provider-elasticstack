@@ -62,14 +62,6 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorUserAgentDataSource returns a PF data source for the user_agent processor.
 func NewProcessorUserAgentDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field containing the user agent string.",
 			Required:    true,

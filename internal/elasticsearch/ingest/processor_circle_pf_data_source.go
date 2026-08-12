@@ -61,14 +61,6 @@ func (m *processorCircleModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorCircleDataSource returns a PF data source for the circle processor.
 func NewProcessorCircleDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field containing the circle geometry to convert.",
 			Required:    true,

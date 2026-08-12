@@ -89,14 +89,6 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDateDataSource returns a PF data source for the date processor.
 func NewProcessorDateDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to get the date from.",
 			Required:    true,

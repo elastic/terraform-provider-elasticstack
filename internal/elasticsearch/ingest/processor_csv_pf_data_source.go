@@ -93,14 +93,6 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorCSVDataSource returns a PF data source for the csv processor.
 func NewProcessorCSVDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to extract data from.",
 			Required:    true,

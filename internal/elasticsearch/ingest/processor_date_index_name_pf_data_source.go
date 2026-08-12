@@ -90,14 +90,6 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDateIndexNameDataSource returns a PF data source for the date_index_name processor.
 func NewProcessorDateIndexNameDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to get the date or timestamp from.",
 			Required:    true,

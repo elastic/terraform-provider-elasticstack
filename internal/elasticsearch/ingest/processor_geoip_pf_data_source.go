@@ -70,14 +70,6 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorGeoIPDataSource returns a PF data source for the geoip processor.
 func NewProcessorGeoIPDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to get the ip address from for the geographical lookup.",
 			Required:    true,

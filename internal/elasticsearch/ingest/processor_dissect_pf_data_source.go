@@ -71,14 +71,6 @@ func (m *processorDissectModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDissectDataSource returns a PF data source for the dissect processor.
 func NewProcessorDissectDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to dissect.",
 			Required:    true,

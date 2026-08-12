@@ -96,14 +96,6 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorInferenceDataSource returns a PF data source for the inference processor.
 func NewProcessorInferenceDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"model_id": schema.StringAttribute{
 			Description: "The ID or alias for the trained model, or the ID of the deployment.",
 			Required:    true,

@@ -83,14 +83,6 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorFingerprintDataSource returns a PF data source for the fingerprint processor.
 func NewProcessorFingerprintDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"fields": schema.ListAttribute{
 			Description: "Array of fields to include in the fingerprint.",
 			Required:    true,

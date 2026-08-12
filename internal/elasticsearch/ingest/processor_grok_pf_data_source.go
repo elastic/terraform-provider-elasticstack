@@ -97,14 +97,6 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorGrokDataSource returns a PF data source for the grok processor.
 func NewProcessorGrokDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to use for grok expression parsing",
 			Required:    true,

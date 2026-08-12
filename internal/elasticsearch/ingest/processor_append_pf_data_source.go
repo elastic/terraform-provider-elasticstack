@@ -71,14 +71,6 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorAppendDataSource returns a PF data source for the append processor.
 func NewProcessorAppendDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to be appended to.",
 			Required:    true,

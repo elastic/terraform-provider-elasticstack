@@ -89,14 +89,6 @@ func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorSetDataSource returns a PF data source for the set processor.
 func NewProcessorSetDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to insert, upsert, or update.",
 			Required:    true,

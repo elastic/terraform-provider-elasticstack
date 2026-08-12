@@ -64,14 +64,6 @@ func (m *processorDotExpanderModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDotExpanderDataSource returns a PF data source for the dot_expander processor.
 func NewProcessorDotExpanderDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to expand into an object field. If set to *, all top-level fields will be expanded.",
 			Required:    true,
