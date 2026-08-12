@@ -26,10 +26,6 @@ import (
 // Backwards-compatible names for tests (implementation lives in lenscommon).
 const lensDrilldownTriggerOnApplyFilter = lenscommon.LensDrilldownTriggerOnApplyFilter
 
-func lensDrilldownItemToRawJSON(item models.LensDrilldownItemTFModel, index int) ([]byte, diag.Diagnostics) {
-	return lenscommon.LensDrilldownItemToRawJSON(item, index)
-}
-
 func lensDrilldownItemFromAPIJSON(raw []byte) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
 	return lenscommon.LensDrilldownItemFromAPIJSON(raw, "drilldowns[0]")
 }
