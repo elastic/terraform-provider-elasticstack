@@ -18,7 +18,7 @@ Returns information about a Fleet output. See the [Fleet output API documentatio
 ### Optional
 
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `space_id` (String) The Kibana space ID where this output is available.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 
 ### Read-Only
 
