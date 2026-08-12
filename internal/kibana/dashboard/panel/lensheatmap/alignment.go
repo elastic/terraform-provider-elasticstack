@@ -29,7 +29,7 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapC
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, plan.Title, plan.Description, plan.DataSourceJSON, plan.MetricJSON, &state.Title, &state.Description, &state.DataSourceJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	alignHeatmapAxisStateFromPlan(plan.Axis, state.Axis)
 	alignHeatmapStylingStateFromPlan(plan.Styling, state.Styling)
 	alignHeatmapLegendStateFromPlan(plan.Legend, &state.Legend)

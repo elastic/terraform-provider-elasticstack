@@ -39,7 +39,7 @@ func alignGaugeConfigStateFromPlan(ctx context.Context, plan, state *models.Gaug
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, plan.Title, plan.Description, plan.DataSourceJSON, plan.MetricJSON, &state.Title, &state.Description, &state.DataSourceJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	if plan.Styling != nil && state.Styling != nil {
 		lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.Styling.ShapeJSON, &state.Styling.ShapeJSON, "orientation")
 		// Kibana materializes the default bullet shape with the horizontal

@@ -36,5 +36,5 @@ func alignRegionMapConfigStateFromPlan(ctx context.Context, plan, state *models.
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, plan.Title, plan.Description, plan.DataSourceJSON, plan.MetricJSON, &state.Title, &state.Description, &state.DataSourceJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 }

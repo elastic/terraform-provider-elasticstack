@@ -52,7 +52,7 @@ func alignTagcloudConfigStateFromPlan(ctx context.Context, plan, state *models.T
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, plan.Title, plan.Description, plan.DataSourceJSON, plan.MetricJSON, &state.Title, &state.Description, &state.DataSourceJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
 	// Kibana materializes server-side defaults when the practitioner omits these fields.
