@@ -658,24 +658,16 @@ func deleteElasticsearchIndexOOB(t *testing.T, name string) {
 	}
 }
 
+// getElasticsearchIndexState returns the live index state for a test, failing
+// the test on any error. It is a thin wrapper over
+// getElasticsearchIndexStateByName so the client setup and Indices.Get call
+// live in a single place; the error-returning variant is used directly by
+// TestCheckFuncs that need to surface errors rather than abort the test.
 func getElasticsearchIndexState(t *testing.T, indexName string) types.IndexState {
 	t.Helper()
-	ctx := context.Background()
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	state, err := getElasticsearchIndexStateByName(indexName)
 	if err != nil {
-		t.Fatalf("acceptance elasticsearch client: %v", err)
-	}
-	typedClient := client.GetESClient()
-	resp, err := typedClient.Indices.Get(indexName).Do(ctx)
-	if err != nil {
-		if esclient.IsNotFoundElasticsearchError(err) {
-			t.Fatalf("index %q not found", indexName)
-		}
-		t.Fatalf("Indices.Get(%q): %v", indexName, err)
-	}
-	state, ok := resp[indexName]
-	if !ok {
-		t.Fatalf("index %q not present in response (have %d keys)", indexName, len(resp))
+		t.Fatalf("getElasticsearchIndexState(%q): %v", indexName, err)
 	}
 	return state
 }
