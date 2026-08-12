@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -72,6 +73,14 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	return result, true, diags
 }
 
+// resolutionGroupPoll is the retry-loop unit of work: one call to the
+// resolution-group endpoint plus its parsed payload.
+type resolutionGroupPoll struct {
+	body       []byte
+	payload    map[string]any
+	statusCode int
+}
+
 func readResolutionGroupWithRetry(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -80,11 +89,14 @@ func readResolutionGroupWithRetry(
 	verifyConsistency bool,
 ) ([]byte, map[string]any, int, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	backoff := 100 * time.Millisecond
-	const maxDuration = 2 * time.Second
-	start := time.Now()
 
-	for {
+	cfg := asyncutils.BackoffConfig{
+		Initial:    100 * time.Millisecond,
+		Max:        500 * time.Millisecond,
+		MaxElapsed: 2 * time.Second,
+	}
+
+	result, err := asyncutils.PollWithBackoff(ctx, cfg, func(ctx context.Context, _ int) (resolutionGroupPoll, bool, error) {
 		resp, err := client.GetKibanaOapiClient().API.GetSecurityEntityStoreResolutionGroupWithResponse(
 			ctx,
 			&kbapi.GetSecurityEntityStoreResolutionGroupParams{EntityId: targetID},
@@ -92,52 +104,44 @@ func readResolutionGroupWithRetry(
 		)
 		if err != nil {
 			diags.AddError("Failed to read resolution group", err.Error())
-			return nil, nil, 0, diags
+			return resolutionGroupPoll{}, true, err
 		}
 
 		statusCode := resp.StatusCode()
 		body := resp.Body
 
-		if statusCode == http.StatusNotFound {
-			return body, nil, statusCode, diags
-		}
 		if statusCode != http.StatusOK {
-			return body, nil, statusCode, diags
+			return resolutionGroupPoll{body: body, statusCode: statusCode}, true, nil
 		}
 
 		var payload map[string]any
 		if err := json.Unmarshal(body, &payload); err != nil {
 			diags.AddError("Failed to parse resolution group response", err.Error())
-			return nil, nil, 0, diags
+			return resolutionGroupPoll{}, true, err
 		}
 
-		// No expected IDs to validate against – accept the response immediately.
-		if len(expectedEntityIDs) == 0 {
-			return body, payload, statusCode, diags
+		poll := resolutionGroupPoll{body: body, payload: payload, statusCode: statusCode}
+
+		// No expected IDs to validate against, or consistency verification
+		// is disabled for this read – accept the response immediately.
+		if len(expectedEntityIDs) == 0 || !verifyConsistency {
+			return poll, true, nil
 		}
 
-		if verifyConsistency {
-			apiEntityIDs := extractEntityIDsFromPayload(payload, targetID)
-			if containsAll(apiEntityIDs, expectedEntityIDs) {
-				return body, payload, statusCode, diags
-			}
+		apiEntityIDs := extractEntityIDsFromPayload(payload, targetID)
+		return poll, containsAll(apiEntityIDs, expectedEntityIDs), nil
+	})
+	if err != nil {
+		// The closure already reports its own errors via diags before
+		// returning one; a bare error here means ctx was cancelled while
+		// waiting between attempts.
+		if !diags.HasError() {
+			diags.AddError("Context cancelled during read-with-retry", err.Error())
 		}
-
-		if !verifyConsistency || time.Since(start) >= maxDuration {
-			return body, payload, statusCode, diags
-		}
-
-		select {
-		case <-ctx.Done():
-			diags.AddError("Context cancelled during read-with-retry", ctx.Err().Error())
-			return nil, nil, 0, diags
-		case <-time.After(backoff):
-		}
-		backoff *= 2
-		if backoff > 500*time.Millisecond {
-			backoff = 500 * time.Millisecond
-		}
+		return nil, nil, 0, diags
 	}
+
+	return result.body, result.payload, result.statusCode, diags
 }
 
 func containsAll(haystack, needles []string) bool {
