@@ -58,13 +58,14 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "policy_id", policyID),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "id", policyID),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id", policyID),
-					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.test", 1),
+					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.test"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.key_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.api_key"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.api_key_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.created_at"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.name"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.active", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "space_id", "default"),
 				),
 			},
 		},
@@ -83,10 +84,14 @@ func TestAccDataSourceEnrollmentTokensNoPolicyID(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "id"),
-					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.all", 1),
+					resource.TestCheckNoResourceAttr("data.elasticstack_fleet_enrollment_tokens.all", "policy_id"),
+					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.all"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.key_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.api_key"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.api_key_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.created_at"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.name"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.active", "true"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.all", "tokens.0.policy_id"),
 				),
 			},
@@ -114,9 +119,11 @@ func TestAccDataSourceEnrollmentTokensSpaceID(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "space_id", spaceID),
-					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.test", 1),
-					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id"),
+					resource.TestCheckResourceAttrPair("data.elasticstack_fleet_enrollment_tokens.test", "policy_id", "elasticstack_fleet_agent_policy.test", "policy_id"),
+					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.test"),
+					resource.TestCheckResourceAttrPair("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id", "elasticstack_fleet_agent_policy.test", "policy_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.key_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.api_key"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.api_key_id"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.created_at"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.name"),
@@ -127,7 +134,39 @@ func TestAccDataSourceEnrollmentTokensSpaceID(t *testing.T) {
 	})
 }
 
-func testCheckTokensMinCount(resourceName string, minCount int) resource.TestCheckFunc {
+func TestAccDataSourceEnrollmentTokensSpaceIDNoPolicyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionEnrollmentTokensSpaceID, versionutils.FlavorAny)
+
+	spaceID := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceName := "Test Space " + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_id"),
+				ConfigVariables: config.Variables{
+					"space_id":   config.StringVariable(spaceID),
+					"space_name": config.StringVariable(spaceName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "space_id", spaceID),
+					resource.TestCheckNoResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "policy_id"),
+					testCheckTokensMinCount("data.elasticstack_fleet_enrollment_tokens.test"),
+					resource.TestCheckResourceAttrPair("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.policy_id", "elasticstack_fleet_agent_policy.test", "policy_id"),
+					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.key_id"),
+				),
+			},
+		},
+	})
+}
+
+func testCheckTokensMinCount(resourceName string) resource.TestCheckFunc {
+	const minCount = 1
+
 	return func(state *terraform.State) error {
 		rs, ok := state.RootModule().Resources[resourceName]
 		if !ok {
