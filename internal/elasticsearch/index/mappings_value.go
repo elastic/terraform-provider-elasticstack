@@ -120,7 +120,9 @@ func (v MappingsValue) Equal(o attr.Value) bool {
 }
 
 // StringSemanticEquals returns true if the refreshed/API mappings are a
-// non-drifting superset of the prior user-intent mappings.
+// non-drifting superset of the prior user-intent mappings. The check is
+// bidirectional: extras on either side are tolerated for plan-time drift
+// suppression and replacement decisions.
 func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -138,20 +140,67 @@ func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 		return v.Normalized.Equal(newValue.Normalized), diags
 	}
 
-	var vMap, newMap map[string]any
-	if err := json.Unmarshal([]byte(v.ValueString()), &vMap); err != nil {
-		diags.AddError("Semantic Equality Check Error", err.Error())
-		return false, diags
-	}
-	if err := json.Unmarshal([]byte(newValue.ValueString()), &newMap); err != nil {
-		diags.AddError("Semantic Equality Check Error", err.Error())
+	vMap, newMap, decDiags := v.decodeMappingPair(newValue)
+	diags.Append(decDiags...)
+	if diags.HasError() {
 		return false, diags
 	}
 
 	// Semantic equality for mappings is bidirectional: two mapping values are
 	// semantically equal when one is a non-drifting superset of the other.
-	// This handles both planning (plan vs prior state) and apply (state vs plan).
+	// Use this for plan-time drift suppression only. Do NOT use it to decide
+	// whether to call Put Mapping at apply time — that gate is
+	// RequiresMappingsUpdate (unidirectional: plan content absent from state).
 	return MappingsSemanticallyEqual(vMap, newMap) || MappingsSemanticallyEqual(newMap, vMap), diags
+}
+
+// RequiresMappingsUpdate returns true when the receiver (the planned mappings)
+// contains content not already present in state — i.e. state is NOT a
+// non-drifting superset of plan.
+//
+// The receiver is the planned mappings (user intent). state is the prior
+// recorded state (API observation). MappingsSemanticallyEqual(planMap,
+// stateMap) asks "does state already have everything plan wants?" Negating
+// gives "plan wants something state doesn't have." Reversing the arguments to
+// MappingsSemanticallyEqual silently reintroduces elastic/protections-cloud#19769.
+//
+// Null/unknown rules: plan null or unknown → false (nothing planned to add);
+// state null or unknown with plan known → true (state has nothing, plan adds everything).
+func (v MappingsValue) RequiresMappingsUpdate(_ context.Context, state MappingsValue) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if !typeutils.IsKnown(v) {
+		return false, diags // nothing planned to add
+	}
+	if !typeutils.IsKnown(state) {
+		return true, diags // state has nothing, plan adds everything
+	}
+
+	planMap, stateMap, decDiags := v.decodeMappingPair(state)
+	diags.Append(decDiags...)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	// planMap is receiver (plan intent), stateMap is argument (API state). Reversing reintroduces #19769.
+	return !MappingsSemanticallyEqual(planMap, stateMap), diags
+}
+
+// decodeMappingPair JSON-decodes both MappingsValue receivers to raw maps.
+// Must only be called after null/unknown guards — calling it on a null or
+// unknown value produces an unmarshal error on the empty string.
+func (v MappingsValue) decodeMappingPair(other MappingsValue) (map[string]any, map[string]any, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var vMap, otherMap map[string]any
+	if err := json.Unmarshal([]byte(v.ValueString()), &vMap); err != nil {
+		diags.AddError("Semantic Equality Check Error", err.Error())
+		return nil, nil, diags
+	}
+	if err := json.Unmarshal([]byte(other.ValueString()), &otherMap); err != nil {
+		diags.AddError("Semantic Equality Check Error", err.Error())
+		return nil, nil, diags
+	}
+	return vMap, otherMap, diags
 }
 
 // normalizeMappings recursively normalises a decoded mapping tree:

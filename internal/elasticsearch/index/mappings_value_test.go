@@ -416,6 +416,88 @@ func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing
 	}
 }
 
+// TestIndexMappingsValue_RequiresMappingsUpdate verifies that RequiresMappingsUpdate
+// returns true when the plan adds content absent from state and false when state
+// already covers the plan (including template-injected extras).
+func TestIndexMappingsValue_RequiresMappingsUpdate(t *testing.T) {
+	t.Parallel()
+
+	field1Only := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"}}}`)
+	field1And2 := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"},"field2":{"type":"keyword"}}}`)
+	field1Plus3 := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"},"extra_field":{"type":"keyword"}}}`)
+
+	tests := []struct {
+		name  string
+		plan  index.MappingsValue
+		state index.MappingsValue
+		want  bool
+	}{
+		{
+			name:  "plan adds field not in state — update required",
+			plan:  field1And2,
+			state: field1Only,
+			want:  true,
+		},
+		{
+			name:  "plan is strict superset of state — update required",
+			plan:  field1And2,
+			state: index.NewMappingsValue(`{"properties":{"field1":{"type":"text"}}}`),
+			want:  true,
+		},
+		{
+			name:  "state is superset of plan (template-injected extras) — no update",
+			plan:  field1Only,
+			state: field1Plus3,
+			want:  false,
+		},
+		{
+			name:  "plan equals state — no update",
+			plan:  field1Only,
+			state: field1Only,
+			want:  false,
+		},
+		{
+			name:  "plan null — no update",
+			plan:  index.NewMappingsNull(),
+			state: field1Only,
+			want:  false,
+		},
+		{
+			name:  "plan null, state null — no update, not spurious PUT",
+			plan:  index.NewMappingsNull(),
+			state: index.NewMappingsNull(),
+			want:  false,
+		},
+		{
+			name:  "plan unknown — no update",
+			plan:  index.NewMappingsUnknown(),
+			state: field1Only,
+			want:  false,
+		},
+		{
+			name:  "state null with non-null plan — update required",
+			plan:  field1Only,
+			state: index.NewMappingsNull(),
+			want:  true,
+		},
+		{
+			name:  "state unknown with non-null plan — update required",
+			plan:  field1Only,
+			state: index.NewMappingsUnknown(),
+			want:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, diags := tc.plan.RequiresMappingsUpdate(context.Background(), tc.state)
+			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 // TestIndexMappingsValue_SemanticEquals verifies that the typed-client-injected
 // "type":"object" entries don't cause spurious drift between a config-derived
 // plan value (no "type":"object") and the API-read state value (with "type":"object").
