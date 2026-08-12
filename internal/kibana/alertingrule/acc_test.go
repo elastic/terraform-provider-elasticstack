@@ -19,7 +19,9 @@ package alertingrule_test
 
 import (
 	"context"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -742,13 +744,19 @@ func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
 	// Prepare a file used by the content_path step and mutate it between steps
 	// to exercise checksum drift detection.
 	guideFile := filepath.Join(t.TempDir(), "investigation_guide.md")
+	guideBodyInitial := "# Investigation Guide\nInitial file content."
+	guideBodyEdited := "# Investigation Guide\nEdited file content."
+	sha256Hex := func(body string) string {
+		sum := sha256.Sum256([]byte(body))
+		return hex.EncodeToString(sum[:])
+	}
 	writeGuide := func(t *testing.T, body string) {
 		t.Helper()
 		if err := os.WriteFile(guideFile, []byte(body), 0o600); err != nil {
 			t.Fatalf("failed to write guide file: %s", err)
 		}
 	}
-	writeGuide(t, "# Investigation Guide\nInitial file content.")
+	writeGuide(t, guideBodyInitial)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -822,7 +830,7 @@ func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
 					"content": config.StringVariable("# Runbook\nUpdated inline guide."),
 				},
 			},
-			// File-based content: switch to content_path; checksum should be set.
+			// File-based content: switch to content_path; checksum should match the file digest.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
@@ -834,15 +842,16 @@ func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content_path", guideFile),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum", sha256Hex(guideBodyInitial)),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
 				),
 			},
-			// Mutate the file out-of-band, then assert a non-empty plan is produced.
+			// Mutate the file out-of-band, then assert a non-empty plan is produced
+			// and the recorded checksum updates to the new digest.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
-				PreConfig:                func() { writeGuide(t, "# Investigation Guide\nEdited file content.") },
+				PreConfig:                func() { writeGuide(t, guideBodyEdited) },
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_path_create"),
 				ConfigVariables: config.Variables{
 					"name":         config.StringVariable(ruleName),
@@ -855,7 +864,27 @@ func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum", sha256Hex(guideBodyEdited)),
+				),
+			},
+			// Omit artifacts (9.5.0+): Optional+Computed+UseStateForUnknown must retain
+			// prior state so read-after-write does not produce an inconsistent result
+			// when Kibana GET returns the preserved guide (elastic/kibana#247279).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minReadBackVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_artifacts"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					// Omitting artifacts on update does not clear them; Terraform retains
+					// the previous content_path source and checksum.
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content_path", guideFile),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.checksum", sha256Hex(guideBodyEdited)),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.investigation_guide.content"),
 				),
 			},
 		},

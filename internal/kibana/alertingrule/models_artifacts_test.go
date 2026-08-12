@@ -133,7 +133,7 @@ func Test_populateArtifactsFromAPI_inlineContentStoresBlob(t *testing.T) {
 	diags := m.populateArtifactsFromAPI(ctx, rule)
 	require.False(t, diags.HasError())
 
-	ig, d := m.priorInvestigationGuide(ctx)
+	ig, d := m.investigationGuideFrom(ctx)
 	require.False(t, d.HasError())
 	require.NotNil(t, ig)
 	require.Equal(t, "new blob from api", ig.Content.ValueString())
@@ -161,7 +161,7 @@ func Test_populateArtifactsFromAPI_contentPathPreservedNotOverwritten(t *testing
 	diags := m.populateArtifactsFromAPI(ctx, rule)
 	require.False(t, diags.HasError())
 
-	ig, d := m.priorInvestigationGuide(ctx)
+	ig, d := m.investigationGuideFrom(ctx)
 	require.False(t, d.HasError())
 	require.NotNil(t, ig)
 	// content_path source: content is not surfaced, path + checksum preserved.
@@ -191,7 +191,7 @@ func Test_applyInvestigationGuideChecksum_contentPathComputesSHA(t *testing.T) {
 	diags := m.applyInvestigationGuideChecksum(ctx)
 	require.False(t, diags.HasError())
 
-	ig, d := m.priorInvestigationGuide(ctx)
+	ig, d := m.investigationGuideFrom(ctx)
 	require.False(t, d.HasError())
 	require.NotNil(t, ig)
 	require.Equal(t, want, ig.Checksum.ValueString())
@@ -248,7 +248,7 @@ func Test_applyInvestigationGuideChecksum_inlineContentClearsChecksum(t *testing
 	diags := m.applyInvestigationGuideChecksum(ctx)
 	require.False(t, diags.HasError())
 
-	ig, d := m.priorInvestigationGuide(ctx)
+	ig, d := m.investigationGuideFrom(ctx)
 	require.False(t, d.HasError())
 	require.NotNil(t, ig)
 	require.True(t, ig.Checksum.IsNull())

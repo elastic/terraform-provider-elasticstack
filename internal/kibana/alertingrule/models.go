@@ -232,9 +232,9 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	return diags
 }
 
-// priorInvestigationGuide returns the investigation guide currently held by the
-// model (plan on the write path, prior state on read), or nil when unset.
-func (m alertingRuleModel) priorInvestigationGuide(ctx context.Context) (*investigationGuideModel, diag.Diagnostics) {
+// investigationGuideFrom returns the investigation guide nested under
+// m.Artifacts (from plan or state, depending on the caller), or nil when unset.
+func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investigationGuideModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
 		return nil, diags
@@ -264,7 +264,7 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 
 	artifactsAttrTypes := getArtifactsAttrTypes()
 
-	priorIG, d := m.priorInvestigationGuide(ctx)
+	priorIG, d := m.investigationGuideFrom(ctx)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
@@ -630,7 +630,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 // the file-based investigation guide the file at `content_path` is read at
 // apply time and its contents are sent as the blob.
 func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.AlertingRuleArtifacts, diag.Diagnostics) {
-	ig, diags := m.priorInvestigationGuide(ctx)
+	ig, diags := m.investigationGuideFrom(ctx)
 	if diags.HasError() || ig == nil {
 		return nil, diags
 	}
@@ -664,7 +664,7 @@ func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.Alerting
 // write so the computed `checksum` in state reflects the applied file, and
 // mirrors the drift detection performed by ModifyPlan.
 func (m *alertingRuleModel) applyInvestigationGuideChecksum(ctx context.Context) diag.Diagnostics {
-	ig, diags := m.priorInvestigationGuide(ctx)
+	ig, diags := m.investigationGuideFrom(ctx)
 	if diags.HasError() || ig == nil {
 		return diags
 	}

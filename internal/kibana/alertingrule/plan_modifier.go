@@ -44,7 +44,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		return
 	}
 
-	planIG, d := plan.priorInvestigationGuide(ctx)
+	planIG, d := plan.investigationGuideFrom(ctx)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -58,7 +58,7 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		stateIG, d := state.priorInvestigationGuide(ctx)
+		stateIG, d := state.investigationGuideFrom(ctx)
 		resp.Diagnostics.Append(d...)
 		if resp.Diagnostics.HasError() {
 			return
