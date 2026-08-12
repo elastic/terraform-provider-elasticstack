@@ -29,34 +29,35 @@ import (
 
 const spaceIDDescription = "An identifier for the space. If space_id is not provided, the default space is used."
 
-// ResourceSpaceIDAttribute returns the canonical space_id attribute for Kibana
-// resources that support UseStateForUnknown in addition to RequiresReplace.
-func ResourceSpaceIDAttribute() schema.StringAttribute {
+// ResourceSpaceIDAttributeWithModifiers returns the canonical space_id attribute
+// for Kibana resources (Optional+Computed with Default("default")), with the
+// supplied plan modifiers.
+func ResourceSpaceIDAttributeWithModifiers(modifiers ...planmodifier.String) schema.StringAttribute {
 	return schema.StringAttribute{
 		MarkdownDescription: spaceIDDescription,
 		Optional:            true,
 		Computed:            true,
 		Default:             stringdefault.StaticString(clients.DefaultSpaceID),
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.UseStateForUnknown(),
-			stringplanmodifier.RequiresReplace(),
-		},
+		PlanModifiers:       modifiers,
 	}
+}
+
+// ResourceSpaceIDAttribute returns the canonical space_id attribute for Kibana
+// resources that support UseStateForUnknown in addition to RequiresReplace.
+func ResourceSpaceIDAttribute() schema.StringAttribute {
+	return ResourceSpaceIDAttributeWithModifiers(
+		stringplanmodifier.UseStateForUnknown(),
+		stringplanmodifier.RequiresReplace(),
+	)
 }
 
 // ResourceSpaceIDAttributeRequiresReplaceOnly returns the canonical space_id
 // attribute for Kibana resources that only need RequiresReplace (no
 // UseStateForUnknown).
 func ResourceSpaceIDAttributeRequiresReplaceOnly() schema.StringAttribute {
-	return schema.StringAttribute{
-		MarkdownDescription: spaceIDDescription,
-		Optional:            true,
-		Computed:            true,
-		Default:             stringdefault.StaticString(clients.DefaultSpaceID),
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.RequiresReplace(),
-		},
-	}
+	return ResourceSpaceIDAttributeWithModifiers(
+		stringplanmodifier.RequiresReplace(),
+	)
 }
 
 // DataSourceSpaceIDAttribute returns the canonical space_id attribute for
