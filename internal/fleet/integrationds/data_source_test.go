@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -52,8 +53,10 @@ func TestAccDataSourceIntegration(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(integrationDataSourceResourceName, "id"),
+					checkFleetPackageID("tcp"),
 					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", "tcp"),
+					resource.TestCheckNoResourceAttr(integrationDataSourceResourceName, "prerelease"),
+					resource.TestCheckNoResourceAttr(integrationDataSourceResourceName, "space_id"),
 					checkFleetPackageVersion("tcp", false, ""),
 				),
 			},
@@ -115,11 +118,70 @@ func TestAccDataSourceIntegrationWithPrerelease(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(integrationDataSourceResourceName, "id"),
+					checkFleetPackageID("apm"),
 					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", "apm"),
 					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "prerelease", "true"),
 					checkFleetPackageVersion("apm", true, ""),
 					checkFleetPackageVersionChangesWhenPrereleaseEnabled("apm", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_false"),
+				Check: resource.ComposeTestCheckFunc(
+					checkFleetPackageID("apm"),
+					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", "apm"),
+					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "prerelease", "false"),
+					checkFleetPackageVersion("apm", false, ""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIntegrationVersionNotFound(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
+	const missingPackageName = "this-package-does-not-exist"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeTestCheckFunc(
+					checkFleetPackageID(missingPackageName),
+					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", missingPackageName),
+					resource.TestCheckNoResourceAttr(integrationDataSourceResourceName, "version"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceIntegrationNameChange(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationDataSource, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				Check: resource.ComposeTestCheckFunc(
+					checkFleetPackageID("tcp"),
+					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", "tcp"),
+					checkFleetPackageVersion("tcp", false, ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				Check: resource.ComposeTestCheckFunc(
+					checkFleetPackageID("system"),
+					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", "system"),
+					checkFleetPackageVersion("system", false, ""),
 				),
 			},
 		},
@@ -153,6 +215,17 @@ func TestAccDataSourceIntegrationKibanaConnection(t *testing.T) {
 			},
 		},
 	})
+}
+
+func checkFleetPackageID(packageName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		hash, err := typeutils.StringToHash(packageName)
+		if err != nil {
+			return err
+		}
+
+		return resource.TestCheckResourceAttr(integrationDataSourceResourceName, "id", *hash)(s)
+	}
 }
 
 func checkFleetPackageVersion(packageName string, prerelease bool, spaceID string) resource.TestCheckFunc {
