@@ -263,28 +263,7 @@ func diffEntityTypes(ctx context.Context, prior, plan types.Set) (added, removed
 		return nil, nil, diags
 	}
 
-	priorSet := make(map[string]bool, len(priorVals))
-	for _, v := range priorVals {
-		priorSet[v] = true
-	}
-	planSet := make(map[string]bool, len(planVals))
-	for _, v := range planVals {
-		planSet[v] = true
-	}
-
-	for v := range planSet {
-		if !priorSet[v] {
-			added = append(added, v)
-		}
-	}
-	for v := range priorSet {
-		if !planSet[v] {
-			removed = append(removed, v)
-		}
-	}
-
-	sort.Strings(added)
-	sort.Strings(removed)
+	added, removed = typeutils.DiffStringSlices(priorVals, planVals)
 	return added, removed, diags
 }
 
