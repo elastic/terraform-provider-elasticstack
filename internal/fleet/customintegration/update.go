@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -83,7 +84,7 @@ func updateCustomIntegration(
 			}
 		}
 
-		checksum, err := computeSHA256(filePath)
+		checksum, err := fileutil.SHA256HexDigest(filePath)
 		if err != nil {
 			diags.AddError("Failed to compute checksum", err.Error())
 			return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags

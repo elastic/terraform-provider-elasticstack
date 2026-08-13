@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -81,7 +82,7 @@ func Test_contentPathChecksumChanged_createMarksChanged(t *testing.T) {
 
 func Test_contentPathChecksumChanged_unchangedWhenChecksumMatches(t *testing.T) {
 	fpath := writeTempGuide(t, "stable body")
-	prior, err := fileSHA256(fpath)
+	prior, err := fileutil.SHA256HexDigest(fpath)
 	require.NoError(t, err)
 
 	ig := &investigationGuideModel{
