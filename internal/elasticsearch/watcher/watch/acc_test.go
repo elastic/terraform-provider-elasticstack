@@ -54,6 +54,18 @@ const (
 		`"search_type":"query_then_fetch"}}}`
 	watchTransformScriptExpected = `{"script":{"lang":"painless","source":"return ctx.payload"}}`
 
+	// Authored JSON for omitted Watcher-injected defaults. State must keep these
+	// shapes (without rest_total_hits_as_int / search_type / indices / lang)
+	// when semantic equality holds.
+	watchSearchInputOmittingTypeAndTotalHits    = `{"search":{"request":{"body":{"query":{"bool":{"must":[{"match":{"event.dataset":"elasticsearch.cluster.stats"}}]}}},"indices":[".monitoring-es-*"]}}}`
+	watchSearchInputOmittingIndices             = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
+	watchSearchTransformOmittingDefaults        = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
+	watchChainSearchOmittingDefaults            = `{"chain":{"inputs":[{"first":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}},{"second":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-logs-*"]}}}}]}}`
+	watchActionsSearchTransformOmittingDefaults = `{"log":{"logging":{"text":"watch fired"},"transform":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}}}`
+	watchConditionScriptOmittingLang            = `{"script":{"source":"return true"}}`
+	watchSearchInputExplicitNonDefaults         = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"],"rest_total_hits_as_int":false,"search_type":"dfs_query_then_fetch"}}}`
+	watchSearchInputExplicitNonDefaultsUpdate   = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*",".monitoring-logs-*"],"rest_total_hits_as_int":false,"search_type":"query_then_fetch"}}}`
+
 	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
 
@@ -623,6 +635,143 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
+				),
+			},
+		},
+	})
+}
+
+func watchJSONDefaultsEmptyPlanStep(watchID, step string) resource.TestStep {
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(step),
+		ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+		ConfigPlanChecks: resource.ConfigPlanChecks{
+			PreApply: []plancheck.PlanCheck{
+				plancheck.ExpectEmptyPlan(),
+			},
+		},
+	}
+}
+
+// TestResourceWatch_searchRequestDefaultsOmitted reproduces issue #4522: a
+// search input against .monitoring-es-* that omits rest_total_hits_as_int and
+// search_type must apply cleanly and produce an empty subsequent plan.
+func TestResourceWatch_searchRequestDefaultsOmitted(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputOmittingTypeAndTotalHits),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
+		},
+	})
+}
+
+// TestResourceWatch_watcherJSONDefaultsOmitted covers omitted search-request
+// defaults on input.indices, transform, chain sub-inputs, actions search
+// transforms, and omitted script lang.
+func TestResourceWatch_watcherJSONDefaultsOmitted(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"watch_id": config.StringVariable(watchID)}
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_indices"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputOmittingIndices),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "omit_indices"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("transform"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "transform", watchSearchTransformOmittingDefaults),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "transform"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("chain"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchChainSearchOmittingDefaults),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "chain"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_search_transform"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "actions", watchActionsSearchTransformOmittingDefaults),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "actions_search_transform"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("script_lang"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "condition", watchConditionScriptOmittingLang),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "script_lang"),
+		},
+	})
+}
+
+// TestResourceWatch_searchRequestExplicitNonDefaults asserts explicit
+// non-default search-request values round-trip unchanged, and a genuine change
+// still produces a non-empty plan.
+func TestResourceWatch_searchRequestExplicitNonDefaults(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"watch_id": config.StringVariable(watchID)}
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputExplicitNonDefaults),
+				),
+			},
+			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputExplicitNonDefaultsUpdate),
 				),
 			},
 		},
