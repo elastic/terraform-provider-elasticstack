@@ -60,6 +60,19 @@ func ResourceSpaceIDAttributeRequiresReplaceOnly() schema.StringAttribute {
 	)
 }
 
+// ResourceSpaceIDAttributeNoDefault returns the canonical space_id attribute
+// for Kibana resources that leave space_id defaulted server-side rather than
+// defaulting it to "default" (Optional+Computed, no Default), with the
+// supplied plan modifiers.
+func ResourceSpaceIDAttributeNoDefault(modifiers ...planmodifier.String) schema.StringAttribute {
+	return schema.StringAttribute{
+		MarkdownDescription: spaceIDDescription,
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers:       modifiers,
+	}
+}
+
 // DataSourceSpaceIDAttribute returns the canonical space_id attribute for
 // Kibana data sources (Optional+Computed, no plan modifiers).
 func DataSourceSpaceIDAttribute() dsschema.StringAttribute {

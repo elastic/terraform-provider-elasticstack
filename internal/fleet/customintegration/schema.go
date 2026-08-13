@@ -21,9 +21,11 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/fleetschema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -64,33 +66,13 @@ To prevent the package from being uninstalled when the resource is destroyed, se
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"ignore_mapping_update_errors": schema.BoolAttribute{
-				Description: "Set to true to ignore mapping update errors during package installation.",
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"skip_data_stream_rollover": schema.BoolAttribute{
-				Description: "Set to true to skip data stream rollover during package installation.",
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"skip_destroy": schema.BoolAttribute{
-				Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"space_id": schema.StringAttribute{
-				Description: "The Kibana space ID where this integration package should be installed. Changing this value forces resource replacement.",
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"ignore_mapping_update_errors": fleetschema.IgnoreMappingUpdateErrorsAttribute(true, new(bool)),
+			"skip_data_stream_rollover":    fleetschema.SkipDataStreamRolloverAttribute(true, new(bool)),
+			"skip_destroy":                 fleetschema.SkipDestroyAttribute(true, new(bool)),
+			"space_id": kbschema.ResourceSpaceIDAttributeNoDefault(
+				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplace(),
+			),
 		},
 	}
 }
