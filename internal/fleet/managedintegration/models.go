@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -138,19 +139,7 @@ const defaultSpaceID = "default"
 // Create is the first caller that actually exercises this path end-to-end;
 // see the corresponding test update in schema_test.go/entitycore_contract_test.go.
 func (m managedIntegrationModel) GetSpaceID() types.String {
-	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue(defaultSpaceID)
-	}
-	for _, elem := range m.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue(defaultSpaceID)
+	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, defaultSpaceID)
 }
 
 func (m managedIntegrationModel) GetKibanaConnection() types.List { return m.KibanaConnection }

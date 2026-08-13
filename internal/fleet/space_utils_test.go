@@ -94,6 +94,57 @@ func TestSpaceIDFromSet(t *testing.T) {
 	}
 }
 
+// TestSpaceIDFromSetOrDefault tests the helper shared by Fleet resource models'
+// GetSpaceID methods, which only differ in their fallback value.
+func TestSpaceIDFromSetOrDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    types.Set
+		fallback string
+		want     string
+	}{
+		{
+			name:     "null set returns fallback",
+			input:    types.SetNull(types.StringType),
+			fallback: "default",
+			want:     "default",
+		},
+		{
+			name:     "unknown set returns fallback",
+			input:    types.SetUnknown(types.StringType),
+			fallback: "default",
+			want:     "default",
+		},
+		{
+			name:     "empty set returns fallback",
+			input:    types.SetValueMust(types.StringType, []attr.Value{}),
+			fallback: "",
+			want:     "",
+		},
+		{
+			name:     "set with only empty string returns fallback",
+			input:    types.SetValueMust(types.StringType, []attr.Value{types.StringValue("")}),
+			fallback: "fallback-value",
+			want:     "fallback-value",
+		},
+		{
+			name:     "single space ID is returned",
+			input:    types.SetValueMust(types.StringType, []attr.Value{types.StringValue("my-space")}),
+			fallback: "default",
+			want:     "my-space",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SpaceIDFromSetOrDefault(tt.input, tt.fallback)
+			if got.ValueString() != tt.want {
+				t.Errorf("SpaceIDFromSetOrDefault() = %q, want %q", got.ValueString(), tt.want)
+			}
+		})
+	}
+}
+
 // TestGetOperationalSpaceFromState tests the helper that extracts operational space from state.
 // This is a critical function for preventing the prepend bug.
 func TestGetOperationalSpaceFromState(t *testing.T) {

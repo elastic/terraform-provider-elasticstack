@@ -42,6 +42,27 @@ func SpaceIDFromSet(ctx context.Context, spaceIDs types.Set) (string, diag.Diagn
 	return ids[0], diags
 }
 
+// SpaceIDFromSetOrDefault scans a space_ids set attribute for the first non-empty,
+// known string element, returning it as a types.String. If the set is null, unknown,
+// or contains no non-empty elements, it returns fallback wrapped in types.StringValue.
+// This centralizes the GetSpaceID extraction logic shared by several Fleet resource
+// models, which differ only in their fallback value.
+func SpaceIDFromSetOrDefault(spaceIDs types.Set, fallback string) types.String {
+	if spaceIDs.IsNull() || spaceIDs.IsUnknown() {
+		return types.StringValue(fallback)
+	}
+	for _, elem := range spaceIDs.Elements() {
+		s, ok := elem.(types.String)
+		if !ok || s.IsNull() || s.IsUnknown() {
+			continue
+		}
+		if v := s.ValueString(); v != "" {
+			return s
+		}
+	}
+	return types.StringValue(fallback)
+}
+
 // GetOperationalSpaceFromState extracts the operational space ID from Terraform state.
 // This helper reads space_ids from state (not plan) to determine which space to use
 // for API operations, preventing errors when space_ids changes (e.g., prepending a new space).

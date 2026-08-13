@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -42,19 +43,7 @@ type serverHostModel struct {
 func (m serverHostModel) GetID() types.String         { return m.ID }
 func (m serverHostModel) GetResourceID() types.String { return m.HostID }
 func (m serverHostModel) GetSpaceID() types.String {
-	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue("")
-	}
-	for _, elem := range m.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue("")
+	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, "")
 }
 func (m serverHostModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 

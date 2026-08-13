@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -57,19 +58,7 @@ func (model outputModel) GetResourceID() types.String     { return model.OutputI
 func (model outputModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 
 func (model outputModel) GetSpaceID() types.String {
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		return types.StringValue("")
-	}
-	for _, elem := range model.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue("")
+	return fleet.SpaceIDFromSetOrDefault(model.SpaceIDs, "")
 }
 
 // IsUnscopedSpace implements entitycore.KibanaUnscopedSpace.
