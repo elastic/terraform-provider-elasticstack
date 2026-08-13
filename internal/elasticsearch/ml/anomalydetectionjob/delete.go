@@ -19,10 +19,8 @@ package anomalydetectionjob
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -74,15 +72,14 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	// 404 means the job is already gone — treat it as success (idempotent delete).
 	_, err = typedClient.Ml.DeleteJob(jobID).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			tflog.Debug(ctx, fmt.Sprintf("ML job %s not found on delete, treating as success", jobID))
 			return diags
 		}
 		tflog.Warn(ctx, fmt.Sprintf("Initial delete of ML job %s failed, retrying with force=true: %s", jobID, err.Error()))
 		_, retryErr := typedClient.Ml.DeleteJob(jobID).Force(true).Do(ctx)
 		if retryErr != nil {
-			if errors.As(retryErr, &esErr) && esErr.Status == 404 {
+			if elasticsearch.IsNotFoundElasticsearchError(retryErr) {
 				tflog.Debug(ctx, fmt.Sprintf("ML job %s not found on force-delete retry, treating as success", jobID))
 				return diags
 			}

@@ -19,11 +19,10 @@ package anomalydetectionjob
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -45,8 +44,7 @@ func readAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchS
 	// Get the ML job using the typed client
 	res, err := typedClient.Ml.GetJobs().JobId(jobID).AllowNoMatch(true).Do(ctx)
 	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
+		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			return state, false, nil
 		}
 		diags.AddError("Failed to get ML anomaly detection job", fmt.Sprintf("Unable to get ML anomaly detection job: %s — %s", jobID, err.Error()))

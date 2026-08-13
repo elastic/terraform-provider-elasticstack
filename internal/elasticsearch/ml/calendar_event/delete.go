@@ -19,11 +19,10 @@ package calendar_event
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -44,7 +43,7 @@ func deleteCalendarEvent(ctx context.Context, client *clients.ElasticsearchScope
 
 	_, err := typedClient.Ml.DeleteCalendarEvent(calendarID, eventID).Do(ctx)
 	if err != nil {
-		if esErr, ok := errors.AsType[*types.ElasticsearchError](err); ok && esErr.Status == 404 {
+		if elasticsearch.IsNotFoundElasticsearchError(err) {
 			tflog.Debug(ctx, fmt.Sprintf("ML calendar event %s already deleted from calendar: %s", eventID, calendarID))
 			return diags
 		}
