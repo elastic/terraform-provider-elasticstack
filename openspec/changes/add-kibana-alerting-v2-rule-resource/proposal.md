@@ -66,11 +66,11 @@ The provider already provides workarounds for this pattern twice: `internal/clie
 
 **3. Two different fields are called "version".** `metadata.version` is an integer configuration counter incremented on every mutation (surfaced on rule events as `rule.version`). Top-level `version` is the saved object optimistic-concurrency token, a string. Both appear in the same response object. The Terraform schema has to expose both, and no naming makes that unconfusing. **Ask: rename one — `metadata.revision` for the counter, or `occ_token`/`sequence_token` for the OCC string.**
 
-## Generated client caveat
+## Generated client
 
-v2 OAS lands via [kibana#279519](https://github.com/elastic/kibana/pull/279519); implementation ([#676](https://github.com/elastic/rna-program/issues/676)) regenerates `kbapi` from that bundle. Schema claims in this change are taken from the zod sources today and do not block on the PR merging.
+v2 OAS lands via [kibana#279519](https://github.com/elastic/kibana/pull/279519); implementation ([#676](https://github.com/elastic/rna-program/issues/676)) regenerates `kbapi` from that bundle. Schema claims in this change are taken from the zod sources and the regenerated OAS on that PR.
 
-It's important to note that zod `.nullable()` becomes `anyOf: [T, {nullable: true}]` in OAS, and `oapi-codegen` emits a `json.RawMessage` union wrapper instead of `*T`. So `RuleResponse.CreatedBy` is not a `*string` — mappers cannot assign it directly; they must go through a typed accessor (and re-wrap on write). On this resource's `PUT` + GET path that hits four fields: `created_by`, `updated_by`, and `state_transition` (read and write). The Terraform schema is unaffected (`created_by`/`updated_by` stay nullable computed strings; `state_transition` stays an optional block); the cost is noisy mapping code in the client wrapper unless codegen collapses the wrappers first. `design.md` D6 prefers a `transform_schema.go` fix (turns them into ordinary pointers) with per-field unwrap as fallback.
+Component ids are `Kibana_HTTP_APIs_alerting_*`. Local codegen can run against a copy of the PR's `oas_docs/output/kibana.yaml` before merge. Committing `github_ref` in `generated/kbapi/Makefile` waits until the PR is on `elastic/kibana`, because that Makefile fetches from `raw.githubusercontent.com/elastic/kibana/$(github_ref)/...`.
 
 ## Capabilities
 
@@ -86,6 +86,6 @@ It's important to note that zod `.nullable()` becomes `anyOf: [T, {nullable: tru
 
 - **Specs**: new delta at `openspec/changes/add-kibana-alerting-v2-rule-resource/specs/kibana-rule/spec.md`, promoted to `openspec/specs/kibana-rule/spec.md` on archive.
 - **Implementation (future, [#673](https://github.com/elastic/rna-program/issues/673))**: new package `internal/kibana/rule/`; new wrapper `internal/clients/kibanaoapi/rule_v2.go`; registration in `provider/plugin_framework.go` `experimentalResources()`.
-- **Generated client (future, [#676](https://github.com/elastic/rna-program/issues/676))**: bump `github_ref` in `generated/kbapi/Makefile` past the merge of [kibana#279519](https://github.com/elastic/kibana/pull/279519) and regenerate; possibly one new transformer in `transform_schema.go`.
+- **Generated client (future, [#676](https://github.com/elastic/rna-program/issues/676))**: regenerate `kbapi` from the [kibana#279519](https://github.com/elastic/kibana/pull/279519) OAS; bump `github_ref` in `generated/kbapi/Makefile` once that PR is on `elastic/kibana`.
 - **Upstream**: three contingent API requests above, to be filed against the Alerting v2 team. Item 1 (writable `enabled`) is the only one that changes this design if granted — see `design.md`.
 - **No impact** on existing resources, state, or the default provider surface. The resource is unreachable without `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true`.

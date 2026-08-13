@@ -605,6 +605,6 @@ Plan-time validation requirements (REQ-006, REQ-007, REQ-014) SHALL additionally
 | Schema and validators | `internal/kibana/rule/schema.go`, `internal/kibana/rule/validate.go` |
 | Model mapping, version gate | `internal/kibana/rule/models.go` |
 | CRUD callbacks | `internal/kibana/rule/{create,read,update,delete}.go` |
-| HTTP client, enable/disable reconciliation, nullable unwrapping | `internal/clients/kibanaoapi/rule_v2.go` |
+| HTTP client, enable/disable reconciliation | `internal/clients/kibanaoapi/rule_v2.go` |
 | Composite id parsing | `internal/clients/api_client.go` (`CompositeID`) |
-| Generated types | `generated/kbapi/kibana.gen.go` (`alerting_v2_*` components) |
+| Generated types | `generated/kbapi/kibana.gen.go` (`Kibana_HTTP_APIs_alerting_*` components) |

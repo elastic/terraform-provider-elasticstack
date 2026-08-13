@@ -39,7 +39,7 @@ This design uses `PUT` for both create and update.
 
 **The cost.** `PUT` does not take a concurrency token, so two writers racing will overwrite each other. That is last-write-wins, which is how the rest of this provider already behaves and what Terraform assumes: the configuration owns the object. Getting conflict detection would mean switching to `PATCH`, storing the token in state, and handling 409s — including from the provider's own enable/disable calls, which bump the token. Not worth it.
 
-Full replace also means a writable field we forget to send gets reset. D9 covers how the write path protects fields the Terraform schema does not model.
+Full replace also means a writable field we forget to send gets reset. D8 covers how the write path protects fields the Terraform schema does not model.
 
 Alternatives considered: `POST` to create and `PATCH` to update (two code paths, the partial-update problems above, and no safe retry after a partial create); `POST` to create and `PUT` to update (still no safe retry, and update still needs a known id anyway).
 
@@ -163,40 +163,19 @@ The window between the two calls is the problem, and it is worse here than in v1
 
 If `enabled` becomes writable in the `PUT` body, the change is confined to the client wrapper: send the field, delete the follow-up. Spec REQ-011 is written so its scenarios hold either way, and `enabled` stays `Optional + Computed` with a `true` default in both worlds — so this is not a schema change and does not block graduation.
 
-### D6. Unwrap the zod-nullable union in codegen, not in every mapper
-
-`.nullable()` in zod v4 serialises to `anyOf: [T, {nullable: true}]`. `oapi-codegen` reads any `anyOf` as a union and emits a `json.RawMessage` wrapper with typed accessors, so `RuleResponse.CreatedBy` is a union rather than `*string`. Counting the pattern across the v2 components and paths in the [kibana#279519](https://github.com/elastic/kibana/pull/279519) bundle gives exactly 37 occurrences.
-
-Four are reachable from this resource under D1:
-
-| Field | Direction |
-|-------|-----------|
-| `alerting_v2_new_rule.state_transition` | write |
-| `alerting_v2_rule_response.state_transition` | read |
-| `alerting_v2_rule_response.createdBy` | read |
-| `alerting_v2_rule_response.updatedBy` | read |
-
-**Preferred fix: a `transform_schema.go` transformer.** Add a transformer that walks `components.schemas` and request-body schemas and rewrites any node whose `anyOf` is exactly `[T, {nullable: true}]` into `T` with `nullable: true` set. `oapi-codegen` then emits a pointer. This follows the shape of the existing global transformers — `transformRemoveAnyOfWhenOneOfPresent` and `transformOmitEmptyNullable` both iterate every component schema and rewrite in place — so it is a familiar pattern in that file rather than a new mechanism. It is generic, so it fixes all 37 at once and covers any future zod-v4 route, and it needs no upstream change.
-
-Two things to check when implementing it: that the rewrite is a no-op on the rest of the bundle (v1 and Fleet schemas come from a different pipeline and should not contain this exact shape), and that `oapi-codegen`'s `nullable-type` output option — currently commented out in `generated/kbapi/oapi-config.yaml` — is still not needed, since enabling it globally would change types across the whole client.
-
-**Fallback,** if the transformer turns out to affect unrelated components: unwrap in `internal/clients/kibanaoapi/rule_v2.go`. With `PUT` the surface is four fields, two of which (`created_by`, `updated_by`) are display-only strings, so hand-unwrapping is tolerable — but it does not scale cleanly if other v2 resources later hit the same wrappers.
-
-Either way this is a codegen-and-client-wrapper concern. The Terraform schema is unaffected: `created_by` and `updated_by` are nullable computed strings and `state_transition` is an optional block regardless of how the Go type is shaped.
-
-### D7. Space handling by request editor, not by path rewriting
+### D6. Space handling by request editor, not by path rewriting
 
 The v2 rule saved object is `namespaceType: 'multiple-isolated'`, so rules are space-scoped and the composite `<space_id>/<rule_id>` identity applies.
 
 `transform_schema.go` has a `spaceIdPaths` allowlist that rewrites selected paths into `/s/{spaceId}` variants, but the classic alerting resource does not use it — it passes `kibanautil.SpaceAwarePathRequestEditor(spaceID)` to the generated client instead, rewriting the URL per request. This design does the same. It keeps the v2 paths out of the transform allowlist, so a `kbapi` regeneration that pulls in new v2 endpoints does not need a matching transform change, and it matches the resource this one is most likely to be read alongside.
 
-### D8. Resource-level minimum version gate, value to be determined
+### D7. Resource-level minimum version gate, value to be determined
 
 The provider supports Elastic Stack 8.0+ and gates features with `entitycore.VersionRequirement` (see `maintenance_window/models.go` for the resource-level form). This resource will need one, since v2 does not exist on older stacks — a request against a stack without the plugin gets a 404 from the HTTP layer, which the resource would misread as "rule deleted" and try to recreate, looping.
 
 The value is not yet knowable; see Open Questions. Until it is, the read path must distinguish "the rule is gone" from "this endpoint does not exist here". The safest available signal is that the engine-disabled 503 (spec REQ-013) and a 404 from an unregistered route are both non-`ALERTING_DISABLED` responses on a stack that has never had v2, so a version gate is the real fix rather than response sniffing.
 
-### D9. Read before write, so full replace cannot clear fields the schema does not model
+### D8. Read before write, so full replace cannot clear fields the schema does not model
 
 Under D1 every write sends the whole object, so a writable field missing from the request body is reset to its server-side default. Today no such field exists — the schema in `specs/kibana-rule/spec.md` covers all of `createRuleDataSchema`. The design has to hold when that stops being true.
 
@@ -208,7 +187,7 @@ So the write path reads first: `GET` the rule, populate the request struct from 
 
 The overwrite must be unconditional for every modeled field, nulls included. Skipping nulls would turn full replace back into a partial update and break the semantics D1 exists to provide — removing a block from configuration has to clear the value server side (spec REQ-012).
 
-Seeding the request from the response means copying between the response and request types, which strengthens the case for the D6 transformer: with it both sides are plain pointers and the copy is mechanical, whereas hand-unwrapping means going through a union accessor on the read side and re-wrapping on the write side for every field carried across.
+Seeding the request from the response means copying between the response and request types. Both sides are plain pointers, so that copy is mechanical.
 
 This is the usual pattern for full-replace APIs ([AzureRM best practices](https://hashicorp.github.io/terraform-provider-azurerm/topics/best-practices/); this repo already does it in `internal/fleet/agentpolicy/update.go`). Cost: one extra `GET` per update; create is unaffected. The wider read-to-write window is more last-write-wins exposure, which D1 already accepts.
 
@@ -222,7 +201,7 @@ Read-before-write alone would quietly preserve unknown fields forever and never 
 
 - **[Risk] `PUT` is last-write-wins.** A rule modified in the Kibana UI between Terraform's refresh and its write is silently overwritten. → **Mitigation:** this is standard Terraform behaviour and standard for this provider; document it in the resource description rather than reaching for `PATCH` and inheriting its problems (D1).
 
-- **[Risk] A field added upstream that the schema does not model would be silently cleared by full-replace `PUT`.** This is data loss with no plan diff, and it arrives through a Renovate regeneration PR too large to review field by field. → **Mitigation:** read before write so unmodeled fields round-trip, plus a fail-closed field-accounting test that turns the regeneration PR red (D9).
+- **[Risk] A field added upstream that the schema does not model would be silently cleared by full-replace `PUT`.** This is data loss with no plan diff, and it arrives through a Renovate regeneration PR too large to review field by field. → **Mitigation:** read before write so unmodeled fields round-trip, plus a fail-closed field-accounting test that turns the regeneration PR red (D8).
 
 - **[Risk] The non-atomic `enabled` reconciliation can leave a rule enabled when configuration says otherwise,** so a briefly live rule can fire notifications. → **Mitigation:** report the partial state explicitly (spec REQ-011) rather than failing silently, and pursue contingent change 1.
 
@@ -241,6 +220,6 @@ Two adjacent migrations are worth recording because they are frequently confused
 
 ## Open Questions
 
-1. **Minimum Kibana version for the gate in D8.** The version in which `/api/alerting/v2/rules` first ships as a public route is not yet determined; the feature is unreleased. Implementation must establish it and add a resource-level `VersionRequirement` with a diagnostic naming the version. This does not change the schema, the approach, or the task breakdown — only the constant — which is why it is deferred rather than resolved. Serverless short-circuits the provider's version checks, so serverless behaviour needs a separate confirmation.
+1. **Minimum Kibana version for the gate in D7.** The version in which `/api/alerting/v2/rules` first ships as a public route is not yet determined; the feature is unreleased. Implementation must establish it and add a resource-level `VersionRequirement` with a diagnostic naming the version. This does not change the schema, the approach, or the task breakdown — only the constant — which is why it is deferred rather than resolved. Serverless short-circuits the provider's version checks, so serverless behaviour needs a separate confirmation.
 
 2. **Interaction with server-side v1 → v2 rule migration.** If Elastic ships a server-side migration and a rule managed by `elasticstack_kibana_alerting_rule` is migrated, its saved object type changes from `alert` to `alerting_rule`. The v1 `GET` then 404s, the classic resource removes it from state (`kibana-alerting-rule` REQ-001), and the next apply tries to recreate it — producing either a duplicate rule or a confusing failure, with no signal to the practitioner that a migration happened. This is not something this change can fix from the v2 side, and the migration's shape is not yet known. It needs a decision with the Alerting v2 team about what a migrated rule looks like to the v1 API, and it may need a follow-up change to the classic resource (for example, detecting the type change and emitting a diagnostic that points at the v2 resource instead of silently planning a recreate). Recorded here so it is not discovered during a migration.
