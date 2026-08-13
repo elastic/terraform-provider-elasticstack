@@ -456,15 +456,18 @@ func validateArtifactsNotEmpty(ctx context.Context, data *alertingRuleModel, dia
 	if diags.HasError() {
 		return
 	}
-	// Reject only when both nested attributes are known-null (i.e. `artifacts = {}`).
-	// An unknown value (e.g. a dashboards list built from a variable/for-expression
-	// or a value sourced from another resource) is treated as possibly-set so we do
-	// not emit a false positive during validation.
-	if am.InvestigationGuide.IsNull() && am.Dashboards.IsNull() {
+	// Reject when neither nested attribute is meaningfully set, i.e. `artifacts = {}`
+	// or `artifacts = { dashboards = [] }`. An unknown value (e.g. a dashboards list
+	// built from a variable/for-expression or sourced from another resource) is
+	// treated as possibly-set so we do not emit a false positive during validation.
+	guideAbsent := am.InvestigationGuide.IsNull() // unknown -> false (possibly set)
+	dashboardsAbsent := am.Dashboards.IsNull() ||
+		(!am.Dashboards.IsUnknown() && len(am.Dashboards.Elements()) == 0)
+	if guideAbsent && dashboardsAbsent {
 		diags.AddAttributeError(
 			path.Root("artifacts"),
 			"Empty artifacts",
-			"artifacts must set at least one of investigation_guide or dashboards.",
+			"artifacts must set at least one of investigation_guide or a non-empty dashboards list.",
 		)
 	}
 }

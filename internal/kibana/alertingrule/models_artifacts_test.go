@@ -413,6 +413,17 @@ func Test_validateArtifactsNotEmpty(t *testing.T) {
 		require.True(t, diags.HasError())
 	})
 
+	t.Run("empty dashboards list rejected", func(t *testing.T) {
+		var diags diag.Diagnostics
+		data := baseModel()
+		data.Artifacts = artifactsObjectWith(ctx, t,
+			types.ObjectNull(getInvestigationGuideAttrTypes()),
+			dashboardsList(ctx, t), // zero elements
+		)
+		validateArtifactsNotEmpty(ctx, &data, &diags)
+		require.True(t, diags.HasError())
+	})
+
 	t.Run("dashboards-only accepted", func(t *testing.T) {
 		var diags diag.Diagnostics
 		data := baseModel()
