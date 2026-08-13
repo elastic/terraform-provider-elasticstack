@@ -17,14 +17,14 @@ This default-population SHALL be used exclusively for the Plugin Framework's sem
 
 #### Scenario: Omitted rest_total_hits_as_int does not cause apply inconsistency
 
-- **GIVEN** a watch `input` configured as a `search` request whose `request` body omits `rest_total_hits_as_int`
+- **GIVEN** a watch `input` configured as a `search` request whose `request` object omits `rest_total_hits_as_int`
 - **WHEN** the resource is created and the Get Watch response used to refresh state includes `rest_total_hits_as_int: true` injected by Elasticsearch
 - **THEN** the apply SHALL succeed without a "Provider produced inconsistent result after apply" error
 - **AND** a subsequent `terraform plan` SHALL show no changes
 
 #### Scenario: Omitted search_type does not cause apply inconsistency
 
-- **GIVEN** a watch `input` configured as a `search` request whose `request` body omits `search_type`
+- **GIVEN** a watch `input` configured as a `search` request whose `request` object omits `search_type`
 - **WHEN** the resource is created and the Get Watch response used to refresh state includes `search_type: "query_then_fetch"` injected by Elasticsearch
 - **THEN** the apply SHALL succeed without a "Provider produced inconsistent result after apply" error
 - **AND** a subsequent `terraform plan` SHALL show no changes
