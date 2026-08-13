@@ -47,8 +47,8 @@ func SHA256HexDigest(path string) (string, error) {
 // FileChecksumDrifted computes the current SHA-256 digest of the file at path
 // and reports whether it differs from priorChecksum. hasPriorState must be
 // false when the resource is being created (there is no prior state to
-// compare against), in which case changed is always true. Otherwise, changed
-// reports whether the freshly computed digest differs from priorChecksum.
+// compare against); in that case changed is true when the digest is computed
+// successfully. Otherwise, changed reports whether newChecksum != priorChecksum.
 func FileChecksumDrifted(path string, priorChecksum string, hasPriorState bool) (newChecksum string, changed bool, err error) {
 	newChecksum, err = SHA256HexDigest(path)
 	if err != nil {
