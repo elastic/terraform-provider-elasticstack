@@ -19,6 +19,7 @@ package watch
 
 import (
 	"context"
+	"maps"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -34,9 +35,7 @@ func searchRequest(extras map[string]any) map[string]any {
 			},
 		},
 	}
-	for k, v := range extras {
-		req[k] = v
-	}
+	maps.Copy(req, extras)
 	return map[string]any{
 		"search": map[string]any{
 			"request": req,
@@ -308,6 +307,12 @@ func TestJSONWithDefaultsValue_StringSemanticEquals_watcherDefaults(t *testing.T
 			prior: `{"http":{"request":{"auth":{"basic":{"password":"::es_redacted::"}}}}}`,
 			next:  `{"http":{"request":{"auth":{"basic":{"password":"super-secret"}}}}}`,
 			equal: false,
+		},
+		{
+			name:  "omitted script lang equals ES injected painless",
+			prior: `{"script":{"source":"return true"}}`,
+			next:  `{"script":{"source":"return true","lang":"painless"}}`,
+			equal: true,
 		},
 	}
 

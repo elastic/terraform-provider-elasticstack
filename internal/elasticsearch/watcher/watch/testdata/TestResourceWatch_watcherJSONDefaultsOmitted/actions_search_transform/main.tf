@@ -23,7 +23,8 @@ resource "elasticstack_elasticsearch_watch" "test" {
         }
       }
       logging = {
-        text = "watch fired"
+        level = "info"
+        text  = "watch fired"
       }
     }
   })

@@ -61,7 +61,7 @@ const (
 	watchSearchInputOmittingIndices             = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
 	watchSearchTransformOmittingDefaults        = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
 	watchChainSearchOmittingDefaults            = `{"chain":{"inputs":[{"first":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}},{"second":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-logs-*"]}}}}]}}`
-	watchActionsSearchTransformOmittingDefaults = `{"log":{"logging":{"text":"watch fired"},"transform":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}}}`
+	watchActionsSearchTransformOmittingDefaults = `{"log":{"logging":{"level":"info","text":"watch fired"},"transform":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}}}`
 	watchConditionScriptOmittingLang            = `{"script":{"source":"return true"}}`
 	watchSearchInputExplicitNonDefaults         = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"],"rest_total_hits_as_int":false,"search_type":"dfs_query_then_fetch"}}}`
 	watchSearchInputExplicitNonDefaultsUpdate   = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*",".monitoring-logs-*"],"rest_total_hits_as_int":false,"search_type":"query_then_fetch"}}}`
