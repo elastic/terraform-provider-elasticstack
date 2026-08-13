@@ -19,6 +19,8 @@ package watch
 
 import (
 	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -27,6 +29,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
+
+const watcherJSONDefaultsDescription = " Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` do not need to be set explicitly and will not cause spurious diffs."
 
 // watchSchema returns the schema for the watch resource without the
 // elasticsearch_connection block; the envelope injects it.
@@ -60,24 +64,24 @@ func watchSchema(_ context.Context) schema.Schema {
 				CustomType:          jsontypes.NormalizedType{},
 			},
 			"input": schema.StringAttribute{
-				MarkdownDescription: "The input that defines the input that loads the data for the watch.",
+				MarkdownDescription: "The input that defines the input that loads the data for the watch." + watcherJSONDefaultsDescription,
 				Optional:            true,
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
 				Default:             stringdefault.StaticString(`{"none":{}}`),
 			},
 			"condition": schema.StringAttribute{
-				MarkdownDescription: "The condition that defines if the actions should be run.",
+				MarkdownDescription: "The condition that defines if the actions should be run." + watcherJSONDefaultsDescription,
 				Optional:            true,
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
 				Default:             stringdefault.StaticString(`{"always":{}}`),
 			},
 			"actions": schema.StringAttribute{
-				MarkdownDescription: "The list of actions that will be run if the condition matches.",
+				MarkdownDescription: "The list of actions that will be run if the condition matches." + watcherJSONDefaultsDescription,
 				Optional:            true,
 				Computed:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
 				Default:             stringdefault.StaticString(`{}`),
 			},
 			"metadata": schema.StringAttribute{
@@ -88,9 +92,9 @@ func watchSchema(_ context.Context) schema.Schema {
 				Default:             stringdefault.StaticString(`{}`),
 			},
 			"transform": schema.StringAttribute{
-				MarkdownDescription: "Processes the watch payload to prepare it for the watch actions.",
+				MarkdownDescription: "Processes the watch payload to prepare it for the watch actions." + watcherJSONDefaultsDescription,
 				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
 			},
 			"throttle_period_in_millis": schema.Int64Attribute{
 				MarkdownDescription: "Minimum time in milliseconds between actions being run. Defaults to 5000.",
