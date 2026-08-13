@@ -66,11 +66,7 @@ func (r *agentPolicyResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	spaceID := fleetutils.SpaceIDFromSet(planModel.SpaceIDs)
 
 	sysMonitoring := planModel.SysMonitoring.ValueBool()
 	policy, diags := fleet.CreateAgentPolicy(ctx, fleetClient, body, sysMonitoring, spaceID)

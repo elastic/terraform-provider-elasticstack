@@ -50,11 +50,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	fleetClient := client.GetFleetClient()
 
 	// Determine space context for creating the package policy
-	spaceID, d := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	spaceID := fleetutils.SpaceIDFromSet(planModel.SpaceIDs)
 
 	// Step 1: Bootstrap create using ENDPOINT_INTEGRATION_CONFIG input type
 	bootstrapReq, d := buildBootstrapRequest(ctx, &planModel)

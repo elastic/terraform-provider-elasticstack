@@ -50,11 +50,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	// Determine space from plan (first space_ids entry) for CREATE.
-	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, plan.SpaceIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	spaceID := fleetutils.SpaceIDFromSet(plan.SpaceIDs)
 
 	body := plan.toAPICreateModel(ctx)
 
