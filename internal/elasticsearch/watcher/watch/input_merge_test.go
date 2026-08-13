@@ -158,9 +158,17 @@ func newInputTestWatch(input map[string]any) *models.Watch {
 // value (concrete password, authoritative API host) is stored in state JSON.
 func TestFromAPIModel_inputRedactedWithPriorPreserved(t *testing.T) {
 	t.Parallel()
-	priorInput := customtypes.NewJSONWithDefaultsValue(`{"http":{"request":{"host":"old.example","path":"/v1/data","auth":{"basic":{"username":"acc-input-user","password":"plain-input-secret"}}}}}`, populateWatcherJSONDefaults)
+	priorInput := customtypes.NewJSONWithDefaultsValue(
+		`{"http":{"request":{"host":"old.example","path":"/v1/data","auth":{"basic":{"username":"acc-input-user","password":"plain-input-secret"}}}}}`,
+		populateWatcherJSONDefaults,
+	)
 	d := &Data{}
-	diags := d.fromAPIModel(context.Background(), newInputTestWatch(httpInputAPI()), customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults), priorInput)
+	diags := d.fromAPIModel(
+		context.Background(),
+		newInputTestWatch(httpInputAPI()),
+		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
+		priorInput,
+	)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 
 	var got map[string]any
@@ -176,7 +184,12 @@ func TestFromAPIModel_inputRedactedWithPriorPreserved(t *testing.T) {
 func TestFromAPIModel_inputRedactedNoPriorKeepsSentinel(t *testing.T) {
 	t.Parallel()
 	d := &Data{}
-	diags := d.fromAPIModel(context.Background(), newInputTestWatch(httpInputAPI()), customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults), customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults))
+	diags := d.fromAPIModel(
+		context.Background(),
+		newInputTestWatch(httpInputAPI()),
+		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
+		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
+	)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 
 	var got map[string]any
@@ -190,7 +203,12 @@ func TestFromAPIModel_inputRedactedNoPriorKeepsSentinel(t *testing.T) {
 func TestFromAPIModel_inputNilDefaultsToNone(t *testing.T) {
 	t.Parallel()
 	d := &Data{}
-	diags := d.fromAPIModel(context.Background(), newInputTestWatch(nil), customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults), customtypes.NewJSONWithDefaultsValue(`{"http":{"request":{"host":"h"}}}`, populateWatcherJSONDefaults))
+	diags := d.fromAPIModel(
+		context.Background(),
+		newInputTestWatch(nil),
+		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
+		customtypes.NewJSONWithDefaultsValue(`{"http":{"request":{"host":"h"}}}`, populateWatcherJSONDefaults),
+	)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 	require.JSONEq(t, `{"none":{}}`, d.Input.ValueString())
 }

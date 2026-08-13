@@ -43,6 +43,17 @@ func searchRequest(extras map[string]any) map[string]any {
 	}
 }
 
+func loggingActionWithSearchTransform(reqDefaults map[string]any) map[string]any {
+	return map[string]any{
+		"log": map[string]any{
+			"transform": searchRequest(reqDefaults),
+			"logging": map[string]any{
+				"text": "watch fired",
+			},
+		},
+	}
+}
+
 func Test_populateWatcherJSONDefaults(t *testing.T) {
 	t.Parallel()
 
@@ -151,27 +162,13 @@ func Test_populateWatcherJSONDefaults(t *testing.T) {
 			}),
 		},
 		{
-			name: "actions nested search transform is defaulted",
-			input: map[string]any{
-				"log": map[string]any{
-					"transform": searchRequest(nil),
-					"logging": map[string]any{
-						"text": "watch fired",
-					},
-				},
-			},
-			expected: map[string]any{
-				"log": map[string]any{
-					"transform": searchRequest(map[string]any{
-						"rest_total_hits_as_int": true,
-						"search_type":            "query_then_fetch",
-						"indices":                []any{},
-					}),
-					"logging": map[string]any{
-						"text": "watch fired",
-					},
-				},
-			},
+			name:  "actions nested search transform is defaulted",
+			input: loggingActionWithSearchTransform(nil),
+			expected: loggingActionWithSearchTransform(map[string]any{
+				"rest_total_hits_as_int": true,
+				"search_type":            "query_then_fetch",
+				"indices":                []any{},
+			}),
 		},
 		{
 			name: "script object omitting lang gets painless",

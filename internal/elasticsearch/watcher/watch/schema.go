@@ -30,7 +30,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
 
-const watcherJSONDefaultsDescription = " Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` do not need to be set explicitly and will not cause spurious diffs."
+const watcherJSONDefaultsDescription = " Elasticsearch-injected search-request defaults" +
+	" (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang`" +
+	" do not need to be set explicitly and will not cause spurious diffs."
 
 // watchSchema returns the schema for the watch resource without the
 // elasticsearch_connection block; the envelope injects it.
