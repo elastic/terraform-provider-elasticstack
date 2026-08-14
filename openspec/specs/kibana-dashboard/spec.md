@@ -517,6 +517,10 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
+For typed panel config blocks whose `PopulateFromAPI` receives both `pm` (the panel model being built, which callers always pass zero-valued to avoid aliasing plan pointers) and `prior` (the prior plan or state panel at the same index), the null-preservation decision for that block SHALL key on `prior.<Type>Config`, not on `pm`'s own field: `prior.<Type>Config != nil` SHALL be treated as a same-type update (honor the practitioner's null intent for optional fields), and `prior.<Type>Config == nil` SHALL be treated as creation, import, or a genuine type change: there is no prior null intent to honor, so the block SHALL be rebuilt from the API. For config blocks that are optional even when the panel type matches (`synthetics_monitors_config`, `synthetics_stats_overview_config`), the block SHALL instead be left null when the API response carries no content for it, rather than materializing an empty block. `pm`'s own field state SHALL NOT be used for this decision, since it never carries prior intent into `PopulateFromAPI`.
+
+As of Kibana 9.5.0 GA, several typed panel config blocks' optional enum-shaped fields (for example `aiops_pattern_analysis_config.minimum_time_range` and `.random_sampler_mode`) receive concrete server-side default values on read where earlier Kibana versions returned no value at all. The provider SHALL apply REQ-009 null-preservation to these fields exactly as it does for any other Kibana-injected default: when the practitioner left the field unset (null in prior state/plan), the resource SHALL keep it null in state even though the API now returns a concrete default, rather than materializing that default and producing "Provider produced inconsistent result after apply".
+
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
 
 The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
@@ -533,6 +537,16 @@ The provider SHALL treat an API-returned `""` for `description` as semantically 
 - GIVEN Terraform configuration omitted the `options` block
 - WHEN Kibana read-back contains only the dashboard option defaults
 - THEN the resource SHALL keep `options` unset in state
+
+#### Scenario: Typed panel config null-preservation keys on prior, not on pm
+
+- GIVEN a typed panel config block (e.g. `aiops_pattern_analysis_config`) whose practitioner-authored value left an optional enum field (e.g. `minimum_time_range`) unset, applied and read back at least once (so `prior.<Type>Config` is non-nil on the next read)
+- WHEN a subsequent refresh or post-update read runs against Kibana 9.5.0 GA or later, which now returns a concrete default for that field instead of omitting it
+- THEN the resource SHALL keep the field null in state because `prior.<Type>Config` is non-nil (same-type update), regardless of what `pm`'s own (zero-valued) field state would otherwise suggest
+- AND the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+---
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
@@ -552,7 +566,7 @@ For XY chart `fitting` round-trips, the resource SHALL treat an empty string ret
 
 For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_stacked`, `bar_horizontal`), Kibana injects server-side bar-styling defaults — `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1` — even when the practitioner omitted those fields. When the plan value for such a field is null and the API read-back returns the matching default, the resource SHALL preserve the null plan value in state instead of materializing the server default.
 
-For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, and XY data/reference-line layers), Kibana injects `"time_field":"@timestamp"` into the read-back payload when the practitioner omits it. When the practitioner-authored `data_source_json` does not include `time_field`, the resource SHALL strip that injected key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
+For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, metric, and XY data/reference-line layers), Kibana injects certain optional keys into the read-back payload when the practitioner omits them: `"time_field":"@timestamp"`, and — as of Kibana 9.5.0 GA — `"name"` (echoing the underlying data view's display name for `data_view_spec` sources; earlier Kibana versions omitted this key). When the practitioner-authored `data_source_json` does not include one of these injected keys, the resource SHALL strip that key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
 
 For each Lens chart panel listed below, Kibana materializes hard-coded server defaults for optional fields when the practitioner omits them. The resource SHALL preserve the practitioner's null/unset plan value in state when the API read-back matches the documented default. The known defaults are:
 
@@ -595,6 +609,13 @@ When the metric-default normalization injects the `empty_as_null` default into a
 
 - GIVEN a Lens chart panel of any supported type whose `data_source_json` omits `time_field`
 - WHEN create runs and Kibana's read-back returns the same payload with `"time_field":"@timestamp"` injected
+- THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: data_source_json without name round-trips on every Lens chart (Kibana 9.5.0 GA)
+
+- GIVEN a Lens chart panel of any supported type whose `data_source_json` uses a `data_view_spec` source and omits `name`
+- WHEN create runs against Kibana 9.5.0 GA (or later) and its read-back returns the same payload with a `"name"` key injected (echoing the data view's display name)
 - THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
 - AND a subsequent plan SHALL show no changes
 
@@ -650,6 +671,8 @@ When the metric-default normalization injects the `empty_as_null` default into a
 - GIVEN an XY panel whose `y[].config_json` uses `operation = "count"` and omits `empty_as_null`
 - WHEN create runs and the provider builds the Kibana API request and reads the panel back
 - THEN the provider SHALL inject the `empty_as_null = false` default for that metric and the metric SHALL round-trip without drift
+
+---
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
@@ -2687,7 +2710,7 @@ The block accepts the following attributes:
 - `max_series_to_plot` (optional int64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request. The Kibana API represents this field as a JSON number (`*float32` in the generated client); the provider exposes it as an integer since a series count cannot be fractional, converting to/from the API's numeric type at the boundary.
 - `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
   - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
-  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
+  - `min` (int64) plus optional `max` (int64): an alternative, numeric spelling of one of the canonical severity bands. The Kibana API models `severity_threshold` items as a union of exactly five members, each pinning **both** `min` and `max` to a single canonical pair (see the canonical-band table below); the `critical` member has no `max` field at all. The provider does not validate this constraint client-side, so on Kibana 9.5.0 GA and later (the pre-GA `9.5.0-SNAPSHOT` build accepted arbitrary `min`/`max` values) any `{min, max}` pair that does not exactly match one of the five canonical pairs — including a canonical `min` combined with a non-canonical `max`, or any `max` set alongside `min = 75` — SHALL be rejected by the Kibana API at `terraform apply` time with an HTTP 400 error, not caught earlier as a plan-time diagnostic. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
 - `title` (optional string): panel title. Subject to REQ-009 null-preservation.
 - `description` (optional string): panel description. Subject to REQ-009 null-preservation.
 - `hide_title` (optional bool): when true, hides the panel title. Subject to REQ-009 null-preservation.
@@ -2703,6 +2726,8 @@ The model layer SHALL expand named severity values to the following canonical `{
 | `minor`     | 25        | 50           |
 | `major`     | 50        | 75           |
 | `critical`  | 75        | (omitted — open-ended upper bound) |
+
+The raw `min`/`max` form exists so a practitioner can spell one of these same five bands numerically instead of via the `severity` enum; it is not a general-purpose custom-range escape hatch on Kibana 9.5.0 GA and later, which validates the `{min, max}` pair against the canonical band list server-side.
 
 On write, the provider SHALL map `ml_anomaly_charts_config` to the `config` object in the `KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts` API schema. Optional fields SHALL be included only when set in state; absent optional fields SHALL NOT be sent to the API.
 
@@ -2735,10 +2760,10 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: Raw range escape hatch
 
-- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]`
-- WHEN create runs and the post-apply read returns `{min: 10, max: 20}`
-- THEN state SHALL contain `min = 10` and `max = 20` (not coerced to a named severity)
-- AND a subsequent plan SHALL show no changes
+- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]` (a `{min, max}` pair that does not match any of the five canonical pairs)
+- WHEN create runs against Kibana 9.5.0 GA or later
+- THEN the Kibana API SHALL reject the request with an HTTP 400 error identifying `severity_threshold` as invalid
+- AND `terraform apply` SHALL fail with that error, since the provider does not validate the canonical-boundary constraint client-side and this form is not a general-purpose custom-range escape hatch on supported GA versions
 
 #### Scenario: Raw range coinciding with a canonical band is preserved (no diff)
 
@@ -2749,9 +2774,9 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: severity_threshold form is preserved across refresh
 
-- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 10, max = 20 }]`
-- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 10, max: 20}]`
-- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 10, max = 20`
+- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 25, max = 50 }]`
+- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 25, max: 50}]`
+- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 25, max = 50`
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: critical severity preserved in raw form when authored raw
