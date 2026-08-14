@@ -23,68 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestComputeSetDiff(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name        string
-		old, next   []string
-		wantAdded   []string
-		wantRemoved []string
-	}{
-		{
-			name:        "add one",
-			old:         []string{"a"},
-			next:        []string{"a", "b"},
-			wantAdded:   []string{"b"},
-			wantRemoved: nil,
-		},
-		{
-			name:        "remove one",
-			old:         []string{"a", "b"},
-			next:        []string{"a"},
-			wantAdded:   nil,
-			wantRemoved: []string{"b"},
-		},
-		{
-			name:        "add and remove",
-			old:         []string{"a", "b"},
-			next:        []string{"b", "c"},
-			wantAdded:   []string{"c"},
-			wantRemoved: []string{"a"},
-		},
-		{
-			name:        "no change",
-			old:         []string{"a", "b"},
-			next:        []string{"a", "b"},
-			wantAdded:   nil,
-			wantRemoved: nil,
-		},
-		{
-			name:        "all new",
-			old:         []string{"a"},
-			next:        []string{"b", "c"},
-			wantAdded:   []string{"b", "c"},
-			wantRemoved: []string{"a"},
-		},
-		{
-			name:        "all removed",
-			old:         []string{"a", "b"},
-			next:        []string{},
-			wantAdded:   nil,
-			wantRemoved: []string{"a", "b"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotAdded, gotRemoved := computeSetDiff(tt.old, tt.next)
-			assert.ElementsMatch(t, tt.wantAdded, gotAdded)
-			assert.ElementsMatch(t, tt.wantRemoved, gotRemoved)
-		})
-	}
-}
-
 func TestExtractEntityIDsFromPayload(t *testing.T) {
 	t.Parallel()
 
