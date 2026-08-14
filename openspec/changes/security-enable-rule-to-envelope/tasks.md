@@ -1,8 +1,8 @@
 ## 1. Implement `writeSecurityEnableRule` callback
 
-- [ ] 1.1 In `update.go`, remove the `Update` wrapper method (`func (r *EnableRuleResource) Update(ctx, req, resp)`) that shadows the envelope's promoted method
-- [ ] 1.2 In `update.go`, remove the `upsert` helper method (`func (r *EnableRuleResource) upsert(ctx, plan, state)`) and its imports
-- [ ] 1.3 In `update.go`, add a package-level `writeSecurityEnableRule` function with signature `func writeSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[enableRuleModel]) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics)` that: preserves the `DisableOnDestroy` null-default, computes `model.ID`, calls `kibanaoapi.EnableRulesByTag`, sets `model.AllRulesEnabled = types.BoolValue(true)`, and returns `KibanaWriteResult{Model: model, SkipReadAfterWrite: true}`
+- [x] 1.1 In `update.go`, remove the `Update` wrapper method (`func (r *EnableRuleResource) Update(ctx, req, resp)`) that shadows the envelope's promoted method
+- [x] 1.2 In `update.go`, remove the `upsert` helper method (`func (r *EnableRuleResource) upsert(ctx, plan, state)`) and its imports
+- [x] 1.3 In `update.go`, add a package-level `writeSecurityEnableRule` function with signature `func writeSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[enableRuleModel]) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics)` that: preserves the `DisableOnDestroy` null-default, computes `model.ID`, calls `kibanaoapi.EnableRulesByTag`, sets `model.AllRulesEnabled = types.BoolValue(true)`, and returns `KibanaWriteResult{Model: model, SkipReadAfterWrite: true}`
 
 ## 2. Remove `Create` wrapper override
 
