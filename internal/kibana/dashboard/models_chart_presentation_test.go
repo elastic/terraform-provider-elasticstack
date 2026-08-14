@@ -20,8 +20,6 @@ package dashboard
 import (
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -55,28 +53,5 @@ func Test_lensDrilldownItemFromAPIJSON_dispatch_and_trigger_defaults(t *testing.
 		require.NotNil(t, item.URLDrilldown)
 		assert.Equal(t, "https://x", item.URLDrilldown.URL.ValueString())
 		assert.Equal(t, "on_open_panel_menu", item.URLDrilldown.Trigger.ValueString())
-	})
-}
-
-func Test_lensDrilldownsToRawJSON_variantCountErrors(t *testing.T) {
-	t.Run("multiple variants set", func(t *testing.T) {
-		item := models.LensDrilldownItemTFModel{
-			DashboardDrilldown: &models.LensDashboardDrilldownTFModel{
-				DashboardID: types.StringValue("d1"),
-				Label:       types.StringValue("x"),
-			},
-			URLDrilldown: &models.LensURLDrilldownTFModel{
-				URL:     types.StringValue("https://x"),
-				Label:   types.StringValue("y"),
-				Trigger: types.StringValue("on_click_row"),
-			},
-		}
-		_, diags := lensDrilldownsToRawJSON([]models.LensDrilldownItemTFModel{item})
-		require.True(t, diags.HasError())
-	})
-
-	t.Run("zero variants set", func(t *testing.T) {
-		_, diags := lensDrilldownsToRawJSON([]models.LensDrilldownItemTFModel{{}})
-		require.True(t, diags.HasError())
 	})
 }

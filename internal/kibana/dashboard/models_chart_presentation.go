@@ -29,7 +29,3 @@ const lensDrilldownTriggerOnApplyFilter = lenscommon.LensDrilldownTriggerOnApply
 func lensDrilldownItemFromAPIJSON(raw []byte) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
 	return lenscommon.LensDrilldownItemFromAPIJSON(raw, "drilldowns[0]")
 }
-
-func lensDrilldownsToRawJSON(items []models.LensDrilldownItemTFModel) ([][]byte, diag.Diagnostics) {
-	return lenscommon.LensDrilldownsToRawJSON(items)
-}
