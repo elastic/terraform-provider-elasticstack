@@ -138,7 +138,7 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 	d.Trigger = jsontypes.NewNormalizedValue(trigger)
 
 	if watch.Body.Input == nil {
-		d.Input = customtypes.NewJSONWithDefaultsValue(`{"none":{}}`, populateWatcherJSONDefaults)
+		d.Input = watcherJSONValue(`{"none":{}}`)
 	} else {
 		var mergedInput any = watch.Body.Input
 		if typeutils.IsKnown(priorInput) {
@@ -156,22 +156,22 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input: %s", err))
 			return diags
 		}
-		d.Input = customtypes.NewJSONWithDefaultsValue(input, populateWatcherJSONDefaults)
+		d.Input = watcherJSONValue(input)
 	}
 
 	if watch.Body.Condition == nil {
-		d.Condition = customtypes.NewJSONWithDefaultsValue(`{"always":{}}`, populateWatcherJSONDefaults)
+		d.Condition = watcherJSONValue(`{"always":{}}`)
 	} else {
 		condition, err := marshalCompact(watch.Body.Condition)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling condition: %s", err))
 			return diags
 		}
-		d.Condition = customtypes.NewJSONWithDefaultsValue(condition, populateWatcherJSONDefaults)
+		d.Condition = watcherJSONValue(condition)
 	}
 
 	if watch.Body.Actions == nil {
-		d.Actions = customtypes.NewJSONWithDefaultsValue(`{}`, populateWatcherJSONDefaults)
+		d.Actions = watcherJSONValue(`{}`)
 	} else {
 		mergedActions := watch.Body.Actions
 		if typeutils.IsKnown(priorActions) {
@@ -189,7 +189,7 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling actions: %s", err))
 			return diags
 		}
-		d.Actions = customtypes.NewJSONWithDefaultsValue(actions, populateWatcherJSONDefaults)
+		d.Actions = watcherJSONValue(actions)
 	}
 
 	if len(watch.Body.Metadata) == 0 {
@@ -213,9 +213,9 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling transform: %s", err))
 			return diags
 		}
-		d.Transform = customtypes.NewJSONWithDefaultsValue(transform, populateWatcherJSONDefaults)
+		d.Transform = watcherJSONValue(transform)
 	} else {
-		d.Transform = customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults)
+		d.Transform = watcherJSONNull()
 	}
 
 	d.ThrottlePeriodInMillis = types.Int64Value(int64(watch.Body.ThrottlePeriodInMillis))

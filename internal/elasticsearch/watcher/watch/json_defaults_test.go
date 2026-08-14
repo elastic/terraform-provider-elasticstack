@@ -22,7 +22,6 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -151,15 +150,6 @@ func Test_populateWatcherJSONDefaults(t *testing.T) {
 					},
 				},
 			},
-		},
-		{
-			name:  "transform search.request missing defaults",
-			input: searchRequest(nil),
-			expected: searchRequest(map[string]any{
-				"rest_total_hits_as_int": true,
-				"search_type":            "query_then_fetch",
-				"indices":                []any{},
-			}),
 		},
 		{
 			name:  "actions nested search transform is defaulted",
@@ -316,8 +306,8 @@ func TestJSONWithDefaultsValue_StringSemanticEquals_watcherDefaults(t *testing.T
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			prior := customtypes.NewJSONWithDefaultsValue(tt.prior, populateWatcherJSONDefaults)
-			next := customtypes.NewJSONWithDefaultsValue(tt.next, populateWatcherJSONDefaults)
+			prior := watcherJSONValue(tt.prior)
+			next := watcherJSONValue(tt.next)
 			equal, diags := prior.StringSemanticEquals(ctx, next)
 			require.False(t, diags.HasError(), "diags: %v", diags)
 			assert.Equal(t, tt.equal, equal)

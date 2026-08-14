@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -158,15 +157,14 @@ func newInputTestWatch(input map[string]any) *models.Watch {
 // value (concrete password, authoritative API host) is stored in state JSON.
 func TestFromAPIModel_inputRedactedWithPriorPreserved(t *testing.T) {
 	t.Parallel()
-	priorInput := customtypes.NewJSONWithDefaultsValue(
+	priorInput := watcherJSONValue(
 		`{"http":{"request":{"host":"old.example","path":"/v1/data","auth":{"basic":{"username":"acc-input-user","password":"plain-input-secret"}}}}}`,
-		populateWatcherJSONDefaults,
 	)
 	d := &Data{}
 	diags := d.fromAPIModel(
 		context.Background(),
 		newInputTestWatch(httpInputAPI()),
-		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
+		watcherJSONNull(),
 		priorInput,
 	)
 	require.False(t, diags.HasError(), "diags: %v", diags)
@@ -187,8 +185,8 @@ func TestFromAPIModel_inputRedactedNoPriorKeepsSentinel(t *testing.T) {
 	diags := d.fromAPIModel(
 		context.Background(),
 		newInputTestWatch(httpInputAPI()),
-		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
-		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
+		watcherJSONNull(),
+		watcherJSONNull(),
 	)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 
@@ -206,8 +204,8 @@ func TestFromAPIModel_inputNilDefaultsToNone(t *testing.T) {
 	diags := d.fromAPIModel(
 		context.Background(),
 		newInputTestWatch(nil),
-		customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults),
-		customtypes.NewJSONWithDefaultsValue(`{"http":{"request":{"host":"h"}}}`, populateWatcherJSONDefaults),
+		watcherJSONNull(),
+		watcherJSONValue(`{"http":{"request":{"host":"h"}}}`),
 	)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 	require.JSONEq(t, `{"none":{}}`, d.Input.ValueString())
@@ -226,9 +224,9 @@ func TestFromAPIModel_inputPriorObjectReplacesRedacted(t *testing.T) {
 			},
 		},
 	}
-	priorInput := customtypes.NewJSONWithDefaultsValue(`{"http":{"request":{"headers":{"Authorization":{"source":"return 'Bearer x'","lang":"painless"}}}}}`, populateWatcherJSONDefaults)
+	priorInput := watcherJSONValue(`{"http":{"request":{"headers":{"Authorization":{"source":"return 'Bearer x'","lang":"painless"}}}}}`)
 	d := &Data{}
-	diags := d.fromAPIModel(context.Background(), newInputTestWatch(apiInput), customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults), priorInput)
+	diags := d.fromAPIModel(context.Background(), newInputTestWatch(apiInput), watcherJSONNull(), priorInput)
 	require.False(t, diags.HasError(), "diags: %v", diags)
 
 	var got map[string]any

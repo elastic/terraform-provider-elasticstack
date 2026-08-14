@@ -58,8 +58,7 @@ const (
 	// shapes (without rest_total_hits_as_int / search_type / indices / lang)
 	// when semantic equality holds.
 	watchSearchInputOmittingTypeAndTotalHits = `{"search":{"request":{"body":{"query":{"bool":{"must":[{"match":{"event.dataset":"elasticsearch.cluster.stats"}}]}}},"indices":[".monitoring-es-*"]}}}`
-	watchSearchInputOmittingIndices          = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
-	watchSearchTransformOmittingDefaults     = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
+	watchSearchRequestOmittingDefaults       = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
 	watchChainSearchOmittingDefaults         = `{"chain":{"inputs":[{"first":{"search":{"request":{"body":{"query":{"match_all":{}}},` +
 		`"indices":[".monitoring-es-*"]}}}},{"second":{"search":{"request":{"body":{"query":{"match_all":{}}},` +
 		`"indices":[".monitoring-logs-*"]}}}}]}}`
@@ -646,6 +645,19 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 	})
 }
 
+func watchJSONDefaultsApplyStep(t *testing.T, watchID, step, attr, expected string) resource.TestStep {
+	t.Helper()
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(step),
+		ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+		Check: resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+			testCheckWatchAttrSemanticallyEqual(t, attr, expected),
+		),
+	}
+}
+
 func watchJSONDefaultsEmptyPlanStep(watchID, step string) resource.TestStep {
 	return resource.TestStep{
 		ProtoV6ProviderFactories: acctest.Providers,
@@ -668,15 +680,7 @@ func TestResourceWatch_searchRequestDefaultsOmitted(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceWatchDestroy,
 		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputOmittingTypeAndTotalHits),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "create", "input", watchSearchInputOmittingTypeAndTotalHits),
 			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
 		},
 	})
@@ -687,60 +691,19 @@ func TestResourceWatch_searchRequestDefaultsOmitted(t *testing.T) {
 // transforms, and omitted script lang.
 func TestResourceWatch_watcherJSONDefaultsOmitted(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
-	vars := config.Variables{"watch_id": config.StringVariable(watchID)}
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceWatchDestroy,
 		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_indices"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputOmittingIndices),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "omit_indices", "input", watchSearchRequestOmittingDefaults),
 			watchJSONDefaultsEmptyPlanStep(watchID, "omit_indices"),
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("transform"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "transform", watchSearchTransformOmittingDefaults),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "transform", "transform", watchSearchRequestOmittingDefaults),
 			watchJSONDefaultsEmptyPlanStep(watchID, "transform"),
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("chain"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "input", watchChainSearchOmittingDefaults),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "chain", "input", watchChainSearchOmittingDefaults),
 			watchJSONDefaultsEmptyPlanStep(watchID, "chain"),
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_search_transform"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "actions", watchActionsSearchTransformOmittingDefaults),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "actions_search_transform", "actions", watchActionsSearchTransformOmittingDefaults),
 			watchJSONDefaultsEmptyPlanStep(watchID, "actions_search_transform"),
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("script_lang"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "condition", watchConditionScriptOmittingLang),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "script_lang", "condition", watchConditionScriptOmittingLang),
 			watchJSONDefaultsEmptyPlanStep(watchID, "script_lang"),
 		},
 	})
@@ -756,15 +719,7 @@ func TestResourceWatch_searchRequestExplicitNonDefaults(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceWatchDestroy,
 		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
-					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputExplicitNonDefaults),
-				),
-			},
+			watchJSONDefaultsApplyStep(t, watchID, "create", "input", watchSearchInputExplicitNonDefaults),
 			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

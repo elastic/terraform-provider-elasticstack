@@ -20,7 +20,6 @@ package watch
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -69,21 +68,21 @@ func watchSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "The input that defines the input that loads the data for the watch." + watcherJSONDefaultsDescription,
 				Optional:            true,
 				Computed:            true,
-				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
+				CustomType:          watcherJSONType(),
 				Default:             stringdefault.StaticString(`{"none":{}}`),
 			},
 			"condition": schema.StringAttribute{
 				MarkdownDescription: "The condition that defines if the actions should be run." + watcherJSONDefaultsDescription,
 				Optional:            true,
 				Computed:            true,
-				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
+				CustomType:          watcherJSONType(),
 				Default:             stringdefault.StaticString(`{"always":{}}`),
 			},
 			"actions": schema.StringAttribute{
 				MarkdownDescription: "The list of actions that will be run if the condition matches." + watcherJSONDefaultsDescription,
 				Optional:            true,
 				Computed:            true,
-				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
+				CustomType:          watcherJSONType(),
 				Default:             stringdefault.StaticString(`{}`),
 			},
 			"metadata": schema.StringAttribute{
@@ -96,7 +95,7 @@ func watchSchema(_ context.Context) schema.Schema {
 			"transform": schema.StringAttribute{
 				MarkdownDescription: "Processes the watch payload to prepare it for the watch actions." + watcherJSONDefaultsDescription,
 				Optional:            true,
-				CustomType:          customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults),
+				CustomType:          watcherJSONType(),
 			},
 			"throttle_period_in_millis": schema.Int64Attribute{
 				MarkdownDescription: "Minimum time in milliseconds between actions being run. Defaults to 5000.",

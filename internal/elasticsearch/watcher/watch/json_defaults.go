@@ -20,6 +20,8 @@ package watch
 import (
 	"maps"
 	"slices"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 )
 
 const (
@@ -164,4 +166,16 @@ func fillScriptLangDefault(script map[string]any) (map[string]any, bool) {
 	out := maps.Clone(script)
 	out["lang"] = watcherDefaultScriptLang
 	return out, true
+}
+
+func watcherJSONType() customtypes.JSONWithDefaultsType[map[string]any] {
+	return customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults)
+}
+
+func watcherJSONValue(s string) customtypes.JSONWithDefaultsValue[map[string]any] {
+	return customtypes.NewJSONWithDefaultsValue(s, populateWatcherJSONDefaults)
+}
+
+func watcherJSONNull() customtypes.JSONWithDefaultsValue[map[string]any] {
+	return customtypes.NewJSONWithDefaultsNull(populateWatcherJSONDefaults)
 }
