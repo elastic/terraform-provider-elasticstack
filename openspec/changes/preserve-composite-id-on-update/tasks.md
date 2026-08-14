@@ -11,8 +11,8 @@
 
 ## 3. data_stream_lifecycle
 
-- [ ] 3.1 In `writeDataStreamLifecycle` (`internal/elasticsearch/index/datastreamlifecycle/write.go`), apply the same `req.Prior == nil` guard as `security_role`.
-- [ ] 3.2 Add a unit test mirroring 2.2 for this resource.
+- [x] 3.1 In `writeDataStreamLifecycle` (`internal/elasticsearch/index/datastreamlifecycle/write.go`), apply the same `req.Prior == nil` guard as `security_role`.
+- [x] 3.2 Add a unit test mirroring 2.2 for this resource.
 
 ## 4. watch
 
