@@ -6,7 +6,7 @@
 
 ## 2. Remove `Create` wrapper override
 
-- [ ] 2.1 Delete `create.go` entirely — it contains only the `Create` wrapper method that shadows the envelope's promoted `Create`; the envelope will now dispatch through `writeSecurityEnableRule`
+- [x] 2.1 Delete `create.go` entirely — it contains only the `Create` wrapper method that shadows the envelope's promoted `Create`; the envelope will now dispatch through `writeSecurityEnableRule`
 
 ## 3. Clean up delete callback
 
