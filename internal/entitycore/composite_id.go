@@ -26,22 +26,45 @@ import (
 )
 
 // CompositeIDForWrite returns the composite resource ID to persist after a write.
+//
 // On Create (req.Prior == nil) it computes the ID from the live cluster UUID via
-// client.ID. On Update it returns the prior state's ID unchanged so that
-// UseStateForUnknown on id is never violated when the connected cluster's UUID
-// differs from the prefix stored in state.
+// client.ID.
+//
+// On Update it never calls client.ID, so a stale cluster-UUID prefix in state
+// (for example after a cluster recreation behind the same endpoint) is preserved
+// and UseStateForUnknown on id is not violated. The write-identity segment is
+// taken from req.WriteID:
+//
+//   - If the prior id's resource segment equals req.WriteID, the prior id is
+//     returned unchanged. Safe for RequiresReplace identity keys (role name,
+//     watch_id, datafeed_id) and for in-place updates that do not change name.
+//   - If the prior id's resource segment differs from req.WriteID, the returned
+//     id is <prior cluster UUID>/<WriteID>. This keeps Read/Delete targeting
+//     the new name after an in-place name change (data_stream_lifecycle).
+//   - If the prior id is not a valid composite id, the prior id is returned
+//     unchanged rather than inventing a cluster UUID.
 func CompositeIDForWrite[T ElasticsearchResourceModel](
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
 	req WriteRequest[T],
 ) (types.String, diag.Diagnostics) {
-	if req.Prior != nil {
-		return (*req.Prior).GetID(), nil
+	if req.Prior == nil {
+		id, idDiags := client.ID(ctx, req.WriteID)
+		if idDiags.HasError() {
+			return types.StringNull(), idDiags
+		}
+		return types.StringValue(id.String()), nil
 	}
 
-	id, idDiags := client.ID(ctx, req.WriteID)
-	if idDiags.HasError() {
-		return types.StringNull(), idDiags
+	priorID := (*req.Prior).GetID()
+	parsed, parseDiags := clients.CompositeIDFromStr(priorID.ValueString())
+	if parseDiags.HasError() {
+		return priorID, nil
 	}
-	return types.StringValue(id.String()), nil
+	if parsed.ResourceID == req.WriteID {
+		return priorID, nil
+	}
+
+	updated := &clients.CompositeID{ClusterID: parsed.ClusterID, ResourceID: req.WriteID}
+	return types.StringValue(updated.String()), nil
 }

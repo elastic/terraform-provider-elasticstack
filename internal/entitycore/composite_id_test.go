@@ -76,6 +76,47 @@ func TestCompositeIDForWrite_UpdatePreservesPriorID(t *testing.T) {
 	assert.NotEqual(t, testLiveClusterUUID+"/"+testResourceName, id.ValueString())
 }
 
+func TestCompositeIDForWrite_UpdateAdoptsNewWriteID(t *testing.T) {
+	t.Parallel()
+
+	const oldName = "old-name"
+	const newName = "new-name"
+	staleID := types.StringValue(testStaleClusterUUID + "/" + oldName)
+	prior := testResourceModel{
+		ID:   staleID,
+		Name: types.StringValue(oldName),
+	}
+	client := newCompositeIDTestClient(t, testLiveClusterUUID)
+	req := WriteRequest[testResourceModel]{
+		Plan: testResourceModel{
+			ID:   types.StringUnknown(),
+			Name: types.StringValue(newName),
+		},
+		Prior:   &prior,
+		WriteID: newName,
+	}
+
+	id, diags := CompositeIDForWrite(context.Background(), client, req)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
+	assert.Equal(t, testStaleClusterUUID+"/"+newName, id.ValueString())
+	assert.NotEqual(t, testLiveClusterUUID+"/"+newName, id.ValueString())
+}
+
+func TestCompositeIDForWrite_UpdateInvalidPriorIDUnchanged(t *testing.T) {
+	t.Parallel()
+
+	priorID := types.StringValue("not-a-composite")
+	prior := testResourceModel{ID: priorID}
+	req := WriteRequest[testResourceModel]{
+		Prior:   &prior,
+		WriteID: "new-name",
+	}
+
+	id, diags := CompositeIDForWrite(context.Background(), nil, req)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
+	assert.Equal(t, priorID, id)
+}
+
 func newCompositeIDTestClient(t *testing.T, clusterUUID string) *clients.ElasticsearchScopedClient {
 	t.Helper()
 
