@@ -10,8 +10,8 @@
 
 ## 3. Clean up delete callback
 
-- [ ] 3.1 In `delete.go`, remove the `entitycore.EnforceVersionRequirements` call and its `if diags.HasError() { return diags }` guard from `deleteSecurityEnableRule` — the envelope's `baseResourceEnvelope.Delete` already enforces version requirements before invoking the callback
-- [ ] 3.2 In `delete.go`, remove the now-unused `entitycore` import
+- [x] 3.1 In `delete.go`, remove the `entitycore.EnforceVersionRequirements` call and its `if diags.HasError() { return diags }` guard from `deleteSecurityEnableRule` — the envelope's `baseResourceEnvelope.Delete` already enforces version requirements before invoking the callback
+- [x] 3.2 In `delete.go`, remove the now-unused `entitycore` import
 
 ## 4. Wire callbacks in resource constructor
 
