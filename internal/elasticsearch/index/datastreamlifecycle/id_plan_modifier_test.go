@@ -40,7 +40,7 @@ func TestIDPlanModifiers(t *testing.T) {
 
 	t.Run("name change sets planned id unknown", func(t *testing.T) {
 		t.Parallel()
-		state, config := testNameStateConfig(t, "old-name", "new-name")
+		state, config := testNameStateConfig(t, "old-name", tftypes.NewValue(tftypes.String, "new-name"))
 		req := planmodifier.StringRequest{
 			Path:        path.Root("id"),
 			State:       state,
@@ -59,7 +59,7 @@ func TestIDPlanModifiers(t *testing.T) {
 
 	t.Run("name unchanged keeps prior id after UseStateForUnknown", func(t *testing.T) {
 		t.Parallel()
-		state, config := testNameStateConfig(t, "old-name", "old-name")
+		state, config := testNameStateConfig(t, "old-name", tftypes.NewValue(tftypes.String, "old-name"))
 		req := planmodifier.StringRequest{
 			Path:        path.Root("id"),
 			State:       state,
@@ -76,29 +76,48 @@ func TestIDPlanModifiers(t *testing.T) {
 		assert.False(t, resp.PlanValue.IsUnknown())
 		assert.Equal(t, priorID, resp.PlanValue)
 	})
+
+	t.Run("unknown config name sets planned id unknown", func(t *testing.T) {
+		t.Parallel()
+		state, config := testNameStateConfig(t, "old-name", tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+		req := planmodifier.StringRequest{
+			Path:        path.Root("id"),
+			State:       state,
+			Config:      config,
+			StateValue:  priorID,
+			PlanValue:   types.StringUnknown(),
+			ConfigValue: types.StringNull(),
+		}
+		resp := &planmodifier.StringResponse{PlanValue: req.PlanValue}
+		for _, m := range idAttr.PlanModifiers {
+			m.PlanModifyString(ctx, req, resp)
+		}
+		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+		assert.True(t, resp.PlanValue.IsUnknown())
+	})
 }
 
-func testNameStateConfig(t *testing.T, stateName, configName string) (tfsdk.State, tfsdk.Config) {
+func testNameStateConfig(t *testing.T, stateName string, configName tftypes.Value) (tfsdk.State, tfsdk.Config) {
 	t.Helper()
 	testSchema := schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id":   schema.StringAttribute{Computed: true},
-			"name": schema.StringAttribute{Required: true},
+			"id":     schema.StringAttribute{Computed: true},
+			attrName: schema.StringAttribute{Required: true},
 		},
 	}
 	objectType := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
-			"id":   tftypes.String,
-			"name": tftypes.String,
+			"id":     tftypes.String,
+			attrName: tftypes.String,
 		},
 	}
 	stateRaw := tftypes.NewValue(objectType, map[string]tftypes.Value{
-		"id":   tftypes.NewValue(tftypes.String, "stale-uuid/old-name"),
-		"name": tftypes.NewValue(tftypes.String, stateName),
+		"id":     tftypes.NewValue(tftypes.String, "stale-uuid/old-name"),
+		attrName: tftypes.NewValue(tftypes.String, stateName),
 	})
 	configRaw := tftypes.NewValue(objectType, map[string]tftypes.Value{
-		"id":   tftypes.NewValue(tftypes.String, nil),
-		"name": tftypes.NewValue(tftypes.String, configName),
+		"id":     tftypes.NewValue(tftypes.String, nil),
+		attrName: configName,
 	})
 	return tfsdk.State{Raw: stateRaw, Schema: testSchema}, tfsdk.Config{Raw: configRaw, Schema: testSchema}
 }

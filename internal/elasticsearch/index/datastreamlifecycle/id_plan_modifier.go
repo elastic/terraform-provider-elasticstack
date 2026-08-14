@@ -37,13 +37,16 @@ func idSetUnknownIfNameChanged() planmodifier.String {
 		"Sets id to unknown when name changes in place so apply can write <prior-uuid>/<new-name>",
 		func(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) bool {
 			var stateName, configName types.String
-			resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("name"), &stateName)...)
-			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("name"), &configName)...)
+			resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(attrName), &stateName)...)
+			resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root(attrName), &configName)...)
 			if resp.Diagnostics.HasError() {
 				return false
 			}
-			if !typeutils.IsKnown(stateName) || !typeutils.IsKnown(configName) {
+			if !typeutils.IsKnown(stateName) {
 				return false
+			}
+			if !typeutils.IsKnown(configName) {
+				return configName.IsUnknown()
 			}
 			return stateName.ValueString() != configName.ValueString()
 		},
