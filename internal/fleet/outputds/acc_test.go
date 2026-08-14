@@ -56,6 +56,9 @@ func TestAccDataSourceOutputDefault(t *testing.T) {
 						"default_integrations": "true",
 						"default_monitoring":   "true",
 					}),
+					testCheckResourceHasOutputHostsCountSet("data.elasticstack_fleet_output.test", map[string]string{
+						"id": "fleet-default-output",
+					}),
 				),
 			},
 		},
@@ -98,12 +101,41 @@ func TestAccDataSourceOutputCustomSpace(t *testing.T) {
 						"name": "default",
 					}),
 					testCheckResourceHasOutputAttrPair("data.elasticstack_fleet_output.test", "elasticstack_fleet_output.test", "id", map[string]string{
-						"name":                 "test",
-						"type":                 "elasticsearch",
-						"hosts.#":              "1",
-						"hosts.0":              "https://elasticsearch:9200",
-						"default_integrations": "false",
-						"default_monitoring":   "false",
+						"name":                   "test",
+						"type":                   "elasticsearch",
+						"hosts.#":                "1",
+						"hosts.0":                "https://elasticsearch:9200",
+						"default_integrations":   "false",
+						"default_monitoring":     "false",
+						"ca_sha256":              "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+						"ca_trusted_fingerprint": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567891",
+						"config_yaml":            "\"ssl.verification_mode\": \"none\"\n",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceOutputLogstash(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("data"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test", "name", "test-logstash"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_output.test", "id", "outputs"),
+					testCheckResourceOutputsMinCount("data.elasticstack_fleet_output.test", 2),
+					testCheckResourceHasOutputAttrPair("data.elasticstack_fleet_output.test", "elasticstack_fleet_output.test", "id", map[string]string{
+						"name":    "test-logstash",
+						"type":    "logstash",
+						"hosts.#": "2",
+						"hosts.0": "logstash:5044",
+						"hosts.1": "logstash2:5044",
 					}),
 				),
 			},
@@ -191,6 +223,40 @@ func testCheckResourceOutputsMinCount(resourceName string, minCount int) resourc
 func testCheckResourceHasOutput(resourceName string, expected map[string]string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		return hasMatchingOutput(state, resourceName, expected)
+	}
+}
+
+// testCheckResourceHasOutputHostsCountSet finds the output matching expected and asserts that its
+// "hosts.#" attribute is present in state, regardless of value, so the (possibly empty) hosts
+// collection is explicitly exercised rather than left untested.
+func testCheckResourceHasOutputHostsCountSet(resourceName string, expected map[string]string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		count, attrs, err := getOutputsCount(state, resourceName)
+		if err != nil {
+			return err
+		}
+
+		for i := range count {
+			matches := true
+			for key, value := range expected {
+				attrKey := fmt.Sprintf("outputs.%d.%s", i, key)
+				if attrs[attrKey] != value {
+					matches = false
+					break
+				}
+			}
+			if !matches {
+				continue
+			}
+
+			hostsCountKey := fmt.Sprintf("outputs.%d.hosts.#", i)
+			if _, ok := attrs[hostsCountKey]; !ok {
+				return fmt.Errorf("resource %q output %d has no %q attribute in state", resourceName, i, hostsCountKey)
+			}
+			return nil
+		}
+
+		return fmt.Errorf("resource %q has no output matching %v", resourceName, expected)
 	}
 }
 
