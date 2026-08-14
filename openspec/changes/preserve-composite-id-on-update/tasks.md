@@ -22,9 +22,9 @@
 
 ## 5. ml_datafeed
 
-- [ ] 5.1 In `updateDatafeed` (`internal/elasticsearch/ml/datafeed/update.go`), remove the `client.ID` call and the recompute of `plan.ID`; preserve the existing `id` from prior state unconditionally.
-- [ ] 5.2 Confirm `createDatafeed` (`internal/elasticsearch/ml/datafeed/create.go`) is unaffected and still computes `id` via `client.ID` on Create.
-- [ ] 5.3 Add a unit test mirroring 2.2 for this resource.
+- [x] 5.1 In `updateDatafeed` (`internal/elasticsearch/ml/datafeed/update.go`), remove the `client.ID` call and the recompute of `plan.ID`; preserve the existing `id` from prior state unconditionally.
+- [x] 5.2 Confirm `createDatafeed` (`internal/elasticsearch/ml/datafeed/create.go`) is unaffected and still computes `id` via `client.ID` on Create.
+- [x] 5.3 Add a unit test mirroring 2.2 for this resource.
 
 ## 6. Spec sync
 
