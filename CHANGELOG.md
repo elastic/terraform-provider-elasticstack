@@ -1,3 +1,14 @@
+## [Unreleased]
+
+### Changes
+
+- Add `artifacts.investigation_guide` support to `elasticstack_kibana_alerting_rule` (inline `content` or file-based `content_path` with drift-detecting checksum). Requires ([#4489](https://github.com/elastic/terraform-provider-elasticstack/pull/4489))
+- Call Put Mapping when adding fields to an existing index's mappings ([#4507](https://github.com/elastic/terraform-provider-elasticstack/pull/4507))
+- Preserve slo_overview panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh, and dedupe the merge logic onto the shared panelkit helpers. ([#4472](https://github.com/elastic/terraform-provider-elasticstack/pull/4472))
+- Preserve slo_error_budget panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh. ([#4450](https://github.com/elastic/terraform-provider-elasticstack/pull/4450))
+- Fix Fleet integration installation with credentials restricted to a non-default Kibana space. ([#4300](https://github.com/elastic/terraform-provider-elasticstack/pull/4300))
+- Add `space_id` support for Kibana Synthetics parameters with composite IDs and space-scoped CRUD and import. ([#4278](https://github.com/elastic/terraform-provider-elasticstack/pull/4278))
+
 ## [0.16.3] - 2026-07-22
 
 ### Breaking changes
