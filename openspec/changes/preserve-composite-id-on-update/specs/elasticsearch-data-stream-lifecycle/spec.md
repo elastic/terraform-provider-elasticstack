@@ -2,7 +2,7 @@
 
 ### Requirement: Identity (REQ-005–REQ-006)
 
-The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<name>`. The resource SHALL compute `id` by calling `client.ID(ctx, name)`, which combines the current cluster UUID with the configured `name` value, only during create. During update, the resource SHALL NOT recompute `id` from the currently connected cluster's UUID. When the configured `name` is unchanged, the resource SHALL preserve the `id` already present in prior state unchanged. When `name` changes in place, the resource SHALL keep the cluster UUID prefix from prior state and replace the name segment with the new `name`. The `id` attribute SHALL use the `UseStateForUnknown` plan modifier so that it is preserved across plan/apply cycles once set.
+The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<name>`. The resource SHALL compute `id` by calling `client.ID(ctx, name)`, which combines the current cluster UUID with the configured `name` value, only during create. During update, the resource SHALL NOT recompute `id` from the currently connected cluster's UUID. When the configured `name` is unchanged, the resource SHALL preserve the `id` already present in prior state unchanged, and `UseStateForUnknown` on `id` SHALL apply so the prior value is planned as known. When `name` changes in place, the planned `id` SHALL be unknown and apply SHALL write `<prior-uuid>/<new-name>`: the cluster UUID prefix from prior state is kept and the name segment is replaced with the new `name`.
 
 #### Scenario: ID computed on create
 
@@ -20,8 +20,9 @@ The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<name>`.
 #### Scenario: Name segment adopted on in-place name change
 
 - GIVEN an existing resource whose stored `id` is `<stale_uuid>/old-name`
-- WHEN `name` is changed to `new-name` and applied
-- THEN the update SHALL succeed
+- WHEN `name` is changed to `new-name`
+- THEN the plan SHALL treat `id` as unknown
+- AND when applied, the update SHALL succeed
 - AND `id` in the resulting state SHALL be `<stale_uuid>/new-name`
 
 ### Requirement: Create and update (REQ-013–REQ-015)
