@@ -24,13 +24,11 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func updateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Data]) (entitycore.WriteResult[Data], diag.Diagnostics) {
 	var diags diag.Diagnostics
 	plan := req.Plan
-	resourceID := req.WriteID
 
 	put, modelDiags := plan.toPutModel(ctx)
 	diags.Append(modelDiags...)
@@ -49,12 +47,6 @@ func updateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient,
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
-	id, idDiags := client.ID(ctx, resourceID)
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[Data]{Model: plan}, diags
-	}
-
-	plan.ID = types.StringValue(id.String())
+	plan.ID = req.Prior.ID
 	return entitycore.WriteResult[Data]{Model: plan}, diags
 }

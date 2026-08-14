@@ -16,9 +16,9 @@
 
 ## 4. watch
 
-- [ ] 4.1 In `updateWatch` (`internal/elasticsearch/watcher/watch/update.go`), remove the `client.ID` call and the recompute of `plan.ID`; since this function only runs for Update (`createWatch` is separate), preserve the existing `id` from prior state unconditionally.
-- [ ] 4.2 Confirm `createWatch` (`internal/elasticsearch/watcher/watch/create.go`) is unaffected and still computes `id` via `client.ID` on Create.
-- [ ] 4.3 Add a unit test mirroring 2.2 for this resource.
+- [x] 4.1 In `updateWatch` (`internal/elasticsearch/watcher/watch/update.go`), remove the `client.ID` call and the recompute of `plan.ID`; since this function only runs for Update (`createWatch` is separate), preserve the existing `id` from prior state unconditionally.
+- [x] 4.2 Confirm `createWatch` (`internal/elasticsearch/watcher/watch/create.go`) is unaffected and still computes `id` via `client.ID` on Create.
+- [x] 4.3 Add a unit test mirroring 2.2 for this resource.
 
 ## 5. ml_datafeed
 
