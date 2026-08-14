@@ -328,7 +328,9 @@ These three keys SHALL be injected only on a `request` object reached via a `sea
 
 Wherever a JSON object has a `script` key whose value is an object, the resource SHALL populate `lang: "painless"` on that object when `lang` is absent. The resource SHALL NOT treat arbitrary objects that merely contain `source` or `id` as scripts.
 
-Default-population SHALL only fill a key that is **absent**; a key already present (including explicit `rest_total_hits_as_int: false`, a non-default `search_type`, a non-empty `indices` array, or a non-painless `lang`) SHALL be left unchanged.
+Wherever a JSON object has a `logging` key whose value is an object, the resource SHALL populate `level: "info"` on that object when `level` is absent. The resource SHALL NOT treat arbitrary objects that merely contain `level` as logging actions.
+
+Default-population SHALL only fill a key that is **absent**; a key already present (including explicit `rest_total_hits_as_int: false`, a non-default `search_type`, a non-empty `indices` array, a non-painless `lang`, or a non-info logging `level`) SHALL be left unchanged.
 
 Default-population SHALL be used exclusively for the Plugin Framework's semantic-equality comparison (`StringSemanticEquals`), which runs after create, update, and read, and during plan. It SHALL NOT be applied as a mutation inside `fromAPIModel`. `fromAPIModel` SHALL continue to marshal the Get Watch (redaction-merged) payload into the resource model as required by REQ-023–REQ-027. When `StringSemanticEquals` reports equality, the Framework SHALL keep the prior value in Terraform state (the plan on apply, prior state on refresh), so practitioner-authored JSON is preserved. Semantic equality SHALL NOT treat the redacted sentinel `::es_redacted::` as equal to a concrete secret; redaction preservation SHALL remain the responsibility of `fromAPIModel` and SHALL run before the custom type is constructed.
 
@@ -381,6 +383,13 @@ On import, when Terraform has no prior plan value, the resource MAY store the AP
 
 - **GIVEN** a watch `condition` or `transform` configured as a `script` whose script object omits `lang`
 - **WHEN** the resource is created and the Get Watch response includes `lang: "painless"` injected by Elasticsearch
+- **THEN** the apply SHALL succeed without a "Provider produced inconsistent result after apply" error
+- **AND** a subsequent `terraform plan` SHALL show no changes
+
+#### Scenario: Omitted logging action level does not cause apply inconsistency
+
+- **GIVEN** a watch `actions` JSON containing a logging action whose `logging` object omits `level`
+- **WHEN** the resource is created and the Get Watch response includes `level: "info"` injected by Elasticsearch
 - **THEN** the apply SHALL succeed without a "Provider produced inconsistent result after apply" error
 - **AND** a subsequent `terraform plan` SHALL show no changes
 

@@ -25,8 +25,9 @@ import (
 )
 
 const (
-	watcherDefaultSearchType = "query_then_fetch"
-	watcherDefaultScriptLang = "painless"
+	watcherDefaultSearchType   = "query_then_fetch"
+	watcherDefaultScriptLang   = "painless"
+	watcherDefaultLoggingLevel = "info"
 )
 
 // populateWatcherJSONDefaults copy-on-write walks a Watcher JSON object and
@@ -37,6 +38,8 @@ const (
 //     are filled on that request only (never on http.request).
 //   - On every object with a "script" key whose value is an object, absent lang
 //     is filled with "painless".
+//   - On every object with a "logging" key whose value is an object, absent
+//     level is filled with "info".
 //
 // The input tree is never mutated. Unchanged subtrees are returned as-is.
 func populateWatcherJSONDefaults(model map[string]any) map[string]any {
@@ -107,6 +110,14 @@ func walkWatcherJSONMap(m map[string]any) (map[string]any, bool) {
 		}
 	}
 
+	if logging, ok := current()["logging"].(map[string]any); ok {
+		newLogging, loggingChanged := fillLoggingLevelDefault(logging)
+		if loggingChanged {
+			ensure()["logging"] = newLogging
+			changed = true
+		}
+	}
+
 	if !changed {
 		return m, false
 	}
@@ -165,6 +176,15 @@ func fillScriptLangDefault(script map[string]any) (map[string]any, bool) {
 	}
 	out := maps.Clone(script)
 	out["lang"] = watcherDefaultScriptLang
+	return out, true
+}
+
+func fillLoggingLevelDefault(logging map[string]any) (map[string]any, bool) {
+	if _, hasLevel := logging["level"]; hasLevel {
+		return logging, false
+	}
+	out := maps.Clone(logging)
+	out["level"] = watcherDefaultLoggingLevel
 	return out, true
 }
 

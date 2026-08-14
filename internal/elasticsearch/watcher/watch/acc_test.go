@@ -55,14 +55,14 @@ const (
 	watchTransformScriptExpected = `{"script":{"lang":"painless","source":"return ctx.payload"}}`
 
 	// Authored JSON for omitted Watcher-injected defaults. State must keep these
-	// shapes (without rest_total_hits_as_int / search_type / indices / lang)
+	// shapes (without rest_total_hits_as_int / search_type / indices / lang / level)
 	// when semantic equality holds.
 	watchSearchInputOmittingTypeAndTotalHits = `{"search":{"request":{"body":{"query":{"bool":{"must":[{"match":{"event.dataset":"elasticsearch.cluster.stats"}}]}}},"indices":[".monitoring-es-*"]}}}`
 	watchSearchRequestOmittingDefaults       = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
 	watchChainSearchOmittingDefaults         = `{"chain":{"inputs":[{"first":{"search":{"request":{"body":{"query":{"match_all":{}}},` +
 		`"indices":[".monitoring-es-*"]}}}},{"second":{"search":{"request":{"body":{"query":{"match_all":{}}},` +
 		`"indices":[".monitoring-logs-*"]}}}}]}}`
-	watchActionsSearchTransformOmittingDefaults = `{"log":{"logging":{"level":"info","text":"watch fired"},` +
+	watchActionsSearchTransformOmittingDefaults = `{"log":{"logging":{"text":"watch fired"},` +
 		`"transform":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}}}`
 	watchConditionScriptOmittingLang    = `{"script":{"source":"return true"}}`
 	watchSearchInputExplicitNonDefaults = `{"search":{"request":{"body":{"query":{"match_all":{}}},` +
@@ -671,6 +671,18 @@ func watchJSONDefaultsEmptyPlanStep(watchID, step string) resource.TestStep {
 	}
 }
 
+func watchJSONDefaultsImportStep(watchID, step string, verifyIgnore ...string) resource.TestStep {
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(step),
+		ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+		ResourceName:             watchResourceName,
+		ImportState:              true,
+		ImportStateVerify:        true,
+		ImportStateVerifyIgnore:  append([]string{"elasticsearch_connection"}, verifyIgnore...),
+	}
+}
+
 // TestResourceWatch_searchRequestDefaultsOmitted reproduces issue #4522: a
 // search input against .monitoring-es-* that omits rest_total_hits_as_int and
 // search_type must apply cleanly and produce an empty subsequent plan.
@@ -682,13 +694,15 @@ func TestResourceWatch_searchRequestDefaultsOmitted(t *testing.T) {
 		Steps: []resource.TestStep{
 			watchJSONDefaultsApplyStep(t, watchID, "create", "input", watchSearchInputOmittingTypeAndTotalHits),
 			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
+			watchJSONDefaultsImportStep(watchID, "create", "input"),
+			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
 		},
 	})
 }
 
 // TestResourceWatch_watcherJSONDefaultsOmitted covers omitted search-request
 // defaults on input.indices, transform, chain sub-inputs, actions search
-// transforms, and omitted script lang.
+// transforms, omitted logging.level, and omitted script lang.
 func TestResourceWatch_watcherJSONDefaultsOmitted(t *testing.T) {
 	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resource.Test(t, resource.TestCase{

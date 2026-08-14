@@ -8,7 +8,7 @@ The same serializer always writes, when omitted at parse time:
 - `search_type: "query_then_fetch"`
 - `indices: []` (parse starts from an empty list; `toXContent` writes the array whenever it is non-null)
 
-Those keys appear on every Watcher search request, not only top-level `input.search`: `transform.search`, `chain` sub-inputs (`chain.inputs[]` → named wrapper → `search.request`), and search transforms nested under `actions`. Independently, Watcher `Script` defaults omitted `lang` to `"painless"` and re-emits it on Get Watch for `condition`, `transform`, and action scripts.
+Those keys appear on every Watcher search request, not only top-level `input.search`: `transform.search`, `chain` sub-inputs (`chain.inputs[]` → named wrapper → `search.request`), and search transforms nested under `actions`. Independently, Watcher `Script` defaults omitted `lang` to `"painless"` and re-emits it on Get Watch for `condition`, `transform`, and action scripts. The same Get Watch injection class applies to `LoggingAction.level`, which defaults to `"info"` and is always serialized.
 
 Existing transform acceptance fixtures work around the symptom by hardcoding `indices`, `rest_total_hits_as_int`, and `search_type` (`internal/elasticsearch/watcher/watch/acc_test.go`). That does not fix apply for practitioners who omit the defaults.
 
@@ -18,6 +18,7 @@ Existing transform acceptance fixtures work around the symptom by hardcoding `in
 - Add one shared `populateWatcherJSONDefaults(model map[string]any) map[string]any` that **copy-on-write** walks maps **and arrays** and:
   - For every `"search"` key whose value is an object containing a `"request"` object, fills absent `rest_total_hits_as_int: true`, `search_type: "query_then_fetch"`, and `indices: []` on that `request` only (never on `http.request`).
   - For every `"script"` key whose value is an object, fills absent `lang: "painless"` on that object.
+  - For every `"logging"` key whose value is an object, fills absent `level: "info"` on that object.
 - Wire that function as the `PopulateDefaultsFunc` for `input`, `transform`, `condition`, and `actions`. `trigger` and `metadata` stay `jsontypes.Normalized`.
 - Leave redaction merge (`mergePreserveRedactedLeaves`, `mergeActionsPreservingRedactedLeaves`) running first in `fromAPIModel`. Semantic equality is a later Framework comparison (`StringSemanticEquals` on create, update, read, **and plan**). `fromAPIModel` still emits API (redaction-merged) JSON; when equality holds, the Framework substitutes the prior/plan value into Terraform state so authored JSON is preserved. Semantic equality MUST NOT treat `::es_redacted::` as equal to a concrete secret.
 - Do **not** change `JSONWithDefaultsType.Equal` in this change. That method ignores the populate func, so every watch attribute that uses `JSONWithDefaultsType[map[string]any]` MUST share this same populate function.
@@ -30,7 +31,7 @@ Existing transform acceptance fixtures work around the symptom by hardcoding `in
 
 ### Modified Capabilities
 
-- `elasticsearch-watch`: Add semantic-equality handling for Watcher-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` on `input`, `transform`, `condition`, and `actions`, including nested `chain` search sub-inputs and action-level search transforms (REQ-031).
+- `elasticsearch-watch`: Add semantic-equality handling for Watcher-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`), script `lang`, and logging-action `level` on `input`, `transform`, `condition`, and `actions`, including nested `chain` search sub-inputs and action-level search transforms (REQ-031).
 
 ## Impact
 

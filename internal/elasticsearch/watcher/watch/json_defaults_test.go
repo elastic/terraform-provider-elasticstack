@@ -42,13 +42,31 @@ func searchRequest(extras map[string]any) map[string]any {
 	}
 }
 
-func loggingActionWithSearchTransform(reqDefaults map[string]any) map[string]any {
+func loggingActionWithSearchTransform(reqDefaults map[string]any, level string) map[string]any {
+	logging := map[string]any{
+		"text": "watch fired",
+	}
+	if level != "" {
+		logging["level"] = level
+	}
 	return map[string]any{
 		"log": map[string]any{
 			"transform": searchRequest(reqDefaults),
-			"logging": map[string]any{
-				"text": "watch fired",
-			},
+			"logging":   logging,
+		},
+	}
+}
+
+func loggingAction(level string) map[string]any {
+	logging := map[string]any{
+		"text": "watch fired",
+	}
+	if level != "" {
+		logging["level"] = level
+	}
+	return map[string]any{
+		"log": map[string]any{
+			"logging": logging,
 		},
 	}
 }
@@ -153,12 +171,33 @@ func Test_populateWatcherJSONDefaults(t *testing.T) {
 		},
 		{
 			name:  "actions nested search transform is defaulted",
-			input: loggingActionWithSearchTransform(nil),
+			input: loggingActionWithSearchTransform(nil, ""),
 			expected: loggingActionWithSearchTransform(map[string]any{
 				"rest_total_hits_as_int": true,
 				"search_type":            "query_then_fetch",
 				"indices":                []any{},
-			}),
+			}, watcherDefaultLoggingLevel),
+		},
+		{
+			name:     "logging action omitting level gets info",
+			input:    loggingAction(""),
+			expected: loggingAction(watcherDefaultLoggingLevel),
+		},
+		{
+			name:     "explicit non-info logging level is preserved",
+			input:    loggingAction("debug"),
+			expected: loggingAction("debug"),
+		},
+		{
+			name: "object with level but no logging key is not treated as a logging action",
+			input: map[string]any{
+				"level": "debug",
+				"text":  "not a logging action",
+			},
+			expected: map[string]any{
+				"level": "debug",
+				"text":  "not a logging action",
+			},
 		},
 		{
 			name: "script object omitting lang gets painless",
@@ -300,6 +339,18 @@ func TestJSONWithDefaultsValue_StringSemanticEquals_watcherDefaults(t *testing.T
 			prior: `{"script":{"source":"return true"}}`,
 			next:  `{"script":{"source":"return true","lang":"painless"}}`,
 			equal: true,
+		},
+		{
+			name:  "omitted logging level equals ES injected info",
+			prior: `{"log":{"logging":{"text":"watch fired"}}}`,
+			next:  `{"log":{"logging":{"text":"watch fired","level":"info"}}}`,
+			equal: true,
+		},
+		{
+			name:  "explicit non-info logging level is unequal to omitted default",
+			prior: `{"log":{"logging":{"text":"watch fired"}}}`,
+			next:  `{"log":{"logging":{"text":"watch fired","level":"debug"}}}`,
+			equal: false,
 		},
 	}
 

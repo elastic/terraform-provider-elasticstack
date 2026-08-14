@@ -1,4 +1,4 @@
-> **Implementation scope note:** This change covers Watcher-injected defaults on JSON attributes that round-trip through Get Watch: search-request `rest_total_hits_as_int`, `search_type`, and `indices` (including `chain` sub-inputs and action-level search transforms) and script `lang: "painless"` on `condition` / `transform` / `actions`. `indices_options` remains out of scope.
+> **Implementation scope note:** This change covers Watcher-injected defaults on JSON attributes that round-trip through Get Watch: search-request `rest_total_hits_as_int`, `search_type`, and `indices` (including `chain` sub-inputs and action-level search transforms), script `lang: "painless"` on `condition` / `transform` / `actions`, and logging-action `level: "info"`. `indices_options` remains out of scope.
 
 ## 1. Spec
 
@@ -10,6 +10,7 @@
 - [x] 2.1 Add `internal/elasticsearch/watcher/watch/json_defaults.go` with `populateWatcherJSONDefaults(model map[string]any) map[string]any`: a copy-on-write recursive walker over maps **and** arrays that:
   - for every object with a `"search"` key whose value has a `"request"` object, fills absent `rest_total_hits_as_int: true`, `search_type: "query_then_fetch"`, and `indices: []` on that `request` only (never `http.request`);
   - for every object with a `"script"` key whose value is an object, fills absent `lang: "painless"`;
+  - for every object with a `"logging"` key whose value is an object, fills absent `level: "info"`;
   - continues after a match so nested `chain.inputs[]` search sub-inputs and action-level search transforms are each visited;
   - does not mutate the input tree.
 - [x] 2.2 In `internal/elasticsearch/watcher/watch/schema.go`, change the `input`, `transform`, `condition`, and `actions` attributes' `CustomType` from `jsontypes.NormalizedType{}` to `customtypes.NewJSONWithDefaultsType(populateWatcherJSONDefaults)`. Leave `trigger` and `metadata` as `jsontypes.NormalizedType{}`. Use the **same** populate function for all four attributes (`JSONWithDefaultsType.Equal` ignores the populate func).

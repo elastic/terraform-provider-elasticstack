@@ -56,15 +56,15 @@ output "watch" {
 
 ### Optional
 
-- `actions` (String) The list of actions that will be run if the condition matches. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` do not need to be set explicitly and will not cause spurious diffs.
+- `actions` (String) The list of actions that will be run if the condition matches. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`), script `lang`, and logging-action `level` do not need to be set explicitly and will not cause spurious diffs.
 - `active` (Boolean) Defines whether the watch is active or inactive by default. The default value is true, which means the watch is active by default.
-- `condition` (String) The condition that defines if the actions should be run. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` do not need to be set explicitly and will not cause spurious diffs.
+- `condition` (String) The condition that defines if the actions should be run. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`), script `lang`, and logging-action `level` do not need to be set explicitly and will not cause spurious diffs.
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
-- `input` (String) The input that defines the input that loads the data for the watch. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` do not need to be set explicitly and will not cause spurious diffs.
+- `input` (String) The input that defines the input that loads the data for the watch. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`), script `lang`, and logging-action `level` do not need to be set explicitly and will not cause spurious diffs.
 - `metadata` (String) Metadata json that will be copied into the history entries.
 - `throttle_period_in_millis` (Number) Minimum time in milliseconds between actions being run. Defaults to 5000.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
-- `transform` (String) Processes the watch payload to prepare it for the watch actions. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`) and script `lang` do not need to be set explicitly and will not cause spurious diffs.
+- `transform` (String) Processes the watch payload to prepare it for the watch actions. Elasticsearch-injected search-request defaults (`rest_total_hits_as_int`, `search_type`, `indices`), script `lang`, and logging-action `level` do not need to be set explicitly and will not cause spurious diffs.
 
 ### Read-Only
 
