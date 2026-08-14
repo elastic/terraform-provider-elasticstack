@@ -421,20 +421,16 @@ func TestAccResourceSecurityRolePreservesStaleCompositeIDOnUpdate(t *testing.T) 
 	resourceName := "elasticstack_elasticsearch_security_role.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			mutateRoleOutOfBand(t, roleName, `{
+  "cluster": ["all"],
+  "metadata": {"version": 1}
+}`)
+			t.Cleanup(func() { deleteRoleOutOfBand(t, roleName) })
+		},
 		CheckDestroy: checkResourceSecurityRoleDestroy,
 		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables: config.Variables{
-					"role_name": config.StringVariable(roleName),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "name", roleName),
-				),
-			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
@@ -482,6 +478,19 @@ func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
 	_, err = typedClient.Security.PutRole(roleName).Raw(strings.NewReader(body)).Do(t.Context())
 	if err != nil {
 		t.Fatalf("out-of-band PutRole failed: %v", err)
+	}
+}
+
+func deleteRoleOutOfBand(t *testing.T, roleName string) {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("cleanup: failed to create client: %v", err)
+		return
+	}
+	_, err = client.GetESClient().Security.DeleteRole(roleName).Do(context.Background())
+	if err != nil {
+		t.Logf("cleanup: delete role %s: %v", roleName, err)
 	}
 }
 

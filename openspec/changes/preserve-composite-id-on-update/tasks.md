@@ -37,5 +37,5 @@
 
 - [x] 7.1 `make build`
 - [x] 7.2 `go test ./internal/elasticsearch/security/role/... ./internal/elasticsearch/index/datastreamlifecycle/... ./internal/elasticsearch/watcher/watch/... ./internal/elasticsearch/ml/datafeed/...`
-- [ ] 7.3 Run the new/extended acceptance test(s) against a live stack (`TF_ACC=1`) per `dev-docs/high-level/testing.md`
+- [x] 7.3 Run the new/extended acceptance test(s) against a live stack (`TF_ACC=1`) per `dev-docs/high-level/testing.md`
 - [x] 7.4 `make check-openspec`
