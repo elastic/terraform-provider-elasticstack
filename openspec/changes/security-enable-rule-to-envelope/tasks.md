@@ -15,10 +15,10 @@
 
 ## 4. Wire callbacks in resource constructor
 
-- [ ] 4.1 In `resource.go`, remove the `placeholder` variable and replace the `PlaceholderKibanaWriteCallback` usages with `writeSecurityEnableRule` for both `Create` and `Update` in `KibanaResourceOptions`
-- [ ] 4.2 In `resource.go`, remove the now-unused `entitycore` import (only needed for the placeholder)
+- [x] 4.1 In `resource.go`, remove the `placeholder` variable and replace the `PlaceholderKibanaWriteCallback` usages with `writeSecurityEnableRule` for both `Create` and `Update` in `KibanaResourceOptions`
+- [x] 4.2 In `resource.go`, remove the now-unused `entitycore` import (only needed for the placeholder)
 
 ## 5. Build and verify
 
-- [ ] 5.1 Run `make build` and confirm the package compiles without errors
-- [ ] 5.2 Run `go test ./internal/kibana/security_enable_rule/...` and confirm all unit and contract tests pass (including `TestEnableRuleResource_embedsEntityCoreKibanaResource`)
+- [x] 5.1 Run `make build` and confirm the package compiles without errors
+- [x] 5.2 Run `go test ./internal/kibana/security_enable_rule/...` and confirm all unit and contract tests pass (including `TestEnableRuleResource_embedsEntityCoreKibanaResource`)

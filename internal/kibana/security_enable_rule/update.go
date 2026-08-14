@@ -28,7 +28,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func writeSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[enableRuleModel]) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
+func writeSecurityEnableRule(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[enableRuleModel],
+) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
 	model := req.Plan
 	var diags diag.Diagnostics
 
