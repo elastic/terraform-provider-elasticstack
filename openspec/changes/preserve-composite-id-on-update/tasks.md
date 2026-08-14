@@ -28,10 +28,10 @@
 
 ## 6. Spec sync
 
-- [ ] 6.1 Update `openspec/specs/elasticsearch-security-role/spec.md` Requirement: Identity (REQ-005–REQ-006) per this change's delta spec.
-- [ ] 6.2 Update `openspec/specs/elasticsearch-data-stream-lifecycle/spec.md` Requirement: Identity (REQ-005–REQ-006) per this change's delta spec.
-- [ ] 6.3 Update `openspec/specs/elasticsearch-watch/spec.md` Requirement: Identity (REQ-005–REQ-006) per this change's delta spec.
-- [ ] 6.4 Update `openspec/specs/elasticsearch-ml-datafeed/spec.md` Requirement: Identity and import (REQ-007–REQ-009) per this change's delta spec.
+- [x] 6.1 Update `openspec/specs/elasticsearch-security-role/spec.md` Requirement: Identity (REQ-005–REQ-006) per this change's delta spec.
+- [x] 6.2 Update `openspec/specs/elasticsearch-data-stream-lifecycle/spec.md` Requirement: Identity (REQ-005–REQ-006) per this change's delta spec.
+- [x] 6.3 Update `openspec/specs/elasticsearch-watch/spec.md` Requirement: Identity (REQ-005–REQ-006) per this change's delta spec.
+- [x] 6.4 Update `openspec/specs/elasticsearch-ml-datafeed/spec.md` Requirement: Identity and import (REQ-007–REQ-009) per this change's delta spec.
 
 ## 7. Verification
 
