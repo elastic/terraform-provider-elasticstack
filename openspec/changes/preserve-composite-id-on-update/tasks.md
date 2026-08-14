@@ -5,9 +5,9 @@
 
 ## 2. security_role
 
-- [ ] 2.1 In `writeRole` (`internal/elasticsearch/security/role/update.go`), only call `client.ID` when `req.Prior == nil`; when `req.Prior != nil`, set `data.ID = req.Prior.ID` and skip the `client.ID` call entirely.
-- [ ] 2.2 Add a unit test where `req.Prior.ID` carries a cluster-UUID prefix that does not match what a (mocked) `client.ID` call would currently produce, asserting the returned `id` equals `req.Prior.ID` unchanged and that Update still succeeds.
-- [ ] 2.3 Add an acceptance test that imports a role with a deliberately incorrect cluster-UUID prefix in its `id`, then applies a config change to a role attribute, and asserts the apply succeeds without an inconsistent-result error and without `id` changing.
+- [x] 2.1 In `writeRole` (`internal/elasticsearch/security/role/update.go`), only call `client.ID` when `req.Prior == nil`; when `req.Prior != nil`, set `data.ID = req.Prior.ID` and skip the `client.ID` call entirely.
+- [x] 2.2 Add a unit test where `req.Prior.ID` carries a cluster-UUID prefix that does not match what a (mocked) `client.ID` call would currently produce, asserting the returned `id` equals `req.Prior.ID` unchanged and that Update still succeeds.
+- [x] 2.3 Add an acceptance test that imports a role with a deliberately incorrect cluster-UUID prefix in its `id`, then applies a config change to a role attribute, and asserts the apply succeeds without an inconsistent-result error and without `id` changing.
 
 ## 3. data_stream_lifecycle
 
