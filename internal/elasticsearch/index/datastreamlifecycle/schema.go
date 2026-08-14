@@ -41,6 +41,7 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					idSetUnknownIfNameChanged(),
 				},
 			},
 			"name": schema.StringAttribute{
