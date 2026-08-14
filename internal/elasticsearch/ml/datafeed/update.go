@@ -71,6 +71,7 @@ func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClie
 		}
 	}
 
+	// Prior is always non-nil: this callback is registered only as Update.
 	plan.ID = req.Prior.ID
 	return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 }

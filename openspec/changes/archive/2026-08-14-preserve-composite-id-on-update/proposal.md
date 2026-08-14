@@ -15,6 +15,7 @@
 - Add unit test coverage for all four resources exercising Update with a `req.Prior.ID` (or state) whose cluster-UUID prefix differs from what `client.ID` would currently compute, asserting the returned `id` is unchanged.
 - Add (or extend) an acceptance test — likely on `security_role`, per the issue's reproduction — that imports a resource with a composite id carrying a deliberately "incorrect" cluster UUID and asserts that a subsequent config-driven update succeeds without an inconsistent-result error and without changing `id`.
 - Update the delta specs for all four capabilities so the documented Identity requirement describes "computed once at Create, preserved from prior state at Update" instead of "computed at create or update."
+- For `data_stream_lifecycle` only (where `name` can change in place), add an `id` plan modifier after `UseStateForUnknown` so a name change plans `id` as unknown and apply writes `<prior-uuid>/<new-name>` instead of failing with an inconsistent-result error. Role, watch, and datafeed identity keys are `RequiresReplace` and do not need this.
 
 ## Capabilities
 
@@ -25,7 +26,7 @@ None.
 ### Modified Capabilities
 
 - `elasticsearch-security-role`: Requirement: Identity (REQ-005–REQ-006) — `id` is computed only at Create; Update preserves the prior `id` unchanged.
-- `elasticsearch-data-stream-lifecycle`: Requirement: Identity (REQ-005–REQ-006) — same correction; the current spec text explicitly (and incorrectly) documents "create (and update, which reuses the create path)" recomputing `id`.
+- `elasticsearch-data-stream-lifecycle`: Requirement: Identity (REQ-005–REQ-006) — same correction, plus in-place `name` changes plan `id` as unknown and apply `<prior-uuid>/<new-name>`.
 - `elasticsearch-watch`: Requirement: Identity (REQ-005–REQ-006) — same correction.
 - `elasticsearch-ml-datafeed`: Requirement: Identity and import (REQ-007–REQ-009) — same correction to the "During create and update, the resource SHALL derive `id`" sentence.
 
@@ -33,6 +34,7 @@ None.
 
 - `internal/elasticsearch/security/role/update.go` (and its unit tests)
 - `internal/elasticsearch/index/datastreamlifecycle/write.go` (and its unit tests)
+- `internal/elasticsearch/index/datastreamlifecycle/id_plan_modifier.go` (and its unit tests)
 - `internal/elasticsearch/watcher/watch/update.go` (and its unit tests)
 - `internal/elasticsearch/ml/datafeed/update.go` (and its unit tests)
 - A new or extended shared helper mirroring `internal/elasticsearch/index/template/write.go:56-65`, likely in `internal/entitycore` or a small package shared by these callbacks

@@ -47,6 +47,7 @@ func updateWatch(ctx context.Context, client *clients.ElasticsearchScopedClient,
 		return entitycore.WriteResult[Data]{Model: plan}, diags
 	}
 
+	// Prior is always non-nil: this callback is registered only as Update.
 	plan.ID = req.Prior.ID
 	return entitycore.WriteResult[Data]{Model: plan}, diags
 }
