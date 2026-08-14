@@ -66,6 +66,7 @@ func TestAccDataSourceEnrollmentTokens(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.name"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "tokens.0.active", "true"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_fleet_enrollment_tokens.test", "space_id"),
+				),
 			},
 		},
 	})
