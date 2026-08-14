@@ -1,7 +1,7 @@
 ## 1. Shared guard
 
-- [ ] 1.1 Decide the exact shared-helper shape (or confirm per-package inline guards), mirroring `internal/elasticsearch/index/template/write.go:56-65`: compute `id` via `client.ID` only when there is no prior state; otherwise carry `id` forward unchanged.
-- [ ] 1.2 If a shared helper is added, place it where all four packages can use it without an import cycle (likely `internal/entitycore` or a small shared utility package) and unit test the helper in isolation.
+- [x] 1.1 Decide the exact shared-helper shape (or confirm per-package inline guards), mirroring `internal/elasticsearch/index/template/write.go:56-65`: compute `id` via `client.ID` only when there is no prior state; otherwise carry `id` forward unchanged.
+- [x] 1.2 If a shared helper is added, place it where all four packages can use it without an import cycle (likely `internal/entitycore` or a small shared utility package) and unit test the helper in isolation.
 
 ## 2. security_role
 
