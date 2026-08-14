@@ -132,7 +132,7 @@ func TestAccDataSourceIntegrationWithPrerelease(t *testing.T) {
 					checkFleetPackageID("apm"),
 					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "name", "apm"),
 					resource.TestCheckResourceAttr(integrationDataSourceResourceName, "prerelease", "false"),
-					checkFleetPackageVersion("apm", false, ""),
+					checkFleetPackageVersionOrUnset("apm", false, ""),
 				),
 			},
 		},
@@ -232,6 +232,20 @@ func checkFleetPackageVersion(packageName string, prerelease bool, spaceID strin
 	return func(s *terraform.State) error {
 		expectedVersion, err := fleetPackageVersion(packageName, prerelease, spaceID)
 		if err != nil {
+			return err
+		}
+
+		return resource.TestCheckResourceAttr(integrationDataSourceResourceName, "version", expectedVersion)(s)
+	}
+}
+
+func checkFleetPackageVersionOrUnset(packageName string, prerelease bool, spaceID string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		expectedVersion, err := fleetPackageVersion(packageName, prerelease, spaceID)
+		if err != nil {
+			if errors.Is(err, errFleetPackageNotFound) {
+				return resource.TestCheckNoResourceAttr(integrationDataSourceResourceName, "version")(s)
+			}
 			return err
 		}
 
