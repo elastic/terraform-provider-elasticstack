@@ -758,6 +758,48 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.AcceptanceServerInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-08-15T03:19:19.462447274Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingElasticsearchScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-08-15T03:19:19.462447424Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingKibanaScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-08-15T03:19:19.462447514Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewElasticsearchScopedClientForTest",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-08-15T03:19:19.462447584Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.newAcceptanceTestingClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-08-15T03:19:19.462447654Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config.NewFromEnv",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config",
+      "attemptedAt": "2026-08-15T03:19:19.462447724Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon.DrilldownsFromVisByRefAPI",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
+      "attemptedAt": "2026-08-15T03:31:15.058073146Z",
+      "reason": "pr_created"
     }
   ]
 }
