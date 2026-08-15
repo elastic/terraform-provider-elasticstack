@@ -15,21 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package privatelocation
+package agentdownloadsource
 
 import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deletePrivateLocation(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
-	var diags diag.Diagnostics
+// writeAgentDownloadSource dispatches Create and Update through the envelope's
+// shared write callback: req.Prior is nil for Create and non-nil for Update.
+func writeAgentDownloadSource(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[model],
+) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
+	fleetClient := client.GetFleetClient()
 
-	oapiClient := client.GetKibanaOapiClient()
-
-	diags.Append(kibanaoapi.DeletePrivateLocation(ctx, oapiClient, spaceID, resourceID)...)
-	return diags
+	if req.Prior == nil {
+		return createAgentDownloadSource(ctx, fleetClient, req.Plan)
+	}
+	return updateAgentDownloadSource(ctx, fleetClient, req.Plan, *req.Prior)
 }

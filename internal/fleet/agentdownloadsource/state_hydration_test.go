@@ -84,11 +84,14 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 func TestCreateAndUpdateFinalizeStateViaReadHydration(t *testing.T) {
 	t.Parallel()
 
-	assertMethodUsesReadHydration(t, "create.go", "Create")
-	assertMethodUsesReadHydration(t, "update.go", "Update")
+	assertFuncUsesReadHydration(t, "create.go", "createAgentDownloadSource")
+	assertFuncUsesReadHydration(t, "update.go", "updateAgentDownloadSource")
 }
 
-func assertMethodUsesReadHydration(t *testing.T, filename string, methodName string) {
+// assertFuncUsesReadHydration verifies that the named write-callback helper
+// calls readAndHydrateState and returns its result as the write result's
+// Model, rather than trusting the raw create/update API response directly.
+func assertFuncUsesReadHydration(t *testing.T, filename string, funcName string) {
 	t.Helper()
 
 	path := filename
@@ -96,49 +99,55 @@ func assertMethodUsesReadHydration(t *testing.T, filename string, methodName str
 	file, err := parser.ParseFile(fileSet, path, nil, 0)
 	require.NoError(t, err)
 
-	var methodDecl *ast.FuncDecl
+	var funcDecl *ast.FuncDecl
 	for _, decl := range file.Decls {
-		funcDecl, ok := decl.(*ast.FuncDecl)
-		if !ok || funcDecl.Name == nil || funcDecl.Name.Name != methodName {
+		fd, ok := decl.(*ast.FuncDecl)
+		if !ok || fd.Name == nil || fd.Name.Name != funcName {
 			continue
 		}
-		methodDecl = funcDecl
+		funcDecl = fd
 		break
 	}
 
-	require.NotNil(t, methodDecl, "method %s not found in %s", methodName, path)
+	require.NotNil(t, funcDecl, "function %s not found in %s", funcName, path)
 
 	var (
 		hasReadAndHydrateCall bool
-		hasStateSetFromRead   bool
+		hasResultFromRead     bool
 	)
 
-	ast.Inspect(methodDecl.Body, func(node ast.Node) bool {
+	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
 		call, ok := node.(*ast.CallExpr)
+		if ok {
+			if selector, selOk := call.Fun.(*ast.SelectorExpr); selOk && selector.Sel != nil && selector.Sel.Name == "readAndHydrateState" {
+				hasReadAndHydrateCall = true
+			}
+			if ident, identOk := call.Fun.(*ast.Ident); identOk && ident.Name == "readAndHydrateState" {
+				hasReadAndHydrateCall = true
+			}
+		}
+
+		composite, ok := node.(*ast.CompositeLit)
 		if !ok {
 			return true
 		}
-
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if ok && selector.Sel != nil && selector.Sel.Name == "readAndHydrateState" {
-			hasReadAndHydrateCall = true
-		}
-
-		if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "readAndHydrateState" {
-			hasReadAndHydrateCall = true
-		}
-
-		if ok && selector.Sel != nil && selector.Sel.Name == "Set" && len(call.Args) >= 2 {
-			if ident, identOK := call.Args[1].(*ast.Ident); identOK && ident.Name == "readState" {
-				hasStateSetFromRead = true
+		for _, elt := range composite.Elts {
+			kv, kvOk := elt.(*ast.KeyValueExpr)
+			if !kvOk {
+				continue
+			}
+			key, keyOk := kv.Key.(*ast.Ident)
+			value, valueOk := kv.Value.(*ast.Ident)
+			if keyOk && valueOk && key.Name == "Model" && value.Name == "readState" {
+				hasResultFromRead = true
 			}
 		}
 
 		return true
 	})
 
-	require.True(t, hasReadAndHydrateCall, "%s should call readAndHydrateState", methodName)
-	require.True(t, hasStateSetFromRead, "%s should set final state from readState", methodName)
+	require.True(t, hasReadAndHydrateCall, "%s should call readAndHydrateState", funcName)
+	require.True(t, hasResultFromRead, "%s should return a write result built from readState", funcName)
 }
 
 func newTestFleetClient(t *testing.T, handler http.Handler) *fleet.Client {

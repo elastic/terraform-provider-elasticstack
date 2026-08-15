@@ -24,46 +24,28 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan model
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(apiClientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client := apiClient.GetFleetClient()
-	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func createAgentDownloadSource(ctx context.Context, client *fleet.Client, plan model) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	// Determine space from plan (first space_ids entry) for CREATE.
 	spaceID := fleetutils.SpaceIDFromSet(plan.SpaceIDs)
 
 	body := plan.toAPICreateModel(ctx)
 
-	createResp, diags := fleet.CreateAgentDownloadSource(ctx, client, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	createResp, createDiags := fleet.CreateAgentDownloadSource(ctx, client, spaceID, body)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
 
 	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(createResp.JSON200, "agent download source")
-	resp.Diagnostics.Append(unwrapDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(unwrapDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
 
 	item := unwrapped.Item
@@ -73,22 +55,15 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		plan.SpaceIDs = types.SetNull(types.StringType)
 	}
 
-	readState, found, diags := readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	readState, found, readDiags := readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
 	if !found {
-		resp.Diagnostics.AddError("Unexpected API response", "Created agent download source could not be read back by source_id")
-		return
+		diags.AddError("Unexpected API response", "Created agent download source could not be read back by source_id")
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
 
-	// This resource shadows the envelope's Create, so it must carry the
-	// envelope-owned timeouts value from the plan; the hydrated read state
-	// leaves it as a zero timeouts.Value{} (untyped Object[]) which fails
-	// State.Set conversion against the schema's typed timeouts attribute.
-	readState.Timeouts = plan.Timeouts
-
-	diags = resp.State.Set(ctx, readState)
-	resp.Diagnostics.Append(diags...)
+	return entitycore.KibanaWriteResult[model]{Model: readState, SkipReadAfterWrite: true}, diags
 }
