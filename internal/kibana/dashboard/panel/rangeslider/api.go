@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -68,7 +69,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 		return kbapi.DashboardPanelItem{}, diags
 	}
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
 		Grid: grid,
 		Id:   id,

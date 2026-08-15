@@ -174,7 +174,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 // ToAPI serializes Terraform vis panel state into kbapi (mirrors legacy visConfigToAPI / visByReferenceToAPI).
 func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 
 	var diags diag.Diagnostics
 	cfg := pm.VisConfig
