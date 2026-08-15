@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -39,18 +38,12 @@ import (
 const panelType = "vis"
 
 // Handler implements iface.Handler for Kibana `vis` dashboard panels (`vis_config` / panel `config_json`).
-type Handler struct{}
+type Handler struct {
+	panelkit.NoopHandlerBase
+}
 
 func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
-
-func (Handler) ClassifyJSON(map[string]any) bool { return false }
-
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any { return config }
-
-func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
-
-func (Handler) AlignStateFromPlan(context.Context, *models.PanelModel, *models.PanelModel) {}
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
 	var diags diag.Diagnostics
