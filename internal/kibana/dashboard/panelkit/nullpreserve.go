@@ -72,6 +72,43 @@ func PreserveList(existing, next attr.Value) attr.Value {
 	return next
 }
 
+// PreserveKnownString updates existing from api only when existing is already known and api is
+// present; an api value of nil, or existing being null/unknown, leaves existing unchanged. Unlike
+// PreserveString, a known existing value is never nulled out just because api is nil.
+func PreserveKnownString(existing types.String, api *string) types.String {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.StringValue(*api)
+	}
+	return existing
+}
+
+// PreserveKnownBool is the bool equivalent of PreserveKnownString.
+func PreserveKnownBool(existing types.Bool, api *bool) types.Bool {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.BoolValue(*api)
+	}
+	return existing
+}
+
+// PreserveKnownFloat32 is the float32 equivalent of PreserveKnownString.
+func PreserveKnownFloat32(existing types.Float32, api *float32) types.Float32 {
+	if typeutils.IsKnown(existing) && api != nil {
+		return types.Float32Value(*api)
+	}
+	return existing
+}
+
+// PreserveKnownList updates existing from next only when existing is already known and present is
+// true; otherwise existing (including its null/unknown state) is left unchanged. present lets
+// callers signal whether next was actually derived from an API value, so a nil API pointer does not
+// have to be pre-converted into a null list before calling.
+func PreserveKnownList(existing types.List, next types.List, present bool) types.List {
+	if typeutils.IsKnown(existing) && present {
+		return next
+	}
+	return existing
+}
+
 // NullPreserveStringFromPrior copies prior into *existing when prior is null or unknown,
 // preserving the exact null/unknown state. If existing is nil, the call is a no-op.
 func NullPreserveStringFromPrior(prior types.String, existing *types.String) {
