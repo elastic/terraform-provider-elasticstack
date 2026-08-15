@@ -72,27 +72,6 @@ func VisDrilldownsToAPI(items models.DrilldownsModel) (*[]kbapi.KibanaHTTPAPIsKb
 	return &api, diags
 }
 
-// DrilldownsFromVisByRefAPI translates API drilldowns on `vis.by_reference`.
-func DrilldownsFromVisByRefAPI(ctx context.Context, api *[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_1_Drilldowns_Item) (models.DrilldownsModel, diag.Diagnostics) {
-	_ = ctx
-	if api == nil {
-		return nil, nil
-	}
-	out := make(models.DrilldownsModel, 0, len(*api))
-	var diags diag.Diagnostics
-	for _, item := range *api {
-		m, itemDiags := drilldownItemFromVisUnionRaw(item)
-		diags.Append(itemDiags...)
-		if !itemDiags.HasError() {
-			out = append(out, m)
-		}
-	}
-	if diags.HasError() {
-		return nil, diags
-	}
-	return out, diags
-}
-
 // DrilldownsToVisByRefAPI translates structured drilldowns for `vis.by_reference`.
 func DrilldownsToVisByRefAPI(items models.DrilldownsModel) (*[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_1_Drilldowns_Item, diag.Diagnostics) {
 	return VisDrilldownsToAPI(items)
