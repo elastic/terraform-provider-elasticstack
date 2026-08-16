@@ -192,6 +192,32 @@ func Test_PopulateFromAPI_byField_knownFields_updatedFromAPI(t *testing.T) {
 	assert.Equal(t, types.Float32Value(5), bf.Step)
 }
 
+// Test: a known optional field is left unchanged (not nulled out) when the API omits it on update.
+func Test_PopulateFromAPI_byField_knownFields_notNulledWhenAPIOmits(t *testing.T) {
+	prior := &models.RangeSliderControlByFieldModel{
+		DataViewID:        types.StringValue("dv-1"),
+		FieldName:         types.StringValue("bytes"),
+		Title:             types.StringValue("kept title"),
+		UseGlobalFilters:  types.BoolValue(true),
+		IgnoreValidations: types.BoolValue(true),
+		Value:             mustStringList("1", "9"),
+		Step:              types.Float32Value(1),
+	}
+	pm := &models.PanelModel{RangeSliderControlConfig: &models.RangeSliderControlConfigModel{ByField: prior}}
+	tfPanel := &models.PanelModel{RangeSliderControlConfig: pm.RangeSliderControlConfig}
+	// No optional field opts: the API response omits every optional field.
+	apiCfg := apiRangeSliderFieldConfig(t)
+	PopulateFromAPI(context.Background(), pm, tfPanel, apiCfg)
+	require.NotNil(t, pm.RangeSliderControlConfig)
+	bf := pm.RangeSliderControlConfig.ByField
+	require.NotNil(t, bf)
+	assert.Equal(t, types.StringValue("kept title"), bf.Title)
+	assert.Equal(t, types.BoolValue(true), bf.UseGlobalFilters)
+	assert.Equal(t, types.BoolValue(true), bf.IgnoreValidations)
+	assert.Equal(t, mustStringList("1", "9"), bf.Value)
+	assert.Equal(t, types.Float32Value(1), bf.Step)
+}
+
 // Test: null-preservation — null optional fields in state are not overwritten by API values.
 func Test_PopulateFromAPI_byField_nullOptionalFields_preserved(t *testing.T) {
 	prior := &models.RangeSliderControlByFieldModel{
