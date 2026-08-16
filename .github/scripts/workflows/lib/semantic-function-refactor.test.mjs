@@ -124,9 +124,12 @@ test("workflow configures Serena MCP server for semantic Go analysis", () => {
 	assert.match(lock, /"serena":\s*\{/);
 	assert.match(
 		lock,
-		/"container":\s*"ghcr\.io\/github\/serena-mcp-server:latest"/,
+		/"container":\s*"ghcr\.io\/oraios\/serena:latest"/,
 	);
-	assert.match(lock, /"entrypoint":\s*"serena"/);
+	assert.match(
+		lock,
+		/"entrypoint":\s*"\/workspaces\/serena\/\.venv\/bin\/serena"/,
+	);
 });
 
 test("compiled lock includes Serena tools in agent allowed-tools", () => {
