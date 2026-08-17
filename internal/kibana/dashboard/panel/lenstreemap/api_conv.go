@@ -41,10 +41,9 @@ func treemapConfigFromAPINoESQL(
 	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
 	snapshotSampling := m.Sampling
 
-	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
@@ -70,9 +69,6 @@ func treemapConfigFromAPINoESQL(
 	}
 	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsBytes), lenscommon.PopulatePartitionMetricsDefaults)
 
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
 	m.Legend = &models.PartitionLegendModel{}
 	lenscommon.PartitionLegendFromTreemapLegend(m.Legend, api.Legend)
 
@@ -95,17 +91,12 @@ func treemapConfigFromAPINoESQL(
 func treemapConfigFromAPIESQL(ctx context.Context, m *models.TreemapConfigModel, prior *models.TreemapConfigModel, api kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// ES|QL charts don't have a query block. Clear it to avoid carrying over
-	// query state from a previous non-ES|QL config.
-	m.Query = nil
-
 	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
 	snapshotSampling := m.Sampling
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, true, nil, &diags,
 	)
 	if !ok {
 		return diags
@@ -256,8 +247,6 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if m.ValueDisplay != nil {
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
@@ -267,15 +256,11 @@ func treemapConfigToAPITreemapESQL(m *models.TreemapConfigModel) (kbapi.KibanaHT
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsTreemapESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -333,8 +318,6 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPI
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "treemap_config.legend must be provided")
 		return api, diags
@@ -345,15 +328,11 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPI
 		api.Styling = &kbapi.KibanaHTTPAPIsTreemapStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

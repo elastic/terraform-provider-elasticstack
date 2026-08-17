@@ -102,18 +102,14 @@ func tagcloudConfigFromAPI(
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
@@ -149,17 +145,15 @@ func tagcloudConfigFromAPIESQL(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, true, nil, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
 
-	m.Query = nil
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulateTagcloudMetricDefaults)
@@ -240,8 +234,6 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	api.Styling = tagcloudStylingToAPI(m)
 
 	if m.MetricJSON.IsNull() {
@@ -262,15 +254,11 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -290,8 +278,6 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		diags.AddError("Failed to unmarshal tagcloud_config.data_source_json", err.Error())
 		return api, diags
 	}
-
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	api.Styling = tagcloudStylingToAPI(m)
 
@@ -327,15 +313,11 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		api.TagBy.Label = &s
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

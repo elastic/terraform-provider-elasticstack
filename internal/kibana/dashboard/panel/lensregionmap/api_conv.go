@@ -37,18 +37,14 @@ func regionMapConfigFromAPINoESQL(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateRegionMapMetricDefaults, &diags)
@@ -79,17 +75,14 @@ func regionMapConfigFromAPIESQL(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, true, nil, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-
-	m.Query = nil
 
 	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateRegionMapMetricDefaults, &diags)
@@ -146,8 +139,6 @@ func regionMapConfigToAPINoESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTT
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if typeutils.IsKnown(m.MetricJSON) {
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
@@ -161,15 +152,11 @@ func regionMapConfigToAPINoESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTT
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -188,8 +175,6 @@ func regionMapConfigToAPIESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTTPA
 		}
 	}
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if typeutils.IsKnown(m.MetricJSON) {
 		if err := json.Unmarshal([]byte(m.MetricJSON.ValueString()), &api.Metric); err != nil {
 			diags.AddError("Failed to unmarshal metric", err.Error())
@@ -203,15 +188,11 @@ func regionMapConfigToAPIESQL(m *models.RegionMapConfigModel) (kbapi.KibanaHTTPA
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsRegionMapESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

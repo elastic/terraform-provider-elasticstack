@@ -52,18 +52,19 @@ func heatmapConfigPopulateCommonFields(m *models.HeatmapConfigModel,
 	title, description *string,
 	ignoreGlobalFilters *bool,
 	sampling *float32,
-	datasetBytes []byte,
-	datasetErr error,
+	dataset any,
 	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
 	axis *kbapi.KibanaHTTPAPIsHeatmapAxes,
 	styling *kbapi.KibanaHTTPAPIsHeatmapStyling,
 	legend *kbapi.KibanaHTTPAPIsHeatmapLegend,
 	prior *models.HeatmapConfigModel,
+	isESQL bool,
+	apiQuery *kbapi.KibanaHTTPAPIsFilterSimple,
 	diags *diag.Diagnostics,
 ) bool {
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		title, description, ignoreGlobalFilters, sampling,
-		datasetBytes, datasetErr, "data_source_json", filters, diags,
+		dataset, "data_source_json", filters, &m.Query, isESQL, apiQuery, diags,
 	)
 	if !ok {
 		return false
@@ -96,8 +97,10 @@ func heatmapConfigFromAPINoESQL(
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !heatmapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, prior, &diags) {
+	if !heatmapConfigPopulateCommonFields(
+		m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		api.DataSource, api.Filters, api.Axis, api.Styling, api.Legend, prior, false, api.Query, &diags,
+	) {
 		return diags
 	}
 
@@ -126,9 +129,6 @@ func heatmapConfigFromAPINoESQL(
 		m.YAxisJSON = jsontypes.NewNormalizedNull()
 	}
 
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
 		return diags
 	}
@@ -140,8 +140,7 @@ func heatmapConfigFromAPIESQL(ctx context.Context, m *models.HeatmapConfigModel,
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	if !heatmapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, datasetBytes, datasetErr, api.Filters, api.Axis, api.Styling, api.Legend, prior, &diags) {
+	if !heatmapConfigPopulateCommonFields(m, api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling, api.DataSource, api.Filters, api.Axis, api.Styling, api.Legend, prior, true, nil, &diags) {
 		return diags
 	}
 
@@ -271,17 +270,11 @@ func heatmapConfigToAPINoESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPI
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -359,17 +352,11 @@ func heatmapConfigToAPIESQL(m *models.HeatmapConfigModel) (kbapi.KibanaHTTPAPIsH
 	diags.Append(legendDiags...)
 	api.Legend = &legend
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

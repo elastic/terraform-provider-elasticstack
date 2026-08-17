@@ -36,10 +36,9 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
 	snapshotSampling := m.Sampling
 
-	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
@@ -80,9 +79,6 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 	}
 	m.Metrics = customtypes.NewJSONWithDefaultsValue(string(metricsWrapped), lenscommon.PopulatePartitionMetricsDefaults)
 
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
-
 	m.Legend = &models.PartitionLegendModel{}
 	lenscommon.PartitionLegendFromMosaicLegend(m.Legend, api.Legend)
 
@@ -105,15 +101,12 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 func mosaicConfigFromAPIESQL(ctx context.Context, m *models.MosaicConfigModel, prior *models.MosaicConfigModel, api kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.Query = nil
-
 	snapshotIgnoreGlobalFilters := m.IgnoreGlobalFilters
 	snapshotSampling := m.Sampling
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, true, nil, &diags,
 	)
 	if !ok {
 		return diags
@@ -252,8 +245,6 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPA
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if m.ValueDisplay != nil {
 		api.Styling = &kbapi.KibanaHTTPAPIsMosaicStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	} else {
@@ -263,15 +254,11 @@ func mosaicConfigToAPIMosaicESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPA
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsMosaicESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -347,8 +334,6 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsM
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "mosaic_config.legend must be provided")
 		return api, diags
@@ -359,15 +344,11 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsM
 		api.Styling = &kbapi.KibanaHTTPAPIsMosaicStyling{Values: lenscommon.PartitionValueDisplayToAPI(m.ValueDisplay)}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

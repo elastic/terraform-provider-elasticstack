@@ -39,10 +39,9 @@ func datatableNoESQLConfigFromAPI(
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
@@ -53,9 +52,6 @@ func datatableNoESQLConfigFromAPI(
 	if stylingDiags := datatableStylingFromAPI(m.Styling, api.Styling); stylingDiags.HasError() {
 		return stylingDiags
 	}
-
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	if len(api.Metrics) > 0 {
 		m.Metrics = make([]models.DatatableMetricModel, len(api.Metrics))
@@ -126,8 +122,6 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 		api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 	}
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
 		for i, metricModel := range m.Metrics {
@@ -167,15 +161,11 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -269,8 +259,6 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 		api.Styling = styling
 	}
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsDatatableESQLMetric, len(m.Metrics))
 		for i, metricModel := range m.Metrics {
@@ -325,15 +313,11 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 		api.SplitMetricsBy = &splits
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

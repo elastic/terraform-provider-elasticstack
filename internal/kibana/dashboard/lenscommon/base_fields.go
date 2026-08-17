@@ -18,6 +18,8 @@
 package lenscommon
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -75,4 +77,44 @@ func PopulateLensChartBaseFromAPI(
 	base.DataSourceJSON = dv
 	base.Filters = PopulateFiltersFromAPI(filters, diags)
 	return base, !diags.HasError()
+}
+
+// PopulateLensChartBaseAndQueryFromAPI wraps PopulateLensChartBaseFromAPI and additionally
+// toggles the shared optional FilterSimple "query" block, consolidating the ESQL/NoESQL split
+// repeated at the top of every Lens chart FromAPI pair: marshal the dataset, populate the base
+// fields, then either clear the query (ESQL, which carries no query field on the wire) or
+// populate it from the API's query (NoESQL). dataset is marshaled with json.Marshal, which
+// dispatches to the concrete type's MarshalJSON when present - as it is for every NoESQL union
+// DataSource type - so a single call covers both variants despite some hand-written call sites
+// historically calling dataset.MarshalJSON() directly. Returns false (having appended diags) when
+// base population fails; callers should return immediately.
+func PopulateLensChartBaseAndQueryFromAPI(
+	title, description *string,
+	ignoreGlobalFilters *bool,
+	sampling *float32,
+	dataset any,
+	dataSourceJSONFieldName string,
+	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
+	query **models.FilterSimpleModel,
+	isESQL bool,
+	apiQuery *kbapi.KibanaHTTPAPIsFilterSimple,
+	diags *diag.Diagnostics,
+) (models.LensChartBaseTFModel, bool) {
+	datasetBytes, datasetErr := json.Marshal(dataset)
+	base, ok := PopulateLensChartBaseFromAPI(
+		title, description, ignoreGlobalFilters, sampling,
+		datasetBytes, datasetErr, dataSourceJSONFieldName, filters, diags,
+	)
+	if !ok {
+		return base, false
+	}
+
+	if isESQL {
+		*query = nil
+	} else {
+		*query = &models.FilterSimpleModel{}
+		FilterSimpleFromAPI(*query, apiQuery)
+	}
+
+	return base, true
 }

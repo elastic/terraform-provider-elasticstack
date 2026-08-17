@@ -259,7 +259,6 @@ func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPA
 	}
 
 	chart.Query = lenscommon.FilterSimpleToAPI(m.Query)
-	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
@@ -283,15 +282,11 @@ func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPA
 
 	chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return chart, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Drilldowns_Item](
-		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&chart.Filters, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+		&diags,
+	)
 
 	return chart, diags
 }
@@ -312,8 +307,6 @@ func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPI
 		diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
 		return chart, diags
 	}
-
-	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]struct {
@@ -350,15 +343,11 @@ func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPI
 
 	chart.Type = kbapi.KibanaHTTPAPIsPieESQLByValuePanelTypePie
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return chart, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieESQLByValuePanel_Drilldowns_Item](
-		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsPieESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&chart.Filters, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+		&diags,
+	)
 
 	return chart, diags
 }

@@ -123,6 +123,36 @@ func ApplyLensChartPresentationWrites[DrilldownItem any](
 	return diags
 }
 
+// ApplyLensChartFiltersAndPresentation consolidates the "filters + presentation" epilogue
+// repeated at the end of every Lens chart ToAPI builder (in both the NoESQL and ESQL variants):
+// build the API filters, convert the presentation block into API writes, and apply those writes
+// to the target struct's TimeRange/HideTitle/HideBorder/References/Drilldowns fields. Pass
+// pointers to the target struct fields, e.g. &api.TimeRange, &api.HideTitle. Diagnostics are
+// appended to diags; callers can unconditionally return (api, diags) afterwards.
+func ApplyLensChartFiltersAndPresentation[DrilldownItem any](
+	filtersModel []models.ChartFilterJSONModel,
+	presentationModel models.LensChartPresentationTFModel,
+	filters **kbapi.KibanaHTTPAPIsLensPanelFilters,
+	timeRange **kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema,
+	hideTitle **bool,
+	hideBorder **bool,
+	references **[]CMReferenceSchema,
+	drilldowns **[]DrilldownItem,
+	diags *diag.Diagnostics,
+) {
+	*filters = BuildFiltersForAPI(filtersModel, diags)
+
+	writes, presDiags := LensChartPresentationWritesFor(presentationModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return
+	}
+
+	diags.Append(ApplyLensChartPresentationWrites[DrilldownItem](
+		writes, timeRange, hideTitle, hideBorder, references, drilldowns,
+	)...)
+}
+
 // DecodeLensDrilldownSlice unmarshals raw drilldown JSON produced by LensDrilldownsToRawJSON into generated union item types.
 func DecodeLensDrilldownSlice[Item any](raw [][]byte) ([]Item, diag.Diagnostics) {
 	var diags diag.Diagnostics

@@ -1086,17 +1086,11 @@ func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 		chart.Query = lenscommon.FilterSimpleToAPI(m.Query)
 	}
 
-	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return chart, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel_Drilldowns_Item](
-		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&chart.Filters, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+		&diags,
+	)
 
 	return chart, diags
 }
@@ -1143,17 +1137,11 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsX
 		}
 	}
 
-	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return chart, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel_Drilldowns_Item](
-		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&chart.Filters, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+		&diags,
+	)
 
 	return chart, diags
 }

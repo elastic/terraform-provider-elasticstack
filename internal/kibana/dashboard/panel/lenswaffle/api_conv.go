@@ -87,18 +87,14 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	m.Legend = &models.WaffleLegendModel{}
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
@@ -168,17 +164,14 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, true, nil, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-
-	m.Query = nil
 
 	m.Legend = &models.WaffleLegendModel{}
 	waffleLegendFromAPI(ctx, m.Legend, api.Legend)
@@ -377,8 +370,6 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
 		return api, diags
@@ -415,15 +406,11 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 		api.GroupBy = &gb
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -444,8 +431,6 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 		diags.AddError("Failed to unmarshal data_source_json", err.Error())
 		return api, diags
 	}
-
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if m.Legend == nil {
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
@@ -510,15 +495,11 @@ func waffleConfigToAPIESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsWaf
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }

@@ -36,18 +36,14 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 	var diags diag.Diagnostics
 	_ = ctx
 
-	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, false, api.Query, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
-
-	m.Query = &models.FilterSimpleModel{}
-	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	metricBytes, err := api.Metric.MarshalJSON()
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateGaugeMetricDefaults, &diags)
@@ -79,17 +75,15 @@ func gaugeConfigFromAPI(ctx context.Context, m *models.GaugeConfigModel, prior *
 func gaugeConfigFromAPIESQL(ctx context.Context, m *models.GaugeConfigModel, prior *models.GaugeConfigModel, api kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	datasetBytes, datasetErr := json.Marshal(api.DataSource)
-	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+	base, ok := lenscommon.PopulateLensChartBaseAndQueryFromAPI(
 		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
-		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+		api.DataSource, "data_source_json", api.Filters, &m.Query, true, nil, &diags,
 	)
 	if !ok {
 		return diags
 	}
 	m.LensChartBaseTFModel = base
 
-	m.Query = nil
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulateGaugeMetricDefaults)
 
 	em := &models.GaugeEsqlMetric{
@@ -207,8 +201,6 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGau
 	}
 	api.Query = lenscommon.FilterSimpleToAPI(m.Query)
 
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
 	if m.MetricJSON.IsNull() {
 		diags.AddError("Missing metric_json", "gauge_config.metric_json must be set for non-ES|QL gauges (or use `esql_metric` in ES|QL mode)")
 		return api, diags
@@ -230,15 +222,11 @@ func gaugeConfigToAPINoESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGau
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
@@ -258,8 +246,6 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 		diags.AddError("Failed to unmarshal gauge_config.data_source_json", err.Error())
 		return api, diags
 	}
-
-	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if m.EsqlMetric == nil {
 		diags.AddError("Missing esql_metric", "gauge_config.esql_metric must be set in ES|QL mode")
@@ -357,15 +343,11 @@ func gaugeConfigToAPIESQL(m *models.GaugeConfigModel) (kbapi.KibanaHTTPAPIsGauge
 		}
 	}
 
-	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-	diags.Append(presDiags...)
-	if presDiags.HasError() {
-		return api, diags
-	}
-
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel_Drilldowns_Item](
-		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
-	)...)
+	lenscommon.ApplyLensChartFiltersAndPresentation[kbapi.KibanaHTTPAPIsGaugeESQLByValuePanel_Drilldowns_Item](
+		m.Filters, m.LensChartPresentationTFModel,
+		&api.Filters, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
+		&diags,
+	)
 
 	return api, diags
 }
