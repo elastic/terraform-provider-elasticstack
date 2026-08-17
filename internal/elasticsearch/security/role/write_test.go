@@ -61,7 +61,6 @@ func TestWriteRole_UpdatePreservesPriorID(t *testing.T) {
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, staleID, result.Model.ID)
-	assert.NotEqual(t, testLiveClusterUUID+"/"+testRoleName, result.Model.ID.ValueString())
 }
 
 func newWriteRoleTestClient(t *testing.T, liveUUID string) *clients.ElasticsearchScopedClient {

@@ -56,7 +56,6 @@ func TestUpdateWatch_PreservesPriorID(t *testing.T) {
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, staleID, result.Model.ID)
-	assert.NotEqual(t, testLiveClusterUUID+"/"+testWatchID, result.Model.ID.ValueString())
 }
 
 func testWatchModel(id types.String) Data {

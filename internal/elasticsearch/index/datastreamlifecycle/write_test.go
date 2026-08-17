@@ -63,7 +63,6 @@ func TestWriteDataStreamLifecycle_UpdatePreservesPriorID(t *testing.T) {
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, staleID, result.Model.ID)
-	assert.NotEqual(t, testLiveClusterUUID+"/"+testDataStreamName, result.Model.ID.ValueString())
 }
 
 func TestWriteDataStreamLifecycle_UpdateAdoptsNewNameSegment(t *testing.T) {
@@ -93,7 +92,6 @@ func TestWriteDataStreamLifecycle_UpdateAdoptsNewNameSegment(t *testing.T) {
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, testStaleClusterUUID+"/"+newName, result.Model.ID.ValueString())
-	assert.NotEqual(t, testLiveClusterUUID+"/"+newName, result.Model.ID.ValueString())
 }
 
 func newWriteLifecycleTestClient(t *testing.T, liveUUID string) *clients.ElasticsearchScopedClient {

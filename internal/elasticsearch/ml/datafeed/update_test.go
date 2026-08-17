@@ -57,7 +57,6 @@ func TestUpdateDatafeed_PreservesPriorID(t *testing.T) {
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, staleID, result.Model.ID)
-	assert.NotEqual(t, testLiveClusterUUID+"/"+testDatafeedID, result.Model.ID.ValueString())
 }
 
 func testDatafeedModel(id types.String) Datafeed {

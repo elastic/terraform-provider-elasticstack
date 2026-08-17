@@ -38,63 +38,52 @@ func TestIDPlanModifiers(t *testing.T) {
 	idAttr := getSchemaFactory(ctx).Attributes["id"].(schema.StringAttribute)
 	priorID := types.StringValue("stale-uuid/old-name")
 
-	t.Run("name change sets planned id unknown", func(t *testing.T) {
-		t.Parallel()
-		state, config := testNameStateConfig(t, "old-name", tftypes.NewValue(tftypes.String, "new-name"))
-		req := planmodifier.StringRequest{
-			Path:        path.Root("id"),
-			State:       state,
-			Config:      config,
-			StateValue:  priorID,
-			PlanValue:   types.StringUnknown(),
-			ConfigValue: types.StringNull(),
-		}
-		resp := &planmodifier.StringResponse{PlanValue: req.PlanValue}
-		for _, m := range idAttr.PlanModifiers {
-			m.PlanModifyString(ctx, req, resp)
-		}
-		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
-		assert.True(t, resp.PlanValue.IsUnknown())
-	})
+	tests := []struct {
+		name        string
+		configName  tftypes.Value
+		wantUnknown bool
+	}{
+		{
+			name:        "name change sets planned id unknown",
+			configName:  tftypes.NewValue(tftypes.String, "new-name"),
+			wantUnknown: true,
+		},
+		{
+			name:        "name unchanged keeps prior id after UseStateForUnknown",
+			configName:  tftypes.NewValue(tftypes.String, "old-name"),
+			wantUnknown: false,
+		},
+		{
+			name:        "unknown config name sets planned id unknown",
+			configName:  tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+			wantUnknown: true,
+		},
+	}
 
-	t.Run("name unchanged keeps prior id after UseStateForUnknown", func(t *testing.T) {
-		t.Parallel()
-		state, config := testNameStateConfig(t, "old-name", tftypes.NewValue(tftypes.String, "old-name"))
-		req := planmodifier.StringRequest{
-			Path:        path.Root("id"),
-			State:       state,
-			Config:      config,
-			StateValue:  priorID,
-			PlanValue:   types.StringUnknown(),
-			ConfigValue: types.StringNull(),
-		}
-		resp := &planmodifier.StringResponse{PlanValue: req.PlanValue}
-		for _, m := range idAttr.PlanModifiers {
-			m.PlanModifyString(ctx, req, resp)
-		}
-		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
-		assert.False(t, resp.PlanValue.IsUnknown())
-		assert.Equal(t, priorID, resp.PlanValue)
-	})
-
-	t.Run("unknown config name sets planned id unknown", func(t *testing.T) {
-		t.Parallel()
-		state, config := testNameStateConfig(t, "old-name", tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
-		req := planmodifier.StringRequest{
-			Path:        path.Root("id"),
-			State:       state,
-			Config:      config,
-			StateValue:  priorID,
-			PlanValue:   types.StringUnknown(),
-			ConfigValue: types.StringNull(),
-		}
-		resp := &planmodifier.StringResponse{PlanValue: req.PlanValue}
-		for _, m := range idAttr.PlanModifiers {
-			m.PlanModifyString(ctx, req, resp)
-		}
-		require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
-		assert.True(t, resp.PlanValue.IsUnknown())
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			state, config := testNameStateConfig(t, "old-name", tt.configName)
+			req := planmodifier.StringRequest{
+				Path:        path.Root("id"),
+				State:       state,
+				Config:      config,
+				StateValue:  priorID,
+				PlanValue:   types.StringUnknown(),
+				ConfigValue: types.StringNull(),
+			}
+			resp := &planmodifier.StringResponse{PlanValue: req.PlanValue}
+			for _, m := range idAttr.PlanModifiers {
+				m.PlanModifyString(ctx, req, resp)
+			}
+			require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+			if tt.wantUnknown {
+				assert.True(t, resp.PlanValue.IsUnknown())
+				return
+			}
+			assert.Equal(t, priorID, resp.PlanValue)
+		})
+	}
 }
 
 func testNameStateConfig(t *testing.T, stateName string, configName tftypes.Value) (tfsdk.State, tfsdk.Config) {

@@ -45,10 +45,7 @@ func idSetUnknownIfNameChanged() planmodifier.String {
 			if !typeutils.IsKnown(stateName) {
 				return false
 			}
-			if !typeutils.IsKnown(configName) {
-				return configName.IsUnknown()
-			}
-			return stateName.ValueString() != configName.ValueString()
+			return !stateName.Equal(configName)
 		},
 	)
 }

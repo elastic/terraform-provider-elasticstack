@@ -58,9 +58,6 @@ func TestCompositeIDForWrite_UpdatePreservesPriorID(t *testing.T) {
 		ID:   staleID,
 		Name: types.StringValue(testResourceName),
 	}
-	// The live-cluster client would compute a different UUID prefix; Update must
-	// ignore it and carry the prior id forward.
-	client := newCompositeIDTestClient(t, testLiveClusterUUID)
 	req := WriteRequest[testResourceModel]{
 		Plan: testResourceModel{
 			ID:   types.StringUnknown(),
@@ -70,10 +67,9 @@ func TestCompositeIDForWrite_UpdatePreservesPriorID(t *testing.T) {
 		WriteID: testResourceName,
 	}
 
-	id, diags := CompositeIDForWrite(context.Background(), client, req)
+	id, diags := CompositeIDForWrite(context.Background(), nil, req)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, staleID, id)
-	assert.NotEqual(t, testLiveClusterUUID+"/"+testResourceName, id.ValueString())
 }
 
 func TestCompositeIDForWrite_UpdateAdoptsNewWriteID(t *testing.T) {
@@ -86,7 +82,6 @@ func TestCompositeIDForWrite_UpdateAdoptsNewWriteID(t *testing.T) {
 		ID:   staleID,
 		Name: types.StringValue(oldName),
 	}
-	client := newCompositeIDTestClient(t, testLiveClusterUUID)
 	req := WriteRequest[testResourceModel]{
 		Plan: testResourceModel{
 			ID:   types.StringUnknown(),
@@ -96,10 +91,9 @@ func TestCompositeIDForWrite_UpdateAdoptsNewWriteID(t *testing.T) {
 		WriteID: newName,
 	}
 
-	id, diags := CompositeIDForWrite(context.Background(), client, req)
+	id, diags := CompositeIDForWrite(context.Background(), nil, req)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, testStaleClusterUUID+"/"+newName, id.ValueString())
-	assert.NotEqual(t, testLiveClusterUUID+"/"+newName, id.ValueString())
 }
 
 func TestCompositeIDForWrite_UpdateInvalidPriorIDUnchanged(t *testing.T) {

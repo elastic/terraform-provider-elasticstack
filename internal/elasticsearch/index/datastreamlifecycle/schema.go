@@ -30,7 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
-// attrName is the Terraform schema key for the data stream name attribute.
 const attrName = "name"
 
 // getSchemaFactory returns the schema for the data stream lifecycle resource
