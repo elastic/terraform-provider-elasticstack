@@ -18,28 +18,9 @@
 package agentbuilderskill
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 )
 
-func readSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior skillModel) (skillModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	skill, d := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if skill == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.populateFromAPI(ctx, spaceID, skill)...)
-	return prior, true, diags
-}
+var readSkill = entitycore.SimpleKibanaRead[skillModel, models.Skill](kibanaoapi.GetSkill, (*skillModel).populateFromAPI)

@@ -18,32 +18,9 @@
 package agentbuildertool
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 )
 
-func readTool(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior toolModel) (toolModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// SpaceID must be set before populateFromAPI so it can build the composite ID.
-	prior.SpaceID = types.StringValue(spaceID)
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if tool == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.populateFromAPI(ctx, tool)...)
-	return prior, true, diags
-}
+var readTool = entitycore.SimpleKibanaRead[toolModel, models.Tool](kibanaoapi.GetTool, (*toolModel).populateFromAPI)

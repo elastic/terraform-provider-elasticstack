@@ -18,14 +18,8 @@
 package agentbuilderagent
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 )
 
-func deleteAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ agentModel) diag.Diagnostics {
-	oapiClient := client.GetKibanaOapiClient()
-	return kibanaoapi.DeleteAgent(ctx, oapiClient, spaceID, resourceID)
-}
+var deleteAgent = entitycore.SimpleKibanaDelete[agentModel](kibanaoapi.DeleteAgent)

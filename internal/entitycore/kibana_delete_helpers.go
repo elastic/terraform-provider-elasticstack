@@ -15,12 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package entitycore
 
 import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var readAgent = entitycore.SimpleKibanaRead[agentModel, models.Agent](kibanaoapi.GetAgent, (*agentModel).populateFromAPI)
+// SimpleKibanaDelete returns a [KibanaDeleteFunc] that resolves the scoped
+// Kibana OAPI client and delegates directly to apiDelete. Use for resources
+// whose delete callback needs nothing beyond client, spaceID, and resourceID,
+// for example:
+//
+//	var deleteAgent = entitycore.SimpleKibanaDelete[agentModel](kibanaoapi.DeleteAgent)
+func SimpleKibanaDelete[T KibanaResourceModel](
+	apiDelete func(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) diag.Diagnostics,
+) KibanaDeleteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ T) diag.Diagnostics {
+		return apiDelete(ctx, client.GetKibanaOapiClient(), spaceID, resourceID)
+	}
+}

@@ -18,14 +18,8 @@
 package agentbuilderworkflow
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 )
 
-func deleteWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ workflowModel) diag.Diagnostics {
-	oapiClient := client.GetKibanaOapiClient()
-	return kibanaoapi.DeleteWorkflow(ctx, oapiClient, spaceID, resourceID)
-}
+var deleteWorkflow = entitycore.SimpleKibanaDelete[workflowModel](kibanaoapi.DeleteWorkflow)

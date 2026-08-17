@@ -18,32 +18,9 @@
 package agentbuilderworkflow
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 )
 
-func readWorkflow(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior workflowModel) (workflowModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// Restore space_id so populateFromAPI can build the composite ID correctly.
-	prior.SpaceID = types.StringValue(spaceID)
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if workflow == nil {
-		return prior, false, diags
-	}
-
-	prior.populateFromAPI(workflow)
-	return prior, true, diags
-}
+var readWorkflow = entitycore.SimpleKibanaRead[workflowModel, models.Workflow](kibanaoapi.GetWorkflow, (*workflowModel).populateFromAPI)

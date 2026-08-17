@@ -18,14 +18,8 @@
 package agentbuilderskill
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 )
 
-func deleteSkill(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ skillModel) diag.Diagnostics {
-	oapiClient := client.GetKibanaOapiClient()
-	return kibanaoapi.DeleteSkill(ctx, oapiClient, spaceID, resourceID)
-}
+var deleteSkill = entitycore.SimpleKibanaDelete[skillModel](kibanaoapi.DeleteSkill)
