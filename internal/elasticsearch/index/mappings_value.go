@@ -381,12 +381,74 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 			continue
 		}
 
+		if key == "dynamic_templates" {
+			if !dynamicTemplatesSemanticallyEqual(userVal, apiVal) {
+				return false
+			}
+			continue
+		}
+
 		if !scalarSemanticEqual(userVal, apiVal) {
 			return false
 		}
 	}
 
 	return true
+}
+
+// dynamicTemplatesSemanticallyEqual checks that every user-declared named
+// dynamic template exists with an equivalent definition in the API mapping.
+// Elasticsearch may append templates contributed by an index template, so API
+// extras and array ordering are intentionally ignored.
+func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any) bool {
+	userTemplates, ok := dynamicTemplatesByName(userRaw)
+	if !ok {
+		return false
+	}
+	apiTemplates, ok := dynamicTemplatesByName(apiRaw)
+	if !ok {
+		return false
+	}
+
+	for name, userDefinition := range userTemplates {
+		apiDefinition, ok := apiTemplates[name]
+		if !ok || !fieldSemanticallyEqual(userDefinition, apiDefinition) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// dynamicTemplatesByName converts Elasticsearch's dynamic_templates array to
+// its named definitions. A valid entry is an object containing exactly one
+// template name whose value is an object. Duplicate names are ambiguous and
+// therefore are not considered semantically equal.
+func dynamicTemplatesByName(raw any) (map[string]any, bool) {
+	templates, ok := raw.([]any)
+	if !ok {
+		return nil, false
+	}
+
+	result := make(map[string]any, len(templates))
+	for _, rawTemplate := range templates {
+		template, ok := rawTemplate.(map[string]any)
+		if !ok || len(template) != 1 {
+			return nil, false
+		}
+
+		for name, definition := range template {
+			if _, exists := result[name]; exists {
+				return nil, false
+			}
+			if _, ok := definition.(map[string]any); !ok {
+				return nil, false
+			}
+			result[name] = definition
+		}
+	}
+
+	return result, true
 }
 
 // propertiesSemanticallyEqual recursively checks that all user-owned properties

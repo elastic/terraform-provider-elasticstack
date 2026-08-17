@@ -290,6 +290,82 @@ func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing
 			want: true,
 		},
 		{
+			name: "declared dynamic_templates allow reordered template-injected extras",
+			user: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"text_ja_example": map[string]any{
+							"path_match": "hoge.example_field.freetext",
+							"mapping": map[string]any{
+								"type":     "text",
+								"analyzer": "kuro",
+							},
+						},
+					},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"template_default": map[string]any{
+							"match_mapping_type": "string",
+							"mapping":            map[string]any{"type": "keyword"},
+						},
+					},
+					map[string]any{
+						"text_ja_example": map[string]any{
+							"mapping": map[string]any{
+								"analyzer": "kuro",
+								"type":     "text",
+							},
+							"path_match": "hoge.example_field.freetext",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "missing declared dynamic template is detected",
+			user: map[string]any{
+				"dynamic_templates": []any{map[string]any{
+					"text_ja_example": map[string]any{"mapping": map[string]any{"type": "text"}},
+				}},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{map[string]any{
+					"template_default": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+				}},
+			},
+			want: false,
+		},
+		{
+			name: "changed declared dynamic template is detected",
+			user: map[string]any{
+				"dynamic_templates": []any{map[string]any{
+					"text_ja_example": map[string]any{"mapping": map[string]any{"analyzer": "kuro", "type": "text"}},
+				}},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{map[string]any{
+					"text_ja_example": map[string]any{"mapping": map[string]any{"analyzer": "standard", "type": "text"}},
+				}},
+			},
+			want: false,
+		},
+		{
+			name: "malformed dynamic template entry is not equal",
+			user: map[string]any{
+				"dynamic_templates": []any{map[string]any{
+					"text_ja_example": map[string]any{"mapping": map[string]any{"type": "text"}},
+				}},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{"not-a-template-object"},
+			},
+			want: false,
+		},
+		{
 			name: "retained API-only properties are allowed",
 			user: map[string]any{
 				"properties": map[string]any{
@@ -425,6 +501,9 @@ func TestIndexMappingsValue_RequiresMappingsUpdate(t *testing.T) {
 	field1Only := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"}}}`)
 	field1And2 := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"},"field2":{"type":"keyword"}}}`)
 	field1Plus3 := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"},"extra_field":{"type":"keyword"}}}`)
+	dynamicTemplateOnly := index.NewMappingsValue(`{"dynamic_templates":[{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
+	dynamicTemplateWithExtra := index.NewMappingsValue(`{"dynamic_templates":[{"template_default":{"mapping":{"type":"keyword"},"match_mapping_type":"string"}},{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
+	changedDynamicTemplate := index.NewMappingsValue(`{"dynamic_templates":[{"text_ja_example":{"mapping":{"analyzer":"standard","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
 
 	tests := []struct {
 		name  string
@@ -455,6 +534,18 @@ func TestIndexMappingsValue_RequiresMappingsUpdate(t *testing.T) {
 			plan:  field1Only,
 			state: field1Only,
 			want:  false,
+		},
+		{
+			name:  "state dynamic templates include template-injected extra — no update",
+			plan:  dynamicTemplateOnly,
+			state: dynamicTemplateWithExtra,
+			want:  false,
+		},
+		{
+			name:  "changed dynamic template definition — update required",
+			plan:  changedDynamicTemplate,
+			state: dynamicTemplateWithExtra,
+			want:  true,
 		},
 		{
 			name:  "plan null — no update",
@@ -516,6 +607,17 @@ func TestIndexMappingsValue_SemanticEquals(t *testing.T) {
 	assert.Equal(t, plan.ValueString(), api.ValueString(), "normalized forms should be identical")
 
 	// StringSemanticEquals should also return true.
+	eq, diags := plan.StringSemanticEquals(context.Background(), api)
+	require.False(t, diags.HasError())
+	assert.True(t, eq)
+}
+
+func TestIndexMappingsValue_SemanticEqualsDynamicTemplateSuperset(t *testing.T) {
+	t.Parallel()
+
+	plan := index.NewMappingsValue(`{"dynamic_templates":[{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
+	api := index.NewMappingsValue(`{"dynamic_templates":[{"template_default":{"mapping":{"type":"keyword"},"match_mapping_type":"string"}},{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
+
 	eq, diags := plan.StringSemanticEquals(context.Background(), api)
 	require.False(t, diags.HasError())
 	assert.True(t, eq)
