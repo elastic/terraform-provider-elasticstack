@@ -22,16 +22,11 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func deletePrivateLocation(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model Model) diag.Diagnostics {
+func deletePrivateLocation(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if vDiags := entitycore.EnforceVersionRequirements(ctx, client, &model); vDiags.HasError() {
-		return vDiags
-	}
 
 	oapiClient := client.GetKibanaOapiClient()
 

@@ -84,61 +84,98 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 func TestCreateAndUpdateFinalizeStateViaReadHydration(t *testing.T) {
 	t.Parallel()
 
-	assertMethodUsesReadHydration(t, "create.go", "Create")
-	assertMethodUsesReadHydration(t, "update.go", "Update")
+	assertFuncCallsFinalizeWrite(t, "create.go", "createAgentDownloadSource")
+	assertFuncCallsFinalizeWrite(t, "update.go", "updateAgentDownloadSource")
+	assertFinalizeWriteUsesReadHydration(t)
 }
 
-func assertMethodUsesReadHydration(t *testing.T, filename string, methodName string) {
+// assertFuncCallsFinalizeWrite verifies that the named write-callback helper
+// delegates to the shared finalizeWrite helper (write.go) to build its result,
+// rather than trusting the raw create/update API response directly.
+func assertFuncCallsFinalizeWrite(t *testing.T, filename string, funcName string) {
 	t.Helper()
 
-	path := filename
-	fileSet := token.NewFileSet()
-	file, err := parser.ParseFile(fileSet, path, nil, 0)
-	require.NoError(t, err)
+	funcDecl := findFuncDecl(t, filename, funcName)
 
-	var methodDecl *ast.FuncDecl
-	for _, decl := range file.Decls {
-		funcDecl, ok := decl.(*ast.FuncDecl)
-		if !ok || funcDecl.Name == nil || funcDecl.Name.Name != methodName {
-			continue
+	var callsFinalizeWrite bool
+	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
+		if callsFinalizeWrite {
+			return false
 		}
-		methodDecl = funcDecl
-		break
-	}
+		if call, ok := node.(*ast.CallExpr); ok {
+			if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "finalizeWrite" {
+				callsFinalizeWrite = true
+				return false
+			}
+		}
+		return true
+	})
 
-	require.NotNil(t, methodDecl, "method %s not found in %s", methodName, path)
+	require.True(t, callsFinalizeWrite, "%s should call finalizeWrite to build its result from a read-back", funcName)
+}
+
+// assertFinalizeWriteUsesReadHydration verifies that finalizeWrite (write.go)
+// calls readAndHydrateState and returns its result as the write result's
+// Model, rather than trusting the raw create/update API response directly.
+func assertFinalizeWriteUsesReadHydration(t *testing.T) {
+	t.Helper()
+
+	funcDecl := findFuncDecl(t, "write.go", "finalizeWrite")
 
 	var (
 		hasReadAndHydrateCall bool
-		hasStateSetFromRead   bool
+		hasResultFromRead     bool
 	)
 
-	ast.Inspect(methodDecl.Body, func(node ast.Node) bool {
-		call, ok := node.(*ast.CallExpr)
-		if !ok {
-			return true
+	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
+		if hasReadAndHydrateCall && hasResultFromRead {
+			return false
 		}
 
-		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if ok && selector.Sel != nil && selector.Sel.Name == "readAndHydrateState" {
-			hasReadAndHydrateCall = true
+		if call, ok := node.(*ast.CallExpr); ok {
+			if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "readAndHydrateState" {
+				hasReadAndHydrateCall = true
+			}
 		}
 
-		if ident, ok := call.Fun.(*ast.Ident); ok && ident.Name == "readAndHydrateState" {
-			hasReadAndHydrateCall = true
-		}
-
-		if ok && selector.Sel != nil && selector.Sel.Name == "Set" && len(call.Args) >= 2 {
-			if ident, identOK := call.Args[1].(*ast.Ident); identOK && ident.Name == "readState" {
-				hasStateSetFromRead = true
+		if composite, ok := node.(*ast.CompositeLit); ok {
+			for _, elt := range composite.Elts {
+				kv, ok := elt.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				key, keyOk := kv.Key.(*ast.Ident)
+				value, valueOk := kv.Value.(*ast.Ident)
+				if keyOk && valueOk && key.Name == "Model" && value.Name == "readState" {
+					hasResultFromRead = true
+				}
 			}
 		}
 
 		return true
 	})
 
-	require.True(t, hasReadAndHydrateCall, "%s should call readAndHydrateState", methodName)
-	require.True(t, hasStateSetFromRead, "%s should set final state from readState", methodName)
+	require.True(t, hasReadAndHydrateCall, "finalizeWrite should call readAndHydrateState")
+	require.True(t, hasResultFromRead, "finalizeWrite should return a write result built from readState")
+}
+
+// findFuncDecl parses filename and returns the *ast.FuncDecl named funcName.
+func findFuncDecl(t *testing.T, filename, funcName string) *ast.FuncDecl {
+	t.Helper()
+
+	fileSet := token.NewFileSet()
+	file, err := parser.ParseFile(fileSet, filename, nil, 0)
+	require.NoError(t, err)
+
+	for _, decl := range file.Decls {
+		fd, ok := decl.(*ast.FuncDecl)
+		if ok && fd.Name != nil && fd.Name.Name == funcName {
+			return fd
+		}
+	}
+
+	require.FailNow(t, "function not found", "%s not found in %s", funcName, filename)
+	return nil
 }
 
 func newTestFleetClient(t *testing.T, handler http.Handler) *fleet.Client {
