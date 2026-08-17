@@ -60,12 +60,7 @@ func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Processor = proc
 	}
 
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
 	return body, diags
 }

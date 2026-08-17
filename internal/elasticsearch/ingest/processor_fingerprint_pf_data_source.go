@@ -51,31 +51,14 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 
 	body.Fields = typeutils.StringListElements(m.Fields, &diags)
-	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
-		m.TargetField = types.StringValue("fingerprint")
-		body.TargetField = "fingerprint"
-	} else {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.TargetField = typeutils.StringDefault(&m.TargetField, "fingerprint")
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 	if typeutils.IsKnown(m.Salt) {
 		body.Salt = m.Salt.ValueString()
 	}
-	if m.Method.IsNull() || m.Method.IsUnknown() {
-		m.Method = types.StringValue("SHA-1")
-		body.Method = "SHA-1"
-	} else {
-		body.Method = m.Method.ValueString()
-	}
+	body.Method = typeutils.StringDefault(&m.Method, "SHA-1")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

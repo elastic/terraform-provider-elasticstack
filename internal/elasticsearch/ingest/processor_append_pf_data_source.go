@@ -54,12 +54,7 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 
 	body.Value = typeutils.StringListElements(m.Value, &diags)
 
-	if m.AllowDuplicates.IsNull() || m.AllowDuplicates.IsUnknown() {
-		m.AllowDuplicates = types.BoolValue(true)
-		body.AllowDuplicates = true
-	} else {
-		body.AllowDuplicates = m.AllowDuplicates.ValueBool()
-	}
+	body.AllowDuplicates = typeutils.BoolDefault(&m.AllowDuplicates, true)
 
 	if typeutils.IsKnown(m.MediaType) {
 		body.MediaType = m.MediaType.ValueString()

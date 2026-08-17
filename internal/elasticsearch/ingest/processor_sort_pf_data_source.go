@@ -50,12 +50,7 @@ func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if m.Order.IsNull() || m.Order.IsUnknown() {
-		m.Order = types.StringValue("asc")
-		body.Order = "asc"
-	} else {
-		body.Order = m.Order.ValueString()
-	}
+	body.Order = typeutils.StringDefault(&m.Order, "asc")
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}

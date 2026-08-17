@@ -78,13 +78,7 @@ func (m *WithIgnorableTargetField) toIgnorableTargetFieldBody(defaultIgnoreMissi
 		WithTargetFieldBody: m.toTargetFieldBody(),
 	}
 
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		// Normalize computed defaults while building the body so state matches the JSON.
-		m.IgnoreMissing = types.BoolValue(defaultIgnoreMissing)
-		body.IgnoreMissing = defaultIgnoreMissing
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, defaultIgnoreMissing)
 
 	return body
 }
