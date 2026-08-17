@@ -62,13 +62,9 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 	}
 
 	if !model.Tags.IsNull() && !model.Tags.IsUnknown() {
-		tags := make([]string, 0)
-		for _, v := range model.Tags.Elements() {
-			if s, ok := v.(types.String); ok {
-				tags = append(tags, s.ValueString())
-			}
-		}
-		body["tags"] = tags
+		var tagsDiags diag.Diagnostics
+		body["tags"] = typeutils.StringSetElements(model.Tags, &tagsDiags)
+		diags.Append(tagsDiags...)
 	}
 
 	if !model.Labels.IsNull() && !model.Labels.IsUnknown() {

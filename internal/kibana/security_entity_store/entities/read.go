@@ -150,11 +150,11 @@ func expandEntityTypesSet(s types.Set) []kbapi.GetSecurityEntityStoreEntitiesPar
 	if s.IsNull() || s.IsUnknown() {
 		return nil
 	}
-	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(s.Elements()))
-	for _, v := range s.Elements() {
-		if str, ok := v.(types.String); ok {
-			result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str.ValueString()))
-		}
+	var diags diag.Diagnostics
+	strs := typeutils.StringSetElements(s, &diags)
+	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(strs))
+	for _, str := range strs {
+		result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str))
 	}
 	return result
 }
