@@ -18,12 +18,14 @@
 package ingest
 
 import (
+	"context"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -66,20 +68,7 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 
 	if typeutils.IsKnown(m.FieldMap) {
-		fm := make(map[string]string, len(m.FieldMap.Elements()))
-		for k, v := range m.FieldMap.Elements() {
-			str, ok := v.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid field_map element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown field_map element", "field_map elements cannot be unknown")
-				}
-				continue
-			}
-			fm[k] = str.ValueString()
-		}
-		body.FieldMap = fm
+		body.FieldMap = typeutils.MapTypeAs[string](context.Background(), m.FieldMap, path.Root("field_map"), &diags)
 	}
 
 	if typeutils.IsKnown(m.TargetField) {
