@@ -20,6 +20,7 @@ package panelkit
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -146,4 +147,102 @@ func TestNullPreserveInt64FromPrior_nilExisting_noopNoPanic(t *testing.T) {
 	assert.NotPanics(t, func() {
 		NullPreserveInt64FromPrior(types.Int64Null(), nil)
 	})
+}
+
+// PreserveKnownString
+
+func TestPreserveKnownString_knownExistingAndAPIPresent_updatesFromAPI(t *testing.T) {
+	t.Parallel()
+	api := "new"
+	got := PreserveKnownString(types.StringValue("old"), &api)
+	assert.Equal(t, types.StringValue("new"), got)
+}
+
+func TestPreserveKnownString_knownExistingAndAPINil_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	got := PreserveKnownString(types.StringValue("old"), nil)
+	assert.Equal(t, types.StringValue("old"), got, "a known existing value must not be nulled out just because the API omitted the field")
+}
+
+func TestPreserveKnownString_nullExisting_leavesNullRegardlessOfAPI(t *testing.T) {
+	t.Parallel()
+	api := "new"
+	got := PreserveKnownString(types.StringNull(), &api)
+	assert.True(t, got.IsNull())
+}
+
+func TestPreserveKnownString_unknownExisting_preservesUnknown(t *testing.T) {
+	t.Parallel()
+	api := "new"
+	got := PreserveKnownString(types.StringUnknown(), &api)
+	assert.True(t, got.IsUnknown())
+}
+
+// PreserveKnownBool
+
+func TestPreserveKnownBool_knownExistingAndAPIPresent_updatesFromAPI(t *testing.T) {
+	t.Parallel()
+	api := true
+	got := PreserveKnownBool(types.BoolValue(false), &api)
+	assert.Equal(t, types.BoolValue(true), got)
+}
+
+func TestPreserveKnownBool_knownExistingAndAPINil_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	got := PreserveKnownBool(types.BoolValue(false), nil)
+	assert.Equal(t, types.BoolValue(false), got, "a known existing value must not be nulled out just because the API omitted the field")
+}
+
+func TestPreserveKnownBool_nullExisting_leavesNullRegardlessOfAPI(t *testing.T) {
+	t.Parallel()
+	api := true
+	got := PreserveKnownBool(types.BoolNull(), &api)
+	assert.True(t, got.IsNull())
+}
+
+// PreserveKnownFloat32
+
+func TestPreserveKnownFloat32_knownExistingAndAPIPresent_updatesFromAPI(t *testing.T) {
+	t.Parallel()
+	api := float32(2.5)
+	got := PreserveKnownFloat32(types.Float32Value(1.5), &api)
+	assert.InDelta(t, 2.5, got.ValueFloat32(), 1e-6)
+}
+
+func TestPreserveKnownFloat32_knownExistingAndAPINil_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	got := PreserveKnownFloat32(types.Float32Value(1.5), nil)
+	assert.InDelta(t, 1.5, got.ValueFloat32(), 1e-6, "a known existing value must not be nulled out just because the API omitted the field")
+}
+
+func TestPreserveKnownFloat32_nullExisting_leavesNullRegardlessOfAPI(t *testing.T) {
+	t.Parallel()
+	api := float32(2.5)
+	got := PreserveKnownFloat32(types.Float32Null(), &api)
+	assert.True(t, got.IsNull())
+}
+
+// PreserveKnownList
+
+func TestPreserveKnownList_knownExistingAndPresent_updatesFromNext(t *testing.T) {
+	t.Parallel()
+	existing := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("old")})
+	next := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("new")})
+	got := PreserveKnownList(existing, next, true)
+	assert.Equal(t, next, got)
+}
+
+func TestPreserveKnownList_knownExistingAndNotPresent_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	existing := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("old")})
+	next := types.ListNull(types.StringType)
+	got := PreserveKnownList(existing, next, false)
+	assert.Equal(t, existing, got, "a known existing value must not be nulled out just because the API omitted the field")
+}
+
+func TestPreserveKnownList_nullExisting_leavesNullRegardlessOfPresent(t *testing.T) {
+	t.Parallel()
+	next := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("new")})
+	got := PreserveKnownList(types.ListNull(types.StringType), next, true)
+	assert.True(t, got.IsNull())
 }

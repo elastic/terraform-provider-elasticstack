@@ -19,13 +19,11 @@ package timeslider
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -44,21 +42,16 @@ func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
 // FromAPI maps a dashboard time_slider_control panel union item onto pm (null-preserving).
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
-	tsPanel, err := item.AsKibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl()
-	if err != nil {
-		var d diag.Diagnostics
-		d.AddError("Dashboard panel decode", err.Error())
-		return d
-	}
-
-	pm.Grid = panelkit.GridFromAPI(tsPanel.Grid.X, tsPanel.Grid.Y, tsPanel.Grid.W, tsPanel.Grid.H)
-	pm.ID = panelkit.IDFromAPI(tsPanel.Id)
-	if configBytes, err := json.Marshal(tsPanel.Config); err == nil {
-		pm.ConfigJSON = customtypes.NewJSONWithDefaultsValue(string(configBytes), panelkit.PanelJSONDefaultsFunc())
-	}
-	PopulateFromAPI(pm, prior, tsPanel.Config)
-	_ = ctx
-	return nil
+	return panelkit.SimpleFromAPI(ctx, pm, prior,
+		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl,
+		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+			return p.Grid, p.Id
+		},
+		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeTimeSliderControl) diag.Diagnostics {
+			PopulateFromAPI(pm, prior, p.Config)
+			return nil
+		},
+	)
 }
 
 // ToAPI serializes Terraform panel state into a kbapi union item.

@@ -181,6 +181,39 @@ func Test_PopulateFromAPI_knownFields_updatedFromAPI(t *testing.T) {
 	assert.Equal(t, types.StringValue("wildcard"), cfg.SearchTechnique)
 }
 
+// Test: a known optional boolean field is left unchanged (not nulled out) when the API omits it on
+// update — regression test for the null-out semantics previously duplicated locally in this package.
+func Test_PopulateFromAPI_knownFields_notNulledWhenAPIOmits(t *testing.T) {
+	pm := &models.PanelModel{
+		OptionsListControlConfig: &models.OptionsListControlConfigModel{
+			ByField: &models.OptionsListControlByFieldModel{
+				DataViewID:        types.StringValue(optionsListControlTestDataViewID),
+				FieldName:         types.StringValue("f1"),
+				Title:             types.StringValue("kept title"),
+				UseGlobalFilters:  types.BoolValue(true),
+				IgnoreValidations: types.BoolValue(true),
+				SingleSelect:      types.BoolValue(true),
+				Exclude:           types.BoolValue(true),
+				ExistsSelected:    types.BoolValue(true),
+				RunPastTimeout:    types.BoolValue(true),
+			},
+		},
+	}
+	tfPanel := &models.PanelModel{OptionsListControlConfig: pm.OptionsListControlConfig}
+	// The API response only carries the required fields; every optional field is omitted (nil).
+	PopulateFromAPI(pm, tfPanel, makeAPIConfig(t, optionsListControlTestDataViewID, "f1"))
+	require.NotNil(t, pm.OptionsListControlConfig)
+	require.NotNil(t, pm.OptionsListControlConfig.ByField)
+	cfg := pm.OptionsListControlConfig.ByField
+	assert.Equal(t, types.StringValue("kept title"), cfg.Title)
+	assert.Equal(t, types.BoolValue(true), cfg.UseGlobalFilters)
+	assert.Equal(t, types.BoolValue(true), cfg.IgnoreValidations)
+	assert.Equal(t, types.BoolValue(true), cfg.SingleSelect)
+	assert.Equal(t, types.BoolValue(true), cfg.Exclude)
+	assert.Equal(t, types.BoolValue(true), cfg.ExistsSelected)
+	assert.Equal(t, types.BoolValue(true), cfg.RunPastTimeout)
+}
+
 // Test: null-preservation — null optional fields in state are not overwritten by API values.
 func Test_PopulateFromAPI_nullFields_preservedAsNull(t *testing.T) {
 	pm := &models.PanelModel{

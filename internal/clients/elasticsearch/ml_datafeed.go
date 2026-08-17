@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -139,10 +138,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, diags
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID)); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID)); notFound || d.HasError() {
 		return nil, d
 	}
 
