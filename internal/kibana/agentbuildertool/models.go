@@ -176,8 +176,7 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 		body.Description = &desc
 	}
 
-	tags, d := optionalTagsFromSet(ctx, model.Tags)
-	diags.Append(d...)
+	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 	if len(tags) > 0 {
 		body.Tags = &tags
 	}
@@ -204,20 +203,10 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		body.Description = &desc
 	}
 
-	tags, d := optionalTagsFromSet(ctx, model.Tags)
-	diags.Append(d...)
+	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 	if len(tags) > 0 {
 		body.Tags = &tags
 	}
 
 	return body, diags
-}
-
-func optionalTagsFromSet(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return nil, nil
-	}
-	var diags diag.Diagnostics
-	tags := typeutils.SetTypeAs[string](ctx, set, path.Empty(), &diags)
-	return tags, diags
 }

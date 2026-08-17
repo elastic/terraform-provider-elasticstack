@@ -133,7 +133,8 @@ type entityStoreEngineError struct {
 
 func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEntityStoreInstallJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PostSecurityEntityStoreInstallJSONRequestBody{}
-	entityTypes, diags := expandEntityTypes(ctx, model.EntityTypes)
+	var diags diag.Diagnostics
+	entityTypes := typeutils.SetTypeAs[string](ctx, model.EntityTypes, path.Empty(), &diags)
 	if diags.HasError() {
 		return body, diags
 	}
@@ -174,14 +175,6 @@ func buildUpdateBody(ctx context.Context, model tfModel) (kbapi.PutSecurityEntit
 	}
 	body.LogExtraction = *le
 	return body, diags
-}
-
-func expandEntityTypes(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return nil, nil
-	}
-	var values []string
-	return values, set.ElementsAs(ctx, &values, false)
 }
 
 // stringSliceToAPITypes converts a []string to a pointer to a slice of a ~string
