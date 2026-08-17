@@ -61,11 +61,6 @@ func agentFeaturesFromPolicy(p *kbapi.KibanaHTTPAPIsAgentPolicyResponse) []apiAg
 	return out
 }
 
-// globalDataTagsItemModel is the model for a single `global_data_tags` map
-// entry; see internal/fleet/globaldatatags for the shared shape and
-// expand/flatten helpers.
-type globalDataTagsItemModel = globaldatatags.Item
-
 type agentPolicyModel struct {
 	ID                        types.String         `tfsdk:"id"`
 	KibanaConnection          types.List           `tfsdk:"kibana_connection"`
@@ -86,7 +81,7 @@ type agentPolicyModel struct {
 	SupportsAgentless         types.Bool           `tfsdk:"supports_agentless"`
 	InactivityTimeout         customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout       customtypes.Duration `tfsdk:"unenrollment_timeout"`
-	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globalDataTagsModel
+	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globaldatatags.Item
 	SpaceIDs                  types.Set            `tfsdk:"space_ids"`
 	RequiredVersions          types.Map            `tfsdk:"required_versions"`
 	AdvancedMonitoringOptions types.Object         `tfsdk:"advanced_monitoring_options"`
@@ -185,7 +180,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	if typeutils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
 		tags := typeutils.Deref(data.GlobalDataTags)
-		map0 := make(map[string]globalDataTagsItemModel, len(tags))
+		map0 := make(map[string]globaldatatags.Item, len(tags))
 		for _, v := range tags {
 			item, err := globaldatatags.Flatten(v.Value,
 				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue1,
@@ -198,7 +193,7 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 			map0[v.Name] = item
 		}
 
-		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, getGlobalDataTagsAttrTypes().(attr.TypeWithElementType).ElementType(), path.Root("global_data_tags"), &diags)
+		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, globaldatatags.ElementType(), path.Root("global_data_tags"), &diags)
 		if diags.HasError() {
 			return diags
 		}
@@ -265,7 +260,7 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat a
 	}
 
 	items := typeutils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
-		func(item globalDataTagsItemModel, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
+		func(item globaldatatags.Item, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
 			value := globaldatatags.Expand(item, meta,
 				func(s string) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
 					var v kbapi.AgentPolicyGlobalDataTagsItem_Value

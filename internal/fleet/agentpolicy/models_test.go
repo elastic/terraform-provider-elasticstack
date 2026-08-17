@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -228,8 +229,6 @@ func TestConvertHostNameFormatToAgentFeature(t *testing.T) {
 func TestConvertGlobalDataTags_MissingValueEntry(t *testing.T) {
 	ctx := context.Background()
 
-	elemType := getGlobalDataTagsAttrTypes().(attr.TypeWithElementType).ElementType().(types.ObjectType)
-
 	tests := []struct {
 		name        string
 		stringValue types.String
@@ -259,13 +258,13 @@ func TestConvertGlobalDataTags_MissingValueEntry(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			entry, objDiags := types.ObjectValue(elemType.AttrTypes, map[string]attr.Value{
-				"string_value": tc.stringValue,
-				"number_value": tc.numberValue,
+			entry, objDiags := types.ObjectValue(globaldatatags.AttrTypes(), map[string]attr.Value{
+				globaldatatags.StringValueAttr: tc.stringValue,
+				globaldatatags.NumberValueAttr: tc.numberValue,
 			})
 			assert.False(t, objDiags.HasError(), "failed to build object: %v", objDiags)
 
-			tagsMap, mapDiags := types.MapValue(elemType, map[string]attr.Value{
+			tagsMap, mapDiags := types.MapValue(globaldatatags.ElementType(), map[string]attr.Value{
 				"my_tag": entry,
 			})
 			assert.False(t, mapDiags.HasError(), "failed to build global_data_tags map: %v", mapDiags)

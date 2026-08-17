@@ -37,24 +37,18 @@ import (
 )
 
 const (
-	// StringValueAttr is the tfsdk/schema attribute name for the string-valued variant.
 	StringValueAttr = "string_value"
-	// NumberValueAttr is the tfsdk/schema attribute name for the number-valued variant.
 	NumberValueAttr = "number_value"
 
-	// ErrExactlyOneValue is the practitioner-facing error for a global_data_tags
-	// entry that has neither, or both, of string_value/number_value set.
-	ErrExactlyOneValue = "Each entry in global_data_tags must have exactly one of string_value or number_value set."
+	errExactlyOneValue = "Each entry in global_data_tags must have exactly one of string_value or number_value set."
 )
 
-// Item is the Terraform model for a single `global_data_tags` map entry,
-// matching the schema.MapNestedAttribute element shape used by both resources.
+// Item is the Terraform model for a single `global_data_tags` map entry.
 type Item struct {
 	StringValue types.String  `tfsdk:"string_value"`
 	NumberValue types.Float32 `tfsdk:"number_value"`
 }
 
-// AttrTypes returns the tfsdk attribute types for Item.
 func AttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		StringValueAttr: types.StringType,
@@ -62,7 +56,6 @@ func AttrTypes() map[string]attr.Type {
 	}
 }
 
-// ElementType returns the object type of a `global_data_tags` map element.
 func ElementType() attr.Type {
 	return types.ObjectType{AttrTypes: AttrTypes()}
 }
@@ -83,7 +76,7 @@ func Expand[T any](item Item, meta typeutils.MapMeta, fromString func(string) (T
 	case typeutils.IsKnown(item.NumberValue):
 		value, err = fromNumber(item.NumberValue.ValueFloat32())
 	default:
-		meta.Diags.AddAttributeError(meta.Path, "Invalid global_data_tags entry", ErrExactlyOneValue)
+		meta.Diags.AddAttributeError(meta.Path, "Invalid global_data_tags entry", errExactlyOneValue)
 		return zero
 	}
 

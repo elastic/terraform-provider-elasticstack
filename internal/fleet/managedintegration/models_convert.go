@@ -53,7 +53,7 @@ import (
 
 // packageModel and cloudConnectorModel are the Go representations of the
 // `package` and `cloud_connector` nested attributes (see models.go's field-level
-// doc comment). global_data_tags uses globalDataTagsItemModel in models.go.
+// doc comment). global_data_tags uses globaldatatags.Item.
 type packageModel struct {
 	Name    types.String `tfsdk:"name"`
 	Version types.String `tfsdk:"version"`
@@ -123,12 +123,12 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 // globalDataTagsToModel converts managed_integrations global_data_tags into
 // the Terraform map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
-	elemType := globalDataTagsElementType()
+	elemType := globaldatatags.ElementType()
 	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
 		return types.MapNull(elemType)
 	}
 
-	map0 := make(map[string]globalDataTagsItemModel, len(*item.GlobalDataTags))
+	map0 := make(map[string]globaldatatags.Item, len(*item.GlobalDataTags))
 	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
 	for _, tag := range *item.GlobalDataTags {
 		tagPath := path.Root(attrGlobalDataTags).AtMapKey(tag.Name)
@@ -169,7 +169,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 	if !typeutils.IsKnown(tags) {
 		return nil
 	}
-	items := typeutils.MapTypeAs[globalDataTagsItemModel](ctx, tags, path.Root(attrGlobalDataTags), diags)
+	items := typeutils.MapTypeAs[globaldatatags.Item](ctx, tags, path.Root(attrGlobalDataTags), diags)
 	if diags.HasError() {
 		return nil
 	}

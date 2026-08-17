@@ -23,32 +23,11 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-const (
-	globalDataTagStringValueAttr = globaldatatags.StringValueAttr
-	globalDataTagNumberValueAttr = globaldatatags.NumberValueAttr
-)
-
-// globalDataTagsItemModel is the element type of the `global_data_tags` map
-// (keyed by tag name), matching schema.go's MapNestedAttribute item shape;
-// see internal/fleet/globaldatatags for the shared shape and
-// expand/flatten helpers.
-type globalDataTagsItemModel = globaldatatags.Item
-
-func globalDataTagAttrTypes() map[string]attr.Type {
-	return globaldatatags.AttrTypes()
-}
-
-func globalDataTagsElementType() attr.Type {
-	return globaldatatags.ElementType()
-}
 
 // MinVersion is the minimum Kibana version required for the Fleet
 // managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; the
@@ -73,12 +52,11 @@ const minVersionUserFacing = "9.5.0"
 // Task 5's responsibility; this file only declares the struct shape.
 //
 // packageModel and cloudConnectorModel back the `package` and `cloud_connector`
-// nested attributes; global_data_tags uses globalDataTagsItemModel as the map
-// element type (see globalDataTagsElementType). Plain nested objects are
-// decoded via types.Object/types.Map helpers, matching internal/fleet/agentpolicy.
-// `inputs` and `vars_json` reuse the shared policyshape custom types
-// directly (policyshape.InputsValue / policyshape.VarsJSONValue) -- no
-// local type duplication.
+// nested attributes; global_data_tags uses globaldatatags.Item as the map
+// element type. Plain nested objects are decoded via types.Object/types.Map
+// helpers, matching internal/fleet/agentpolicy. `inputs` and `vars_json` reuse
+// the shared policyshape custom types directly (policyshape.InputsValue /
+// policyshape.VarsJSONValue) -- no local type duplication.
 type managedIntegrationModel struct {
 	entitycore.ResourceTimeoutsField
 	ID                               types.String              `tfsdk:"id"`
@@ -94,7 +72,7 @@ type managedIntegrationModel struct {
 	VarGroupSelections               types.Map                 `tfsdk:"var_group_selections"`               // > string
 	Inputs                           policyshape.InputsValue   `tfsdk:"inputs"`                             // > policyshape.InputModel
 	CloudConnector                   types.Object              `tfsdk:"cloud_connector"`                    // > cloudConnectorModel
-	GlobalDataTags                   types.Map                 `tfsdk:"global_data_tags"`                   // > globalDataTagsItemModel
+	GlobalDataTags                   types.Map                 `tfsdk:"global_data_tags"`                   // > globaldatatags.Item
 	AdditionalDatastreamsPermissions types.List                `tfsdk:"additional_datastreams_permissions"` // > string
 	CreateDatasetTemplates           types.Bool                `tfsdk:"create_dataset_templates"`
 	Force                            types.Bool                `tfsdk:"force"`
@@ -104,9 +82,8 @@ type managedIntegrationModel struct {
 	UpdatedAt                        types.String              `tfsdk:"updated_at"`
 }
 
-// Note: nested attribute element types (packageModel, cloudConnectorModel,
-// globalDataTagsItemModel) live in models.go / models_convert.go for conversion
-// plumbing only.
+// Note: nested attribute element types (packageModel, cloudConnectorModel)
+// live in models.go / models_convert.go for conversion plumbing only.
 
 func (m managedIntegrationModel) GetID() types.String         { return m.ID }
 func (m managedIntegrationModel) GetResourceID() types.String { return m.PolicyID }

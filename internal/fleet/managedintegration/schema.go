@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -237,25 +238,25 @@ func getSchema(_ context.Context) schema.Schema {
 					"Keyed by tag name; set exactly one of `string_value` or `number_value` per entry.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						globalDataTagStringValueAttr: schema.StringAttribute{
+						globaldatatags.StringValueAttr: schema.StringAttribute{
 							Optional:            true,
 							MarkdownDescription: "String value for the tag. If this is set, `number_value` must not be defined.",
 							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
+								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr)),
 								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
 								),
 							},
 						},
-						globalDataTagNumberValueAttr: schema.Float32Attribute{
+						globaldatatags.NumberValueAttr: schema.Float32Attribute{
 							Optional:            true,
 							MarkdownDescription: "Number value for the tag. If this is set, `string_value` must not be defined.",
 							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
+								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr)),
 								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
 								),
 							},
 						},
