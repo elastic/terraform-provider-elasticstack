@@ -36,6 +36,7 @@ const (
 	attrCertData               = "cert_data"
 	attrKeyData                = "key_data"
 	attrCACerts                = "ca_certs"
+	attrEndpoint               = "endpoint"
 
 	descESConnectionBlock = "Elasticsearch connection configuration block."
 	descInsecureTLS       = "Disable TLS certificate validation"
@@ -62,4 +63,12 @@ const (
 	descKbPassword        = "Password to use for API authentication to Kibana."
 	descKbEndpoints       = "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number."
 	descKbCACerts         = "A list of paths to CA certificates to validate the certificate presented by the Kibana server."
+
+	descFleetConnectionBlock = "Fleet connection configuration block."
+	descFleetUsername        = "Username to use for API authentication to Fleet."
+	descFleetPassword        = "Password to use for API authentication to Fleet."
+	descFleetAPIKey          = "API Key to use for authentication to Fleet."
+	descFleetBearerToken     = "Bearer Token to use for authentication to Fleet."
+	descFleetEndpoint        = "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number."
+	descFleetCACerts         = "A list of paths to CA certificates to validate the certificate presented by the Fleet server."
 )

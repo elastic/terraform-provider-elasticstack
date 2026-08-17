@@ -176,6 +176,52 @@ func TestElasticsearchConnectionBlocks_allAttributesPresent(t *testing.T) {
 	}
 }
 
+func TestFleetConnectionBlock_matchesSpecDrivenAttrTypes(t *testing.T) {
+	t.Parallel()
+
+	block := GetFleetFWConnectionBlock()
+	lb, ok := block.(fwschema.ListNestedBlock)
+	require.True(t, ok, "GetFleetFWConnectionBlock must return a ListNestedBlock")
+
+	got, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
+	require.NoError(t, err)
+
+	require.Equal(t, fleetConnectionBlockSpec().attrTypes(), got)
+}
+
+func TestFleetConnectionBlock_allAttributesPresent(t *testing.T) {
+	t.Parallel()
+
+	wantAttrs := []string{
+		attrUsername, attrPassword, attrAPIKey, attrBearerToken,
+		attrEndpoint, attrCACerts, attrInsecure,
+	}
+
+	got := fwConnectionBlockAttributeNames(GetFleetFWConnectionBlock())
+	for _, name := range wantAttrs {
+		require.Contains(t, got, name)
+	}
+	require.Len(t, got, len(wantAttrs))
+}
+
+func TestFleetConnectionBlock_sensitiveAttributes(t *testing.T) {
+	t.Parallel()
+
+	block := GetFleetFWConnectionBlock()
+	lb, ok := block.(fwschema.ListNestedBlock)
+	require.True(t, ok, "GetFleetFWConnectionBlock must return a ListNestedBlock")
+
+	for _, name := range []string{attrPassword, attrAPIKey, attrBearerToken, attrEndpoint} {
+		attr, ok := lb.NestedObject.Attributes[name].(fwschema.StringAttribute)
+		require.True(t, ok, "attribute %q must be a StringAttribute", name)
+		require.True(t, attr.Sensitive, "attribute %q must be sensitive", name)
+	}
+
+	usernameAttr, ok := lb.NestedObject.Attributes[attrUsername].(fwschema.StringAttribute)
+	require.True(t, ok)
+	require.False(t, usernameAttr.Sensitive)
+}
+
 func TestKibanaConnectionNullList_objectMatchesGetKbFWConnectionBlock(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

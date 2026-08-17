@@ -22,12 +22,8 @@ import (
 	"maps"
 	"sync"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -71,62 +67,7 @@ func GetKbFWConnectionBlock() fwschema.Block {
 }
 
 func GetFleetFWConnectionBlock() fwschema.Block {
-	usernamePath := path.MatchRelative().AtParent().AtName(attrUsername)
-	passwordPath := path.MatchRelative().AtParent().AtName(attrPassword)
-	apiKeyPath := path.MatchRelative().AtParent().AtName(attrAPIKey)
-	bearerTokenPath := path.MatchRelative().AtParent().AtName(attrBearerToken)
-
-	return fwschema.ListNestedBlock{
-		MarkdownDescription: "Fleet connection configuration block.",
-		NestedObject: fwschema.NestedBlockObject{
-			Attributes: map[string]fwschema.Attribute{
-				attrUsername: fwschema.StringAttribute{
-					MarkdownDescription: "Username to use for API authentication to Fleet.",
-					Optional:            true,
-					Validators:          []validator.String{stringvalidator.AlsoRequires(passwordPath)},
-				},
-				attrPassword: fwschema.StringAttribute{
-					MarkdownDescription: "Password to use for API authentication to Fleet.",
-					Optional:            true,
-					Sensitive:           true,
-					Validators:          []validator.String{stringvalidator.AlsoRequires(usernamePath)},
-				},
-				attrAPIKey: fwschema.StringAttribute{
-					MarkdownDescription: "API Key to use for authentication to Fleet.",
-					Optional:            true,
-					Sensitive:           true,
-					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath, bearerTokenPath),
-					},
-				},
-				attrBearerToken: fwschema.StringAttribute{
-					MarkdownDescription: "Bearer Token to use for authentication to Fleet.",
-					Optional:            true,
-					Sensitive:           true,
-					Validators: []validator.String{
-						stringvalidator.ConflictsWith(usernamePath, passwordPath, apiKeyPath),
-					},
-				},
-				"endpoint": fwschema.StringAttribute{
-					MarkdownDescription: "The Fleet server where the terraform provider will point to, this must include the http(s) schema and port number.",
-					Optional:            true,
-					Sensitive:           true,
-				},
-				attrCACerts: fwschema.ListAttribute{
-					MarkdownDescription: "A list of paths to CA certificates to validate the certificate presented by the Fleet server.",
-					Optional:            true,
-					ElementType:         types.StringType,
-				},
-				attrInsecure: fwschema.BoolAttribute{
-					MarkdownDescription: descInsecureTLS,
-					Optional:            true,
-				},
-			},
-		},
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(1),
-		},
-	}
+	return fleetConnectionBlockSpec().fwBlock()
 }
 
 var (
