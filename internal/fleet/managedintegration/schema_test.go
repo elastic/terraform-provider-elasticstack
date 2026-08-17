@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -245,14 +246,14 @@ func TestGetSchema_extrasAndOperationFlags(t *testing.T) {
 	globalDataTags, ok := s.Attributes["global_data_tags"].(schema.MapNestedAttribute)
 	require.True(t, ok)
 	assert.True(t, globalDataTags.Optional)
-	_, hasStringValue := globalDataTags.NestedObject.Attributes[globalDataTagStringValueAttr]
-	_, hasNumberValue := globalDataTags.NestedObject.Attributes[globalDataTagNumberValueAttr]
+	_, hasStringValue := globalDataTags.NestedObject.Attributes[globaldatatags.StringValueAttr]
+	_, hasNumberValue := globalDataTags.NestedObject.Attributes[globaldatatags.NumberValueAttr]
 	assert.True(t, hasStringValue)
 	assert.True(t, hasNumberValue)
-	stringValue, ok := globalDataTags.NestedObject.Attributes[globalDataTagStringValueAttr].(schema.StringAttribute)
+	stringValue, ok := globalDataTags.NestedObject.Attributes[globaldatatags.StringValueAttr].(schema.StringAttribute)
 	require.True(t, ok)
 	assert.NotEmpty(t, stringValue.Validators)
-	numberValue, ok := globalDataTags.NestedObject.Attributes[globalDataTagNumberValueAttr].(schema.Float32Attribute)
+	numberValue, ok := globalDataTags.NestedObject.Attributes[globaldatatags.NumberValueAttr].(schema.Float32Attribute)
 	require.True(t, ok)
 	assert.NotEmpty(t, numberValue.Validators)
 

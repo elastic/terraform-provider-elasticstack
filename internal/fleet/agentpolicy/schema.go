@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
@@ -44,11 +45,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-)
-
-const (
-	globalDataTagStringValueAttr = "string_value"
-	globalDataTagNumberValueAttr = "number_value"
 )
 
 func (r *agentPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -170,25 +166,25 @@ func getSchema() schema.Schema {
 				Description: globalDataTagsDescription,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						globalDataTagStringValueAttr: schema.StringAttribute{
+						globaldatatags.StringValueAttr: schema.StringAttribute{
 							Description: "String value for the field. If this is set, number_value must not be defined.",
 							Optional:    true,
 							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
+								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr)),
 								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
 								),
 							},
 						},
-						globalDataTagNumberValueAttr: schema.Float32Attribute{
+						globaldatatags.NumberValueAttr: schema.Float32Attribute{
 							Description: "Number value for the field. If this is set, string_value must not be defined.",
 							Optional:    true,
 							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
+								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr)),
 								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
+									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
 								),
 							},
 						},
@@ -196,12 +192,7 @@ func getSchema() schema.Schema {
 				},
 				Computed: true,
 				Optional: true,
-				Default: mapdefault.StaticValue(types.MapValueMust(types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						globalDataTagStringValueAttr: types.StringType,
-						globalDataTagNumberValueAttr: types.Float32Type,
-					},
-				}, map[string]attr.Value{})),
+				Default:  mapdefault.StaticValue(types.MapValueMust(globaldatatags.ElementType(), map[string]attr.Value{})),
 			},
 			"space_ids": schema.SetAttribute{
 				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
@@ -436,7 +427,4 @@ func getSchema() schema.Schema {
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
-}
-func getGlobalDataTagsAttrTypes() attr.Type {
-	return getSchema().Attributes["global_data_tags"].GetType()
 }
