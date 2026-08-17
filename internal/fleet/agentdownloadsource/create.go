@@ -55,15 +55,7 @@ func createAgentDownloadSource(ctx context.Context, client *fleet.Client, plan m
 		plan.SpaceIDs = types.SetNull(types.StringType)
 	}
 
-	readState, found, readDiags := readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[model]{}, diags
-	}
-	if !found {
-		diags.AddError("Unexpected API response", "Created agent download source could not be read back by source_id")
-		return entitycore.KibanaWriteResult[model]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[model]{Model: readState, SkipReadAfterWrite: true}, diags
+	written, writeDiags := finalizeWrite(ctx, client, item.Id, spaceID, plan, "Created")
+	diags.Append(writeDiags...)
+	return written, diags
 }

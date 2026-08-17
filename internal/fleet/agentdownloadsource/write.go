@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -38,4 +39,23 @@ func writeAgentDownloadSource(
 		return createAgentDownloadSource(ctx, fleetClient, req.Plan)
 	}
 	return updateAgentDownloadSource(ctx, fleetClient, req.Plan, *req.Prior)
+}
+
+// finalizeWrite reads back the just-written source by ID and hydrates it into
+// the final write result, or returns a diagnostic naming verb (e.g. "Created",
+// "Updated") if the read-back doesn't find it.
+func finalizeWrite(ctx context.Context, client *fleet.Client, sourceID, spaceID string, plan model, verb string) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
+	}
+	if !found {
+		diags.AddError("Unexpected API response", verb+" agent download source could not be read back by source_id")
+		return entitycore.KibanaWriteResult[model]{}, diags
+	}
+
+	return entitycore.KibanaWriteResult[model]{Model: readState, SkipReadAfterWrite: true}, diags
 }
