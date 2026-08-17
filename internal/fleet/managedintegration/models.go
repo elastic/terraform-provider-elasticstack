@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -31,26 +32,22 @@ import (
 )
 
 const (
-	globalDataTagStringValueAttr = "string_value"
-	globalDataTagNumberValueAttr = "number_value"
+	globalDataTagStringValueAttr = globaldatatags.StringValueAttr
+	globalDataTagNumberValueAttr = globaldatatags.NumberValueAttr
 )
 
 // globalDataTagsItemModel is the element type of the `global_data_tags` map
-// (keyed by tag name), matching schema.go's MapNestedAttribute item shape.
-type globalDataTagsItemModel struct {
-	StringValue types.String  `tfsdk:"string_value"`
-	NumberValue types.Float32 `tfsdk:"number_value"`
-}
+// (keyed by tag name), matching schema.go's MapNestedAttribute item shape;
+// see internal/fleet/globaldatatags for the shared shape and
+// expand/flatten helpers.
+type globalDataTagsItemModel = globaldatatags.Item
 
 func globalDataTagAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		globalDataTagStringValueAttr: types.StringType,
-		globalDataTagNumberValueAttr: types.Float32Type,
-	}
+	return globaldatatags.AttrTypes()
 }
 
 func globalDataTagsElementType() attr.Type {
-	return types.ObjectType{AttrTypes: globalDataTagAttrTypes()}
+	return globaldatatags.ElementType()
 }
 
 // MinVersion is the minimum Kibana version required for the Fleet
