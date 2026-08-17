@@ -33,14 +33,12 @@ import (
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
 
-type Handler struct{}
-
-func (Handler) PanelType() string                  { return panelType }
-func (Handler) SchemaAttribute() schema.Attribute  { return SchemaAttribute() }
-func (Handler) ClassifyJSON(_ map[string]any) bool { return false }
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
+type Handler struct {
+	panelkit.NoopHandlerBase
 }
+
+func (Handler) PanelType() string                 { return panelType }
+func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 

@@ -31,20 +31,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 )
 
-type Handler struct{}
-
-func (Handler) PanelType() string                  { return panelType }
-func (Handler) SchemaAttribute() schema.Attribute  { return SchemaAttribute() }
-func (Handler) ClassifyJSON(_ map[string]any) bool { return false }
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
+type Handler struct {
+	panelkit.NoopHandlerBase
 }
+
+func (Handler) PanelType() string                 { return panelType }
+func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
-
-func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
-	_, _, _ = ctx, plan, state
-}
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
