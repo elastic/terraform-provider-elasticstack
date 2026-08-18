@@ -30,7 +30,7 @@ import (
 // whose delete callback needs nothing beyond client, spaceID, and resourceID,
 // for example:
 //
-//	var deleteAgent = entitycore.SimpleKibanaDelete[agentModel](kibanaoapi.DeleteAgent)
+//	Delete: entitycore.SimpleKibanaDelete[agentModel](kibanaoapi.DeleteAgent),
 func SimpleKibanaDelete[T KibanaResourceModel](
 	apiDelete func(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) diag.Diagnostics,
 ) KibanaDeleteFunc[T] {

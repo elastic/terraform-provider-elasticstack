@@ -33,7 +33,7 @@ import (
 // derived fields not sourced from the API payload) should keep a hand-written
 // read callback. populate is typically a populateFromAPI method expression:
 //
-//	var readAgent = entitycore.SimpleKibanaRead[agentModel, models.Agent](kibanaoapi.GetAgent, (*agentModel).populateFromAPI)
+//	Read: entitycore.SimpleKibanaRead[agentModel, models.Agent](kibanaoapi.GetAgent, (*agentModel).populateFromAPI),
 func SimpleKibanaRead[T KibanaResourceModel, R any](
 	apiGet func(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) (*R, diag.Diagnostics),
 	populate func(model *T, ctx context.Context, spaceID string, data *R) diag.Diagnostics,
