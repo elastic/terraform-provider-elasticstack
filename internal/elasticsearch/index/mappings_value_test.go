@@ -502,7 +502,12 @@ func TestIndexMappingsValue_RequiresMappingsUpdate(t *testing.T) {
 	field1And2 := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"},"field2":{"type":"keyword"}}}`)
 	field1Plus3 := index.NewMappingsValue(`{"properties":{"field1":{"type":"text"},"extra_field":{"type":"keyword"}}}`)
 	dynamicTemplateOnly := index.NewMappingsValue(`{"dynamic_templates":[{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
-	dynamicTemplateWithExtra := index.NewMappingsValue(`{"dynamic_templates":[{"template_default":{"mapping":{"type":"keyword"},"match_mapping_type":"string"}},{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
+	dynamicTemplateWithExtra := index.NewMappingsValue(`{
+		"dynamic_templates":[
+			{"template_default":{"mapping":{"type":"keyword"},"match_mapping_type":"string"}},
+			{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}
+		]
+	}`)
 	changedDynamicTemplate := index.NewMappingsValue(`{"dynamic_templates":[{"text_ja_example":{"mapping":{"analyzer":"standard","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
 
 	tests := []struct {
@@ -616,7 +621,12 @@ func TestIndexMappingsValue_SemanticEqualsDynamicTemplateSuperset(t *testing.T) 
 	t.Parallel()
 
 	plan := index.NewMappingsValue(`{"dynamic_templates":[{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
-	api := index.NewMappingsValue(`{"dynamic_templates":[{"template_default":{"mapping":{"type":"keyword"},"match_mapping_type":"string"}},{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}]}`)
+	api := index.NewMappingsValue(`{
+		"dynamic_templates":[
+			{"template_default":{"mapping":{"type":"keyword"},"match_mapping_type":"string"}},
+			{"text_ja_example":{"mapping":{"analyzer":"kuro","type":"text"},"path_match":"hoge.example_field.freetext"}}
+		]
+	}`)
 
 	eq, diags := plan.StringSemanticEquals(context.Background(), api)
 	require.False(t, diags.HasError())
