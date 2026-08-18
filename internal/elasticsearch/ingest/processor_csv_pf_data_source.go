@@ -55,37 +55,15 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Field = m.Field.ValueString()
 	}
 	body.TargetFields = typeutils.StringListElements(m.TargetFields, &diags)
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
-	if m.Separator.IsNull() || m.Separator.IsUnknown() {
-		m.Separator = types.StringValue(",")
-		body.Separator = ","
-	} else {
-		body.Separator = m.Separator.ValueString()
-	}
-	if m.Quote.IsNull() || m.Quote.IsUnknown() {
-		m.Quote = types.StringValue("\"")
-		body.Quote = "\""
-	} else {
-		body.Quote = m.Quote.ValueString()
-	}
-	if m.Trim.IsNull() || m.Trim.IsUnknown() {
-		m.Trim = types.BoolValue(false)
-		body.Trim = false
-	} else {
-		body.Trim = m.Trim.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
+	body.Separator = typeutils.StringDefault(&m.Separator, ",")
+	body.Quote = typeutils.StringDefault(&m.Quote, "\"")
+	body.Trim = typeutils.BoolDefault(&m.Trim, false)
 	if typeutils.IsKnown(m.EmptyValue) {
 		body.EmptyValue = m.EmptyValue.ValueString()
 	}
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

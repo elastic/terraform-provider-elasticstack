@@ -69,12 +69,7 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TrimValue) {
 		body.TrimValue = m.TrimValue.ValueString()
 	}
-	if m.StripBrackets.IsNull() || m.StripBrackets.IsUnknown() {
-		m.StripBrackets = types.BoolValue(false)
-		body.StripBrackets = false
-	} else {
-		body.StripBrackets = m.StripBrackets.ValueBool()
-	}
+	body.StripBrackets = typeutils.BoolDefault(&m.StripBrackets, false)
 
 	return body, diags
 }

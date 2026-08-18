@@ -63,22 +63,10 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.EcsCompatibility) {
 		body.EcsCompatibility = m.EcsCompatibility.ValueString()
 	}
-	if m.TraceMatch.IsNull() || m.TraceMatch.IsUnknown() {
-		m.TraceMatch = types.BoolValue(false)
-		body.TraceMatch = false
-	} else {
-		body.TraceMatch = m.TraceMatch.ValueBool()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.TraceMatch = typeutils.BoolDefault(&m.TraceMatch, false)
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

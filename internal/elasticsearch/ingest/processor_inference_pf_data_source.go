@@ -75,9 +75,7 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

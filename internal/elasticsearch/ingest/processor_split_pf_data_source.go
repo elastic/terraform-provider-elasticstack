@@ -49,12 +49,7 @@ func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Separator) {
 		body.Separator = m.Separator.ValueString()
 	}
-	if m.PreserveTrailing.IsNull() || m.PreserveTrailing.IsUnknown() {
-		m.PreserveTrailing = types.BoolValue(false)
-		body.PreserveTrailing = false
-	} else {
-		body.PreserveTrailing = m.PreserveTrailing.ValueBool()
-	}
+	body.PreserveTrailing = typeutils.BoolDefault(&m.PreserveTrailing, false)
 
 	return body, diags
 }
