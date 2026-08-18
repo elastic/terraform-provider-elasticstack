@@ -72,11 +72,6 @@ func VisDrilldownsToAPI(items models.DrilldownsModel) (*[]kbapi.KibanaHTTPAPIsKb
 	return &api, diags
 }
 
-// DrilldownsToVisByRefAPI translates structured drilldowns for `vis.by_reference`.
-func DrilldownsToVisByRefAPI(items models.DrilldownsModel) (*[]kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config_1_Drilldowns_Item, diag.Diagnostics) {
-	return VisDrilldownsToAPI(items)
-}
-
 type drilldownTypeJSONPeek struct {
 	Type string `json:"type"`
 }
