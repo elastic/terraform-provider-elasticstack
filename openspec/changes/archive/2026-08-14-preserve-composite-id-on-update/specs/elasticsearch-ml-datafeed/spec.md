@@ -2,7 +2,7 @@
 
 ### Requirement: Identity and import (REQ-007–REQ-009)
 
-The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<datafeed_id>`. During create, the resource SHALL derive `id` by calling `r.client.ID(ctx, datafeedID)` to obtain the cluster UUID and `datafeed_id`, and SHALL set `id` in state after a successful API call. During update, the resource SHALL preserve the `id` already present in prior state unchanged and SHALL NOT call `r.client.ID` or otherwise recompute `id` from the currently connected cluster's UUID. The resource SHALL support import by accepting an `id` in the format `<cluster_uuid>/<datafeed_id>`, parsing it with `clients.CompositeIDFromStr`, and persisting both `id` and `datafeed_id` to state. When the import `id` format is invalid, the resource SHALL return an error diagnostic.
+The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<datafeed_id>`. During create, the resource SHALL derive `id` by calling `client.ID(ctx, datafeedID)` to obtain the cluster UUID and `datafeed_id`, and SHALL set `id` in state after a successful API call. During update, the resource SHALL preserve the `id` already present in prior state unchanged and SHALL NOT call `client.ID` or otherwise recompute `id` from the currently connected cluster's UUID. The resource SHALL support import by accepting an `id` in the format `<cluster_uuid>/<datafeed_id>`, parsing it with `clients.CompositeIDFromStr`, and persisting both `id` and `datafeed_id` to state. When the import `id` format is invalid, the resource SHALL return an error diagnostic.
 
 #### Scenario: Import with valid composite id
 

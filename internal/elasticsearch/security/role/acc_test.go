@@ -415,6 +415,59 @@ func TestAccResourceSecurityRoleApplicationsUpdate(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecurityRolePreservesStaleCompositeIDOnUpdate(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	staleID := "00000000-0000-0000-0000-000000000000/" + roleName
+	resourceName := "elasticstack_elasticsearch_security_role.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			mutateRoleOutOfBand(t, roleName, `{
+  "cluster": ["all"],
+  "metadata": {"version": 1}
+}`)
+			t.Cleanup(func() { deleteRoleOutOfBand(t, roleName) })
+		},
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+				},
+				ResourceName:       resourceName,
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateId:      staleID,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported instance, got %d", len(is))
+					}
+					if is[0].ID != staleID {
+						return fmt.Errorf("imported id = %q, want %q", is[0].ID, staleID)
+					}
+					return nil
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", staleID),
+					resource.TestCheckResourceAttr(resourceName, "name", roleName),
+					resource.TestCheckTypeSetElemAttr(resourceName, "cluster.*", "monitor"),
+					resource.TestCheckResourceAttr(resourceName, "metadata", `{"version":2}`),
+				),
+			},
+		},
+	})
+}
+
 func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
 	t.Helper()
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
@@ -425,6 +478,19 @@ func mutateRoleOutOfBand(t *testing.T, roleName, body string) {
 	_, err = typedClient.Security.PutRole(roleName).Raw(strings.NewReader(body)).Do(t.Context())
 	if err != nil {
 		t.Fatalf("out-of-band PutRole failed: %v", err)
+	}
+}
+
+func deleteRoleOutOfBand(t *testing.T, roleName string) {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Logf("cleanup: failed to create client: %v", err)
+		return
+	}
+	_, err = client.GetESClient().Security.DeleteRole(roleName).Do(context.Background())
+	if err != nil {
+		t.Logf("cleanup: delete role %s: %v", roleName, err)
 	}
 }
 

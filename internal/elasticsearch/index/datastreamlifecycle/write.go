@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // writeDataStreamLifecycle handles both Create and Update for the data
@@ -35,13 +34,13 @@ func writeDataStreamLifecycle(ctx context.Context, client *clients.Elasticsearch
 	plan := req.Plan
 	resourceID := req.WriteID
 
-	id, idDiags := client.ID(ctx, resourceID)
+	id, idDiags := entitycore.CompositeIDForWrite(ctx, client, req)
 	if idDiags.HasError() {
 		diags.Append(idDiags...)
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	plan.ID = types.StringValue(id.String())
+	plan.ID = id
 
 	apiModel, d := plan.toAPIModel(ctx)
 	diags.Append(d...)
