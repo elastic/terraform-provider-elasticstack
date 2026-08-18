@@ -828,6 +828,12 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon.DrilldownsToVisByRefAPI",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
+      "attemptedAt": "2026-08-18T03:36:18.350497277Z",
+      "reason": "pr_created"
     }
   ]
 }
