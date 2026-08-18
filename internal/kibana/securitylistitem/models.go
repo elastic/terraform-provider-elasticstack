@@ -112,9 +112,10 @@ func (m *Model) toAPIUpdateModel(ctx context.Context, resourceID string) (*kbapi
 }
 
 // fromAPIModel populates the Terraform model from an API response
-func (m *Model) fromAPIModel(ctx context.Context, apiItem *kbapi.SecurityListsAPIListItem) diag.Diagnostics {
+func (m *Model) fromAPIModel(_ context.Context, spaceID string, apiItem *kbapi.SecurityListsAPIListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
-	_ = ctx
+
+	m.SpaceID = types.StringValue(spaceID)
 
 	compID := clients.CompositeID{
 		ClusterID:  m.SpaceID.ValueString(),

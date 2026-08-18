@@ -38,3 +38,18 @@ func SimpleKibanaDelete[T KibanaResourceModel](
 		return apiDelete(ctx, client.GetKibanaOapiClient(), spaceID, resourceID)
 	}
 }
+
+// SimpleKibanaDeleteWithParams is [SimpleKibanaDelete] for Kibana APIs whose
+// delete endpoint takes a per-resource params struct (for example
+// *kbapi.DeleteListParams) instead of a bare resourceID string. buildParams
+// constructs that struct from resourceID and the prior model:
+//
+//	Delete: entitycore.SimpleKibanaDeleteWithParams[Model, kbapi.DeleteListParams](buildDeleteListParams, kibanaoapi.DeleteList),
+func SimpleKibanaDeleteWithParams[T KibanaResourceModel, P any](
+	buildParams func(resourceID string, prior T) *P,
+	apiDelete func(ctx context.Context, client *kibanaoapi.Client, spaceID string, params *P) diag.Diagnostics,
+) KibanaDeleteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior T) diag.Diagnostics {
+		return apiDelete(ctx, client.GetKibanaOapiClient(), spaceID, buildParams(resourceID, prior))
+	}
+}

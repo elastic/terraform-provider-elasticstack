@@ -20,7 +20,11 @@ package securityexceptionlist
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -42,13 +46,54 @@ func newExceptionListResource() *ExceptionListResource {
 			"security_exception_list",
 			entitycore.KibanaResourceOptions[ExceptionListModel]{
 				Schema: getSchema,
-				Read:   readExceptionList,
-				Delete: deleteExceptionList,
+				Read: entitycore.SimpleKibanaReadWithParams[
+					ExceptionListModel,
+					kbapi.ReadExceptionListParams,
+					kbapi.SecurityExceptionsAPIExceptionList,
+				](buildExceptionListReadParams, getExceptionListWithNamespaceRetry, (*ExceptionListModel).fromAPI),
+				Delete: entitycore.SimpleKibanaDeleteWithParams[ExceptionListModel, kbapi.DeleteExceptionListParams](buildExceptionListDeleteParams, kibanaoapi.DeleteExceptionList),
 				Create: createExceptionList,
 				Update: updateExceptionList,
 			},
 		),
 	}
+}
+
+func buildExceptionListReadParams(resourceID string, prior ExceptionListModel) *kbapi.ReadExceptionListParams {
+	id := resourceID
+	params := &kbapi.ReadExceptionListParams{Id: &id}
+	if typeutils.IsKnown(prior.NamespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(prior.NamespaceType.ValueString())
+		params.NamespaceType = &nsType
+	}
+	return params
+}
+
+// getExceptionListWithNamespaceRetry retries with namespace_type=agnostic when
+// namespace_type was not known up front (e.g. during import) and the initial
+// lookup found nothing.
+func getExceptionListWithNamespaceRetry(
+	ctx context.Context,
+	client *kibanaoapi.Client,
+	spaceID string,
+	params *kbapi.ReadExceptionListParams,
+) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
+	return kibanaoapi.GetWithNamespaceRetry(ctx, client, spaceID, params, params.NamespaceType != nil, setExceptionListAgnosticNamespaceType, kibanaoapi.GetExceptionList)
+}
+
+func setExceptionListAgnosticNamespaceType(params *kbapi.ReadExceptionListParams) {
+	agnostic := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
+	params.NamespaceType = &agnostic
+}
+
+func buildExceptionListDeleteParams(resourceID string, prior ExceptionListModel) *kbapi.DeleteExceptionListParams {
+	id := resourceID
+	params := &kbapi.DeleteExceptionListParams{Id: &id}
+	if prior.NamespaceType.ValueString() != "" {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(prior.NamespaceType.ValueString())
+		params.NamespaceType = &nsType
+	}
+	return params
 }
 
 // NewResource is a helper function to simplify the provider implementation.

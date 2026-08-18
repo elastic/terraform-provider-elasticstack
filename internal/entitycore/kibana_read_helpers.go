@@ -55,3 +55,34 @@ func SimpleKibanaRead[T KibanaResourceModel, R any](
 		return prior, true, diags
 	}
 }
+
+// SimpleKibanaReadWithParams is [SimpleKibanaRead] for Kibana APIs whose read
+// endpoint takes a per-resource params struct (for example
+// *kbapi.ReadListParams) instead of a bare resourceID string. buildParams
+// constructs that struct from resourceID and the prior model; use it for
+// params that depend on prior model fields (for example a namespace type),
+// otherwise ignore prior:
+//
+//	Read: entitycore.SimpleKibanaReadWithParams[Model, kbapi.ReadListParams, kbapi.SecurityListsAPIList](buildReadListParams, kibanaoapi.GetList, (*Model).fromAPI),
+func SimpleKibanaReadWithParams[T KibanaResourceModel, P any, R any](
+	buildParams func(resourceID string, prior T) *P,
+	apiGet func(ctx context.Context, client *kibanaoapi.Client, spaceID string, params *P) (*R, diag.Diagnostics),
+	populate func(model *T, ctx context.Context, spaceID string, data *R) diag.Diagnostics,
+) KibanaReadFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior T) (T, bool, diag.Diagnostics) {
+		var diags diag.Diagnostics
+
+		data, d := apiGet(ctx, client.GetKibanaOapiClient(), spaceID, buildParams(resourceID, prior))
+		diags.Append(d...)
+		if diags.HasError() {
+			return prior, false, diags
+		}
+
+		if data == nil {
+			return prior, false, diags
+		}
+
+		diags.Append(populate(&prior, ctx, spaceID, data)...)
+		return prior, true, diags
+	}
+}

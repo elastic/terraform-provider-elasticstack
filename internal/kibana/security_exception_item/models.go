@@ -987,8 +987,10 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 }
 
 // fromAPI converts the API response to Terraform model
-func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.SecurityExceptionsAPIExceptionListItem) diag.Diagnostics {
+func (m *ExceptionItemModel) fromAPI(ctx context.Context, spaceID string, apiResp *kbapi.SecurityExceptionsAPIExceptionListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
+
+	m.SpaceID = types.StringValue(spaceID)
 
 	// Create composite ID from space_id and item id
 	compID := clients.CompositeID{

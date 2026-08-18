@@ -18,6 +18,8 @@
 package securitylist
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -121,8 +123,10 @@ func (m *Model) toUpdateRequest() (*kbapi.UpdateListJSONRequestBody, diag.Diagno
 }
 
 // fromAPI converts the API response to Terraform model
-func (m *Model) fromAPI(apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
+func (m *Model) fromAPI(_ context.Context, spaceID string, apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
+
+	m.SpaceID = types.StringValue(spaceID)
 
 	// Create composite ID from space_id and list_id
 	compID := clients.CompositeID{
