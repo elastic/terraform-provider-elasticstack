@@ -20,44 +20,20 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createExceptionList(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionListModel],
-) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	body, d := m.toCreateRequest(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	createResp, d := kibanaoapi.CreateExceptionList(ctx, oapiClient, req.SpaceID, *body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createResp, "create", "exception list") {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	if createResp.NamespaceType != "" {
-		m.NamespaceType = types.StringValue(string(createResp.NamespaceType))
-	}
-
-	m.ID = entitycore.KibanaResourceID(req.SpaceID, createResp.Id)
-
-	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
-}
+var createExceptionList = entitycore.SimpleKibanaCreate(
+	"exception list",
+	func(ctx context.Context, req entitycore.KibanaWriteRequest[ExceptionListModel]) (*kbapi.CreateExceptionListJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toCreateRequest(ctx)
+	},
+	kibanaoapi.CreateExceptionList,
+	func(m *ExceptionListModel, spaceID string, resp *kbapi.SecurityExceptionsAPIExceptionList) {
+		populateNamespaceType(m, resp.NamespaceType)
+		m.ID = entitycore.KibanaResourceID(spaceID, resp.Id)
+	},
+)

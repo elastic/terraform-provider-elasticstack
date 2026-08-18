@@ -20,33 +20,17 @@ package securitylist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateSecurityList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	updateReq, d := m.toUpdateRequest()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	updatedList, d := kibanaoapi.UpdateList(ctx, oapiClient, req.SpaceID, *updateReq)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updatedList, "update", "security list") {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
-}
+var updateSecurityList = entitycore.SimpleKibanaUpdate(
+	"security list",
+	func(_ context.Context, req entitycore.KibanaWriteRequest[Model]) (*kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toUpdateRequest()
+	},
+	kibanaoapi.UpdateList,
+	nil,
+)

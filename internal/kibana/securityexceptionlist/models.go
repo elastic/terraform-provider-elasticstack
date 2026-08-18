@@ -165,6 +165,16 @@ func (m *ExceptionListModel) toUpdateRequest(ctx context.Context, resourceID str
 	return req, diags
 }
 
+// populateNamespaceType copies a Create/Update response's NamespaceType onto
+// m, matching the shared shape of [kbapi.SecurityExceptionsAPIExceptionList]
+// returned by both CreateExceptionList and UpdateExceptionList. It leaves
+// m.NamespaceType untouched when the API returns an empty value.
+func populateNamespaceType(m *ExceptionListModel, namespaceType kbapi.SecurityExceptionsAPIExceptionNamespaceType) {
+	if namespaceType != "" {
+		m.NamespaceType = types.StringValue(string(namespaceType))
+	}
+}
+
 // fromAPI converts the API response to Terraform model
 func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.SecurityExceptionsAPIExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics

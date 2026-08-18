@@ -20,39 +20,17 @@ package securityexceptionitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateExceptionItem(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionItemModel],
-) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	// Build the update request body using model method
-	body, d := m.toUpdateRequest(ctx, req.WriteID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
-	}
-
-	// Update the exception item
-	updateResp, d := kibanaoapi.UpdateExceptionListItem(ctx, oapiClient, req.SpaceID, *body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updateResp, "update", "exception item") {
-		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[ExceptionItemModel]{Model: m}, diags
-}
+var updateExceptionItem = entitycore.SimpleKibanaUpdate(
+	"exception item",
+	func(ctx context.Context, req entitycore.KibanaWriteRequest[ExceptionItemModel]) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toUpdateRequest(ctx, req.WriteID)
+	},
+	kibanaoapi.UpdateExceptionListItem,
+	nil,
+)

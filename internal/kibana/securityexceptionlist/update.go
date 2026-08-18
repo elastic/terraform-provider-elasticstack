@@ -20,42 +20,19 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateExceptionList(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionListModel],
-) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	body, d := m.toUpdateRequest(ctx, req.WriteID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	updateResp, d := kibanaoapi.UpdateExceptionList(ctx, oapiClient, req.SpaceID, *body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updateResp, "update", "exception list") {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	if updateResp.NamespaceType != "" {
-		m.NamespaceType = types.StringValue(string(updateResp.NamespaceType))
-	}
-
-	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
-}
+var updateExceptionList = entitycore.SimpleKibanaUpdate(
+	"exception list",
+	func(ctx context.Context, req entitycore.KibanaWriteRequest[ExceptionListModel]) (*kbapi.UpdateExceptionListJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toUpdateRequest(ctx, req.WriteID)
+	},
+	kibanaoapi.UpdateExceptionList,
+	func(m *ExceptionListModel, _ string, resp *kbapi.SecurityExceptionsAPIExceptionList) {
+		populateNamespaceType(m, resp.NamespaceType)
+	},
+)

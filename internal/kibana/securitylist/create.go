@@ -20,37 +20,21 @@ package securitylist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createSecurityList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	createReq, d := m.toCreateRequest()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	createdList, d := kibanaoapi.CreateList(ctx, oapiClient, req.SpaceID, *createReq)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createdList, "create", "security list") {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	m.ListID = typeutils.StringishValue(createdList.Id)
-	m.ID = entitycore.KibanaResourceID(req.SpaceID, createdList.Id)
-
-	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
-}
+var createSecurityList = entitycore.SimpleKibanaCreate(
+	"security list",
+	func(_ context.Context, req entitycore.KibanaWriteRequest[Model]) (*kbapi.CreateListJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toCreateRequest()
+	},
+	kibanaoapi.CreateList,
+	func(m *Model, spaceID string, resp *kbapi.SecurityListsAPIList) {
+		m.ListID = typeutils.StringishValue(resp.Id)
+		m.ID = entitycore.KibanaResourceID(spaceID, resp.Id)
+	},
+)

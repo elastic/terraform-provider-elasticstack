@@ -20,33 +20,17 @@ package securitylistitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	updateReq, d := m.toAPIUpdateModel(ctx, req.WriteID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	updatedListItem, d := kibanaoapi.UpdateListItem(ctx, oapiClient, req.SpaceID, *updateReq)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updatedListItem, "update", "security list item") {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
-}
+var updateSecurityListItem = entitycore.SimpleKibanaUpdate(
+	"security list item",
+	func(ctx context.Context, req entitycore.KibanaWriteRequest[Model]) (*kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toAPIUpdateModel(ctx, req.WriteID)
+	},
+	kibanaoapi.UpdateListItem,
+	nil,
+)

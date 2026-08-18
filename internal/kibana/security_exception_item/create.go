@@ -20,43 +20,21 @@ package securityexceptionitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createExceptionItem(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionItemModel],
-) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	// Build the request body using model method
-	body, d := m.toCreateRequest(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
-	}
-
-	// Create the exception item
-	createResp, d := kibanaoapi.CreateExceptionListItem(ctx, oapiClient, req.SpaceID, *body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
-	}
-
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createResp, "create", "exception item") {
-		return entitycore.KibanaWriteResult[ExceptionItemModel]{}, diags
-	}
-
-	m.ItemID = typeutils.StringishValue(createResp.ItemId)
-	m.ID = entitycore.KibanaResourceID(req.SpaceID, createResp.Id)
-
-	return entitycore.KibanaWriteResult[ExceptionItemModel]{Model: m}, diags
-}
+var createExceptionItem = entitycore.SimpleKibanaCreate(
+	"exception item",
+	func(ctx context.Context, req entitycore.KibanaWriteRequest[ExceptionItemModel]) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+		return req.Plan.toCreateRequest(ctx)
+	},
+	kibanaoapi.CreateExceptionListItem,
+	func(m *ExceptionItemModel, spaceID string, resp *kbapi.SecurityExceptionsAPIExceptionListItem) {
+		m.ItemID = typeutils.StringishValue(resp.ItemId)
+		m.ID = entitycore.KibanaResourceID(spaceID, resp.Id)
+	},
+)
