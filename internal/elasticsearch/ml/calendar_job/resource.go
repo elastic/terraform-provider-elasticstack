@@ -20,7 +20,6 @@ package calendar_job
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -56,9 +55,8 @@ func NewCalendarJobResource() resource.Resource {
 }
 
 func (r *calendarJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	compID := entitycore.ParseImportCompositeID(req, resp)
+	if compID == nil {
 		return
 	}
 

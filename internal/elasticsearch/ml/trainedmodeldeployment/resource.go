@@ -20,7 +20,6 @@ package trainedmodeldeployment
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -53,9 +52,8 @@ func NewTrainedModelDeploymentResource() resource.Resource {
 }
 
 func (r *trainedModelDeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	compID := entitycore.ParseImportCompositeID(req, resp)
+	if compID == nil {
 		return
 	}
 

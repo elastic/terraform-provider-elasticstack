@@ -20,7 +20,6 @@ package calendar
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -62,9 +61,8 @@ func (r *calendarResource) ImportState(ctx context.Context, req resource.ImportS
 		return
 	}
 
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	compID := entitycore.ParseImportCompositeID(req, resp)
+	if compID == nil {
 		return
 	}
 

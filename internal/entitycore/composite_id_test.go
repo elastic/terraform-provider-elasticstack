@@ -26,6 +26,7 @@ import (
 
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -109,6 +110,48 @@ func TestCompositeIDForWrite_UpdateInvalidPriorIDUnchanged(t *testing.T) {
 	id, diags := CompositeIDForWrite(context.Background(), nil, req)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %s", diags)
 	assert.Equal(t, priorID, id)
+}
+
+func TestParseImportCompositeID_ValidComposite(t *testing.T) {
+	t.Parallel()
+
+	req := resource.ImportStateRequest{ID: testStaleClusterUUID + "/" + testResourceName}
+	resp := &resource.ImportStateResponse{}
+
+	compID := ParseImportCompositeID(req, resp)
+	require.False(t, resp.Diagnostics.HasError(), "unexpected diagnostics: %s", resp.Diagnostics)
+	require.NotNil(t, compID)
+	assert.Equal(t, testStaleClusterUUID, compID.ClusterID)
+	assert.Equal(t, testResourceName, compID.ResourceID)
+}
+
+func TestParseImportCompositeID_InvalidAppendsDiagnosticsAndReturnsNil(t *testing.T) {
+	t.Parallel()
+
+	req := resource.ImportStateRequest{ID: testResourceName}
+	resp := &resource.ImportStateResponse{}
+
+	compID := ParseImportCompositeID(req, resp)
+	assert.Nil(t, compID)
+	assert.True(t, resp.Diagnostics.HasError())
+}
+
+func TestTryParseCompositeID_Valid(t *testing.T) {
+	t.Parallel()
+
+	compID, ok := TryParseCompositeID(testStaleClusterUUID + "/" + testResourceName)
+	require.True(t, ok)
+	require.NotNil(t, compID)
+	assert.Equal(t, testStaleClusterUUID, compID.ClusterID)
+	assert.Equal(t, testResourceName, compID.ResourceID)
+}
+
+func TestTryParseCompositeID_InvalidReturnsFalseWithoutDiagnostics(t *testing.T) {
+	t.Parallel()
+
+	compID, ok := TryParseCompositeID(testResourceName)
+	assert.False(t, ok)
+	assert.Nil(t, compID)
 }
 
 func newCompositeIDTestClient(t *testing.T, clusterUUID string) *clients.ElasticsearchScopedClient {

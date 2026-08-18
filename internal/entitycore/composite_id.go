@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -67,4 +68,29 @@ func CompositeIDForWrite[T ElasticsearchResourceModel](
 
 	updated := &clients.CompositeID{ClusterID: parsed.ClusterID, ResourceID: req.WriteID}
 	return types.StringValue(updated.String()), nil
+}
+
+// ParseImportCompositeID parses req.ID as a composite id (<cluster_uuid>/<resource_id>)
+// for use in ImportState methods that require the composite id shape. On failure it
+// appends the parse diagnostics to resp.Diagnostics and returns nil; callers should
+// return immediately when the result is nil.
+func ParseImportCompositeID(req resource.ImportStateRequest, resp *resource.ImportStateResponse) *clients.CompositeID {
+	compID, diags := clients.CompositeIDFromStr(req.ID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return nil
+	}
+	return compID
+}
+
+// TryParseCompositeID attempts to parse id as a composite id (<cluster_uuid>/<resource_id>).
+// It reports success via ok rather than diagnostics, for ImportState methods that accept
+// either a composite id or a bare resource identifier and fall back to treating id as the
+// latter on parse failure.
+func TryParseCompositeID(id string) (compID *clients.CompositeID, ok bool) {
+	compID, diags := clients.CompositeIDFromStr(id)
+	if diags.HasError() {
+		return nil, false
+	}
+	return compID, true
 }

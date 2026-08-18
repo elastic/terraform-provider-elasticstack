@@ -20,7 +20,6 @@ package filter
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -62,9 +61,8 @@ func NewFilterResource() resource.Resource {
 // and filter_id so Destroy and Read use the same composite id shape as for
 // normally managed resources.
 func (r *filterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	compID := entitycore.ParseImportCompositeID(req, resp)
+	if compID == nil {
 		return
 	}
 

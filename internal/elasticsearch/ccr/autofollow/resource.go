@@ -20,7 +20,6 @@ package autofollow
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -54,7 +53,7 @@ func NewAutoFollowPatternResource() resource.Resource {
 }
 
 func (r *autoFollowPatternResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if compID, diags := clients.CompositeIDFromStr(req.ID); !diags.HasError() {
+	if compID, ok := entitycore.TryParseCompositeID(req.ID); ok {
 		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 		if resp.Diagnostics.HasError() {
 			return
