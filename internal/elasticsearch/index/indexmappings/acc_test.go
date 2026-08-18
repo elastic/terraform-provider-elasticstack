@@ -193,6 +193,55 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 	})
 }
 
+func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamicTemplates(1),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					setDynamicTemplatesOutOfBand(t, indexName, []any{
+						map[string]any{
+							"template_default": map[string]any{
+								"match_mapping_type": "string",
+								"mapping":            map[string]any{"type": "keyword"},
+							},
+						},
+						map[string]any{
+							"text_ja_example": map[string]any{
+								"path_match": "hoge.example_field.freetext",
+								"mapping":    map[string]any{"type": "text"},
+							},
+						},
+					})
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceIndexMappings_import(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -651,6 +700,25 @@ func addDynamicMappingField(t *testing.T, indexName, fieldName string, fieldMapp
 	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
 	if diags.HasError() {
 		t.Fatalf("failed to add dynamic mapping field: %v", diags)
+	}
+}
+
+func setDynamicTemplatesOutOfBand(t *testing.T, indexName string, templates []any) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create Elasticsearch client: %s", err)
+	}
+
+	body, err := json.Marshal(map[string]any{"dynamic_templates": templates})
+	if err != nil {
+		t.Fatalf("failed to marshal dynamic templates: %s", err)
+	}
+
+	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
+	if diags.HasError() {
+		t.Fatalf("failed to set dynamic templates out of band: %v", diags)
 	}
 }
 
