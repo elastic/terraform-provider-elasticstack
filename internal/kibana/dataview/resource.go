@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -47,7 +48,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[dataViewModel]{
 				Schema: getSchema,
 				Read:   readDataView,
-				Delete: deleteDataView,
+				Delete: entitycore.SimpleKibanaDelete[dataViewModel](kibanaoapi.DeleteDataView),
 				Create: createDataView,
 				Update: updateDataView,
 			},
