@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderagent
+package entitycore
 
 import (
 	"context"
@@ -25,21 +25,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, prior agentModel) (agentModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	agent, d := kibanaoapi.GetAgent(ctx, oapiClient, spaceID, resourceID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
+// SimpleKibanaDelete returns a [KibanaDeleteFunc] that resolves the scoped
+// Kibana OAPI client and delegates directly to apiDelete. Use for resources
+// whose delete callback needs nothing beyond client, spaceID, and resourceID,
+// for example:
+//
+//	Delete: entitycore.SimpleKibanaDelete[agentModel](kibanaoapi.DeleteAgent),
+func SimpleKibanaDelete[T KibanaResourceModel](
+	apiDelete func(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) diag.Diagnostics,
+) KibanaDeleteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ T) diag.Diagnostics {
+		return apiDelete(ctx, client.GetKibanaOapiClient(), spaceID, resourceID)
 	}
-
-	if agent == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.populateFromAPI(ctx, spaceID, agent)...)
-	return prior, true, diags
 }

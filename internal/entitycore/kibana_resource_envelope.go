@@ -47,7 +47,7 @@ type KibanaResourceModel interface {
 	WithResourceTimeouts
 }
 
-type kibanaReadFunc[T KibanaResourceModel] func(
+type KibanaReadFunc[T KibanaResourceModel] func(
 	context.Context,
 	*clients.KibanaScopedClient,
 	string,
@@ -55,7 +55,7 @@ type kibanaReadFunc[T KibanaResourceModel] func(
 	T,
 ) (T, bool, diag.Diagnostics)
 
-type kibanaDeleteFunc[T KibanaResourceModel] func(
+type KibanaDeleteFunc[T KibanaResourceModel] func(
 	context.Context,
 	*clients.KibanaScopedClient,
 	string,
@@ -127,8 +127,8 @@ type KibanaPostReadFunc[T KibanaResourceModel] func(
 // factory-supplied attribute with the same key.
 type KibanaResourceOptions[T KibanaResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
-	Read     kibanaReadFunc[T]
-	Delete   kibanaDeleteFunc[T]
+	Read     KibanaReadFunc[T]
+	Delete   KibanaDeleteFunc[T]
 	Create   KibanaWriteFunc[T]
 	Update   KibanaWriteFunc[T]
 	PostRead KibanaPostReadFunc[T]
@@ -147,7 +147,7 @@ type KibanaResource[T KibanaResourceModel] struct {
 	baseResourceEnvelope[T, *clients.KibanaScopedClient]
 	createFunc KibanaWriteFunc[T]
 	updateFunc KibanaWriteFunc[T]
-	readFunc   kibanaReadFunc[T]
+	readFunc   KibanaReadFunc[T]
 }
 
 const (
