@@ -67,14 +67,14 @@ type PrivateStateStorage interface {
 	SetKey(ctx context.Context, key string, value []byte) diag.Diagnostics
 }
 
-type elasticsearchReadFunc[T ElasticsearchResourceModel] func(
+type ElasticsearchReadFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
 	string,
 	T,
 ) (T, bool, diag.Diagnostics)
 
-type elasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
+type ElasticsearchDeleteFunc[T ElasticsearchResourceModel] func(
 	context.Context,
 	*clients.ElasticsearchScopedClient,
 	string,
@@ -144,8 +144,8 @@ type PostReadFunc[T ElasticsearchResourceModel] func(
 // factory-supplied attribute with the same key.
 type ElasticsearchResourceOptions[T ElasticsearchResourceModel] struct {
 	Schema   func(context.Context) rschema.Schema
-	Read     elasticsearchReadFunc[T]
-	Delete   elasticsearchDeleteFunc[T]
+	Read     ElasticsearchReadFunc[T]
+	Delete   ElasticsearchDeleteFunc[T]
 	Create   WriteFunc[T]
 	Update   WriteFunc[T]
 	PostRead PostReadFunc[T]

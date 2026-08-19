@@ -19,42 +19,33 @@ package calendar
 
 import (
 	"context"
-	"fmt"
 
+	esv8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getcalendars"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func readCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
 	calendarID := resourceID
 	if calendarID == "" {
+		var diags fwdiags.Diagnostics
 		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
 		return state, false, diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar: %s", calendarID))
-
-	typedClient := client.GetESClient()
-
-	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			return state, false, nil
-		}
-		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar: %s — %s", calendarID, err.Error()))
-		return state, false, diags
-	}
-
-	if len(res.Calendars) == 0 {
-		return state, false, nil
-	}
-
-	applyTypedCalendarToTFModel(&state, &res.Calendars[0])
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar: %s", calendarID))
-	return state, true, diags
+	return entitycore.SimpleElasticsearchRead[TFModel, getcalendars.Response](
+		"ML calendar",
+		func(ctx context.Context, typedClient *esv8.TypedClient, calendarID string) (*getcalendars.Response, error) {
+			return typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+		},
+		func(model *TFModel, _ context.Context, res *getcalendars.Response) (bool, fwdiags.Diagnostics) {
+			if len(res.Calendars) == 0 {
+				return false, nil
+			}
+			applyTypedCalendarToTFModel(model, &res.Calendars[0])
+			return true, nil
+		},
+	)(ctx, client, calendarID, state)
 }

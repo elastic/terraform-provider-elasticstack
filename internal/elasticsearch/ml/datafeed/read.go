@@ -26,7 +26,7 @@ import (
 )
 
 // readDatafeed fetches the datafeed from Elasticsearch and populates the model.
-// It satisfies the entitycore elasticsearchReadFunc[Datafeed] signature.
+// It satisfies the entitycore ElasticsearchReadFunc[Datafeed] signature.
 func readDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state Datafeed) (Datafeed, bool, fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 

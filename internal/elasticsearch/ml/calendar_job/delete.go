@@ -19,41 +19,25 @@ package calendar_job
 
 import (
 	"context"
-	"fmt"
 
+	esv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
+func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model TFModel) fwdiags.Diagnostics {
 	calendarID, jobID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<job_id>")
-	diags.Append(splitDiags...)
-	if diags.HasError() {
-		return diags
+	if splitDiags.HasError() {
+		return splitDiags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
-
-	typedClient := client.GetESClient()
-
-	_, err := typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			tflog.Debug(ctx, fmt.Sprintf("ML calendar job assignment already removed: calendar=%s job=%s", calendarID, jobID))
-			return diags
-		}
-		diags.AddError(
-			"Failed to remove ML job from calendar",
-			fmt.Sprintf("Unable to remove job %q from calendar %q: %s", jobID, calendarID, err.Error()),
-		)
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully removed ML job from calendar: calendar=%s job=%s", calendarID, jobID))
-	return diags
+	return entitycore.SimpleElasticsearchDelete[TFModel](
+		"ML calendar job assignment",
+		func(ctx context.Context, typedClient *esv8.TypedClient, _ string) error {
+			_, err := typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
+			return err
+		},
+	)(ctx, client, resourceID, model)
 }

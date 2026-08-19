@@ -26,7 +26,7 @@ import (
 )
 
 // deleteDatafeed stops and deletes the datafeed. It satisfies the entitycore
-// elasticsearchDeleteFunc[Datafeed] signature.
+// ElasticsearchDeleteFunc[Datafeed] signature.
 func deleteDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ Datafeed) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 

@@ -19,38 +19,25 @@ package calendar_event
 
 import (
 	"context"
-	"fmt"
 
+	esv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func deleteCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ CalendarEventTFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
+func deleteCalendarEvent(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model CalendarEventTFModel) fwdiags.Diagnostics {
 	calendarID, eventID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<event_id>")
-	diags.Append(splitDiags...)
-	if diags.HasError() {
-		return diags
+	if splitDiags.HasError() {
+		return splitDiags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar event %s from calendar: %s", eventID, calendarID))
-
-	typedClient := client.GetESClient()
-
-	_, err := typedClient.Ml.DeleteCalendarEvent(calendarID, eventID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			tflog.Debug(ctx, fmt.Sprintf("ML calendar event %s already deleted from calendar: %s", eventID, calendarID))
-			return diags
-		}
-		diags.AddError("Failed to delete ML calendar event", fmt.Sprintf("Unable to delete ML calendar event %s from calendar %s — %s", eventID, calendarID, err.Error()))
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML calendar event %s from calendar: %s", eventID, calendarID))
-	return diags
+	return entitycore.SimpleElasticsearchDelete[CalendarEventTFModel](
+		"ML calendar event",
+		func(ctx context.Context, typedClient *esv8.TypedClient, _ string) error {
+			_, err := typedClient.Ml.DeleteCalendarEvent(calendarID, eventID).Do(ctx)
+			return err
+		},
+	)(ctx, client, resourceID, model)
 }

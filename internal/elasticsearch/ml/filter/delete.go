@@ -19,37 +19,26 @@ package filter
 
 import (
 	"context"
-	"fmt"
 
+	esv8 "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
+func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, model TFModel) fwdiags.Diagnostics {
 	filterID := resourceID
 	if filterID == "" {
+		var diags fwdiags.Diagnostics
 		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
 		return diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML filter: %s", filterID))
-
-	typedClient := client.GetESClient()
-
-	_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			tflog.Debug(ctx, fmt.Sprintf("ML filter already absent: %s", filterID))
-			return diags
-		}
-		diags.AddError("Failed to delete ML filter", fmt.Sprintf("Unable to delete ML filter: %s — %s", filterID, err.Error()))
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML filter: %s", filterID))
-	return diags
+	return entitycore.SimpleElasticsearchDelete[TFModel](
+		"ML filter",
+		func(ctx context.Context, typedClient *esv8.TypedClient, filterID string) error {
+			_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
+			return err
+		},
+	)(ctx, client, filterID, model)
 }

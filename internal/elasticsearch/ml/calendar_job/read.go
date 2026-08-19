@@ -19,64 +19,49 @@ package calendar_job
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
+	esv8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getcalendars"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
 	calendarID, jobID, splitDiags := ml.SplitCalendarResourcePath(resourceID, "<job_id>")
-	diags.Append(splitDiags...)
-	if diags.HasError() {
-		return state, false, diags
+	if splitDiags.HasError() {
+		return state, false, splitDiags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
+	return entitycore.SimpleElasticsearchRead[TFModel, getcalendars.Response](
+		"ML calendar",
+		func(ctx context.Context, typedClient *esv8.TypedClient, calendarID string) (*getcalendars.Response, error) {
+			return typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+		},
+		func(model *TFModel, ctx context.Context, res *getcalendars.Response) (bool, fwdiags.Diagnostics) {
+			if len(res.Calendars) == 0 {
+				return false, nil
+			}
 
-	typedClient := client.GetESClient()
+			cal := res.Calendars[0]
+			if !slices.Contains(cal.JobIds, jobID) {
+				return false, nil
+			}
 
-	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
-	if err != nil {
-		// Missing calendar: typed client returns *types.ElasticsearchError with status 404
-		// (see go-elasticsearch typedapi/ml/getcalendars GetCalendars.Do). Treat as gone so
-		// refresh removes the assignment from state when the calendar is deleted out-of-band.
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			return state, false, nil
-		}
-		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar %q: %s", calendarID, err.Error()))
-		return state, false, diags
-	}
+			var diags fwdiags.Diagnostics
+			compID, idDiags := client.ID(ctx, calendarID+"/"+jobID)
+			diags.Append(idDiags...)
+			if diags.HasError() {
+				return false, diags
+			}
 
-	if len(res.Calendars) == 0 {
-		return state, false, nil
-	}
-
-	cal := res.Calendars[0]
-	if !slices.Contains(cal.JobIds, jobID) {
-		return state, false, nil
-	}
-
-	compID, idDiags := client.ID(ctx, calendarID+"/"+jobID)
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return state, false, diags
-	}
-
-	out := TFModel{
-		ElasticsearchConnection: state.ElasticsearchConnection,
-		CalendarID:              types.StringValue(calendarID),
-		JobID:                   types.StringValue(jobID),
-		ID:                      types.StringValue(compID.String()),
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
-	return out, true, diags
+			model.CalendarID = types.StringValue(calendarID)
+			model.JobID = types.StringValue(jobID)
+			model.ID = types.StringValue(compID.String())
+			return true, diags
+		},
+	)(ctx, client, calendarID, state)
 }

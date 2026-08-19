@@ -19,46 +19,38 @@ package filter
 
 import (
 	"context"
-	"fmt"
 
+	esv8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getfilters"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state TFModel) (TFModel, bool, fwdiags.Diagnostics) {
-	var diags fwdiags.Diagnostics
-
 	filterID := resourceID
 	if filterID == "" {
+		var diags fwdiags.Diagnostics
 		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
 		return state, false, diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Reading ML filter: %s", filterID))
-
-	typedClient := client.GetESClient()
-
-	res, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			return state, false, nil
-		}
-		diags.AddError("Failed to get ML filter", fmt.Sprintf("Unable to get ML filter: %s — %s", filterID, err.Error()))
-		return state, false, diags
-	}
-
-	if len(res.Filters) == 0 {
-		return state, false, nil
-	}
-
-	out := state
-	diags.Append((&out).fromMLFilter(ctx, &res.Filters[0])...)
-	if diags.HasError() {
-		return state, false, diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML filter: %s", filterID))
-	return out, true, diags
+	return entitycore.SimpleElasticsearchRead[TFModel, getfilters.Response](
+		"ML filter",
+		func(ctx context.Context, typedClient *esv8.TypedClient, filterID string) (*getfilters.Response, error) {
+			return typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
+		},
+		func(model *TFModel, ctx context.Context, res *getfilters.Response) (bool, fwdiags.Diagnostics) {
+			if len(res.Filters) == 0 {
+				return false, nil
+			}
+			out := *model
+			diags := (&out).fromMLFilter(ctx, &res.Filters[0])
+			if diags.HasError() {
+				return false, diags
+			}
+			*model = out
+			return true, diags
+		},
+	)(ctx, client, filterID, state)
 }

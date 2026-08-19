@@ -28,7 +28,7 @@ import (
 )
 
 // deleteAnomalyDetectionJob closes and deletes the ML job. It satisfies the
-// entitycore elasticsearchDeleteFunc[TFModel] signature.
+// entitycore ElasticsearchDeleteFunc[TFModel] signature.
 func deleteAnomalyDetectionJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
 	var diags fwdiags.Diagnostics
 
