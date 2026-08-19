@@ -21,12 +21,21 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
+
+// deleteConnectorAPI adapts [kibanaoapi.DeleteConnector]'s (resourceID, spaceID)
+// parameter order to the (spaceID, resourceID) order expected by
+// [entitycore.SimpleKibanaDelete].
+func deleteConnectorAPI(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) diag.Diagnostics {
+	return kibanaoapi.DeleteConnector(ctx, client, resourceID, spaceID)
+}
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
@@ -50,7 +59,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[tfModel]{
 				Schema: getSchema,
 				Read:   readConnector,
-				Delete: deleteConnector,
+				Delete: entitycore.SimpleKibanaDelete[tfModel](deleteConnectorAPI),
 				Create: createConnector,
 				Update: updateConnector,
 			},
