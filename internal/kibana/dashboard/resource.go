@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -50,7 +51,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[models.DashboardModel]{
 				Schema:   schemaFactory,
 				Read:     readDashboard,
-				Delete:   deleteDashboard,
+				Delete:   entitycore.SimpleKibanaDelete[models.DashboardModel](kibanaoapi.DeleteDashboard),
 				Create:   createDashboard,
 				Update:   updateDashboard,
 				PostRead: postReadDashboard,
