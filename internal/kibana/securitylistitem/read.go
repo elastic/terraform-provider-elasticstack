@@ -21,34 +21,19 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior Model) (Model, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	prior.SpaceID = types.StringValue(spaceID)
-
-	id := resourceID
-	params := &kbapi.ReadListItemParams{
-		Id: &id,
-	}
-
-	listItem, d := kibanaoapi.GetListItem(ctx, oapiClient, spaceID, params)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if listItem == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.fromAPIModel(ctx, listItem)...)
-	return prior, true, diags
-}
+var readSecurityListItem = entitycore.ReadByIDParams[Model, kbapi.ReadListItemParams, kbapi.SecurityListsAPIListItem](
+	func(id string) *kbapi.ReadListItemParams {
+		return &kbapi.ReadListItemParams{Id: &id}
+	},
+	kibanaoapi.GetListItem,
+	func(model *Model, ctx context.Context, spaceID string, data *kbapi.SecurityListsAPIListItem) diag.Diagnostics {
+		model.SpaceID = types.StringValue(spaceID)
+		return model.fromAPIModel(ctx, data)
+	},
+)

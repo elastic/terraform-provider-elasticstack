@@ -18,22 +18,14 @@
 package securityexceptionitem
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 )
 
-func deleteExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ ExceptionItemModel) diag.Diagnostics {
-	oapiClient := client.GetKibanaOapiClient()
-
-	id := resourceID
-	params := &kbapi.DeleteExceptionListItemParams{
-		Id: &id,
-	}
-
-	paramsDiags := kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, spaceID, params)
-	return paramsDiags
-}
+var deleteExceptionItem = entitycore.DeleteByIDParams[ExceptionItemModel](
+	func(id string, _ ExceptionItemModel) *kbapi.DeleteExceptionListItemParams {
+		return &kbapi.DeleteExceptionListItemParams{Id: &id}
+	},
+	kibanaoapi.DeleteExceptionListItem,
+)

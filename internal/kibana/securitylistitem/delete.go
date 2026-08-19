@@ -18,24 +18,14 @@
 package securitylistitem
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 )
 
-func deleteSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ Model) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	id := resourceID
-	params := &kbapi.DeleteListItemParams{
-		Id: &id,
-	}
-
-	diags.Append(kibanaoapi.DeleteListItem(ctx, oapiClient, spaceID, params)...)
-	return diags
-}
+var deleteSecurityListItem = entitycore.DeleteByIDParams[Model](
+	func(id string, _ Model) *kbapi.DeleteListItemParams {
+		return &kbapi.DeleteListItemParams{Id: &id}
+	},
+	kibanaoapi.DeleteListItem,
+)

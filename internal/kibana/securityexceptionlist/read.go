@@ -21,49 +21,30 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readExceptionList(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, prior ExceptionListModel) (ExceptionListModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	prior.SpaceID = types.StringValue(spaceID)
-
-	id := resourceID
-	params := &kbapi.ReadExceptionListParams{
-		Id: &id,
-	}
-	if typeutils.IsKnown(prior.NamespaceType) {
-		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(prior.NamespaceType.ValueString())
-		params.NamespaceType = &nsType
-	}
-
-	readResp, d := kibanaoapi.GetExceptionList(ctx, oapiClient, spaceID, params)
-	diags.Append(d...)
-	if diags.HasError() {
-		return prior, false, diags
-	}
-
-	if readResp == nil && !typeutils.IsKnown(prior.NamespaceType) {
+var readExceptionList = entitycore.ReadByIDParamsWithAgnosticNamespaceRetry[ExceptionListModel, kbapi.ReadExceptionListParams, kbapi.SecurityExceptionsAPIExceptionList](
+	func(model ExceptionListModel) types.String { return model.NamespaceType },
+	func(id string, namespaceType types.String) *kbapi.ReadExceptionListParams {
+		params := &kbapi.ReadExceptionListParams{Id: &id}
+		if typeutils.IsKnown(namespaceType) {
+			nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(namespaceType.ValueString())
+			params.NamespaceType = &nsType
+		}
+		return params
+	},
+	func(params *kbapi.ReadExceptionListParams) {
 		agnosticNsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
 		params.NamespaceType = &agnosticNsType
-		readResp, d = kibanaoapi.GetExceptionList(ctx, oapiClient, spaceID, params)
-		diags.Append(d...)
-		if diags.HasError() {
-			return prior, false, diags
-		}
-	}
-
-	if readResp == nil {
-		return prior, false, diags
-	}
-
-	diags.Append(prior.fromAPI(ctx, readResp)...)
-	return prior, true, diags
-}
+	},
+	kibanaoapi.GetExceptionList,
+	func(model *ExceptionListModel, ctx context.Context, spaceID string, data *kbapi.SecurityExceptionsAPIExceptionList) diag.Diagnostics {
+		model.SpaceID = types.StringValue(spaceID)
+		return model.fromAPI(ctx, data)
+	},
+)
