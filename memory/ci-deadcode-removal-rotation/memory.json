@@ -834,6 +834,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
       "attemptedAt": "2026-08-18T03:36:18.350497277Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.NewKibanaEphemeralResource",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-19T03:39:15.613930218Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
