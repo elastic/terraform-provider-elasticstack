@@ -20,7 +20,10 @@ package proxy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -43,8 +46,13 @@ func newResource() *Resource {
 			"proxy",
 			entitycore.KibanaResourceOptions[proxyModel]{
 				Schema: getSchema,
-				Read:   readProxy,
-				Delete: deleteProxy,
+				Read: entitycore.SimpleFleetRead[proxyModel, kbapi.FleetProxyItem](
+					fleetclient.GetProxy,
+					func(model *proxyModel, _ context.Context, spaceID string, data *kbapi.FleetProxyItem) diag.Diagnostics {
+						return model.populateFromAPI(spaceID, *data)
+					},
+				),
+				Delete: entitycore.SimpleFleetDelete[proxyModel](fleetclient.DeleteProxy),
 				Create: createProxy,
 				Update: updateProxy,
 			},

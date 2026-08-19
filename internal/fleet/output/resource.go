@@ -20,8 +20,11 @@ package output
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -50,8 +53,19 @@ func newOutputResource() *outputResource {
 			"output",
 			entitycore.KibanaResourceOptions[outputModel]{
 				Schema: getSchema,
-				Read:   readOutput,
-				Delete: deleteOutput,
+				Read: entitycore.SimpleFleetRead[outputModel, kbapi.OutputUnion](
+					func(ctx context.Context, client *fleet.Client, spaceID, resourceID string) (*kbapi.OutputUnion, diag.Diagnostics) {
+						return fleet.GetOutput(ctx, client, resourceID, spaceID)
+					},
+					func(model *outputModel, ctx context.Context, _ string, data *kbapi.OutputUnion) diag.Diagnostics {
+						return model.populateFromAPI(ctx, data)
+					},
+				),
+				Delete: entitycore.SimpleFleetDelete[outputModel](
+					func(ctx context.Context, client *fleet.Client, spaceID, resourceID string) diag.Diagnostics {
+						return fleet.DeleteOutput(ctx, client, resourceID, spaceID)
+					},
+				),
 				Create: createOutput,
 				Update: updateOutput,
 			},

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package proxy
+package entitycore
 
 import (
 	"context"
@@ -25,25 +25,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func readProxy(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model proxyModel) (proxyModel, bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	fleetClient := client.GetFleetClient()
-
-	apiResp, getDiags := fleetclient.GetProxy(ctx, fleetClient, spaceID, resourceID)
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return model, false, diags
+// SimpleFleetDelete returns a [KibanaDeleteFunc] that resolves the scoped
+// Fleet client and delegates directly to apiDelete. Use for resources
+// whose delete callback needs nothing beyond client, spaceID, and resourceID,
+// for example:
+//
+//	Delete: entitycore.SimpleFleetDelete[proxyModel](fleetclient.DeleteProxy),
+func SimpleFleetDelete[T KibanaResourceModel](
+	apiDelete func(ctx context.Context, client *fleetclient.Client, spaceID, resourceID string) diag.Diagnostics,
+) KibanaDeleteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, _ T) diag.Diagnostics {
+		return apiDelete(ctx, client.GetFleetClient(), spaceID, resourceID)
 	}
-
-	if apiResp == nil {
-		return model, false, diags
-	}
-
-	diags.Append(model.populateFromAPI(spaceID, *apiResp)...)
-	if diags.HasError() {
-		return model, false, diags
-	}
-
-	return model, true, diags
 }

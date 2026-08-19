@@ -18,7 +18,11 @@
 package agentdownloadsource
 
 import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -43,7 +47,11 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[model]{
 				Schema: getSchema,
 				Read:   readAgentDownloadSource,
-				Delete: deleteAgentDownloadSource,
+				Delete: entitycore.SimpleFleetDelete[model](
+					func(ctx context.Context, client *fleet.Client, spaceID, resourceID string) diag.Diagnostics {
+						return fleet.DeleteAgentDownloadSource(ctx, client, resourceID, spaceID)
+					},
+				),
 				Create: writeAgentDownloadSource,
 				Update: writeAgentDownloadSource,
 			},
