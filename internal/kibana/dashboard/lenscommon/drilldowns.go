@@ -279,8 +279,3 @@ func drilldownModelToVisUnionItem(m models.DrilldownItemModel) (kbapi.KibanaHTTP
 	}
 	return u, diags
 }
-
-// ExplicitEmptyDrilldowns builds a slice that is intentionally non-nil with length 0 for distinguishing omission from explicit empty-clear in Terraform state.
-func ExplicitEmptyDrilldowns() models.DrilldownsModel {
-	return make(models.DrilldownsModel, 0)
-}
