@@ -27,7 +27,7 @@
 
 ## 5. Validation
 
-- [ ] 5.1 Verify `make lint` and `make build` pass.
-- [ ] 5.2 Verify `make check-openspec` passes (`openspec validate --all`).
+- [x] 5.1 Verify `make lint` and `make build` pass.
+- [x] 5.2 Verify `make check-openspec` passes (`openspec validate --all`).
 - [ ] 5.3 Run the managed-integration acceptance tests against a live stack with `TF_ACC=1` to confirm CRUD behaviour is unchanged (see `dev-docs/high-level/testing.md`). Note: the acceptance harness instantiates the provider with `AccTestVersion`, which registers experimental resources regardless of the env var, so this run cannot prove opt-in-free availability — that coverage lives in the unit tests from tasks 3.2 and 3.4.
 - [ ] 5.4 For whoever archives this change: because the delta is REMOVED + ADDED, archive appends **Resource type and stable registration** to the end of `openspec/specs/fleet-managed-integration/spec.md` and deletes the old first requirement. The appended position is acceptable — requirement order is not normative, matching the kibana-dashboard graduation precedent; verify the archived spec still passes `make check-openspec`.
