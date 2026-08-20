@@ -53,7 +53,7 @@ func TestGetSchema_noKibanaConnectionBlock(t *testing.T) {
 func TestGetSchema_descriptionStatesMinVersionAndTopology(t *testing.T) {
 	t.Parallel()
 	s := getSchema(context.Background())
-	unstableClaim := "experi" + "mental"
+	unstableClaim := "experimental"
 	assert.NotContains(t, strings.ToLower(s.MarkdownDescription), unstableClaim)
 	assert.Contains(t, s.MarkdownDescription, "9.5.0")
 	assert.Contains(t, s.MarkdownDescription, "Elastic Cloud Hosted")
