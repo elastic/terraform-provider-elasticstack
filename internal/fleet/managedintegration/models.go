@@ -45,7 +45,7 @@ const minVersionUserFacing = "9.5.0"
 // elasticstack_fleet_managed_integration resource.
 //
 // Task 4 of the fleet-managed-integration OpenSpec change
-// (openspec/changes/fleet-managed-integration/tasks.md, section "4. Resource:
+// (openspec/changes/archive/2026-07-22-fleet-managed-integration/tasks.md, section "4. Resource:
 // schema") adds one field per schema attribute defined in schema.go (see
 // openspec/specs/fleet-managed-integration/spec.md, "Schema attributes" requirement).
 // CRUD population (populateFromAPI/toAPI*Model conversion functions) is
@@ -119,14 +119,14 @@ func (m managedIntegrationModel) GetSpaceID() types.String {
 func (m managedIntegrationModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 // GetVersionRequirements enforces the minimum Kibana version for the Fleet
-// managed_integrations API (experimental, added in Kibana 9.5.0). See
-// openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// managed_integrations API (GA, added in Kibana 9.5.0). See
+// openspec/changes/archive/2026-07-22-fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint".
 func (m managedIntegrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *MinVersion,
-			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later (experimental API).", minVersionUserFacing),
+			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later.", minVersionUserFacing),
 		},
 	}, nil
 }
