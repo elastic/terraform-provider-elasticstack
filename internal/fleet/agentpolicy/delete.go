@@ -35,17 +35,8 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := client.GetFleetClient()
-
 	policyID := stateModel.PolicyID.ValueString()
-	skipDestroy := stateModel.SkipDestroy.ValueBool()
-	if skipDestroy {
+	if stateModel.SkipDestroy.ValueBool() {
 		tflog.Debug(ctx, "Skipping destroy of Agent Policy", map[string]any{"policy_id": policyID})
 		return
 	}
@@ -53,7 +44,7 @@ func (r *agentPolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 	// Read the existing spaces from state to determine where to delete
 	// NOTE: DELETE removes the policy from ALL spaces (global delete)
 	// To remove from specific spaces only, UPDATE space_ids instead of deleting
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	fleetClient, spaceID, diags := fleetutils.ResolveFleetClientAndSpace(ctx, req.State, r.Client(), stateModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

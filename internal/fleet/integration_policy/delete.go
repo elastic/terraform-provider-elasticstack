@@ -34,21 +34,13 @@ func (r *integrationPolicyResource) Delete(ctx context.Context, req resource.Del
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := client.GetFleetClient()
-
 	policyID := stateModel.PolicyID.ValueString()
 	force := stateModel.Force.ValueBool()
 
 	// Read the existing spaces from state to determine where to delete
 	// NOTE: DELETE removes the policy from ALL spaces (global delete)
 	// To remove from specific spaces only, UPDATE space_ids instead
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	fleetClient, spaceID, diags := fleetutils.ResolveFleetClientAndSpace(ctx, req.State, r.Client(), stateModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

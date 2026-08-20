@@ -34,19 +34,11 @@ func (r *elasticDefendIntegrationPolicyResource) Delete(ctx context.Context, req
 		return
 	}
 
-	client, diags := r.Client().GetKibanaClient(ctx, stateModel.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	fleetClient := client.GetFleetClient()
-
 	policyID := stateModel.PolicyID.ValueString()
 	force := stateModel.Force.ValueBool()
 
 	// Use the operational space from STATE to determine where to delete
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
+	fleetClient, spaceID, diags := fleetutils.ResolveFleetClientAndSpace(ctx, req.State, r.Client(), stateModel.KibanaConnection)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
