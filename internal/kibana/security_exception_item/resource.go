@@ -20,6 +20,8 @@ package securityexceptionitem
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,7 +46,12 @@ func newExceptionItemResource() *ExceptionItemResource {
 			entitycore.KibanaResourceOptions[ExceptionItemModel]{
 				Schema: getSchema,
 				Read:   readExceptionItem,
-				Delete: deleteExceptionItem,
+				Delete: entitycore.SimpleKibanaDeleteWithIDParam(
+					func(id *string, _ ExceptionItemModel) *kbapi.DeleteExceptionListItemParams {
+						return &kbapi.DeleteExceptionListItemParams{Id: id}
+					},
+					kibanaoapi.DeleteExceptionListItem,
+				),
 				Create: createExceptionItem,
 				Update: updateExceptionItem,
 			},

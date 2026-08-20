@@ -20,6 +20,8 @@ package securitylistitem
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,7 +46,12 @@ func newSecurityListItemResource() *securityListItemResource {
 			entitycore.KibanaResourceOptions[Model]{
 				Schema: getSchema,
 				Read:   readSecurityListItem,
-				Delete: deleteSecurityListItem,
+				Delete: entitycore.SimpleKibanaDeleteWithIDParam(
+					func(id *string, _ Model) *kbapi.DeleteListItemParams {
+						return &kbapi.DeleteListItemParams{Id: id}
+					},
+					kibanaoapi.DeleteListItem,
+				),
 				Create: createSecurityListItem,
 				Update: updateSecurityListItem,
 			},

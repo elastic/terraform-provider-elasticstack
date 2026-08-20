@@ -38,3 +38,24 @@ func SimpleKibanaDelete[T KibanaResourceModel](
 		return apiDelete(ctx, client.GetKibanaOapiClient(), spaceID, resourceID)
 	}
 }
+
+// SimpleKibanaDeleteWithIDParam returns a [KibanaDeleteFunc] that resolves
+// the scoped Kibana OAPI client, builds a params struct via newParams, and
+// delegates to apiDelete. Use for resources whose delete API takes an
+// Id-params struct rather than a bare resourceID, for example:
+//
+//	Delete: entitycore.SimpleKibanaDeleteWithIDParam(
+//		func(id *string, _ ExceptionItemModel) *kbapi.DeleteExceptionListItemParams {
+//			return &kbapi.DeleteExceptionListItemParams{Id: id}
+//		},
+//		kibanaoapi.DeleteExceptionListItem,
+//	),
+func SimpleKibanaDeleteWithIDParam[T KibanaResourceModel, P any](
+	newParams func(id *string, model T) *P,
+	apiDelete func(ctx context.Context, client *kibanaoapi.Client, spaceID string, params *P) diag.Diagnostics,
+) KibanaDeleteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, resourceID string, spaceID string, model T) diag.Diagnostics {
+		id := resourceID
+		return apiDelete(ctx, client.GetKibanaOapiClient(), spaceID, newParams(&id, model))
+	}
+}
