@@ -21,9 +21,9 @@
 
 ## 4. Documentation
 
-- [ ] 4.1 Run `make docs-generate` and verify `docs/resources/fleet_managed_integration.md` is created.
-- [ ] 4.2 Review the generated page for wording that assumed the resource was experimental or hidden, and check no other page changed unexpectedly; verify with `git diff --stat docs/`. Add a `templates/resources/fleet_managed_integration.md.tmpl` only if the generated page reads poorly, then re-run `make docs-generate`.
-- [ ] 4.3 Remove the paragraph in `examples/resources/elasticstack_fleet_managed_integration/README.md` that instructs exporting `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` before plan, apply, or import; verify with `grep -rn TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL examples/resources/elasticstack_fleet_managed_integration/` finding no hits.
+- [x] 4.1 Run `make docs-generate` and verify `docs/resources/fleet_managed_integration.md` is created.
+- [x] 4.2 Review the generated page for wording that assumed the resource was experimental or hidden, and check no other page changed unexpectedly; verify with `git diff --stat docs/`. Add a `templates/resources/fleet_managed_integration.md.tmpl` only if the generated page reads poorly, then re-run `make docs-generate`.
+- [x] 4.3 Remove the paragraph in `examples/resources/elasticstack_fleet_managed_integration/README.md` that instructs exporting `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=true` before plan, apply, or import; verify with `grep -rn TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL examples/resources/elasticstack_fleet_managed_integration/` finding no hits.
 
 ## 5. Validation
 
