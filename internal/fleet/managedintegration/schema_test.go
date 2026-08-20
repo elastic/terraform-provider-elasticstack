@@ -20,6 +20,7 @@ package managedintegration
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
@@ -44,6 +45,19 @@ func TestGetSchema_noKibanaConnectionBlock(t *testing.T) {
 	t.Parallel()
 	s := getSchema(context.Background())
 	assert.Empty(t, s.Blocks, "expected the schema factory to leave block injection to the entitycore envelope")
+}
+
+// TestGetSchema_descriptionStatesMinVersionAndTopology covers the OpenSpec
+// scenario that the resource description must not claim preview status: it
+// names Kibana 9.5.0 and the Elastic Cloud Hosted / Serverless-only constraint.
+func TestGetSchema_descriptionStatesMinVersionAndTopology(t *testing.T) {
+	t.Parallel()
+	s := getSchema(context.Background())
+	unstableClaim := "experimental"
+	assert.NotContains(t, strings.ToLower(s.MarkdownDescription), unstableClaim)
+	assert.Contains(t, s.MarkdownDescription, "9.5.0")
+	assert.Contains(t, s.MarkdownDescription, "Elastic Cloud Hosted")
+	assert.Contains(t, s.MarkdownDescription, "Serverless")
 }
 
 // TestGetSchema_identityAttributes checks Optional/Computed/Required and the

@@ -79,7 +79,7 @@ func TestManagedIntegrationModel_getVersionRequirements(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
 	require.True(t, reqs[0].MinVersion.Equal(version.Must(version.NewVersion("9.5.0-SNAPSHOT"))))
-	require.Equal(t, "Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API).", reqs[0].ErrorMessage)
+	require.Equal(t, "Fleet managed integrations require Elastic Stack v9.5.0 or later.", reqs[0].ErrorMessage)
 }
 
 func TestMinVersion_matchesPolicyshapeMinVersionConditionCore(t *testing.T) {
@@ -139,7 +139,7 @@ func (f *fakeMinVersionClient) EnforceMinVersion(_ context.Context, minVersion *
 // a sub-9.5.0 Kibana) establish that Create/Read/Update/Delete on
 // elasticstack_fleet_managed_integration never reach the Fleet API when the
 // connected Kibana is older than 9.5.0. See
-// openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// openspec/changes/archive/2026-07-22-fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint" ->
 // "Scenario: Older Kibana returns error".
 func TestManagedIntegrationModel_versionGate_firesBeforeAPICall(t *testing.T) {
@@ -172,7 +172,7 @@ func TestManagedIntegrationModel_versionGate_firesBeforeAPICall(t *testing.T) {
 			summaries = append(summaries, d.Summary()+": "+d.Detail())
 		}
 		require.Contains(t, strings.Join(summaries, "\n"), "9.5.0")
-		require.Contains(t, strings.Join(summaries, "\n"), "Fleet managed integrations require Elastic Stack v9.5.0 or later (experimental API).")
+		require.Contains(t, strings.Join(summaries, "\n"), "Fleet managed integrations require Elastic Stack v9.5.0 or later.")
 	})
 
 	t.Run("supported version does not block", func(t *testing.T) {

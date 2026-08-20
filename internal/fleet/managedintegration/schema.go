@@ -59,7 +59,7 @@ const (
 )
 
 // getSchema defines the elasticstack_fleet_managed_integration resource schema
-// (openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// (openspec/changes/archive/2026-07-22-fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, "Schema attributes"). CRUD population lives in models_convert.go
 // and create/read/update/delete. Version gating is in models.go; the
 // deployment-topology preflight is in create.go/topology.go.
@@ -79,8 +79,7 @@ func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Fleet managed integrations, which provision agent runtime capacity in Elastic's " +
 			"own cloud infrastructure instead of on a host running Elastic Agent. " +
-			"**This resource is experimental**: the underlying Fleet managed integrations API requires Kibana " +
-			"9.5.0 and its behavior may change in future Kibana releases. " +
+			"The underlying Fleet managed integrations API requires Kibana 9.5.0 or later. " +
 			"It is only supported on **Elastic Cloud Hosted** and **Serverless** (Security or Observability) " +
 			"deployments; self-managed (on-premises) Kibana is not supported, and this resource refuses to run " +
 			"against a self-managed deployment it can positively identify as such.",

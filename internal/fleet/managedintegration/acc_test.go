@@ -16,7 +16,7 @@
 // under the License.
 
 // Package managedintegration_test implements acceptance tests for
-// elasticstack_fleet_managed_integration (openspec/changes/fleet-managed-integration).
+// elasticstack_fleet_managed_integration (openspec/changes/archive/2026-07-22-fleet-managed-integration).
 // All tests here require TF_ACC=1 and a live Kibana connection; per design.md
 // and the change's own task description, this resource is only functional
 // against Elastic Cloud Hosted or Serverless (Kibana >= 9.5.0 for
