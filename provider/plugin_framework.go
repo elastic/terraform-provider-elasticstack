@@ -258,6 +258,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		integrationpolicy.NewResource,
 		customintegration.NewResource,
 		elasticdefendintegrationpolicy.NewResource,
+		managedintegration.NewResource,
 		output.NewResource,
 		agentdownloadsource.NewResource,
 		serverhost.NewResource,
@@ -318,7 +319,6 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 func (p *Provider) experimentalResources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		kibanatag.NewResource,
-		managedintegration.NewResource,
 	}
 }
 

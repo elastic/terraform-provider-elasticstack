@@ -1,7 +1,7 @@
 ## 1. Provider registration
 
-- [ ] 1.1 Add `managedintegration.NewResource` to `resources()` in `provider/plugin_framework.go` and remove it from `experimentalResources()` in the same edit, leaving `kibanatag.NewResource` as the sole experimental entry; verify with `grep -n 'managedintegration.NewResource' provider/plugin_framework.go` showing exactly one hit, located inside `resources()`.
-- [ ] 1.2 Verify `make build` succeeds.
+- [x] 1.1 Add `managedintegration.NewResource` to `resources()` in `provider/plugin_framework.go` and remove it from `experimentalResources()` in the same edit, leaving `kibanatag.NewResource` as the sole experimental entry; verify with `grep -n 'managedintegration.NewResource' provider/plugin_framework.go` showing exactly one hit, located inside `resources()`.
+- [x] 1.2 Verify `make build` succeeds.
 
 ## 2. Drop the experimental wording
 
