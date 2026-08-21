@@ -6,31 +6,17 @@ variable "package_version" {
   type = string
 }
 
-variable "input_condition" {
-  type = string
-}
-
-variable "stream_condition" {
-  type = string
-}
-
-variable "input_enabled" {
-  type = bool
-}
-
-variable "stream_enabled" {
-  type = bool
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
 }
 
 resource "elasticstack_fleet_managed_integration" "test" {
-  name            = var.policy_name
-  description     = "condition round-trip acceptance test"
-  policy_template = "cspm"
+  name                     = var.policy_name
+  description              = "Managed integration CSPM Create-Only-Flags Test Policy"
+  policy_template          = "cspm"
+  force                    = true
+  create_dataset_templates = true
 
   package = {
     name    = "cloud_security_posture"
@@ -42,18 +28,12 @@ resource "elasticstack_fleet_managed_integration" "test" {
     deployment = "aws"
   })
 
-  var_group_selections = {
-    deployment = "aws"
-  }
-
   inputs = {
     "cspm-cloudbeat/cis_aws" = {
-      enabled   = var.input_enabled
-      condition = var.input_condition
+      enabled = true
       streams = {
         "cloud_security_posture.findings" = {
-          enabled   = var.stream_enabled
-          condition = var.stream_condition
+          enabled = true
           vars = jsonencode({
             role_arn               = "arn:aws:iam::123456789012:role/tf-acc-test-role"
             "aws.credentials.type" = "assume_role"

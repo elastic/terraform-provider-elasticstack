@@ -123,6 +123,11 @@ func TestAccResourceManagedIntegration(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceName, "package.name", "cloud_security_posture"),
 					resource.TestCheckResourceAttr(testResourceName, "package.version", cspmPackageVersion),
 					resource.TestCheckResourceAttrSet(testResourceName, "package.title"),
+					// force_delete defaults to false when omitted from config (schema.go's
+					// booldefault.StaticBool(false)); TestAccResourceManagedIntegration_ForceDelete
+					// only ever asserts the explicit `true` case, so this asserts the other half
+					// of the round trip.
+					resource.TestCheckResourceAttr(testResourceName, "force_delete", "false"),
 					resource.TestCheckResourceAttrSet(testResourceName, "policy_id"),
 					resource.TestCheckResourceAttrSet(testResourceName, "created_at"),
 					resource.TestCheckResourceAttrSet(testResourceName, "updated_at"),
@@ -439,6 +444,41 @@ func TestAccResourceManagedIntegration_ForceDelete(t *testing.T) {
 	})
 }
 
+// TestAccResourceManagedIntegration_CreateOnlyFlags verifies force and
+// create_dataset_templates round-trip through state when explicitly
+// configured. Both are create-only flags (schema.go): sent on the create
+// request only and never read back from the API, so -- unlike force_delete --
+// there is no server-side value to assert against; this test instead confirms
+// (a) a real Kibana accepts them on create without error and (b) the
+// configured value survives a refresh (Check runs after Terraform's implicit
+// post-apply refresh). Previously these two attributes appeared only in
+// ImportStateVerifyIgnore lists, never configured or asserted by value.
+func TestAccResourceManagedIntegration_CreateOnlyFlags(t *testing.T) {
+	skipUnlessManagedIntegrationLiveStack(t)
+	skipUnlessConfirmedCloud(t)
+
+	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceManagedIntegrationDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"package_version": config.StringVariable(cspmPackageVersion),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "force", "true"),
+					resource.TestCheckResourceAttr(testResourceName, "create_dataset_templates", "true"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceManagedIntegration_CloudConnector wires a real cloud connector
 // (POST /api/fleet/cloud_connectors) and configures a plaintext stream
 // aws.credentials.external_id. Terraform state must retain the plaintext after
@@ -520,6 +560,58 @@ func TestAccResourceManagedIntegration_NameUpdateInPlace(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "name", renamedName),
 					testCheckManagedIntegrationNamePersisted(testResourceName, renamedName),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceManagedIntegration_PackageTitleUpdate verifies package.title
+// -- previously only ever asserted with TestCheckResourceAttrSet, never
+// explicitly user-configured or checked for an exact value (schema.go docs it
+// as "Updatable in-place (not RequiresReplace)") -- can be explicitly set on
+// create and changed in-place on update, both against a live stack.
+func TestAccResourceManagedIntegration_PackageTitleUpdate(t *testing.T) {
+	skipUnlessManagedIntegrationLiveStack(t)
+	skipUnlessConfirmedCloud(t)
+
+	policyName := sdkacctest.RandStringFromCharSet(16, sdkacctest.CharSetAlphaNum)
+	initialTitle := "TF Acceptance CSPM Title"
+	updatedTitle := "TF Acceptance CSPM Title Updated"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceManagedIntegrationDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"package_version": config.StringVariable(cspmPackageVersion),
+					"package_title":   config.StringVariable(initialTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "package.title", initialTitle),
+					testCheckManagedIntegrationPackageTitlePersisted(testResourceName, initialTitle),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"package_version": config.StringVariable(cspmPackageVersion),
+					"package_title":   config.StringVariable(updatedTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(testResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceName, "package.title", updatedTitle),
+					testCheckManagedIntegrationPackageTitlePersisted(testResourceName, updatedTitle),
 				),
 			},
 		},
@@ -819,6 +911,12 @@ func TestAccResourceManagedIntegration_CloudConnectorRequiresReplace(t *testing.
 
 // TestAccResourceManagedIntegration_ConditionRoundTrip verifies input/stream
 // condition expressions round-trip through create, read, and in-place update.
+// It also exercises inputs.<key>.enabled and inputs.<key>.streams.<key>.enabled
+// with their non-default `false` value (schema-coverage: both were previously
+// only ever asserted as `true`, their shared default) -- the create step sets
+// the stream to `false` while leaving the input at its default `true`, and the
+// update step flips both, so each flag is observed both true and false across
+// the two steps.
 func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
 	skipUnlessManagedIntegrationLiveStack(t)
 	skipUnlessConfirmedCloud(t)
@@ -841,10 +939,14 @@ func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
 					"package_version":  config.StringVariable(cspmPackageVersion),
 					"input_condition":  config.StringVariable(initialInputCondition),
 					"stream_condition": config.StringVariable(initialStreamCondition),
+					"input_enabled":    config.BoolVariable(true),
+					"stream_enabled":   config.BoolVariable(false),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.condition", initialInputCondition),
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.condition", initialStreamCondition),
+					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.enabled", "true"),
+					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.enabled", "false"),
 					testCheckManagedIntegrationConditionsPersisted(testResourceName, initialInputCondition, initialStreamCondition),
 				),
 			},
@@ -856,6 +958,8 @@ func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
 					"package_version":  config.StringVariable(cspmPackageVersion),
 					"input_condition":  config.StringVariable(updatedInputCondition),
 					"stream_condition": config.StringVariable(updatedStreamCondition),
+					"input_enabled":    config.BoolVariable(false),
+					"stream_enabled":   config.BoolVariable(true),
 				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
@@ -865,6 +969,8 @@ func TestAccResourceManagedIntegration_ConditionRoundTrip(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.condition", updatedInputCondition),
 					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.condition", updatedStreamCondition),
+					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.enabled", "false"),
+					resource.TestCheckResourceAttr(testResourceName, "inputs.cspm-cloudbeat/cis_aws.streams.cloud_security_posture.findings.enabled", "true"),
 					testCheckManagedIntegrationConditionsPersisted(testResourceName, updatedInputCondition, updatedStreamCondition),
 				),
 			},
