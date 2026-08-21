@@ -850,6 +850,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
       "attemptedAt": "2026-08-20T03:41:14.809050693Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon.PreserveNullFloat64IfStateEquals",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
+      "attemptedAt": "2026-08-21T03:38:16.751857629Z",
+      "reason": "verification_timeout"
     }
   ]
 }
