@@ -68,7 +68,7 @@ type IlmPhase struct {
 }
 
 type ilmLifecycleResponseEntry struct {
-	ModifiedDate any `json:"modified_date"`
+	ModifiedDate string `json:"modified_date"`
 	Policy       struct {
 		Meta   json.RawMessage                      `json:"_meta"`
 		Phases map[string]ilmLifecycleResponsePhase `json:"phases"`
@@ -76,7 +76,7 @@ type ilmLifecycleResponseEntry struct {
 }
 
 type ilmLifecycleResponsePhase struct {
-	MinAge  any                       `json:"min_age"`
+	MinAge  string                    `json:"min_age"`
 	Actions map[string]map[string]any `json:"actions"`
 }
 
@@ -119,27 +119,17 @@ func decodeGetIlmResponse(policyName string, body io.Reader) (*IlmPolicy, fwdiag
 	}
 
 	out := &IlmPolicy{
-		ModifiedDate: anyToString(entry.ModifiedDate),
+		ModifiedDate: entry.ModifiedDate,
 		Metadata:     entry.Policy.Meta,
 		Phases:       make(map[string]IlmPhase, len(entry.Policy.Phases)),
 	}
 	for name, phase := range entry.Policy.Phases {
 		out.Phases[name] = IlmPhase{
-			MinAge:  anyToString(phase.MinAge),
+			MinAge:  phase.MinAge,
 			Actions: phase.Actions,
 		}
 	}
 	return out, nil
-}
-
-func anyToString(v any) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return fmt.Sprint(v)
 }
 
 // GetIndicesWithILMPolicy returns the names of all indices currently using

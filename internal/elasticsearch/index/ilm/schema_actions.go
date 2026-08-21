@@ -213,7 +213,16 @@ func blockRollover() schema.SingleNestedBlock {
 }
 
 func blockSearchableSnapshot() schema.SingleNestedBlock {
-	b := singleNestedBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
+	return searchableSnapshotBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.")
+}
+
+// blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
+func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
+	return searchableSnapshotBlock("Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.")
+}
+
+func searchableSnapshotBlock(desc string) schema.SingleNestedBlock {
+	b := singleNestedBlock(desc, schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			attrSnapshotRepository: schema.StringAttribute{
 				Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
@@ -228,31 +237,6 @@ func blockSearchableSnapshot() schema.SingleNestedBlock {
 			attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
 		},
 	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)))
-	b.PlanModifiers = []planmodifier.Object{defaultForceMergeOnClone{}}
-	return b
-}
-
-// blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
-func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
-	b := singleNestedBlock(
-		"Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.",
-		schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				attrSnapshotRepository: schema.StringAttribute{
-					Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
-					Optional:    true,
-				},
-				attrForceMergeIndex: schema.BoolAttribute{
-					Description: "Force merges the managed index to one segment.",
-					Optional:    true,
-					Computed:    true,
-					Default:     booldefault.StaticBool(true),
-				},
-				attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
-			},
-		},
-		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)),
-	)
 	b.PlanModifiers = []planmodifier.Object{defaultForceMergeOnClone{}}
 	return b
 }
@@ -320,9 +304,9 @@ func searchableSnapshotForceMergeOnCloneAttribute() schema.BoolAttribute {
 		Optional:            true,
 		Computed:            true,
 		Validators: []validator.Bool{
-			validators.ForbiddenIfDependentPathExpressionEqualsBool(
+			validators.ForbiddenIfDependentPathExpressionOneOf(
 				path.MatchRelative().AtParent().AtName(attrForceMergeIndex),
-				false,
+				[]string{"false"},
 			),
 		},
 		PlanModifiers: []planmodifier.Bool{
@@ -364,7 +348,7 @@ func (m defaultForceMergeOnClone) PlanModifyBool(ctx context.Context, req planmo
 }
 
 func (m defaultForceMergeOnClone) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
-	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() || req.ConfigValue.IsUnknown() {
+	if !typeutils.IsKnown(req.PlanValue) || req.ConfigValue.IsUnknown() {
 		return
 	}
 
@@ -456,7 +440,7 @@ func boolFromParentObject(ctx context.Context, get func(context.Context, path.Pa
 }
 
 func boolFromObject(obj types.Object, name string) types.Bool {
-	if obj.IsNull() || obj.IsUnknown() {
+	if !typeutils.IsKnown(obj) {
 		return types.BoolUnknown()
 	}
 	v, ok := obj.Attributes()[name]

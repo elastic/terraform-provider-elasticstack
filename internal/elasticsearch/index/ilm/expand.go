@@ -162,12 +162,8 @@ func expandPhase(p map[string]any, settingsSupport map[string]bool) (*models.Pha
 // action map has force_merge_index explicitly set to false. Elasticsearch rejects
 // a non-null force_merge_on_clone in that combination.
 func searchableSnapshotForceMergeIndexIsFalse(action map[string]any) bool {
-	v, ok := action[attrForceMergeIndex]
-	if !ok || v == nil {
-		return false
-	}
-	b, ok := v.(bool)
-	return ok && !b
+	index := typeutils.BoolFromMap(action, attrForceMergeIndex)
+	return typeutils.IsKnown(index) && !index.ValueBool()
 }
 
 func expandAction(a []any, settingsSupport map[string]bool, settings ...string) (map[string]any, diag.Diagnostics) {

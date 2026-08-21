@@ -208,8 +208,6 @@ func dependentEvaluationFromAttr(val attr.Value) dependentEvaluation {
 		eval.valueStr = v.ValueString()
 	case types.Bool:
 		eval.valueStr = strconv.FormatBool(v.ValueBool())
-	default:
-		eval.valueStr = val.String()
 	}
 	return eval
 }
@@ -627,14 +625,6 @@ func ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression path.Expres
 	condition := forbiddenIfOneOf(dependentFieldLabel, allowedValues)
 	condition.dependentPathExpression = &dependentPathExpression
 	return condition
-}
-
-// ForbiddenIfDependentPathExpressionEqualsBool forbids setting the current
-// attribute when a bool-typed dependent attribute matched by the path
-// expression equals value. Bool dependents are compared as "true"/"false"
-// via the shared Condition evaluation path.
-func ForbiddenIfDependentPathExpressionEqualsBool(dependentPathExpression path.Expression, value bool) Condition {
-	return ForbiddenIfDependentPathExpressionOneOf(dependentPathExpression, []string{strconv.FormatBool(value)})
 }
 
 // OneOfWhenDependentPathExpressionEquals creates a validation condition that validates the current attribute's

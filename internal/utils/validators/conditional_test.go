@@ -1690,7 +1690,7 @@ func TestOneOfWhenDependentPathExpressionEquals_Description(t *testing.T) {
 	require.Contains(t, v.Description(context.Background()), "rolling")
 }
 
-func TestForbiddenIfDependentPathExpressionEqualsBool_forceMergeOnClone(t *testing.T) {
+func TestForbiddenIfDependentPathExpressionOneOf_forceMergeOnClone(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
@@ -1783,9 +1783,9 @@ func TestForbiddenIfDependentPathExpressionEqualsBool_forceMergeOnClone(t *testi
 				Schema: testSchema,
 			}
 
-			v := ForbiddenIfDependentPathExpressionEqualsBool(
+			v := ForbiddenIfDependentPathExpressionOneOf(
 				path.MatchRelative().AtParent().AtName("force_merge_index"),
-				false,
+				[]string{"false"},
 			)
 
 			request := validator.BoolRequest{
