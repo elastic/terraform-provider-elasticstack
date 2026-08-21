@@ -57,6 +57,7 @@ var ilmActionSettingOptions = map[string]struct {
 	minVersion     *version.Version
 }{
 	attrAllowWriteAfterShrink: {def: false, minVersion: version.Must(version.NewVersion("8.14.0"))},
+	attrForceMergeOnClone:     {def: true, minVersion: SearchableSnapshotForceMergeOnCloneMinSupportedVersion},
 	attrNumberOfReplicas:      {skipEmptyCheck: true},
 	attrPriority:              {skipEmptyCheck: true},
 	attrMaxPrimaryShardDocs:   {def: 0, minVersion: MaxPrimaryShardDocsMinSupportedVersion},
@@ -123,7 +124,12 @@ func expandPhase(p map[string]any, settingsSupport map[string]bool) (*models.Pha
 				attrMinPrimaryShardSize,
 			)
 		case ilmActionSearchableSnapshot:
-			actions[actionName], diags = expandAction(a, settingsSupport, attrSnapshotRepository, attrForceMergeIndex)
+			var action map[string]any
+			action, diags = expandAction(a, settingsSupport, attrSnapshotRepository, attrForceMergeIndex, attrForceMergeOnClone)
+			if !diags.HasError() && searchableSnapshotForceMergeIndexIsFalse(action) {
+				delete(action, attrForceMergeOnClone)
+			}
+			actions[actionName] = action
 		case ilmActionSetPriority:
 			actions[actionName], diags = expandAction(a, settingsSupport, attrPriority)
 		case ilmActionShrink:
@@ -150,6 +156,18 @@ func expandPhase(p map[string]any, settingsSupport map[string]bool) (*models.Pha
 
 	phase.Actions = actions
 	return &phase, diags
+}
+
+// searchableSnapshotForceMergeIndexIsFalse reports whether the searchable_snapshot
+// action map has force_merge_index explicitly set to false. Elasticsearch rejects
+// a non-null force_merge_on_clone in that combination.
+func searchableSnapshotForceMergeIndexIsFalse(action map[string]any) bool {
+	v, ok := action[attrForceMergeIndex]
+	if !ok || v == nil {
+		return false
+	}
+	b, ok := v.(bool)
+	return ok && !b
 }
 
 func expandAction(a []any, settingsSupport map[string]bool, settings ...string) (map[string]any, diag.Diagnostics) {

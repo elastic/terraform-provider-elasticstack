@@ -89,6 +89,13 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 				shrinkAction[attrAllowWriteAfterShrink] = false
 			}
 			phase[actionName] = []any{shrinkAction}
+		case ilmActionSearchableSnapshot:
+			ssAction := make(map[string]any, len(action))
+			maps.Copy(ssAction, action)
+			if _, ok := ssAction[attrForceMergeOnClone]; !ok && !searchableSnapshotForceMergeIndexIsFalse(ssAction) {
+				ssAction[attrForceMergeOnClone] = true
+			}
+			phase[actionName] = []any{ssAction}
 		default:
 			phase[actionName] = []any{action}
 		}
