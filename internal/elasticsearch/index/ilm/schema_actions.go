@@ -297,9 +297,15 @@ func blockUnfollow() schema.SingleNestedBlock {
 	})
 }
 
-const forceMergeOnCloneDescription = "Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to false to skip the clone and force-merge the managed index directly. Defaults to true. Cannot be set when force_merge_index is false. Setting false requires Elasticsearch 9.2.1 or later."
+const forceMergeOnCloneDescription = "" +
+	"Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. " +
+	"Set to false to skip the clone and force-merge the managed index directly. Defaults to true. " +
+	"Cannot be set when force_merge_index is false. Setting false requires Elasticsearch 9.2.1 or later."
 
-const forceMergeOnCloneMarkdownDescription = "Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later."
+const forceMergeOnCloneMarkdownDescription = "" +
+	"Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. " +
+	"Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. " +
+	"Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later."
 
 func searchableSnapshotForceMergeOnCloneAttribute() schema.BoolAttribute {
 	return schema.BoolAttribute{
@@ -335,7 +341,12 @@ func (m nullForceMergeOnCloneWhenIndexDisabled) MarkdownDescription(ctx context.
 }
 
 func (m nullForceMergeOnCloneWhenIndexDisabled) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
-	if typeutils.IsKnown(req.ConfigValue) {
+	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
+	if req.ConfigValue.IsUnknown() {
+		return
+	}
+	// Only clear the computed default when the attribute was left unset.
+	if !req.ConfigValue.IsNull() {
 		return
 	}
 
