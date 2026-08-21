@@ -18,8 +18,10 @@
 package ilm
 
 import (
+	"context"
 	_ "embed"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -30,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 //go:embed descriptions/ilm_set_priority_action.md
@@ -220,6 +223,7 @@ func blockSearchableSnapshot() schema.SingleNestedBlock {
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
+			attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
 		},
 	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)))
 }
@@ -240,6 +244,7 @@ func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
 					Computed:    true,
 					Default:     booldefault.StaticBool(true),
 				},
+				attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
 			},
 		},
 		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)),
@@ -290,6 +295,59 @@ func blockUnfollow() schema.SingleNestedBlock {
 			},
 		},
 	})
+}
+
+const forceMergeOnCloneDescription = "Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to false to skip the clone and force-merge the managed index directly. Defaults to true. Cannot be set when force_merge_index is false. Setting false requires Elasticsearch 9.2.1 or later."
+
+const forceMergeOnCloneMarkdownDescription = "Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later."
+
+func searchableSnapshotForceMergeOnCloneAttribute() schema.BoolAttribute {
+	return schema.BoolAttribute{
+		Description:         forceMergeOnCloneDescription,
+		MarkdownDescription: forceMergeOnCloneMarkdownDescription,
+		Optional:            true,
+		Computed:            true,
+		Default:             booldefault.StaticBool(true),
+		Validators: []validator.Bool{
+			validators.ForbiddenIfDependentPathExpressionEqualsBool(
+				path.MatchRelative().AtParent().AtName(attrForceMergeIndex),
+				false,
+			),
+		},
+		PlanModifiers: []planmodifier.Bool{
+			nullForceMergeOnCloneWhenIndexDisabled{},
+		},
+	}
+}
+
+// nullForceMergeOnCloneWhenIndexDisabled clears the computed true default when
+// sibling force_merge_index is false. Elasticsearch rejects a non-null
+// force_merge_on_clone in that combination, so the planned value must stay
+// null to match the read-path (which does not backfill in that case).
+type nullForceMergeOnCloneWhenIndexDisabled struct{}
+
+func (m nullForceMergeOnCloneWhenIndexDisabled) Description(context.Context) string {
+	return "does not default force_merge_on_clone when force_merge_index is false"
+}
+
+func (m nullForceMergeOnCloneWhenIndexDisabled) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m nullForceMergeOnCloneWhenIndexDisabled) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+	if typeutils.IsKnown(req.ConfigValue) {
+		return
+	}
+
+	var sibling types.Bool
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.ParentPath().AtName(attrForceMergeIndex), &sibling)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if typeutils.IsKnown(sibling) && !sibling.ValueBool() {
+		resp.PlanValue = types.BoolNull()
+	}
 }
 
 func blockWaitForSnapshot() schema.SingleNestedBlock {
