@@ -130,11 +130,15 @@ func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonA
 	d.Note = typeutils.StringishPointerValue(fields.Note)
 	d.Setup = typeutils.NonEmptyStringishValue(fields.Setup)
 
-	diags.Append(d.updateIndexFromAPI(ctx, fields.Index)...)
-	diags.Append(d.updateAuthorFromAPI(ctx, fields.Author)...)
-	diags.Append(d.updateTagsFromAPI(ctx, fields.Tags)...)
-	diags.Append(d.updateFalsePositivesFromAPI(ctx, fields.FalsePositives)...)
-	diags.Append(d.updateReferencesFromAPI(ctx, fields.References)...)
+	var indexStrs []string
+	if fields.Index != nil {
+		indexStrs = *fields.Index
+	}
+	d.Index = typeutils.StringsToListMust(indexStrs)
+	d.Author = typeutils.StringsToListMust(fields.Author)
+	d.Tags = typeutils.StringsToListMust(fields.Tags)
+	d.FalsePositives = typeutils.StringsToListMust(fields.FalsePositives)
+	d.References = typeutils.StringsToListMust(fields.References)
 
 	diags.Append(d.updateActionsFromAPI(ctx, fields.Actions)...)
 	diags.Append(d.updateExceptionsListFromAPI(ctx, fields.ExceptionsList)...)
@@ -615,7 +619,7 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 		copy(fieldStrings, multipleFields)
 		fieldList = typeutils.SliceToListTypeString(ctx, fieldStrings, path.Root("threshold").AtName("field"), &diags)
 	} else {
-		fieldList = types.ListValueMust(types.StringType, []attr.Value{})
+		fieldList = typeutils.StringsToListMust(nil)
 	}
 
 	// Handle cardinality (optional)
@@ -678,7 +682,7 @@ func (d *Data) updateThreatFiltersFromAPI(ctx context.Context, apiThreatFilters 
 	}
 
 	if len(*apiThreatFilters) == 0 {
-		d.ThreatFilters = types.ListValueMust(types.StringType, []attr.Value{})
+		d.ThreatFilters = typeutils.StringsToListMust(nil)
 		return diags
 	}
 
@@ -718,54 +722,6 @@ func updateListFieldFromAPI[T any](
 		return converter(ctx, slice)
 	}
 	return nullList, nil
-}
-
-// stringSliceOrEmptyList converts a []string to a types.List, returning an empty
-// (non-null) list when strs is empty.
-func stringSliceOrEmptyList(ctx context.Context, strs []string, p path.Path, diags *diag.Diagnostics) types.List {
-	if len(strs) > 0 {
-		return typeutils.ListValueFrom(ctx, strs, types.StringType, p, diags)
-	}
-	return types.ListValueMust(types.StringType, []attr.Value{})
-}
-
-// Helper function to update index patterns from API response
-func (d *Data) updateIndexFromAPI(ctx context.Context, index *[]string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	var strs []string
-	if index != nil {
-		strs = *index
-	}
-	d.Index = stringSliceOrEmptyList(ctx, strs, path.Root("index"), &diags)
-	return diags
-}
-
-// Helper function to update author from API response
-func (d *Data) updateAuthorFromAPI(ctx context.Context, author []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.Author = stringSliceOrEmptyList(ctx, author, path.Root("author"), &diags)
-	return diags
-}
-
-// Helper function to update tags from API response
-func (d *Data) updateTagsFromAPI(ctx context.Context, tags []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.Tags = stringSliceOrEmptyList(ctx, tags, path.Root("tags"), &diags)
-	return diags
-}
-
-// Helper function to update false positives from API response
-func (d *Data) updateFalsePositivesFromAPI(ctx context.Context, falsePositives []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.FalsePositives = stringSliceOrEmptyList(ctx, falsePositives, path.Root("false_positives"), &diags)
-	return diags
-}
-
-// Helper function to update references from API response
-func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.References = stringSliceOrEmptyList(ctx, references, path.Root("references"), &diags)
-	return diags
 }
 
 func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
