@@ -579,6 +579,33 @@ func TestAccResourceILMSearchableSnapshotPhases(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "modified_date"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(ilm.SearchableSnapshotForceMergeOnCloneMinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_merge_on_clone"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"repository_name": config.StringVariable(repositoryName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "hot.searchable_snapshot.snapshot_repository", repositoryName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "hot.searchable_snapshot.force_merge_index", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "hot.searchable_snapshot.force_merge_on_clone", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_lifecycle.test_searchable_snapshot", "modified_date"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(ilm.SearchableSnapshotForceMergeOnCloneMinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_merge_on_clone"),
+				ConfigVariables: config.Variables{
+					"policy_name":     config.StringVariable(policyName),
+					"repository_name": config.StringVariable(repositoryName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
 		},
 	})
 }
