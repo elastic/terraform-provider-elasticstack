@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -39,35 +37,103 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 
 	typedClient := apiClient.GetESClient()
-	var req putlifecycle.Request
-	if err := json.Unmarshal(policyBytes, &req); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	_, err = typedClient.Ilm.PutLifecycle(policy.Name).Request(&req).Do(ctx)
+	// Submit the marshaled policy JSON as the raw request body rather than
+	// unmarshaling into putlifecycle.Request. The typed SearchableSnapshotAction
+	// struct does not model force_merge_on_clone, and its UnmarshalJSON would
+	// silently drop the field. Tracked upstream as
+	// https://github.com/elastic/elasticsearch-specification/issues/6575
+	// (terraform-provider-elasticstack#4606).
+	_, err = typedClient.Ilm.PutLifecycle(policy.Name).Raw(bytes.NewReader(policyBytes)).Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
 
-func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*types.Lifecycle, fwdiags.Diagnostics) {
+// IlmPolicy is the subset of a GET _ilm/policy response the provider needs.
+// Actions are left as generic maps so fields the typed client does not model
+// (for example searchable_snapshot.force_merge_on_clone) survive the read path.
+type IlmPolicy struct {
+	ModifiedDate string
+	Metadata     map[string]any
+	Phases       map[string]IlmPhase
+}
+
+// IlmPhase is one phase of an [IlmPolicy].
+type IlmPhase struct {
+	MinAge  string
+	Actions map[string]map[string]any
+}
+
+type ilmLifecycleResponseEntry struct {
+	ModifiedDate any `json:"modified_date"`
+	Policy       struct {
+		Meta   map[string]any                       `json:"_meta"`
+		Phases map[string]ilmLifecycleResponsePhase `json:"phases"`
+	} `json:"policy"`
+}
+
+type ilmLifecycleResponsePhase struct {
+	MinAge  any                       `json:"min_age"`
+	Actions map[string]map[string]any `json:"actions"`
+}
+
+func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*IlmPolicy, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Do(ctx)
+
+	// Use Perform rather than Do so the response is not decoded through the
+	// typed Lifecycle/SearchableSnapshotAction structs, which would silently
+	// drop fields the generated client does not model (e.g. force_merge_on_clone).
+	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Perform(ctx)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	if lifecycle, ok := res[policyName]; ok {
-		return &lifecycle, nil
+	defer res.Body.Close()
+
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to fetch ILM policy"); notFound || d.HasError() {
+		if notFound {
+			return nil, nil
+		}
+		return nil, d
 	}
-	return nil, fwdiags.Diagnostics{
-		fwdiags.NewErrorDiagnostic(
-			"Unable to find a ILM policy in the cluster",
-			fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
-		),
+
+	var decoded map[string]ilmLifecycleResponseEntry
+	if err := json.NewDecoder(res.Body).Decode(&decoded); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
+
+	entry, ok := decoded[policyName]
+	if !ok {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Unable to find a ILM policy in the cluster",
+				fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
+			),
+		}
+	}
+
+	out := &IlmPolicy{
+		ModifiedDate: anyToString(entry.ModifiedDate),
+		Metadata:     entry.Policy.Meta,
+		Phases:       make(map[string]IlmPhase, len(entry.Policy.Phases)),
+	}
+	for name, phase := range entry.Policy.Phases {
+		out.Phases[name] = IlmPhase{
+			MinAge:  anyToString(phase.MinAge),
+			Actions: phase.Actions,
+		}
+	}
+	return out, nil
+}
+
+func anyToString(v any) string {
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return fmt.Sprint(v)
 }
 
 // GetIndicesWithILMPolicy returns the names of all indices currently using
