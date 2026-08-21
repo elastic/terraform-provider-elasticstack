@@ -131,7 +131,9 @@ Additional schema behavior:
 - `metadata`, `allocate.include`, `allocate.exclude`, and `allocate.require` use normalized JSON object string types and validate JSON-object syntax.
 - Empty allocation filter objects are omitted from state on read so unset optional filters remain absent.
 - `elasticsearch_connection` remains list-shaped in state because it comes from the shared provider connection schema.
+
 ## Requirements
+
 ### Requirement: CRUD APIs and diagnostics (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put Lifecycle API to create and update ILM policies, the Get Lifecycle API to read them, and the Delete Lifecycle API to delete them. When Elasticsearch returns a non-success response for create, update, read, or delete, except for HTTP `404` on read, the resource SHALL surface that failure as Terraform diagnostics.
@@ -327,7 +329,15 @@ The following minimum versions SHALL apply:
 
 ILM settings available throughout the supported `8.x` and later range SHALL NOT have pre-8.0 compatibility gates.
 
-The `searchable_snapshot` action block, available in the `hot`, `cold`, and `frozen` phases, SHALL additionally accept an optional `force_merge_on_clone` boolean attribute (computed default `true`), alongside its existing `snapshot_repository` and `force_merge_index` attributes.
+The `searchable_snapshot` action block, available in the `hot`, `cold`, and `frozen` phases, SHALL additionally accept an optional `force_merge_on_clone` boolean attribute (computed default `true`), alongside its existing `snapshot_repository` and `force_merge_index` attributes:
+
+```hcl
+searchable_snapshot {
+  snapshot_repository  = <optional, string>          # required when block is present
+  force_merge_index    = <optional + computed, bool> # default true
+  force_merge_on_clone = <optional + computed, bool> # default true; false requires ES >= 9.2.1
+}
+```
 
 `force_merge_on_clone` SHALL be rejected by config validation when configured (to any value) together with `force_merge_index = false`, since Elasticsearch disallows a non-null `force_merge_on_clone` in that combination. When `force_merge_index` is `false` and `force_merge_on_clone` is left unset, the provider SHALL omit `force_merge_on_clone` from the API payload regardless of its computed default.
 
@@ -580,4 +590,3 @@ The acceptance test suite SHALL include a test `TestAccResourceILMFromSDKNoMetad
 - WHEN the provider is upgraded to the Plugin Framework version and `terraform plan` runs
 - THEN the plan SHALL succeed without an `Invalid JSON String Value` error
 - AND the plan SHALL show no diff
-

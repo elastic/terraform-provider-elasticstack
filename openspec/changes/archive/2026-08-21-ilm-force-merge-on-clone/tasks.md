@@ -49,7 +49,7 @@ Elasticsearch's `SearchableSnapshotAction` constructor rejects any non-null `for
 - [x] 5.1 Update `openspec/specs/elasticsearch-index-lifecycle/spec.md`: extend the version-gated settings requirement (REQ-022–REQ-025) or add a new requirement documenting `force_merge_on_clone` and its `9.2.1` gate, and update the `searchable_snapshot` schema block shown in the "Action block shapes" section
 - [x] 5.2 Regenerate/update provider documentation for `elasticstack_elasticsearch_index_lifecycle` to describe the new attribute
 - [x] 5.3 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate ilm-force-merge-on-clone --type change` and fix any reported issues
-- [ ] 5.4 After implementation lands and this change is archived, run `make check-openspec` to confirm the main spec absorbed the delta cleanly
+- [x] 5.4 After implementation lands and this change is archived, run `make check-openspec` to confirm the main spec absorbed the delta cleanly
 
 ## 6. Follow-up (not blocking this change)
 
