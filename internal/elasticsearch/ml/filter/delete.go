@@ -19,12 +19,10 @@ package filter
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
@@ -36,20 +34,10 @@ func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 		return diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML filter: %s", filterID))
-
 	typedClient := client.GetESClient()
 
-	_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			tflog.Debug(ctx, fmt.Sprintf("ML filter already absent: %s", filterID))
-			return diags
-		}
-		diags.AddError("Failed to delete ML filter", fmt.Sprintf("Unable to delete ML filter: %s — %s", filterID, err.Error()))
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML filter: %s", filterID))
-	return diags
+	return ml.DeleteWithNotFoundAsSuccess(ctx, "ML filter", filterID, func() error {
+		_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
+		return err
+	})
 }

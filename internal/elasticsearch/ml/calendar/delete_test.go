@@ -19,25 +19,16 @@ package calendar
 
 import (
 	"context"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func deleteCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
-	calendarID := resourceID
-	if calendarID == "" {
-		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
-		return diags
-	}
-
-	typedClient := client.GetESClient()
-
-	return ml.DeleteWithNotFoundAsSuccess(ctx, "ML calendar", calendarID, func() error {
-		_, err := typedClient.Ml.DeleteCalendar(calendarID).Do(ctx)
-		return err
-	})
+func TestDeleteCalendar_emptyResourceID(t *testing.T) {
+	ctx := context.Background()
+	var state TFModel
+	diags := deleteCalendar(ctx, nil, "", state)
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags.Errors()[0].Summary(), "Invalid resource ID")
 }
