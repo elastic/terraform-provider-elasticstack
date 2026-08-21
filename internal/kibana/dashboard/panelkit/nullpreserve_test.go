@@ -25,6 +25,109 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// NullPreserveFromPrior (generic core)
+
+func TestNullPreserveFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	existing := types.StringValue("original")
+	NullPreserveFromPrior(types.StringValue("prior"), &existing)
+	assert.Equal(t, "original", existing.ValueString())
+}
+
+func TestNullPreserveFromPrior_nullPrior_setsExistingToNull(t *testing.T) {
+	t.Parallel()
+	existing := types.Int64Value(42)
+	NullPreserveFromPrior(types.Int64Null(), &existing)
+	assert.True(t, existing.IsNull(), "null prior should set existing to null")
+	assert.False(t, existing.IsUnknown())
+}
+
+func TestNullPreserveFromPrior_unknownPrior_setsExistingToUnknown(t *testing.T) {
+	t.Parallel()
+	existing := types.BoolValue(true)
+	NullPreserveFromPrior(types.BoolUnknown(), &existing)
+	assert.True(t, existing.IsUnknown(), "unknown prior should set existing to unknown, not null")
+}
+
+func TestNullPreserveFromPrior_nilExisting_noopNoPanic(t *testing.T) {
+	t.Parallel()
+	assert.NotPanics(t, func() {
+		NullPreserveFromPrior[types.String](types.StringNull(), nil)
+	})
+}
+
+// NullPreserveSetFromPrior
+
+func TestNullPreserveSetFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	existing := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("original")})
+	prior := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("prior")})
+	NullPreserveSetFromPrior(prior, &existing)
+	assert.Equal(t, []attr.Value{types.StringValue("original")}, existing.Elements())
+}
+
+func TestNullPreserveSetFromPrior_nullPrior_setsExistingToNull(t *testing.T) {
+	t.Parallel()
+	existing := types.SetValueMust(types.StringType, []attr.Value{types.StringValue("original")})
+	NullPreserveSetFromPrior(types.SetNull(types.StringType), &existing)
+	assert.True(t, existing.IsNull())
+}
+
+func TestNullPreserveSetFromPrior_nilExisting_noopNoPanic(t *testing.T) {
+	t.Parallel()
+	assert.NotPanics(t, func() {
+		NullPreserveSetFromPrior(types.SetNull(types.StringType), nil)
+	})
+}
+
+// NullPreserveListFromPrior
+
+func TestNullPreserveListFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	existing := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("original")})
+	prior := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("prior")})
+	NullPreserveListFromPrior(prior, &existing)
+	assert.Equal(t, []attr.Value{types.StringValue("original")}, existing.Elements())
+}
+
+func TestNullPreserveListFromPrior_unknownPrior_setsExistingToUnknown(t *testing.T) {
+	t.Parallel()
+	existing := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("original")})
+	NullPreserveListFromPrior(types.ListUnknown(types.StringType), &existing)
+	assert.True(t, existing.IsUnknown())
+}
+
+func TestNullPreserveListFromPrior_nilExisting_noopNoPanic(t *testing.T) {
+	t.Parallel()
+	assert.NotPanics(t, func() {
+		NullPreserveListFromPrior(types.ListNull(types.StringType), nil)
+	})
+}
+
+// NullPreserveMapFromPrior
+
+func TestNullPreserveMapFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
+	t.Parallel()
+	existing := types.MapValueMust(types.StringType, map[string]attr.Value{"k": types.StringValue("original")})
+	prior := types.MapValueMust(types.StringType, map[string]attr.Value{"k": types.StringValue("prior")})
+	NullPreserveMapFromPrior(prior, &existing)
+	assert.Equal(t, map[string]attr.Value{"k": types.StringValue("original")}, existing.Elements())
+}
+
+func TestNullPreserveMapFromPrior_nullPrior_setsExistingToNull(t *testing.T) {
+	t.Parallel()
+	existing := types.MapValueMust(types.StringType, map[string]attr.Value{"k": types.StringValue("original")})
+	NullPreserveMapFromPrior(types.MapNull(types.StringType), &existing)
+	assert.True(t, existing.IsNull())
+}
+
+func TestNullPreserveMapFromPrior_nilExisting_noopNoPanic(t *testing.T) {
+	t.Parallel()
+	assert.NotPanics(t, func() {
+		NullPreserveMapFromPrior(types.MapNull(types.StringType), nil)
+	})
+}
+
 // NullPreserveStringFromPrior
 
 func TestNullPreserveStringFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
