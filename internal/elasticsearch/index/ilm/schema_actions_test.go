@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -60,6 +61,7 @@ func TestNullForceMergeOnCloneWhenIndexDisabled(t *testing.T) {
 		configClone  types.Bool
 		planClone    types.Bool
 		configIndex  types.Bool
+		planIndex    *types.Bool
 		expectedPlan types.Bool
 	}{
 		{
@@ -67,6 +69,14 @@ func TestNullForceMergeOnCloneWhenIndexDisabled(t *testing.T) {
 			configClone:  types.BoolNull(),
 			planClone:    types.BoolValue(true),
 			configIndex:  types.BoolValue(false),
+			expectedPlan: types.BoolNull(),
+		},
+		{
+			name:         "unset with config index null uses plan force_merge_index false",
+			configClone:  types.BoolNull(),
+			planClone:    types.BoolValue(true),
+			configIndex:  types.BoolNull(),
+			planIndex:    boolPtr(types.BoolValue(false)),
 			expectedPlan: types.BoolNull(),
 		},
 		{
@@ -123,10 +133,165 @@ func TestNullForceMergeOnCloneWhenIndexDisabled(t *testing.T) {
 				ConfigValue: tt.configClone,
 				PlanValue:   tt.planClone,
 			}
+			if tt.planIndex != nil {
+				req.Plan = tfsdk.Plan{
+					Schema: testSchema,
+					Raw: tftypes.NewValue(objectType, map[string]tftypes.Value{
+						attrForceMergeIndex:   boolTF(t, *tt.planIndex),
+						attrForceMergeOnClone: boolTF(t, tt.planClone),
+					}),
+				}
+			}
 			resp := &planmodifier.BoolResponse{PlanValue: req.PlanValue}
 			nullForceMergeOnCloneWhenIndexDisabled{}.PlanModifyBool(ctx, req, resp)
 			require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
 			assert.Equal(t, tt.expectedPlan, resp.PlanValue)
 		})
 	}
+}
+
+// Production attributes live under hot|cold|frozen.searchable_snapshot blocks.
+// A flat schema can hide GetAttribute path bugs that only show up with nested blocks.
+func TestNullForceMergeOnCloneWhenIndexDisabled_nestedBlock(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	testSchema := schema.Schema{
+		Blocks: map[string]schema.Block{
+			ilmPhaseFrozen: schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					attrMinAge: schema.StringAttribute{Optional: true},
+				},
+				Blocks: map[string]schema.Block{
+					ilmActionSearchableSnapshot: schema.SingleNestedBlock{
+						Attributes: map[string]schema.Attribute{
+							attrSnapshotRepository: schema.StringAttribute{Optional: true},
+							attrForceMergeIndex:    schema.BoolAttribute{Optional: true, Computed: true},
+							attrForceMergeOnClone:  schema.BoolAttribute{Optional: true, Computed: true},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tfType := testSchema.Type().TerraformType(ctx)
+	boolTF := func(t *testing.T, v types.Bool) tftypes.Value {
+		t.Helper()
+		tv, err := v.ToTerraformValue(ctx)
+		require.NoError(t, err)
+		return tv
+	}
+	strTF := func(t *testing.T, v types.String) tftypes.Value {
+		t.Helper()
+		tv, err := v.ToTerraformValue(ctx)
+		require.NoError(t, err)
+		return tv
+	}
+
+	ssObj := tftypes.NewValue(tfType.(tftypes.Object).AttributeTypes[ilmPhaseFrozen].(tftypes.Object).AttributeTypes[ilmActionSearchableSnapshot], map[string]tftypes.Value{
+		attrSnapshotRepository: strTF(t, types.StringValue("repo-a")),
+		attrForceMergeIndex:    boolTF(t, types.BoolValue(false)),
+		attrForceMergeOnClone:  boolTF(t, types.BoolNull()),
+	})
+	frozenObj := tftypes.NewValue(tfType.(tftypes.Object).AttributeTypes[ilmPhaseFrozen], map[string]tftypes.Value{
+		attrMinAge:                  strTF(t, types.StringValue("30d")),
+		ilmActionSearchableSnapshot: ssObj,
+	})
+	raw := tftypes.NewValue(tfType, map[string]tftypes.Value{
+		ilmPhaseFrozen: frozenObj,
+	})
+
+	config := tfsdk.Config{Schema: testSchema, Raw: raw}
+	plan := tfsdk.Plan{Schema: testSchema, Raw: raw}
+	attrPath := path.Root(ilmPhaseFrozen).AtName(ilmActionSearchableSnapshot).AtName(attrForceMergeOnClone)
+
+	req := planmodifier.BoolRequest{
+		Path:        attrPath,
+		Config:      config,
+		Plan:        plan,
+		ConfigValue: types.BoolNull(),
+		PlanValue:   types.BoolValue(true),
+	}
+	resp := &planmodifier.BoolResponse{PlanValue: req.PlanValue}
+	nullForceMergeOnCloneWhenIndexDisabled{}.PlanModifyBool(ctx, req, resp)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	assert.Equal(t, types.BoolNull(), resp.PlanValue)
+}
+
+func TestNullForceMergeOnCloneInSearchableSnapshot(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	attrTypes := searchableSnapshotObjectType().AttrTypes
+	ssObj := func(index, clone types.Bool) types.Object {
+		return types.ObjectValueMust(attrTypes, map[string]attr.Value{
+			attrSnapshotRepository: types.StringValue("repo-a"),
+			attrForceMergeIndex:    index,
+			attrForceMergeOnClone:  clone,
+		})
+	}
+
+	tests := []struct {
+		name          string
+		configIndex   types.Bool
+		configClone   types.Bool
+		planIndex     types.Bool
+		planClone     types.Bool
+		expectedClone types.Bool
+	}{
+		{
+			name:          "unset with force_merge_index false nulls the computed default",
+			configIndex:   types.BoolValue(false),
+			configClone:   types.BoolNull(),
+			planIndex:     types.BoolValue(false),
+			planClone:     types.BoolValue(true),
+			expectedClone: types.BoolNull(),
+		},
+		{
+			name:          "unset with plan force_merge_index false when config index is null",
+			configIndex:   types.BoolNull(),
+			configClone:   types.BoolNull(),
+			planIndex:     types.BoolValue(false),
+			planClone:     types.BoolValue(true),
+			expectedClone: types.BoolNull(),
+		},
+		{
+			name:          "unset with force_merge_index true leaves the default",
+			configIndex:   types.BoolValue(true),
+			configClone:   types.BoolNull(),
+			planIndex:     types.BoolValue(true),
+			planClone:     types.BoolValue(true),
+			expectedClone: types.BoolValue(true),
+		},
+		{
+			name:          "explicit false is unchanged",
+			configIndex:   types.BoolValue(true),
+			configClone:   types.BoolValue(false),
+			planIndex:     types.BoolValue(true),
+			planClone:     types.BoolValue(false),
+			expectedClone: types.BoolValue(false),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			req := planmodifier.ObjectRequest{
+				ConfigValue: ssObj(tt.configIndex, tt.configClone),
+				PlanValue:   ssObj(tt.planIndex, tt.planClone),
+			}
+			resp := &planmodifier.ObjectResponse{PlanValue: req.PlanValue}
+			nullForceMergeOnCloneInSearchableSnapshot{}.PlanModifyObject(ctx, req, resp)
+			require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+			got, ok := resp.PlanValue.Attributes()[attrForceMergeOnClone].(types.Bool)
+			require.True(t, ok)
+			assert.Equal(t, tt.expectedClone, got)
+		})
+	}
+}
+
+func boolPtr(v types.Bool) *types.Bool {
+	return &v
 }

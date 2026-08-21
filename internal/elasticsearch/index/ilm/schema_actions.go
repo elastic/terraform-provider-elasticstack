@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -211,7 +212,7 @@ func blockRollover() schema.SingleNestedBlock {
 }
 
 func blockSearchableSnapshot() schema.SingleNestedBlock {
-	return singleNestedBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
+	b := singleNestedBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			attrSnapshotRepository: schema.StringAttribute{
 				Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
@@ -226,11 +227,13 @@ func blockSearchableSnapshot() schema.SingleNestedBlock {
 			attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
 		},
 	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)))
+	b.PlanModifiers = []planmodifier.Object{nullForceMergeOnCloneInSearchableSnapshot{}}
+	return b
 }
 
 // blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
 func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
-	return singleNestedBlock(
+	b := singleNestedBlock(
 		"Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.",
 		schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
@@ -249,6 +252,8 @@ func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
 		},
 		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)),
 	)
+	b.PlanModifiers = []planmodifier.Object{nullForceMergeOnCloneInSearchableSnapshot{}}
+	return b
 }
 
 func blockSetPriority() schema.SingleNestedBlock {
@@ -350,15 +355,110 @@ func (m nullForceMergeOnCloneWhenIndexDisabled) PlanModifyBool(ctx context.Conte
 		return
 	}
 
-	var sibling types.Bool
-	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, req.Path.ParentPath().AtName(attrForceMergeIndex), &sibling)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
+	sibling := forceMergeIndexFromPlanOrConfig(ctx, req)
 	if typeutils.IsKnown(sibling) && !sibling.ValueBool() {
 		resp.PlanValue = types.BoolNull()
 	}
+}
+
+// nullForceMergeOnCloneInSearchableSnapshot is the block-level counterpart of
+// [nullForceMergeOnCloneWhenIndexDisabled]. Nested searchable_snapshot blocks
+// expose sibling attributes on the object value itself; reading those avoids
+// Config.GetAttribute path misses that leave the computed true default in plan
+// while flatten stores null.
+type nullForceMergeOnCloneInSearchableSnapshot struct{}
+
+func (m nullForceMergeOnCloneInSearchableSnapshot) Description(context.Context) string {
+	return "does not default force_merge_on_clone when force_merge_index is false"
+}
+
+func (m nullForceMergeOnCloneInSearchableSnapshot) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m nullForceMergeOnCloneInSearchableSnapshot) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
+		return
+	}
+
+	configClone := types.BoolUnknown()
+	if !req.ConfigValue.IsNull() && !req.ConfigValue.IsUnknown() {
+		configClone = boolFromObject(req.ConfigValue, attrForceMergeOnClone)
+	}
+	if configClone.IsUnknown() || !configClone.IsNull() {
+		return
+	}
+
+	index := boolFromObject(req.PlanValue, attrForceMergeIndex)
+	if !typeutils.IsKnown(index) {
+		index = boolFromObject(req.ConfigValue, attrForceMergeIndex)
+	}
+	if !typeutils.IsKnown(index) || index.ValueBool() {
+		return
+	}
+
+	attrs := req.PlanValue.Attributes()
+	attrs[attrForceMergeOnClone] = types.BoolNull()
+	obj, diags := types.ObjectValue(req.PlanValue.AttributeTypes(ctx), attrs)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+	resp.PlanValue = obj
+}
+
+func forceMergeIndexFromPlanOrConfig(ctx context.Context, req planmodifier.BoolRequest) types.Bool {
+	siblingPath := req.Path.ParentPath().AtName(attrForceMergeIndex)
+	parentPath := req.Path.ParentPath()
+
+	if req.Plan.Schema != nil && !req.Plan.Raw.IsNull() {
+		if v := boolAtPath(ctx, req.Plan.GetAttribute, siblingPath); typeutils.IsKnown(v) {
+			return v
+		}
+		if v := boolFromParentObject(ctx, req.Plan.GetAttribute, parentPath); typeutils.IsKnown(v) {
+			return v
+		}
+	}
+	if req.Config.Schema != nil && !req.Config.Raw.IsNull() {
+		if v := boolAtPath(ctx, req.Config.GetAttribute, siblingPath); typeutils.IsKnown(v) {
+			return v
+		}
+		if v := boolFromParentObject(ctx, req.Config.GetAttribute, parentPath); typeutils.IsKnown(v) {
+			return v
+		}
+	}
+	return types.BoolUnknown()
+}
+
+func boolAtPath(ctx context.Context, get func(context.Context, path.Path, any) diag.Diagnostics, p path.Path) types.Bool {
+	var v types.Bool
+	if diags := get(ctx, p, &v); diags.HasError() {
+		return types.BoolUnknown()
+	}
+	return v
+}
+
+func boolFromParentObject(ctx context.Context, get func(context.Context, path.Path, any) diag.Diagnostics, parentPath path.Path) types.Bool {
+	var parent types.Object
+	if diags := get(ctx, parentPath, &parent); diags.HasError() {
+		return types.BoolUnknown()
+	}
+	return boolFromObject(parent, attrForceMergeIndex)
+}
+
+func boolFromObject(obj types.Object, name string) types.Bool {
+	if obj.IsNull() || obj.IsUnknown() {
+		return types.BoolUnknown()
+	}
+	v, ok := obj.Attributes()[name]
+	if !ok {
+		return types.BoolUnknown()
+	}
+	b, ok := v.(types.Bool)
+	if !ok {
+		return types.BoolUnknown()
+	}
+	return b
 }
 
 func blockWaitForSnapshot() schema.SingleNestedBlock {
