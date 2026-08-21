@@ -20,6 +20,7 @@ package ilm
 import (
 	"context"
 	_ "embed"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
@@ -227,7 +228,7 @@ func blockSearchableSnapshot() schema.SingleNestedBlock {
 			attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
 		},
 	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)))
-	b.PlanModifiers = []planmodifier.Object{nullForceMergeOnCloneInSearchableSnapshot{}}
+	b.PlanModifiers = []planmodifier.Object{defaultForceMergeOnClone{}}
 	return b
 }
 
@@ -252,7 +253,7 @@ func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
 		},
 		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)),
 	)
-	b.PlanModifiers = []planmodifier.Object{nullForceMergeOnCloneInSearchableSnapshot{}}
+	b.PlanModifiers = []planmodifier.Object{defaultForceMergeOnClone{}}
 	return b
 }
 
@@ -318,7 +319,6 @@ func searchableSnapshotForceMergeOnCloneAttribute() schema.BoolAttribute {
 		MarkdownDescription: forceMergeOnCloneMarkdownDescription,
 		Optional:            true,
 		Computed:            true,
-		Default:             booldefault.StaticBool(true),
 		Validators: []validator.Bool{
 			validators.ForbiddenIfDependentPathExpressionEqualsBool(
 				path.MatchRelative().AtParent().AtName(attrForceMergeIndex),
@@ -326,85 +326,94 @@ func searchableSnapshotForceMergeOnCloneAttribute() schema.BoolAttribute {
 			),
 		},
 		PlanModifiers: []planmodifier.Bool{
-			nullForceMergeOnCloneWhenIndexDisabled{},
+			defaultForceMergeOnClone{},
 		},
 	}
 }
 
-// nullForceMergeOnCloneWhenIndexDisabled clears the computed true default when
-// sibling force_merge_index is false. Elasticsearch rejects a non-null
-// force_merge_on_clone in that combination, so the planned value must stay
-// null to match the read-path (which does not backfill in that case).
-type nullForceMergeOnCloneWhenIndexDisabled struct{}
+// defaultForceMergeOnClone plans Elasticsearch's true default for
+// force_merge_on_clone, except when sibling force_merge_index is false — that
+// combination must stay null to match flatten (no backfill) and the API.
+//
+// The planned default is applied here rather than with booldefault.StaticBool
+// so Framework never sees an intermediate true that later modifiers have to
+// undo (which dirties an otherwise-empty plan and unknowns modified_date).
+type defaultForceMergeOnClone struct{}
 
-func (m nullForceMergeOnCloneWhenIndexDisabled) Description(context.Context) string {
-	return "does not default force_merge_on_clone when force_merge_index is false"
+var (
+	_ planmodifier.Bool   = defaultForceMergeOnClone{}
+	_ planmodifier.Object = defaultForceMergeOnClone{}
+)
+
+func (m defaultForceMergeOnClone) Description(context.Context) string {
+	return "defaults force_merge_on_clone to true unless force_merge_index is false"
 }
 
-func (m nullForceMergeOnCloneWhenIndexDisabled) MarkdownDescription(ctx context.Context) string {
+func (m defaultForceMergeOnClone) MarkdownDescription(ctx context.Context) string {
 	return m.Description(ctx)
 }
 
-func (m nullForceMergeOnCloneWhenIndexDisabled) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
-	// Do nothing if there is an unknown configuration value, otherwise interpolation gets messed up.
-	if req.ConfigValue.IsUnknown() {
+func (m defaultForceMergeOnClone) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+	// When force_merge_index is not yet known, leave the plan unchanged so this
+	// is not the first concrete value. The object modifier can still default.
+	next, ok := plannedForceMergeOnClone(req.ConfigValue, forceMergeIndexFromPlanOrConfig(ctx, req), false)
+	if !ok || resp.PlanValue.Equal(next) {
 		return
 	}
-	// Only clear the computed default when the attribute was left unset.
+	resp.PlanValue = next
+}
+
+func (m defaultForceMergeOnClone) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	configClone := types.BoolNull()
 	if !req.ConfigValue.IsNull() {
-		return
-	}
-
-	sibling := forceMergeIndexFromPlanOrConfig(ctx, req)
-	if typeutils.IsKnown(sibling) && !sibling.ValueBool() {
-		resp.PlanValue = types.BoolNull()
-	}
-}
-
-// nullForceMergeOnCloneInSearchableSnapshot is the block-level counterpart of
-// [nullForceMergeOnCloneWhenIndexDisabled]. Nested searchable_snapshot blocks
-// expose sibling attributes on the object value itself; reading those avoids
-// Config.GetAttribute path misses that leave the computed true default in plan
-// while flatten stores null.
-type nullForceMergeOnCloneInSearchableSnapshot struct{}
-
-func (m nullForceMergeOnCloneInSearchableSnapshot) Description(context.Context) string {
-	return "does not default force_merge_on_clone when force_merge_index is false"
-}
-
-func (m nullForceMergeOnCloneInSearchableSnapshot) MarkdownDescription(ctx context.Context) string {
-	return m.Description(ctx)
-}
-
-func (m nullForceMergeOnCloneInSearchableSnapshot) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
-	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
-		return
-	}
-
-	configClone := types.BoolUnknown()
-	if !req.ConfigValue.IsNull() && !req.ConfigValue.IsUnknown() {
 		configClone = boolFromObject(req.ConfigValue, attrForceMergeOnClone)
-	}
-	if configClone.IsUnknown() || !configClone.IsNull() {
-		return
 	}
 
 	index := boolFromObject(req.PlanValue, attrForceMergeIndex)
 	if !typeutils.IsKnown(index) {
 		index = boolFromObject(req.ConfigValue, attrForceMergeIndex)
 	}
-	if !typeutils.IsKnown(index) || index.ValueBool() {
+
+	next, ok := plannedForceMergeOnClone(configClone, index, true)
+	if !ok {
+		return
+	}
+	current := boolFromObject(req.PlanValue, attrForceMergeOnClone)
+	if current.Equal(next) {
 		return
 	}
 
-	attrs := req.PlanValue.Attributes()
-	attrs[attrForceMergeOnClone] = types.BoolNull()
+	attrs := maps.Clone(req.PlanValue.Attributes())
+	attrs[attrForceMergeOnClone] = next
 	obj, diags := types.ObjectValue(req.PlanValue.AttributeTypes(ctx), attrs)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return
 	}
 	resp.PlanValue = obj
+}
+
+// plannedForceMergeOnClone returns the planned force_merge_on_clone value.
+// ok is false when the caller must leave PlanValue unchanged: unknown config,
+// or (when defaultIfIndexUnknown is false) an unknown force_merge_index.
+func plannedForceMergeOnClone(configClone, index types.Bool, defaultIfIndexUnknown bool) (types.Bool, bool) {
+	if configClone.IsUnknown() {
+		return types.BoolUnknown(), false
+	}
+	if !configClone.IsNull() {
+		return configClone, true
+	}
+	if typeutils.IsKnown(index) && !index.ValueBool() {
+		return types.BoolNull(), true
+	}
+	if typeutils.IsKnown(index) || defaultIfIndexUnknown {
+		return types.BoolValue(true), true
+	}
+	return types.BoolUnknown(), false
 }
 
 func forceMergeIndexFromPlanOrConfig(ctx context.Context, req planmodifier.BoolRequest) types.Bool {
