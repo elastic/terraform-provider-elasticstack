@@ -386,35 +386,33 @@ func waitForUninstall(ctx context.Context, client *clients.KibanaScopedClient, s
 	getStatus := func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 		return getEntityStoreStatus(ctx, client, spaceID, false)
 	}
-	checker := makeUninstallStateChecker(getStatus)
 
-	// Immediate first check so an already not_installed store returns without
-	// waiting a poll interval. Skipped when ctx is already done so the wait
-	// loop reports the deadline.
-	if ctx.Err() == nil {
-		if done, _ := checker(ctx); done {
-			return nil
-		}
-	}
-
-	err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, asyncutils.WithPollInterval(5*time.Second))
+	_, err := asyncutils.PollUntilState(ctx, "security entity store", spaceID, makeUninstallFetch(getStatus), uninstallIsDesired, asyncutils.WithPollInterval(5*time.Second))
 	return uninstallWaitDiagsFromError(err)
 }
 
-// makeUninstallStateChecker builds a StateChecker that returns true once the
-// entity store status reaches "not_installed". Errors reading the status are
-// treated as transient and retried.
+// entityStoreStatusFunc reads the current entity store status, along with the
+// raw response body backing it.
 type entityStoreStatusFunc func(ctx context.Context) (*entityStoreStatus, []byte, diag.Diagnostics)
 
-func makeUninstallStateChecker(getStatus entityStoreStatusFunc) asyncutils.StateChecker {
-	return func(ctx context.Context) (bool, error) {
+// makeUninstallFetch builds a fetch function for [asyncutils.PollUntilState]
+// that resolves the current entity store status. Errors reading the status
+// are treated as transient and retried rather than aborting the wait.
+func makeUninstallFetch(getStatus entityStoreStatusFunc) func(context.Context) (*entityStoreStatus, error) {
+	return func(ctx context.Context) (*entityStoreStatus, error) {
 		status, _, diags := getStatus(ctx)
 		if diags.HasError() {
 			tflog.Debug(ctx, fmt.Sprintf("transient error reading entity store status during uninstall wait: %v", diags.Errors()))
-			return false, nil
+			return nil, nil
 		}
-		return status.Status == entityStoreStatusNotInstalled, nil
+		return status, nil
 	}
+}
+
+// uninstallIsDesired reports whether the entity store status has reached
+// "not_installed".
+func uninstallIsDesired(status *entityStoreStatus) bool {
+	return status != nil && status.Status == entityStoreStatusNotInstalled
 }
 
 // uninstallWaitDiagsFromError converts a WaitForStateTransition error into a
@@ -444,6 +442,14 @@ func waitForStarted(ctx context.Context, client *clients.KibanaScopedClient, spa
 	}, spaceID, asyncutils.WithPollInterval(3*time.Second))
 }
 
+// entityStoreSnapshot pairs a decoded entity store status with the raw
+// response body it was decoded from, so callers that need the raw body (for
+// framework-attribute population) don't have to re-fetch it.
+type entityStoreSnapshot struct {
+	status  *entityStoreStatus
+	rawBody []byte
+}
+
 // waitForStartedFromStatusFunc is the internal implementation of waitForStarted,
 // exposed with a swappable status reader so unit tests can exercise it without a
 // real Kibana client.
@@ -456,31 +462,32 @@ func waitForStartedFromStatusFunc(ctx context.Context, getStatus entityStoreStat
 		return status, rawBody, nil
 	}
 
-	checker := makeStartedStateChecker(getStatus, func(s *entityStoreStatus, b []byte) {
-		status, rawBody = s, b
-	})
-
-	err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, opts...)
+	snap, err := asyncutils.PollUntilState(ctx, "security entity store", spaceID, makeStartedFetch(getStatus), startedIsDesired, opts...)
+	if snap != nil {
+		status, rawBody = snap.status, snap.rawBody
+	}
 	return status, rawBody, startedWaitDiagsFromError(err)
 }
 
-// makeStartedStateChecker builds a StateChecker that returns true once the entity
-// store status is no longer "installing" (i.e. running, stopped, error, or
-// not_installed). Errors reading the status are treated as transient and retried.
-// The capture callback, if non-nil, receives the latest successful status read so
-// the caller can return the last-observed data on timeout.
-func makeStartedStateChecker(getStatus entityStoreStatusFunc, capture func(*entityStoreStatus, []byte)) asyncutils.StateChecker {
-	return func(ctx context.Context) (bool, error) {
+// makeStartedFetch builds a fetch function for [asyncutils.PollUntilState]
+// that resolves the current entity store status and raw body. Errors reading
+// the status are treated as transient and retried rather than aborting the
+// wait.
+func makeStartedFetch(getStatus entityStoreStatusFunc) func(context.Context) (*entityStoreSnapshot, error) {
+	return func(ctx context.Context) (*entityStoreSnapshot, error) {
 		status, rawBody, diags := getStatus(ctx)
 		if diags.HasError() {
 			tflog.Debug(ctx, fmt.Sprintf("transient error reading entity store status during started wait: %v", diags.Errors()))
-			return false, nil
+			return nil, nil
 		}
-		if capture != nil {
-			capture(status, rawBody)
-		}
-		return status.Status != entityStoreStatusInstalling, nil
+		return &entityStoreSnapshot{status: status, rawBody: rawBody}, nil
 	}
+}
+
+// startedIsDesired reports whether the entity store status is no longer
+// "installing" (i.e. running, stopped, error, or not_installed).
+func startedIsDesired(snap *entityStoreSnapshot) bool {
+	return snap != nil && snap.status != nil && snap.status.Status != entityStoreStatusInstalling
 }
 
 // startedWaitDiagsFromError converts a WaitForStateTransition error into diagnostics.

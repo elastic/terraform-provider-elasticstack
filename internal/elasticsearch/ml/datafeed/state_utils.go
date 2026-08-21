@@ -61,29 +61,27 @@ var errDatafeedInUndesiredState = errors.New("datafeed stuck in undesired state"
 
 // WaitForDatafeedState waits for a datafeed to reach the desired state
 func WaitForDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, datafeedID string, desiredState State) (bool, diag.Diagnostics) {
-	stateChecker := func(ctx context.Context) (bool, error) {
+	fetch := func(ctx context.Context) (*State, error) {
 		currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 		if diags.HasError() {
-			return false, diagutil.FwDiagsAsError(diags)
+			return nil, diagutil.FwDiagsAsError(diags)
 		}
 
 		if currentState == nil {
-			return false, fmt.Errorf("datafeed %s not found", datafeedID)
+			return nil, fmt.Errorf("datafeed %s not found", datafeedID)
 		}
 
-		if *currentState == desiredState {
-			return true, nil
+		if _, isInTerminalState := terminalDatafeedStates[*currentState]; isInTerminalState && *currentState != desiredState {
+			return nil, fmt.Errorf("%w: datafeed is in state [%s] but desired state is [%s]", errDatafeedInUndesiredState, *currentState, desiredState)
 		}
 
-		_, isInTerminalState := terminalDatafeedStates[*currentState]
-		if isInTerminalState {
-			return false, fmt.Errorf("%w: datafeed is in state [%s] but desired state is [%s]", errDatafeedInUndesiredState, *currentState, desiredState)
-		}
-
-		return false, nil
+		return currentState, nil
+	}
+	isDesired := func(currentState *State) bool {
+		return currentState != nil && *currentState == desiredState
 	}
 
-	err := asyncutils.WaitForStateTransition(ctx, "datafeed", datafeedID, stateChecker)
+	_, err := asyncutils.PollUntilState(ctx, "datafeed", datafeedID, fetch, isDesired)
 	if errors.Is(err, errDatafeedInUndesiredState) {
 		return false, nil
 	}

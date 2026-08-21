@@ -72,14 +72,14 @@ func TestUninstallWaitDiagsFromError(t *testing.T) {
 	}
 }
 
-func TestMakeUninstallStateChecker(t *testing.T) {
+func TestMakeUninstallFetch(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name           string
-		statusFunc     entityStoreStatusFunc
-		wantDone       bool
-		wantCheckerErr bool
+		name       string
+		statusFunc entityStoreStatusFunc
+		wantStatus entityStoreStatusValue
+		wantNil    bool
 	}{
 		{
 			name: "status read error is treated as transient retry",
@@ -88,45 +88,47 @@ func TestMakeUninstallStateChecker(t *testing.T) {
 				diags.AddError("transient", "boom")
 				return nil, nil, diags
 			},
-			wantDone:       false,
-			wantCheckerErr: false,
+			wantNil: true,
 		},
 		{
-			name: "not_installed reaches desired state",
+			name: "not_installed is returned as-is",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 				return &entityStoreStatus{Status: entityStoreStatusNotInstalled}, nil, nil
 			},
-			wantDone: true,
+			wantStatus: entityStoreStatusNotInstalled,
 		},
 		{
-			name: "installing continues polling",
+			name: "installing is returned as-is",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 				return &entityStoreStatus{Status: entityStoreStatusInstalling}, nil, nil
 			},
-			wantDone: false,
-		},
-		{
-			name: "running continues polling",
-			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: entityStoreStatusValue("running")}, nil, nil
-			},
-			wantDone: false,
+			wantStatus: entityStoreStatusInstalling,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			checker := makeUninstallStateChecker(tc.statusFunc)
-			done, err := checker(context.Background())
-			if tc.wantCheckerErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+			fetch := makeUninstallFetch(tc.statusFunc)
+			status, err := fetch(context.Background())
+			require.NoError(t, err)
+			if tc.wantNil {
+				assert.Nil(t, status)
+				return
 			}
-			assert.Equal(t, tc.wantDone, done)
+			require.NotNil(t, status)
+			assert.Equal(t, tc.wantStatus, status.Status)
 		})
 	}
+}
+
+func TestUninstallIsDesired(t *testing.T) {
+	t.Parallel()
+
+	assert.False(t, uninstallIsDesired(nil))
+	assert.False(t, uninstallIsDesired(&entityStoreStatus{Status: entityStoreStatusInstalling}))
+	assert.False(t, uninstallIsDesired(&entityStoreStatus{Status: entityStoreStatusValue("running")}))
+	assert.True(t, uninstallIsDesired(&entityStoreStatus{Status: entityStoreStatusNotInstalled}))
 }
 
 func TestWaitForUninstall_DeadlineExpired(t *testing.T) {
@@ -209,15 +211,15 @@ func TestStartedWaitDiagsFromError(t *testing.T) {
 	}
 }
 
-func TestMakeStartedStateChecker(t *testing.T) {
+func TestMakeStartedFetch(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name           string
-		statusFunc     entityStoreStatusFunc
-		wantDone       bool
-		wantCheckerErr bool
-		wantStatus     entityStoreStatusValue
+		name       string
+		statusFunc entityStoreStatusFunc
+		wantNil    bool
+		wantStatus entityStoreStatusValue
+		wantBody   string
 	}{
 		{
 			name: "status read error is treated as transient retry",
@@ -226,73 +228,52 @@ func TestMakeStartedStateChecker(t *testing.T) {
 				diags.AddError("transient", "boom")
 				return nil, nil, diags
 			},
-			wantDone:       false,
-			wantCheckerErr: false,
+			wantNil: true,
 		},
 		{
-			name: "installing continues polling and captures status",
+			name: "installing is returned as-is with its raw body",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 				return &entityStoreStatus{Status: entityStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
 			},
-			wantDone:   false,
 			wantStatus: entityStoreStatusInstalling,
+			wantBody:   `{"status":"installing"}`,
 		},
 		{
-			name: "running reaches desired state and captures status",
+			name: "running is returned as-is with its raw body",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 				return &entityStoreStatus{Status: entityStoreStatusValue("running")}, []byte(`{"status":"running"}`), nil
 			},
-			wantDone:   true,
 			wantStatus: entityStoreStatusValue("running"),
-		},
-		{
-			name: "not_installed reaches desired state and captures status",
-			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: entityStoreStatusNotInstalled}, []byte(`{"status":"not_installed"}`), nil
-			},
-			wantDone:   true,
-			wantStatus: entityStoreStatusNotInstalled,
-		},
-		{
-			name: "stopped reaches desired state",
-			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: entityStoreStatusValue("stopped")}, []byte(`{"status":"stopped"}`), nil
-			},
-			wantDone:   true,
-			wantStatus: entityStoreStatusValue("stopped"),
-		},
-		{
-			name: "error reaches desired state",
-			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: entityStoreStatusValue("error")}, []byte(`{"status":"error"}`), nil
-			},
-			wantDone:   true,
-			wantStatus: entityStoreStatusValue("error"),
+			wantBody:   `{"status":"running"}`,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			var captured *entityStoreStatus
-			var capturedBody []byte
-			checker := makeStartedStateChecker(tc.statusFunc, func(s *entityStoreStatus, b []byte) {
-				captured, capturedBody = s, b
-			})
-			done, err := checker(context.Background())
-			if tc.wantCheckerErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+			fetch := makeStartedFetch(tc.statusFunc)
+			snap, err := fetch(context.Background())
+			require.NoError(t, err)
+			if tc.wantNil {
+				assert.Nil(t, snap)
+				return
 			}
-			assert.Equal(t, tc.wantDone, done)
-			if tc.wantStatus != "" {
-				require.NotNil(t, captured)
-				assert.Equal(t, tc.wantStatus, captured.Status)
-				assert.NotNil(t, capturedBody)
-			}
+			require.NotNil(t, snap)
+			assert.Equal(t, tc.wantStatus, snap.status.Status)
+			assert.JSONEq(t, tc.wantBody, string(snap.rawBody))
 		})
 	}
+}
+
+func TestStartedIsDesired(t *testing.T) {
+	t.Parallel()
+
+	assert.False(t, startedIsDesired(nil))
+	assert.False(t, startedIsDesired(&entityStoreSnapshot{status: &entityStoreStatus{Status: entityStoreStatusInstalling}}))
+	assert.True(t, startedIsDesired(&entityStoreSnapshot{status: &entityStoreStatus{Status: entityStoreStatusValue("running")}}))
+	assert.True(t, startedIsDesired(&entityStoreSnapshot{status: &entityStoreStatus{Status: entityStoreStatusValue("stopped")}}))
+	assert.True(t, startedIsDesired(&entityStoreSnapshot{status: &entityStoreStatus{Status: entityStoreStatusValue("error")}}))
+	assert.True(t, startedIsDesired(&entityStoreSnapshot{status: &entityStoreStatus{Status: entityStoreStatusNotInstalled}}))
 }
 
 func TestWaitForStarted_NotInstalledEarlyExit(t *testing.T) {

@@ -48,19 +48,22 @@ func getJobState(ctx context.Context, client *clients.ElasticsearchScopedClient,
 }
 
 func waitForJobState(ctx context.Context, client *clients.ElasticsearchScopedClient, data MLJobStateData, jobID, desiredState string) diag.Diagnostics {
-	stateChecker := func(ctx context.Context) (bool, error) {
+	fetch := func(ctx context.Context) (*string, error) {
 		currentState, diags := getJobState(ctx, client, data, jobID)
 		if diags.HasError() {
-			return false, diagutil.FwDiagsAsError(diags)
+			return nil, diagutil.FwDiagsAsError(diags)
 		}
 
 		if currentState == nil {
-			return false, errJobNotFound
+			return nil, errJobNotFound
 		}
 
-		return *currentState == desiredState, nil
+		return currentState, nil
+	}
+	isDesired := func(currentState *string) bool {
+		return currentState != nil && *currentState == desiredState
 	}
 
-	err := asyncutils.WaitForStateTransition(ctx, "ml_job", jobID, stateChecker)
+	_, err := asyncutils.PollUntilState(ctx, "ml_job", jobID, fetch, isDesired)
 	return diagutil.FrameworkDiagFromError(err)
 }

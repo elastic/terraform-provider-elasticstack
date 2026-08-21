@@ -75,27 +75,20 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 // An initial check is performed immediately before entering the poll loop to
 // avoid the minimum 2 s tick latency when the job is already closed.
 func WaitForMLJobClosed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) error {
-	isJobClosed := func(ctx context.Context) (bool, error) {
+	fetch := func(ctx context.Context) (*types.JobStats, error) {
 		stats, diags := GetMLJobStats(ctx, apiClient, jobID)
 		if diags.HasError() {
-			return false, diagutil.FwDiagsAsError(diags)
+			return nil, diagutil.FwDiagsAsError(diags)
 		}
-		// Job is gone — treat as settled.
-		if stats == nil {
-			return true, nil
-		}
-		return stats.State == jobstate.Closed, nil
+		return stats, nil
+	}
+	// Job is gone — treat as settled.
+	isJobClosed := func(stats *types.JobStats) bool {
+		return stats == nil || stats.State == jobstate.Closed
 	}
 
-	// Check immediately before entering the poll loop so that jobs already in
-	// closed state (the common case for jobs that were explicitly closed before
-	// delete) do not incur the minimum 2 s poll interval.
-	alreadyClosed, err := isJobClosed(ctx)
-	if err != nil || alreadyClosed {
-		return err
-	}
-
-	return asyncutils.WaitForStateTransition(ctx, "ml_job", jobID, isJobClosed)
+	_, err := asyncutils.PollUntilState(ctx, "ml_job", jobID, fetch, isJobClosed)
+	return err
 }
 
 // GetMLJobStats retrieves the stats for a specific machine learning job
