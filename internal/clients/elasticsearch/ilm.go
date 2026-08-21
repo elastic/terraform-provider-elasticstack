@@ -112,7 +112,7 @@ func decodeGetIlmResponse(policyName string, body io.Reader) (*IlmPolicy, fwdiag
 	if !ok {
 		return nil, fwdiags.Diagnostics{
 			fwdiags.NewErrorDiagnostic(
-				"Unable to find a ILM policy in the cluster",
+				"Unable to find an ILM policy in the cluster",
 				fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
 			),
 		}
