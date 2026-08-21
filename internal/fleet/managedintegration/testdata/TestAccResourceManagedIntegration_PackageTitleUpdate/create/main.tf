@@ -6,20 +6,8 @@ variable "package_version" {
   type = string
 }
 
-variable "input_condition" {
+variable "package_title" {
   type = string
-}
-
-variable "stream_condition" {
-  type = string
-}
-
-variable "input_enabled" {
-  type = bool
-}
-
-variable "stream_enabled" {
-  type = bool
 }
 
 provider "elasticstack" {
@@ -29,12 +17,13 @@ provider "elasticstack" {
 
 resource "elasticstack_fleet_managed_integration" "test" {
   name            = var.policy_name
-  description     = "condition round-trip acceptance test"
+  description     = "Managed integration CSPM Package-Title Test Policy"
   policy_template = "cspm"
 
   package = {
     name    = "cloud_security_posture"
     version = var.package_version
+    title   = var.package_title
   }
 
   vars_json = jsonencode({
@@ -42,18 +31,12 @@ resource "elasticstack_fleet_managed_integration" "test" {
     deployment = "aws"
   })
 
-  var_group_selections = {
-    deployment = "aws"
-  }
-
   inputs = {
     "cspm-cloudbeat/cis_aws" = {
-      enabled   = var.input_enabled
-      condition = var.input_condition
+      enabled = true
       streams = {
         "cloud_security_posture.findings" = {
-          enabled   = var.stream_enabled
-          condition = var.stream_condition
+          enabled = true
           vars = jsonencode({
             role_arn               = "arn:aws:iam::123456789012:role/tf-acc-test-role"
             "aws.credentials.type" = "assume_role"

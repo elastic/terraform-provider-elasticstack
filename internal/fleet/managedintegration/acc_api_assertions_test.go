@@ -276,6 +276,23 @@ func testCheckManagedIntegrationPackageVersionPersisted(resourceName, expectedVe
 	}
 }
 
+func testCheckManagedIntegrationPackageTitlePersisted(resourceName, expectedTitle string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		policyID, spaceID, err := managedIntegrationPolicyFromState(s, resourceName)
+		if err != nil {
+			return err
+		}
+		item, err := readManagedIntegrationAPI(context.Background(), spaceID, policyID)
+		if err != nil {
+			return err
+		}
+		if item.Package.Title != expectedTitle {
+			return fmt.Errorf("managed integration %s: expected package.title %q, got %q", policyID, expectedTitle, item.Package.Title)
+		}
+		return nil
+	}
+}
+
 func testCheckManagedIntegrationUpdateExtrasPersisted(
 	resourceName string,
 	wantVars map[string]any,
