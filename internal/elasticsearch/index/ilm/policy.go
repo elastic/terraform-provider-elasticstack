@@ -19,7 +19,6 @@ package ilm
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -62,13 +61,8 @@ func readPolicyIntoModel(ctx context.Context, ilmDef *elasticsearch.IlmPolicy, p
 		ModifiedDate: types.StringValue(ilmDef.ModifiedDate),
 	}
 
-	if ilmDef.Metadata != nil {
-		b, err := json.Marshal(ilmDef.Metadata)
-		if err != nil {
-			diags.AddError("Failed to marshal metadata", err.Error())
-			return nil, diags
-		}
-		out.Metadata = jsontypes.NewNormalizedValue(string(b))
+	if len(ilmDef.Metadata) > 0 && string(ilmDef.Metadata) != "null" {
+		out.Metadata = jsontypes.NewNormalizedValue(string(ilmDef.Metadata))
 	} else {
 		out.Metadata = prior.Metadata
 	}

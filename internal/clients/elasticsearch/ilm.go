@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -53,9 +54,10 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 // IlmPolicy is the subset of a GET _ilm/policy response the provider needs.
 // Actions are left as generic maps so fields the typed client does not model
 // (for example searchable_snapshot.force_merge_on_clone) survive the read path.
+// Metadata is kept as raw JSON so integer values are not rounded via float64.
 type IlmPolicy struct {
 	ModifiedDate string
-	Metadata     map[string]any
+	Metadata     json.RawMessage
 	Phases       map[string]IlmPhase
 }
 
@@ -68,7 +70,7 @@ type IlmPhase struct {
 type ilmLifecycleResponseEntry struct {
 	ModifiedDate any `json:"modified_date"`
 	Policy       struct {
-		Meta   map[string]any                       `json:"_meta"`
+		Meta   json.RawMessage                      `json:"_meta"`
 		Phases map[string]ilmLifecycleResponsePhase `json:"phases"`
 	} `json:"policy"`
 }
@@ -97,8 +99,12 @@ func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 		return nil, d
 	}
 
+	return decodeGetIlmResponse(policyName, res.Body)
+}
+
+func decodeGetIlmResponse(policyName string, body io.Reader) (*IlmPolicy, fwdiags.Diagnostics) {
 	var decoded map[string]ilmLifecycleResponseEntry
-	if err := json.NewDecoder(res.Body).Decode(&decoded); err != nil {
+	if err := json.NewDecoder(body).Decode(&decoded); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
