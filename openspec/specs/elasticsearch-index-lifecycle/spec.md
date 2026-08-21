@@ -98,7 +98,7 @@ rollover {
 searchable_snapshot {
   snapshot_repository  = <optional, string>          # required when block is present
   force_merge_index    = <optional + computed, bool> # default true
-  force_merge_on_clone = <optional + computed, bool> # default true; false requires ES >= 9.2.1
+  force_merge_on_clone = <optional + computed, bool> # default true unless force_merge_index is false (then null); false requires ES >= 9.2.1
 }
 
 set_priority {
@@ -329,17 +329,17 @@ The following minimum versions SHALL apply:
 
 ILM settings available throughout the supported `8.x` and later range SHALL NOT have pre-8.0 compatibility gates.
 
-The `searchable_snapshot` action block, available in the `hot`, `cold`, and `frozen` phases, SHALL additionally accept an optional `force_merge_on_clone` boolean attribute (computed default `true`), alongside its existing `snapshot_repository` and `force_merge_index` attributes:
+The `searchable_snapshot` action block, available in the `hot`, `cold`, and `frozen` phases, SHALL additionally accept an optional `force_merge_on_clone` boolean attribute (computed default `true` when `force_merge_index` is not `false`), alongside its existing `snapshot_repository` and `force_merge_index` attributes:
 
 ```hcl
 searchable_snapshot {
   snapshot_repository  = <optional, string>          # required when block is present
   force_merge_index    = <optional + computed, bool> # default true
-  force_merge_on_clone = <optional + computed, bool> # default true; false requires ES >= 9.2.1
+  force_merge_on_clone = <optional + computed, bool> # default true unless force_merge_index is false (then null); false requires ES >= 9.2.1
 }
 ```
 
-`force_merge_on_clone` SHALL be rejected by config validation when configured (to any value) together with `force_merge_index = false`, since Elasticsearch disallows a non-null `force_merge_on_clone` in that combination. When `force_merge_index` is `false` and `force_merge_on_clone` is left unset, the provider SHALL omit `force_merge_on_clone` from the API payload regardless of its computed default.
+`force_merge_on_clone` SHALL be rejected by config validation when configured (to any value) together with `force_merge_index = false`, since Elasticsearch disallows a non-null `force_merge_on_clone` in that combination. When `force_merge_index` is `false` and `force_merge_on_clone` is left unset, the provider SHALL plan and store `force_merge_on_clone` as null rather than its computed default, and SHALL omit `force_merge_on_clone` from the API payload.
 
 #### Scenario: Unsupported rollover min condition
 
@@ -398,6 +398,14 @@ searchable_snapshot {
 - WHEN the policy is expanded against a supported (`9.2.1`+) Elasticsearch server
 - THEN the provider SHALL omit `force_merge_on_clone` from the `searchable_snapshot` action payload
 - AND the Put Lifecycle API call SHALL proceed
+
+#### Scenario: Force-merge-on-clone planned and stored as null when force-merge-index is disabled and left unset
+
+- GIVEN a `searchable_snapshot` block configures `force_merge_index = false`
+- AND the same block leaves `force_merge_on_clone` unset
+- WHEN the provider plans or reads the policy into state
+- THEN the provider SHALL plan and store `force_merge_on_clone` as null
+- AND SHALL NOT materialize the computed default `true`
 
 #### Scenario: Force-merge-on-clone default backfilled on read when omitted by Elasticsearch
 

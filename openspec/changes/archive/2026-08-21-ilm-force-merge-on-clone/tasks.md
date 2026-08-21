@@ -1,8 +1,8 @@
 ## 1. Schema
 
 - [x] 1.1 Add `attrForceMergeOnClone = "force_merge_on_clone"` to `internal/elasticsearch/index/ilm/constants.go`
-- [x] 1.2 Add `force_merge_on_clone` (`schema.BoolAttribute`, Optional+Computed, `Default: booldefault.StaticBool(true)`) to `blockSearchableSnapshot()` in `internal/elasticsearch/index/ilm/schema_actions.go`
-- [x] 1.3 Add the same attribute to `blockSearchableSnapshotInFrozenPhase()` in the same file
+- [x] 1.2 Add `force_merge_on_clone` (`schema.BoolAttribute`, Optional+Computed, no static default; `defaultForceMergeOnClone` plan modifier) to `blockSearchableSnapshot()` in `internal/elasticsearch/index/ilm/schema_actions.go`
+- [x] 1.3 Add the same attribute and plan modifier to `blockSearchableSnapshotInFrozenPhase()` in the same file
 - [x] 1.4 Add `attrForceMergeOnClone: types.BoolType` to `searchableSnapshotObjectType()` in `internal/elasticsearch/index/ilm/attr_types.go`
 
 ## 1a. `force_merge_index = false` interaction validator
