@@ -249,7 +249,7 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(settingsBytes, []byte("null")) {
+	if !bytes.Equal(settingsBytes, []byte(jsonNullLiteral)) {
 		if err := json.Unmarshal(settingsBytes, &settingsMap); err != nil {
 			return nil, err
 		}

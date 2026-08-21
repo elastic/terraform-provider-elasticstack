@@ -121,7 +121,7 @@ func TestDecodeGetIlmResponse(t *testing.T) {
 			assert.Equal(t, tt.wantDate, got.ModifiedDate)
 
 			if tt.wantMetaEmpty {
-				assert.True(t, len(got.Metadata) == 0 || string(got.Metadata) == "null")
+				assert.True(t, len(got.Metadata) == 0 || string(got.Metadata) == jsonNullLiteral)
 			} else if tt.wantMetaInt != "" {
 				assert.Contains(t, string(got.Metadata), tt.wantMetaInt)
 				assert.NotContains(t, string(got.Metadata), "e+")
