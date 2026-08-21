@@ -167,6 +167,10 @@ func TestAccDataSourceKibanaAgentBuilderAgent(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(dataSourceID, "name", "Test Agent"),
 					resource.TestCheckResourceAttr(dataSourceID, "description", "A test agent for export"),
+					resource.TestCheckResourceAttr(dataSourceID, "avatar_color", ""),
+					resource.TestCheckResourceAttr(dataSourceID, "avatar_symbol", ""),
+					resource.TestCheckNoResourceAttr(dataSourceID, "labels"),
+					resource.TestCheckNoResourceAttr(dataSourceID, "skill_ids"),
 					resource.TestCheckResourceAttr(dataSourceID, "instructions", "You are a helpful assistant."),
 					resource.TestCheckResourceAttr(dataSourceID, "include_dependencies", "false"),
 					resource.TestCheckResourceAttr(dataSourceID, "tools.#", "0"),
@@ -240,6 +244,7 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 	agentID := "test-agent-deps-" + uuid.New().String()[:8]
 	esqlToolID := "test-esql-tool-" + uuid.New().String()[:8]
 	workflowToolID := "test-wf-tool-" + uuid.New().String()[:8]
+	indexSearchToolID := "test-idx-tool-" + uuid.New().String()[:8]
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderWorkflowAPIVersion) },
@@ -248,9 +253,10 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables: config.Variables{
-					"agent_id":         config.StringVariable(agentID),
-					"esql_tool_id":     config.StringVariable(esqlToolID),
-					"workflow_tool_id": config.StringVariable(workflowToolID),
+					"agent_id":             config.StringVariable(agentID),
+					"esql_tool_id":         config.StringVariable(esqlToolID),
+					"workflow_tool_id":     config.StringVariable(workflowToolID),
+					"index_search_tool_id": config.StringVariable(indexSearchToolID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceID, "id", "default/"+agentID),
@@ -258,7 +264,7 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(dataSourceID, "name", "Test Agent With Tools"),
 					resource.TestCheckResourceAttr(dataSourceID, "include_dependencies", "true"),
-					resource.TestCheckResourceAttr(dataSourceID, "tools.#", "2"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.#", "3"),
 					resource.TestCheckResourceAttr(dataSourceID, "tools.0.id", "default/"+esqlToolID),
 					resource.TestCheckResourceAttr(dataSourceID, "tools.0.space_id", "default"),
 					resource.TestCheckResourceAttr(dataSourceID, "tools.0.tool_id", esqlToolID),
@@ -278,6 +284,44 @@ func TestAccDataSourceKibanaAgentBuilderAgentWithDependencies(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.1.configuration", "elasticstack_kibana_agentbuilder_tool.workflow", "configuration"),
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.1.workflow_id", "elasticstack_kibana_agentbuilder_workflow.test", "workflow_id"),
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.1.workflow_configuration_yaml", "elasticstack_kibana_agentbuilder_workflow.test", "configuration_yaml"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.2.id", "default/"+indexSearchToolID),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.2.space_id", "default"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.2.tool_id", indexSearchToolID),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.2.type", "index_search"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.2.description", "Test index search tool"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.2.readonly", "false"),
+					resource.TestCheckResourceAttrPair(dataSourceID, "tools.2.configuration", "elasticstack_kibana_agentbuilder_tool.index_search", "configuration"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaAgentBuilderAgentBuiltinTool covers the tools[].readonly
+// gap for the "true" case: built-in platform tools (e.g. platform.core.index_explorer)
+// are read-only, whereas every custom tool created through the provider is not.
+func TestAccDataSourceKibanaAgentBuilderAgentBuiltinTool(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-builtin-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceID, "id", "default/"+agentID),
+					resource.TestCheckResourceAttr(dataSourceID, "agent_id", agentID),
+					resource.TestCheckResourceAttr(dataSourceID, "space_id", "default"),
+					resource.TestCheckResourceAttr(dataSourceID, "include_dependencies", "true"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.#", "1"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.0.tool_id", "platform.core.index_explorer"),
+					resource.TestCheckResourceAttr(dataSourceID, "tools.0.readonly", "true"),
 				),
 			},
 		},
