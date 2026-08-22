@@ -19,11 +19,13 @@ package exportsavedobjects_test
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -38,7 +40,7 @@ func TestAccDataSourceKibanaExportSavedObjects(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
+					resource.TestCheckResourceAttr(dataSourceName, "id", "default/export"),
 					resource.TestCheckResourceAttr(dataSourceName, "space_id", "default"),
 					resource.TestCheckResourceAttr(dataSourceName, "exclude_export_details", "true"),
 					resource.TestCheckResourceAttr(dataSourceName, "include_references_deep", "true"),
@@ -48,7 +50,7 @@ func TestAccDataSourceKibanaExportSavedObjects(t *testing.T) {
 						dataSourceName, "objects.0.id",
 						"elasticstack_kibana_action_connector.test", "connector_id",
 					),
-					checkExportedObjectsContains(dataSourceName, "exported_objects", "action"),
+					checkExportedObjectsContains("action"),
 				),
 			},
 		},
@@ -71,6 +73,7 @@ func TestAccDataSourceKibanaExportSavedObjects_boolOptions(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "exclude_export_details", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "include_references_deep", "true"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "exported_objects"),
+					checkExportedObjectsContains("exportedCount"),
 				),
 			},
 			{
@@ -85,6 +88,7 @@ func TestAccDataSourceKibanaExportSavedObjects_boolOptions(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "exclude_export_details", "true"),
 					resource.TestCheckResourceAttr(dataSourceName, "include_references_deep", "false"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "exported_objects"),
+					checkExportedObjectsNotContains("exportedCount"),
 				),
 			},
 		},
@@ -132,18 +136,120 @@ func TestAccDataSourceKibanaExportSavedObjects_kibanaConnection(t *testing.T) {
 	})
 }
 
-func checkExportedObjectsContains(resourceName, attr, substr string) resource.TestCheckFunc {
+func TestAccDataSourceKibanaExportSavedObjects_boolOptionsDefault(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
+					resource.TestCheckResourceAttr(dataSourceName, "exclude_export_details", "true"),
+					resource.TestCheckResourceAttr(dataSourceName, "include_references_deep", "true"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "exported_objects"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaExportSavedObjects_emptyObjects(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ExpectError:              regexp.MustCompile(`(?s)at least 1`),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaExportSavedObjects_multipleObjects(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
+					resource.TestCheckResourceAttr(dataSourceName, "objects.#", "2"),
+					resource.TestCheckResourceAttr(dataSourceName, "objects.0.type", "action"),
+					resource.TestCheckResourceAttrPair(
+						dataSourceName, "objects.0.id",
+						"elasticstack_kibana_action_connector.test", "connector_id",
+					),
+					resource.TestCheckResourceAttr(dataSourceName, "objects.1.type", "space"),
+					resource.TestCheckResourceAttr(dataSourceName, "objects.1.id", "default"),
+					checkExportedObjectsContains("action"),
+					checkExportedObjectsContains("space"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaExportSavedObjects_customSpace(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceName, "id", fmt.Sprintf("%s/export", spaceID)),
+					resource.TestCheckResourceAttr(dataSourceName, "space_id", spaceID),
+					resource.TestCheckResourceAttr(dataSourceName, "objects.#", "1"),
+					resource.TestCheckResourceAttrPair(
+						dataSourceName, "objects.0.id",
+						"elasticstack_kibana_action_connector.test", "connector_id",
+					),
+					checkExportedObjectsContains("action"),
+				),
+			},
+		},
+	})
+}
+
+const exportedObjectsAttr = "exported_objects"
+
+func checkExportedObjectsContains(substr string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
+		rs, ok := s.RootModule().Resources[dataSourceName]
 		if !ok {
-			return fmt.Errorf("resource not found: %s", resourceName)
+			return fmt.Errorf("resource not found: %s", dataSourceName)
 		}
-		val, ok := rs.Primary.Attributes[attr]
+		val, ok := rs.Primary.Attributes[exportedObjectsAttr]
 		if !ok {
-			return fmt.Errorf("attribute %q not found on %s", attr, resourceName)
+			return fmt.Errorf("attribute %q not found on %s", exportedObjectsAttr, dataSourceName)
 		}
 		if !strings.Contains(val, substr) {
-			return fmt.Errorf("expected %s.%s to contain %q, got: %s", resourceName, attr, substr, val)
+			return fmt.Errorf("expected %s.%s to contain %q, got: %s", dataSourceName, exportedObjectsAttr, substr, val)
+		}
+		return nil
+	}
+}
+
+func checkExportedObjectsNotContains(substr string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[dataSourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", dataSourceName)
+		}
+		val, ok := rs.Primary.Attributes[exportedObjectsAttr]
+		if !ok {
+			return fmt.Errorf("attribute %q not found on %s", exportedObjectsAttr, dataSourceName)
+		}
+		if strings.Contains(val, substr) {
+			return fmt.Errorf("expected %s.%s to not contain %q, got: %s", dataSourceName, exportedObjectsAttr, substr, val)
 		}
 		return nil
 	}
