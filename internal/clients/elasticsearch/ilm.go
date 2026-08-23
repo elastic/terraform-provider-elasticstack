@@ -63,21 +63,16 @@ type IlmPolicy struct {
 
 // IlmPhase is one phase of an [IlmPolicy].
 type IlmPhase struct {
-	MinAge  string
-	Actions map[string]map[string]any
+	MinAge  string                    `json:"min_age"`
+	Actions map[string]map[string]any `json:"actions"`
 }
 
 type ilmLifecycleResponseEntry struct {
 	ModifiedDate string `json:"modified_date"`
 	Policy       struct {
-		Meta   json.RawMessage                      `json:"_meta"`
-		Phases map[string]ilmLifecycleResponsePhase `json:"phases"`
+		Meta   json.RawMessage     `json:"_meta"`
+		Phases map[string]IlmPhase `json:"phases"`
 	} `json:"policy"`
-}
-
-type ilmLifecycleResponsePhase struct {
-	MinAge  string                    `json:"min_age"`
-	Actions map[string]map[string]any `json:"actions"`
 }
 
 func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*IlmPolicy, fwdiags.Diagnostics) {
@@ -118,18 +113,11 @@ func decodeGetIlmResponse(policyName string, body io.Reader) (*IlmPolicy, fwdiag
 		}
 	}
 
-	out := &IlmPolicy{
+	return &IlmPolicy{
 		ModifiedDate: entry.ModifiedDate,
 		Metadata:     entry.Policy.Meta,
-		Phases:       make(map[string]IlmPhase, len(entry.Policy.Phases)),
-	}
-	for name, phase := range entry.Policy.Phases {
-		out.Phases[name] = IlmPhase{
-			MinAge:  phase.MinAge,
-			Actions: phase.Actions,
-		}
-	}
-	return out, nil
+		Phases:       entry.Policy.Phases,
+	}, nil
 }
 
 // GetIndicesWithILMPolicy returns the names of all indices currently using
