@@ -19,8 +19,8 @@ package customtypes
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -82,20 +82,5 @@ func (t JSONWithDefaultsType[TModel]) ValueFromString(_ context.Context, in base
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
 func (t JSONWithDefaultsType[TModel]) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	stringValue, ok := attrValue.(basetypes.StringValue)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	stringValuable, diags := t.ValueFromString(ctx, stringValue)
-	if diags.HasError() {
-		return nil, fmt.Errorf("unexpected error converting StringValue to StringValuable: %v", diags)
-	}
-
-	return stringValuable, nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }
