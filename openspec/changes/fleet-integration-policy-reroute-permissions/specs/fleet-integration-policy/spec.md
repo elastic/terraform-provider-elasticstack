@@ -35,7 +35,8 @@ When `additional_datastreams_permissions` was previously set in state and is rem
 
 - **GIVEN** `additional_datastreams_permissions = []`
 - **WHEN** Terraform validates the configuration
-- **THEN** a validation error SHALL be returned directing the user to remove the attribute instead
+- **THEN** a plan-time validation error SHALL be returned by a minimum-size validator, matching the treatment of `agent_policy_ids`
+- **AND** the attribute documentation SHALL state that permissions are revoked by removing the attribute rather than setting an empty list
 
 #### Scenario: Clearing is not attempted against an unsupported server
 
@@ -45,7 +46,7 @@ When `additional_datastreams_permissions` was previously set in state and is rem
 
 ### Requirement: Compatibility — additional_datastreams_permissions (REQ-029)
 
-When `additional_datastreams_permissions` is configured with a known value, the resource SHALL verify the server version is at least 9.1.0. If the server version is lower, the resource SHALL return an attribute-level error diagnostic with "Unsupported Elasticsearch version" and SHALL not call the Fleet API. The Fleet package policy API accepted this field starting in Kibana 9.1.0 and it was not backported to 8.x, so no 8.x server supports it.
+When `additional_datastreams_permissions` is configured with a known value, the resource SHALL verify the server version is at least 9.1.0. If the server version is lower, the resource SHALL return an attribute-level error diagnostic, whose summary is emitted by the shared version-requirement enforcement in `entitycore` ("Unsupported server version"), and SHALL not call the Fleet API. The Fleet package policy API accepted this field starting in Kibana 9.1.0 and it was not backported to 8.x, so no 8.x server supports it.
 
 #### Scenario: additional_datastreams_permissions on old server
 

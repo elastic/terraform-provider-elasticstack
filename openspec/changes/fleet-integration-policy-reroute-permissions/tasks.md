@@ -9,7 +9,7 @@
 - [x] 2.1 Add `attrAdditionalDatastreamsPermissions = "additional_datastreams_permissions"` to `constants.go`; verify by `go build ./...`
 - [x] 2.2 Add the attribute to `getSchemaV3` in `schema.go` as an `Optional` `ListAttribute` of `types.StringType` with a `listvalidator.SizeAtLeast(1)` validator and a description that names the Kibana UI label ("Add a reroute processor permission"), the 9.1.0 minimum, that Kibana validates entries against the space's allowed namespace prefixes, and that the attribute must be removed rather than set to `[]` to revoke permissions; verify with a schema unit test asserting the attribute type, optionality, and validator presence
 - [x] 2.3 Add `AdditionalDatastreamsPermissions types.List` with the matching `tfsdk` tag to `integrationPolicyModel` in `models.go`; verify by `go build ./...` and confirm no schema/model mismatch panic via `go test ./internal/fleet/integration_policy/...`
-- [x] 2.4 Confirm no state upgrader or schema version bump is needed by checking that `getSchemaV3` still reports `Version: 3` and that the existing v0/v1/v2 upgrade tests pass unchanged with `go test ./internal/fleet/integration_policy/... -run Upgrade`
+- [x] 2.4 Confirm no schema version bump and no new state upgrader are needed by checking that `getSchemaV3` still reports `Version: 3`; initialise the attribute to `types.ListNull(types.StringType)` in the existing V2→V3 upgrader, since the zero-value `types.List` carries no element type and fails when state is set; verify the existing v0/v1/v2 upgrade tests pass unchanged with `go test ./internal/fleet/integration_policy/... -run Upgrade`
 
 ## 3. Request body conversion
 
