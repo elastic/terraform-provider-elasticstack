@@ -18,6 +18,7 @@
 package typeutils
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -47,4 +48,19 @@ func AssertSameType[T attr.Value](expected T, other attr.Value) (T, bool, diag.D
 	}
 
 	return got, true, diags
+}
+
+// UnmarshalJSONForSemanticEquals unmarshals raw JSON into a value of type T,
+// centralizing the "Semantic Equality Check Error" diagnostic raised on
+// failure across XSemanticEquals implementations that decode JSON-typed
+// values before comparing them structurally.
+func UnmarshalJSONForSemanticEquals[T any](raw string) (T, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var out T
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		diags.AddError("Semantic Equality Check Error", err.Error())
+	}
+
+	return out, diags
 }

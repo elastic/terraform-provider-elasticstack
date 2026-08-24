@@ -633,6 +633,18 @@ func TestIndexMappingsValue_SemanticEqualsDynamicTemplateSuperset(t *testing.T) 
 	assert.True(t, eq)
 }
 
+func TestIndexMappingsValue_SemanticEqualsInvalidJSONReturnsDiagnostic(t *testing.T) {
+	t.Parallel()
+
+	plan := index.NewMappingsValue(`{invalid`)
+	api := index.NewMappingsValue(`{"properties":{}}`)
+
+	eq, diags := plan.StringSemanticEquals(context.Background(), api)
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Summary(), "Semantic Equality Check Error")
+	assert.False(t, eq)
+}
+
 // TestFieldSemanticallyEqual_scriptObjectToObject verifies script object comparison
 // by meaningful keys (source, lang, params, options) while allowing extra API keys.
 func TestFieldSemanticallyEqual_scriptObjectToObject(t *testing.T) {
