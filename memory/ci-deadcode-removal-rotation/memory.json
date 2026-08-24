@@ -856,6 +856,54 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
       "attemptedAt": "2026-08-21T03:38:16.751857629Z",
       "reason": "verification_timeout"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.assertCloseStatePanic",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.452138439Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.decodeKibanaConnection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.452138589Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.encodeKibanaConnection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.452138679Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.kibanaConnectionFromSnapshot",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.452138749Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.kibanaConnectionListFromSnapshot",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.452138819Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.kibanaConnectionSnapshotFromList",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.45213889Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.snapshotFromKibanaConnection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-08-24T03:26:58.45213896Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon.UnregisterVizConverter",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
+      "attemptedAt": "2026-08-24T03:37:55.390461157Z",
+      "reason": "verification_timeout"
     }
   ]
 }
