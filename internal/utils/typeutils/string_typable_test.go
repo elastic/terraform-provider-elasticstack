@@ -73,3 +73,52 @@ func TestStringTypableValueFromTerraform(t *testing.T) {
 		require.Equal(t, basetypes.NewStringValue("hello"), val)
 	})
 }
+
+type fakeStringType struct {
+	basetypes.StringType
+}
+
+type otherStringType struct {
+	basetypes.StringType
+}
+
+func TestStringTypableEqual(t *testing.T) {
+	t.Run("true when the other type is the same concrete type", func(t *testing.T) {
+		require.True(t, typeutils.StringTypableEqual[fakeStringType](fakeStringType{}))
+	})
+
+	t.Run("false when the other type is a different concrete type", func(t *testing.T) {
+		require.False(t, typeutils.StringTypableEqual[fakeStringType](otherStringType{}))
+	})
+
+	t.Run("false when the other type is not an attr.Type StringTypable at all", func(t *testing.T) {
+		require.False(t, typeutils.StringTypableEqual[fakeStringType](basetypes.BoolType{}))
+	})
+}
+
+type fakeStringValue struct {
+	basetypes.StringValue
+}
+
+func fakeStringValueOf(v fakeStringValue) basetypes.StringValue {
+	return v.StringValue
+}
+
+func TestStringValuableEqual(t *testing.T) {
+	t.Run("false when the other value is not the same concrete type", func(t *testing.T) {
+		self := fakeStringValue{StringValue: basetypes.NewStringValue("hello")}
+		require.False(t, typeutils.StringValuableEqual(self.StringValue, basetypes.NewStringValue("hello"), fakeStringValueOf))
+	})
+
+	t.Run("false when the embedded values differ", func(t *testing.T) {
+		self := fakeStringValue{StringValue: basetypes.NewStringValue("hello")}
+		other := fakeStringValue{StringValue: basetypes.NewStringValue("world")}
+		require.False(t, typeutils.StringValuableEqual(self.StringValue, other, fakeStringValueOf))
+	})
+
+	t.Run("true when the embedded values are equal", func(t *testing.T) {
+		self := fakeStringValue{StringValue: basetypes.NewStringValue("hello")}
+		other := fakeStringValue{StringValue: basetypes.NewStringValue("hello")}
+		require.True(t, typeutils.StringValuableEqual(self.StringValue, other, fakeStringValueOf))
+	})
+}

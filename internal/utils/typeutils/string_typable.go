@@ -54,3 +54,26 @@ func StringTypableValueFromTerraform(
 
 	return stringValuable, nil
 }
+
+// StringTypableEqual implements the Equal method shared by every custom basetypes.StringTypable
+// type in this package that embeds basetypes.StringType: since basetypes.StringType carries no
+// distinguishing state, equality between two instances of T reduces to asserting o to that same
+// concrete type.
+func StringTypableEqual[T attr.Type](o attr.Type) bool {
+	_, ok := o.(T)
+	return ok
+}
+
+// StringValuableEqual implements the Equal method shared by every custom basetypes.StringValuable
+// type in this package that embeds basetypes.StringValue: it asserts o to the same concrete type T,
+// then delegates to the embedded StringValue's own Equal. embeddedOf extracts the embedded
+// basetypes.StringValue from a T (normally a field access, e.g. func(d Duration) basetypes.StringValue
+// { return d.StringValue }).
+func StringValuableEqual[T attr.Value](self basetypes.StringValue, o attr.Value, embeddedOf func(T) basetypes.StringValue) bool {
+	other, ok := o.(T)
+	if !ok {
+		return false
+	}
+
+	return self.Equal(embeddedOf(other))
+}

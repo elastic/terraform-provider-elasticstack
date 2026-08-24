@@ -139,17 +139,8 @@ func (v IndexSettingsValue) ValidateAttribute(ctx context.Context, req xattr.Val
 // Terraform drift and apply consistency between the user's input form and the canonical
 // {"index":{...}} shape Elasticsearch returns.
 func (v IndexSettingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(IndexSettingsValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic equality check error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 
