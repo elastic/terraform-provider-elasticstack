@@ -133,7 +133,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	// Treat an explicit JSON null the same as an absent global so state is
 	// stored as null rather than the literal string "null".
-	if strings.TrimSpace(string(role.Global)) == "null" {
+	if strings.TrimSpace(string(role.Global)) == jsonNullLiteral {
 		role.Global = nil
 	}
 

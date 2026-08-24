@@ -28,6 +28,11 @@ import (
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+// jsonNullLiteral is the JSON `null` token. Compared against marshaled
+// json.RawMessage / []byte values to treat an explicit JSON null the same as
+// an absent field.
+const jsonNullLiteral = "null"
+
 // DateMathIndexNameRe matches plain Elasticsearch date math index name expressions.
 // The pattern enforces:
 //   - opening `<`

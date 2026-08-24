@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -136,23 +137,22 @@ func (v Condition) evaluatePathExpression(ctx context.Context, config tfsdk.Conf
 	var eval dependentEvaluation
 	sawNonNullNonUnknown := false
 	for _, matchedPath := range matchedPaths {
-		var pathValue types.String
-		getDiags := config.GetAttribute(ctx, matchedPath, &pathValue)
+		pathEval, getDiags := readDependentAttr(ctx, config, matchedPath)
 		if getDiags.HasError() {
 			diags.Append(getDiags...)
 			continue
 		}
 
-		if pathValue.IsUnknown() {
+		if pathEval.isUnknown {
 			eval.isUnknown = true
 			continue
 		}
-		if pathValue.IsNull() {
+		if pathEval.isNull {
 			continue
 		}
 
 		sawNonNullNonUnknown = true
-		eval.valueStr = pathValue.ValueString()
+		eval.valueStr = pathEval.valueStr
 		if slices.Contains(v.allowedValues, eval.valueStr) {
 			eval.matchesAllowed = true
 			return eval, diags
@@ -168,18 +168,9 @@ func (v Condition) evaluatePathExpression(ctx context.Context, config tfsdk.Conf
 
 // evaluateStaticPath reads the dependent value at a static path.
 func (v Condition) evaluateStaticPath(ctx context.Context, config tfsdk.Config) (dependentEvaluation, diag.Diagnostics) {
-	var dependentValue types.String
-	var diags diag.Diagnostics
-
-	diags.Append(config.GetAttribute(ctx, *v.dependentPath, &dependentValue)...)
+	eval, diags := readDependentAttr(ctx, config, *v.dependentPath)
 	if diags.HasError() {
 		return dependentEvaluation{}, diags
-	}
-
-	eval := dependentEvaluation{
-		isNull:    dependentValue.IsNull(),
-		isUnknown: dependentValue.IsUnknown(),
-		valueStr:  dependentValue.ValueString(),
 	}
 
 	if !eval.isNull && !eval.isUnknown {
@@ -187,6 +178,38 @@ func (v Condition) evaluateStaticPath(ctx context.Context, config tfsdk.Config) 
 	}
 
 	return eval, diags
+}
+
+// readDependentAttr reads a dependent attribute as either types.String or
+// types.Bool. Bool values are compared as "true"/"false" so existing
+// string-valued constructors can key off a boolean sibling.
+func readDependentAttr(ctx context.Context, config tfsdk.Config, p path.Path) (dependentEvaluation, diag.Diagnostics) {
+	var val attr.Value
+	diags := config.GetAttribute(ctx, p, &val)
+	if diags.HasError() {
+		return dependentEvaluation{}, diags
+	}
+	return dependentEvaluationFromAttr(val), diags
+}
+
+func dependentEvaluationFromAttr(val attr.Value) dependentEvaluation {
+	eval := dependentEvaluation{}
+	if val == nil || val.IsNull() {
+		eval.isNull = true
+		return eval
+	}
+	if val.IsUnknown() {
+		eval.isUnknown = true
+		return eval
+	}
+
+	switch v := val.(type) {
+	case types.String:
+		eval.valueStr = v.ValueString()
+	case types.Bool:
+		eval.valueStr = strconv.FormatBool(v.ValueBool())
+	}
+	return eval
 }
 
 // dependentFieldHasAllowedValue checks if the dependent field specified by the condition's

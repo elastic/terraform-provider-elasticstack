@@ -1689,3 +1689,120 @@ func TestOneOfWhenDependentPathExpressionEquals_Description(t *testing.T) {
 	require.Contains(t, v.Description(context.Background()), "value must be one of")
 	require.Contains(t, v.Description(context.Background()), "rolling")
 }
+
+func TestForbiddenIfDependentPathExpressionOneOf_forceMergeOnClone(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name              string
+		forceMergeOnClone types.Bool
+		forceMergeIndex   types.Bool
+		expectedError     bool
+	}
+
+	testCases := []testCase{
+		{
+			name:              "valid - force_merge_on_clone unset, force_merge_index false",
+			forceMergeOnClone: types.BoolNull(),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone false, force_merge_index true",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolValue(true),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone true, force_merge_index true",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolValue(true),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone set, force_merge_index unset",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolNull(),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone set, force_merge_index unknown",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolUnknown(),
+			expectedError:     false,
+		},
+		{
+			name:              "invalid - force_merge_on_clone true, force_merge_index false",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     true,
+		},
+		{
+			name:              "invalid - force_merge_on_clone false, force_merge_index false",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     true,
+		},
+	}
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"force_merge_index": schema.BoolAttribute{
+				Optional: true,
+			},
+			"force_merge_on_clone": schema.BoolAttribute{
+				Optional: true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			currentTfValue, err := tc.forceMergeOnClone.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+			dependentTfValue, err := tc.forceMergeIndex.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+
+			rawConfig := tftypes.NewValue(
+				tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"force_merge_index":    tftypes.Bool,
+						"force_merge_on_clone": tftypes.Bool,
+					},
+				},
+				map[string]tftypes.Value{
+					"force_merge_index":    dependentTfValue,
+					"force_merge_on_clone": currentTfValue,
+				},
+			)
+
+			config := tfsdk.Config{
+				Raw:    rawConfig,
+				Schema: testSchema,
+			}
+
+			v := ForbiddenIfDependentPathExpressionOneOf(
+				path.MatchRelative().AtParent().AtName("force_merge_index"),
+				[]string{"false"},
+			)
+
+			request := validator.BoolRequest{
+				Path:        path.Root("force_merge_on_clone"),
+				ConfigValue: tc.forceMergeOnClone,
+				Config:      config,
+			}
+
+			response := &validator.BoolResponse{}
+			v.ValidateBool(context.Background(), request, response)
+
+			if tc.expectedError {
+				require.True(t, response.Diagnostics.HasError(), "Expected validation error but got none")
+				require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "force_merge_on_clone")
+			} else {
+				require.False(t, response.Diagnostics.HasError(), "Expected no validation error but got: %v", response.Diagnostics.Errors())
+			}
+		})
+	}
+}

@@ -22,10 +22,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ilm/putlifecycle"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
@@ -39,35 +38,86 @@ func PutIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, p
 	}
 
 	typedClient := apiClient.GetESClient()
-	var req putlifecycle.Request
-	if err := json.Unmarshal(policyBytes, &req); err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	_, err = typedClient.Ilm.PutLifecycle(policy.Name).Request(&req).Do(ctx)
+	// Submit the marshaled policy JSON as the raw request body rather than
+	// unmarshaling into putlifecycle.Request. The typed SearchableSnapshotAction
+	// struct does not model force_merge_on_clone, and its UnmarshalJSON would
+	// silently drop the field. Tracked upstream as
+	// https://github.com/elastic/elasticsearch-specification/issues/6575
+	// (terraform-provider-elasticstack#4606).
+	_, err = typedClient.Ilm.PutLifecycle(policy.Name).Raw(bytes.NewReader(policyBytes)).Do(ctx)
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return nil
 }
 
-func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*types.Lifecycle, fwdiags.Diagnostics) {
+// IlmPolicy is the subset of a GET _ilm/policy response the provider needs.
+// Actions are left as generic maps so fields the typed client does not model
+// (for example searchable_snapshot.force_merge_on_clone) survive the read path.
+// Metadata is kept as raw JSON so integer values are not rounded via float64.
+type IlmPolicy struct {
+	ModifiedDate string
+	Metadata     json.RawMessage
+	Phases       map[string]IlmPhase
+}
+
+// IlmPhase is one phase of an [IlmPolicy].
+type IlmPhase struct {
+	MinAge  string                    `json:"min_age"`
+	Actions map[string]map[string]any `json:"actions"`
+}
+
+type ilmLifecycleResponseEntry struct {
+	ModifiedDate string `json:"modified_date"`
+	Policy       struct {
+		Meta   json.RawMessage     `json:"_meta"`
+		Phases map[string]IlmPhase `json:"phases"`
+	} `json:"policy"`
+}
+
+func GetIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*IlmPolicy, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Do(ctx)
+
+	// Use Perform rather than Do so the response is not decoded through the
+	// typed Lifecycle/SearchableSnapshotAction structs, which would silently
+	// drop fields the generated client does not model (e.g. force_merge_on_clone).
+	res, err := typedClient.Ilm.GetLifecycle().Policy(policyName).Perform(ctx)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	if lifecycle, ok := res[policyName]; ok {
-		return &lifecycle, nil
+	defer res.Body.Close()
+
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to fetch ILM policy"); notFound || d.HasError() {
+		if notFound {
+			return nil, nil
+		}
+		return nil, d
 	}
-	return nil, fwdiags.Diagnostics{
-		fwdiags.NewErrorDiagnostic(
-			"Unable to find a ILM policy in the cluster",
-			fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
-		),
+
+	return decodeGetIlmResponse(policyName, res.Body)
+}
+
+func decodeGetIlmResponse(policyName string, body io.Reader) (*IlmPolicy, fwdiags.Diagnostics) {
+	var decoded map[string]ilmLifecycleResponseEntry
+	if err := json.NewDecoder(body).Decode(&decoded); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
 	}
+
+	entry, ok := decoded[policyName]
+	if !ok {
+		return nil, fwdiags.Diagnostics{
+			fwdiags.NewErrorDiagnostic(
+				"Unable to find an ILM policy in the cluster",
+				fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
+			),
+		}
+	}
+
+	return &IlmPolicy{
+		ModifiedDate: entry.ModifiedDate,
+		Metadata:     entry.Policy.Meta,
+		Phases:       entry.Policy.Phases,
+	}, nil
 }
 
 // GetIndicesWithILMPolicy returns the names of all indices currently using
