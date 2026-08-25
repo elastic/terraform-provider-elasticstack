@@ -25,10 +25,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
@@ -235,32 +233,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional: true,
 				MarkdownDescription: "Global data tags applied to the managed integration's data streams; updatable in-place. " +
 					"Keyed by tag name; set exactly one of `string_value` or `number_value` per entry.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						globaldatatags.StringValueAttr: schema.StringAttribute{
-							Optional:            true,
-							MarkdownDescription: "String value for the tag. If this is set, `number_value` must not be defined.",
-							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr)),
-								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
-									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
-								),
-							},
-						},
-						globaldatatags.NumberValueAttr: schema.Float32Attribute{
-							Optional:            true,
-							MarkdownDescription: "Number value for the tag. If this is set, `string_value` must not be defined.",
-							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr)),
-								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
-									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
-								),
-							},
-						},
-					},
-				},
+				NestedObject: globaldatatags.NestedObject(
+					"String value for the tag. If this is set, `number_value` must not be defined.",
+					"Number value for the tag. If this is set, `string_value` must not be defined.",
+					true,
+				),
 			},
 			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
 				Optional:            true,

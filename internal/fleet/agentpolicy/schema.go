@@ -24,12 +24,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -164,32 +162,11 @@ func getSchema() schema.Schema {
 			},
 			"global_data_tags": schema.MapNestedAttribute{
 				Description: globalDataTagsDescription,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						globaldatatags.StringValueAttr: schema.StringAttribute{
-							Description: "String value for the field. If this is set, number_value must not be defined.",
-							Optional:    true,
-							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr)),
-								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
-									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
-								),
-							},
-						},
-						globaldatatags.NumberValueAttr: schema.Float32Attribute{
-							Description: "Number value for the field. If this is set, string_value must not be defined.",
-							Optional:    true,
-							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr)),
-								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globaldatatags.StringValueAttr),
-									path.MatchRelative().AtParent().AtName(globaldatatags.NumberValueAttr),
-								),
-							},
-						},
-					},
-				},
+				NestedObject: globaldatatags.NestedObject(
+					"String value for the field. If this is set, number_value must not be defined.",
+					"Number value for the field. If this is set, string_value must not be defined.",
+					false,
+				),
 				Computed: true,
 				Optional: true,
 				Default:  mapdefault.StaticValue(types.MapValueMust(globaldatatags.ElementType(), map[string]attr.Value{})),

@@ -32,7 +32,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -85,6 +90,51 @@ func Expand[T any](item Item, meta typeutils.MapMeta, fromString func(string) (T
 		return zero
 	}
 	return value
+}
+
+// NestedObject builds the schema.NestedAttributeObject shared by every
+// `global_data_tags` map attribute: the string_value/number_value attributes
+// wired with the ConflictsWith + AtLeastOneOf validator pairs that enforce
+// "exactly one of the two must be set". stringDescription/numberDescription
+// populate each attribute's Description field, or MarkdownDescription when
+// markdown is true, so callers can keep their own schema's description style
+// (plain vs. Markdown) without duplicating the validator wiring.
+func NestedObject(stringDescription, numberDescription string, markdown bool) schema.NestedAttributeObject {
+	stringAttr := schema.StringAttribute{
+		Optional: true,
+		Validators: []validator.String{
+			stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(NumberValueAttr)),
+			stringvalidator.AtLeastOneOf(
+				path.MatchRelative().AtParent().AtName(StringValueAttr),
+				path.MatchRelative().AtParent().AtName(NumberValueAttr),
+			),
+		},
+	}
+	numberAttr := schema.Float32Attribute{
+		Optional: true,
+		Validators: []validator.Float32{
+			float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(StringValueAttr)),
+			float32validator.AtLeastOneOf(
+				path.MatchRelative().AtParent().AtName(StringValueAttr),
+				path.MatchRelative().AtParent().AtName(NumberValueAttr),
+			),
+		},
+	}
+
+	if markdown {
+		stringAttr.MarkdownDescription = stringDescription
+		numberAttr.MarkdownDescription = numberDescription
+	} else {
+		stringAttr.Description = stringDescription
+		numberAttr.Description = numberDescription
+	}
+
+	return schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			StringValueAttr: stringAttr,
+			NumberValueAttr: numberAttr,
+		},
+	}
 }
 
 // Flatten decodes a caller's API union value V into Item, preferring the
