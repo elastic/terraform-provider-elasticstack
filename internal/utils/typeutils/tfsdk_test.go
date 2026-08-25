@@ -1016,7 +1016,7 @@ func TestSetTypeToSliceStringPtr(t *testing.T) {
 	}{
 		{name: "returns nil for unknown set", input: stringSetUnk, want: nil},
 		{name: "returns nil for null set", input: stringSetNil, want: nil},
-		{name: "returns nil for empty set", input: stringSetEmpty, want: nil},
+		{name: "returns pointer for empty set", input: stringSetEmpty, want: &[]string{}},
 		{name: "returns pointer for non-empty set", input: stringSetFull, want: &want},
 	}
 

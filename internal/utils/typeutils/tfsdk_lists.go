@@ -161,14 +161,7 @@ func ListTypeToSliceString(ctx context.Context, value types.List, p path.Path, d
 // ListTypeToSliceStringPtr extracts a *[]string from an optional list attribute,
 // returning nil when the list is null or unknown.
 func ListTypeToSliceStringPtr(ctx context.Context, l types.List, p path.Path, diags *diag.Diagnostics) *[]string {
-	if l.IsNull() || l.IsUnknown() {
-		return nil
-	}
-	result := ListTypeToSliceString(ctx, l, p, diags)
-	if diags.HasError() {
-		return nil
-	}
-	return &result
+	return collectionToSliceStringPtr(ctx, l, p, diags)
 }
 
 // ListTypeAs converts a types.List into a tfsdk aware []T.
