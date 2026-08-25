@@ -25,128 +25,55 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// NullPreserveStringFromPrior
-
-func TestNullPreserveStringFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
+func TestNullPreserveFromPrior(t *testing.T) {
 	t.Parallel()
-	existing := types.StringValue("original")
-	NullPreserveStringFromPrior(types.StringValue("prior"), &existing)
-	assert.Equal(t, "original", existing.ValueString())
-}
 
-func TestNullPreserveStringFromPrior_nullPrior_setsExistingToNull(t *testing.T) {
-	t.Parallel()
-	existing := types.StringValue("original")
-	NullPreserveStringFromPrior(types.StringNull(), &existing)
-	assert.True(t, existing.IsNull(), "null prior should set existing to null")
-	assert.False(t, existing.IsUnknown())
-}
+	tests := []struct {
+		name     string
+		prior    attr.Value
+		existing attr.Value
+		want     attr.Value
+		nilDest  bool
+	}{
+		{
+			name:     "known prior leaves existing unchanged",
+			prior:    types.StringValue("prior"),
+			existing: types.StringValue("original"),
+			want:     types.StringValue("original"),
+		},
+		{
+			name:     "null prior sets existing to null",
+			prior:    types.Int64Null(),
+			existing: types.Int64Value(42),
+			want:     types.Int64Null(),
+		},
+		{
+			name:     "unknown prior sets existing to unknown",
+			prior:    types.BoolUnknown(),
+			existing: types.BoolValue(true),
+			want:     types.BoolUnknown(),
+		},
+		{
+			name:    "nil existing is a no-op",
+			prior:   types.StringNull(),
+			nilDest: true,
+		},
+	}
 
-func TestNullPreserveStringFromPrior_unknownPrior_setsExistingToUnknown(t *testing.T) {
-	t.Parallel()
-	existing := types.StringValue("original")
-	NullPreserveStringFromPrior(types.StringUnknown(), &existing)
-	assert.True(t, existing.IsUnknown(), "unknown prior should set existing to unknown, not null")
-}
-
-func TestNullPreserveStringFromPrior_nilExisting_noopNoPanic(t *testing.T) {
-	t.Parallel()
-	assert.NotPanics(t, func() {
-		NullPreserveStringFromPrior(types.StringNull(), nil)
-	})
-}
-
-// NullPreserveBoolFromPrior
-
-func TestNullPreserveBoolFromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
-	t.Parallel()
-	existing := types.BoolValue(true)
-	NullPreserveBoolFromPrior(types.BoolValue(false), &existing)
-	assert.True(t, existing.ValueBool())
-}
-
-func TestNullPreserveBoolFromPrior_nullPrior_setsExistingToNull(t *testing.T) {
-	t.Parallel()
-	existing := types.BoolValue(true)
-	NullPreserveBoolFromPrior(types.BoolNull(), &existing)
-	assert.True(t, existing.IsNull(), "null prior should set existing to null")
-	assert.False(t, existing.IsUnknown())
-}
-
-func TestNullPreserveBoolFromPrior_unknownPrior_setsExistingToUnknown(t *testing.T) {
-	t.Parallel()
-	existing := types.BoolValue(true)
-	NullPreserveBoolFromPrior(types.BoolUnknown(), &existing)
-	assert.True(t, existing.IsUnknown(), "unknown prior should set existing to unknown, not null")
-}
-
-func TestNullPreserveBoolFromPrior_nilExisting_noopNoPanic(t *testing.T) {
-	t.Parallel()
-	assert.NotPanics(t, func() {
-		NullPreserveBoolFromPrior(types.BoolNull(), nil)
-	})
-}
-
-// NullPreserveFloat32FromPrior
-
-func TestNullPreserveFloat32FromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
-	t.Parallel()
-	existing := types.Float32Value(1.5)
-	NullPreserveFloat32FromPrior(types.Float32Value(2.5), &existing)
-	assert.InDelta(t, 1.5, existing.ValueFloat32(), 1e-6)
-}
-
-func TestNullPreserveFloat32FromPrior_nullPrior_setsExistingToNull(t *testing.T) {
-	t.Parallel()
-	existing := types.Float32Value(1.5)
-	NullPreserveFloat32FromPrior(types.Float32Null(), &existing)
-	assert.True(t, existing.IsNull(), "null prior should set existing to null")
-	assert.False(t, existing.IsUnknown())
-}
-
-func TestNullPreserveFloat32FromPrior_unknownPrior_setsExistingToUnknown(t *testing.T) {
-	t.Parallel()
-	existing := types.Float32Value(1.5)
-	NullPreserveFloat32FromPrior(types.Float32Unknown(), &existing)
-	assert.True(t, existing.IsUnknown(), "unknown prior should set existing to unknown, not null")
-}
-
-func TestNullPreserveFloat32FromPrior_nilExisting_noopNoPanic(t *testing.T) {
-	t.Parallel()
-	assert.NotPanics(t, func() {
-		NullPreserveFloat32FromPrior(types.Float32Null(), nil)
-	})
-}
-
-// NullPreserveInt64FromPrior
-
-func TestNullPreserveInt64FromPrior_knownPrior_leavesExistingUnchanged(t *testing.T) {
-	t.Parallel()
-	existing := types.Int64Value(42)
-	NullPreserveInt64FromPrior(types.Int64Value(99), &existing)
-	assert.Equal(t, int64(42), existing.ValueInt64())
-}
-
-func TestNullPreserveInt64FromPrior_nullPrior_setsExistingToNull(t *testing.T) {
-	t.Parallel()
-	existing := types.Int64Value(42)
-	NullPreserveInt64FromPrior(types.Int64Null(), &existing)
-	assert.True(t, existing.IsNull(), "null prior should set existing to null")
-	assert.False(t, existing.IsUnknown())
-}
-
-func TestNullPreserveInt64FromPrior_unknownPrior_setsExistingToUnknown(t *testing.T) {
-	t.Parallel()
-	existing := types.Int64Value(42)
-	NullPreserveInt64FromPrior(types.Int64Unknown(), &existing)
-	assert.True(t, existing.IsUnknown(), "unknown prior should set existing to unknown, not null")
-}
-
-func TestNullPreserveInt64FromPrior_nilExisting_noopNoPanic(t *testing.T) {
-	t.Parallel()
-	assert.NotPanics(t, func() {
-		NullPreserveInt64FromPrior(types.Int64Null(), nil)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if tt.nilDest {
+				assert.NotPanics(t, func() {
+					NullPreserveFromPrior(tt.prior, (*attr.Value)(nil))
+				})
+				return
+			}
+			existing := tt.existing
+			NullPreserveFromPrior(tt.prior, &existing)
+			assert.Equal(t, tt.want, existing)
+		})
+	}
 }
 
 // PreserveKnownString
