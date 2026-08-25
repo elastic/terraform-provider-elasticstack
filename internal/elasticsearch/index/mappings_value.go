@@ -190,16 +190,16 @@ func (v MappingsValue) RequiresMappingsUpdate(_ context.Context, state MappingsV
 // Must only be called after null/unknown guards — calling it on a null or
 // unknown value produces an unmarshal error on the empty string.
 func (v MappingsValue) decodeMappingPair(other MappingsValue) (map[string]any, map[string]any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var vMap, otherMap map[string]any
-	if err := json.Unmarshal([]byte(v.ValueString()), &vMap); err != nil {
-		diags.AddError("Semantic Equality Check Error", err.Error())
+	vMap, diags := typeutils.UnmarshalJSONForSemanticEquals[map[string]any](v.ValueString())
+	if diags.HasError() {
 		return nil, nil, diags
 	}
-	if err := json.Unmarshal([]byte(other.ValueString()), &otherMap); err != nil {
-		diags.AddError("Semantic Equality Check Error", err.Error())
+
+	otherMap, diags := typeutils.UnmarshalJSONForSemanticEquals[map[string]any](other.ValueString())
+	if diags.HasError() {
 		return nil, nil, diags
 	}
+
 	return vMap, otherMap, diags
 }
 

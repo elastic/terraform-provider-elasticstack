@@ -50,3 +50,19 @@ func TestAssertSameType(t *testing.T) {
 		require.Contains(t, diags[0].Detail(), "types.Bool")
 	})
 }
+
+func TestUnmarshalJSONForSemanticEquals(t *testing.T) {
+	t.Run("valid json", func(t *testing.T) {
+		got, diags := typeutils.UnmarshalJSONForSemanticEquals[map[string]any](`{"a":1}`)
+
+		require.False(t, diags.HasError())
+		require.Equal(t, map[string]any{"a": float64(1)}, got)
+	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		_, diags := typeutils.UnmarshalJSONForSemanticEquals[map[string]any](`{invalid`)
+
+		require.True(t, diags.HasError())
+		require.Contains(t, diags[0].Summary(), "Semantic Equality Check Error")
+	})
+}
