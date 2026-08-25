@@ -50,8 +50,7 @@ func (t NormalizedYamlType) ValueType(_ context.Context) attr.Value {
 
 // Equal returns true if the given type is equivalent.
 func (t NormalizedYamlType) Equal(o attr.Type) bool {
-	_, ok := o.(NormalizedYamlType)
-	return ok
+	return typeutils.StringTypableEqual[NormalizedYamlType](o)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.

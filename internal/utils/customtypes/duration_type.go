@@ -47,13 +47,7 @@ func (t DurationType) ValueType(_ context.Context) attr.Value {
 
 // Equal returns true if the given type is equivalent.
 func (t DurationType) Equal(o attr.Type) bool {
-	other, ok := o.(DurationType)
-
-	if !ok {
-		return false
-	}
-
-	return t.StringType.Equal(other.StringType)
+	return typeutils.StringTypableEqual[DurationType](o)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.

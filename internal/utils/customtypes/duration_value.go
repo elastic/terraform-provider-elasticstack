@@ -46,13 +46,7 @@ func (v Duration) Type(_ context.Context) attr.Type {
 
 // Equal returns true if the given value is equivalent.
 func (v Duration) Equal(o attr.Value) bool {
-	other, ok := o.(Duration)
-
-	if !ok {
-		return false
-	}
-
-	return v.StringValue.Equal(other.StringValue)
+	return typeutils.StringValuableEqual(v.StringValue, o, func(d Duration) basetypes.StringValue { return d.StringValue })
 }
 
 func (v Duration) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {

@@ -47,13 +47,7 @@ func (t MemorySizeType) ValueType(_ context.Context) attr.Value {
 
 // Equal returns true if the given type is equivalent.
 func (t MemorySizeType) Equal(o attr.Type) bool {
-	other, ok := o.(MemorySizeType)
-
-	if !ok {
-		return false
-	}
-
-	return t.StringType.Equal(other.StringType)
+	return typeutils.StringTypableEqual[MemorySizeType](o)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
