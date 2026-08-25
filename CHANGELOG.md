@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.16.4] - 2026-08-25
 
 ### Changes
 
@@ -1077,7 +1077,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...v0.16.1
