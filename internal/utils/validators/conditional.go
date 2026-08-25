@@ -327,19 +327,41 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) Conditi
 	}
 }
 
+// oneOfClause renders the singular/plural clause shared by the descriptions and error
+// messages of allowedIfOneOf, requiredIfOneOf, and forbiddenIfOneOf: e.g.
+// `can only be set when protocol equals "https"` when there is a single allowed value,
+// or `can only be set when protocol is one of [https wss]` when there are several.
+func oneOfClause(verb, label string, allowedValues []string) string {
+	if len(allowedValues) == 1 {
+		return fmt.Sprintf("%s when %s equals %q", verb, label, allowedValues[0])
+	}
+	return fmt.Sprintf("%s when %s is one of %v", verb, label, allowedValues)
+}
+
+// oneOfDescription builds the "value <clause>" description shared by allowedIfOneOf,
+// requiredIfOneOf, and forbiddenIfOneOf.
+func oneOfDescription(verb, label string, allowedValues []string) string {
+	return "value " + oneOfClause(verb, label, allowedValues)
+}
+
+// oneOfAttributeError builds the "Attribute <p> <clause><trailer>" error message shared by
+// allowedIfOneOf, requiredIfOneOf, and forbiddenIfOneOf. trailer is appended verbatim and is
+// empty for the variants that don't also report the dependent's current value.
+func oneOfAttributeError(p path.Path, verb, label string, allowedValues []string, trailer string) string {
+	return fmt.Sprintf("Attribute %s %s%s", p, oneOfClause(verb, label, allowedValues), trailer)
+}
+
 // allowedIfOneOf builds the shared Condition for AllowedIfDependentPathOneOf and
 // AllowedIfDependentPathExpressionOneOf. label is the display name of the dependent
 // field used in the description and error message; it is the only thing that differs
 // between the static-path and path-expression variants.
 func allowedIfOneOf(label string, allowedValues []string, options AllowedIfOptions) Condition {
+	const verb = "can only be set"
 	return Condition{
 		allowedValues:    allowedValues,
 		allowedIfOptions: &options,
 		description: func() string {
-			if len(allowedValues) == 1 {
-				return fmt.Sprintf("value can only be set when %s equals %q", label, allowedValues[0])
-			}
-			return fmt.Sprintf("value can only be set when %s is one of %v", label, allowedValues)
+			return oneOfDescription(verb, label, allowedValues)
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
@@ -351,27 +373,8 @@ func allowedIfOneOf(label string, allowedValues []string, options AllowedIfOptio
 
 			if isSet {
 				dependentValueLabel := dependentEval.valueForErrorMessage()
-				if len(allowedValues) == 1 {
-					diags.AddAttributeError(p, "Invalid Configuration",
-						fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
-							p,
-							label,
-							allowedValues[0],
-							label,
-							dependentValueLabel,
-						),
-					)
-				} else {
-					diags.AddAttributeError(p, "Invalid Configuration",
-						fmt.Sprintf("Attribute %s can only be set when %s is one of %v, but %s is %q",
-							p,
-							label,
-							allowedValues,
-							label,
-							dependentValueLabel,
-						),
-					)
-				}
+				trailer := fmt.Sprintf(", but %s is %q", label, dependentValueLabel)
+				diags.AddAttributeError(p, "Invalid Configuration", oneOfAttributeError(p, verb, label, allowedValues, trailer))
 			}
 
 			return diags
@@ -437,10 +440,7 @@ func requiredIfOneOf(label string, allowedValues []string) Condition {
 	return Condition{
 		allowedValues: allowedValues,
 		description: func() string {
-			if len(allowedValues) == 1 {
-				return fmt.Sprintf("value required when %s equals %q", label, allowedValues[0])
-			}
-			return fmt.Sprintf("value required when %s is one of %v", label, allowedValues)
+			return oneOfDescription("required", label, allowedValues)
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
@@ -454,13 +454,7 @@ func requiredIfOneOf(label string, allowedValues []string) Condition {
 			}
 
 			if isEmpty {
-				var msg string
-				if len(allowedValues) == 1 {
-					msg = fmt.Sprintf("Attribute %s must be set when %s equals %q", p, label, allowedValues[0])
-				} else {
-					msg = fmt.Sprintf("Attribute %s must be set when %s is one of %v", p, label, allowedValues)
-				}
-				diags.AddAttributeError(p, "Invalid Configuration", msg)
+				diags.AddAttributeError(p, "Invalid Configuration", oneOfAttributeError(p, "must be set", label, allowedValues, ""))
 			}
 			return diags
 		},
@@ -499,13 +493,11 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 // field used in the description and error message; it is the only thing that differs
 // between the static-path and path-expression variants.
 func forbiddenIfOneOf(label string, allowedValues []string) Condition {
+	const verb = "cannot be set"
 	return Condition{
 		allowedValues: allowedValues,
 		description: func() string {
-			if len(allowedValues) == 1 {
-				return fmt.Sprintf("value cannot be set when %s equals %q", label, allowedValues[0])
-			}
-			return fmt.Sprintf("value cannot be set when %s is one of %v", label, allowedValues)
+			return oneOfDescription(verb, label, allowedValues)
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
@@ -516,13 +508,7 @@ func forbiddenIfOneOf(label string, allowedValues []string) Condition {
 
 			isSet := !attrValueIsUnsetForConditionalValidation(val)
 			if isSet {
-				var msg string
-				if len(allowedValues) == 1 {
-					msg = fmt.Sprintf("Attribute %s cannot be set when %s equals %q", p, label, allowedValues[0])
-				} else {
-					msg = fmt.Sprintf("Attribute %s cannot be set when %s is one of %v", p, label, allowedValues)
-				}
-				diags.AddAttributeError(p, "Invalid Configuration", msg)
+				diags.AddAttributeError(p, "Invalid Configuration", oneOfAttributeError(p, verb, label, allowedValues, ""))
 			}
 			return diags
 		},
