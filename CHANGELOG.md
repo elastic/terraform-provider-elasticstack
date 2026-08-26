@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Changes
+
+- Add `additional_datastreams_permissions` to `elasticstack_fleet_integration_policy`, granting an integration's Elasticsearch API key write access to data streams targeted by a `reroute` processor. Requires Elastic Stack 9.1.0 or above. ([#4657](https://github.com/elastic/terraform-provider-elasticstack/pull/4657))
+
 ## [0.16.4] - 2026-08-25
 
 ### Changes
