@@ -11,7 +11,7 @@ Define the main CI workflow: build, lint (including OpenSpec validation), matrix
 ```yaml
 on:
   push:
-    branches: [main]
+    branches: [main, "renovate/**"]
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch: {}
@@ -22,13 +22,19 @@ permissions:
 ## Requirements
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
-The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
+The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
 
 #### Scenario: Push to main
 
 - GIVEN a `push` to `main`
 - WHEN the change-classification job reports `provider_changes=true`
 - THEN build, lint, and test jobs MAY run per other requirements
+
+#### Scenario: Push to a Renovate branch
+
+- GIVEN a `push` to a branch matching `renovate/**`
+- WHEN the workflow is dispatched
+- THEN the workflow SHALL run so commit check runs exist for branch automerge
 
 ### Requirement: Build and lint jobs (REQ-007–REQ-008, REQ-031)
 
