@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIntersectMappings_dropsUndeclaredProperties(t *testing.T) {
@@ -129,4 +130,141 @@ func TestIntersectProperties_nested(t *testing.T) {
 	props := author["properties"].(map[string]any)
 	assert.Len(t, props, 1)
 	assert.Contains(t, props, "name")
+}
+
+func TestIntersectMappings_dynamicTemplates(t *testing.T) {
+	alpha := map[string]any{
+		"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+	}
+	beta := map[string]any{
+		"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+	}
+	extra := map[string]any{
+		"template_default": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+	}
+
+	tests := []struct {
+		name            string
+		api             map[string]any
+		state           map[string]any
+		wantNames       []string
+		wantOmitKey     bool
+		wantPassthrough bool
+	}{
+		{
+			name: "drops index-template-injected extra",
+			api: map[string]any{
+				"dynamic_templates": []any{alpha, extra},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			wantNames: []string{"alpha"},
+		},
+		{
+			name: "omits declared name absent from API",
+			api: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha, beta},
+			},
+			wantNames: []string{"alpha"},
+		},
+		{
+			name: "omits key when API omits dynamic_templates entirely",
+			api:  map[string]any{},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			wantOmitKey: true,
+		},
+		{
+			name: "passthrough when API has duplicate template name",
+			api: map[string]any{
+				"dynamic_templates": []any{alpha, alpha},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			wantPassthrough: true,
+		},
+		{
+			name: "passthrough when state has duplicate template name",
+			api: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha, alpha},
+			},
+			wantPassthrough: true,
+		},
+		{
+			name: "passthrough when API entry value is not an object",
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{"alpha": "not-an-object"},
+				},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			wantPassthrough: true,
+		},
+		{
+			name: "passthrough when state entry value is not an object",
+			api: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{"alpha": "not-an-object"},
+				},
+			},
+			wantPassthrough: true,
+		},
+		{
+			name: "preserves state's declared order not API order",
+			api: map[string]any{
+				"dynamic_templates": []any{beta, alpha},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha, beta},
+			},
+			wantNames: []string{"alpha", "beta"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := IntersectMappings(tc.api, tc.state)
+			raw, present := got[dynamicTemplatesKey]
+			if tc.wantOmitKey {
+				assert.False(t, present, "expected dynamic_templates to be omitted from result")
+				return
+			}
+			require.True(t, present, "expected dynamic_templates in result")
+			gotArr, ok := raw.([]any)
+			require.True(t, ok, "expected dynamic_templates to be an array")
+			if tc.wantPassthrough {
+				assert.Equal(t, tc.api[dynamicTemplatesKey], gotArr)
+				return
+			}
+			assert.Equal(t, tc.wantNames, dynamicTemplateEntryNames(t, gotArr))
+		})
+	}
+}
+
+func dynamicTemplateEntryNames(t *testing.T, templates []any) []string {
+	t.Helper()
+	names := make([]string, 0, len(templates))
+	for _, raw := range templates {
+		entry, ok := raw.(map[string]any)
+		require.True(t, ok)
+		require.Len(t, entry, 1)
+		for name := range entry {
+			names = append(names, name)
+		}
+	}
+	return names
 }
