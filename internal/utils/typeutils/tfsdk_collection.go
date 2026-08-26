@@ -57,3 +57,18 @@ func nonEmptyCollectionOrDefault[T any, C attr.Value](
 	}
 	return factory(ctx, elemType, slice)
 }
+
+// CollectionToSliceStringPtr extracts a *[]string from an optional list/set attribute,
+// returning nil when the collection is null or unknown. A known-but-empty collection
+// yields a pointer to an empty slice, preserving the null/unknown vs. empty distinction
+// consistently across collection kinds.
+func CollectionToSliceStringPtr(ctx context.Context, value Elementable, p path.Path, diags *diag.Diagnostics) *[]string {
+	if value.IsNull() || value.IsUnknown() {
+		return nil
+	}
+	result := elementsAs[[]string](ctx, value, p, diags)
+	if diags.HasError() {
+		return nil
+	}
+	return &result
+}
