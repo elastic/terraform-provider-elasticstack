@@ -1018,6 +1018,72 @@ func TestAccResourceILM_shrinkAllowWriteAfterShrink(t *testing.T) {
 	})
 }
 
+func TestAccResourceILMHotPhaseWithoutRollover(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.min_age", "1h"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.set_priority.priority", "10"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover.max_age"),
+					checkHotPhaseEmptyRolloverInES(policyName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func checkHotPhaseEmptyRolloverInES(policyName string) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+
+		ilmDef, diags := esclient.GetIlm(context.Background(), client, policyName)
+		if diags.HasError() {
+			return fmt.Errorf("failed to GET ILM policy %q: %s", policyName, diags)
+		}
+		if ilmDef == nil {
+			return fmt.Errorf("ILM policy %q not found", policyName)
+		}
+
+		hot, ok := ilmDef.Phases["hot"]
+		if !ok {
+			return fmt.Errorf("hot phase missing from GET response for policy %q", policyName)
+		}
+
+		rollover, ok := hot.Actions["rollover"]
+		if !ok {
+			return fmt.Errorf("expected Elasticsearch GET to include empty hot.actions.rollover {}, but rollover was absent (actions=%v)", hot.Actions)
+		}
+		if len(rollover) != 0 {
+			return fmt.Errorf("expected Elasticsearch GET to include empty hot.actions.rollover {}, got %v", rollover)
+		}
+		return nil
+	}
+}
+
 func TestAccResourceILM_hotReadonlyDisabled(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
