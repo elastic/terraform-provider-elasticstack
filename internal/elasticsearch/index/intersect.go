@@ -15,27 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package indexmappings
+package index
 
 import (
 	"maps"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 )
 
-// intersectMappings retains only top-level keys present in state. Within properties,
-// only field names from the state's properties tree are kept at every nesting level.
-//
-// For other top-level keys, when the API value is semantically equal to the
 // propertiesKey is the Elasticsearch mapping key whose value is a nested
 // field/property map. Centralised so the intersect logic and recursion stay
 // in sync.
 const propertiesKey = "properties"
 
+// IntersectMappings retains only top-level keys present in state. Within properties,
+// only field names from the state's properties tree are kept at every nesting level.
+//
+// For other top-level keys, when the API value is semantically equal to the
 // declared state (FieldSemanticallyEqual), the declared value is kept so
 // read-after-write matches the configuration shape. Otherwise the API value is
-// stored. Plan-time drift is still handled by index.MappingsType semantic equality.
-func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
+// stored. Plan-time drift is still handled by MappingsType semantic equality.
+func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
 	result := make(map[string]any, len(stateMappings))
 	for key, stateVal := range stateMappings {
 		apiVal, ok := apiMappings[key]
@@ -54,7 +52,7 @@ func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 				continue
 			}
 		}
-		if index.FieldSemanticallyEqual(stateVal, apiVal) {
+		if FieldSemanticallyEqual(stateVal, apiVal) {
 			result[key] = stateVal
 			continue
 		}

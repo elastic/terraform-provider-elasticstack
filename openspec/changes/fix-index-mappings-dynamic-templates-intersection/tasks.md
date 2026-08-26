@@ -1,9 +1,9 @@
 ## 1. Package consolidation
 
-- [ ] 1.1 Move `internal/elasticsearch/index/indexmappings/intersect.go` into `internal/elasticsearch/index` (e.g. `internal/elasticsearch/index/intersect.go`); move `intersect_test.go` alongside it
-- [ ] 1.2 Rename `intersectMappings` to exported `IntersectMappings`; keep `intersectProperties` unexported
-- [ ] 1.3 Update the call site in `internal/elasticsearch/index/indexmappings/read.go:73` to `index.IntersectMappings(apiMap, stateMap)`
-- [ ] 1.4 Remove the now-empty `indexmappings/intersect.go` and fix package declarations/imports in the moved files
+- [x] 1.1 Move `internal/elasticsearch/index/indexmappings/intersect.go` into `internal/elasticsearch/index` (e.g. `internal/elasticsearch/index/intersect.go`); move `intersect_test.go` alongside it
+- [x] 1.2 Rename `intersectMappings` to exported `IntersectMappings`; keep `intersectProperties` unexported
+- [x] 1.3 Update the call site in `internal/elasticsearch/index/indexmappings/read.go:73` to `index.IntersectMappings(apiMap, stateMap)`
+- [x] 1.4 Remove the now-empty `indexmappings/intersect.go` and fix package declarations/imports in the moved files
 
 ## 2. Name-keyed `dynamic_templates` intersection
 

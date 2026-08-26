@@ -70,7 +70,7 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 		}
 	}
 
-	intersected := intersectMappings(apiMap, stateMap)
+	intersected := index.IntersectMappings(apiMap, stateMap)
 	intersectedBytes, err := json.Marshal(intersected)
 	if err != nil {
 		return state, false, diag.Diagnostics{

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package indexmappings
+package index
 
 import (
 	"testing"
@@ -36,7 +36,7 @@ func TestIntersectMappings_dropsUndeclaredProperties(t *testing.T) {
 		},
 	}
 
-	got := intersectMappings(api, state)
+	got := IntersectMappings(api, state)
 	props := got["properties"].(map[string]any)
 	assert.Len(t, props, 1)
 	assert.Contains(t, props, "title")
@@ -57,7 +57,7 @@ func TestIntersectMappings_retainsOtherTopLevelKeys(t *testing.T) {
 		},
 	}
 
-	got := intersectMappings(api, state)
+	got := IntersectMappings(api, state)
 	assert.Equal(t, false, got["dynamic"])
 }
 
@@ -76,7 +76,7 @@ func TestIntersectMappings_retainsDeclaredKeyWhenAPIOmits(t *testing.T) {
 		},
 	}
 
-	got := intersectMappings(api, state)
+	got := IntersectMappings(api, state)
 	assert.Equal(t, true, got["_source"].(map[string]any)["enabled"])
 }
 
@@ -101,7 +101,7 @@ func TestIntersectMappings_keepsDeclaredShapeWhenSemanticallyEqual(t *testing.T)
 		},
 	}
 
-	got := intersectMappings(api, state)
+	got := IntersectMappings(api, state)
 	runtime := got["runtime"].(map[string]any)
 	field := runtime["day_of_week"].(map[string]any)
 	assert.Equal(t, "emit(1)", field["script"])
