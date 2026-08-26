@@ -1022,8 +1022,7 @@ func TestAccResourceILM_shrinkAllowWriteAfterShrink(t *testing.T) {
 // rollover block (only set_priority) and asserts terraform plan stays empty
 // after apply/refresh. The GET check requires hot.actions.rollover to be
 // absent (including empty "{}"); an injected empty action fails this test so
-// it is visible on the CI matrix. Flatten of "rollover": {} is covered by
-// TestFlattenPhaseRollover, not by this live GET.
+// it is visible on the CI matrix.
 func TestAccResourceILMHotPhaseWithoutRollover(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

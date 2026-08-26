@@ -22,27 +22,24 @@ import (
 	"encoding/json"
 	"maps"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// priorHasDeclaredAction reports whether prior state already contains a
-// non-null, known object for the named action. Used to preserve user-declared
-// blocks (toggle actions, empty rollover) across refresh.
-func priorHasDeclaredAction(prior types.Object, action string) bool {
-	if !typeutils.IsKnown(prior) {
+func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string) bool {
+	if prior.IsNull() || prior.IsUnknown() {
 		return false
 	}
-	v, ok := prior.Attributes()[action]
-	if !ok || !typeutils.IsKnown(v) {
+	attrVals := prior.Attributes()
+	v, ok := attrVals[toggle]
+	if !ok || v.IsNull() || v.IsUnknown() {
 		return false
 	}
 	objV, ok := v.(types.Object)
 	if !ok {
 		return false
 	}
-	return typeutils.IsKnown(objV)
+	return !objV.IsNull() && !objV.IsUnknown()
 }
 
 func flattenPhase(ctx context.Context, phaseName string, minAge string, actions map[string]map[string]any, prior types.Object) (types.Object, diag.Diagnostics) {
@@ -50,7 +47,7 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 	phase := make(map[string]any)
 
 	for _, aCase := range []string{ilmActionReadonly, ilmActionFreeze, ilmActionUnfollow} {
-		if priorHasDeclaredAction(prior, aCase) {
+		if priorHasDeclaredToggle(ctx, prior, aCase) {
 			phase[aCase] = []any{map[string]any{attrEnabled: false}}
 		}
 	}
@@ -99,15 +96,6 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 				ssAction[attrForceMergeOnClone] = true
 			}
 			phase[actionName] = []any{ssAction}
-		case ilmActionRollover:
-			// Elasticsearch may return "rollover": {} for a hot phase even when
-			// the PUT omitted it. An empty action with no prior declaration is
-			// treated as absent so state stays ObjectNull rather than an
-			// all-null object (which Terraform Core treats as a diff).
-			if len(action) == 0 && !priorHasDeclaredAction(prior, ilmActionRollover) {
-				continue
-			}
-			phase[actionName] = []any{action}
 		default:
 			phase[actionName] = []any{action}
 		}
