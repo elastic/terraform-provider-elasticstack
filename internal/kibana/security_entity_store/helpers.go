@@ -212,8 +212,8 @@ func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object)
 	if diags.HasError() {
 		return nil, diags
 	}
-	add := typeutils.ListTypeToSliceStringPtr(ctx, model.AdditionalIndexPatterns, path.Empty(), &diags)
-	excl := typeutils.ListTypeToSliceStringPtr(ctx, model.ExcludedIndexPatterns, path.Empty(), &diags)
+	add := typeutils.CollectionToSliceStringPtr(ctx, model.AdditionalIndexPatterns, path.Empty(), &diags)
+	excl := typeutils.CollectionToSliceStringPtr(ctx, model.ExcludedIndexPatterns, path.Empty(), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}

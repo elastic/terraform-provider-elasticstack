@@ -195,12 +195,12 @@ func expandElasticsearch(ctx context.Context, obj types.Object) (kibanaoapi.Secu
 		return out, diags
 	}
 
-	out.Cluster = typeutils.SetTypeToSliceStringPtr(ctx, objAttrSet(obj, "cluster", types.StringType), path.Empty(), &diags)
+	out.Cluster = typeutils.CollectionToSliceStringPtr(ctx, objAttrSet(obj, "cluster", types.StringType), path.Empty(), &diags)
 	if diags.HasError() {
 		return out, diags
 	}
 
-	out.RunAs = typeutils.SetTypeToSliceStringPtr(ctx, objAttrSet(obj, "run_as", types.StringType), path.Empty(), &diags)
+	out.RunAs = typeutils.CollectionToSliceStringPtr(ctx, objAttrSet(obj, "run_as", types.StringType), path.Empty(), &diags)
 	if diags.HasError() {
 		return out, diags
 	}
@@ -280,7 +280,7 @@ func expandKibana(ctx context.Context, set types.Set) ([]kibanaoapi.SecurityRole
 			entry.Feature = &featureMap
 		}
 
-		entry.Spaces = typeutils.SetTypeToSliceStringPtr(ctx, objAttrSet(obj, "spaces", types.StringType), path.Empty(), &diags)
+		entry.Spaces = typeutils.CollectionToSliceStringPtr(ctx, objAttrSet(obj, "spaces", types.StringType), path.Empty(), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
