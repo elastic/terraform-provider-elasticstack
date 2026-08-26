@@ -32,8 +32,7 @@ func readCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient
 	var diags fwdiags.Diagnostics
 
 	calendarID := resourceID
-	if calendarID == "" {
-		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(calendarID, "calendar_id"); diags.HasError() {
 		return state, false, diags
 	}
 

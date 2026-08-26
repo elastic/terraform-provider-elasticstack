@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -33,8 +34,7 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	var diags fwdiags.Diagnostics
 
 	jobID := resourceID
-	if jobID == "" {
-		diags.AddError("Invalid resource ID", "job_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(jobID, "job_id"); diags.HasError() {
 		return diags
 	}
 

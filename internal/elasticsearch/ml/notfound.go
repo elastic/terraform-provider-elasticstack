@@ -48,6 +48,18 @@ func DeleteWithNotFoundAsSuccess(ctx context.Context, kindLabel, id string, do f
 	return diags
 }
 
+// RequireNonEmptyID returns diagnostics with a single error when id is
+// empty, using fieldName (e.g. "calendar_id") in the message. Callers should
+// return their own zero-value result together with these diagnostics when
+// diags.HasError() is true.
+func RequireNonEmptyID(id, fieldName string) fwdiags.Diagnostics {
+	var diags fwdiags.Diagnostics
+	if id == "" {
+		diags.AddError("Invalid resource ID", fmt.Sprintf("%s cannot be empty", fieldName))
+	}
+	return diags
+}
+
 // ReadWithNotFoundAsAbsent runs do to fetch an ML sub-resource. A "not found"
 // error from Elasticsearch is treated as the resource being absent
 // (found=false, no diagnostics) rather than an error, matching Terraform's

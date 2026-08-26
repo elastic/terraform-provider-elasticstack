@@ -26,11 +26,8 @@ import (
 )
 
 func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
 	filterID := resourceID
-	if filterID == "" {
-		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(filterID, "filter_id"); diags.HasError() {
 		return diags
 	}
 
