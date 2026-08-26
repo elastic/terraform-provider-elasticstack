@@ -1018,6 +1018,11 @@ func TestAccResourceILM_shrinkAllowWriteAfterShrink(t *testing.T) {
 	})
 }
 
+// TestAccResourceILMHotPhaseWithoutRollover creates a hot phase with no
+// rollover block (only set_priority) and asserts terraform plan stays empty
+// after apply/refresh. Unit tests cover flatten of an injected empty
+// "rollover": {}; this stack (Elasticsearch 9.4) omits rollover from GET when
+// it was not PUT.
 func TestAccResourceILMHotPhaseWithoutRollover(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -1037,7 +1042,7 @@ func TestAccResourceILMHotPhaseWithoutRollover(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.set_priority.priority", "10"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover"),
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover.max_age"),
-					checkHotPhaseEmptyRolloverInES(policyName),
+					checkHotPhaseRolloverGET(policyName),
 				),
 			},
 			{
@@ -1053,7 +1058,16 @@ func TestAccResourceILMHotPhaseWithoutRollover(t *testing.T) {
 	})
 }
 
-func checkHotPhaseEmptyRolloverInES(policyName string) resource.TestCheckFunc {
+// checkHotPhaseRolloverGET inspects the live GET _ilm/policy response for a hot
+// phase created without a rollover block.
+//
+// Elasticsearch 9.4 (the local acc-test stack) omits rollover entirely when it
+// was not included in the PUT. Other versions may inject an empty
+// "rollover": {}. Either shape must leave Terraform state with a null
+// rollover (asserted by TestCheckNoResourceAttr + the PlanOnly step). If
+// rollover is present, it must be empty so flatten's omission branch is
+// exercised rather than a real set of conditions.
+func checkHotPhaseRolloverGET(policyName string) resource.TestCheckFunc {
 	return func(*terraform.State) error {
 		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 		if err != nil {
@@ -1073,12 +1087,13 @@ func checkHotPhaseEmptyRolloverInES(policyName string) resource.TestCheckFunc {
 			return fmt.Errorf("hot phase missing from GET response for policy %q", policyName)
 		}
 
-		rollover, ok := hot.Actions["rollover"]
-		if !ok {
-			return fmt.Errorf("expected Elasticsearch GET to include empty hot.actions.rollover {}, but rollover was absent (actions=%v)", hot.Actions)
+		if _, ok := hot.Actions["set_priority"]; !ok {
+			return fmt.Errorf("expected hot.actions.set_priority in GET response, got %v", hot.Actions)
 		}
-		if len(rollover) != 0 {
-			return fmt.Errorf("expected Elasticsearch GET to include empty hot.actions.rollover {}, got %v", rollover)
+
+		rollover, ok := hot.Actions["rollover"]
+		if ok && len(rollover) != 0 {
+			return fmt.Errorf("unexpected non-empty hot.actions.rollover in GET: %v", rollover)
 		}
 		return nil
 	}
