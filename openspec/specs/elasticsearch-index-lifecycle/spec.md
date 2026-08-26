@@ -601,11 +601,13 @@ The acceptance test suite SHALL include a test `TestAccResourceILMFromSDKNoMetad
 
 ### Requirement: Hot phase rollover omission preserved on read (REQ-036)
 
-When Elasticsearch returns an empty `rollover` action (`"rollover": {}`, with no conditions) for the `hot` phase of an ILM policy, and neither the Terraform configuration nor the prior Terraform state declared a `rollover` block for that phase, the provider SHALL treat the action as absent and leave `hot.rollover` as `null` in state, rather than materializing a non-null object with all-null attributes.
+When Elasticsearch returns an empty `rollover` action (`"rollover": {}`, with no conditions) for an ILM policy, and neither the Terraform configuration nor the prior Terraform state declared a `rollover` block for that phase, the provider SHALL treat the action as absent and leave `hot.rollover` as `null` in state, rather than materializing a non-null object with all-null attributes.
 
 When the prior Terraform state already contains a non-null `rollover` object for the `hot` phase (the user has explicitly declared a `rollover` block, including an empty one with no conditions), the provider SHALL preserve that declaration in state by continuing to write the returned action, consistent with the prior-state preservation pattern used for the `readonly`, `freeze`, and `unfollow` toggle actions (REQ-029).
 
-This normalization applies only to the `rollover` action within the `hot` phase; it does not change how `warm`, `cold`, or `delete` phases handle their actions, and it does not change the write path — the provider already omits `rollover` from the Elasticsearch ILM PUT payload when the Terraform configuration does not declare it.
+This normalization applies to the `rollover` action, which ILM supports only in the `hot` phase. It does not change how `warm`, `cold`, or `delete` phases handle their actions, and it does not change the write path — the provider already omits `rollover` from the Elasticsearch ILM PUT payload when the Terraform configuration does not declare it.
+
+`GET _ilm/policy` for a hot phase that was PUT without `rollover` is expected to omit the action entirely rather than inject `"rollover": {}` (observed on Elasticsearch 9.4). The acceptance test SHALL fail if GET includes a `rollover` key, empty or not, so a stack that injects `"rollover": {}` is visible. The flatten-path empty-action guard remains for that GET shape; the prior-state guard is retained so an explicitly declared empty `rollover {}` is not dropped if Elasticsearch returns `"rollover": {}`.
 
 #### Scenario: Hot phase without rollover produces no diff after refresh
 
@@ -613,6 +615,13 @@ This normalization applies only to the `rollover` action within the `hot` phase;
 - AND the prior Terraform state has `hot.rollover = null`
 - WHEN the provider reads the policy and Elasticsearch's response includes `"rollover": {}` for the `hot` phase
 - THEN the provider SHALL store `hot.rollover = null` in state
+- AND a subsequent `terraform plan` SHALL show no changes
+
+#### Scenario: GET omits undeclared hot-phase rollover
+
+- GIVEN a Terraform configuration for `elasticstack_elasticsearch_index_lifecycle` whose `hot` phase declares no `rollover` block
+- WHEN the provider creates the policy and GETs it from Elasticsearch
+- THEN `GET _ilm/policy` SHALL omit `hot.actions.rollover` entirely (an empty `"rollover": {}` SHALL fail the acceptance test)
 - AND a subsequent `terraform plan` SHALL show no changes
 
 #### Scenario: Explicitly declared empty rollover is preserved
