@@ -321,29 +321,7 @@ func UnflattenDottedMap(flat map[string]any) map[string]any {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		v := flat[k]
-		parts := strings.Split(k, ".")
-		cur := root
-		for i := range parts {
-			p := parts[i]
-			if i == len(parts)-1 {
-				cur[p] = v
-				break
-			}
-			existing, ok := cur[p]
-			if !ok {
-				nm := make(map[string]any)
-				cur[p] = nm
-				cur = nm
-				continue
-			}
-			nm, ok := existing.(map[string]any)
-			if !ok {
-				nm = make(map[string]any)
-				cur[p] = nm
-			}
-			cur = nm
-		}
+		typeutils.SetAtPath(root, strings.Split(k, "."), flat[k])
 	}
 	return root
 }
