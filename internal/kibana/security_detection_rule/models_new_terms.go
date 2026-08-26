@@ -33,13 +33,11 @@ type NewTermsRuleProcessor struct {
 
 func newNewTermsRuleProcessor() NewTermsRuleProcessor {
 	return NewTermsRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPINewTermsRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPINewTermsRule, d *Data) diag.Diagnostics {
-				return d.updateFromNewTermsRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPINewTermsRule, d *Data) diag.Diagnostics {
+			return d.updateFromNewTermsRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
+			return v.Id.String()
 		},
 	}
 }

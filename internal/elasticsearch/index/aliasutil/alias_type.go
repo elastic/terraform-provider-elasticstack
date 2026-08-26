@@ -68,9 +68,7 @@ type AliasObjectType struct {
 // NewAliasObjectType constructs an AliasObjectType with the standard alias schema.
 func NewAliasObjectType() AliasObjectType {
 	return AliasObjectType{
-		ObjectType: basetypes.ObjectType{
-			AttrTypes: AliasAttributeTypes(),
-		},
+		AttrTypes: AliasAttributeTypes(),
 	}
 }
 

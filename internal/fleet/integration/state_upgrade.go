@@ -119,8 +119,8 @@ func (r *integrationResource) UpgradeState(ctx context.Context) map[int64]resour
 					IgnoreConstraints:         priorState.IgnoreConstraints,
 					SkipDestroy:               priorState.SkipDestroy,
 					SpaceID:                   types.StringNull(),
-				}
-				upgradedState.Timeouts = priorState.Timeouts
+
+					Timeouts: priorState.Timeouts}
 
 				if !priorState.SpaceIDs.IsNull() && !priorState.SpaceIDs.IsUnknown() {
 					var spaceIDs []string

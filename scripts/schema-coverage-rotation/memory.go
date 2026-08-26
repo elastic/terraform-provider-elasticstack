@@ -335,10 +335,10 @@ func selectEntities(mem *Memory, n int) []entity {
 
 	var candidates []candidate
 	for name, ts := range mem.Resources {
-		candidates = append(candidates, candidate{entity: entity{Type: entityTypeResource, Name: name}, ts: ts})
+		candidates = append(candidates, candidate{Type: entityTypeResource, Name: name, ts: ts})
 	}
 	for name, ts := range mem.DataSources {
-		candidates = append(candidates, candidate{entity: entity{Type: entityTypeDataSource, Name: name}, ts: ts})
+		candidates = append(candidates, candidate{Type: entityTypeDataSource, Name: name, ts: ts})
 	}
 
 	sort.Slice(candidates, func(i, j int) bool {

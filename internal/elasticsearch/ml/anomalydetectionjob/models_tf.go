@@ -703,9 +703,8 @@ func (plan *TFModel) convertModelPlotConfigFromAPI(ctx context.Context, apiModel
 	modelPlotConfigTF := ModelPlotConfigTFModel{
 		Enabled: types.BoolValue(apiModelPlotConfig.Enabled),
 		Terms:   typeutils.NonEmptyStringishValue(apiModelPlotConfig.Terms),
-	}
 
-	modelPlotConfigTF.AnnotationsEnabled = types.BoolPointerValue(apiModelPlotConfig.AnnotationsEnabled)
+		AnnotationsEnabled: types.BoolPointerValue(apiModelPlotConfig.AnnotationsEnabled)}
 
 	modelPlotConfigObjectValue, d := types.ObjectValueFrom(ctx, getModelPlotConfigAttrTypes(ctx), modelPlotConfigTF)
 	diags.Append(d...)

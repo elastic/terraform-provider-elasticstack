@@ -33,13 +33,11 @@ type ThreatMatchRuleProcessor struct {
 
 func newThreatMatchRuleProcessor() ThreatMatchRuleProcessor {
 	return ThreatMatchRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThreatMatchRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
-				return d.updateFromThreatMatchRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
+			return d.updateFromThreatMatchRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
+			return v.Id.String()
 		},
 	}
 }

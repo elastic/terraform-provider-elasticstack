@@ -260,10 +260,9 @@ func convertRiskScoreMappingToModel(ctx context.Context, apiRiskScoreMapping kba
 			Field:    types.StringValue(apiMapping.Field),
 			Operator: types.StringValue(string(apiMapping.Operator)),
 			Value:    types.StringValue(apiMapping.Value),
-		}
 
-		// Set optional risk score if provided
-		mapping.RiskScore = typeutils.IntPointerToInt64Value(apiMapping.RiskScore)
+			// Set optional risk score if provided
+			RiskScore: typeutils.IntPointerToInt64Value(apiMapping.RiskScore)}
 
 		mappings = append(mappings, mapping)
 	}
@@ -301,10 +300,9 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 		integration := RelatedIntegrationModel{
 			Package: types.StringValue(apiIntegration.Package),
 			Version: types.StringValue(apiIntegration.Version),
-		}
 
-		// Set optional integration field if provided
-		integration.Integration = typeutils.StringishPointerValue(apiIntegration.Integration)
+			// Set optional integration field if provided
+			Integration: typeutils.StringishPointerValue(apiIntegration.Integration)}
 
 		integrations = append(integrations, integration)
 	}
@@ -453,8 +451,8 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 	responseAction.ActionTypeID = types.StringValue(string(osqueryAction.ActionTypeId))
 
 	// Convert osquery params
-	paramsModel := ResponseActionParamsModel{}
-	paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
+	paramsModel := ResponseActionParamsModel{
+		Query: types.StringPointerValue(osqueryAction.Params.Query)}
 	if osqueryAction.Params.PackId != nil {
 		paramsModel.PackID = types.StringPointerValue(osqueryAction.Params.PackId)
 	} else {
@@ -799,14 +797,14 @@ func (d *Data) updateThresholdAlertSuppressionFromAPI(ctx context.Context, apiSu
 		return diags
 	}
 
-	model := AlertSuppressionModel{}
+	model := AlertSuppressionModel{
 
-	// Threshold alert suppression only has duration field, so we set group_by and missing_fields_strategy to null
-	model.GroupBy = types.ListNull(types.StringType)
-	model.MissingFieldsStrategy = types.StringNull()
+		// Threshold alert suppression only has duration field, so we set group_by and missing_fields_strategy to null
+		GroupBy:               types.ListNull(types.StringType),
+		MissingFieldsStrategy: types.StringNull(),
 
-	// Convert duration (always present in threshold alert suppression)
-	model.Duration = parseDurationFromAPI(apiSuppression.Duration)
+		// Convert duration (always present in threshold alert suppression)
+		Duration: parseDurationFromAPI(apiSuppression.Duration)}
 
 	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, getAlertSuppressionType(), model)
 	diags.Append(objDiags...)

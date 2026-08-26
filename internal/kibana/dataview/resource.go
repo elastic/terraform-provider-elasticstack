@@ -83,12 +83,12 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	id := (&clients.CompositeID{ClusterID: spaceID, ResourceID: composite.ResourceID}).String()
 
 	stateModel := dataViewModel{
-		ResourceTimeoutsField: entitycore.ResourceTimeoutsField{Timeouts: timeoutsValue},
-		ID:                    types.StringValue(id),
-		SpaceID:               types.StringValue(spaceID),
-		Override:              types.BoolValue(false),
-		DataView:              types.ObjectUnknown(getDataViewAttrTypes(ctx)),
-		KibanaConnection:      providerschema.KibanaConnectionNullList(),
+		Timeouts:         timeoutsValue,
+		ID:               types.StringValue(id),
+		SpaceID:          types.StringValue(spaceID),
+		Override:         types.BoolValue(false),
+		DataView:         types.ObjectUnknown(getDataViewAttrTypes(ctx)),
+		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, stateModel)...)

@@ -30,9 +30,8 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 	var diags diag.Diagnostics
 	out := models.ComponentTemplate{
 		Name: d.Name.ValueString(),
-	}
 
-	out.Meta = templateutil.ExpandMetadataJSON(d.Metadata, &diags)
+		Meta: templateutil.ExpandMetadataJSON(d.Metadata, &diags)}
 	if diags.HasError() {
 		return out, diags
 	}

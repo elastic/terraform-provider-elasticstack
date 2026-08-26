@@ -38,8 +38,12 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 			expected: false,
 		},
 		{
+			// Wrapped through an error-typed variable, not passed inline: vet's printf
+			// check flags %w on a *types.ElasticsearchError because ElasticsearchError's
+			// Error() has a value receiver, but the pointer is intentional here since
+			// that's the type the client actually decodes errors into.
 			name:     "nil *ElasticsearchError in chain returns false",
-			err:      fmt.Errorf("wrap: %w", (*types.ElasticsearchError)(nil)),
+			err:      fmt.Errorf("wrap: %w", error((*types.ElasticsearchError)(nil))),
 			expected: false,
 		},
 		{
@@ -54,7 +58,7 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 		},
 		{
 			name:     "elasticsearch 404 wrapped in another error returns true",
-			err:      fmt.Errorf("wrapped: %w", &types.ElasticsearchError{Status: 404}),
+			err:      fmt.Errorf("wrapped: %w", error(&types.ElasticsearchError{Status: 404})),
 			expected: true,
 		},
 		{

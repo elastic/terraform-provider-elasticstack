@@ -41,9 +41,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 
 	apiConfig := kbapi.KibanaHTTPAPIsMlAnomalyCharts{
 		JobIds: typeutils.ValueStringSlice(cfg.JobIDs),
-	}
 
-	apiConfig.MaxSeriesToPlot = typeutils.Int64ToFloat32Ptr(cfg.MaxSeriesToPlot)
+		MaxSeriesToPlot: typeutils.Int64ToFloat32Ptr(cfg.MaxSeriesToPlot)}
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&apiConfig.Title, &apiConfig.Description, &apiConfig.HideTitle, &apiConfig.HideBorder)
 	if cfg.TimeRange != nil {

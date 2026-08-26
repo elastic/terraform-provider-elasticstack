@@ -94,7 +94,7 @@ type ExpandWildcardsValue struct {
 }
 
 func (v ExpandWildcardsValue) Type(_ context.Context) attr.Type {
-	return ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}}
+	return ExpandWildcardsType{ElemType: types.StringType}
 }
 
 func (v ExpandWildcardsValue) Equal(o attr.Value) bool {

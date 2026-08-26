@@ -113,9 +113,7 @@ func (t JSONWithContextualDefaultsType) ValueFromString(_ context.Context, in ba
 	}
 
 	return JSONWithContextualDefaultsValue{
-		Normalized: jsontypes.Normalized{
-			StringValue: in,
-		},
+		StringValue:      in,
 		contextValue:     contextValue,
 		populateDefaults: t.populateDefaults,
 	}, nil

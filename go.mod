@@ -1,6 +1,6 @@
 module github.com/elastic/terraform-provider-elasticstack
 
-go 1.26.1
+go 1.27.0
 
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.19.7
@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.31.0
 	github.com/hashicorp/terraform-plugin-log v0.11.0
 	github.com/hashicorp/terraform-plugin-testing v1.16.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/tools v0.49.0
 )
