@@ -21,6 +21,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -51,6 +52,10 @@ func TestAccResourceDatafeed(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "indices.0", "test-index-*"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed.test", "query"),
+					// runtime_mappings and max_empty_searches are omitted from this config and
+					// carry no defaults, so they must remain absent.
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "runtime_mappings"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "max_empty_searches"),
 				),
 			},
 			{
@@ -236,6 +241,8 @@ func TestAccResourceDatafeedAggregations(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "aggregations", expectedAggregations),
 					// script_fields must be absent (mutually exclusive with aggregations)
 					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_datafeed.test", "script_fields"),
+					// query is Optional+Computed and omitted here; the server fills in a default.
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_datafeed.test", "query"),
 				),
 			},
 		},
@@ -485,6 +492,103 @@ func TestAccResourceDatafeed_ImportNonExistent(t *testing.T) {
 				ImportState:       true,
 				ImportStateId:     "cluster-id/non-existent-datafeed-id",
 				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
+// TestAccResourceDatafeedExpandWildcardsNone exercises the "none" enum value of
+// indices_options.expand_wildcards, which is never otherwise configured or asserted
+// across the rest of the acceptance suite.
+func TestAccResourceDatafeedExpandWildcardsNone(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-ew-none-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-ew-none-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	const resourceAddr = "elasticstack_elasticsearch_ml_datafeed.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceAddr, "datafeed_id", datafeedID),
+					resource.TestCheckResourceAttr(resourceAddr, "indices_options.expand_wildcards.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceAddr, "indices_options.expand_wildcards.*", "none"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceDatafeed_EmptyIndices verifies that the SizeAtLeast(1) validator on
+// `indices` rejects an empty list at plan time.
+func TestAccResourceDatafeed_EmptyIndices(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-empty-idx-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-empty-idx-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				ExpectError: regexp.MustCompile(`(?s)list must contain at least 1 elements`),
+			},
+		},
+	})
+}
+
+// TestAccResourceDatafeed_ConflictingAggregationsAndScriptFields verifies that setting
+// both aggregations and script_fields together is rejected by the ConflictsWith
+// validator at plan time.
+func TestAccResourceDatafeed_ConflictingAggregationsAndScriptFields(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-conflict-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-conflict-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				ExpectError: regexp.MustCompile(`(?s)cannot be specified when`),
+			},
+		},
+	})
+}
+
+// TestAccResourceDatafeed_ChunkingAutoWithTimeSpan verifies that chunking_config.time_span
+// is rejected when chunking_config.mode is not "manual", per the AllowedIfDependentPathEquals
+// validator.
+func TestAccResourceDatafeed_ChunkingAutoWithTimeSpan(t *testing.T) {
+	jobID := fmt.Sprintf("test-job-chunk-auto-ts-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedID := fmt.Sprintf("test-datafeed-chunk-auto-ts-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"job_id":      config.StringVariable(jobID),
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				ExpectError: regexp.MustCompile(`(?s)can only be set when.*mode\s+equals\s+"manual"`),
 			},
 		},
 	})
