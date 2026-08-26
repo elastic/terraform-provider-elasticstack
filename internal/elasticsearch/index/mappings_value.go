@@ -398,8 +398,10 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 
 // dynamicTemplatesSemanticallyEqual checks that every user-declared named
 // dynamic template exists with an equivalent definition in the API mapping.
-// Elasticsearch may append templates contributed by an index template, so API
-// extras and array ordering are intentionally ignored.
+// Elasticsearch may append templates contributed by an index template, so
+// API extras are ignored. The relative order of the user's declared names
+// must match their relative order in the API array (after filtering out
+// extras); a live reorder of declared templates is a semantic difference.
 func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any) bool {
 	userTemplates, ok := dynamicTemplatesByName(userRaw)
 	if !ok {
@@ -417,7 +419,36 @@ func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any) bool {
 		}
 	}
 
-	return true
+	userOrder := dynamicTemplateNamesInOrder(userRaw)
+	apiOrder := dynamicTemplateNamesInOrder(apiRaw)
+	filteredAPI := make([]string, 0, len(userOrder))
+	for _, name := range apiOrder {
+		if _, declared := userTemplates[name]; declared {
+			filteredAPI = append(filteredAPI, name)
+		}
+	}
+	return reflect.DeepEqual(userOrder, filteredAPI)
+}
+
+// dynamicTemplateNamesInOrder returns template names in array order. raw is
+// assumed to have already parsed via dynamicTemplatesByName.
+func dynamicTemplateNamesInOrder(raw any) []string {
+	templates, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	names := make([]string, 0, len(templates))
+	for _, rawTemplate := range templates {
+		template, ok := rawTemplate.(map[string]any)
+		if !ok {
+			continue
+		}
+		for name := range template {
+			names = append(names, name)
+			break
+		}
+	}
+	return names
 }
 
 // dynamicTemplatesByName converts Elasticsearch's dynamic_templates array to

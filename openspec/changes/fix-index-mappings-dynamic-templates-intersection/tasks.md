@@ -15,9 +15,9 @@
 
 ## 3. Order-sensitive semantic equality
 
-- [ ] 3.1 Extend `dynamicTemplatesSemanticallyEqual` (`mappings_value.go`) to additionally check that the relative order of the user's declared template names (from `userRaw`) matches their relative order within `apiRaw`, after filtering `apiRaw` down to just the declared names (ignoring API-only extras)
-- [ ] 3.2 Add unit test: user declares `[alpha, beta]`, API returns `[beta, alpha]` (both present, semantically equal definitions, reordered) → `dynamicTemplatesSemanticallyEqual` returns `false`
-- [ ] 3.3 Add unit test: user declares `[alpha, beta]`, API returns `[extra, alpha, beta]` (index-template-injected extra interleaved, declared order preserved among declared names) → `dynamicTemplatesSemanticallyEqual` returns `true`
+- [x] 3.1 Extend `dynamicTemplatesSemanticallyEqual` (`mappings_value.go`) to additionally check that the relative order of the user's declared template names (from `userRaw`) matches their relative order within `apiRaw`, after filtering `apiRaw` down to just the declared names (ignoring API-only extras)
+- [x] 3.2 Add unit test: user declares `[alpha, beta]`, API returns `[beta, alpha]` (both present, semantically equal definitions, reordered) → `dynamicTemplatesSemanticallyEqual` returns `false`
+- [x] 3.3 Add unit test: user declares `[alpha, beta]`, API returns `[extra, alpha, beta]` (index-template-injected extra interleaved, declared order preserved among declared names) → `dynamicTemplatesSemanticallyEqual` returns `true`
 
 ## 4. Unit tests (intersection)
 

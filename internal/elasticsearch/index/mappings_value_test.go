@@ -326,6 +326,57 @@ func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing
 			want: true,
 		},
 		{
+			name: "reordered declared dynamic templates are not equal",
+			user: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "injected extra interleaved among declared names preserves equality",
+			user: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"extra": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+				},
+			},
+			want: true,
+		},
+		{
 			name: "missing declared dynamic template is detected",
 			user: map[string]any{
 				"dynamic_templates": []any{map[string]any{
