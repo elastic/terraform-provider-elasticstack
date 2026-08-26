@@ -229,16 +229,7 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			attrGlobalDataTags: schema.MapNestedAttribute{
-				Optional: true,
-				MarkdownDescription: "Global data tags applied to the managed integration's data streams; updatable in-place. " +
-					"Keyed by tag name; set exactly one of `string_value` or `number_value` per entry.",
-				NestedObject: globaldatatags.NestedObject(
-					"String value for the tag. If this is set, `number_value` must not be defined.",
-					"Number value for the tag. If this is set, `string_value` must not be defined.",
-					true,
-				),
-			},
+			attrGlobalDataTags: globaldatatags.Schema(nil),
 			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,

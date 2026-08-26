@@ -34,7 +34,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -160,17 +159,7 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"global_data_tags": schema.MapNestedAttribute{
-				Description: globalDataTagsDescription,
-				NestedObject: globaldatatags.NestedObject(
-					"String value for the field. If this is set, number_value must not be defined.",
-					"Number value for the field. If this is set, string_value must not be defined.",
-					false,
-				),
-				Computed: true,
-				Optional: true,
-				Default:  mapdefault.StaticValue(types.MapValueMust(globaldatatags.ElementType(), map[string]attr.Value{})),
-			},
+			"global_data_tags": globaldatatags.Schema(map[string]attr.Value{}),
 			"space_ids": schema.SetAttribute{
 				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
 				ElementType: types.StringType,

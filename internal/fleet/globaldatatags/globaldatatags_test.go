@@ -20,43 +20,41 @@ package globaldatatags
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	frameworkschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNestedObject_attributesAndValidators(t *testing.T) {
+func TestSchema_attributesAndValidators(t *testing.T) {
 	t.Parallel()
 
-	obj := NestedObject("a string description", "a number description", false)
+	attribute := Schema(nil)
 
-	stringAttr, ok := obj.Attributes[StringValueAttr].(schema.StringAttribute)
+	assert.True(t, attribute.Optional)
+	assert.False(t, attribute.Computed)
+	assert.Nil(t, attribute.Default)
+	assert.Equal(t, descriptionMarkdown, attribute.MarkdownDescription)
+
+	stringAttr, ok := attribute.NestedObject.Attributes[StringValueAttr].(frameworkschema.StringAttribute)
 	require.True(t, ok)
 	assert.True(t, stringAttr.Optional)
-	assert.Equal(t, "a string description", stringAttr.Description)
-	assert.Empty(t, stringAttr.MarkdownDescription)
+	assert.Equal(t, stringValueDescription, stringAttr.MarkdownDescription)
 	assert.Len(t, stringAttr.Validators, 2)
 
-	numberAttr, ok := obj.Attributes[NumberValueAttr].(schema.Float32Attribute)
+	numberAttr, ok := attribute.NestedObject.Attributes[NumberValueAttr].(frameworkschema.Float32Attribute)
 	require.True(t, ok)
 	assert.True(t, numberAttr.Optional)
-	assert.Equal(t, "a number description", numberAttr.Description)
-	assert.Empty(t, numberAttr.MarkdownDescription)
+	assert.Equal(t, numberValueDescription, numberAttr.MarkdownDescription)
 	assert.Len(t, numberAttr.Validators, 2)
 }
 
-func TestNestedObject_markdownDescription(t *testing.T) {
+func TestSchema_withDefault(t *testing.T) {
 	t.Parallel()
 
-	obj := NestedObject("a string description", "a number description", true)
+	attribute := Schema(map[string]attr.Value{})
 
-	stringAttr, ok := obj.Attributes[StringValueAttr].(schema.StringAttribute)
-	require.True(t, ok)
-	assert.Empty(t, stringAttr.Description)
-	assert.Equal(t, "a string description", stringAttr.MarkdownDescription)
-
-	numberAttr, ok := obj.Attributes[NumberValueAttr].(schema.Float32Attribute)
-	require.True(t, ok)
-	assert.Empty(t, numberAttr.Description)
-	assert.Equal(t, "a number description", numberAttr.MarkdownDescription)
+	assert.True(t, attribute.Optional)
+	assert.True(t, attribute.Computed)
+	assert.NotNil(t, attribute.Default)
 }
