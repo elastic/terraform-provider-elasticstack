@@ -159,6 +159,7 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
 					testCheckSpaceAttrByID(spaceID, "initials", "TC"),
 					testCheckSpaceAttrByID(spaceID, "color", "#E8478B"),
+					testCheckSpaceAttrByID(spaceID, "solution", ""),
 				),
 			},
 			{
