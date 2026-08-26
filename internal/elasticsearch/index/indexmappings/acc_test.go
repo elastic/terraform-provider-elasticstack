@@ -176,7 +176,7 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 					checkStateMappingsDynamic(false),
 					checkStateMappingsSourceEnabled(true),
 					checkStateMappingsRuntimeFields("day_of_week"),
-					checkStateMappingsDynamicTemplates(1),
+					checkStateMappingsDynamicTemplates("strings_as_keywords"),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -207,7 +207,7 @@ func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T
 					"index_name": config.StringVariable(indexName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamicTemplates(1),
+					checkStateMappingsDynamicTemplates("text_ja_example"),
 				),
 			},
 			{
@@ -237,6 +237,32 @@ func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T
 						plancheck.ExpectEmptyPlan(),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamicTemplates("text_ja_example"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					// Omit the declared name so the API no longer has text_ja_example.
+					setDynamicTemplatesOutOfBand(t, indexName, []any{
+						map[string]any{
+							"template_default": map[string]any{
+								"match_mapping_type": "string",
+								"mapping":            map[string]any{"type": "keyword"},
+							},
+						},
+					})
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamicTemplates(),
+				),
 			},
 		},
 	})
@@ -633,7 +659,7 @@ func checkStateMappingsRuntimeFields(names ...string) resource.TestCheckFunc {
 	}
 }
 
-func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
+func checkStateMappingsDynamicTemplates(wantNames ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		mappings, err := stateMappingsFromResource(s)
 		if err != nil {
@@ -641,10 +667,39 @@ func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
 		}
 		templates, ok := mappings["dynamic_templates"].([]any)
 		if !ok {
+			if len(wantNames) == 0 {
+				return nil
+			}
 			return fmt.Errorf("state mappings dynamic_templates is not an array")
 		}
-		if len(templates) < minCount {
-			return fmt.Errorf("state mappings dynamic_templates length %d, want at least %d", len(templates), minCount)
+
+		gotSet := make(map[string]struct{}, len(templates))
+		gotNames := make([]string, 0, len(templates))
+		for i, raw := range templates {
+			entry, ok := raw.(map[string]any)
+			if !ok || len(entry) != 1 {
+				return fmt.Errorf("state mappings dynamic_templates[%d] is not a single-name object", i)
+			}
+			for name := range entry {
+				gotSet[name] = struct{}{}
+				gotNames = append(gotNames, name)
+			}
+		}
+
+		wantSet := make(map[string]struct{}, len(wantNames))
+		for _, name := range wantNames {
+			wantSet[name] = struct{}{}
+		}
+		if _, injected := gotSet["template_default"]; injected {
+			return fmt.Errorf("state mappings dynamic_templates contains injected name %q", "template_default")
+		}
+		if len(gotSet) != len(wantSet) {
+			return fmt.Errorf("state mappings dynamic_templates names %v, want %v", gotNames, wantNames)
+		}
+		for name := range wantSet {
+			if _, ok := gotSet[name]; !ok {
+				return fmt.Errorf("state mappings dynamic_templates names %v, want %v", gotNames, wantNames)
+			}
 		}
 		return nil
 	}

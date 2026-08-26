@@ -21,19 +21,19 @@
 
 ## 4. Unit tests (intersection)
 
-- [ ] 4.1 Add unit test: state declares one template, API returns that template plus an index-template-injected extra → result contains only the declared template
-- [ ] 4.2 Add unit test: state declares a template name absent from the API → result omits that name (decision 2)
-- [ ] 4.3 Add unit test: state declares one or more templates, API omits the `dynamic_templates` key entirely → result omits the key (decision 2, covers task 2.2)
-- [ ] 4.4 Add unit test: state or API `dynamic_templates` has a duplicate template name → whole-array passthrough for that key (decision 3)
-- [ ] 4.5 Add unit test: state or API `dynamic_templates` entry value is not an object → whole-array passthrough for that key (decision 3)
-- [ ] 4.6 Add unit test: multiple declared templates → result preserves the state's declared order, not the API's array order
-- [ ] 4.7 Run `go test ./internal/elasticsearch/index/...` and confirm the relocated `properties`-intersection unit tests still pass unchanged
+- [x] 4.1 Add unit test: state declares one template, API returns that template plus an index-template-injected extra → result contains only the declared template
+- [x] 4.2 Add unit test: state declares a template name absent from the API → result omits that name (decision 2)
+- [x] 4.3 Add unit test: state declares one or more templates, API omits the `dynamic_templates` key entirely → result omits the key (decision 2, covers task 2.2)
+- [x] 4.4 Add unit test: state or API `dynamic_templates` has a duplicate template name → whole-array passthrough for that key (decision 3)
+- [x] 4.5 Add unit test: state or API `dynamic_templates` entry value is not an object → whole-array passthrough for that key (decision 3)
+- [x] 4.6 Add unit test: multiple declared templates → result preserves the state's declared order, not the API's array order
+- [x] 4.7 Run `go test ./internal/elasticsearch/index/...` and confirm the relocated `properties`-intersection unit tests still pass unchanged
 
 ## 5. Acceptance test tightening
 
-- [ ] 5.1 Change `checkStateMappingsDynamicTemplates(minCount int)` in `acc_test.go` to an exact-name-set assertion (e.g. `checkStateMappingsDynamicTemplates(wantNames ...string)`) that fails if the state array's name set differs from `wantNames`
-- [ ] 5.2 Update **both** existing call sites — `TestAccResourceIndexMappings_allTopLevelKeys` (`acc_test.go:179`) and `TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate` (`acc_test.go:210`) — to pass each fixture's expected declared name(s); the latter additionally asserts `template_default` (the out-of-band-injected name) is absent
-- [ ] 5.3 Add a step to `TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate` that deletes a declared template name out-of-band (via `setDynamicTemplatesOutOfBand` omitting it) and asserts the next read/plan reflects its removal from state rather than pinning the stale value
+- [x] 5.1 Change `checkStateMappingsDynamicTemplates(minCount int)` in `acc_test.go` to an exact-name-set assertion (e.g. `checkStateMappingsDynamicTemplates(wantNames ...string)`) that fails if the state array's name set differs from `wantNames`
+- [x] 5.2 Update **both** existing call sites — `TestAccResourceIndexMappings_allTopLevelKeys` (`acc_test.go:179`) and `TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate` (`acc_test.go:210`) — to pass each fixture's expected declared name(s); the latter additionally asserts `template_default` (the out-of-band-injected name) is absent
+- [x] 5.3 Add a step to `TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate` that deletes a declared template name out-of-band (via `setDynamicTemplatesOutOfBand` omitting it) and asserts the next read/plan reflects its removal from state rather than pinning the stale value
 
 ## 6. Spec sync
 
