@@ -32,8 +32,7 @@ func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	var diags fwdiags.Diagnostics
 
 	filterID := resourceID
-	if filterID == "" {
-		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(filterID, "filter_id"); diags.HasError() {
 		return state, false, diags
 	}
 

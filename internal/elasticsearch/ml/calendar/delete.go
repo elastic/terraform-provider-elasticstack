@@ -26,11 +26,8 @@ import (
 )
 
 func deleteCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
 	calendarID := resourceID
-	if calendarID == "" {
-		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(calendarID, "calendar_id"); diags.HasError() {
 		return diags
 	}
 

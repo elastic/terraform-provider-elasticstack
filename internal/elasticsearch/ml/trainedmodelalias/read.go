@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -32,8 +33,7 @@ func readTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchSco
 	var diags fwdiags.Diagnostics
 
 	alias := resourceID
-	if alias == "" {
-		diags.AddError("Invalid resource ID", "model_alias cannot be empty")
+	if diags := ml.RequireNonEmptyID(alias, "model_alias"); diags.HasError() {
 		return state, false, diags
 	}
 

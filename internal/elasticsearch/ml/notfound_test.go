@@ -58,6 +58,20 @@ func TestDeleteWithNotFoundAsSuccess(t *testing.T) {
 	})
 }
 
+func TestRequireNonEmptyID(t *testing.T) {
+	t.Run("empty id produces a labelled diagnostic", func(t *testing.T) {
+		diags := RequireNonEmptyID("", "calendar_id")
+		require.True(t, diags.HasError())
+		assert.Equal(t, "Invalid resource ID", diags.Errors()[0].Summary())
+		assert.Equal(t, "calendar_id cannot be empty", diags.Errors()[0].Detail())
+	})
+
+	t.Run("non-empty id produces no diagnostics", func(t *testing.T) {
+		diags := RequireNonEmptyID("thing-1", "calendar_id")
+		assert.False(t, diags.HasError())
+	})
+}
+
 func TestReadWithNotFoundAsAbsent(t *testing.T) {
 	ctx := context.Background()
 
