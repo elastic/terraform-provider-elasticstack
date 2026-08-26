@@ -121,6 +121,21 @@ func TestAccSpacesDataSource(t *testing.T) {
 func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 	spaceID := "tfacc" + sdkacctest.RandStringFromCharSet(17, sdkacctest.CharSetAlphaNum)
 
+	spaceCountCheck := resource.TestCheckResourceAttrWith(
+		testSpacesResourceName,
+		"spaces.#",
+		func(value string) error {
+			count, err := strconv.Atoi(value)
+			if err != nil {
+				return err
+			}
+			if count < 2 {
+				return fmt.Errorf("expected at least 2 spaces, got %d", count)
+			}
+			return nil
+		},
+	)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -136,20 +151,7 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.name", "Default"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					// Data source must return at least two spaces.
-					resource.TestCheckResourceAttrWith(
-						testSpacesResourceName,
-						"spaces.#",
-						func(value string) error {
-							count, err := strconv.Atoi(value)
-							if err != nil {
-								return err
-							}
-							if count < 2 {
-								return fmt.Errorf("expected at least 2 spaces, got %d", count)
-							}
-							return nil
-						},
-					),
+					spaceCountCheck,
 					// Custom space — looked up by ID to avoid index-ordering fragility.
 					testCheckSpaceAttrByID(spaceID, "name", "Test Coverage Space"),
 					testCheckSpaceAttrByID(spaceID, "description", "Test space for data source coverage"),
@@ -157,6 +159,19 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
 					testCheckSpaceAttrByID(spaceID, "initials", "TC"),
 					testCheckSpaceAttrByID(spaceID, "color", "#E8478B"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_with_solution"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					spaceCountCheck,
+					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "1"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
 					testCheckSpaceAttrByID(spaceID, "solution", "classic"),
 				),
 			},
