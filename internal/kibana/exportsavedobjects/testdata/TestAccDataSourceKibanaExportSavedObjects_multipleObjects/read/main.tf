@@ -11,6 +11,11 @@ resource "elasticstack_kibana_action_connector" "test" {
   })
 }
 
+resource "elasticstack_kibana_action_connector" "test2" {
+  name              = "test-export-connector-multi-2"
+  connector_type_id = ".server-log"
+}
+
 data "elasticstack_kibana_export_saved_objects" "test" {
   space_id = "default"
   objects = [
@@ -19,8 +24,8 @@ data "elasticstack_kibana_export_saved_objects" "test" {
       id   = elasticstack_kibana_action_connector.test.connector_id
     },
     {
-      type = "space",
-      id   = "default"
+      type = "action",
+      id   = elasticstack_kibana_action_connector.test2.connector_id
     }
   ]
 }
