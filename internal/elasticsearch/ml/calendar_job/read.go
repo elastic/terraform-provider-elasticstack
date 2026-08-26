@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getcalendars"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -39,23 +39,18 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 		return state, false, diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
-
 	typedClient := client.GetESClient()
 
-	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
-	if err != nil {
-		// Missing calendar: typed client returns *types.ElasticsearchError with status 404
-		// (see go-elasticsearch typedapi/ml/getcalendars GetCalendars.Do). Treat as gone so
-		// refresh removes the assignment from state when the calendar is deleted out-of-band.
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			return state, false, nil
-		}
-		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar %q: %s", calendarID, err.Error()))
+	// Missing calendar: typed client returns *types.ElasticsearchError with status 404
+	// (see go-elasticsearch typedapi/ml/getcalendars GetCalendars.Do). Treat as gone so
+	// refresh removes the assignment from state when the calendar is deleted out-of-band.
+	res, found, diags := ml.ReadWithNotFoundAsAbsent(ctx, "ML calendar", calendarID, func() (*getcalendars.Response, error) {
+		return typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+	})
+	if diags.HasError() {
 		return state, false, diags
 	}
-
-	if len(res.Calendars) == 0 {
+	if !found || len(res.Calendars) == 0 {
 		return state, false, nil
 	}
 
