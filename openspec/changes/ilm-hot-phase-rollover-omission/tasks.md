@@ -12,7 +12,7 @@
 
 ## 3. Acceptance test
 
-- [ ] 3.1 Add an acceptance test (e.g. `TestAccResourceILMHotPhaseWithoutRollover`) that creates an `elasticstack_elasticsearch_index_lifecycle` policy with a `hot` phase containing no `rollover` block (only, e.g., `set_priority`), and asserts `terraform plan` after apply/refresh shows no diff.
+- [ ] 3.1 Add an acceptance test (e.g. `TestAccResourceILMHotPhaseWithoutRollover`) that creates an `elasticstack_elasticsearch_index_lifecycle` policy with a `hot` phase containing no `rollover` block (only, e.g., `set_priority`), verifies that the live Elasticsearch GET response contains an empty `"rollover": {}` action, and asserts `terraform plan` after apply/refresh shows no diff. Use a supported test setup/version that produces this response so the normalization branch is exercised.
 - [ ] 3.2 Confirm the test also covers a subsequent `terraform plan` with no configuration changes to catch regressions of the perpetual-diff bug.
 
 ## 4. Spec and validation
