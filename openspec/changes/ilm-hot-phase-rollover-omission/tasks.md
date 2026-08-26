@@ -1,8 +1,8 @@
 ## 1. Flatten-path fix
 
-- [ ] 1.1 Generalize `priorHasDeclaredToggle` (or add a sibling `priorHasDeclaredAction` helper) in `internal/elasticsearch/index/ilm/flatten.go` so the same prior-state-declaration check can be applied to the `rollover` action name.
-- [ ] 1.2 Add an explicit `case ilmActionRollover:` in `flattenPhase`'s action switch: when the returned action is empty (`len(action) == 0`) and the prior state does not have a declared non-null `rollover` object for this phase, skip writing `rollover` into `phase` (treat it as absent). Otherwise fall through to writing `phase[actionName] = []any{action}` as today.
-- [ ] 1.3 Confirm no change is needed in `expand.go`'s `ilmActionRollover` case (write path already omits rollover correctly when unconfigured).
+- [x] 1.1 Generalize `priorHasDeclaredToggle` (or add a sibling `priorHasDeclaredAction` helper) in `internal/elasticsearch/index/ilm/flatten.go` so the same prior-state-declaration check can be applied to the `rollover` action name.
+- [x] 1.2 Add an explicit `case ilmActionRollover:` in `flattenPhase`'s action switch: when the returned action is empty (`len(action) == 0`) and the prior state does not have a declared non-null `rollover` object for this phase, skip writing `rollover` into `phase` (treat it as absent). Otherwise fall through to writing `phase[actionName] = []any{action}` as today.
+- [x] 1.3 Confirm no change is needed in `expand.go`'s `ilmActionRollover` case (write path already omits rollover correctly when unconfigured). `objectToExpandMap` skips null/unknown attributes, so an undeclared `rollover` never reaches `expandPhase`; no expand.go change.
 
 ## 2. Unit tests
 
