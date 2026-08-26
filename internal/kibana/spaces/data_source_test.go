@@ -105,6 +105,7 @@ func TestAccSpacesDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.disabled_features.#", "0"),
 					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.color"),
+					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.initials"),
 					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.image_url"),
 					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.solution"),
 				),
@@ -152,9 +153,11 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					// Custom space — looked up by ID to avoid index-ordering fragility.
 					testCheckSpaceAttrByID(spaceID, "name", "Test Coverage Space"),
 					testCheckSpaceAttrByID(spaceID, "description", "Test space for data source coverage"),
-					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "0"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "1"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
 					testCheckSpaceAttrByID(spaceID, "initials", "TC"),
 					testCheckSpaceAttrByID(spaceID, "color", "#E8478B"),
+					testCheckSpaceAttrByID(spaceID, "solution", "classic"),
 				),
 			},
 		},
@@ -208,7 +211,9 @@ func TestAccSpacesDataSource_withImageURL(t *testing.T) {
 }
 
 // TestAccSpacesDataSource_withKibanaConnection verifies that the data source
-// correctly reads spaces when an explicit kibana_connection block is provided.
+// correctly reads spaces when an explicit kibana_connection block is provided,
+// covering both the secure (insecure = false) and insecure (insecure = true)
+// variants of the connection block.
 func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 	checks := []resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
@@ -219,6 +224,14 @@ func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.insecure", "false"),
 	}
 	checks = append(checks, acctest.KibanaConnectionAuthChecks(testSpacesResourceName)...)
+
+	insecureChecks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.#", "1"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.insecure", "true"),
+	}
+	insecureChecks = append(insecureChecks, acctest.KibanaConnectionAuthChecks(testSpacesResourceName)...)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -231,6 +244,14 @@ func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(config.Variables{}),
 				Check:                    resource.ComposeAggregateTestCheckFunc(checks...),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"insecure": config.BoolVariable(true),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(insecureChecks...),
 			},
 		},
 	})
