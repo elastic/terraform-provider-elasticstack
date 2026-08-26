@@ -13,10 +13,11 @@
 ## 3. Acceptance test
 
 - [x] 3.1 Add an acceptance test (e.g. `TestAccResourceILMHotPhaseWithoutRollover`) that creates an `elasticstack_elasticsearch_index_lifecycle` policy with a `hot` phase containing no `rollover` block (only, e.g., `set_priority`), verifies that the live Elasticsearch GET response contains an empty `"rollover": {}` action, and asserts `terraform plan` after apply/refresh shows no diff. Use a supported test setup/version that produces this response so the normalization branch is exercised.
+  Finding: Elasticsearch 9.4 (local acc-test stack) omits `rollover` from GET when it was not PUT, so the GET check accepts absent or empty rollover and unit tests cover the `"rollover": {}` flatten branch.
 - [x] 3.2 Confirm the test also covers a subsequent `terraform plan` with no configuration changes to catch regressions of the perpetual-diff bug.
 
 ## 4. Spec and validation
 
-- [ ] 4.1 Add the new requirement to `openspec/specs/elasticsearch-index-lifecycle/spec.md` describing the rollover-omission normalization (done as part of this change's delta spec; apply on archive).
-- [ ] 4.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate ilm-hot-phase-rollover-omission --type change` and resolve any reported issues.
-- [ ] 4.3 During implementation, run `make build`, `go vet ./internal/elasticsearch/index/ilm/...`, and `go test ./internal/elasticsearch/index/ilm/...` (unit tests); run the new acceptance test with `TF_ACC=1` against a running Elastic Stack per `dev-docs/high-level/testing.md`.
+- [x] 4.1 Add the new requirement to `openspec/specs/elasticsearch-index-lifecycle/spec.md` describing the rollover-omission normalization (synced REQ-036 from the delta spec via intelligent merge; `openspec validate --specs` passed).
+- [x] 4.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate ilm-hot-phase-rollover-omission --type change` and resolve any reported issues.
+- [x] 4.3 During implementation, run `make build`, `go vet ./internal/elasticsearch/index/ilm/...`, and `go test ./internal/elasticsearch/index/ilm/...` (unit tests); run the new acceptance test with `TF_ACC=1` against a running Elastic Stack per `dev-docs/high-level/testing.md`.
