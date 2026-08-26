@@ -6,9 +6,9 @@
 
 ## 2. Unit tests
 
-- [ ] 2.1 Add a unit test asserting that a hot phase whose actions map contains `"rollover": {}` and whose prior state has `rollover = null` flattens to a null `rollover` in the resulting object.
-- [ ] 2.2 Add a unit test asserting that a hot phase whose actions map contains `"rollover": {}` but whose prior state already had a non-null `rollover` object preserves that object (round-trip stability for explicitly-empty user-declared rollover).
-- [ ] 2.3 Add/confirm a unit test that a hot phase with a populated `rollover` action (real conditions) continues to flatten those conditions unchanged.
+- [x] 2.1 Add a unit test asserting that a hot phase whose actions map contains `"rollover": {}` and whose prior state has `rollover = null` flattens to a null `rollover` in the resulting object.
+- [x] 2.2 Add a unit test asserting that a hot phase whose actions map contains `"rollover": {}` but whose prior state already had a non-null `rollover` object preserves that object (round-trip stability for explicitly-empty user-declared rollover).
+- [x] 2.3 Add/confirm a unit test that a hot phase with a populated `rollover` action (real conditions) continues to flatten those conditions unchanged.
 
 ## 3. Acceptance test
 
