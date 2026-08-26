@@ -145,10 +145,10 @@ func readIngestPipeline(ctx context.Context, client *clients.ElasticsearchScoped
 	}
 
 	data := Data{
-		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: state.ElasticsearchConnection},
-		ID:                           types.StringValue(compID.String()),
-		Name:                         types.StringValue(resourceID),
-		Description:                  types.StringPointerValue(pipeline.Description),
+		ElasticsearchConnection: state.ElasticsearchConnection,
+		ID:                      types.StringValue(compID.String()),
+		Name:                    types.StringValue(resourceID),
+		Description:             types.StringPointerValue(pipeline.Description),
 	}
 
 	processorsList, listDiags := jsonListFromSlice(ctx, pipeline.Processors, "processor")

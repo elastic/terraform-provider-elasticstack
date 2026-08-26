@@ -78,9 +78,7 @@ func (t GroupByType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (
 
 func NewGroupByType() GroupByType {
 	return GroupByType{
-		ListType: basetypes.ListType{
-			ElemType: types.StringType,
-		},
+		ElemType: types.StringType,
 	}
 }
 

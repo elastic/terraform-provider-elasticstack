@@ -322,8 +322,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 			DataViewID:  stringVal("metrics-*"),
 			MetricField: stringVal("system.cpu.total.pct"),
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := aiopschangepointchart.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

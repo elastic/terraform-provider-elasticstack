@@ -79,8 +79,8 @@ func Test_populateFromAPIByValue_openLinksNullPreservedWhenAPIDefaultTrue(t *tes
 
 func Test_populateFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesFalse(t *testing.T) {
 	apiFalse := false
-	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
-	cfg.HideBorder = &apiFalse
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi",
+		HideBorder: &apiFalse}
 
 	tfPanel := &models.PanelModel{
 		MarkdownConfig: &models.MarkdownConfigModel{
@@ -98,8 +98,8 @@ func Test_populateFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesFalse(t *te
 
 func Test_populateFromAPIByValue_hideBorderNullPreservedWhenAPIEchoesTrue(t *testing.T) {
 	apiTrue := true
-	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi"}
-	cfg.HideBorder = &apiTrue
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0{Content: "hi",
+		HideBorder: &apiTrue}
 
 	tfPanel := &models.PanelModel{
 		MarkdownConfig: &models.MarkdownConfigModel{
@@ -168,8 +168,8 @@ func Test_populateFromAPIByReference_mapsPresentationFields(t *testing.T) {
 
 func Test_populateFromAPIByReference_hideBorderNullPreservedWhenAPIFalse(t *testing.T) {
 	apiFalse := false
-	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{RefId: "r1"}
-	cfg.HideBorder = &apiFalse
+	cfg := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig1{RefId: "r1",
+		HideBorder: &apiFalse}
 
 	tfPanel := &models.PanelModel{
 		MarkdownConfig: &models.MarkdownConfigModel{

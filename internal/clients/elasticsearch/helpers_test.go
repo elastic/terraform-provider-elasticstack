@@ -39,7 +39,7 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 		},
 		{
 			name:     "nil *ElasticsearchError in chain returns false",
-			err:      fmt.Errorf("wrap: %w", (*types.ElasticsearchError)(nil)),
+			err:      fmt.Errorf("wrap: %w", (*types.ElasticsearchError)(nil)), //nolint:govet // pointer type intentional: mirrors the *types.ElasticsearchError the client decodes errors into
 			expected: false,
 		},
 		{
@@ -54,7 +54,7 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 		},
 		{
 			name:     "elasticsearch 404 wrapped in another error returns true",
-			err:      fmt.Errorf("wrapped: %w", &types.ElasticsearchError{Status: 404}),
+			err:      fmt.Errorf("wrapped: %w", &types.ElasticsearchError{Status: 404}), //nolint:govet // pointer type intentional: mirrors the *types.ElasticsearchError the client decodes errors into
 			expected: true,
 		},
 		{

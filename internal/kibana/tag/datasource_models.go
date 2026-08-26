@@ -71,11 +71,11 @@ func tagItemFromAPI(detail kibanaoapi.TagDetail) tagItemModel {
 		ID:    types.StringValue(detail.ID),
 		Name:  types.StringValue(detail.Name),
 		Color: types.StringValue(detail.Color),
-	}
-	item.Description = optionalStringPointerValue(detail.Description)
-	item.Managed = types.BoolPointerValue(detail.Managed)
-	item.CreatedAt = types.StringPointerValue(detail.CreatedAt)
-	item.UpdatedAt = types.StringPointerValue(detail.UpdatedAt)
+
+		Description: optionalStringPointerValue(detail.Description),
+		Managed:     types.BoolPointerValue(detail.Managed),
+		CreatedAt:   types.StringPointerValue(detail.CreatedAt),
+		UpdatedAt:   types.StringPointerValue(detail.UpdatedAt)}
 	return item
 }
 

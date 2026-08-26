@@ -75,7 +75,7 @@ func (t JSONWithDefaultsType[TModel]) Equal(o attr.Type) bool {
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t JSONWithDefaultsType[TModel]) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	return JSONWithDefaultsValue[TModel]{
-		Normalized:       jsontypes.Normalized{StringValue: in},
+		StringValue:      in,
 		populateDefaults: t.populateDefaults,
 	}, nil
 }

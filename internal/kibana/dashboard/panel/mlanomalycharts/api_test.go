@@ -369,8 +369,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 		MlAnomalyChartsConfig: &models.MlAnomalyChartsConfigModel{
 			JobIDs: []types.String{types.StringValue("job-a")},
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := mlanomalycharts.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

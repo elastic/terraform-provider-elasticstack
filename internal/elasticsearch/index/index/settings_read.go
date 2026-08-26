@@ -351,7 +351,7 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 				continue
 			}
 			planField := planVal.Field(i)
-			planAttr, ok := planField.Interface().(attr.Value)
+			planAttr, ok := reflect.TypeAssert[attr.Value](planField)
 			if !ok {
 				break
 			}

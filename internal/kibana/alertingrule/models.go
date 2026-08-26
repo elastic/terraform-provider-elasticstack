@@ -204,8 +204,8 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		fm := flappingModel{
 			LookBackWindow:        types.Int64Value(rule.Flapping.LookBackWindow),
 			StatusChangeThreshold: types.Int64Value(rule.Flapping.StatusChangeThreshold),
-		}
-		fm.Enabled = types.BoolPointerValue(rule.Flapping.Enabled)
+
+			Enabled: types.BoolPointerValue(rule.Flapping.Enabled)}
 		flObj, d := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), fm)
 		diags.Append(d...)
 		m.Flapping = flObj
@@ -731,9 +731,9 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 
 		// Alerts filter - convert to single object
 		if apiAction.AlertsFilter != nil {
-			filter := alertsFilterModel{}
+			filter := alertsFilterModel{
 
-			filter.Kql = types.StringPointerValue(apiAction.AlertsFilter.Kql)
+				Kql: types.StringPointerValue(apiAction.AlertsFilter.Kql)}
 
 			if apiAction.AlertsFilter.Timeframe != nil {
 				tf := apiAction.AlertsFilter.Timeframe

@@ -291,13 +291,12 @@ func (m *streamModel) toAPIUpsertRequest(ctx context.Context, diags *diag.Diagno
 		Dashboards: []string{},
 		Rules:      []string{},
 		Queries:    []kibanaoapi.StreamQuery{},
-	}
 
-	// Build stream definition
-	req.Stream = kibanaoapi.StreamDefinition{
-		Type:        streamType,
-		Description: m.Description.ValueString(),
-	}
+		// Build stream definition
+		Stream: kibanaoapi.StreamDefinition{
+			Type:        streamType,
+			Description: m.Description.ValueString(),
+		}}
 
 	switch streamType {
 	case streamTypeWired:

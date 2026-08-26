@@ -236,12 +236,10 @@ func TestAccResourceSecurityAPIKeyWithRemoteIndices(t *testing.T) {
 									AllowRestrictedIndices: new(false),
 								}},
 								RemoteIndices: []models.RemoteIndexPerms{{
-									Clusters: []string{"*"},
-									IndexPerms: models.IndexPerms{
-										Names:                  []string{"index-a*"},
-										Privileges:             []string{"read"},
-										AllowRestrictedIndices: new(true),
-									},
+									Clusters:               []string{"*"},
+									Names:                  []string{"index-a*"},
+									Privileges:             []string{"read"},
+									AllowRestrictedIndices: new(true),
 								}},
 							},
 						}

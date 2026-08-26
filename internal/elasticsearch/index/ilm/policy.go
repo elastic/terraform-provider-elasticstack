@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -52,13 +51,11 @@ func policyFromModel(ctx context.Context, m *tfModel, settingsSupport map[string
 func readPolicyIntoModel(ctx context.Context, ilmDef *elasticsearch.IlmPolicy, prior *tfModel, policyName string) (*tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &tfModel{
-		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{
-			ElasticsearchConnection: prior.ElasticsearchConnection,
-		},
-		ID:           prior.ID,
-		Name:         types.StringValue(policyName),
-		ForceDestroy: prior.ForceDestroy,
-		ModifiedDate: types.StringValue(ilmDef.ModifiedDate),
+		ElasticsearchConnection: prior.ElasticsearchConnection,
+		ID:                      prior.ID,
+		Name:                    types.StringValue(policyName),
+		ForceDestroy:            prior.ForceDestroy,
+		ModifiedDate:            types.StringValue(ilmDef.ModifiedDate),
 	}
 
 	if len(ilmDef.Metadata) > 0 && string(ilmDef.Metadata) != "null" {

@@ -73,12 +73,11 @@ type WithIgnorableTargetField struct {
 	IgnoreMissing types.Bool `tfsdk:"ignore_missing"`
 }
 
-func (m *WithIgnorableTargetField) toIgnorableTargetFieldBody(defaultIgnoreMissing bool) WithIgnorableTargetFieldBody {
+func (m *WithIgnorableTargetField) toIgnorableTargetFieldBody() WithIgnorableTargetFieldBody {
 	body := WithIgnorableTargetFieldBody{
 		WithTargetFieldBody: m.toTargetFieldBody(),
-	}
 
-	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, defaultIgnoreMissing)
+		IgnoreMissing: typeutils.BoolDefault(&m.IgnoreMissing, false)}
 
 	return body
 }
@@ -136,7 +135,7 @@ func (d *simpleIgnorableTargetFieldDataSource) Read(ctx context.Context, req dat
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	body.WithIgnorableTargetFieldBody = model.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = model.toIgnorableTargetFieldBody()
 
 	jsonStr, hash, diags := marshalAndHash(d.cfg.typeName, body)
 	resp.Diagnostics.Append(diags...)

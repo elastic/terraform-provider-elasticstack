@@ -68,7 +68,7 @@ func (t IndexSettingsType) Equal(o attr.Type) bool {
 
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t IndexSettingsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return IndexSettingsValue{Normalized: jsontypes.Normalized{StringValue: in}}, nil
+	return IndexSettingsValue{StringValue: in}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.

@@ -222,8 +222,8 @@ func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, p
 					Type:  colorType,
 					Color: colorValue,
 				},
-			}
-			em.Label = typeutils.StringishPointerValue(met.Label)
+
+				Label: typeutils.StringishPointerValue(met.Label)}
 			m.EsqlMetrics[i] = em
 		}
 	}

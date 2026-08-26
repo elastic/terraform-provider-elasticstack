@@ -309,8 +309,8 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	// The typed API DelayedDataCheckConfig has Enabled (bool, not pointer) and CheckWindow (Duration)
 	delayedDataCheckConfigTF := DelayedDataCheckConfig{
 		Enabled: types.BoolValue(apiModel.DelayedDataCheckConfig.Enabled),
-	}
-	delayedDataCheckConfigTF.CheckWindow = typeutils.ElasticsearchDurationToString(apiModel.DelayedDataCheckConfig.CheckWindow)
+
+		CheckWindow: typeutils.ElasticsearchDurationToString(apiModel.DelayedDataCheckConfig.CheckWindow)}
 	delayedDataCheckConfigObj, diag := types.ObjectValueFrom(ctx, map[string]attr.Type{
 		"enabled":      types.BoolType,
 		"check_window": types.StringType,

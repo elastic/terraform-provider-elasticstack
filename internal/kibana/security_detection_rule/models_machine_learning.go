@@ -33,13 +33,11 @@ type MachineLearningRuleProcessor struct {
 
 func newMachineLearningRuleProcessor() MachineLearningRuleProcessor {
 	return MachineLearningRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIMachineLearningRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
-				return d.updateFromMachineLearningRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
+			return d.updateFromMachineLearningRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
+			return v.Id.String()
 		},
 	}
 }

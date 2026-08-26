@@ -180,9 +180,8 @@ func queryRuleFromAPI(ctx context.Context, rule types.QueryRule, diagnostics *di
 		Type:     fwtypes.StringValue(rule.Type.String()),
 		Criteria: criteriaList,
 		Actions:  actionsObj,
-	}
 
-	model.Priority = typeutils.IntPointerToInt64Value(rule.Priority)
+		Priority: typeutils.IntPointerToInt64Value(rule.Priority)}
 
 	return model
 }
@@ -190,12 +189,11 @@ func queryRuleFromAPI(ctx context.Context, rule types.QueryRule, diagnostics *di
 func queryRuleCriteriaFromAPI(criterion types.QueryRuleCriteria, diagnostics *diag.Diagnostics) QueryRuleCriteriaModel {
 	model := QueryRuleCriteriaModel{
 		Type: fwtypes.StringValue(criterion.Type.String()),
-	}
 
-	// Elasticsearch returns metadata as an empty string for criteria types that do
-	// not use it (notably `always`, since 8.19). Normalize empty strings to null so
-	// state stays consistent with configurations that omit `metadata`.
-	model.Metadata = typeutils.NonEmptyStringOrNull(criterion.Metadata)
+		// Elasticsearch returns metadata as an empty string for criteria types that do
+		// not use it (notably `always`, since 8.19). Normalize empty strings to null so
+		// state stays consistent with configurations that omit `metadata`.
+		Metadata: typeutils.NonEmptyStringOrNull(criterion.Metadata)}
 
 	if len(criterion.Values) == 0 {
 		model.Values = jsontypes.Normalized{StringValue: fwtypes.StringNull()}

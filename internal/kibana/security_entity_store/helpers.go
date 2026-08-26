@@ -283,7 +283,6 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 	leModel := logExtractionModel{
 		AdditionalIndexPatterns:     types.ListNull(types.StringType),
 		ExcludedIndexPatterns:       types.ListNull(types.StringType),
-		Delay:                       types.StringNull(),
 		DocsLimit:                   types.Int64Null(),
 		FieldHistoryLength:          types.Int64Null(),
 		Frequency:                   types.StringNull(),
@@ -292,8 +291,8 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 		MaxLogsPerWindow:            types.Int64Null(),
 		MaxLogsPerWindowCapBehavior: types.StringNull(),
 		MaxTimeWindowSize:           types.StringNull(),
-	}
-	leModel.Delay = typeutils.StringishPointerValue(first.Delay)
+
+		Delay: typeutils.StringishPointerValue(first.Delay)}
 	if first.FieldHistoryLength != 0 {
 		leModel.FieldHistoryLength = types.Int64Value(int64(first.FieldHistoryLength))
 	}
@@ -319,13 +318,13 @@ func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.Lis
 			Status:             types.StringValue(string(e.Status)),
 			IndexPattern:       types.StringValue(e.IndexPattern),
 			FieldHistoryLength: types.Int64Value(int64(e.FieldHistoryLength)),
-		}
-		em.Delay = typeutils.StringishPointerValue(e.Delay)
-		em.Frequency = typeutils.StringishPointerValue(e.Frequency)
-		em.LookbackPeriod = typeutils.StringishPointerValue(e.LookbackPeriod)
-		em.Filter = typeutils.StringishPointerValue(e.Filter)
-		em.Timeout = typeutils.StringishPointerValue(e.Timeout)
-		em.TimestampField = typeutils.StringishPointerValue(e.TimestampField)
+
+			Delay:          typeutils.StringishPointerValue(e.Delay),
+			Frequency:      typeutils.StringishPointerValue(e.Frequency),
+			LookbackPeriod: typeutils.StringishPointerValue(e.LookbackPeriod),
+			Filter:         typeutils.StringishPointerValue(e.Filter),
+			Timeout:        typeutils.StringishPointerValue(e.Timeout),
+			TimestampField: typeutils.StringishPointerValue(e.TimestampField)}
 		if e.Error != nil {
 			em.ErrorAction = types.StringValue(e.Error.Action)
 			em.ErrorMessage = types.StringValue(e.Error.Message)

@@ -125,16 +125,15 @@ func (m Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWi
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
 		Enabled: m.Enabled.ValueBoolPointer(),
 		Title:   m.Title.ValueStringPointer(),
-	}
 
-	body.Schedule = &struct {
-		Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
-	}{
-		Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
-			Duration: m.CustomSchedule.Duration.ValueString(),
-			Start:    m.CustomSchedule.Start.ValueString(),
-		},
-	}
+		Schedule: &struct {
+			Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
+		}{
+			Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
+				Duration: m.CustomSchedule.Duration.ValueString(),
+				Start:    m.CustomSchedule.Start.ValueString(),
+			},
+		}}
 
 	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()

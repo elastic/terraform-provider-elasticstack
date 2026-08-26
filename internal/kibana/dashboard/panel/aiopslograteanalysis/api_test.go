@@ -217,8 +217,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 		AiopsLogRateAnalysisConfig: &models.AiopsLogRateAnalysisConfigModel{
 			DataViewID: stringVal("logs-*"),
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := aiopslograteanalysis.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

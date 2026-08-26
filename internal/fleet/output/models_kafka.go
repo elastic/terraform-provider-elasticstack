@@ -544,11 +544,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 	}
 
 	// Kafka-specific fields - initialize kafka nested object
-	kafkaModel := outputKafkaModel{}
-	kafkaModel.AuthType = types.StringValue(string(data.AuthType))
-	kafkaModel.BrokerTimeout = types.Float32PointerValue(data.BrokerTimeout)
-	kafkaModel.ClientID = types.StringPointerValue(data.ClientId)
-	kafkaModel.Compression = types.StringPointerValue((*string)(data.Compression))
+	kafkaModel := outputKafkaModel{
+		AuthType:      types.StringValue(string(data.AuthType)),
+		BrokerTimeout: types.Float32PointerValue(data.BrokerTimeout),
+		ClientID:      types.StringPointerValue(data.ClientId),
+		Compression:   types.StringPointerValue((*string)(data.Compression))}
 	// Handle CompressionLevel
 	if compressionLevel := readOutputKafkaCompressionLevel(data.CompressionLevel); compressionLevel != nil {
 		kafkaModel.CompressionLevel = types.Int64Value(*compressionLevel)
