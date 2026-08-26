@@ -26,8 +26,14 @@ import (
 // in sync.
 const propertiesKey = "properties"
 
+// dynamicTemplatesKey is the Elasticsearch mapping key whose value is an
+// ordered array of named dynamic templates.
+const dynamicTemplatesKey = "dynamic_templates"
+
 // IntersectMappings retains only top-level keys present in state. Within properties,
 // only field names from the state's properties tree are kept at every nesting level.
+// Within dynamic_templates, only template names declared in state are kept,
+// preserving the state's declared order.
 //
 // For other top-level keys, when the API value is semantically equal to the
 // declared state (FieldSemanticallyEqual), the declared value is kept so
@@ -38,9 +44,23 @@ func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 	for key, stateVal := range stateMappings {
 		apiVal, ok := apiMappings[key]
 		if !ok {
+			if key == dynamicTemplatesKey {
+				// API omitted dynamic_templates entirely (e.g. every declared
+				// template was removed out-of-band) — drop rather than pin stateVal.
+				continue
+			}
 			// Elasticsearch may omit top-level keys that match defaults; keep the declared value.
 			result[key] = stateVal
 			continue
+		}
+		if key == dynamicTemplatesKey {
+			if templates, ok := intersectDynamicTemplates(apiVal, stateVal); ok {
+				if len(templates) > 0 {
+					result[key] = templates
+				}
+				continue
+			}
+			// Unparseable shape — fall through to FieldSemanticallyEqual/passthrough.
 		}
 		if key == propertiesKey {
 			apiProps, apiOK := apiVal.(map[string]any)
@@ -59,6 +79,42 @@ func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 		result[key] = apiVal
 	}
 	return result
+}
+
+// intersectDynamicTemplates filters the API's dynamic_templates array down to
+// the names declared in state, using the API's definition for each retained
+// name and preserving the state's declared order. Names absent from the API
+// are omitted. ok is false when either side cannot be parsed via
+// dynamicTemplatesByName, signalling the caller to pass through the API value.
+func intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool) {
+	apiTemplates, apiOK := dynamicTemplatesByName(apiVal)
+	if !apiOK {
+		return nil, false
+	}
+	if _, stateOK := dynamicTemplatesByName(stateVal); !stateOK {
+		return nil, false
+	}
+
+	stateArr, ok := stateVal.([]any)
+	if !ok {
+		return nil, false
+	}
+
+	result := make([]any, 0, len(stateArr))
+	for _, rawEntry := range stateArr {
+		entry, ok := rawEntry.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		for name := range entry {
+			apiDef, found := apiTemplates[name]
+			if !found {
+				continue
+			}
+			result = append(result, map[string]any{name: apiDef})
+		}
+	}
+	return result, true
 }
 
 func intersectProperties(apiProps, stateProps map[string]any) map[string]any {

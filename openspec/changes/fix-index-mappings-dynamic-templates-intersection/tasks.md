@@ -7,11 +7,11 @@
 
 ## 2. Name-keyed `dynamic_templates` intersection
 
-- [ ] 2.1 Add a `dynamicTemplatesKey = "dynamic_templates"` constant (parallel to the existing `propertiesKey`) in the relocated file
-- [ ] 2.2 In `IntersectMappings`'s "API key absent" early return (`if !ok { ... }`), add a `dynamicTemplatesKey` case that `continue`s without writing to `result` (drop, not keep-`stateVal`) — this covers the API omitting `dynamic_templates` entirely, e.g. every declared template removed out-of-band (decision 2)
-- [ ] 2.3 Implement `intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool)`: parse both sides via `dynamicTemplatesByName`; on failure for either side, return `ok = false` (decision 3, passthrough); on success, walk the **state's** original `[]any` order, keep each declared name's entry using the API's definition when present in `dynamicTemplatesByName(apiVal)`, and omit names absent from the API (decision 2)
-- [ ] 2.4 Add a `dynamic_templates` branch in `IntersectMappings` (after the `apiVal, ok := apiMappings[key]` lookup succeeds) parallel to the existing `properties` branch: on `ok == true`, set `result[key]` to the filtered templates only if non-empty (mirroring the `properties` `len(intersected) > 0` guard), then `continue`; on `ok == false`, fall through to the existing `FieldSemanticallyEqual`/passthrough logic unchanged
-- [ ] 2.5 Confirm the state's declared order is preserved in the returned slice (do not iterate the map from `dynamicTemplatesByName`, which has no defined order)
+- [x] 2.1 Add a `dynamicTemplatesKey = "dynamic_templates"` constant (parallel to the existing `propertiesKey`) in the relocated file
+- [x] 2.2 In `IntersectMappings`'s "API key absent" early return (`if !ok { ... }`), add a `dynamicTemplatesKey` case that `continue`s without writing to `result` (drop, not keep-`stateVal`) — this covers the API omitting `dynamic_templates` entirely, e.g. every declared template removed out-of-band (decision 2)
+- [x] 2.3 Implement `intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool)`: parse both sides via `dynamicTemplatesByName`; on failure for either side, return `ok = false` (decision 3, passthrough); on success, walk the **state's** original `[]any` order, keep each declared name's entry using the API's definition when present in `dynamicTemplatesByName(apiVal)`, and omit names absent from the API (decision 2)
+- [x] 2.4 Add a `dynamic_templates` branch in `IntersectMappings` (after the `apiVal, ok := apiMappings[key]` lookup succeeds) parallel to the existing `properties` branch: on `ok == true`, set `result[key]` to the filtered templates only if non-empty (mirroring the `properties` `len(intersected) > 0` guard), then `continue`; on `ok == false`, fall through to the existing `FieldSemanticallyEqual`/passthrough logic unchanged
+- [x] 2.5 Confirm the state's declared order is preserved in the returned slice (do not iterate the map from `dynamicTemplatesByName`, which has no defined order)
 
 ## 3. Order-sensitive semantic equality
 
