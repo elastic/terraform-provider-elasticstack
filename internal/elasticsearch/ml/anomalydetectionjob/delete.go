@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -53,18 +54,18 @@ func deleteAnomalyDetectionJob(ctx context.Context, client *clients.Elasticsearc
 	// optimistic concurrency control on .ml-config: if CloseJob's state
 	// transition commits after DeleteJob reads the seqNo but before it writes,
 	// the delete fails with HTTP 409 version_conflict_engine_exception.
-	if err := elasticsearch.WaitForMLJobClosed(ctx, client, jobID); err != nil {
+	if waitDiags := waitForJobClosed(ctx, client, jobID); waitDiags.HasError() {
 		// If the Terraform operation context expired during the wait, surface the
 		// timeout directly rather than letting it propagate as a confusing delete
 		// error.
 		if ctx.Err() != nil {
 			diags.AddError(
 				"Timeout waiting for ML job to close",
-				fmt.Sprintf("ML job %s did not close within the allotted time: %s", jobID, err.Error()),
+				fmt.Sprintf("ML job %s did not close within the allotted time: %s", jobID, diagutil.FwDiagsAsError(waitDiags).Error()),
 			)
 			return diags
 		}
-		tflog.Warn(ctx, fmt.Sprintf("Failed to wait for ML job %s to close before deletion: %s", jobID, err.Error()))
+		tflog.Warn(ctx, fmt.Sprintf("Failed to wait for ML job %s to close before deletion: %s", jobID, diagutil.FwDiagsAsError(waitDiags).Error()))
 		// Continue with deletion even if the wait fails for non-timeout reasons.
 	}
 

@@ -23,10 +23,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/jobstate"
-	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -67,35 +64,6 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	}
 
 	return diags
-}
-
-// WaitForMLJobClosed polls the job's state until it reports "closed" or is no
-// longer found. A nil stats result (job not found) is treated as settled.
-// The wait is bounded by the Terraform operation context (delete timeout).
-// An initial check is performed immediately before entering the poll loop to
-// avoid the minimum 2 s tick latency when the job is already closed.
-func WaitForMLJobClosed(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, jobID string) error {
-	isJobClosed := func(ctx context.Context) (bool, error) {
-		stats, diags := GetMLJobStats(ctx, apiClient, jobID)
-		if diags.HasError() {
-			return false, diagutil.FwDiagsAsError(diags)
-		}
-		// Job is gone — treat as settled.
-		if stats == nil {
-			return true, nil
-		}
-		return stats.State == jobstate.Closed, nil
-	}
-
-	// Check immediately before entering the poll loop so that jobs already in
-	// closed state (the common case for jobs that were explicitly closed before
-	// delete) do not incur the minimum 2 s poll interval.
-	alreadyClosed, err := isJobClosed(ctx)
-	if err != nil || alreadyClosed {
-		return err
-	}
-
-	return asyncutils.WaitForStateTransition(ctx, "ml_job", jobID, isJobClosed)
 }
 
 // GetMLJobStats retrieves the stats for a specific machine learning job

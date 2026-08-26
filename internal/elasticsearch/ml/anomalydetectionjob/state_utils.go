@@ -15,40 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package jobstate
+package anomalydetectionjob
 
 import (
 	"context"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/jobstate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func getJobState(ctx context.Context, client *clients.ElasticsearchScopedClient, _ MLJobStateData, jobID string) (*string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	currentJob, getDiags := elasticsearch.GetMLJobStats(ctx, client, jobID)
-	diags.Append(getDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	if currentJob == nil {
-		return nil, diags
-	}
-
-	stateStr := currentJob.State.String()
-	return &stateStr, diags
-}
-
-func waitForJobState(ctx context.Context, client *clients.ElasticsearchScopedClient, data MLJobStateData, jobID, desiredState string) diag.Diagnostics {
-	_, diags := ml.WaitForResourceState(ctx, "ml_job", jobID, ml.WaitForResourceStateConfig[string]{
-		Get: func(ctx context.Context) (*string, diag.Diagnostics) {
-			return getJobState(ctx, client, data, jobID)
+// waitForJobClosed polls the job's state until it reports "closed" or is no
+// longer found. A nil stats result (job not found) is treated as settled.
+// The wait is bounded by the Terraform operation context (delete timeout).
+func waitForJobClosed(ctx context.Context, client *clients.ElasticsearchScopedClient, jobID string) fwdiags.Diagnostics {
+	_, diags := ml.WaitForResourceState(ctx, "ml_job", jobID, ml.WaitForResourceStateConfig[jobstate.JobState]{
+		Get: func(ctx context.Context) (*jobstate.JobState, fwdiags.Diagnostics) {
+			stats, diags := elasticsearch.GetMLJobStats(ctx, client, jobID)
+			if diags.HasError() || stats == nil {
+				return nil, diags
+			}
+			return &stats.State, diags
 		},
-		Desired: desiredState,
+		Desired:           jobstate.Closed,
+		NotFoundIsDesired: true,
 	})
 	return diags
 }
