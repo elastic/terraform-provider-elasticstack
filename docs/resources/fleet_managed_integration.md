@@ -102,7 +102,7 @@ resource "elasticstack_fleet_managed_integration" "cspm_aws" {
 - `description` (String) The description of the managed integration; updatable in-place. An explicit empty string is rejected: it is indistinguishable from "unset" once round-tripped through the API (Kibana returns an omitted/empty description as `""`, which this provider folds back to null), so setting `description = ""` would otherwise produce a permanent, non-converging diff. Omit the attribute instead of setting it to `""`.
 - `force` (Boolean) Force the create operation. Create-only: sent on the create request only and not read back from the API.
 - `force_delete` (Boolean) Force deletion of the policy, passed as `?force=true` on the delete request. Defaults to `false`.
-- `global_data_tags` (Attributes Map) Global data tags applied to the managed integration's data streams; updatable in-place. Keyed by tag name; set exactly one of `string_value` or `number_value` per entry. (see [below for nested schema](#nestedatt--global_data_tags))
+- `global_data_tags` (Attributes Map) User-defined tags. Keyed by tag name; each entry must set exactly one of `string_value` or `number_value`. (see [below for nested schema](#nestedatt--global_data_tags))
 - `inputs` (Attributes Map) Policy inputs mapped by input type ID; updatable in-place. (see [below for nested schema](#nestedatt--inputs))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `namespace` (String) The namespace of the managed integration; forces replacement on change. An explicit empty string is rejected for the same reason as `description`: it is indistinguishable from "unset" once round-tripped through the API.

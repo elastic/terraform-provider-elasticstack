@@ -32,7 +32,13 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -41,6 +47,10 @@ const (
 	NumberValueAttr = "number_value"
 
 	errExactlyOneValue = "Each entry in global_data_tags must have exactly one of string_value or number_value set."
+
+	descriptionMarkdown    = "User-defined tags. Keyed by tag name; each entry must set exactly one of `string_value` or `number_value`."
+	stringValueDescription = "String value for the tag. If this is set, `number_value` must not be defined."
+	numberValueDescription = "Number value for the tag. If this is set, `string_value` must not be defined."
 )
 
 // Item is the Terraform model for a single `global_data_tags` map entry.
@@ -85,6 +95,53 @@ func Expand[T any](item Item, meta typeutils.MapMeta, fromString func(string) (T
 		return zero
 	}
 	return value
+}
+
+// Schema builds the schema.MapNestedAttribute shared by every `global_data_tags`
+// attribute: the string_value/number_value attributes wired with the
+// ConflictsWith + AtLeastOneOf validator pairs that enforce "exactly one of
+// the two must be set", plus the map-level Optional/Computed/Default wiring.
+// Pass a non-nil defaultValue (e.g. an empty map) to have the attribute
+// default to it when unset; pass nil to leave the attribute Optional-only
+// with no default.
+func Schema(defaultValue map[string]attr.Value) schema.MapNestedAttribute {
+	attribute := schema.MapNestedAttribute{
+		MarkdownDescription: descriptionMarkdown,
+		Optional:            true,
+		Computed:            defaultValue != nil,
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				StringValueAttr: schema.StringAttribute{
+					Optional:            true,
+					MarkdownDescription: stringValueDescription,
+					Validators: []validator.String{
+						stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(NumberValueAttr)),
+						stringvalidator.AtLeastOneOf(
+							path.MatchRelative().AtParent().AtName(StringValueAttr),
+							path.MatchRelative().AtParent().AtName(NumberValueAttr),
+						),
+					},
+				},
+				NumberValueAttr: schema.Float32Attribute{
+					Optional:            true,
+					MarkdownDescription: numberValueDescription,
+					Validators: []validator.Float32{
+						float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(StringValueAttr)),
+						float32validator.AtLeastOneOf(
+							path.MatchRelative().AtParent().AtName(StringValueAttr),
+							path.MatchRelative().AtParent().AtName(NumberValueAttr),
+						),
+					},
+				},
+			},
+		},
+	}
+
+	if defaultValue != nil {
+		attribute.Default = mapdefault.StaticValue(types.MapValueMust(ElementType(), defaultValue))
+	}
+
+	return attribute
 }
 
 // Flatten decodes a caller's API union value V into Item, preferring the
