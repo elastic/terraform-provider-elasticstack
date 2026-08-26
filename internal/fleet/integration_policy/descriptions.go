@@ -21,3 +21,6 @@ import _ "embed"
 
 //go:embed descriptions/space_ids.md
 var spaceIDsDescription string
+
+//go:embed descriptions/additional_datastreams_permissions.md
+var additionalDatastreamsPermissionsDescription string

@@ -98,6 +98,10 @@ func (m integrationPolicyModelV1) toV3(ctx context.Context) (integrationPolicyMo
 		OutputID:           m.OutputID,
 		SpaceIDs:           m.SpaceIDs,
 		VarsJSON:           varsJSONVal,
+
+		// V0 and V1 state predate the attribute. The zero-value types.List
+		// carries no element type, which fails when state is set.
+		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
 	}
 
 	inputsV1 := typeutils.ListTypeAs[integrationPolicyInputModelV1](ctx, m.Input, path.Root("input"), &diags)

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
@@ -312,5 +313,139 @@ func TestConditionHandling(t *testing.T) {
 		d := inputsMap["test-input"].(InputValue).As(ctx, &inputModel, basetypes.ObjectAsOptions{})
 		require.False(t, d.HasError())
 		require.True(t, inputModel.Condition.IsNull(), "condition should be null in state when the API doesn't return it")
+	})
+}
+
+// TestAdditionalDatastreamsPermissionsHandling covers the attribute that grants
+// an integration's API key write access to data streams outside its own
+// package, which a `reroute` processor needs. Kibana added it in 9.1.0, so the
+// conversion has to stay silent on older servers.
+func TestAdditionalDatastreamsPermissionsHandling(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("schema declares an optional non-empty string list", func(t *testing.T) {
+		attr, ok := getSchemaV3().Attributes[attrAdditionalDatastreamsPermissions].(schema.ListAttribute)
+		require.True(t, ok, "attribute should be a ListAttribute")
+		require.Equal(t, types.StringType, attr.ElementType)
+		require.True(t, attr.Optional)
+		require.False(t, attr.Computed, "the server must not be able to introduce a value the config did not ask for")
+		require.Len(t, attr.Validators, 1, "an empty list must be rejected at plan time in favour of removing the attribute")
+	})
+
+	baseModel := func(perms types.List) integrationPolicyModel {
+		return integrationPolicyModel{
+			Name:                             types.StringValue("test-policy"),
+			IntegrationName:                  types.StringValue("test-integration"),
+			IntegrationVersion:               types.StringValue("1.0.0"),
+			AgentPolicyIDs:                   types.ListNull(types.StringType),
+			AdditionalDatastreamsPermissions: perms,
+		}
+	}
+
+	supported := integrationPolicyFeatures{
+		SupportsPolicyIDs:                        true,
+		SupportsOutputID:                         true,
+		SupportsAdditionalDatastreamsPermissions: true,
+	}
+
+	decodeBody := func(t *testing.T, model integrationPolicyModel, feat integrationPolicyFeatures) map[string]any {
+		t.Helper()
+
+		body, diags := model.toAPIModel(ctx, feat)
+		require.False(t, diags.HasError())
+
+		raw, err := body.MarshalJSON()
+		require.NoError(t, err)
+
+		var decoded map[string]any
+		require.NoError(t, json.Unmarshal(raw, &decoded))
+		return decoded
+	}
+
+	t.Run("toAPIModel sends permissions when set", func(t *testing.T) {
+		perms, diags := types.ListValueFrom(ctx, types.StringType, []string{"logs-custom-*", "metrics-elastic_agent.my_dataset-default"})
+		require.False(t, diags.HasError())
+
+		decoded := decodeBody(t, baseModel(perms), supported)
+		require.Equal(t,
+			[]any{"logs-custom-*", "metrics-elastic_agent.my_dataset-default"},
+			decoded["additional_datastreams_permissions"],
+		)
+	})
+
+	t.Run("toAPIModel sends an empty array to clear permissions", func(t *testing.T) {
+		decoded := decodeBody(t, baseModel(types.ListNull(types.StringType)), supported)
+		require.Equal(t, []any{}, decoded["additional_datastreams_permissions"],
+			"an unset attribute must revoke permissions granted by an earlier apply")
+	})
+
+	t.Run("toAPIModel omits permissions on unsupported versions", func(t *testing.T) {
+		decoded := decodeBody(t, baseModel(types.ListNull(types.StringType)), integrationPolicyFeatures{
+			SupportsPolicyIDs: true,
+			SupportsOutputID:  true,
+		})
+		_, present := decoded["additional_datastreams_permissions"]
+		require.False(t, present, "pre-9.1 Kibana rejects the field outright")
+	})
+
+	t.Run("declares version requirement when set", func(t *testing.T) {
+		perms, diags := types.ListValueFrom(ctx, types.StringType, []string{"logs-custom-*"})
+		require.False(t, diags.HasError())
+
+		reqs, d := baseModel(perms).GetVersionRequirements(ctx)
+		require.False(t, d.HasError())
+		require.Len(t, reqs, 1)
+		require.Equal(t, MinVersionAdditionalDatastreamsPermissions.String(), reqs[0].MinVersion.String())
+		require.Equal(t, "additional_datastreams_permissions", reqs[0].AttributePath.String())
+	})
+
+	t.Run("declares no version requirement when unset", func(t *testing.T) {
+		reqs, d := baseModel(types.ListNull(types.StringType)).GetVersionRequirements(ctx)
+		require.False(t, d.HasError())
+		require.Empty(t, reqs)
+	})
+
+	t.Run("populateFromAPI reads permissions back into state", func(t *testing.T) {
+		perms := []string{"logs-custom-*"}
+		data := &kbapi.PackagePolicy{
+			Id:   "test-id",
+			Name: "test-policy",
+			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
+				Name:    "test-integration",
+				Version: "1.0.0",
+			},
+			AdditionalDatastreamsPermissions: &perms,
+		}
+
+		model := &integrationPolicyModel{}
+		require.False(t, model.populateFromAPI(ctx, nil, data).HasError())
+
+		var got []string
+		require.False(t, model.AdditionalDatastreamsPermissions.ElementsAs(ctx, &got, false).HasError())
+		require.Equal(t, perms, got)
+	})
+
+	t.Run("populateFromAPI leaves permissions null when API returns none", func(t *testing.T) {
+		for name, returned := range map[string]*[]string{
+			"omitted": nil,
+			"empty":   {},
+		} {
+			t.Run(name, func(t *testing.T) {
+				data := &kbapi.PackagePolicy{
+					Id:   "test-id",
+					Name: "test-policy",
+					Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
+						Name:    "test-integration",
+						Version: "1.0.0",
+					},
+					AdditionalDatastreamsPermissions: returned,
+				}
+
+				model := &integrationPolicyModel{}
+				require.False(t, model.populateFromAPI(ctx, nil, data).HasError())
+				require.True(t, model.AdditionalDatastreamsPermissions.IsNull(),
+					"an empty response must map to null so it matches a config that omits the attribute")
+			})
+		}
 	})
 }

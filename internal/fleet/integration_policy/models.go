@@ -49,6 +49,8 @@ type integrationPolicyModel struct {
 	Inputs             InputsValue   `tfsdk:"inputs"` // > integrationPolicyInputsModel
 	VarsJSON           VarsJSONValue `tfsdk:"vars_json"`
 	SpaceIDs           types.Set     `tfsdk:"space_ids"`
+
+	AdditionalDatastreamsPermissions types.List `tfsdk:"additional_datastreams_permissions"` // > string
 }
 
 func (model integrationPolicyModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -66,6 +68,13 @@ func (model integrationPolicyModel) GetVersionRequirements(ctx context.Context) 
 			path.Root("output_id"),
 			*MinVersionOutputID,
 			fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputID),
+		))
+	}
+	if typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root(attrAdditionalDatastreamsPermissions),
+			*MinVersionAdditionalDatastreamsPermissions,
+			fmt.Sprintf("Additional data stream permissions are only supported in Elastic Stack %s and above", MinVersionAdditionalDatastreamsPermissions),
 		))
 	}
 
@@ -164,6 +173,14 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)
+
+	if data.AdditionalDatastreamsPermissions != nil && len(*data.AdditionalDatastreamsPermissions) > 0 {
+		perms, d := types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)
+		diags.Append(d...)
+		model.AdditionalDatastreamsPermissions = perms
+	} else {
+		model.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
+	}
 
 	varsMap := varsAnyToMap(data.Vars)
 	if len(varsMap) == 0 {
@@ -335,6 +352,23 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		}
 		// 8.15+ accepts an empty array to clear any existing associations.
 		if feat.SupportsPolicyIDs {
+			emptyArray := []string{}
+			return &emptyArray
+		}
+		return nil
+	}()
+	mappedBody.AdditionalDatastreamsPermissions = func() *[]string {
+		if typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+			var perms []string
+			d := model.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)
+			diags.Append(d...)
+			return &perms
+		}
+		// Create and Update share this conversion and neither passes prior
+		// state, so an unset attribute must also revoke permissions granted by
+		// an earlier apply. 9.1+ accepts an empty array to do that; older
+		// servers reject the field outright, so omit it there.
+		if feat.SupportsAdditionalDatastreamsPermissions {
 			emptyArray := []string{}
 			return &emptyArray
 		}
