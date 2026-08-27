@@ -14,6 +14,7 @@ resource "elasticstack_kibana_space" "test" {
   description       = "Test space for data source coverage"
   initials          = "TC"
   color             = "#E8478B"
+  solution          = "classic"
   disabled_features = ["ingestManager"]
 }
 
