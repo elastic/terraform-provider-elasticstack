@@ -124,6 +124,8 @@ func TestAccResourceAnomalyDetectionJobBasic(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_format", "epoch_ms"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "create_time"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_type", "anomaly_detector"),
+					// results_index_name is omitted from config; confirms the computed-default path.
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "results_index_name"),
 				),
 			},
 			{
@@ -190,8 +192,11 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.field_name", "response_time"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.by_field_name", "status"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.over_field_name", "clientip"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.exclude_frequent", "over"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.0", "status_code"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.model_prune_window", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.multivariate_by_fields", "true"),
 					// Analysis limits checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.model_memory_limit", "100mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.categorization_examples_limit", "5"),
@@ -200,6 +205,7 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_format", "epoch_ms"),
 					// Model plot config checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.annotations_enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.terms", "host1"),
 					// Other settings checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "allow_lazy_open", "true"),
@@ -236,8 +242,11 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.field_name", "response_time"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.by_field_name", "status"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.over_field_name", "clientip"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.1.exclude_frequent", "over"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.0", "status_code"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.model_prune_window", "1d"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.multivariate_by_fields", "true"),
 					// Updated analysis limits checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.model_memory_limit", "256mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.categorization_examples_limit", "10"),
@@ -246,6 +255,8 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_format", "epoch_ms"),
 					// Updated model plot config checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.annotations_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.terms", "host2"),
 					// Updated other settings checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "allow_lazy_open", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "background_persist_interval", "3h"),
@@ -258,6 +269,29 @@ func TestAccResourceAnomalyDetectionJobComprehensive(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "create_time"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_type", "anomaly_detector"),
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "job_version"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobBucketSpanDefault covers the analysis_config.bucket_span
+// schema-level default ("5m"), which every other test exercises with an explicit value.
+func TestAccResourceAnomalyDetectionJobBucketSpanDefault(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-bucket-span-default-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.bucket_span", "5m"),
+					resource.TestCheckResourceAttrSet(addr, "id"),
 				),
 			},
 		},
@@ -363,8 +397,9 @@ func TestAccResourceAnomalyDetectionJobPerPartitionEnabled(t *testing.T) {
 
 // Regression test for #1564: custom_rules with conditions were not sent to ES on create,
 // and the read path failed to serialize them back from the API response.
-// The update step changes the condition value, triggering a destroy+recreate (analysis_config
-// is immutable), and asserts the new value is correctly persisted.
+// The update step changes the condition value and adds a second action (skip_model_update),
+// triggering a destroy+recreate (analysis_config is immutable), and asserts the new values
+// are correctly persisted.
 func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 	jobID := fmt.Sprintf("test-ad-rules-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	addr := testResourceAddr
@@ -394,6 +429,9 @@ func TestAccResourceAnomalyDetectionJobCustomRules(t *testing.T) {
 				ConfigVariables:          config.Variables{"job_id": config.StringVariable(jobID)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.#", "2"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.0", "skip_result"),
+					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.actions.1", "skip_model_update"),
 					resource.TestCheckResourceAttr(addr, "analysis_config.detectors.0.custom_rules.0.conditions.0.value", "20"),
 					resource.TestCheckResourceAttrSet(addr, "id"),
 				),
@@ -601,6 +639,7 @@ func TestAccResourceAnomalyDetectionJobNullAndEmpty(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.0.detector_description", "Sum of bytes"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.0.use_null", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.0.custom_rules.#", "0"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.detectors.0.exclude_frequent"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.influencers.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.categorization_filters.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.per_partition_categorization.enabled", "false"),
@@ -608,6 +647,7 @@ func TestAccResourceAnomalyDetectionJobNullAndEmpty(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_config.multivariate_by_fields", "false"),
 					// Analysis limits checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.model_memory_limit", "11MB"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "analysis_limits.categorization_examples_limit"),
 					// Data description checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_field", "timestamp"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "data_description.time_format", "epoch_ms"),
