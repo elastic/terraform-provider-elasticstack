@@ -106,7 +106,7 @@ func TestAccSpacesDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.disabled_features.#", "0"),
 					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.color"),
-					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.initials"),
+					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.initials"),
 					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.image_url"),
 					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.solution"),
 				),
