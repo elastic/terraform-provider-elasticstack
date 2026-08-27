@@ -92,6 +92,24 @@ func TestExpandWildcardsSemanticEquals_NoneEqualsSelf(t *testing.T) {
 	assert.True(t, eq, `["none"] should equal ["none"]`)
 }
 
+func TestExpandWildcardsSemanticEquals_NoneEqualsEmpty(t *testing.T) {
+	ctx := context.Background()
+
+	none := makeExpandWildcardsValue(t, "none")
+	empty, diags := datafeed.NewExpandWildcardsValue(nil)
+	require.False(t, diags.HasError())
+	require.False(t, empty.IsNull())
+	assert.Empty(t, empty.Elements())
+
+	eq, diags := none.SetSemanticEquals(ctx, empty)
+	require.False(t, diags.HasError())
+	assert.True(t, eq, `["none"] should be semantically equal to an empty set`)
+
+	eq, diags = empty.SetSemanticEquals(ctx, none)
+	require.False(t, diags.HasError())
+	assert.True(t, eq, `an empty set should be semantically equal to ["none"]`)
+}
+
 func TestExpandWildcardsSemanticEquals_NoneNotEqualOpen(t *testing.T) {
 	ctx := context.Background()
 

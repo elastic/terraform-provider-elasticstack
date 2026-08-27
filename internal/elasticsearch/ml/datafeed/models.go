@@ -321,17 +321,13 @@ func (m *Datafeed) FromAPIModel(ctx context.Context, apiModel *elasticsearch.MLD
 	// Convert indices_options
 	if apiModel.IndicesOptions != nil {
 		indicesOptionsTF := IndicesOptions{}
-		if len(apiModel.IndicesOptions.ExpandWildcards) > 0 {
-			elems := make([]attr.Value, len(apiModel.IndicesOptions.ExpandWildcards))
-			for i, s := range apiModel.IndicesOptions.ExpandWildcards {
-				elems[i] = types.StringValue(s.String())
-			}
-			expandWildcardsVal, diag := NewExpandWildcardsValue(elems)
-			diags.Append(diag...)
-			indicesOptionsTF.ExpandWildcards = expandWildcardsVal
-		} else {
-			indicesOptionsTF.ExpandWildcards = NewExpandWildcardsNull()
+		tokens := make([]string, len(apiModel.IndicesOptions.ExpandWildcards))
+		for i, s := range apiModel.IndicesOptions.ExpandWildcards {
+			tokens[i] = s.String()
 		}
+		expandWildcardsVal, diag := expandWildcardsValueFromAPI(tokens)
+		diags.Append(diag...)
+		indicesOptionsTF.ExpandWildcards = expandWildcardsVal
 		indicesOptionsTF.IgnoreUnavailable = types.BoolPointerValue(apiModel.IndicesOptions.IgnoreUnavailable)
 		indicesOptionsTF.AllowNoIndices = types.BoolPointerValue(apiModel.IndicesOptions.AllowNoIndices)
 		indicesOptionsTF.IgnoreThrottled = types.BoolPointerValue(apiModel.IndicesOptions.IgnoreThrottled)
