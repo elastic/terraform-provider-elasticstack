@@ -86,20 +86,10 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 }
 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteUser(username).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete a user", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete a user")
 }
 
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {

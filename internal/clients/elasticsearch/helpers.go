@@ -97,3 +97,16 @@ func CallOrNotFound[T any](fn func() (T, error)) (T, fwdiags.Diagnostics) {
 	}
 	return result, nil
 }
+
+// DeleteWithNotFoundAsSuccess converts err from a delete call into framework
+// diagnostics, treating an Elasticsearch 404 as a successful no-op (the
+// resource is already gone) rather than an error. Unlike DiagsOrNotFound,
+// which reports err.Error() verbatim, this attaches summary as the
+// diagnostic's summary line so delete call sites keep a resource-specific
+// error message (e.g. "Unable to delete a role").
+func DeleteWithNotFoundAsSuccess(err error, summary string) fwdiags.Diagnostics {
+	if err == nil || IsNotFoundElasticsearchError(err) {
+		return nil
+	}
+	return diagutil.ErrDiag(summary, err)
+}

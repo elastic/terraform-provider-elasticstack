@@ -115,18 +115,8 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 }
 
 func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteRoleMapping(roleMappingName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete role mapping", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete role mapping")
 }
