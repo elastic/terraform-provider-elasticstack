@@ -258,11 +258,10 @@ func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T
 						},
 					})
 				},
+				// PlanOnly skips step.Check; ExpectNonEmptyPlan is the assertion
+				// that Read persisted the empty declared set instead of re-pinning.
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamicTemplates(),
-				),
 			},
 		},
 	})

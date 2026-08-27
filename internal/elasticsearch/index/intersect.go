@@ -97,23 +97,12 @@ func intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool) 
 		return nil, false
 	}
 
-	apiArr, ok := apiVal.([]any)
-	if !ok {
-		return nil, false
-	}
-
-	result := make([]any, 0, len(apiArr))
-	for _, rawEntry := range apiArr {
-		entry, ok := rawEntry.(map[string]any)
-		if !ok {
-			return nil, false
+	result := make([]any, 0, len(apiTemplates))
+	for _, name := range dynamicTemplateNamesInOrder(apiVal) {
+		if _, declared := stateTemplates[name]; !declared {
+			continue
 		}
-		for name := range entry {
-			if _, declared := stateTemplates[name]; !declared {
-				continue
-			}
-			result = append(result, map[string]any{name: apiTemplates[name]})
-		}
+		result = append(result, map[string]any{name: apiTemplates[name]})
 	}
 	return result, true
 }

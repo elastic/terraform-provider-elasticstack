@@ -89,7 +89,7 @@ For the `dynamic_templates` top-level key, the filtering SHALL be **name-keyed**
 
 Because `Read` already drops undeclared extras, plan/apply semantic equality for this resource's `dynamic_templates` SHALL require **matching name sets** (not extras-tolerant subset matching used by the index and template resources, which store the full API mappings) in addition to equivalent definitions and relative order. A declared name absent from the API, or a config name absent from state, SHALL surface as drift. An empty declared `dynamic_templates` array SHALL NOT be treated as a subset of a nonempty array.
 
-If the previously stored `mappings` is empty (e.g. immediately after `terraform import` via `ImportStatePassthroughID`), the resource SHALL store the full API response as the initial mask. This allows users to narrow the declaration in subsequent configuration changes.
+If the previously stored `mappings` is empty (e.g. immediately after `terraform import` via `ImportStatePassthroughID`), the resource SHALL store the full API response as the initial mask. This allows users to narrow the declaration in subsequent configuration changes. Because this resource compares `dynamic_templates` name sets exactly, the first plan after import SHALL show a `mappings` diff when the imported API array includes undeclared extras (for example an index-template-injected name). That plan is a one-off: apply writes the declared subset, and the next Read intersects extras away.
 
 The resource SHALL use `index.MappingsType{ExactDynamicTemplateNames: true}` so that equivalent JSON representations (different key ordering, different whitespace) do not produce a spurious diff, while `dynamic_templates` name sets are compared exactly.
 
@@ -107,6 +107,16 @@ The resource SHALL use `index.MappingsType{ExactDynamicTemplateNames: true}` so 
 - WHEN `terraform refresh` or `terraform plan` runs
 - THEN the resource SHALL be removed from state
 - AND Terraform SHALL propose recreating it on the next apply
+
+#### Scenario: First plan after import of injected dynamic templates is a one-off diff
+
+- GIVEN an index whose mappings include a user-declared `dynamic_templates` entry `text_ja_example` and an index-template-injected entry `template_default`
+- AND the resource is imported so the first Read stores the full API `dynamic_templates` array
+- AND configuration declares only `text_ja_example`
+- WHEN the first `terraform plan` after import runs
+- THEN the plan SHALL show a `mappings` diff (exact name-set equality; extras in imported state are not tolerated)
+- AND `terraform apply` SHALL converge state to the declared subset
+- AND a later `terraform plan` SHALL show no diff for the injected extra
 
 #### Scenario: Index-template-injected dynamic templates do not persist into state
 

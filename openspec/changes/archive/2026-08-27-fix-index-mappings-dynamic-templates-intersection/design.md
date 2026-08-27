@@ -21,7 +21,7 @@ Two maintainer decision rounds on the issue, together with the prior implementat
 **Non-Goals:**
 - Changing the plan/apply consistency path's overall shape (`MappingsSemanticallyEqual`/`StringSemanticEquals`, `RequiresMappingsUpdate`) — already fixed by #4581. The one exception is `dynamicTemplatesSemanticallyEqual`, which this change extends to be order-sensitive (see Decisions) so it stays consistent with `Read`'s new order-preserving behavior; no other part of the consistency path changes.
 - Changing `properties` intersection behavior — already correctly name-aware; only its package location changes (it moves alongside `intersectMappings`).
-- Changing import behavior (`priorMappingsEmpty` short-circuit in `read.go:54-57`) — the first read after import stores the full API mappings unfiltered by design; this fix only changes behavior once a prior `dynamic_templates` mask exists in state.
+- Changing the first-read-after-import short-circuit (`priorMappingsEmpty` in `read.go`) — the first Read after import still stores the full API mappings unfiltered. Exact `dynamic_templates` name-set equality does change the **first plan** after import when that unfiltered state includes undeclared extras: the plan shows a one-off `mappings` diff, apply writes the declared subset, and later Reads intersect extras away.
 
 ## Decisions
 
