@@ -395,7 +395,7 @@ func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any, exactDy
 			return false
 		}
 
-		if key == "properties" {
+		if key == propertiesKey {
 			userProps, ok := userVal.(map[string]any)
 			if !ok {
 				return false
@@ -410,7 +410,7 @@ func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any, exactDy
 			continue
 		}
 
-		if key == "dynamic_templates" {
+		if key == dynamicTemplatesKey {
 			if !dynamicTemplatesSemanticallyEqual(userVal, apiVal, exactDynamicTemplateNames) {
 				return false
 			}
@@ -435,11 +435,11 @@ func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any, exactDy
 // extras when exactNames is false); a live reorder of declared templates is
 // a semantic difference.
 func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any, exactNames bool) bool {
-	userTemplates, ok := dynamicTemplatesByName(userRaw)
+	userTemplates, userOrder, ok := parseDynamicTemplates(userRaw)
 	if !ok {
 		return false
 	}
-	apiTemplates, ok := dynamicTemplatesByName(apiRaw)
+	apiTemplates, apiOrder, ok := parseDynamicTemplates(apiRaw)
 	if !ok {
 		return false
 	}
@@ -462,67 +462,50 @@ func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any, exactNames bool) boo
 		}
 	}
 
-	userOrder := dynamicTemplateNamesInOrder(userRaw)
-	apiOrder := dynamicTemplateNamesInOrder(apiRaw)
-	filteredAPI := make([]string, 0, len(userOrder))
-	for _, name := range apiOrder {
-		if _, declared := userTemplates[name]; declared {
-			filteredAPI = append(filteredAPI, name)
-		}
-	}
-	return reflect.DeepEqual(userOrder, filteredAPI)
+	return reflect.DeepEqual(userOrder, filterDeclaredTemplateNames(apiOrder, userTemplates))
 }
 
-// dynamicTemplateNamesInOrder returns template names in array order. raw is
-// assumed to have already parsed via dynamicTemplatesByName.
-func dynamicTemplateNamesInOrder(raw any) []string {
+// parseDynamicTemplates converts Elasticsearch's dynamic_templates array to
+// its named definitions and the original array order. A valid entry is an
+// object containing exactly one template name whose value is an object.
+// Duplicate names are ambiguous and therefore are not considered parseable.
+func parseDynamicTemplates(raw any) (byName map[string]any, order []string, ok bool) {
 	templates, ok := raw.([]any)
 	if !ok {
-		return nil
-	}
-	names := make([]string, 0, len(templates))
-	for _, rawTemplate := range templates {
-		template, ok := rawTemplate.(map[string]any)
-		if !ok {
-			continue
-		}
-		for name := range template {
-			names = append(names, name)
-			break
-		}
-	}
-	return names
-}
-
-// dynamicTemplatesByName converts Elasticsearch's dynamic_templates array to
-// its named definitions. A valid entry is an object containing exactly one
-// template name whose value is an object. Duplicate names are ambiguous and
-// therefore are not considered semantically equal.
-func dynamicTemplatesByName(raw any) (map[string]any, bool) {
-	templates, ok := raw.([]any)
-	if !ok {
-		return nil, false
+		return nil, nil, false
 	}
 
-	result := make(map[string]any, len(templates))
+	byName = make(map[string]any, len(templates))
+	order = make([]string, 0, len(templates))
 	for _, rawTemplate := range templates {
 		template, ok := rawTemplate.(map[string]any)
 		if !ok || len(template) != 1 {
-			return nil, false
+			return nil, nil, false
 		}
 
 		for name, definition := range template {
-			if _, exists := result[name]; exists {
-				return nil, false
+			if _, exists := byName[name]; exists {
+				return nil, nil, false
 			}
 			if _, ok := definition.(map[string]any); !ok {
-				return nil, false
+				return nil, nil, false
 			}
-			result[name] = definition
+			byName[name] = definition
+			order = append(order, name)
 		}
 	}
 
-	return result, true
+	return byName, order, true
+}
+
+func filterDeclaredTemplateNames(order []string, declared map[string]any) []string {
+	filtered := make([]string, 0, len(order))
+	for _, name := range order {
+		if _, ok := declared[name]; ok {
+			filtered = append(filtered, name)
+		}
+	}
+	return filtered
 }
 
 // propertiesSemanticallyEqual recursively checks that all user-owned properties
@@ -564,7 +547,7 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 			return false
 		}
 
-		if key == "properties" {
+		if key == propertiesKey {
 			userProps, ok := userVal.(map[string]any)
 			if !ok {
 				return false

@@ -50,7 +50,6 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 	}
 
 	// Import / first read: no prior mask available, store the full API response.
-	// newIndexMappingsValue handles normalization; intersection is skipped.
 	if priorMappingsEmpty(state.Mappings) {
 		state.Mappings = newIndexMappingsValue(string(apiBytes))
 		return state, true, nil

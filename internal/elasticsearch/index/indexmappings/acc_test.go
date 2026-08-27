@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 	"testing"
@@ -686,16 +687,8 @@ func checkStateMappingsDynamicTemplates(wantNames ...string) resource.TestCheckF
 		for _, name := range wantNames {
 			wantSet[name] = struct{}{}
 		}
-		if _, injected := gotSet["template_default"]; injected {
-			return fmt.Errorf("state mappings dynamic_templates contains injected name %q", "template_default")
-		}
-		if len(gotSet) != len(wantSet) {
+		if !maps.Equal(gotSet, wantSet) {
 			return fmt.Errorf("state mappings dynamic_templates names %v, want %v", gotNames, wantNames)
-		}
-		for name := range wantSet {
-			if _, ok := gotSet[name]; !ok {
-				return fmt.Errorf("state mappings dynamic_templates names %v, want %v", gotNames, wantNames)
-			}
 		}
 		return nil
 	}
@@ -732,29 +725,19 @@ func deleteIndexOutOfBand(t *testing.T, indexName string) {
 
 func addDynamicMappingField(t *testing.T, indexName, fieldName string, fieldMapping map[string]any) {
 	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create Elasticsearch client: %s", err)
-	}
-
-	payload := map[string]any{
+	updateIndexMappingsOutOfBand(t, indexName, map[string]any{
 		"properties": map[string]any{
 			fieldName: fieldMapping,
 		},
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatalf("failed to marshal dynamic mapping: %s", err)
-	}
-
-	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
-	if diags.HasError() {
-		t.Fatalf("failed to add dynamic mapping field: %v", diags)
-	}
+	})
 }
 
 func setDynamicTemplatesOutOfBand(t *testing.T, indexName string, templates []any) {
+	t.Helper()
+	updateIndexMappingsOutOfBand(t, indexName, map[string]any{"dynamic_templates": templates})
+}
+
+func updateIndexMappingsOutOfBand(t *testing.T, indexName string, payload map[string]any) {
 	t.Helper()
 
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
@@ -762,14 +745,14 @@ func setDynamicTemplatesOutOfBand(t *testing.T, indexName string, templates []an
 		t.Fatalf("failed to create Elasticsearch client: %s", err)
 	}
 
-	body, err := json.Marshal(map[string]any{"dynamic_templates": templates})
+	body, err := json.Marshal(payload)
 	if err != nil {
-		t.Fatalf("failed to marshal dynamic templates: %s", err)
+		t.Fatalf("failed to marshal out-of-band mappings: %s", err)
 	}
 
 	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
 	if diags.HasError() {
-		t.Fatalf("failed to set dynamic templates out of band: %v", diags)
+		t.Fatalf("failed to update index mappings out of band: %v", diags)
 	}
 }
 

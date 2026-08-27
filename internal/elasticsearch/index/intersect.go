@@ -21,14 +21,10 @@ import (
 	"maps"
 )
 
-// propertiesKey is the Elasticsearch mapping key whose value is a nested
-// field/property map. Centralised so the intersect logic and recursion stay
-// in sync.
-const propertiesKey = "properties"
-
-// dynamicTemplatesKey is the Elasticsearch mapping key whose value is an
-// ordered array of named dynamic templates.
-const dynamicTemplatesKey = "dynamic_templates"
+const (
+	propertiesKey       = "properties"
+	dynamicTemplatesKey = "dynamic_templates"
+)
 
 // IntersectMappings retains only top-level keys present in state. Within properties,
 // only field names from the state's properties tree are kept at every nesting level.
@@ -61,7 +57,8 @@ func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 				result[key] = templates
 				continue
 			}
-			// Unparseable shape — fall through to FieldSemanticallyEqual/passthrough.
+			result[key] = apiVal
+			continue
 		}
 		if key == propertiesKey {
 			apiProps, apiOK := apiVal.(map[string]any)
@@ -82,23 +79,18 @@ func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 	return result
 }
 
-// intersectDynamicTemplates filters the API's dynamic_templates array down to
-// the names declared in state, using the API's definition for each retained
-// name and preserving the API's relative order of those names. Names absent
-// from the API are omitted. ok is false when either side cannot be parsed via
-// dynamicTemplatesByName, signalling the caller to pass through the API value.
 func intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool) {
-	apiTemplates, apiOK := dynamicTemplatesByName(apiVal)
+	apiTemplates, apiOrder, apiOK := parseDynamicTemplates(apiVal)
 	if !apiOK {
 		return nil, false
 	}
-	stateTemplates, stateOK := dynamicTemplatesByName(stateVal)
+	stateTemplates, _, stateOK := parseDynamicTemplates(stateVal)
 	if !stateOK {
 		return nil, false
 	}
 
 	result := make([]any, 0, len(apiTemplates))
-	for _, name := range dynamicTemplateNamesInOrder(apiVal) {
+	for _, name := range apiOrder {
 		if _, declared := stateTemplates[name]; !declared {
 			continue
 		}
