@@ -34,6 +34,8 @@ var (
 	_ basetypes.SetValuableWithSemanticEquals = (*ExpandWildcardsValue)(nil)
 )
 
+const expandWildcardNone = "none"
+
 // expandWildcardsAllTokens are the constituent values that Elasticsearch
 // normalizes "all" into when returning a datafeed configuration.
 var expandWildcardsAllTokens = map[string]struct{}{
@@ -110,8 +112,9 @@ func (v ExpandWildcardsValue) ToSetValue(_ context.Context) (basetypes.SetValue,
 }
 
 // SetSemanticEquals returns true if the two ExpandWildcardsValue instances are
-// semantically equal. The key rule: "all" expands to {"open","closed","hidden"},
-// so ["all"] and ["open","closed","hidden"] (in any order) are equal.
+// semantically equal. Key rules: "all" expands to {"open","closed","hidden"};
+// an empty set is equivalent to {"none"} because Elasticsearch serializes
+// expand_wildcards:"none" as [].
 func (v ExpandWildcardsValue) SetSemanticEquals(_ context.Context, priorValuable basetypes.SetValuable) (bool, diag.Diagnostics) {
 	priorValue, ok, diags := typeutils.AssertSameType(v, priorValuable)
 	if !ok {
@@ -146,8 +149,9 @@ func (v ExpandWildcardsValue) SetSemanticEquals(_ context.Context, priorValuable
 }
 
 // normalizeExpandWildcards returns a set of string tokens after expanding
-// the shorthand "all" into its constituent values {"open","closed","hidden"}.
-// All other tokens are kept as-is.
+// the shorthand "all" into its constituent values {"open","closed","hidden"}
+// and treating an empty set as {"none"} (Elasticsearch's serialization of
+// expand_wildcards:"none"). All other tokens are kept as-is.
 func normalizeExpandWildcards(v ExpandWildcardsValue) map[string]struct{} {
 	result := make(map[string]struct{})
 	for _, elem := range v.Elements() {
@@ -165,7 +169,26 @@ func normalizeExpandWildcards(v ExpandWildcardsValue) map[string]struct{} {
 			result[s.ValueString()] = struct{}{}
 		}
 	}
+	// Elasticsearch stores "none" as an empty WildcardStates set and
+	// serializes it as []. An empty known set is therefore "none".
+	if len(result) == 0 {
+		result[expandWildcardNone] = struct{}{}
+	}
 	return result
+}
+
+// expandWildcardsValueFromAPI maps Get Datafeeds expand_wildcards tokens
+// into Terraform state. An empty or omitted list means "none": Elasticsearch
+// serializes IndicesOptions with no OPEN/CLOSED/HIDDEN states as [].
+func expandWildcardsValueFromAPI(tokens []string) (ExpandWildcardsValue, diag.Diagnostics) {
+	if len(tokens) == 0 {
+		tokens = []string{expandWildcardNone}
+	}
+	elems := make([]attr.Value, len(tokens))
+	for i, s := range tokens {
+		elems[i] = types.StringValue(s)
+	}
+	return NewExpandWildcardsValue(elems)
 }
 
 // NewExpandWildcardsNull returns an ExpandWildcardsValue with a null value.
