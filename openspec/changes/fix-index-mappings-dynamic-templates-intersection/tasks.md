@@ -37,6 +37,6 @@
 
 ## 6. Spec sync
 
-- [ ] 6.1 Extend `openspec/specs/elasticstack-elasticsearch-index-mappings/spec.md` REQ-004 to document `dynamic_templates` name-keyed filtering, drop-on-missing (including the fully-absent-key case), and passthrough-on-unparseable-shape semantics, with scenarios
-- [ ] 6.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fix-index-mappings-dynamic-templates-intersection --type change` and resolve any reported issues
+- [x] 6.1 Extend `openspec/specs/elasticstack-elasticsearch-index-mappings/spec.md` REQ-004 to document `dynamic_templates` name-keyed filtering, drop-on-missing (including the fully-absent-key case), and passthrough-on-unparseable-shape semantics, with scenarios
+- [x] 6.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate fix-index-mappings-dynamic-templates-intersection --type change` and resolve any reported issues
 - [ ] 6.3 After implementation and merge, run `make check-openspec` / archive the change per the project's OpenSpec workflow so the delta is folded into the main spec
