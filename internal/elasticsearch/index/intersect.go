@@ -15,33 +15,49 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package indexmappings
+package index
 
 import (
 	"maps"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 )
 
-// intersectMappings retains only top-level keys present in state. Within properties,
+const (
+	propertiesKey       = "properties"
+	dynamicTemplatesKey = "dynamic_templates"
+)
+
+// IntersectMappings retains only top-level keys present in state. Within properties,
 // only field names from the state's properties tree are kept at every nesting level.
+// Within dynamic_templates, only template names declared in state are kept,
+// in the API's relative order of those names.
 //
 // For other top-level keys, when the API value is semantically equal to the
-// propertiesKey is the Elasticsearch mapping key whose value is a nested
-// field/property map. Centralised so the intersect logic and recursion stay
-// in sync.
-const propertiesKey = "properties"
-
 // declared state (FieldSemanticallyEqual), the declared value is kept so
 // read-after-write matches the configuration shape. Otherwise the API value is
-// stored. Plan-time drift is still handled by index.MappingsType semantic equality.
-func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
+// stored. Plan-time drift is still handled by MappingsType semantic equality.
+func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any {
 	result := make(map[string]any, len(stateMappings))
 	for key, stateVal := range stateMappings {
 		apiVal, ok := apiMappings[key]
 		if !ok {
+			if key == dynamicTemplatesKey {
+				// API omitted dynamic_templates entirely (e.g. every declared
+				// template was removed out-of-band). Persist an empty array so
+				// Framework semantic equality cannot re-pin the prior declared
+				// value — an omitted key is indistinguishable from "never declared".
+				result[key] = []any{}
+				continue
+			}
 			// Elasticsearch may omit top-level keys that match defaults; keep the declared value.
 			result[key] = stateVal
+			continue
+		}
+		if key == dynamicTemplatesKey {
+			if templates, ok := intersectDynamicTemplates(apiVal, stateVal); ok {
+				result[key] = templates
+				continue
+			}
+			result[key] = apiVal
 			continue
 		}
 		if key == propertiesKey {
@@ -54,13 +70,33 @@ func intersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 				continue
 			}
 		}
-		if index.FieldSemanticallyEqual(stateVal, apiVal) {
+		if FieldSemanticallyEqual(stateVal, apiVal) {
 			result[key] = stateVal
 			continue
 		}
 		result[key] = apiVal
 	}
 	return result
+}
+
+func intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool) {
+	apiTemplates, apiOrder, apiOK := parseDynamicTemplates(apiVal)
+	if !apiOK {
+		return nil, false
+	}
+	stateTemplates, _, stateOK := parseDynamicTemplates(stateVal)
+	if !stateOK {
+		return nil, false
+	}
+
+	result := make([]any, 0, len(apiTemplates))
+	for _, name := range apiOrder {
+		if _, declared := stateTemplates[name]; !declared {
+			continue
+		}
+		result = append(result, map[string]any{name: apiTemplates[name]})
+	}
+	return result, true
 }
 
 func intersectProperties(apiProps, stateProps map[string]any) map[string]any {

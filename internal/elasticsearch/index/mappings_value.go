@@ -39,8 +39,16 @@ var (
 )
 
 // MappingsType is a custom string type for Elasticsearch index/template mappings JSON.
+//
+// ExactDynamicTemplateNames, when true, makes StringSemanticEquals require
+// matching dynamic_templates name sets instead of extras-tolerant subset
+// matching. Use this only for elasticstack_elasticsearch_index_mappings,
+// whose Read path already drops undeclared extras. Leave it false for the
+// index, template, and component-template resources, which store the full
+// API mappings (template-injected extras in state).
 type MappingsType struct {
 	jsontypes.NormalizedType
+	ExactDynamicTemplateNames bool
 }
 
 // String returns a human readable string of the type name.
@@ -50,7 +58,7 @@ func (t MappingsType) String() string {
 
 // ValueType returns the Value type.
 func (t MappingsType) ValueType(_ context.Context) attr.Value {
-	return MappingsValue{}
+	return MappingsValue{ExactDynamicTemplateNames: t.ExactDynamicTemplateNames}
 }
 
 // Equal returns true if the given type is equivalent.
@@ -59,18 +67,18 @@ func (t MappingsType) Equal(o attr.Type) bool {
 	if !ok {
 		return false
 	}
-	return t.NormalizedType.Equal(other.NormalizedType)
+	return t.ExactDynamicTemplateNames == other.ExactDynamicTemplateNames && t.NormalizedType.Equal(other.NormalizedType)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t MappingsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	if in.IsNull() {
-		return NewMappingsNull(), nil
+		return t.valueWithFlag(NewMappingsNull()), nil
 	}
 	if in.IsUnknown() {
-		return NewMappingsUnknown(), nil
+		return t.valueWithFlag(NewMappingsUnknown()), nil
 	}
-	return NewMappingsValue(in.ValueString()), nil
+	return t.valueWithFlag(NewMappingsValue(in.ValueString())), nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
@@ -85,9 +93,12 @@ func (t MappingsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) 
 		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
 	}
 
-	return MappingsValue{
-		Normalized: normalized,
-	}, nil
+	return t.valueWithFlag(MappingsValue{Normalized: normalized}), nil
+}
+
+func (t MappingsType) valueWithFlag(v MappingsValue) MappingsValue {
+	v.ExactDynamicTemplateNames = t.ExactDynamicTemplateNames
+	return v
 }
 
 // MappingsValue is a custom string value type for Elasticsearch index/template mappings JSON.
@@ -103,11 +114,12 @@ func (t MappingsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) 
 // properties, dynamic_templates, _meta, etc.) to not trigger plan changes.
 type MappingsValue struct {
 	jsontypes.Normalized
+	ExactDynamicTemplateNames bool
 }
 
 // Type returns an MappingsType.
 func (v MappingsValue) Type(_ context.Context) attr.Type {
-	return MappingsType{}
+	return MappingsType{ExactDynamicTemplateNames: v.ExactDynamicTemplateNames}
 }
 
 // Equal returns true if the given value is equivalent.
@@ -151,7 +163,8 @@ func (v MappingsValue) StringSemanticEquals(ctx context.Context, newValuable bas
 	// Use this for plan-time drift suppression only. Do NOT use it to decide
 	// whether to call Put Mapping at apply time — that gate is
 	// RequiresMappingsUpdate (unidirectional: plan content absent from state).
-	return MappingsSemanticallyEqual(vMap, newMap) || MappingsSemanticallyEqual(newMap, vMap), diags
+	exactNames := v.ExactDynamicTemplateNames || newValue.ExactDynamicTemplateNames
+	return mappingsSemanticallyEqual(vMap, newMap, exactNames) || mappingsSemanticallyEqual(newMap, vMap, exactNames), diags
 }
 
 // RequiresMappingsUpdate returns true when the receiver (the planned mappings)
@@ -287,6 +300,15 @@ func NewMappingsValue(value string) MappingsValue {
 	return MappingsValue{Normalized: jsontypes.NewNormalizedValue(value)}
 }
 
+// WithExactDynamicTemplateNames returns a copy of v that uses exact
+// dynamic_templates name-set equality. The index mappings resource must set
+// this on every constructed value (schema conversion already copies the flag
+// from MappingsType; Read-constructed values must call this explicitly).
+func (v MappingsValue) WithExactDynamicTemplateNames() MappingsValue {
+	v.ExactDynamicTemplateNames = true
+	return v
+}
+
 // ---- semantic equality helpers -----------------------------------------------
 
 // scalarSemanticEqual returns true when two scalar leaf values are semantically
@@ -355,7 +377,14 @@ const SemanticTextMappingType = "semantic_text"
 //   - All user-owned properties exist in the API with matching types.
 //   - Template-injected extras (extra properties, dynamic_templates, _meta, …) are allowed.
 //   - semantic_text model_settings auto-populated by ES are allowed.
+//
+// This extras-tolerant form is used by RequiresMappingsUpdate and by
+// StringSemanticEquals when ExactDynamicTemplateNames is false.
 func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
+	return mappingsSemanticallyEqual(userMappings, apiMappings, false)
+}
+
+func mappingsSemanticallyEqual(userMappings, apiMappings map[string]any, exactDynamicTemplateNames bool) bool {
 	if len(userMappings) == 0 && len(apiMappings) == 0 {
 		return true
 	}
@@ -366,7 +395,7 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 			return false
 		}
 
-		if key == "properties" {
+		if key == propertiesKey {
 			userProps, ok := userVal.(map[string]any)
 			if !ok {
 				return false
@@ -381,8 +410,8 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 			continue
 		}
 
-		if key == "dynamic_templates" {
-			if !dynamicTemplatesSemanticallyEqual(userVal, apiVal) {
+		if key == dynamicTemplatesKey {
+			if !dynamicTemplatesSemanticallyEqual(userVal, apiVal, exactDynamicTemplateNames) {
 				return false
 			}
 			continue
@@ -398,15 +427,31 @@ func MappingsSemanticallyEqual(userMappings, apiMappings map[string]any) bool {
 
 // dynamicTemplatesSemanticallyEqual checks that every user-declared named
 // dynamic template exists with an equivalent definition in the API mapping.
-// Elasticsearch may append templates contributed by an index template, so API
-// extras and array ordering are intentionally ignored.
-func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any) bool {
-	userTemplates, ok := dynamicTemplatesByName(userRaw)
+// When exactNames is false, Elasticsearch may append templates contributed by
+// an index template, so API extras are ignored. When exactNames is true (the
+// index mappings resource, whose Read already dropped undeclared extras), the
+// two name sets must match. The relative order of the user's declared names
+// must match their relative order in the API array (after filtering out
+// extras when exactNames is false); a live reorder of declared templates is
+// a semantic difference.
+func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any, exactNames bool) bool {
+	userTemplates, userOrder, ok := parseDynamicTemplates(userRaw)
 	if !ok {
 		return false
 	}
-	apiTemplates, ok := dynamicTemplatesByName(apiRaw)
+	apiTemplates, apiOrder, ok := parseDynamicTemplates(apiRaw)
 	if !ok {
+		return false
+	}
+
+	if exactNames {
+		if len(userTemplates) != len(apiTemplates) {
+			return false
+		}
+	} else if len(userTemplates) == 0 && len(apiTemplates) > 0 {
+		// An empty declared list is not a subset of a nonempty API list.
+		// Without this, Framework Read would treat an intersected drop (`[]`)
+		// as equal to prior state that still has names and re-pin the stale array.
 		return false
 	}
 
@@ -417,38 +462,50 @@ func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any) bool {
 		}
 	}
 
-	return true
+	return reflect.DeepEqual(userOrder, filterDeclaredTemplateNames(apiOrder, userTemplates))
 }
 
-// dynamicTemplatesByName converts Elasticsearch's dynamic_templates array to
-// its named definitions. A valid entry is an object containing exactly one
-// template name whose value is an object. Duplicate names are ambiguous and
-// therefore are not considered semantically equal.
-func dynamicTemplatesByName(raw any) (map[string]any, bool) {
+// parseDynamicTemplates converts Elasticsearch's dynamic_templates array to
+// its named definitions and the original array order. A valid entry is an
+// object containing exactly one template name whose value is an object.
+// Duplicate names are ambiguous and therefore are not considered parseable.
+func parseDynamicTemplates(raw any) (byName map[string]any, order []string, ok bool) {
 	templates, ok := raw.([]any)
 	if !ok {
-		return nil, false
+		return nil, nil, false
 	}
 
-	result := make(map[string]any, len(templates))
+	byName = make(map[string]any, len(templates))
+	order = make([]string, 0, len(templates))
 	for _, rawTemplate := range templates {
 		template, ok := rawTemplate.(map[string]any)
 		if !ok || len(template) != 1 {
-			return nil, false
+			return nil, nil, false
 		}
 
 		for name, definition := range template {
-			if _, exists := result[name]; exists {
-				return nil, false
+			if _, exists := byName[name]; exists {
+				return nil, nil, false
 			}
 			if _, ok := definition.(map[string]any); !ok {
-				return nil, false
+				return nil, nil, false
 			}
-			result[name] = definition
+			byName[name] = definition
+			order = append(order, name)
 		}
 	}
 
-	return result, true
+	return byName, order, true
+}
+
+func filterDeclaredTemplateNames(order []string, declared map[string]any) []string {
+	filtered := make([]string, 0, len(order))
+	for _, name := range order {
+		if _, ok := declared[name]; ok {
+			filtered = append(filtered, name)
+		}
+	}
+	return filtered
 }
 
 // propertiesSemanticallyEqual recursively checks that all user-owned properties
@@ -490,7 +547,7 @@ func fieldSemanticallyEqual(userFieldRaw, apiFieldRaw any) bool {
 			return false
 		}
 
-		if key == "properties" {
+		if key == propertiesKey {
 			userProps, ok := userVal.(map[string]any)
 			if !ok {
 				return false

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -326,6 +327,57 @@ func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing
 			want: true,
 		},
 		{
+			name: "reordered declared dynamic templates are not equal",
+			user: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "injected extra interleaved among declared names preserves equality",
+			user: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+				},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{
+						"extra": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+					map[string]any{
+						"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+					},
+					map[string]any{
+						"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+					},
+				},
+			},
+			want: true,
+		},
+		{
 			name: "missing declared dynamic template is detected",
 			user: map[string]any{
 				"dynamic_templates": []any{map[string]any{
@@ -362,6 +414,18 @@ func TestMappingsSemanticallyEqual_coverageForMappingSupersetAndDrift(t *testing
 			},
 			api: map[string]any{
 				"dynamic_templates": []any{"not-a-template-object"},
+			},
+			want: false,
+		},
+		{
+			name: "empty declared dynamic_templates is not a subset of nonempty API",
+			user: map[string]any{
+				"dynamic_templates": []any{},
+			},
+			api: map[string]any{
+				"dynamic_templates": []any{map[string]any{
+					"text_ja_example": map[string]any{"mapping": map[string]any{"type": "text"}},
+				}},
 			},
 			want: false,
 		},
@@ -631,6 +695,182 @@ func TestIndexMappingsValue_SemanticEqualsDynamicTemplateSuperset(t *testing.T) 
 	eq, diags := plan.StringSemanticEquals(context.Background(), api)
 	require.False(t, diags.HasError())
 	assert.True(t, eq)
+}
+
+func TestIndexMappingsValue_StringSemanticEquals_dynamicTemplatesReadContract(t *testing.T) {
+	t.Parallel()
+
+	alpha := map[string]any{
+		"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+	}
+	extra := map[string]any{
+		"template_default": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+	}
+	priorWithNamesJSON := `{"dynamic_templates":[{"text_ja_example":{"mapping":{"type":"text"},"path_match":"hoge.example_field.freetext"}}]}`
+
+	tests := []struct {
+		name string
+		// proposed and prior are StringSemanticEquals receiver / argument.
+		// When api/state are set, proposed is produced via IntersectMappings.
+		api      map[string]any
+		state    map[string]any
+		proposed index.MappingsValue
+		prior    index.MappingsValue
+		want     bool
+	}{
+		{
+			name: "intersected drop is not equal to prior with names",
+			api: map[string]any{
+				"dynamic_templates": []any{extra},
+			},
+			prior: index.NewMappingsValue(priorWithNamesJSON),
+			want:  false,
+		},
+		{
+			name:  "intersected drop when API omits the key is not equal to prior with names",
+			api:   map[string]any{},
+			prior: index.NewMappingsValue(priorWithNamesJSON),
+			want:  false,
+		},
+		{
+			name:     "config with names equals state with extras",
+			proposed: index.NewMappingsValue(`{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}}]}`),
+			prior:    index.NewMappingsValue(`{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}},{"extra":{"mapping":{"type":"keyword"}}}]}`),
+			want:     true,
+		},
+		{
+			name:     "config without dynamic_templates equals API extras",
+			proposed: index.NewMappingsValue(`{"properties":{"title":{"type":"text"}}}`),
+			prior:    index.NewMappingsValue(`{"properties":{"title":{"type":"text"}},"dynamic_templates":[{"extra":{"mapping":{"type":"keyword"}}}]}`),
+			want:     true,
+		},
+		{
+			name: "intersected same names equals prior same names",
+			api: map[string]any{
+				"dynamic_templates": []any{alpha, extra},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			prior: index.NewMappingsValue(`{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}}]}`),
+			want:  true,
+		},
+		{
+			name: "intersected API reorder is not equal to prior state order",
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}}},
+					map[string]any{"alpha": map[string]any{"mapping": map[string]any{"type": "text"}}},
+				},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{"alpha": map[string]any{"mapping": map[string]any{"type": "text"}}},
+					map[string]any{"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}}},
+				},
+			},
+			prior: index.NewMappingsValue(`{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}},{"beta":{"mapping":{"type":"keyword"}}}]}`),
+			want:  false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			proposed := tc.proposed
+			if tc.api != nil {
+				stateMap := tc.state
+				if stateMap == nil {
+					require.NoError(t, json.Unmarshal([]byte(tc.prior.ValueString()), &stateMap))
+				}
+				intersected := index.IntersectMappings(tc.api, stateMap)
+				b, err := json.Marshal(intersected)
+				require.NoError(t, err)
+				proposed = index.NewMappingsValue(string(b))
+			}
+
+			eq, diags := proposed.StringSemanticEquals(context.Background(), tc.prior)
+			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+			assert.Equal(t, tc.want, eq)
+		})
+	}
+}
+
+func TestIndexMappingsValue_StringSemanticEquals_exactDynamicTemplateNames(t *testing.T) {
+	t.Parallel()
+
+	alphaJSON := `{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}}]}`
+	alphaBetaJSON := `{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}},{"beta":{"mapping":{"type":"keyword"}}}]}`
+	alphaExtraJSON := `{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}},{"extra":{"mapping":{"type":"keyword"}}}]}`
+
+	exact := func(raw string) index.MappingsValue {
+		return index.NewMappingsValue(raw).WithExactDynamicTemplateNames()
+	}
+
+	alpha := map[string]any{
+		"alpha": map[string]any{"mapping": map[string]any{"type": "text"}},
+	}
+	beta := map[string]any{
+		"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}},
+	}
+
+	t.Run("partial drop persists: intersected [alpha] vs prior [alpha, beta]", func(t *testing.T) {
+		t.Parallel()
+		intersected := index.IntersectMappings(
+			map[string]any{"dynamic_templates": []any{alpha}},
+			map[string]any{"dynamic_templates": []any{alpha, beta}},
+		)
+		b, err := json.Marshal(intersected)
+		require.NoError(t, err)
+		proposed := index.NewMappingsValue(string(b)).WithExactDynamicTemplateNames()
+		require.True(t, proposed.ExactDynamicTemplateNames)
+
+		eq, diags := proposed.StringSemanticEquals(context.Background(), exact(alphaBetaJSON))
+		require.False(t, diags.HasError())
+		assert.False(t, eq)
+	})
+
+	t.Run("plan restores dropped name: config [alpha, beta] vs intersected [alpha]", func(t *testing.T) {
+		t.Parallel()
+		eq, diags := exact(alphaBetaJSON).StringSemanticEquals(context.Background(), exact(alphaJSON))
+		require.False(t, diags.HasError())
+		assert.False(t, eq)
+	})
+
+	t.Run("same declared names remain equal", func(t *testing.T) {
+		t.Parallel()
+		eq, diags := exact(alphaJSON).StringSemanticEquals(context.Background(), exact(alphaJSON))
+		require.False(t, diags.HasError())
+		assert.True(t, eq)
+	})
+
+	t.Run("flag off: config [alpha] vs state [alpha, extra] stays equal", func(t *testing.T) {
+		t.Parallel()
+		config := index.NewMappingsValue(alphaJSON)
+		state := index.NewMappingsValue(alphaExtraJSON)
+		require.False(t, config.ExactDynamicTemplateNames)
+
+		eq, diags := config.StringSemanticEquals(context.Background(), state)
+		require.False(t, diags.HasError())
+		assert.True(t, eq)
+	})
+}
+
+func TestMappingsType_ExactDynamicTemplateNamesPlumbing(t *testing.T) {
+	t.Parallel()
+
+	exactType := index.MappingsType{ExactDynamicTemplateNames: true}
+	plainType := index.MappingsType{}
+	assert.False(t, exactType.Equal(plainType))
+	assert.True(t, exactType.Equal(index.MappingsType{ExactDynamicTemplateNames: true}))
+
+	v, diags := exactType.ValueFromString(context.Background(), types.StringValue(`{"dynamic_templates":[]}`))
+	require.False(t, diags.HasError())
+	mv, ok := v.(index.MappingsValue)
+	require.True(t, ok)
+	assert.True(t, mv.ExactDynamicTemplateNames)
+	assert.True(t, mv.Type(context.Background()).(index.MappingsType).ExactDynamicTemplateNames)
 }
 
 func TestIndexMappingsValue_SemanticEqualsInvalidJSONReturnsDiagnostic(t *testing.T) {

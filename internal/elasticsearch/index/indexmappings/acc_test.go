@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 	"testing"
@@ -176,7 +177,7 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 					checkStateMappingsDynamic(false),
 					checkStateMappingsSourceEnabled(true),
 					checkStateMappingsRuntimeFields("day_of_week"),
-					checkStateMappingsDynamicTemplates(1),
+					checkStateMappingsDynamicTemplates("strings_as_keywords"),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -207,7 +208,7 @@ func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T
 					"index_name": config.StringVariable(indexName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamicTemplates(1),
+					checkStateMappingsDynamicTemplates("text_ja_example"),
 				),
 			},
 			{
@@ -237,6 +238,31 @@ func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T
 						plancheck.ExpectEmptyPlan(),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamicTemplates("text_ja_example"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					// Omit the declared name so the API no longer has text_ja_example.
+					setDynamicTemplatesOutOfBand(t, indexName, []any{
+						map[string]any{
+							"template_default": map[string]any{
+								"match_mapping_type": "string",
+								"mapping":            map[string]any{"type": "keyword"},
+							},
+						},
+					})
+				},
+				// PlanOnly skips step.Check; ExpectNonEmptyPlan is the assertion
+				// that Read persisted the empty declared set instead of re-pinning.
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -633,7 +659,7 @@ func checkStateMappingsRuntimeFields(names ...string) resource.TestCheckFunc {
 	}
 }
 
-func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
+func checkStateMappingsDynamicTemplates(wantNames ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		mappings, err := stateMappingsFromResource(s)
 		if err != nil {
@@ -643,8 +669,26 @@ func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
 		if !ok {
 			return fmt.Errorf("state mappings dynamic_templates is not an array")
 		}
-		if len(templates) < minCount {
-			return fmt.Errorf("state mappings dynamic_templates length %d, want at least %d", len(templates), minCount)
+
+		gotSet := make(map[string]struct{}, len(templates))
+		gotNames := make([]string, 0, len(templates))
+		for i, raw := range templates {
+			entry, ok := raw.(map[string]any)
+			if !ok || len(entry) != 1 {
+				return fmt.Errorf("state mappings dynamic_templates[%d] is not a single-name object", i)
+			}
+			for name := range entry {
+				gotSet[name] = struct{}{}
+				gotNames = append(gotNames, name)
+			}
+		}
+
+		wantSet := make(map[string]struct{}, len(wantNames))
+		for _, name := range wantNames {
+			wantSet[name] = struct{}{}
+		}
+		if !maps.Equal(gotSet, wantSet) {
+			return fmt.Errorf("state mappings dynamic_templates names %v, want %v", gotNames, wantNames)
 		}
 		return nil
 	}
@@ -681,29 +725,19 @@ func deleteIndexOutOfBand(t *testing.T, indexName string) {
 
 func addDynamicMappingField(t *testing.T, indexName, fieldName string, fieldMapping map[string]any) {
 	t.Helper()
-
-	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-	if err != nil {
-		t.Fatalf("failed to create Elasticsearch client: %s", err)
-	}
-
-	payload := map[string]any{
+	updateIndexMappingsOutOfBand(t, indexName, map[string]any{
 		"properties": map[string]any{
 			fieldName: fieldMapping,
 		},
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatalf("failed to marshal dynamic mapping: %s", err)
-	}
-
-	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
-	if diags.HasError() {
-		t.Fatalf("failed to add dynamic mapping field: %v", diags)
-	}
+	})
 }
 
 func setDynamicTemplatesOutOfBand(t *testing.T, indexName string, templates []any) {
+	t.Helper()
+	updateIndexMappingsOutOfBand(t, indexName, map[string]any{"dynamic_templates": templates})
+}
+
+func updateIndexMappingsOutOfBand(t *testing.T, indexName string, payload map[string]any) {
 	t.Helper()
 
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
@@ -711,14 +745,14 @@ func setDynamicTemplatesOutOfBand(t *testing.T, indexName string, templates []an
 		t.Fatalf("failed to create Elasticsearch client: %s", err)
 	}
 
-	body, err := json.Marshal(map[string]any{"dynamic_templates": templates})
+	body, err := json.Marshal(payload)
 	if err != nil {
-		t.Fatalf("failed to marshal dynamic templates: %s", err)
+		t.Fatalf("failed to marshal out-of-band mappings: %s", err)
 	}
 
 	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
 	if diags.HasError() {
-		t.Fatalf("failed to set dynamic templates out of band: %v", diags)
+		t.Fatalf("failed to update index mappings out of band: %v", diags)
 	}
 }
 
