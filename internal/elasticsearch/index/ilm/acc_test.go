@@ -1018,6 +1018,81 @@ func TestAccResourceILM_shrinkAllowWriteAfterShrink(t *testing.T) {
 	})
 }
 
+// TestAccResourceILMHotPhaseWithoutRollover creates a hot phase with no
+// rollover block (only set_priority) and asserts terraform plan stays empty
+// after apply/refresh. The GET check requires hot.actions.rollover to be
+// absent (including empty "{}"); an injected empty action fails this test so
+// it is visible on the CI matrix.
+func TestAccResourceILMHotPhaseWithoutRollover(t *testing.T) {
+	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceILMDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.min_age", "1h"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.set_priority.priority", "10"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_index_lifecycle.test", "hot.rollover.max_age"),
+					checkHotPhaseRolloverGET(policyName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// checkHotPhaseRolloverGET inspects the live GET _ilm/policy response for a hot
+// phase created without a rollover block. GET must omit the rollover action
+// entirely; an empty "rollover": {} is a failure so the CI matrix reports
+// whether any supported stack injects that shape.
+func checkHotPhaseRolloverGET(policyName string) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+
+		ilmDef, diags := esclient.GetIlm(context.Background(), client, policyName)
+		if diags.HasError() {
+			return fmt.Errorf("failed to GET ILM policy %q: %s", policyName, diags)
+		}
+		if ilmDef == nil {
+			return fmt.Errorf("ILM policy %q not found", policyName)
+		}
+
+		hot, ok := ilmDef.Phases["hot"]
+		if !ok {
+			return fmt.Errorf("hot phase missing from GET response for policy %q", policyName)
+		}
+
+		if _, ok := hot.Actions["set_priority"]; !ok {
+			return fmt.Errorf("expected hot.actions.set_priority in GET response, got %v", hot.Actions)
+		}
+
+		if rollover, ok := hot.Actions["rollover"]; ok {
+			return fmt.Errorf("expected hot.actions.rollover to be absent after PUT without rollover, got %v", rollover)
+		}
+		return nil
+	}
+}
+
 func TestAccResourceILM_hotReadonlyDisabled(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 

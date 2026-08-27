@@ -598,3 +598,23 @@ The acceptance test suite SHALL include a test `TestAccResourceILMFromSDKNoMetad
 - WHEN the provider is upgraded to the Plugin Framework version and `terraform plan` runs
 - THEN the plan SHALL succeed without an `Invalid JSON String Value` error
 - AND the plan SHALL show no diff
+
+### Requirement: Hot phase without rollover is preserved (REQ-036)
+
+A Terraform configuration for `elasticstack_elasticsearch_index_lifecycle` whose `hot` phase declares no `rollover` block SHALL create a policy whose PUT omits the rollover action. After apply and refresh, `hot.rollover` SHALL be null in state, and a subsequent `terraform plan` SHALL show no changes.
+
+`GET _ilm/policy` for that policy SHALL omit `hot.actions.rollover` entirely. The acceptance test SHALL fail if GET includes a `rollover` key, empty or not. ILM supports `rollover` only in the `hot` phase. The write path already omits undeclared `rollover` from the PUT payload; this requirement documents that round-trip, it does not add flatten-path normalization for an injected `"rollover": {}`.
+
+#### Scenario: Hot phase without rollover produces no diff after refresh
+
+- GIVEN a Terraform configuration for `elasticstack_elasticsearch_index_lifecycle` whose `hot` phase declares no `rollover` block
+- WHEN the provider applies the configuration and refreshes state
+- THEN state SHALL have `hot.rollover = null`
+- AND a subsequent `terraform plan` SHALL show no changes
+
+#### Scenario: GET omits undeclared hot-phase rollover
+
+- GIVEN a Terraform configuration for `elasticstack_elasticsearch_index_lifecycle` whose `hot` phase declares no `rollover` block
+- WHEN the provider creates the policy and GETs it from Elasticsearch
+- THEN `GET _ilm/policy` SHALL omit `hot.actions.rollover` entirely (an empty `"rollover": {}` SHALL fail the acceptance test)
+- AND a subsequent `terraform plan` SHALL show no changes
