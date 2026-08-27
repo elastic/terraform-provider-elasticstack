@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/require"
 )
@@ -237,6 +238,109 @@ func TestAccResourceScriptParamsRemoval(t *testing.T) {
 	})
 }
 
+func TestAccResourceScriptForceNew(t *testing.T) {
+	resourceName := "elasticstack_elasticsearch_script.test"
+	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	replacementScriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+				),
+			},
+			{
+				// Changing script_id must force replacement rather than an in-place update.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(replacementScriptID)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", replacementScriptID),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceScriptContextUpdate(t *testing.T) {
+	resourceName := "elasticstack_elasticsearch_script.test"
+	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("score"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttr(resourceName, "context", "score"),
+					resource.TestCheckResourceAttr(resourceName, "source", "_score * params['multiplier']"),
+				),
+			},
+			{
+				// context must be updatable in-place from one valid value to another,
+				// not just set <-> unset.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("filter"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttr(resourceName, "context", "filter"),
+					resource.TestCheckResourceAttr(resourceName, "source", "params['enabled'] == true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceScriptLangUpdate(t *testing.T) {
+	resourceName := "elasticstack_elasticsearch_script.test"
+	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkScriptDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("painless"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttr(resourceName, "lang", "painless"),
+					resource.TestCheckResourceAttr(resourceName, "source", "_score * params['multiplier']"),
+				),
+			},
+			{
+				// lang must be updatable in-place, and the change must be honored
+				// rather than reusing a cached compiled script.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("expression"),
+				ConfigVariables:          config.Variables{"script_id": config.StringVariable(scriptID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+					resource.TestCheckResourceAttr(resourceName, "lang", "expression"),
+					resource.TestCheckResourceAttr(resourceName, "source", "_score * multiplier"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceScriptExplicitConnection(t *testing.T) {
 	endpoints := scriptESEndpoints()
 	if len(endpoints) == 0 {
@@ -250,6 +354,31 @@ func TestAccResourceScriptExplicitConnection(t *testing.T) {
 	scriptID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_script.test_conn"
 
+	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
+		resource.TestCheckResourceAttrSet(resourceName, "id"),
+		resource.TestCheckResourceAttr(resourceName, "lang", "painless"),
+		resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.#", "1"),
+		resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.#",
+			fmt.Sprintf("%d", len(endpoints))),
+		resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+		resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.insecure", "true"),
+	}
+	// The fixture mirrors the auth precedence used elsewhere: an api_key, when set,
+	// is used exclusively; otherwise username/password are configured.
+	if apiKey != "" {
+		checks = append(checks, resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.api_key", apiKey))
+	} else {
+		checks = append(checks,
+			resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.username", username),
+			resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.password", password),
+		)
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkScriptDestroy,
@@ -260,20 +389,11 @@ func TestAccResourceScriptExplicitConnection(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"script_id": config.StringVariable(scriptID),
 					"endpoints": config.ListVariable(endpointVars...),
-					"api_key":   config.StringVariable(os.Getenv("ELASTICSEARCH_API_KEY")),
-					"username":  config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
-					"password":  config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+					"api_key":   config.StringVariable(apiKey),
+					"username":  config.StringVariable(username),
+					"password":  config.StringVariable(password),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "script_id", scriptID),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					resource.TestCheckResourceAttr(resourceName, "lang", "painless"),
-					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.#",
-						fmt.Sprintf("%d", len(endpoints))),
-					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
-					resource.TestCheckResourceAttr(resourceName, "elasticsearch_connection.0.insecure", "true"),
-				),
+				Check: resource.ComposeTestCheckFunc(checks...),
 			},
 		},
 	})
