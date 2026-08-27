@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/getrolemapping"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -93,16 +94,12 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 }
 
 func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*types.SecurityRoleMapping, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, diags
-		}
-		diags.AddError("Unable to get role mapping", err.Error())
+	res, diags := CallOrNotFound(func() (getrolemapping.Response, error) {
+		return typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
+	})
+	if diags.HasError() || res == nil {
 		return nil, diags
 	}
 
