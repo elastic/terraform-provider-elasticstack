@@ -754,6 +754,23 @@ func TestIndexMappingsValue_StringSemanticEquals_dynamicTemplatesReadContract(t 
 			prior: index.NewMappingsValue(`{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}}]}`),
 			want:  true,
 		},
+		{
+			name: "intersected API reorder is not equal to prior state order",
+			api: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}}},
+					map[string]any{"alpha": map[string]any{"mapping": map[string]any{"type": "text"}}},
+				},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{
+					map[string]any{"alpha": map[string]any{"mapping": map[string]any{"type": "text"}}},
+					map[string]any{"beta": map[string]any{"mapping": map[string]any{"type": "keyword"}}},
+				},
+			},
+			prior: index.NewMappingsValue(`{"dynamic_templates":[{"alpha":{"mapping":{"type":"text"}}},{"beta":{"mapping":{"type":"keyword"}}}]}`),
+			want:  false,
+		},
 	}
 
 	for _, tc := range tests {

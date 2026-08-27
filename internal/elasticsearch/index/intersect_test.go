@@ -233,14 +233,14 @@ func TestIntersectMappings_dynamicTemplates(t *testing.T) {
 			wantPassthrough: true,
 		},
 		{
-			name: "preserves state's declared order not API order",
+			name: "preserves API relative order of declared names not state order",
 			api: map[string]any{
-				"dynamic_templates": []any{beta, alpha},
+				"dynamic_templates": []any{beta, extra, alpha},
 			},
 			state: map[string]any{
 				"dynamic_templates": []any{alpha, beta},
 			},
-			wantNames: []string{"alpha", "beta"},
+			wantNames: []string{"beta", "alpha"},
 		},
 	}
 
