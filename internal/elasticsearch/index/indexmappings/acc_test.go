@@ -667,9 +667,6 @@ func checkStateMappingsDynamicTemplates(wantNames ...string) resource.TestCheckF
 		}
 		templates, ok := mappings["dynamic_templates"].([]any)
 		if !ok {
-			if len(wantNames) == 0 {
-				return nil
-			}
 			return fmt.Errorf("state mappings dynamic_templates is not an array")
 		}
 

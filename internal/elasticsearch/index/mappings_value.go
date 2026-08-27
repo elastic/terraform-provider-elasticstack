@@ -412,6 +412,13 @@ func dynamicTemplatesSemanticallyEqual(userRaw, apiRaw any) bool {
 		return false
 	}
 
+	// An empty declared list is not a subset of a nonempty API list. Without
+	// this, Framework Read would treat an intersected drop (`[]`) as equal to
+	// prior state that still has names and re-pin the stale array.
+	if len(userTemplates) == 0 && len(apiTemplates) > 0 {
+		return false
+	}
+
 	for name, userDefinition := range userTemplates {
 		apiDefinition, ok := apiTemplates[name]
 		if !ok || !fieldSemanticallyEqual(userDefinition, apiDefinition) {

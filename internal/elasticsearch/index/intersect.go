@@ -46,7 +46,10 @@ func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 		if !ok {
 			if key == dynamicTemplatesKey {
 				// API omitted dynamic_templates entirely (e.g. every declared
-				// template was removed out-of-band) — drop rather than pin stateVal.
+				// template was removed out-of-band). Persist an empty array so
+				// Framework semantic equality cannot re-pin the prior declared
+				// value — an omitted key is indistinguishable from "never declared".
+				result[key] = []any{}
 				continue
 			}
 			// Elasticsearch may omit top-level keys that match defaults; keep the declared value.
@@ -55,9 +58,7 @@ func IntersectMappings(apiMappings, stateMappings map[string]any) map[string]any
 		}
 		if key == dynamicTemplatesKey {
 			if templates, ok := intersectDynamicTemplates(apiVal, stateVal); ok {
-				if len(templates) > 0 {
-					result[key] = templates
-				}
+				result[key] = templates
 				continue
 			}
 			// Unparseable shape — fall through to FieldSemanticallyEqual/passthrough.

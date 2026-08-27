@@ -148,7 +148,6 @@ func TestIntersectMappings_dynamicTemplates(t *testing.T) {
 		api             map[string]any
 		state           map[string]any
 		wantNames       []string
-		wantOmitKey     bool
 		wantPassthrough bool
 	}{
 		{
@@ -172,12 +171,22 @@ func TestIntersectMappings_dynamicTemplates(t *testing.T) {
 			wantNames: []string{"alpha"},
 		},
 		{
-			name: "omits key when API omits dynamic_templates entirely",
+			name: "persists empty array when API omits dynamic_templates entirely",
 			api:  map[string]any{},
 			state: map[string]any{
 				"dynamic_templates": []any{alpha},
 			},
-			wantOmitKey: true,
+			wantNames: []string{},
+		},
+		{
+			name: "persists empty array when no declared names remain in API",
+			api: map[string]any{
+				"dynamic_templates": []any{extra},
+			},
+			state: map[string]any{
+				"dynamic_templates": []any{alpha},
+			},
+			wantNames: []string{},
 		},
 		{
 			name: "passthrough when API has duplicate template name",
@@ -239,10 +248,6 @@ func TestIntersectMappings_dynamicTemplates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := IntersectMappings(tc.api, tc.state)
 			raw, present := got[dynamicTemplatesKey]
-			if tc.wantOmitKey {
-				assert.False(t, present, "expected dynamic_templates to be omitted from result")
-				return
-			}
 			require.True(t, present, "expected dynamic_templates in result")
 			gotArr, ok := raw.([]any)
 			require.True(t, ok, "expected dynamic_templates to be an array")
