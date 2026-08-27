@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change elasticsearch-index-mappings. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Schema (REQ-001)
 
 The resource SHALL expose the following top-level attributes:
@@ -148,8 +150,6 @@ The resource SHALL use `index.MappingsType{ExactDynamicTemplateNames: true}` so 
 - AND the plan SHALL show a diff for the `mappings` attribute reflecting the changed order
 - AND the diff SHALL NOT be suppressed by semantic equality
 
----
-
 ### Requirement: Delete — no-op (REQ-005)
 
 On `terraform destroy`, the resource SHALL remove itself from Terraform state without issuing any API call. Elasticsearch does not support removing field mappings without a full reindex; the resource acknowledges this constraint by design.
@@ -198,4 +198,3 @@ When the Elasticsearch API returns a non-success response (other than 404 on rea
 - GIVEN the Elasticsearch `PUT /{index}/_mapping` API returns a non-success response during update
 - WHEN update runs
 - THEN Terraform diagnostics SHALL include the API error
-
