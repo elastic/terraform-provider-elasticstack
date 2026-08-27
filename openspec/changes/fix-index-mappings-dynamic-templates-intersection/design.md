@@ -61,9 +61,13 @@ for key, stateVal := range stateMappings {
 
 Emitting the **API's relative order of declared names** is required so a live reorder in Elasticsearch is written into state and then surfaces as plan drift. Walking state order would reconstruct `[alpha, beta]` from API `[beta, alpha]` and `dynamicTemplatesSemanticallyEqual` would never see the API order on this resource. Happy path (no live reorder) is unchanged because the API relative order of declared names already matches state.
 
-### Order-sensitive `dynamicTemplatesSemanticallyEqual`
+### Exact `dynamic_templates` name-set equality for this resource
 
-`dynamicTemplatesSemanticallyEqual` (`mappings_value.go`) compares by name and, after filtering the API array down to declared names, requires that relative order to match `userRaw`. With `Read` storing the API's relative order of declared names, a live reorder is visible in state; equality then reports it as drift rather than masking it. API-only extras remain ignored. An empty declared list is **not** a subset of a nonempty API list — otherwise Framework Read (`proposedNew.StringSemanticEquals(prior)`) would treat an intersected drop (`[]`) as equal to prior names and re-pin the stale array. Bidirectional `StringSemanticEquals` is left unchanged: it is required for the `elasticstack_elasticsearch_index` resource, which stores full API mappings (extras in state).
+Shared `MappingsType{}` extras-tolerant equality (config `[alpha]` vs state `[alpha, extra]`) is required by `elasticstack_elasticsearch_index` and the template resources, which store the full API mappings. That same subset predicate cannot tell "beta was declared and disappeared" from "extra is template-injected", so Framework Read would re-pin prior `[alpha, beta]` over intersected `[alpha]`.
+
+`elasticstack_elasticsearch_index_mappings` therefore uses `MappingsType{ExactDynamicTemplateNames: true}`. Read-constructed values must carry the same flag (`WithExactDynamicTemplateNames`) or `proposedNew.StringSemanticEquals(prior)` still uses extras-tolerant equality. When the flag is set, `dynamicTemplatesSemanticallyEqual` requires matching name sets in addition to definition and relative-order checks. Bidirectional `StringSemanticEquals` and `RequiresMappingsUpdate` are otherwise unchanged.
+
+`dynamicTemplatesSemanticallyEqual` (`mappings_value.go`) compares by name and, after filtering the API array down to declared names (when extras are tolerated), requires that relative order to match `userRaw`. With `Read` storing the API's relative order of declared names, a live reorder is visible in state; equality then reports it as drift rather than masking it. An empty declared list is **not** a subset of a nonempty API list.
 
 ### Test tightening
 
