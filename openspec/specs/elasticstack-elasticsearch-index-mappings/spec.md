@@ -83,9 +83,9 @@ On read, the resource SHALL retrieve the index metadata via the existing `GetInd
 
 For the `properties` top-level key, the filtering SHALL be **recursive**: only field names that appear in the previously stored `properties` tree SHALL be retained at every nesting level. Dynamically-added fields within `properties` that are absent from the stored state SHALL be silently discarded.
 
-For the `dynamic_templates` top-level key, the filtering SHALL be **name-keyed**, mirroring `properties`: only dynamic template names that appear in the previously stored `dynamic_templates` array SHALL be retained, using the API's definition for each retained name. Template entries contributed by an index template (or any other out-of-band source) that are absent from the stored state SHALL be silently discarded. The retained entries SHALL preserve the **stored state's declared order**, not the API response's array order, because dynamic template order is semantically significant to Elasticsearch (first match wins). A declared template name that is absent from the API response SHALL be dropped from state rather than retained with a stale value, whether that name is missing from an otherwise-present `dynamic_templates` array or the API response omits the `dynamic_templates` key entirely (for example, because every declared template was removed out-of-band); this allows drift to surface on the next plan rather than following the general rule of retaining the stored value for a top-level key absent from the API response. If either the stored state's or the API response's `dynamic_templates` value cannot be parsed into named templates (a duplicate template name within the array, or a template entry whose value is not an object — reachable only through manual state edits or import, since Elasticsearch itself does not produce this shape), the resource SHALL fall back to storing the API's `dynamic_templates` value unfiltered for that key, unchanged from its behavior for other unrecognized top-level keys.
+For the `dynamic_templates` top-level key, the filtering SHALL be **name-keyed**, mirroring `properties`: only dynamic template names that appear in the previously stored `dynamic_templates` array SHALL be retained, using the API's definition for each retained name. Template entries contributed by an index template (or any other out-of-band source) that are absent from the stored state SHALL be silently discarded. The retained entries SHALL preserve the **API response's relative order of declared names**, dropping undeclared extras, because dynamic template order is semantically significant to Elasticsearch (first match wins). A live reorder of declared templates is thereby written into state. A declared template name that is absent from the API response SHALL be dropped from state rather than retained with a stale value, whether that name is missing from an otherwise-present `dynamic_templates` array or the API response omits the `dynamic_templates` key entirely (for example, because every declared template was removed out-of-band). When no declared names remain, the resource SHALL persist `dynamic_templates` as an empty array rather than omitting the key, so Framework semantic equality does not re-pin the previously stored array (an omitted key is indistinguishable from never having declared `dynamic_templates`). This allows drift to surface on the next plan rather than following the general rule of retaining the stored value for a top-level key absent from the API response. If either the stored state's or the API response's `dynamic_templates` value cannot be parsed into named templates (a duplicate template name within the array, or a template entry whose value is not an object — reachable only through manual state edits or import, since Elasticsearch itself does not produce this shape), the resource SHALL fall back to storing the API's `dynamic_templates` value unfiltered for that key, unchanged from its behavior for other unrecognized top-level keys.
 
-Because `Read` reconstructs the stored state's declared order rather than the API's, plan/apply semantic equality for `dynamic_templates` SHALL also be order-sensitive with respect to the declared names: if Elasticsearch reports a different relative order among the user's declared template names than previously stored (ignoring index-template-injected extras), this SHALL be treated as a semantic difference and surfaced as drift on the next plan, not masked by order-insensitive equality.
+Because `Read` stores the API's relative order of declared names, plan/apply semantic equality for `dynamic_templates` SHALL also be order-sensitive with respect to the declared names: if Elasticsearch reports a different relative order among the user's declared template names than previously stored (ignoring index-template-injected extras), this SHALL be treated as a semantic difference and surfaced as drift on the next plan, not masked by order-insensitive equality. An empty declared `dynamic_templates` array SHALL NOT be treated as a subset of a nonempty API or prior-state array.
 
 If the previously stored `mappings` is empty (e.g. immediately after `terraform import` via `ImportStatePassthroughID`), the resource SHALL store the full API response as the initial mask. This allows users to narrow the declaration in subsequent configuration changes.
 
@@ -130,12 +130,13 @@ The resource SHALL use `index.MappingsType{}` semantic equality so that equivale
 - THEN the resource SHALL store the API's `dynamic_templates` value for that key unfiltered
 - AND SHALL NOT error or drop the `dynamic_templates` key entirely
 
-#### Scenario: All declared dynamic templates removed out-of-band drops the key from state
+#### Scenario: All declared dynamic templates removed out-of-band leaves no declared names in state
 
 - GIVEN a resource that declares one `dynamic_templates` entry named `alpha`
 - AND `alpha` is removed from the index's mappings out-of-band, leaving the API response with no `dynamic_templates` key at all
 - WHEN `terraform plan` or `terraform refresh` runs
-- THEN the stored `mappings` state SHALL NOT contain a `dynamic_templates` key
+- THEN the stored `dynamic_templates` state SHALL be an empty array
+- AND SHALL NOT retain the previously stored `alpha` entry
 - AND the next `terraform plan` SHALL show a diff proposing to restore `alpha` (drift surfaced, not silently pinned)
 
 #### Scenario: Reordering declared dynamic templates surfaces as drift
@@ -143,7 +144,8 @@ The resource SHALL use `index.MappingsType{}` semantic equality so that equivale
 - GIVEN a resource that declares two `dynamic_templates` entries in the order `alpha`, then `beta`
 - AND Elasticsearch's index mappings report the same two templates with equivalent definitions but in the order `beta`, then `alpha` (a live reorder, not an index-template-injected extra)
 - WHEN `terraform plan` runs
-- THEN the plan SHALL show a diff for the `mappings` attribute reflecting the changed order
+- THEN the stored `dynamic_templates` state SHALL reflect the API order `beta`, then `alpha`
+- AND the plan SHALL show a diff for the `mappings` attribute reflecting the changed order
 - AND the diff SHALL NOT be suppressed by semantic equality
 
 ---

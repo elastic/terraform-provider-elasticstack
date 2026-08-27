@@ -8,10 +8,10 @@
 ## 2. Name-keyed `dynamic_templates` intersection
 
 - [x] 2.1 Add a `dynamicTemplatesKey = "dynamic_templates"` constant (parallel to the existing `propertiesKey`) in the relocated file
-- [x] 2.2 In `IntersectMappings`'s "API key absent" early return (`if !ok { ... }`), add a `dynamicTemplatesKey` case that `continue`s without writing to `result` (drop, not keep-`stateVal`) — this covers the API omitting `dynamic_templates` entirely, e.g. every declared template removed out-of-band (decision 2)
-- [x] 2.3 Implement `intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool)`: parse both sides via `dynamicTemplatesByName`; on failure for either side, return `ok = false` (decision 3, passthrough); on success, walk the **state's** original `[]any` order, keep each declared name's entry using the API's definition when present in `dynamicTemplatesByName(apiVal)`, and omit names absent from the API (decision 2)
-- [x] 2.4 Add a `dynamic_templates` branch in `IntersectMappings` (after the `apiVal, ok := apiMappings[key]` lookup succeeds) parallel to the existing `properties` branch: on `ok == true`, set `result[key]` to the filtered templates only if non-empty (mirroring the `properties` `len(intersected) > 0` guard), then `continue`; on `ok == false`, fall through to the existing `FieldSemanticallyEqual`/passthrough logic unchanged
-- [x] 2.5 Confirm the state's declared order is preserved in the returned slice (do not iterate the map from `dynamicTemplatesByName`, which has no defined order)
+- [x] 2.2 In `IntersectMappings`'s "API key absent" early return (`if !ok { ... }`), add a `dynamicTemplatesKey` case that persists `dynamic_templates: []` rather than omitting the key or keeping `stateVal` — this covers the API omitting `dynamic_templates` entirely, e.g. every declared template removed out-of-band (decision 2)
+- [x] 2.3 Implement `intersectDynamicTemplates(apiVal, stateVal any) (templates []any, ok bool)`: parse both sides via `dynamicTemplatesByName`; on failure for either side, return `ok = false` (decision 3, passthrough); on success, walk the **API's** original `[]any` order, keep each name that is also declared in state using the API's definition, and omit names absent from the API (decision 2)
+- [x] 2.4 Add a `dynamic_templates` branch in `IntersectMappings` (after the `apiVal, ok := apiMappings[key]` lookup succeeds) parallel to the existing `properties` branch: on `ok == true`, always set `result[key]` to the filtered templates (including an empty array when no declared names remain), then `continue`; on `ok == false`, fall through to the existing `FieldSemanticallyEqual`/passthrough logic unchanged
+- [x] 2.5 Confirm the API's relative order of declared names is preserved in the returned slice (walk the API array, not the map from `dynamicTemplatesByName` and not the state's array)
 
 ## 3. Order-sensitive semantic equality
 
@@ -23,10 +23,10 @@
 
 - [x] 4.1 Add unit test: state declares one template, API returns that template plus an index-template-injected extra → result contains only the declared template
 - [x] 4.2 Add unit test: state declares a template name absent from the API → result omits that name (decision 2)
-- [x] 4.3 Add unit test: state declares one or more templates, API omits the `dynamic_templates` key entirely → result omits the key (decision 2, covers task 2.2)
+- [x] 4.3 Add unit test: state declares one or more templates, API omits the `dynamic_templates` key entirely → result persists an empty array (decision 2, covers task 2.2)
 - [x] 4.4 Add unit test: state or API `dynamic_templates` has a duplicate template name → whole-array passthrough for that key (decision 3)
 - [x] 4.5 Add unit test: state or API `dynamic_templates` entry value is not an object → whole-array passthrough for that key (decision 3)
-- [x] 4.6 Add unit test: multiple declared templates → result preserves the state's declared order, not the API's array order
+- [x] 4.6 Add unit test: multiple declared templates → result follows the **API** relative order of declared names, not the state's order
 - [x] 4.7 Run `go test ./internal/elasticsearch/index/...` and confirm the relocated `properties`-intersection unit tests still pass unchanged
 
 ## 5. Acceptance test tightening
