@@ -57,7 +57,7 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	body.InternalNetworks = typeutils.StringSetElements(m.InternalNetworks, &diags)
+	body.InternalNetworks = typeutils.StringElements(m.InternalNetworks, &diags)
 	if typeutils.IsKnown(m.InternalNetworksField) {
 		body.InternalNetworksField = m.InternalNetworksField.ValueString()
 	}

@@ -52,7 +52,7 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Field = m.Field.ValueString()
 	}
 
-	body.Value = typeutils.StringListElements(m.Value, &diags)
+	body.Value = typeutils.StringElements(m.Value, &diags)
 
 	body.AllowDuplicates = typeutils.BoolDefault(&m.AllowDuplicates, true)
 

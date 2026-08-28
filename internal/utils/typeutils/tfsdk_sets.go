@@ -50,13 +50,3 @@ func SetTypeAs[T any](ctx context.Context, value types.Set, p path.Path, diags *
 func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.Set {
 	return collectionValueFrom(ctx, value, elemType, p, diags, types.SetValueFrom)
 }
-
-// StringSetElements extracts the string values from a types.Set of strings
-// without requiring a context.Context. Returns nil for null/unknown sets and
-// appends an error diagnostic for non-string, null, or unknown elements.
-func StringSetElements(set types.Set, diags *diag.Diagnostics) []string {
-	if set.IsNull() || set.IsUnknown() {
-		return nil
-	}
-	return stringElementsFromValues(set.Elements(), "set", diags)
-}

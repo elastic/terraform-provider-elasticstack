@@ -54,7 +54,7 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Field = m.Field.ValueString()
 	}
 	body.TargetField = typeutils.StringDefault(&m.TargetField, "@timestamp")
-	body.Formats = typeutils.StringListElements(m.Formats, &diags)
+	body.Formats = typeutils.StringElements(m.Formats, &diags)
 	body.Timezone = typeutils.StringDefault(&m.Timezone, "UTC")
 	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
 	body.OutputFormat = typeutils.StringDefault(&m.OutputFormat, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")

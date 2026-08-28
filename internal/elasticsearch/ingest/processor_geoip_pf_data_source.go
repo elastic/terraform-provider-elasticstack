@@ -51,7 +51,7 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.DatabaseFile) {
 		body.DatabaseFile = m.DatabaseFile.ValueString()
 	}
-	body.Properties = typeutils.StringSetElements(m.Properties, &diags)
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
 	body.FirstOnly = typeutils.BoolDefault(&m.FirstOnly, true)
 
 	return body, diags

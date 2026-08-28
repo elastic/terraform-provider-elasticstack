@@ -131,7 +131,7 @@ func appendStringSetToMap(m map[string]any, key string, set types.Set) {
 		return
 	}
 	var diags diag.Diagnostics
-	vals := typeutils.StringSetElements(set, &diags)
+	vals := typeutils.StringElements(set, &diags)
 	if len(vals) > 0 {
 		m[key] = vals
 	}

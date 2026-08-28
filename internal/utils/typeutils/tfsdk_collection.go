@@ -60,11 +60,26 @@ func nonEmptyCollectionOrDefault[T any, C attr.Value](
 	return factory(ctx, elemType, slice)
 }
 
-// stringElementsFromValues extracts string values from a slice of attr.Value, appending an
-// error diagnostic for any element that is not a types.String or is null/unknown. kind is used
-// to tailor the diagnostic messages (e.g. "list" or "set") and is shared by StringListElements
-// and StringSetElements so both collection kinds enforce identical null/unknown validation.
-func stringElementsFromValues(elems []attr.Value, kind string, diags *diag.Diagnostics) []string {
+// elementCollection is satisfied by types.List and types.Set, giving access to their
+// elements as a slice regardless of collection kind. types.Map is deliberately excluded:
+// its Elements() returns map[string]attr.Value, not a slice.
+type elementCollection interface {
+	attr.Value
+	Elements() []attr.Value
+}
+
+// StringElements extracts the string values from a types.List or types.Set of strings.
+// Returns nil for a null/unknown collection and appends an error diagnostic for any
+// element that is not a types.String or is null/unknown.
+func StringElements(value elementCollection, diags *diag.Diagnostics) []string {
+	if value.IsNull() || value.IsUnknown() {
+		return nil
+	}
+	kind := "list"
+	if _, ok := value.(types.Set); ok {
+		kind = "set"
+	}
+	elems := value.Elements()
 	result := make([]string, 0, len(elems))
 	for _, elem := range elems {
 		str, ok := elem.(types.String)
