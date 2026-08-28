@@ -903,71 +903,41 @@ func TestSetTypeAs(t *testing.T) {
 	}
 }
 
-func TestStringSetElements(t *testing.T) {
+func TestStringElements(t *testing.T) {
 	t.Parallel()
 
-	stringSetUnk := types.SetUnknown(types.StringType)
-	stringSetNil := types.SetNull(types.StringType)
-	stringSetEmpty := types.SetValueMust(types.StringType, []attr.Value{})
-	stringSetFull := types.SetValueMust(types.StringType, []attr.Value{
-		types.StringValue("v1"),
-		types.StringValue("v2"),
-		types.StringValue("v3"),
-	})
+	// Structurally matches the unexported elementCollection interface StringElements accepts,
+	// letting this table mix types.List and types.Set inputs.
+	type collection interface {
+		attr.Value
+		Elements() []attr.Value
+	}
 
 	tests := []struct {
 		name      string
-		input     types.Set
+		input     collection
 		want      []string
 		wantDiags bool
 	}{
-		{name: "returns nil for unknown set", input: stringSetUnk, want: nil},
-		{name: "returns nil for null set", input: stringSetNil, want: nil},
-		{name: "returns empty slice for empty set", input: stringSetEmpty, want: []string{}},
-		{name: "extracts string elements", input: stringSetFull, want: []string{"v1", "v2", "v3"}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.StringSetElements(tt.input, &diags)
-			require.ElementsMatch(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
-func TestStringListElements(t *testing.T) {
-	t.Parallel()
-
-	stringListUnk := types.ListUnknown(types.StringType)
-	stringListNil := types.ListNull(types.StringType)
-	stringListEmpty := types.ListValueMust(types.StringType, []attr.Value{})
-	stringListFull := types.ListValueMust(types.StringType, []attr.Value{
-		types.StringValue("v1"),
-		types.StringValue("v2"),
-		types.StringValue("v3"),
-	})
-
-	tests := []struct {
-		name      string
-		input     types.List
-		want      []string
-		wantDiags bool
-	}{
-		{name: "returns nil for unknown list", input: stringListUnk, want: nil, wantDiags: false},
-		{name: "returns nil for null list", input: stringListNil, want: nil, wantDiags: false},
-		{name: "returns empty slice for empty list", input: stringListEmpty, want: []string{}, wantDiags: false},
-		{name: "extracts string elements", input: stringListFull, want: []string{"v1", "v2", "v3"}, wantDiags: false},
-		{name: "adds diag for null element", input: types.ListValueMust(types.StringType, []attr.Value{types.StringNull()}), want: []string{}, wantDiags: true},
+		{name: "returns nil for unknown list", input: types.ListUnknown(types.StringType), want: nil},
+		{name: "returns nil for null set", input: types.SetNull(types.StringType), want: nil},
+		{name: "returns empty slice for empty list", input: types.ListValueMust(types.StringType, []attr.Value{}), want: []string{}},
+		{name: "extracts string elements from list", input: types.ListValueMust(types.StringType, []attr.Value{
+			types.StringValue("v1"), types.StringValue("v2"), types.StringValue("v3"),
+		}), want: []string{"v1", "v2", "v3"}},
+		{name: "extracts string elements from set", input: types.SetValueMust(types.StringType, []attr.Value{
+			types.StringValue("v1"), types.StringValue("v2"), types.StringValue("v3"),
+		}), want: []string{"v1", "v2", "v3"}},
+		{name: "adds diag for null element in list", input: types.ListValueMust(types.StringType, []attr.Value{types.StringNull()}), want: []string{}, wantDiags: true},
+		{name: "adds diag for null element in set", input: types.SetValueMust(types.StringType, []attr.Value{types.StringNull()}), want: []string{}, wantDiags: true},
 		{name: "adds diag for unknown element", input: types.ListValueMust(types.StringType, []attr.Value{types.StringUnknown()}), want: []string{}, wantDiags: true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			got := typeutils.StringListElements(tt.input, &diags)
-			require.Equal(t, tt.want, got)
+			got := typeutils.StringElements(tt.input, &diags)
+			require.ElementsMatch(t, tt.want, got)
 			require.Equal(t, tt.wantDiags, diags.HasError())
 		})
 	}

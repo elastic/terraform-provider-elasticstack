@@ -63,7 +63,7 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 
 	if !model.Tags.IsNull() && !model.Tags.IsUnknown() {
 		var tagsDiags diag.Diagnostics
-		body["tags"] = typeutils.StringSetElements(model.Tags, &tagsDiags)
+		body["tags"] = typeutils.StringElements(model.Tags, &tagsDiags)
 		diags.Append(tagsDiags...)
 	}
 

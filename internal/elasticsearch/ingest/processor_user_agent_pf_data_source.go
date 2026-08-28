@@ -50,7 +50,7 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.RegexFile) {
 		body.RegexFile = m.RegexFile.ValueString()
 	}
-	body.Properties = typeutils.StringSetElements(m.Properties, &diags)
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
 	if typeutils.IsKnown(m.ExtractDeviceType) {
 		v := m.ExtractDeviceType.ValueBool()
 		body.ExtractDeviceType = &v

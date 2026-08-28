@@ -47,7 +47,7 @@ func (m *processorSetSecurityUserModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	body.Properties = typeutils.StringSetElements(m.Properties, &diags)
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
 
 	return body, diags
 }

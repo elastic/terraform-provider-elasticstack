@@ -151,7 +151,7 @@ func expandEntityTypesSet(s types.Set) []kbapi.GetSecurityEntityStoreEntitiesPar
 		return nil
 	}
 	var diags diag.Diagnostics
-	strs := typeutils.StringSetElements(s, &diags)
+	strs := typeutils.StringElements(s, &diags)
 	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(strs))
 	for _, str := range strs {
 		result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str))

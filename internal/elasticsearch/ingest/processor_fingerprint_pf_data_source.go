@@ -50,7 +50,7 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	body.Fields = typeutils.StringListElements(m.Fields, &diags)
+	body.Fields = typeutils.StringElements(m.Fields, &diags)
 	body.TargetField = typeutils.StringDefault(&m.TargetField, "fingerprint")
 	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 	if typeutils.IsKnown(m.Salt) {

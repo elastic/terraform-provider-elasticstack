@@ -56,7 +56,7 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	body.Patterns = typeutils.StringListElements(m.Patterns, &diags)
+	body.Patterns = typeutils.StringElements(m.Patterns, &diags)
 	if typeutils.IsKnown(m.PatternDefinitions) {
 		body.PatternDefinitions = typeutils.MapTypeAs[string](context.Background(), m.PatternDefinitions, path.Root("pattern_definitions"), &diags)
 	}

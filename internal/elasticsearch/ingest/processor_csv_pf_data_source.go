@@ -54,7 +54,7 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	body.TargetFields = typeutils.StringListElements(m.TargetFields, &diags)
+	body.TargetFields = typeutils.StringElements(m.TargetFields, &diags)
 	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 	body.Separator = typeutils.StringDefault(&m.Separator, ",")
 	body.Quote = typeutils.StringDefault(&m.Quote, "\"")

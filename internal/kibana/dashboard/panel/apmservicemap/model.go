@@ -193,7 +193,7 @@ func mapOrientationFromAPI(v *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrie
 // stringSetToEnumSlice converts a validated Set of strings into a slice of the API's enum type,
 // returning nil when the set has no elements (so the field is omitted from the API payload).
 func stringSetToEnumSlice[T ~string](set types.Set, diags *diag.Diagnostics) *[]T {
-	vals := typeutils.StringSetElements(set, diags)
+	vals := typeutils.StringElements(set, diags)
 	if len(vals) == 0 {
 		return nil
 	}

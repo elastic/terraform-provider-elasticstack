@@ -58,8 +58,8 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.ValueSplit) {
 		body.ValueSplit = m.ValueSplit.ValueString()
 	}
-	body.IncludeKeys = typeutils.StringSetElements(m.IncludeKeys, &diags)
-	body.ExcludeKeys = typeutils.StringSetElements(m.ExcludeKeys, &diags)
+	body.IncludeKeys = typeutils.StringElements(m.IncludeKeys, &diags)
+	body.ExcludeKeys = typeutils.StringElements(m.ExcludeKeys, &diags)
 	if typeutils.IsKnown(m.Prefix) {
 		body.Prefix = m.Prefix.ValueString()
 	}

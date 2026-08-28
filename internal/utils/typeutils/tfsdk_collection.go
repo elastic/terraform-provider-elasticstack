@@ -19,10 +19,12 @@ package typeutils
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // collectionFactory creates a collection type C from a context, element type, and value.
@@ -56,6 +58,42 @@ func nonEmptyCollectionOrDefault[T any, C attr.Value](
 		return original, nil
 	}
 	return factory(ctx, elemType, slice)
+}
+
+// elementCollection is satisfied by types.List and types.Set, giving access to their
+// elements as a slice regardless of collection kind. types.Map is deliberately excluded:
+// its Elements() returns map[string]attr.Value, not a slice.
+type elementCollection interface {
+	attr.Value
+	Elements() []attr.Value
+}
+
+// StringElements extracts the string values from a types.List or types.Set of strings.
+// Returns nil for a null/unknown collection and appends an error diagnostic for any
+// element that is not a types.String or is null/unknown.
+func StringElements(value elementCollection, diags *diag.Diagnostics) []string {
+	if value.IsNull() || value.IsUnknown() {
+		return nil
+	}
+	kind := "list"
+	if _, ok := value.(types.Set); ok {
+		kind = "set"
+	}
+	elems := value.Elements()
+	result := make([]string, 0, len(elems))
+	for _, elem := range elems {
+		str, ok := elem.(types.String)
+		if !ok || str.IsNull() || str.IsUnknown() {
+			if !ok {
+				diags.AddError(fmt.Sprintf("Invalid %s element type", kind), "expected types.String")
+			} else {
+				diags.AddError(fmt.Sprintf("Unknown %s element", kind), fmt.Sprintf("%s elements cannot be null or unknown", kind))
+			}
+			continue
+		}
+		result = append(result, str.ValueString())
+	}
+	return result
 }
 
 // CollectionToSliceStringPtr extracts a *[]string from an optional list/set attribute,

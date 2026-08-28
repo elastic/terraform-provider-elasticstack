@@ -60,7 +60,7 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.DateRounding) {
 		body.DateRounding = m.DateRounding.ValueString()
 	}
-	body.DateFormats = typeutils.StringListElements(m.DateFormats, &diags)
+	body.DateFormats = typeutils.StringElements(m.DateFormats, &diags)
 	body.Timezone = typeutils.StringDefault(&m.Timezone, "UTC")
 	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
 	body.IndexNameFormat = typeutils.StringDefault(&m.IndexNameFormat, "yyyy-MM-dd")
