@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
@@ -76,12 +75,8 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		}
 		defer httpRes.Body.Close()
 
-		if httpRes.StatusCode >= 400 {
-			body, _ := io.ReadAll(httpRes.Body)
-			return "", fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
-				fmt.Sprintf("Unable to create index: %s", index.Name),
-				fmt.Sprintf("status: %d, body: %s", httpRes.StatusCode, string(body)),
-			)}
+		if diags := diagutil.CheckHTTPErrorFromFW(httpRes, fmt.Sprintf("Unable to create index: %s", index.Name)); diags.HasError() {
+			return "", diags
 		}
 		// Indices.Create response always contains the resolved index name.
 		// We cannot parse the typed response here because the typed
