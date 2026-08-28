@@ -925,6 +925,8 @@ func TestStringSetElements(t *testing.T) {
 		{name: "returns nil for null set", input: stringSetNil, want: nil},
 		{name: "returns empty slice for empty set", input: stringSetEmpty, want: []string{}},
 		{name: "extracts string elements", input: stringSetFull, want: []string{"v1", "v2", "v3"}},
+		{name: "adds diag for null element", input: types.SetValueMust(types.StringType, []attr.Value{types.StringNull()}), want: []string{}, wantDiags: true},
+		{name: "adds diag for unknown element", input: types.SetValueMust(types.StringType, []attr.Value{types.StringUnknown()}), want: []string{}, wantDiags: true},
 	}
 
 	for _, tt := range tests {
@@ -932,7 +934,7 @@ func TestStringSetElements(t *testing.T) {
 			var diags diag.Diagnostics
 			got := typeutils.StringSetElements(tt.input, &diags)
 			require.ElementsMatch(t, tt.want, got)
-			require.Empty(t, diags)
+			require.Equal(t, tt.wantDiags, diags.HasError())
 		})
 	}
 }

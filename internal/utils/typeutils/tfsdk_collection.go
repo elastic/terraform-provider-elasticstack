@@ -19,10 +19,12 @@ package typeutils
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // collectionFactory creates a collection type C from a context, element type, and value.
@@ -56,6 +58,27 @@ func nonEmptyCollectionOrDefault[T any, C attr.Value](
 		return original, nil
 	}
 	return factory(ctx, elemType, slice)
+}
+
+// stringElementsFromValues extracts string values from a slice of attr.Value, appending an
+// error diagnostic for any element that is not a types.String or is null/unknown. kind is used
+// to tailor the diagnostic messages (e.g. "list" or "set") and is shared by StringListElements
+// and StringSetElements so both collection kinds enforce identical null/unknown validation.
+func stringElementsFromValues(elems []attr.Value, kind string, diags *diag.Diagnostics) []string {
+	result := make([]string, 0, len(elems))
+	for _, elem := range elems {
+		str, ok := elem.(types.String)
+		if !ok || str.IsNull() || str.IsUnknown() {
+			if !ok {
+				diags.AddError(fmt.Sprintf("Invalid %s element type", kind), "expected types.String")
+			} else {
+				diags.AddError(fmt.Sprintf("Unknown %s element", kind), fmt.Sprintf("%s elements cannot be null or unknown", kind))
+			}
+			continue
+		}
+		result = append(result, str.ValueString())
+	}
+	return result
 }
 
 // CollectionToSliceStringPtr extracts a *[]string from an optional list/set attribute,

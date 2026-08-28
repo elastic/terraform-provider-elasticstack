@@ -175,18 +175,5 @@ func StringListElements(list types.List, diags *diag.Diagnostics) []string {
 	if list.IsNull() || list.IsUnknown() {
 		return nil
 	}
-	elems := make([]string, 0, len(list.Elements()))
-	for _, elem := range list.Elements() {
-		str, ok := elem.(types.String)
-		if !ok || str.IsNull() || str.IsUnknown() {
-			if !ok {
-				diags.AddError("Invalid list element type", "expected types.String")
-			} else {
-				diags.AddError("Unknown list element", "list elements cannot be null or unknown")
-			}
-			continue
-		}
-		elems = append(elems, str.ValueString())
-	}
-	return elems
+	return stringElementsFromValues(list.Elements(), "list", diags)
 }

@@ -53,23 +53,10 @@ func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p p
 
 // StringSetElements extracts the string values from a types.Set of strings
 // without requiring a context.Context. Returns nil for null/unknown sets and
-// appends an error diagnostic for non-string or unknown elements.
+// appends an error diagnostic for non-string, null, or unknown elements.
 func StringSetElements(set types.Set, diags *diag.Diagnostics) []string {
 	if set.IsNull() || set.IsUnknown() {
 		return nil
 	}
-	elems := make([]string, 0, len(set.Elements()))
-	for _, elem := range set.Elements() {
-		str, ok := elem.(types.String)
-		if !ok || str.IsUnknown() {
-			if !ok {
-				diags.AddError("Invalid set element type", "expected types.String")
-			} else {
-				diags.AddError("Unknown set element", "set elements cannot be unknown")
-			}
-			continue
-		}
-		elems = append(elems, str.ValueString())
-	}
-	return elems
+	return stringElementsFromValues(set.Elements(), "set", diags)
 }
