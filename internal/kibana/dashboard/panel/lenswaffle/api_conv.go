@@ -255,16 +255,14 @@ func waffleLegendFromAPI(ctx context.Context, m *models.WaffleLegendModel, api *
 		m.Visible = types.StringNull()
 		return
 	}
+	var size, visibility *string
 	if api.Size != nil {
-		m.Size = types.StringValue(string(*api.Size))
-	} else {
-		m.Size = types.StringNull()
+		size = new(string(*api.Size))
 	}
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLines = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLines = types.Int64Null()
+	if api.Visibility != nil {
+		visibility = new(string(*api.Visibility))
 	}
+	m.Size, m.TruncateAfterLines, m.Visible = lenscommon.LegendSizeTruncateVisibilityFromAPI(size, api.TruncateAfterLines, visibility)
 	if api.Values != nil && len(*api.Values) > 0 {
 		elems := make([]attr.Value, len(*api.Values))
 		for i, v := range *api.Values {
@@ -279,11 +277,6 @@ func waffleLegendFromAPI(ctx context.Context, m *models.WaffleLegendModel, api *
 	} else {
 		m.Values = types.ListNull(types.StringType)
 	}
-	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
-	}
 }
 
 func waffleLegendToAPI(m *models.WaffleLegendModel) (*kbapi.KibanaHTTPAPIsWaffleLegend, diag.Diagnostics) {
@@ -293,18 +286,18 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (*kbapi.KibanaHTTPAPIsWaffle
 		diags.AddError("Missing legend", "waffle_config.legend must be provided")
 		return nil, diags
 	}
-	if typeutils.IsKnown(m.Size) {
-		size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-		leg.Size = &size
-	} else {
-		diags.AddError("Missing legend size", "waffle_config.legend.size must be provided")
+	size, truncateAfterLines, visibility := lenscommon.LegendSizeTruncateVisibilityToAPI(
+		m.Size, m.Visible, m.TruncateAfterLines,
+		"Missing legend size", "waffle_config.legend.size must be provided",
+		&diags,
+	)
+	if size != nil {
+		s := kbapi.KibanaHTTPAPIsLegendSize(*size)
+		leg.Size = &s
 	}
-	if typeutils.IsKnown(m.TruncateAfterLines) {
-		v := float32(m.TruncateAfterLines.ValueInt64())
-		leg.TruncateAfterLines = &v
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsWaffleLegendVisibility(m.Visible.ValueString())
+	leg.TruncateAfterLines = truncateAfterLines
+	if visibility != nil {
+		v := kbapi.KibanaHTTPAPIsWaffleLegendVisibility(*visibility)
 		leg.Visibility = &v
 	}
 	if !m.Values.IsNull() && !m.Values.IsUnknown() {
