@@ -264,5 +264,5 @@ func extractSnapshotRepositoryInfo(repo types.Repository) (*SnapshotRepositoryIn
 func DeleteSnapshotRepository(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Snapshot.DeleteRepository(name).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete snapshot repository")
 }

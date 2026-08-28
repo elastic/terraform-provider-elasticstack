@@ -187,5 +187,5 @@ func ClearILMPolicyFromIndices(ctx context.Context, apiClient *clients.Elasticse
 func DeleteIlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ilm.DeleteLifecycle(policyName).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete ILM policy")
 }

@@ -48,7 +48,7 @@ func GetQueryRuleset(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	return CallOrNotFound(func() (*getruleset.Response, error) {
 		return typedClient.QueryRules.GetRuleset(rulesetID).Do(ctx)
-	})
+	}, "Unable to get query ruleset")
 }
 
 // DeleteQueryRuleset deletes a query ruleset. Returns nil on 404 (idempotent).
@@ -56,5 +56,5 @@ func DeleteQueryRuleset(ctx context.Context, apiClient *clients.ElasticsearchSco
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.QueryRules.DeleteRuleset(rulesetID).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete query ruleset")
 }

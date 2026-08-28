@@ -80,5 +80,5 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ingest.DeletePipeline(name).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete ingest pipeline")
 }
