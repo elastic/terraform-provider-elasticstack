@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strings"
 
@@ -103,14 +102,9 @@ func decodeGetIlmResponse(policyName string, body io.Reader) (*IlmPolicy, fwdiag
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	entry, ok := decoded[policyName]
-	if !ok {
-		return nil, fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(
-				"Unable to find an ILM policy in the cluster",
-				fmt.Sprintf(`Unable to find "%s" ILM policy in the cluster`, policyName),
-			),
-		}
+	entry, diags := LookupOrNotFoundDiag(decoded, policyName, "ILM policy")
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return &IlmPolicy{
