@@ -74,26 +74,27 @@ func IsNotFoundElasticsearchError(err error) bool {
 	return esErr.Status == 404
 }
 
-// DiagsOrNotFound converts err into framework diagnostics, treating an
-// Elasticsearch 404 as a successful no-op rather than an error. Use this for
-// typed-client calls made via .Do(ctx) whose return type is only
-// fwdiags.Diagnostics (e.g. delete operations).
-func DiagsOrNotFound(err error) fwdiags.Diagnostics {
-	if err == nil || IsNotFoundElasticsearchError(err) {
-		return nil
-	}
-	return diagutil.FrameworkDiagFromError(err)
-}
-
 // CallOrNotFound runs fn and applies the standard 404-as-not-found convention
 // for typed-client calls made via .Do(ctx): a 404 is swallowed into a zero
 // value with no error (signalling "does not exist" to the caller), and any
-// other error is wrapped into framework diagnostics.
-func CallOrNotFound[T any](fn func() (T, error)) (T, fwdiags.Diagnostics) {
+// other error is wrapped into framework diagnostics using summary.
+func CallOrNotFound[T any](fn func() (T, error), summary string) (T, fwdiags.Diagnostics) {
 	result, err := fn()
 	if err != nil {
 		var zero T
-		return zero, DiagsOrNotFound(err)
+		return zero, DeleteWithNotFoundAsSuccess(err, summary)
 	}
 	return result, nil
+}
+
+// DeleteWithNotFoundAsSuccess converts err from a typed-client call made via
+// .Do(ctx) into framework diagnostics, treating an Elasticsearch 404 as a
+// successful no-op (the resource is already gone) rather than an error. Any
+// other error is wrapped into a single diagnostic using summary (e.g.
+// "Unable to delete a role").
+func DeleteWithNotFoundAsSuccess(err error, summary string) fwdiags.Diagnostics {
+	if err == nil || IsNotFoundElasticsearchError(err) {
+		return nil
+	}
+	return diagutil.ErrDiag(summary, err)
 }

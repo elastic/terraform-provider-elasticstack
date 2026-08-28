@@ -144,12 +144,5 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteRole(rolename).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to delete a role", err.Error())}
-	}
-
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete a role")
 }

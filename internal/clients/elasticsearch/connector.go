@@ -116,7 +116,7 @@ func GetConnector(
 
 	return CallOrNotFound(func() (*getconnector.Response, error) {
 		return typedClient.Connector.Get(connectorID).Do(ctx)
-	})
+	}, "Unable to get connector")
 }
 
 // DeleteConnector deletes the connector by id. Returns nil on 404 (idempotent).
@@ -128,7 +128,7 @@ func DeleteConnector(
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Connector.Delete(connectorID).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete connector")
 }
 
 // UpdateConnectorName updates the connector name and description.
