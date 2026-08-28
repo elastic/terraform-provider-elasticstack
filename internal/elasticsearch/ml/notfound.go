@@ -30,22 +30,25 @@ import (
 // a "not found" error from Elasticsearch as a successful no-op (the resource
 // is already gone). kindLabel (e.g. "ML filter") and id are used to build
 // consistent log and error messages across the ML sub-resource packages.
+//
+// This is a thin, logging-aware wrapper around
+// elasticsearch.DeleteWithNotFoundAsSuccess, which owns the actual
+// 404-as-success classification and diagnostic construction so the
+// convention has a single implementation shared by both layers.
 func DeleteWithNotFoundAsSuccess(ctx context.Context, kindLabel, id string, do func() error) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
 	tflog.Debug(ctx, fmt.Sprintf("Deleting %s: %s", kindLabel, id))
 
-	if err := do(); err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			tflog.Debug(ctx, fmt.Sprintf("%s already absent: %s", kindLabel, id))
-			return diags
-		}
-		diags.AddError(fmt.Sprintf("Failed to delete %s", kindLabel), fmt.Sprintf("Unable to delete %s: %s — %s", kindLabel, id, err.Error()))
-		return diags
+	err := do()
+	switch {
+	case err == nil:
+		tflog.Debug(ctx, fmt.Sprintf("Successfully deleted %s: %s", kindLabel, id))
+	case elasticsearch.IsNotFoundElasticsearchError(err):
+		tflog.Debug(ctx, fmt.Sprintf("%s already absent: %s", kindLabel, id))
+	default:
+		err = fmt.Errorf("unable to delete %s: %s — %w", kindLabel, id, err)
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted %s: %s", kindLabel, id))
-	return diags
+	return elasticsearch.DeleteWithNotFoundAsSuccess(err, fmt.Sprintf("Failed to delete %s", kindLabel))
 }
 
 // RequireNonEmptyID returns diagnostics with a single error when id is
@@ -65,17 +68,30 @@ func RequireNonEmptyID(id, fieldName string) fwdiags.Diagnostics {
 // (found=false, no diagnostics) rather than an error, matching Terraform's
 // refresh-time drift-detection convention. kindLabel and id are used to build
 // consistent error messages across the ML sub-resource packages.
+//
+// This is a thin, logging-aware wrapper around elasticsearch.CallOrNotFound,
+// which owns the actual 404-as-absent classification and diagnostic
+// construction so the convention has a single implementation shared by both
+// layers.
 func ReadWithNotFoundAsAbsent[T any](ctx context.Context, kindLabel, id string, do func() (T, error)) (result T, found bool, diags fwdiags.Diagnostics) {
 	tflog.Debug(ctx, fmt.Sprintf("Reading %s: %s", kindLabel, id))
 
-	result, err := do()
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			return result, false, diags
+	var notFound bool
+	result, diags = elasticsearch.CallOrNotFound(func() (T, error) {
+		res, err := do()
+		switch {
+		case err == nil:
+			return res, nil
+		case elasticsearch.IsNotFoundElasticsearchError(err):
+			notFound = true
+			return res, err
+		default:
+			return res, fmt.Errorf("unable to get %s: %s — %w", kindLabel, id, err)
 		}
-		diags.AddError(fmt.Sprintf("Failed to get %s", kindLabel), fmt.Sprintf("Unable to get %s: %s — %s", kindLabel, id, err.Error()))
+	}, fmt.Sprintf("Failed to get %s", kindLabel))
+
+	if diags.HasError() {
 		return result, false, diags
 	}
-
-	return result, true, diags
+	return result, !notFound, diags
 }
