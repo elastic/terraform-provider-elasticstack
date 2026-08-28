@@ -904,6 +904,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
       "attemptedAt": "2026-08-24T03:37:55.390461157Z",
       "reason": "verification_timeout"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed.NewExpandWildcardsNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed",
+      "attemptedAt": "2026-08-28T05:55:33.012140111Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
