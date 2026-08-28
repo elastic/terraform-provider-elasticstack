@@ -42,6 +42,36 @@ type TuningParams struct {
 	ReadPollTimeout               customtypes.Duration
 }
 
+// NewTuningParams builds a TuningParams from the 10 common CCR tuning fields.
+// It centralizes the Model-to-TuningParams mapping shared by resource
+// packages (followerindex, autofollow) whose Model types expose the same
+// field set, mirroring the reverse mapping in TuningParamsFromParameters.
+func NewTuningParams(
+	maxOutstandingReadRequests types.Int64,
+	maxOutstandingWriteRequests types.Int64,
+	maxReadRequestOperationCount types.Int64,
+	maxReadRequestSize types.String,
+	maxRetryDelay customtypes.Duration,
+	maxWriteBufferCount types.Int64,
+	maxWriteBufferSize types.String,
+	maxWriteRequestOperationCount types.Int64,
+	maxWriteRequestSize types.String,
+	readPollTimeout customtypes.Duration,
+) TuningParams {
+	return TuningParams{
+		MaxOutstandingReadRequests:    maxOutstandingReadRequests,
+		MaxOutstandingWriteRequests:   maxOutstandingWriteRequests,
+		MaxReadRequestOperationCount:  maxReadRequestOperationCount,
+		MaxReadRequestSize:            maxReadRequestSize,
+		MaxRetryDelay:                 maxRetryDelay,
+		MaxWriteBufferCount:           maxWriteBufferCount,
+		MaxWriteBufferSize:            maxWriteBufferSize,
+		MaxWriteRequestOperationCount: maxWriteRequestOperationCount,
+		MaxWriteRequestSize:           maxWriteRequestSize,
+		ReadPollTimeout:               readPollTimeout,
+	}
+}
+
 // ApplyToPutAutoFollowRequest sets the tuning fields on req.
 // MaxOutstandingReadRequests is only sent when > 0 because the auto-follow PUT API
 // rejects non-positive values (the Computed zero echoed back on read must not be

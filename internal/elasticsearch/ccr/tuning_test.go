@@ -148,6 +148,25 @@ func TestApplyToResumeFollowRequest_allFields(t *testing.T) {
 	assert.Equal(t, estypes.Duration("5m"), req.ReadPollTimeout)
 }
 
+func TestNewTuningParams_fieldOrder(t *testing.T) {
+	t.Parallel()
+
+	p := NewTuningParams(
+		types.Int64Value(10),
+		types.Int64Value(8),
+		types.Int64Value(512),
+		types.StringValue("100mb"),
+		customtypes.NewDurationValue("30s"),
+		types.Int64Value(100),
+		types.StringValue("200mb"),
+		types.Int64Value(256),
+		types.StringValue("64mb"),
+		customtypes.NewDurationValue("5m"),
+	)
+
+	assert.Equal(t, fullTuningParams(), p)
+}
+
 func TestTuningParamsFromParameters_allFields(t *testing.T) {
 	t.Parallel()
 

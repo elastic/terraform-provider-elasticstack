@@ -135,18 +135,18 @@ func buildPutAutoFollowPatternRequest(ctx context.Context, model Model) (*putaut
 	// API, which omits the field when it was never set (decoding to 0). The
 	// ApplyToPutAutoFollowRequest helper skips non-positive values so the
 	// Computed zero echoed back on update is not rejected by Elasticsearch.
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
+	tuning := ccr.NewTuningParams(
+		model.MaxOutstandingReadRequests,
+		model.MaxOutstandingWriteRequests,
+		model.MaxReadRequestOperationCount,
+		model.MaxReadRequestSize,
+		model.MaxRetryDelay,
+		model.MaxWriteBufferCount,
+		model.MaxWriteBufferSize,
+		model.MaxWriteRequestOperationCount,
+		model.MaxWriteRequestSize,
+		model.ReadPollTimeout,
+	)
 	diags.Append(ccr.ApplyToPutAutoFollowRequest(tuning, req)...)
 	if diags.HasError() {
 		return nil, diags

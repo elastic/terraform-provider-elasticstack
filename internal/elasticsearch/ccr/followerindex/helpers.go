@@ -185,6 +185,23 @@ func parseSettingsRawForUpdate(settingsRaw string) (map[string]any, diag.Diagnos
 	return typeutils.UnmarshalJSONDiag[map[string]any](settingsRaw, "Failed to parse settings_raw")
 }
 
+// tuningParamsFromModel maps the 10 common tuning fields off model into a
+// ccr.TuningParams, via the shared constructor in the ccr package.
+func tuningParamsFromModel(model Model) ccr.TuningParams {
+	return ccr.NewTuningParams(
+		model.MaxOutstandingReadRequests,
+		model.MaxOutstandingWriteRequests,
+		model.MaxReadRequestOperationCount,
+		model.MaxReadRequestSize,
+		model.MaxRetryDelay,
+		model.MaxWriteBufferCount,
+		model.MaxWriteBufferSize,
+		model.MaxWriteRequestOperationCount,
+		model.MaxWriteRequestSize,
+		model.ReadPollTimeout,
+	)
+}
+
 func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 	req := &follow.Request{
 		LeaderIndex:    model.LeaderIndex.ValueString(),
@@ -203,19 +220,7 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 		req.Settings = settings
 	}
 
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
-	diags.Append(ccr.ApplyToFollowRequest(tuning, req)...)
+	diags.Append(ccr.ApplyToFollowRequest(tuningParamsFromModel(model), req)...)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -225,19 +230,7 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 
 func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	req := &resumefollow.Request{}
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
-	ccr.ApplyToResumeFollowRequest(tuning, req)
+	ccr.ApplyToResumeFollowRequest(tuningParamsFromModel(model), req)
 	return req
 }
 
