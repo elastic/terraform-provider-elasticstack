@@ -191,13 +191,6 @@ func expandWildcardsValueFromAPI(tokens []string) (ExpandWildcardsValue, diag.Di
 	return NewExpandWildcardsValue(elems)
 }
 
-// NewExpandWildcardsNull returns an ExpandWildcardsValue with a null value.
-func NewExpandWildcardsNull() ExpandWildcardsValue {
-	return ExpandWildcardsValue{
-		SetValue: basetypes.NewSetNull(types.StringType),
-	}
-}
-
 // NewExpandWildcardsValue returns an ExpandWildcardsValue with a known value
 // constructed from the given string elements.
 func NewExpandWildcardsValue(elements []attr.Value) (ExpandWildcardsValue, diag.Diagnostics) {
