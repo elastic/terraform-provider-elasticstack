@@ -43,7 +43,7 @@ func GetSynonymSet(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	for {
 		res, diags := CallOrNotFound(func() (*getsynonym.Response, error) {
 			return typedClient.Synonyms.GetSynonym(synonymSetID).From(from).Size(synonymPageSize).Do(ctx)
-		})
+		}, "Unable to get synonym set")
 		if diags.HasError() {
 			return nil, diags
 		}

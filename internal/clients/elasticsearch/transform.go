@@ -188,16 +188,7 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to delete transform: %s", *name), err.Error()),
-		}
-	}
-
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, fmt.Sprintf("Unable to delete transform: %s", *name))
 }
 
 func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {

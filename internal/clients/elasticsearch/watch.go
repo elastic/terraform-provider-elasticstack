@@ -94,17 +94,8 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags // already gone, treat as success
-		}
-		diags.AddError("Unable to delete watch", err.Error())
-		return diags
-	}
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete watch")
 }

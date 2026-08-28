@@ -80,18 +80,19 @@ func TestIsNotFoundElasticsearchError(t *testing.T) {
 	}
 }
 
-func TestDiagsOrNotFound(t *testing.T) {
+func TestDeleteWithNotFoundAsSuccess(t *testing.T) {
 	t.Run("nil error returns no diagnostics", func(t *testing.T) {
-		assert.False(t, DiagsOrNotFound(nil).HasError())
+		assert.False(t, DeleteWithNotFoundAsSuccess(nil, "Unable to delete thing").HasError())
 	})
 
 	t.Run("404 error returns no diagnostics", func(t *testing.T) {
-		assert.False(t, DiagsOrNotFound(&types.ElasticsearchError{Status: 404}).HasError())
+		assert.False(t, DeleteWithNotFoundAsSuccess(&types.ElasticsearchError{Status: 404}, "Unable to delete thing").HasError())
 	})
 
-	t.Run("other error is wrapped into diagnostics", func(t *testing.T) {
-		diags := DiagsOrNotFound(&types.ElasticsearchError{Status: 500})
+	t.Run("other error is wrapped into diagnostics using the given summary", func(t *testing.T) {
+		diags := DeleteWithNotFoundAsSuccess(&types.ElasticsearchError{Status: 500}, "Unable to delete thing")
 		assert.True(t, diags.HasError())
+		assert.Equal(t, "Unable to delete thing", diags[0].Summary())
 	})
 }
 
@@ -99,7 +100,7 @@ func TestCallOrNotFound(t *testing.T) {
 	t.Run("returns the result on success", func(t *testing.T) {
 		result, diags := CallOrNotFound(func() (string, error) {
 			return "value", nil
-		})
+		}, "Unable to get thing")
 		assert.False(t, diags.HasError())
 		assert.Equal(t, "value", result)
 	})
@@ -107,16 +108,17 @@ func TestCallOrNotFound(t *testing.T) {
 	t.Run("returns zero value and no diagnostics on 404", func(t *testing.T) {
 		result, diags := CallOrNotFound(func() (string, error) {
 			return "ignored", &types.ElasticsearchError{Status: 404}
-		})
+		}, "Unable to get thing")
 		assert.False(t, diags.HasError())
 		assert.Empty(t, result)
 	})
 
-	t.Run("returns zero value and diagnostics on other errors", func(t *testing.T) {
+	t.Run("returns zero value and diagnostics using the given summary on other errors", func(t *testing.T) {
 		result, diags := CallOrNotFound(func() (string, error) {
 			return "ignored", &types.ElasticsearchError{Status: 500}
-		})
+		}, "Unable to get thing")
 		assert.True(t, diags.HasError())
+		assert.Equal(t, "Unable to get thing", diags[0].Summary())
 		assert.Empty(t, result)
 	})
 }

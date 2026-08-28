@@ -44,7 +44,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	typedClient := apiClient.GetESClient()
 	res, diags := CallOrNotFound(func() (*getdatastream.Response, error) {
 		return typedClient.Indices.GetDataStream().Name(dataStreamName).Do(ctx)
-	})
+	}, "Unable to get data stream")
 	if diags.HasError() || res == nil {
 		return nil, diags
 	}
@@ -58,7 +58,7 @@ func GetDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 func DeleteDataStream(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.DeleteDataStream(dataStreamName).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete data stream")
 }
 
 func PutDataStreamLifecycle(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, dataStreamName string, expandWildcards string, lifecycle models.LifecycleSettings) fwdiags.Diagnostics {
@@ -153,5 +153,5 @@ func DeleteDataStreamLifecycle(ctx context.Context, apiClient *clients.Elasticse
 		builder = builder.ExpandWildcards(expandwildcard.ExpandWildcard{Name: expandWildcards})
 	}
 	_, err := builder.Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete data stream lifecycle")
 }

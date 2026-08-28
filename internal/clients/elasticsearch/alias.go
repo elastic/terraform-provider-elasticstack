@@ -33,7 +33,7 @@ import (
 func DeleteIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, aliases []string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.DeleteAlias(index, strings.Join(aliases, ",")).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete index alias")
 }
 
 func UpdateIndexAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, alias *models.IndexAlias) fwdiags.Diagnostics {
@@ -53,7 +53,7 @@ func GetAlias(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	typedClient := apiClient.GetESClient()
 	return CallOrNotFound(func() (map[string]types.IndexAliases, error) {
 		return typedClient.Indices.GetAlias().Name(aliasName).Do(ctx)
-	})
+	}, "Unable to get index alias")
 }
 
 // AliasAction represents a single action in an atomic alias update operation

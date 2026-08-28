@@ -104,7 +104,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Delete(name).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete index")
 }
 
 // GetIndex retrieves a single index by its concrete name.  The caller is responsible
@@ -128,7 +128,7 @@ func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	typedClient := apiClient.GetESClient()
 	return CallOrNotFound(func() (map[string]types.IndexState, error) {
 		return typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
-	})
+	}, "Unable to get index")
 }
 
 func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, settings map[string]any) fwdiags.Diagnostics {

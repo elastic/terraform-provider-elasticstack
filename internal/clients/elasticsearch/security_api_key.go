@@ -86,22 +86,12 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 }
 
 func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
 		Ids: []string{id},
 	}).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete an apikey", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete an apikey")
 }
 
 func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createcrossclusterapikey.Request) (*createcrossclusterapikey.Response, fwdiag.Diagnostics) {

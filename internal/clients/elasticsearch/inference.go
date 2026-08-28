@@ -127,18 +127,8 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 }
 
 func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Inference.Delete(inferenceID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete inference endpoint", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete inference endpoint")
 }
