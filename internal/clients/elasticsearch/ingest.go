@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -65,16 +64,12 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	if pipeline, ok := pipelines[name]; ok {
-		pipeline.Name = name
-		return &pipeline, nil
+	pipeline, diags := LookupOrNotFoundDiag(pipelines, name, "ingest pipeline")
+	if diags.HasError() {
+		return nil, diags
 	}
-	return nil, fwdiag.Diagnostics{
-		fwdiag.NewErrorDiagnostic(
-			"Unable to find ingest pipeline",
-			fmt.Sprintf(`Unable to find "%s" ingest pipeline in the cluster`, name),
-		),
-	}
+	pipeline.Name = name
+	return pipeline, nil
 }
 
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {

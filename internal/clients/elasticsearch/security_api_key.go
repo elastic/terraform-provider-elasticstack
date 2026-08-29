@@ -19,7 +19,6 @@ package elasticsearch
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
@@ -73,16 +72,7 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 		return nil, diags
 	}
 
-	if len(res.ApiKeys) != 1 {
-		diags.AddError(
-			"Unable to find an apikey in the cluster",
-			fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
-		)
-		return nil, diags
-	}
-
-	apiKey := res.ApiKeys[0]
-	return &apiKey, diags
+	return SingleOrNotFoundDiag(res.ApiKeys, id, "apikey")
 }
 
 func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
