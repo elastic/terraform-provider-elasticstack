@@ -19,13 +19,7 @@ package dashboard
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // Backwards-compatible names for tests (implementation lives in lenscommon).
 const lensDrilldownTriggerOnApplyFilter = lenscommon.LensDrilldownTriggerOnApplyFilter
-
-func lensDrilldownItemFromAPIJSON(raw []byte) (models.LensDrilldownItemTFModel, diag.Diagnostics) {
-	return lenscommon.LensDrilldownItemFromAPIJSON(raw, "drilldowns[0]")
-}
