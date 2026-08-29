@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,7 +30,7 @@ import (
 
 func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScopedClient, model dsModel) (dsModel, diag.Diagnostics) {
 	spaceID := entity.NormalizeSpaceID(model.SpaceID)
-	includeComponents := !model.IncludeComponents.IsNull() && !model.IncludeComponents.IsUnknown() && model.IncludeComponents.ValueBool()
+	includeComponents := typeutils.IsKnown(model.IncludeComponents) && model.IncludeComponents.ValueBool()
 	status, rawBody, diags := getEntityStoreStatus(ctx, client, spaceID, includeComponents)
 	if diags.HasError() {
 		return model, diags

@@ -141,7 +141,7 @@ func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEnt
 	if len(entityTypes) > 0 {
 		body.EntityTypes = stringSliceToAPITypes[kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes](entityTypes)
 	}
-	if !model.HistorySnapshot.IsNull() && !model.HistorySnapshot.IsUnknown() {
+	if typeutils.IsKnown(model.HistorySnapshot) {
 		var hs historySnapshotModel
 		diags.Append(model.HistorySnapshot.As(ctx, &hs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -153,7 +153,7 @@ func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEnt
 			}{Frequency: p}
 		}
 	}
-	if !model.LogExtraction.IsNull() && !model.LogExtraction.IsUnknown() {
+	if typeutils.IsKnown(model.LogExtraction) {
 		le, d := expandInstallLogExtraction(ctx, model.LogExtraction)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -229,7 +229,7 @@ func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object)
 		MaxLogsPerWindow:        typeutils.OptionalInt(model.MaxLogsPerWindow),
 		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
 	}
-	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {
+	if typeutils.IsKnown(model.MaxLogsPerWindowCapBehavior) {
 		behavior := T(model.MaxLogsPerWindowCapBehavior.ValueString())
 		c.MaxLogsPerWindowCapBehavior = &behavior
 	}
@@ -246,10 +246,10 @@ func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*apiLogEx
 
 func diffEntityTypes(ctx context.Context, prior, plan types.Set) (added, removed []string, diags diag.Diagnostics) {
 	var priorVals, planVals []string
-	if !prior.IsNull() && !prior.IsUnknown() {
+	if typeutils.IsKnown(prior) {
 		diags.Append(prior.ElementsAs(ctx, &priorVals, false)...)
 	}
-	if !plan.IsNull() && !plan.IsUnknown() {
+	if typeutils.IsKnown(plan) {
 		diags.Append(plan.ElementsAs(ctx, &planVals, false)...)
 	}
 	if diags.HasError() {

@@ -158,13 +158,13 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		Description: model.Description.ValueString(),
 	}
 
-	if !model.AvatarColor.IsNull() && !model.AvatarColor.IsUnknown() {
+	if typeutils.IsKnown(model.AvatarColor) {
 		body.AvatarColor = model.AvatarColor.ValueStringPointer()
 	}
-	if !model.AvatarSymbol.IsNull() && !model.AvatarSymbol.IsUnknown() {
+	if typeutils.IsKnown(model.AvatarSymbol) {
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
-	if !model.Instructions.IsNull() && !model.Instructions.IsUnknown() {
+	if typeutils.IsKnown(model.Instructions) {
 		body.Configuration.Instructions = model.Instructions.ValueStringPointer()
 	}
 
@@ -199,13 +199,13 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		Name: &name,
 	}
 
-	if !model.Description.IsNull() && !model.Description.IsUnknown() {
+	if typeutils.IsKnown(model.Description) {
 		body.Description = model.Description.ValueStringPointer()
 	}
-	if !model.AvatarColor.IsNull() && !model.AvatarColor.IsUnknown() {
+	if typeutils.IsKnown(model.AvatarColor) {
 		body.AvatarColor = model.AvatarColor.ValueStringPointer()
 	}
-	if !model.AvatarSymbol.IsNull() && !model.AvatarSymbol.IsUnknown() {
+	if typeutils.IsKnown(model.AvatarSymbol) {
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
 
@@ -232,7 +232,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	}
 
 	var instructions *string
-	if !model.Instructions.IsNull() && !model.Instructions.IsUnknown() {
+	if typeutils.IsKnown(model.Instructions) {
 		instructions = model.Instructions.ValueStringPointer()
 	}
 

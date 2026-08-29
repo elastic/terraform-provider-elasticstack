@@ -49,10 +49,10 @@ func objAttrSet(obj types.Object, name string, elemType attr.Type) types.Set {
 func kibanaPrivilegeCounts(obj types.Object) (base, feature types.Set, baseLen, featureLen int) {
 	base = objAttrSet(obj, "base", types.StringType)
 	feature = objAttrSet(obj, "feature", types.ObjectType{AttrTypes: kibanaFeatureAttrTypes()})
-	if !base.IsNull() && !base.IsUnknown() {
+	if typeutils.IsKnown(base) {
 		baseLen = len(base.Elements())
 	}
-	if !feature.IsNull() && !feature.IsUnknown() {
+	if typeutils.IsKnown(feature) {
 		featureLen = len(feature.Elements())
 	}
 	return
@@ -66,12 +66,12 @@ func expandFieldSecurity(ctx context.Context, obj types.Object) (map[string][]st
 	grant := objAttrSet(obj, "grant", types.StringType)
 	except := objAttrSet(obj, "except", types.StringType)
 	out := map[string][]string{}
-	if !grant.IsNull() && !grant.IsUnknown() && len(grant.Elements()) > 0 {
+	if typeutils.IsKnown(grant) && len(grant.Elements()) > 0 {
 		var grants []string
 		diags.Append(grant.ElementsAs(ctx, &grants, false)...)
 		out["grant"] = grants
 	}
-	if !except.IsNull() && !except.IsUnknown() && len(except.Elements()) > 0 {
+	if typeutils.IsKnown(except) && len(except.Elements()) > 0 {
 		var excepts []string
 		diags.Append(except.ElementsAs(ctx, &excepts, false)...)
 		out["except"] = excepts
@@ -112,7 +112,7 @@ func expandEntryCommon(ctx context.Context, obj types.Object, wantClusters bool)
 		v := q.ValueString()
 		out.Query = &v
 	}
-	if fs, ok := obj.Attributes()["field_security"].(types.Object); ok && !fs.IsNull() && !fs.IsUnknown() {
+	if fs, ok := obj.Attributes()["field_security"].(types.Object); ok && typeutils.IsKnown(fs) {
 		fsMap, d := expandFieldSecurity(ctx, fs)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -301,7 +301,7 @@ func expandResourceModel(ctx context.Context, m resourceModel) (string, kibanaoa
 	}
 	body.Elasticsearch = es
 
-	if !m.Kibana.IsNull() && !m.Kibana.IsUnknown() && len(m.Kibana.Elements()) > 0 {
+	if typeutils.IsKnown(m.Kibana) && len(m.Kibana.Elements()) > 0 {
 		kib, d := expandKibana(ctx, m.Kibana)
 		diags.Append(d...)
 		if diags.HasError() {

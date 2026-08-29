@@ -486,7 +486,7 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
 	}
-	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
+	if typeutils.IsKnown(cfg.SelectedOptions) {
 		c.SelectedOptions = buildSelectedOptionsField(cfg.SelectedOptions)
 	}
 	if cfg.DisplaySettings != nil {
@@ -543,7 +543,7 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
 	}
-	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
+	if typeutils.IsKnown(cfg.SelectedOptions) {
 		c.SelectedOptions = buildSelectedOptionsEsql(cfg.SelectedOptions)
 	}
 	if cfg.DisplaySettings != nil {

@@ -344,7 +344,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 	mappedBody.OutputId = model.OutputID.ValueStringPointer()
 	mappedBody.PolicyId = model.AgentPolicyID.ValueStringPointer()
 	mappedBody.PolicyIds = func() *[]string {
-		if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		if typeutils.IsKnown(model.AgentPolicyIDs) {
 			var policyIDs []string
 			d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
 			diags.Append(d...)

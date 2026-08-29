@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -50,7 +51,7 @@ func ExpandAliasFields(f AliasFields) (models.IndexAlias, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	ia := models.IndexAlias{Name: f.Name.ValueString()}
 
-	if !f.Filter.IsNull() && !f.Filter.IsUnknown() {
+	if typeutils.IsKnown(f.Filter) {
 		fs := strings.TrimSpace(f.Filter.ValueString())
 		if fs != "" {
 			filterMap := make(map[string]any)
@@ -62,19 +63,19 @@ func ExpandAliasFields(f AliasFields) (models.IndexAlias, diag.Diagnostics) {
 		}
 	}
 
-	if !f.IndexRouting.IsNull() && !f.IndexRouting.IsUnknown() {
+	if typeutils.IsKnown(f.IndexRouting) {
 		ia.IndexRouting = f.IndexRouting.ValueString()
 	}
-	if !f.SearchRouting.IsNull() && !f.SearchRouting.IsUnknown() {
+	if typeutils.IsKnown(f.SearchRouting) {
 		ia.SearchRouting = f.SearchRouting.ValueString()
 	}
-	if !f.Routing.IsNull() && !f.Routing.IsUnknown() {
+	if typeutils.IsKnown(f.Routing) {
 		ia.Routing = f.Routing.ValueString()
 	}
-	if !f.IsHidden.IsNull() && !f.IsHidden.IsUnknown() {
+	if typeutils.IsKnown(f.IsHidden) {
 		ia.IsHidden = f.IsHidden.ValueBool()
 	}
-	if !f.IsWriteIndex.IsNull() && !f.IsWriteIndex.IsUnknown() {
+	if typeutils.IsKnown(f.IsWriteIndex) {
 		ia.IsWriteIndex = f.IsWriteIndex.ValueBool()
 	}
 

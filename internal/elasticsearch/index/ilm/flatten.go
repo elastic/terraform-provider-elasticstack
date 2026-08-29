@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,7 +40,7 @@ func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string
 	if !ok {
 		return false
 	}
-	return !objV.IsNull() && !objV.IsUnknown()
+	return typeutils.IsKnown(objV)
 }
 
 func flattenPhase(ctx context.Context, phaseName string, minAge string, actions map[string]map[string]any, prior types.Object) (types.Object, diag.Diagnostics) {

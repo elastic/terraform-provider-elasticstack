@@ -51,7 +51,7 @@ type tfMetricCustomMetric struct {
 // doc_count must have no field; all other aggregations require one.
 func validateMetricAggregationField(metric tfMetricCustomMetric) error {
 	if metric.Aggregation.ValueString() == "doc_count" {
-		if !metric.Field.IsNull() && !metric.Field.IsUnknown() {
+		if typeutils.IsKnown(metric.Field) {
 			return fmt.Errorf("field must not be set when aggregation is doc_count")
 		}
 	} else {

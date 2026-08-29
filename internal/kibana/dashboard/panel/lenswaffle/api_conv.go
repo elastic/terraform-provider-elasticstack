@@ -71,7 +71,7 @@ func mergeWaffleConfigFromPlanSeed(cur, seed *models.WaffleConfigModel) {
 		}
 	}
 	if cur.Legend != nil && seed.Legend != nil {
-		if cur.Legend.Values.IsNull() && !seed.Legend.Values.IsNull() && !seed.Legend.Values.IsUnknown() {
+		if cur.Legend.Values.IsNull() && typeutils.IsKnown(seed.Legend.Values) {
 			cur.Legend.Values = seed.Legend.Values
 		}
 		if seed.Legend.Visible.IsNull() && typeutils.IsKnown(cur.Legend.Visible) {
@@ -307,7 +307,7 @@ func waffleLegendToAPI(m *models.WaffleLegendModel) (*kbapi.KibanaHTTPAPIsWaffle
 		v := kbapi.KibanaHTTPAPIsWaffleLegendVisibility(m.Visible.ValueString())
 		leg.Visibility = &v
 	}
-	if !m.Values.IsNull() && !m.Values.IsUnknown() {
+	if typeutils.IsKnown(m.Values) {
 		elems := m.Values.Elements()
 		vals := make([]kbapi.KibanaHTTPAPIsWaffleLegendValues, 0, len(elems))
 		for _, e := range elems {
