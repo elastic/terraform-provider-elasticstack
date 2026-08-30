@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/getapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/invalidateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
@@ -59,16 +60,12 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 }
 
 func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.ApiKey, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Security.GetApiKey().Id(id).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, diags
-		}
-		diags.AddError("Unable to get an apikey", err.Error())
+	res, diags := CallOrNotFound(func() (*getapikey.Response, error) {
+		return typedClient.Security.GetApiKey().Id(id).Do(ctx)
+	}, "Unable to get apikey")
+	if diags.HasError() || res == nil {
 		return nil, diags
 	}
 
