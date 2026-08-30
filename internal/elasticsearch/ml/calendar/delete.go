@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -33,8 +34,6 @@ func deleteCalendar(ctx context.Context, client *clients.ElasticsearchScopedClie
 
 	typedClient := client.GetESClient()
 
-	return ml.DeleteWithNotFoundAsSuccess(ctx, "ML calendar", calendarID, func() error {
-		_, err := typedClient.Ml.DeleteCalendar(calendarID).Do(ctx)
-		return err
-	})
+	_, err := typedClient.Ml.DeleteCalendar(calendarID).Do(ctx)
+	return elasticsearch.DeleteWithNotFoundAsSuccess(err, "Failed to delete ML calendar")
 }

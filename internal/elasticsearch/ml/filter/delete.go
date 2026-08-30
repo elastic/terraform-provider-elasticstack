@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -33,8 +34,6 @@ func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 
 	typedClient := client.GetESClient()
 
-	return ml.DeleteWithNotFoundAsSuccess(ctx, "ML filter", filterID, func() error {
-		_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
-		return err
-	})
+	_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
+	return elasticsearch.DeleteWithNotFoundAsSuccess(err, "Failed to delete ML filter")
 }
