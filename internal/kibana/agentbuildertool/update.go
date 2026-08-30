@@ -18,36 +18,14 @@
 package agentbuildertool
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 )
 
-func updateTool(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[toolModel]) (entitycore.KibanaWriteResult[toolModel], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	body, d := plan.toAPIUpdateModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[toolModel]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	_, d = kibanaoapi.UpdateTool(ctx, oapiClient, req.SpaceID, req.WriteID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[toolModel]{}, diags
-	}
-
-	// Set SpaceID after the API call so the returned model carries the resolved
-	// space for the envelope's read-after-write step.
-	plan.SpaceID = types.StringValue(req.SpaceID)
-
-	return entitycore.KibanaWriteResult[toolModel]{Model: plan}, diags
-}
+var updateTool = entitycore.SimpleKibanaUpdate[toolModel, kbapi.PutAgentBuilderToolsToolidJSONRequestBody, models.Tool](
+	toolModel.toAPIUpdateModel,
+	kibanaoapi.UpdateTool,
+	(*toolModel).setWriteSpaceID,
+)

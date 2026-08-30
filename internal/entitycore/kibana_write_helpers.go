@@ -18,7 +18,10 @@
 package entitycore
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -55,4 +58,86 @@ func KibanaResourceID(spaceID, resourceID string) types.String {
 		ClusterID:  spaceID,
 		ResourceID: resourceID,
 	}).String())
+}
+
+// SimpleKibanaCreate returns a [KibanaWriteFunc] for the common plan -> body
+// -> API create -> populate shape shared by simple Kibana write callbacks:
+// convert the plan to Body via toBody, call apiCreate for req.SpaceID, then
+// apply populate to the plan (typically setting SpaceID, plus any
+// response-derived fields) before wrapping it in [KibanaWriteResult]. Use for
+// resources whose create callback needs nothing beyond that shape; resources
+// with extra steps (version gates, generated-ID capture) should wrap this in
+// a small function instead of hand-rolling the tail, for example:
+//
+//	func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
+//		supportsSkillIDs, diags := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+//		if diags.HasError() {
+//			return entitycore.KibanaWriteResult[agentModel]{}, diags
+//		}
+//		return entitycore.SimpleKibanaCreate[agentModel, kbapi.PostAgentBuilderAgentsJSONRequestBody, models.Agent](
+//			func(plan agentModel, ctx context.Context) (kbapi.PostAgentBuilderAgentsJSONRequestBody, diag.Diagnostics) {
+//				return plan.toAPICreateModel(ctx, supportsSkillIDs)
+//			},
+//			kibanaoapi.CreateAgent,
+//			setAgentWriteSpaceID,
+//		)(ctx, client, req)
+//	}
+//
+// toBody is typically a toAPICreateModel method expression:
+//
+//	Skill.toAPICreateModel
+func SimpleKibanaCreate[T KibanaResourceModel, Body any, R any](
+	toBody func(plan T, ctx context.Context) (Body, diag.Diagnostics),
+	apiCreate func(ctx context.Context, client *kibanaoapi.Client, spaceID string, body Body) (*R, diag.Diagnostics),
+	populate func(plan *T, ctx context.Context, spaceID string, resp *R) diag.Diagnostics,
+) KibanaWriteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, req KibanaWriteRequest[T]) (KibanaWriteResult[T], diag.Diagnostics) {
+		plan := req.Plan
+		var diags diag.Diagnostics
+
+		body, d := toBody(plan, ctx)
+		diags.Append(d...)
+		if diags.HasError() {
+			return KibanaWriteResult[T]{}, diags
+		}
+
+		resp, d := apiCreate(ctx, client.GetKibanaOapiClient(), req.SpaceID, body)
+		diags.Append(d...)
+		if diags.HasError() {
+			return KibanaWriteResult[T]{}, diags
+		}
+
+		diags.Append(populate(&plan, ctx, req.SpaceID, resp)...)
+		return KibanaWriteResult[T]{Model: plan}, diags
+	}
+}
+
+// SimpleKibanaUpdate is [SimpleKibanaCreate]'s counterpart for Update: it
+// calls apiUpdate with req.SpaceID and req.WriteID instead of apiCreate with
+// req.SpaceID alone. See [SimpleKibanaCreate] for the shared shape and usage
+// pattern.
+func SimpleKibanaUpdate[T KibanaResourceModel, Body any, R any](
+	toBody func(plan T, ctx context.Context) (Body, diag.Diagnostics),
+	apiUpdate func(ctx context.Context, client *kibanaoapi.Client, spaceID, writeID string, body Body) (*R, diag.Diagnostics),
+	populate func(plan *T, ctx context.Context, spaceID string, resp *R) diag.Diagnostics,
+) KibanaWriteFunc[T] {
+	return func(ctx context.Context, client *clients.KibanaScopedClient, req KibanaWriteRequest[T]) (KibanaWriteResult[T], diag.Diagnostics) {
+		plan := req.Plan
+		var diags diag.Diagnostics
+
+		body, d := toBody(plan, ctx)
+		diags.Append(d...)
+		if diags.HasError() {
+			return KibanaWriteResult[T]{}, diags
+		}
+
+		resp, d := apiUpdate(ctx, client.GetKibanaOapiClient(), req.SpaceID, req.WriteID, body)
+		diags.Append(d...)
+		if diags.HasError() {
+			return KibanaWriteResult[T]{}, diags
+		}
+
+		diags.Append(populate(&plan, ctx, req.SpaceID, resp)...)
+		return KibanaWriteResult[T]{Model: plan}, diags
+	}
 }
