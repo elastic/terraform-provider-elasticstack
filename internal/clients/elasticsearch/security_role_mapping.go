@@ -98,7 +98,7 @@ func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 
 	res, diags := CallOrNotFound(func() (getrolemapping.Response, error) {
 		return typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
-	})
+	}, "Unable to get role mapping")
 	if diags.HasError() || res == nil {
 		return nil, diags
 	}

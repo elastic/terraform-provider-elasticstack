@@ -65,7 +65,7 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 
 	res, diags := CallOrNotFound(func() (*getapikey.Response, error) {
 		return typedClient.Security.GetApiKey().Id(id).Do(ctx)
-	})
+	}, "Unable to get apikey")
 	if diags.HasError() || res == nil {
 		return nil, diags
 	}

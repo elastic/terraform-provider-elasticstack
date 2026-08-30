@@ -52,7 +52,7 @@ func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 
 	res, diags := CallOrNotFound(func() (*get.Response, error) {
 		return typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
-	})
+	}, "Unable to get inference endpoint")
 	if diags.HasError() || res == nil || len(res.Endpoints) == 0 {
 		return nil, diags
 	}
