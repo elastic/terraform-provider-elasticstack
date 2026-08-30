@@ -23,6 +23,7 @@ import (
 
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -38,7 +39,7 @@ func strSettingNullWithFallback(settings map[string]any, key string, fallback ty
 	if !v.IsNull() {
 		return v
 	}
-	if !fallback.IsNull() && !fallback.IsUnknown() {
+	if typeutils.IsKnown(fallback) {
 		return fallback
 	}
 	return types.StringNull()
@@ -128,13 +129,13 @@ func settingsToFs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 
 	var diags diag.Diagnostics
 	var priorFs FsSettings
-	if !state.Fs.IsNull() && !state.Fs.IsUnknown() {
+	if typeutils.IsKnown(state.Fs) {
 		diags.Append(state.Fs.As(ctx, &priorFs, basetypes.ObjectAsOptions{})...)
 	}
 
 	// Try to inherit compress from state if API does not return it
 	compressFallback := true
-	if !state.Fs.IsNull() && !state.Fs.IsUnknown() {
+	if typeutils.IsKnown(state.Fs) {
 		var stateFs FsSettings
 		if asDiags := state.Fs.As(ctx, &stateFs, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
 			compressFallback = stateFs.Compress.ValueBool()
@@ -160,12 +161,12 @@ func settingsToURL(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 
 	var diags diag.Diagnostics
 	var priorURL URLSettings
-	if !state.URL.IsNull() && !state.URL.IsUnknown() {
+	if typeutils.IsKnown(state.URL) {
 		diags.Append(state.URL.As(ctx, &priorURL, basetypes.ObjectAsOptions{})...)
 	}
 
 	compressFallback := true
-	if !state.URL.IsNull() && !state.URL.IsUnknown() {
+	if typeutils.IsKnown(state.URL) {
 		var stateURL URLSettings
 		if asDiags := state.URL.As(ctx, &stateURL, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
 			compressFallback = stateURL.Compress.ValueBool()
@@ -193,7 +194,7 @@ func settingsToGcs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryIn
 
 	var diags diag.Diagnostics
 	var priorGcs GcsSettings
-	if !state.Gcs.IsNull() && !state.Gcs.IsUnknown() {
+	if typeutils.IsKnown(state.Gcs) {
 		diags.Append(state.Gcs.As(ctx, &priorGcs, basetypes.ObjectAsOptions{})...)
 	}
 
@@ -217,7 +218,7 @@ func settingsToAzure(ctx context.Context, repo *elasticsearch.SnapshotRepository
 
 	var diags diag.Diagnostics
 	var priorAzure AzureSettings
-	if !state.Azure.IsNull() && !state.Azure.IsUnknown() {
+	if typeutils.IsKnown(state.Azure) {
 		diags.Append(state.Azure.As(ctx, &priorAzure, basetypes.ObjectAsOptions{})...)
 	}
 
@@ -242,17 +243,17 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 
 	var diags diag.Diagnostics
 	var priorS3 S3Settings
-	if !state.S3.IsNull() && !state.S3.IsUnknown() {
+	if typeutils.IsKnown(state.S3) {
 		diags.Append(state.S3.As(ctx, &priorS3, basetypes.ObjectAsOptions{})...)
 	}
 
 	endpointFallback := types.StringNull()
 	pathStyleAccessFallback := false
-	if !state.S3.IsNull() && !state.S3.IsUnknown() {
+	if typeutils.IsKnown(state.S3) {
 		var stateS3 S3Settings
 		if asDiags := state.S3.As(ctx, &stateS3, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
 			endpointFallback = stateS3.Endpoint
-			if !stateS3.PathStyleAccess.IsNull() && !stateS3.PathStyleAccess.IsUnknown() {
+			if typeutils.IsKnown(stateS3.PathStyleAccess) {
 				pathStyleAccessFallback = stateS3.PathStyleAccess.ValueBool()
 			}
 		}
@@ -300,7 +301,7 @@ func settingsToHdfs(ctx context.Context, repo *elasticsearch.SnapshotRepositoryI
 
 	var diags diag.Diagnostics
 	var priorHdfs HdfsSettings
-	if !state.Hdfs.IsNull() && !state.Hdfs.IsUnknown() {
+	if typeutils.IsKnown(state.Hdfs) {
 		diags.Append(state.Hdfs.As(ctx, &priorHdfs, basetypes.ObjectAsOptions{})...)
 	}
 

@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -55,7 +56,7 @@ func createEntityStore(
 		return entitycore.KibanaWriteResult[tfModel]{}, d
 	}
 
-	if !plan.Started.IsNull() && !plan.Started.IsUnknown() && !plan.Started.ValueBool() {
+	if typeutils.IsKnown(plan.Started) && !plan.Started.ValueBool() {
 		if d := kibanaoapi.StopSecurityEntityStore(ctx, client.GetKibanaOapiClient(), spaceID, kbapi.PutSecurityEntityStoreStopJSONRequestBody{}); d.HasError() {
 			return entitycore.KibanaWriteResult[tfModel]{}, d
 		}

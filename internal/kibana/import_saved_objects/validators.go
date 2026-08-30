@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -54,8 +55,8 @@ func (v *bothTrueValidator) ValidateResource(ctx context.Context, req resource.V
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if !val1.IsNull() && !val1.IsUnknown() && val1.ValueBool() &&
-		!val2.IsNull() && !val2.IsUnknown() && val2.ValueBool() {
+	if typeutils.IsKnown(val1) && val1.ValueBool() &&
+		typeutils.IsKnown(val2) && val2.ValueBool() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(v.attr1),
 			"Invalid attribute combination",

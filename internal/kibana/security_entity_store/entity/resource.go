@@ -86,13 +86,13 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		return
 	}
 
-	if !model.Entity.IsNull() && !model.Entity.IsUnknown() {
+	if typeutils.IsKnown(model.Entity) {
 		var entityModel entityBlockModel
 		resp.Diagnostics.Append(model.Entity.As(ctx, &entityModel, basetypes.ObjectAsOptions{})...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		if !entityModel.ID.IsNull() && !entityModel.ID.IsUnknown() && entityModel.ID.ValueString() != entityID {
+		if typeutils.IsKnown(entityModel.ID) && entityModel.ID.ValueString() != entityID {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("entity_id"),
 				"entity_id mismatch",

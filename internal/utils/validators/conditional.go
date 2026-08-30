@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -127,7 +128,7 @@ func (v Condition) evaluatePathExpression(ctx context.Context, config tfsdk.Conf
 			if getDiags.HasError() {
 				continue
 			}
-			if !obj.IsNull() && !obj.IsUnknown() {
+			if typeutils.IsKnown(obj) {
 				return dependentEvaluation{matchesAllowed: true}, diags
 			}
 		}

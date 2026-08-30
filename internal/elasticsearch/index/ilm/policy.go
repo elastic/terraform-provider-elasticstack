@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,7 +31,7 @@ import (
 func policyFromModel(ctx context.Context, m *tfModel, settingsSupport map[string]bool) (*models.Policy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	meta := ""
-	if !m.Metadata.IsNull() && !m.Metadata.IsUnknown() {
+	if typeutils.IsKnown(m.Metadata) {
 		meta = m.Metadata.ValueString()
 	}
 	phases := make(map[string]map[string]any)

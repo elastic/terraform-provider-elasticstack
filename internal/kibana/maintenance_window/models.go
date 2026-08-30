@@ -98,7 +98,7 @@ func (m Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWin
 	body.Schedule.Custom.Duration = m.CustomSchedule.Duration.ValueString()
 	body.Schedule.Custom.Start = m.CustomSchedule.Start.ValueString()
 
-	if !m.CustomSchedule.Timezone.IsNull() && !m.CustomSchedule.Timezone.IsUnknown() {
+	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()
 	}
 

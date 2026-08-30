@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -70,7 +71,7 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 	}
 
 	// The API allows setting a custom id only at creation time.
-	if !m.SourceID.IsNull() && !m.SourceID.IsUnknown() && m.SourceID.ValueString() != "" {
+	if typeutils.IsKnown(m.SourceID) && m.SourceID.ValueString() != "" {
 		id := m.SourceID.ValueString()
 		body.Id = &id
 	}

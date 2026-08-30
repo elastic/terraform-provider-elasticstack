@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -36,7 +37,7 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 		return out, diags
 	}
 
-	if !d.Template.IsNull() && !d.Template.IsUnknown() {
+	if typeutils.IsKnown(d.Template) {
 		tpl, d2 := templateutil.ExpandTemplateBlock(ctx, d.Template)
 		diags.Append(d2...)
 		if diags.HasError() {
@@ -45,7 +46,7 @@ func expandFromData(ctx context.Context, d Data) (models.ComponentTemplate, diag
 		out.Template = tpl
 	}
 
-	if !d.Version.IsNull() && !d.Version.IsUnknown() {
+	if typeutils.IsKnown(d.Version) {
 		v := d.Version.ValueInt64()
 		out.Version = &v
 	}

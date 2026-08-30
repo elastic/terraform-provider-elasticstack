@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -131,7 +132,7 @@ func (v pinnedPanelControlValidator) ValidateObject(_ context.Context, req valid
 
 	var panelType string
 	var typeKnown bool
-	if typeAttr != nil && !typeAttr.IsNull() && !typeAttr.IsUnknown() {
+	if typeAttr != nil && typeutils.IsKnown(typeAttr) {
 		typeValue, ok := typeAttr.(interface{ ValueString() string })
 		if !ok {
 			resp.Diagnostics.AddAttributeError(req.Path.AtName("type"), "Invalid pinned panel entry type", "The `type` attribute must be a string value.")
