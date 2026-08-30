@@ -33,9 +33,3 @@ func WithEnclosingDashboard(ctx context.Context, dm *models.DashboardModel) cont
 	}
 	return context.WithValue(ctx, enclosingDashboardCtxKey{}, dm)
 }
-
-// EnclosingDashboard returns the dashboard passed via WithEnclosingDashboard, or nil.
-func EnclosingDashboard(ctx context.Context) *models.DashboardModel {
-	v, _ := ctx.Value(enclosingDashboardCtxKey{}).(*models.DashboardModel)
-	return v
-}
