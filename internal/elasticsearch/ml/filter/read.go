@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getfilters"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -38,13 +39,13 @@ func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 
 	typedClient := client.GetESClient()
 
-	res, found, diags := ml.ReadWithNotFoundAsAbsent(ctx, "ML filter", filterID, func() (*getfilters.Response, error) {
+	res, diags := elasticsearch.CallOrNotFound(func() (*getfilters.Response, error) {
 		return typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
-	})
-	if diags.HasError() {
+	}, "Failed to get ML filter")
+	if diags.HasError() || res == nil {
 		return state, false, diags
 	}
-	if !found || len(res.Filters) == 0 {
+	if len(res.Filters) == 0 {
 		return state, false, nil
 	}
 
