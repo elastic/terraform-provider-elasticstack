@@ -460,7 +460,8 @@ func isEmptyJSONObject(v jsontypes.Normalized) bool {
 	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
 		return false
 	}
-	return len(m) == 0
+	// json.Unmarshal("null", &map) succeeds with a nil map; len(nil) == 0.
+	return m != nil && len(m) == 0
 }
 
 // Helper functions for schema attribute types

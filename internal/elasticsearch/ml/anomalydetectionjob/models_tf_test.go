@@ -64,6 +64,16 @@ func TestIsEmptyJSONObject(t *testing.T) {
 			value: jsontypes.NewNormalizedValue("not-json"),
 			want:  false,
 		},
+		{
+			name:  "JSON null",
+			value: jsontypes.NewNormalizedValue("null"),
+			want:  false,
+		},
+		{
+			name:  "JSON null with whitespace",
+			value: jsontypes.NewNormalizedValue(" null "),
+			want:  false,
+		},
 	}
 
 	for _, tt := range tests {
