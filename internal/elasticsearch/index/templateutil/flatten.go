@@ -32,15 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// IsKnownSemanticallyEmpty reports whether a prior JSON string value is a
-// known, non-null value that nevertheless decodes to a zero-length JSON object
-// (for example `{}` or whitespace-padded variants). The flatten layer uses this
-// signal to preserve a practitioner-authored empty-object value in state when
-// the Elasticsearch GET response omits the corresponding field entirely.
-func IsKnownSemanticallyEmpty(v typeutils.KnownStringValue) bool {
-	return typeutils.IsKnownEmptyJSONObject(v)
-}
-
 // FlattenTemplateCoreResult holds the shared template block fields produced by
 // FlattenTemplateCore. Callers extend this with package-specific fields (e.g.
 // lifecycle in the index template package) before constructing the final
@@ -129,7 +120,7 @@ func flattenMappings(apiMappings map[string]any, prior esindex.MappingsValue) (e
 		}
 		return esindex.NewMappingsValue(string(b)), diags
 	}
-	if IsKnownSemanticallyEmpty(prior) {
+	if typeutils.IsKnownEmptyJSONObject(prior) {
 		return prior, diags
 	}
 	return esindex.NewMappingsNull(), diags
@@ -147,7 +138,7 @@ func flattenSettings(apiSettings map[string]any, prior customtypes.IndexSettings
 		}
 		return customtypes.NewIndexSettingsValue(string(b)), diags
 	}
-	if IsKnownSemanticallyEmpty(prior) {
+	if typeutils.IsKnownEmptyJSONObject(prior) {
 		return prior, diags
 	}
 	return customtypes.NewIndexSettingsNull(), diags

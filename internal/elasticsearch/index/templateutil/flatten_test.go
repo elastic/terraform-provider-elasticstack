@@ -24,6 +24,7 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,45 +32,45 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsKnownSemanticallyEmpty(t *testing.T) {
+func TestIsKnownEmptyJSONObject(t *testing.T) {
 	t.Run("mappings null returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmpty(esindex.NewMappingsNull()))
+		assert.False(t, typeutils.IsKnownEmptyJSONObject(esindex.NewMappingsNull()))
 	})
 
 	t.Run("mappings unknown returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmpty(esindex.NewMappingsUnknown()))
+		assert.False(t, typeutils.IsKnownEmptyJSONObject(esindex.NewMappingsUnknown()))
 	})
 
 	t.Run("mappings empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmpty(esindex.NewMappingsValue("{}")))
+		assert.True(t, typeutils.IsKnownEmptyJSONObject(esindex.NewMappingsValue("{}")))
 	})
 
 	t.Run("mappings whitespace-padded empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmpty(esindex.NewMappingsValue("  {}  ")))
+		assert.True(t, typeutils.IsKnownEmptyJSONObject(esindex.NewMappingsValue("  {}  ")))
 	})
 
 	t.Run("mappings non-empty JSON object returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmpty(esindex.NewMappingsValue(`{"properties":{}}`)))
+		assert.False(t, typeutils.IsKnownEmptyJSONObject(esindex.NewMappingsValue(`{"properties":{}}`)))
 	})
 
 	t.Run("settings null returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsNull()))
+		assert.False(t, typeutils.IsKnownEmptyJSONObject(customtypes.NewIndexSettingsNull()))
 	})
 
 	t.Run("settings unknown returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsUnknown()))
+		assert.False(t, typeutils.IsKnownEmptyJSONObject(customtypes.NewIndexSettingsUnknown()))
 	})
 
 	t.Run("settings empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsValue("{}")))
+		assert.True(t, typeutils.IsKnownEmptyJSONObject(customtypes.NewIndexSettingsValue("{}")))
 	})
 
 	t.Run("settings whitespace-padded empty JSON object returns true", func(t *testing.T) {
-		assert.True(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsValue("  {}  ")))
+		assert.True(t, typeutils.IsKnownEmptyJSONObject(customtypes.NewIndexSettingsValue("  {}  ")))
 	})
 
 	t.Run("settings non-empty JSON object returns false", func(t *testing.T) {
-		assert.False(t, IsKnownSemanticallyEmpty(customtypes.NewIndexSettingsValue(`{"number_of_shards":1}`)))
+		assert.False(t, typeutils.IsKnownEmptyJSONObject(customtypes.NewIndexSettingsValue(`{"number_of_shards":1}`)))
 	})
 }
 
