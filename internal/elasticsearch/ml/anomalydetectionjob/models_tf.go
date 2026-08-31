@@ -408,6 +408,11 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 		plan.CustomSettings = jsontypes.NewNormalizedNull()
 	case isEmptyJSONObject(priorCustomSettings):
 		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
+	case !isJSONObject(priorCustomSettings):
+		// Non-object priors (JSON literal "null", arrays, scalars, invalid JSON)
+		// stay as-is so read matches the write-path hands-off omit for
+		// jsonencode(null) and does not copy API values into state.
+		plan.CustomSettings = priorCustomSettings
 	case apiModel.CustomSettings != nil:
 		customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
 		if err != nil {
@@ -447,6 +452,21 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
 	return diags
+}
+
+// isJSONObject reports whether v is a JSON object (including "{}").
+// Null, unknown, the JSON literal "null", arrays, numbers, strings, and
+// invalid JSON return false.
+func isJSONObject(v jsontypes.Normalized) bool {
+	if v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
+		return false
+	}
+	// json.Unmarshal("null", &map) succeeds with a nil map.
+	return m != nil
 }
 
 // isEmptyJSONObject reports whether v is a JSON object with zero keys.

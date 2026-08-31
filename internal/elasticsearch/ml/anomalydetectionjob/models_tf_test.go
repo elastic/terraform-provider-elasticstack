@@ -26,6 +26,79 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIsJSONObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value jsontypes.Normalized
+		want  bool
+	}{
+		{
+			name:  "null",
+			value: jsontypes.NewNormalizedNull(),
+			want:  false,
+		},
+		{
+			name:  "unknown",
+			value: jsontypes.NewNormalizedUnknown(),
+			want:  false,
+		},
+		{
+			name:  "empty object",
+			value: jsontypes.NewNormalizedValue("{}"),
+			want:  true,
+		},
+		{
+			name:  "empty object with whitespace",
+			value: jsontypes.NewNormalizedValue("{ }"),
+			want:  true,
+		},
+		{
+			name:  "non-empty object",
+			value: jsontypes.NewNormalizedValue(`{"a":1}`),
+			want:  true,
+		},
+		{
+			name:  "JSON null",
+			value: jsontypes.NewNormalizedValue("null"),
+			want:  false,
+		},
+		{
+			name:  "JSON null with whitespace",
+			value: jsontypes.NewNormalizedValue(" null "),
+			want:  false,
+		},
+		{
+			name:  "array",
+			value: jsontypes.NewNormalizedValue("[]"),
+			want:  false,
+		},
+		{
+			name:  "number",
+			value: jsontypes.NewNormalizedValue("1"),
+			want:  false,
+		},
+		{
+			name:  "string",
+			value: jsontypes.NewNormalizedValue(`"x"`),
+			want:  false,
+		},
+		{
+			name:  "invalid JSON",
+			value: jsontypes.NewNormalizedValue("not-json"),
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, isJSONObject(tt.value))
+		})
+	}
+}
+
 func TestIsEmptyJSONObject(t *testing.T) {
 	t.Parallel()
 
@@ -137,6 +210,24 @@ func TestFromAPIModel_customSettingsHandsOff(t *testing.T) {
 			prior:     jsontypes.NewNormalizedValue(`{"department":"ops"}`),
 			api:       nil,
 			wantValue: "{}",
+		},
+		{
+			name:      "JSON null prior stays null when API has values",
+			prior:     jsontypes.NewNormalizedValue("null"),
+			api:       map[string]any{"created_by": "advanced-wizard"},
+			wantValue: "null",
+		},
+		{
+			name:      "JSON null prior stays null when API is nil",
+			prior:     jsontypes.NewNormalizedValue("null"),
+			api:       nil,
+			wantValue: "null",
+		},
+		{
+			name:      "JSON null with whitespace stays as-is when API has values",
+			prior:     jsontypes.NewNormalizedValue(" null "),
+			api:       map[string]any{"created_by": "advanced-wizard"},
+			wantValue: " null ",
 		},
 	}
 
