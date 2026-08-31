@@ -112,6 +112,22 @@ func SimpleKibanaCreate[T KibanaResourceModel, Body any, R any](
 	}
 }
 
+// ResolveUpdateSpaceID returns the space an Update write callback should
+// target: req.Prior's space when Prior is set (the space the resource
+// actually lives in), falling back to req.SpaceID otherwise. This matters
+// because the space in the current apply request's plan is not always the
+// space the resource was created in (for example when the resource's space
+// membership is derived rather than a plain required field), so calling the
+// API update with the plan's space can target the wrong space. Extracted
+// from an identical snippet duplicated across fleet/serverhost and
+// fleet/output update callbacks.
+func ResolveUpdateSpaceID[T KibanaResourceModel](req KibanaWriteRequest[T]) string {
+	if req.Prior != nil {
+		return (*req.Prior).GetSpaceID().ValueString()
+	}
+	return req.SpaceID
+}
+
 // SimpleKibanaUpdate is [SimpleKibanaCreate]'s counterpart for Update: it
 // calls apiUpdate with req.SpaceID and req.WriteID instead of apiCreate with
 // req.SpaceID alone. See [SimpleKibanaCreate] for the shared shape and usage
