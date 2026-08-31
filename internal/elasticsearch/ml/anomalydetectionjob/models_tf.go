@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -401,15 +402,21 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.AllowLazyOpen = types.BoolPointerValue(apiModel.AllowLazyOpen)
 	plan.BackgroundPersistInterval = typeutils.NonEmptyStringishValue(apiModel.BackgroundPersistInterval)
 
-	if apiModel.CustomSettings != nil {
-		customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
-		if err != nil {
-			diags.AddError("Failed to marshal custom_settings", err.Error())
+	priorCustomSettings := plan.CustomSettings
+	switch {
+	case typeutils.IsKnown(priorCustomSettings) && typeutils.IsEmptyJSONObject(priorCustomSettings.ValueString()):
+		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
+	case !isJSONObject(priorCustomSettings):
+		// TF-null, JSON "null", arrays, scalars, and invalid JSON stay as-is.
+	case apiModel.CustomSettings != nil:
+		plan.CustomSettings = typeutils.MarshalToNormalized(apiModel.CustomSettings, path.Root("custom_settings"), &diags)
+		if diags.HasError() {
 			return diags
 		}
-		plan.CustomSettings = jsontypes.NewNormalizedValue(string(customSettingsJSON))
-	} else {
-		plan.CustomSettings = jsontypes.NewNormalizedNull()
+	default:
+		// Owned object, but the API omitted the bag — persist "{}" rather than
+		// resurrecting the prior value.
+		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
 	}
 
 	plan.DailyModelSnapshotRetentionAfterDays = types.Int64PointerValue(apiModel.DailyModelSnapshotRetentionAfterDays)
@@ -437,6 +444,21 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
 	return diags
+}
+
+// isJSONObject reports whether v is a JSON object (including "{}").
+// Null, unknown, the JSON literal "null", arrays, numbers, strings, and
+// invalid JSON return false.
+func isJSONObject(v jsontypes.Normalized) bool {
+	if !typeutils.IsKnown(v) {
+		return false
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
+		return false
+	}
+	// json.Unmarshal("null", &map) succeeds with a nil map.
+	return m != nil
 }
 
 // Helper functions for schema attribute types
