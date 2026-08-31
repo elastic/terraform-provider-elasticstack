@@ -54,9 +54,10 @@ func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p p
 // SetFromAPIStringsPreserveKnownEmpty converts an optional API string slice into a
 // types.Set of strings. Kibana returns nil/[] interchangeably for an empty set, so
 // a nil or empty apiValue collapses dest to Null only when dest was Unknown;
-// a Known-empty dest (e.g. `attr = []` from config) is preserved as-is to avoid
-// "produced inconsistent result after apply" diffs on read-after-apply.
-func SetFromAPIStringsPreserveKnownEmpty[T any](ctx context.Context, apiValue *[]T, dest types.Set) (types.Set, diag.Diagnostics) {
+// all Known destinations (including Known-empty, e.g. `attr = []` from config) are
+// preserved as-is to avoid "produced inconsistent result after apply" diffs on
+// read-after-apply. T must be a string kind (~string).
+func SetFromAPIStringsPreserveKnownEmpty[T ~string](ctx context.Context, apiValue *[]T, dest types.Set) (types.Set, diag.Diagnostics) {
 	if apiValue != nil && len(*apiValue) > 0 {
 		return types.SetValueFrom(ctx, types.StringType, *apiValue)
 	}
