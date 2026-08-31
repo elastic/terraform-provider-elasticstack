@@ -237,13 +237,18 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 			diags.AddError("Failed to parse custom_settings", err.Error())
 			return false, diags
 		}
-		raw, err := json.Marshal(customSettings)
-		if err != nil {
-			diags.AddError("Failed to encode custom_settings", err.Error())
-			return false, diags
+		// JSON literal "null" unmarshals to a nil map. That is not a wipe ("{}")
+		// and not an owned object — omit the field so we stay hands-off instead
+		// of sending "custom_settings": null, which the Update Job API rejects.
+		if customSettings != nil {
+			raw, err := json.Marshal(customSettings)
+			if err != nil {
+				diags.AddError("Failed to encode custom_settings", err.Error())
+				return false, diags
+			}
+			u.CustomSettings = json.RawMessage(raw)
+			hasChanges = true
 		}
-		u.CustomSettings = json.RawMessage(raw)
-		hasChanges = true
 	}
 
 	if !plan.DailyModelSnapshotRetentionAfterDays.Equal(state.DailyModelSnapshotRetentionAfterDays) && !plan.DailyModelSnapshotRetentionAfterDays.IsNull() {

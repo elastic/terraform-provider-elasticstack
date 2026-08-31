@@ -132,6 +132,26 @@ func TestUpdateAPIModel_BuildFromPlan_nullCustomSettingsIsOmitted(t *testing.T) 
 	require.NotContains(t, string(body), "custom_settings")
 }
 
+func TestUpdateAPIModel_BuildFromPlan_jsonNullCustomSettingsIsOmitted(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baselineTFModelForBuildFromPlan(ctx, t)
+	prior.CustomSettings = jsontypes.NewNormalizedValue(`{"created_by":"advanced-wizard"}`)
+
+	plan := prior
+	plan.CustomSettings = jsontypes.NewNormalizedValue("null")
+
+	var u UpdateAPIModel
+	hasChanges, diags := u.BuildFromPlan(ctx, &plan, &prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, hasChanges)
+	require.Nil(t, u.CustomSettings)
+
+	body, err := json.Marshal(u)
+	require.NoError(t, err)
+	require.NotContains(t, string(body), "custom_settings")
+}
+
 func TestUpdateAPIModel_BuildFromPlan_nonEmptyCustomSettingsReplacesBag(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
