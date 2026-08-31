@@ -658,6 +658,7 @@ func TestAccResourceAnomalyDetectionJobNullAndEmpty(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "model_plot_config.annotations_enabled", "true"),
 					// Other settings checks
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "allow_lazy_open", "false"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "custom_settings"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "results_index_name", "test-job1"),
 					// Computed fields
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_ml_anomaly_detection_job.test", "create_time"),
@@ -903,6 +904,18 @@ func TestAccResourceAnomalyDetectionJobCustomSettingsOmitted(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "job_id", jobID),
 					resource.TestCheckNoResourceAttr(addr, "custom_settings"),
+					testAccCheckMLJobCustomSettingsEquals(jobID, `{"created_by":"advanced-wizard"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             addr,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(addr, "custom_settings"),
 				),
 			},
 		},
@@ -979,6 +992,39 @@ func TestAccResourceAnomalyDetectionJobCustomSettingsReownership(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "custom_settings", `{"department":"ops"}`),
+					testAccCheckMLJobCustomSettingsEquals(jobID, `{"department":"ops"}`),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomSettingsOwnedThenOmitted covers dropping
+// ownership: update must not send custom_settings, state becomes null, server bag stays.
+func TestAccResourceAnomalyDetectionJobCustomSettingsOwnedThenOmitted(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cs-owned-omit-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+	vars := config.Variables{"job_id": config.StringVariable(jobID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "custom_settings", `{"department":"ops"}`),
+					testAccCheckMLJobCustomSettingsEquals(jobID, `{"department":"ops"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(addr, "custom_settings"),
 					testAccCheckMLJobCustomSettingsEquals(jobID, `{"department":"ops"}`),
 				),
 			},
@@ -1083,6 +1129,9 @@ func updateMLJobCustomSettingsOutOfBand(t *testing.T, jobID, customSettingsJSON 
 	if err != nil {
 		t.Fatalf("UpdateJob custom_settings out-of-band for %q: %v", jobID, err)
 	}
+	if err := assertMLJobCustomSettingsEquals(jobID, customSettingsJSON); err != nil {
+		t.Fatalf("out-of-band custom_settings not persisted for %q: %v", jobID, err)
+	}
 }
 
 func getMLJobCustomSettings(jobID string) (json.RawMessage, error) {
@@ -1121,34 +1170,38 @@ func testAccCheckMLJobCustomSettingsCleared(jobID string) resource.TestCheckFunc
 	}
 }
 
+func assertMLJobCustomSettingsEquals(jobID, wantJSON string) error {
+	raw, err := getMLJobCustomSettings(jobID)
+	if err != nil {
+		return err
+	}
+	if len(raw) == 0 {
+		return fmt.Errorf("expected custom_settings %s on job %q, got absent", wantJSON, jobID)
+	}
+	var got, want map[string]any
+	if err := json.Unmarshal(raw, &got); err != nil {
+		return fmt.Errorf("unmarshal custom_settings for %q: %w", jobID, err)
+	}
+	if err := json.Unmarshal([]byte(wantJSON), &want); err != nil {
+		return fmt.Errorf("unmarshal expected custom_settings: %w", err)
+	}
+	gotJSON, err := json.Marshal(got)
+	if err != nil {
+		return err
+	}
+	wantCompact, err := json.Marshal(want)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(gotJSON, wantCompact) {
+		return fmt.Errorf("custom_settings on job %q: got %s, want %s", jobID, gotJSON, wantCompact)
+	}
+	return nil
+}
+
 func testAccCheckMLJobCustomSettingsEquals(jobID, wantJSON string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		raw, err := getMLJobCustomSettings(jobID)
-		if err != nil {
-			return err
-		}
-		if len(raw) == 0 {
-			return fmt.Errorf("expected custom_settings %s on job %q, got absent", wantJSON, jobID)
-		}
-		var got, want map[string]any
-		if err := json.Unmarshal(raw, &got); err != nil {
-			return fmt.Errorf("unmarshal custom_settings for %q: %w", jobID, err)
-		}
-		if err := json.Unmarshal([]byte(wantJSON), &want); err != nil {
-			return fmt.Errorf("unmarshal expected custom_settings: %w", err)
-		}
-		gotJSON, err := json.Marshal(got)
-		if err != nil {
-			return err
-		}
-		wantCompact, err := json.Marshal(want)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(gotJSON, wantCompact) {
-			return fmt.Errorf("custom_settings on job %q: got %s, want %s", jobID, gotJSON, wantCompact)
-		}
-		return nil
+		return assertMLJobCustomSettingsEquals(jobID, wantJSON)
 	}
 }
 
