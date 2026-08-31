@@ -912,11 +912,14 @@ func TestAccResourceAnomalyDetectionJobCustomSettingsOmitted(t *testing.T) {
 				ResourceName:             addr,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
-				ConfigVariables:          vars,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr(addr, "custom_settings"),
-				),
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if v, ok := is[0].Attributes["custom_settings"]; ok {
+						return fmt.Errorf("expected custom_settings to be absent after import, got %q", v)
+					}
+					return nil
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: vars,
 			},
 		},
 	})
