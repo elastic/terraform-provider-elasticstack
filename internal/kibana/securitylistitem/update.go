@@ -21,33 +21,27 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// updateSecurityListItem wraps SimpleKibanaUpdate in a small function because
-// Model.toAPIUpdateModel needs req.WriteID, which SimpleKibanaUpdate's toBody
-// callback does not receive directly.
-func updateSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	return entitycore.SimpleKibanaUpdate[Model, kbapi.UpdateListItemJSONRequestBody, kbapi.SecurityListsAPIListItem](
-		func(plan Model, ctx context.Context) (kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
-			body, diags := plan.toAPIUpdateModel(ctx, req.WriteID)
-			if diags.HasError() {
-				return kbapi.UpdateListItemJSONRequestBody{}, diags
-			}
-			return *body, diags
-		},
-		// UpdateListItem takes the resource ID via the request body (see
-		// Model.toAPIUpdateModel), not as a separate parameter, so the writeID
-		// argument required by SimpleKibanaUpdate's apiUpdate shape is unused here.
-		func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-			return kibanaoapi.UpdateListItem(ctx, client, spaceID, body)
-		},
-		(*Model).populateUpdated,
-	)(ctx, client, req)
-}
+var updateSecurityListItem = entitycore.SimpleKibanaUpdate[Model, kbapi.UpdateListItemJSONRequestBody, kbapi.SecurityListsAPIListItem](
+	func(plan Model, ctx context.Context, writeID string) (kbapi.UpdateListItemJSONRequestBody, diag.Diagnostics) {
+		body, diags := plan.toAPIUpdateModel(ctx, writeID)
+		if diags.HasError() {
+			return kbapi.UpdateListItemJSONRequestBody{}, diags
+		}
+		return *body, diags
+	},
+	// UpdateListItem takes the resource ID via the request body (see
+	// Model.toAPIUpdateModel), not as a separate parameter, so the writeID
+	// argument required by SimpleKibanaUpdate's apiUpdate shape is unused here.
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
+		return kibanaoapi.UpdateListItem(ctx, client, spaceID, body)
+	},
+	(*Model).populateUpdated,
+)
 
 // populateUpdated only validates the update response is non-nil: the plan
 // already carries the correct field values for an update.

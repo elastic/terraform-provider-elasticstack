@@ -18,14 +18,19 @@
 package agentbuilderskill
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 var updateSkill = entitycore.SimpleKibanaUpdate[skillModel, kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody, models.Skill](
-	skillModel.toAPIUpdateModel,
+	func(plan skillModel, ctx context.Context, _ string) (kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody, diag.Diagnostics) {
+		return plan.toAPIUpdateModel(ctx)
+	},
 	kibanaoapi.UpdateSkill,
 	(*skillModel).setWriteSpaceID,
 )
