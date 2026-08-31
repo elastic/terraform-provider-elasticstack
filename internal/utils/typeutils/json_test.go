@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/stretchr/testify/require"
@@ -122,6 +123,59 @@ func TestIsEmptyJSONObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.want, typeutils.IsEmptyJSONObject(tt.in))
+		})
+	}
+}
+
+func TestIsJSONObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{name: "empty string", in: "", want: false},
+		{name: "empty object", in: "{}", want: true},
+		{name: "empty object with whitespace", in: "{ }", want: true},
+		{name: "non-empty object", in: `{"a":1}`, want: true},
+		{name: "JSON null", in: "null", want: false},
+		{name: "JSON null with whitespace", in: " null ", want: false},
+		{name: "array", in: "[]", want: false},
+		{name: "number", in: "1", want: false},
+		{name: "string", in: `"x"`, want: false},
+		{name: "invalid JSON", in: "not-json", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, typeutils.IsJSONObject(tt.in))
+		})
+	}
+}
+
+func TestIsKnownEmptyJSONObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value jsontypes.Normalized
+		want  bool
+	}{
+		{name: "null", value: jsontypes.NewNormalizedNull(), want: false},
+		{name: "unknown", value: jsontypes.NewNormalizedUnknown(), want: false},
+		{name: "empty object", value: jsontypes.NewNormalizedValue("{}"), want: true},
+		{name: "whitespace-padded empty object", value: jsontypes.NewNormalizedValue("  {}  "), want: true},
+		{name: "non-empty object", value: jsontypes.NewNormalizedValue(`{"a":1}`), want: false},
+		{name: "JSON null literal", value: jsontypes.NewNormalizedValue("null"), want: false},
+		{name: "array", value: jsontypes.NewNormalizedValue("[]"), want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, typeutils.IsKnownEmptyJSONObject(tt.value))
 		})
 	}
 }

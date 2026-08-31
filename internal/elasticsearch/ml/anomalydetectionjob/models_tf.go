@@ -404,10 +404,10 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 
 	priorCustomSettings := plan.CustomSettings
 	switch {
-	case typeutils.IsKnown(priorCustomSettings) && typeutils.IsEmptyJSONObject(priorCustomSettings.ValueString()):
+	case typeutils.IsKnownEmptyJSONObject(priorCustomSettings):
 		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
-	case !isJSONObject(priorCustomSettings):
-		// TF-null, JSON "null", arrays, scalars, and invalid JSON stay as-is.
+	case !typeutils.IsKnown(priorCustomSettings) || !typeutils.IsJSONObject(priorCustomSettings.ValueString()):
+		// TF-null, unknown, JSON "null", arrays, scalars, and invalid JSON stay as-is.
 	case apiModel.CustomSettings != nil:
 		plan.CustomSettings = typeutils.MarshalToNormalized(apiModel.CustomSettings, path.Root("custom_settings"), &diags)
 		if diags.HasError() {
@@ -444,21 +444,6 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
 	return diags
-}
-
-// isJSONObject reports whether v is a JSON object (including "{}").
-// Null, unknown, the JSON literal "null", arrays, numbers, strings, and
-// invalid JSON return false.
-func isJSONObject(v jsontypes.Normalized) bool {
-	if !typeutils.IsKnown(v) {
-		return false
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
-		return false
-	}
-	// json.Unmarshal("null", &map) succeeds with a nil map.
-	return m != nil
 }
 
 // Helper functions for schema attribute types

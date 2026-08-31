@@ -72,7 +72,7 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 			return state, false, diags
 		}
 		state.Metadata = jsontypes.NewNormalizedValue(string(metadata))
-	} else if state.Metadata.IsNull() || state.Metadata.IsUnknown() || !typeutils.IsEmptyJSONObject(state.Metadata.ValueString()) {
+	} else if !typeutils.IsKnownEmptyJSONObject(state.Metadata) {
 		state.Metadata = jsontypes.NewNormalizedNull()
 	}
 

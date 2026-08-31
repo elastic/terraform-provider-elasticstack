@@ -74,6 +74,37 @@ func NormalizeJSONScalar(v any) any {
 	})
 }
 
+// KnownStringValue is the subset of a Terraform attribute value needed to
+// determine whether a known value's string representation is a
+// semantically-empty JSON object. Satisfied by jsontypes.Normalized and
+// similar generated custom string types.
+type KnownStringValue interface {
+	IsNull() bool
+	IsUnknown() bool
+	ValueString() string
+}
+
+// IsKnownEmptyJSONObject reports whether v is a known, non-null value whose
+// string representation is a semantically-empty JSON object (see
+// IsEmptyJSONObject). Read implementations use this to decide whether to
+// preserve a practitioner-authored "{}" in state when the API response omits
+// the corresponding field, avoiding the Plugin Framework's "produced
+// inconsistent result after apply" error.
+func IsKnownEmptyJSONObject(v KnownStringValue) bool {
+	if v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	return IsEmptyJSONObject(v.ValueString())
+}
+
+// IsJSONObject reports whether s decodes to a JSON object, including the
+// empty object "{}". It returns false for the JSON literal `null`, arrays,
+// scalars, and invalid JSON (including whitespace-only or empty strings).
+func IsJSONObject(s string) bool {
+	_, ok := unmarshalJSONObject(s)
+	return ok
+}
+
 // IsEmptyJSONObject reports whether s is a semantically-empty JSON object —
 // either whitespace-only, the literal `{}`, or any JSON object that unmarshals
 // to a zero-length, non-nil map. It returns false for non-empty objects,
@@ -83,14 +114,23 @@ func IsEmptyJSONObject(s string) bool {
 	if trimmed == "" {
 		return true
 	}
+	m, ok := unmarshalJSONObject(trimmed)
+	return ok && len(m) == 0
+}
+
+// unmarshalJSONObject decodes s as a JSON object, returning the decoded map
+// and true on success. It returns nil, false for the JSON literal `null`,
+// non-object JSON, and invalid JSON.
+func unmarshalJSONObject(s string) (map[string]any, bool) {
 	var m map[string]any
-	if err := json.Unmarshal([]byte(trimmed), &m); err != nil {
-		return false
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return nil, false
 	}
+	// json.Unmarshal("null", &m) succeeds but leaves m nil.
 	if m == nil {
-		return false
+		return nil, false
 	}
-	return len(m) == 0
+	return m, true
 }
 
 // JSONBytesEqual reports whether the JSON in two byte slices is semantically equivalent.
