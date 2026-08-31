@@ -99,64 +99,6 @@ func TestIsJSONObject(t *testing.T) {
 	}
 }
 
-func TestIsEmptyJSONObject(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		value jsontypes.Normalized
-		want  bool
-	}{
-		{
-			name:  "null",
-			value: jsontypes.NewNormalizedNull(),
-			want:  false,
-		},
-		{
-			name:  "unknown",
-			value: jsontypes.NewNormalizedUnknown(),
-			want:  false,
-		},
-		{
-			name:  "empty object",
-			value: jsontypes.NewNormalizedValue("{}"),
-			want:  true,
-		},
-		{
-			name:  "empty object with whitespace",
-			value: jsontypes.NewNormalizedValue("{ }"),
-			want:  true,
-		},
-		{
-			name:  "non-empty object",
-			value: jsontypes.NewNormalizedValue(`{"a":1}`),
-			want:  false,
-		},
-		{
-			name:  "invalid JSON",
-			value: jsontypes.NewNormalizedValue("not-json"),
-			want:  false,
-		},
-		{
-			name:  "JSON null",
-			value: jsontypes.NewNormalizedValue("null"),
-			want:  false,
-		},
-		{
-			name:  "JSON null with whitespace",
-			value: jsontypes.NewNormalizedValue(" null "),
-			want:  false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			require.Equal(t, tt.want, isEmptyJSONObject(tt.value))
-		})
-	}
-}
-
 func TestFromAPIModel_customSettingsHandsOff(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

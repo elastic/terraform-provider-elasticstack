@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/filtertype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -232,9 +233,8 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 	}
 
 	if !plan.CustomSettings.Equal(state.CustomSettings) && !plan.CustomSettings.IsNull() {
-		var customSettings map[string]any
-		if err := json.Unmarshal([]byte(plan.CustomSettings.ValueString()), &customSettings); err != nil {
-			diags.AddError("Failed to parse custom_settings", err.Error())
+		customSettings := typeutils.NormalizedTypeToMap[any](plan.CustomSettings, path.Root("custom_settings"), &diags)
+		if diags.HasError() {
 			return false, diags
 		}
 		// JSON literal "null" unmarshals to a nil map. That is not a wipe ("{}")

@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/putfilter"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -1159,17 +1160,10 @@ func testAccCheckMLJobCustomSettingsCleared(jobID string) resource.TestCheckFunc
 		if err != nil {
 			return err
 		}
-		if len(raw) == 0 {
+		if len(raw) == 0 || typeutils.IsEmptyJSONObject(string(raw)) {
 			return nil
 		}
-		var m map[string]any
-		if err := json.Unmarshal(raw, &m); err != nil {
-			return fmt.Errorf("unmarshal custom_settings for %q: %w", jobID, err)
-		}
-		if len(m) != 0 {
-			return fmt.Errorf("expected empty custom_settings on job %q, got %s", jobID, raw)
-		}
-		return nil
+		return fmt.Errorf("expected empty custom_settings on job %q, got %s", jobID, raw)
 	}
 }
 
@@ -1181,23 +1175,12 @@ func assertMLJobCustomSettingsEquals(jobID, wantJSON string) error {
 	if len(raw) == 0 {
 		return fmt.Errorf("expected custom_settings %s on job %q, got absent", wantJSON, jobID)
 	}
-	var got, want map[string]any
-	if err := json.Unmarshal(raw, &got); err != nil {
-		return fmt.Errorf("unmarshal custom_settings for %q: %w", jobID, err)
-	}
-	if err := json.Unmarshal([]byte(wantJSON), &want); err != nil {
-		return fmt.Errorf("unmarshal expected custom_settings: %w", err)
-	}
-	gotJSON, err := json.Marshal(got)
+	eq, err := typeutils.JSONBytesEqual(raw, []byte(wantJSON))
 	if err != nil {
-		return err
+		return fmt.Errorf("compare custom_settings for %q: %w", jobID, err)
 	}
-	wantCompact, err := json.Marshal(want)
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(gotJSON, wantCompact) {
-		return fmt.Errorf("custom_settings on job %q: got %s, want %s", jobID, gotJSON, wantCompact)
+	if !eq {
+		return fmt.Errorf("custom_settings on job %q: got %s, want %s", jobID, raw, wantJSON)
 	}
 	return nil
 }

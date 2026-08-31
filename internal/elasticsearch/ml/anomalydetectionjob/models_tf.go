@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -402,28 +403,19 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.BackgroundPersistInterval = typeutils.NonEmptyStringishValue(apiModel.BackgroundPersistInterval)
 
 	priorCustomSettings := plan.CustomSettings
-
 	switch {
-	case priorCustomSettings.IsNull():
-		plan.CustomSettings = jsontypes.NewNormalizedNull()
-	case isEmptyJSONObject(priorCustomSettings):
+	case typeutils.IsKnown(priorCustomSettings) && typeutils.IsEmptyJSONObject(priorCustomSettings.ValueString()):
 		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
 	case !isJSONObject(priorCustomSettings):
-		// Non-object priors (JSON literal "null", arrays, scalars, invalid JSON)
-		// stay as-is so read matches the write-path hands-off omit for
-		// jsonencode(null) and does not copy API values into state.
-		plan.CustomSettings = priorCustomSettings
+		// TF-null, JSON "null", arrays, scalars, and invalid JSON stay as-is.
 	case apiModel.CustomSettings != nil:
-		customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
-		if err != nil {
-			diags.AddError("Failed to marshal custom_settings", err.Error())
+		plan.CustomSettings = typeutils.MarshalToNormalized(apiModel.CustomSettings, path.Root("custom_settings"), &diags)
+		if diags.HasError() {
 			return diags
 		}
-		plan.CustomSettings = jsontypes.NewNormalizedValue(string(customSettingsJSON))
 	default:
-		// Owned (non-null, non-"{}") in prior state/plan, but the API returned nothing
-		// (e.g. Elasticsearch dropped the object entirely) — treat as cleared to "{}"
-		// rather than resurrecting the prior owned value, so state matches the server.
+		// Owned object, but the API omitted the bag — persist "{}" rather than
+		// resurrecting the prior value.
 		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
 	}
 
@@ -458,7 +450,7 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 // Null, unknown, the JSON literal "null", arrays, numbers, strings, and
 // invalid JSON return false.
 func isJSONObject(v jsontypes.Normalized) bool {
-	if v.IsNull() || v.IsUnknown() {
+	if !typeutils.IsKnown(v) {
 		return false
 	}
 	var m map[string]any
@@ -467,21 +459,6 @@ func isJSONObject(v jsontypes.Normalized) bool {
 	}
 	// json.Unmarshal("null", &map) succeeds with a nil map.
 	return m != nil
-}
-
-// isEmptyJSONObject reports whether v is a JSON object with zero keys.
-// Formatting differences ("{}" vs "{ }") are treated as equivalent. Null,
-// unknown, and invalid JSON return false.
-func isEmptyJSONObject(v jsontypes.Normalized) bool {
-	if v.IsNull() || v.IsUnknown() {
-		return false
-	}
-	var m map[string]any
-	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
-		return false
-	}
-	// json.Unmarshal("null", &map) succeeds with a nil map; len(nil) == 0.
-	return m != nil && len(m) == 0
 }
 
 // Helper functions for schema attribute types
