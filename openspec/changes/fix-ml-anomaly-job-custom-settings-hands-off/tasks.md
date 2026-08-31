@@ -1,11 +1,11 @@
 ## 1. Read path — stop mirroring the API value unconditionally
 
-- [ ] 1.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_tf.go`, in
+- [x] 1.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_tf.go`, in
   `(plan *TFModel) fromAPIModel`, capture `plan.CustomSettings` into a local
   `priorCustomSettings` before it is overwritten (it currently holds the plan value on
   the write/read-after-write path, or the prior state value on the plain read/refresh
   path — see design.md "Read: `fromAPIModel`").
-- [ ] 1.2 Replace the current unconditional block:
+- [x] 1.2 Replace the current unconditional block:
   ```go
   if apiModel.CustomSettings != nil {
       customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
@@ -19,7 +19,7 @@
   (`"{}"`, semantically) stays `"{}"` regardless of the API response; any other prior
   object is refreshed from the live API value (or forced to `"{}"` if the API returns
   nothing for an owned bag).
-- [ ] 1.3 Add a small helper (e.g. `isEmptyJSONObject(v jsontypes.Normalized) bool`) that
+- [x] 1.3 Add a small helper (e.g. `isEmptyJSONObject(v jsontypes.Normalized) bool`) that
   decodes the value's JSON into `map[string]any` and reports `len(...) == 0`, rather than
   string-comparing against the literal `"{}"` (formatting can vary while remaining
   semantically equal). Unit-test it directly in `models_api_test.go` or a new

@@ -401,15 +401,25 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.AllowLazyOpen = types.BoolPointerValue(apiModel.AllowLazyOpen)
 	plan.BackgroundPersistInterval = typeutils.NonEmptyStringishValue(apiModel.BackgroundPersistInterval)
 
-	if apiModel.CustomSettings != nil {
+	priorCustomSettings := plan.CustomSettings
+
+	switch {
+	case priorCustomSettings.IsNull():
+		plan.CustomSettings = jsontypes.NewNormalizedNull()
+	case isEmptyJSONObject(priorCustomSettings):
+		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
+	case apiModel.CustomSettings != nil:
 		customSettingsJSON, err := json.Marshal(apiModel.CustomSettings)
 		if err != nil {
 			diags.AddError("Failed to marshal custom_settings", err.Error())
 			return diags
 		}
 		plan.CustomSettings = jsontypes.NewNormalizedValue(string(customSettingsJSON))
-	} else {
-		plan.CustomSettings = jsontypes.NewNormalizedNull()
+	default:
+		// Owned (non-null, non-"{}") in prior state/plan, but the API returned nothing
+		// (e.g. Elasticsearch dropped the object entirely) — treat as cleared to "{}"
+		// rather than resurrecting the prior owned value, so state matches the server.
+		plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
 	}
 
 	plan.DailyModelSnapshotRetentionAfterDays = types.Int64PointerValue(apiModel.DailyModelSnapshotRetentionAfterDays)
@@ -437,6 +447,20 @@ func (plan *TFModel) fromAPIModel(ctx context.Context, apiModel *APIModel) diag.
 	plan.ModelPlotConfig = plan.convertModelPlotConfigFromAPI(ctx, apiModel.ModelPlotConfig, &diags)
 
 	return diags
+}
+
+// isEmptyJSONObject reports whether v is a JSON object with zero keys.
+// Formatting differences ("{}" vs "{ }") are treated as equivalent. Null,
+// unknown, and invalid JSON return false.
+func isEmptyJSONObject(v jsontypes.Normalized) bool {
+	if v.IsNull() || v.IsUnknown() {
+		return false
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(v.ValueString()), &m); err != nil {
+		return false
+	}
+	return len(m) == 0
 }
 
 // Helper functions for schema attribute types
