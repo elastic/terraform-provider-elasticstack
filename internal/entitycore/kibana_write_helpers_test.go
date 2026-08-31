@@ -162,12 +162,13 @@ func TestSimpleKibanaCreate(t *testing.T) {
 }
 
 func TestSimpleKibanaUpdate(t *testing.T) {
-	t.Run("happy path forwards spaceID and writeID to apiUpdate then populate", func(t *testing.T) {
-		var gotSpaceID, gotWriteID string
+	t.Run("happy path forwards writeID to toBody and spaceID/writeID to apiUpdate then populate", func(t *testing.T) {
+		var gotToBodyWriteID, gotSpaceID, gotWriteID string
 		resp := "updated-body"
 
 		writeFn := SimpleKibanaUpdate[simpleWriteTestModel, string, string](
-			func(plan simpleWriteTestModel, _ context.Context) (string, diag.Diagnostics) {
+			func(plan simpleWriteTestModel, _ context.Context, writeID string) (string, diag.Diagnostics) {
+				gotToBodyWriteID = writeID
 				return "body-for-" + plan.ID, nil
 			},
 			func(_ context.Context, _ *kibanaoapi.Client, spaceID, writeID string, _ string) (*string, diag.Diagnostics) {
@@ -185,6 +186,7 @@ func TestSimpleKibanaUpdate(t *testing.T) {
 		})
 
 		require.False(t, diags.HasError())
+		assert.Equal(t, "abc-123", gotToBodyWriteID)
 		assert.Equal(t, "default", gotSpaceID)
 		assert.Equal(t, "abc-123", gotWriteID)
 		assert.Equal(t, "default", result.Model.SpaceID)
@@ -194,7 +196,7 @@ func TestSimpleKibanaUpdate(t *testing.T) {
 		populateCalled := false
 
 		writeFn := SimpleKibanaUpdate[simpleWriteTestModel, string, string](
-			func(_ simpleWriteTestModel, _ context.Context) (string, diag.Diagnostics) {
+			func(_ simpleWriteTestModel, _ context.Context, _ string) (string, diag.Diagnostics) {
 				return "body", nil
 			},
 			func(_ context.Context, _ *kibanaoapi.Client, _, _ string, _ string) (*string, diag.Diagnostics) {

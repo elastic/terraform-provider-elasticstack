@@ -21,39 +21,29 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// updateExceptionList wraps SimpleKibanaUpdate in a small function because
-// ExceptionListModel.toUpdateRequest needs req.WriteID, which
-// SimpleKibanaUpdate's toBody callback does not receive directly.
-func updateExceptionList(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionListModel],
-) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
-	return entitycore.SimpleKibanaUpdate[ExceptionListModel, kbapi.UpdateExceptionListJSONRequestBody, kbapi.SecurityExceptionsAPIExceptionList](
-		func(plan ExceptionListModel, ctx context.Context) (kbapi.UpdateExceptionListJSONRequestBody, diag.Diagnostics) {
-			body, diags := plan.toUpdateRequest(ctx, req.WriteID)
-			if diags.HasError() {
-				return kbapi.UpdateExceptionListJSONRequestBody{}, diags
-			}
-			return *body, diags
-		},
-		// UpdateExceptionList takes the resource ID via the request body (see
-		// ExceptionListModel.toUpdateRequest), not as a separate parameter, so
-		// the writeID argument required by SimpleKibanaUpdate's apiUpdate shape
-		// is unused here.
-		func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-			return kibanaoapi.UpdateExceptionList(ctx, client, spaceID, body)
-		},
-		(*ExceptionListModel).populateUpdated,
-	)(ctx, client, req)
-}
+var updateExceptionList = entitycore.SimpleKibanaUpdate[ExceptionListModel, kbapi.UpdateExceptionListJSONRequestBody, kbapi.SecurityExceptionsAPIExceptionList](
+	func(plan ExceptionListModel, ctx context.Context, writeID string) (kbapi.UpdateExceptionListJSONRequestBody, diag.Diagnostics) {
+		body, diags := plan.toUpdateRequest(ctx, writeID)
+		if diags.HasError() {
+			return kbapi.UpdateExceptionListJSONRequestBody{}, diags
+		}
+		return *body, diags
+	},
+	// UpdateExceptionList takes the resource ID via the request body (see
+	// ExceptionListModel.toUpdateRequest), not as a separate parameter, so
+	// the writeID argument required by SimpleKibanaUpdate's apiUpdate shape
+	// is unused here.
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
+		return kibanaoapi.UpdateExceptionList(ctx, client, spaceID, body)
+	},
+	(*ExceptionListModel).populateUpdated,
+)
 
 // populateUpdated captures the namespace type reported by the update
 // response; NamespaceType may be defaulted by the API when the request omits

@@ -27,7 +27,7 @@ import (
 )
 
 var updateSecurityList = entitycore.SimpleKibanaUpdate[Model, kbapi.UpdateListJSONRequestBody, kbapi.SecurityListsAPIList](
-	func(plan Model, _ context.Context) (kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
+	func(plan Model, _ context.Context, _ string) (kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
 		req, diags := plan.toUpdateRequest()
 		if diags.HasError() {
 			return kbapi.UpdateListJSONRequestBody{}, diags

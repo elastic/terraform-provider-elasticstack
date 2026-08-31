@@ -114,10 +114,11 @@ func SimpleKibanaCreate[T KibanaResourceModel, Body any, R any](
 
 // SimpleKibanaUpdate is [SimpleKibanaCreate]'s counterpart for Update: it
 // calls apiUpdate with req.SpaceID and req.WriteID instead of apiCreate with
-// req.SpaceID alone. See [SimpleKibanaCreate] for the shared shape and usage
-// pattern.
+// req.SpaceID alone, and it passes req.WriteID through to toBody as well,
+// since update bodies commonly need to embed the resource ID being updated.
+// See [SimpleKibanaCreate] for the shared shape and usage pattern.
 func SimpleKibanaUpdate[T KibanaResourceModel, Body any, R any](
-	toBody func(plan T, ctx context.Context) (Body, diag.Diagnostics),
+	toBody func(plan T, ctx context.Context, writeID string) (Body, diag.Diagnostics),
 	apiUpdate func(ctx context.Context, client *kibanaoapi.Client, spaceID, writeID string, body Body) (*R, diag.Diagnostics),
 	populate func(plan *T, ctx context.Context, spaceID string, resp *R) diag.Diagnostics,
 ) KibanaWriteFunc[T] {
@@ -125,7 +126,7 @@ func SimpleKibanaUpdate[T KibanaResourceModel, Body any, R any](
 		plan := req.Plan
 		var diags diag.Diagnostics
 
-		body, d := toBody(plan, ctx)
+		body, d := toBody(plan, ctx, req.WriteID)
 		diags.Append(d...)
 		if diags.HasError() {
 			return KibanaWriteResult[T]{}, diags

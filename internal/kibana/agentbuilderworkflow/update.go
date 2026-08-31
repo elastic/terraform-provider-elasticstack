@@ -28,7 +28,7 @@ import (
 )
 
 var updateWorkflow = entitycore.SimpleKibanaUpdate[workflowModel, kbapi.PutWorkflowsWorkflowIdJSONRequestBody, kibanaoapi.PartialWorkflow](
-	func(plan workflowModel, _ context.Context) (kbapi.PutWorkflowsWorkflowIdJSONRequestBody, diag.Diagnostics) {
+	func(plan workflowModel, _ context.Context, _ string) (kbapi.PutWorkflowsWorkflowIdJSONRequestBody, diag.Diagnostics) {
 		return plan.toAPIUpdateModel(), nil
 	},
 	kibanaoapi.UpdateWorkflow,

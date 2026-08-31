@@ -36,7 +36,7 @@ func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 	}
 
 	return entitycore.SimpleKibanaUpdate[agentModel, kbapi.PutAgentBuilderAgentsIdJSONRequestBody, models.Agent](
-		func(plan agentModel, ctx context.Context) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
+		func(plan agentModel, ctx context.Context, _ string) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
 			return plan.toAPIUpdateModel(ctx, supportsSkillIDs)
 		},
 		kibanaoapi.UpdateAgent,
