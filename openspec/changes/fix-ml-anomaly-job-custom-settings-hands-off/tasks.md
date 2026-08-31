@@ -67,7 +67,7 @@
   the next `terraform plan` shows a diff and the next `terraform apply` replaces the bag
   with exactly the configured object (extras dropped) — confirming the "any other
   object" row of the contract still holds and did not regress.
-- [ ] 4.4 Confirm the existing `TestAccResourceAnomalyDetectionJobComprehensive` and
+- [x] 4.4 Confirm the existing `TestAccResourceAnomalyDetectionJobComprehensive` and
   `TestAccResourceAnomalyDetectionJobNullAndEmpty` tests (which already cover
   `custom_settings` set-and-updated and `custom_settings = null` respectively) still
   pass unmodified — this change must not alter behavior for configs that already set the
@@ -75,19 +75,20 @@
 
 ## 5. Build and verify
 
-- [ ] 5.1 Run `make build` and confirm the provider compiles without errors.
-- [ ] 5.2 Run the targeted acceptance tests for the anomaly detection job resource
+- [x] 5.1 Run `make build` and confirm the provider compiles without errors.
+- [x] 5.2 Run the targeted acceptance tests for the anomaly detection job resource
   (requires a running Elasticsearch stack; see
   [`dev-docs/high-level/testing.md`](../../../dev-docs/high-level/testing.md)).
-- [ ] 5.3 Run `go test ./internal/elasticsearch/ml/anomalydetectionjob/...` (unit tests
+- [x] 5.3 Run `go test ./internal/elasticsearch/ml/anomalydetectionjob/...` (unit tests
   only) to confirm `models_api_test.go` / any new table tests pass.
 
 ## 6. OpenSpec
 
-- [ ] 6.1 Keep the delta spec
+- [x] 6.1 Keep the delta spec
   `openspec/changes/fix-ml-anomaly-job-custom-settings-hands-off/specs/elasticsearch-ml-anomaly-detection-job/spec.md`
   aligned with the implementation as it lands.
 - [ ] 6.2 After merge: sync the delta into
   `openspec/specs/elasticsearch-ml-anomaly-detection-job/spec.md` (updating the existing
   `custom_settings`-related requirement text in REQ-025-026/REQ-027-031 rather than
   duplicating it) and run `make check-openspec`.
+  (Deferred — post-merge only.)
