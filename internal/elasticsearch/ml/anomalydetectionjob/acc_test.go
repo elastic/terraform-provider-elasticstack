@@ -18,8 +18,10 @@
 package anomalydetectionjob_test
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
@@ -864,6 +866,126 @@ func TestAccResourceAnomalyDetectionJobExplicitConnection(t *testing.T) {
 	})
 }
 
+// TestAccResourceAnomalyDetectionJobCustomSettingsOmitted is the #4729 regression:
+// omitted custom_settings must not pick up Kibana/operator-authored server values
+// and must not fail apply with "Provider produced inconsistent result after apply".
+func TestAccResourceAnomalyDetectionJobCustomSettingsOmitted(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cs-omitted-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+	vars := config.Variables{"job_id": config.StringVariable(jobID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckNoResourceAttr(addr, "custom_settings"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					updateMLJobCustomSettingsOutOfBand(t, jobID, `{"created_by":"advanced-wizard"}`)
+				},
+				ConfigDirectory:    acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:    vars,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckNoResourceAttr(addr, "custom_settings"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomSettingsWipe confirms custom_settings = "{}"
+// is the only wipe: state persists "{}" and the server-side bag is cleared.
+func TestAccResourceAnomalyDetectionJobCustomSettingsWipe(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cs-wipe-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+	vars := config.Variables{"job_id": config.StringVariable(jobID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "custom_settings", `{"department":"ops"}`),
+					testAccCheckMLJobCustomSettingsEquals(jobID, `{"department":"ops"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("wipe"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "custom_settings", "{}"),
+					testAccCheckMLJobCustomSettingsCleared(jobID),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceAnomalyDetectionJobCustomSettingsReownership confirms that when
+// Terraform owns a non-empty custom_settings object, extras added out-of-band
+// show as drift and the next apply replaces the bag with exactly the configured object.
+func TestAccResourceAnomalyDetectionJobCustomSettingsReownership(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cs-reown-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+	vars := config.Variables{"job_id": config.StringVariable(jobID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "custom_settings", `{"department":"ops"}`),
+					testAccCheckMLJobCustomSettingsEquals(jobID, `{"department":"ops"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					updateMLJobCustomSettingsOutOfBand(t, jobID, `{"department":"ops","created_by":"advanced-wizard"}`)
+				},
+				ConfigDirectory:    acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:    vars,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "custom_settings", `{"department":"ops"}`),
+					testAccCheckMLJobCustomSettingsEquals(jobID, `{"department":"ops"}`),
+				),
+			},
+		},
+	})
+}
+
 //go:embed testdata/TestAccResourceAnomalyDetectionJobFrom0_12_2/create/main.tf
 var sdkCreateConfig string
 
@@ -947,6 +1069,87 @@ func setupAccMLFilterOutOfBand(t *testing.T, filterID string) {
 			t.Logf("cleanup: delete ML filter %q: %v", filterID, err)
 		}
 	})
+}
+
+func updateMLJobCustomSettingsOutOfBand(t *testing.T, jobID, customSettingsJSON string) {
+	t.Helper()
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		t.Fatalf("Elasticsearch client: %v", err)
+	}
+	body := fmt.Sprintf(`{"custom_settings":%s}`, customSettingsJSON)
+	_, err = client.GetESClient().Ml.UpdateJob(jobID).Raw(bytes.NewReader([]byte(body))).Do(ctx)
+	if err != nil {
+		t.Fatalf("UpdateJob custom_settings out-of-band for %q: %v", jobID, err)
+	}
+}
+
+func getMLJobCustomSettings(jobID string) (json.RawMessage, error) {
+	ctx := context.Background()
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return nil, fmt.Errorf("Elasticsearch client: %w", err)
+	}
+	res, err := client.GetESClient().Ml.GetJobs().JobId(jobID).AllowNoMatch(true).Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("GetJobs %q: %w", jobID, err)
+	}
+	if len(res.Jobs) == 0 {
+		return nil, fmt.Errorf("GetJobs %q returned no jobs", jobID)
+	}
+	return res.Jobs[0].CustomSettings, nil
+}
+
+func testAccCheckMLJobCustomSettingsCleared(jobID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		raw, err := getMLJobCustomSettings(jobID)
+		if err != nil {
+			return err
+		}
+		if len(raw) == 0 {
+			return nil
+		}
+		var m map[string]any
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return fmt.Errorf("unmarshal custom_settings for %q: %w", jobID, err)
+		}
+		if len(m) != 0 {
+			return fmt.Errorf("expected empty custom_settings on job %q, got %s", jobID, raw)
+		}
+		return nil
+	}
+}
+
+func testAccCheckMLJobCustomSettingsEquals(jobID, wantJSON string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		raw, err := getMLJobCustomSettings(jobID)
+		if err != nil {
+			return err
+		}
+		if len(raw) == 0 {
+			return fmt.Errorf("expected custom_settings %s on job %q, got absent", wantJSON, jobID)
+		}
+		var got, want map[string]any
+		if err := json.Unmarshal(raw, &got); err != nil {
+			return fmt.Errorf("unmarshal custom_settings for %q: %w", jobID, err)
+		}
+		if err := json.Unmarshal([]byte(wantJSON), &want); err != nil {
+			return fmt.Errorf("unmarshal expected custom_settings: %w", err)
+		}
+		gotJSON, err := json.Marshal(got)
+		if err != nil {
+			return err
+		}
+		wantCompact, err := json.Marshal(want)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(gotJSON, wantCompact) {
+			return fmt.Errorf("custom_settings on job %q: got %s, want %s", jobID, gotJSON, wantCompact)
+		}
+		return nil
+	}
 }
 
 func testAccAnomalyDetectionJobESEndpoints() []string {

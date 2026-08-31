@@ -44,7 +44,7 @@
 
 ## 3. Verify `"{}"` semantics against a live Elasticsearch cluster
 
-- [ ] 3.1 Before or alongside the acceptance test in task 4, confirm that
+- [x] 3.1 Before or alongside the acceptance test in task 4, confirm that
   `POST _ml/anomaly_detectors/<job_id>/_update` with body `{"custom_settings":{}}`
   actually clears every existing key in `custom_settings` on the target job (per
   design.md "Open Questions" — the agreed path treats this as likely given Update Job's
@@ -54,15 +54,15 @@
 
 ## 4. Acceptance tests
 
-- [ ] 4.1 Add a test that reproduces the reported bug: create a job with
+- [x] 4.1 Add a test that reproduces the reported bug: create a job with
   `custom_settings` omitted from config, inject a `custom_settings` value directly via
   the Elasticsearch Update Job API outside of Terraform (simulating Kibana), then run
   `terraform plan` and `terraform apply` and assert **no diff** and **no error** (the
   core regression test for this issue).
-- [ ] 4.2 Add a test for the `"{}"` wipe: start from a job with a populated
+- [x] 4.2 Add a test for the `"{}"` wipe: start from a job with a populated
   `custom_settings`, set `custom_settings = "{}"` in config, apply, and assert state
   shows `"{}"` and (per task 3's finding) that the server-side bag is actually cleared.
-- [ ] 4.3 Add a test for re-ownership drift: set `custom_settings` to a real object,
+- [x] 4.3 Add a test for re-ownership drift: set `custom_settings` to a real object,
   apply, then have Elasticsearch/Kibana add an extra key outside Terraform, and assert
   the next `terraform plan` shows a diff and the next `terraform apply` replaces the bag
   with exactly the configured object (extras dropped) — confirming the "any other
