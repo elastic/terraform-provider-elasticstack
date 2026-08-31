@@ -27,16 +27,16 @@
 
 ## 2. Write path — make `"{}"` reach the Update Job API
 
-- [ ] 2.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_api.go`, change
+- [x] 2.1 In `internal/elasticsearch/ml/anomalydetectionjob/models_api.go`, change
   `UpdateAPIModel.CustomSettings` from `map[string]any \`json:"custom_settings,omitempty"\`` to
   `json.RawMessage \`json:"custom_settings,omitempty"\`` (a marshaled `{}` is 2 bytes and
   is not empty for `omitempty` purposes on `json.RawMessage`, unlike an empty map).
-- [ ] 2.2 In `BuildFromPlan`, after unmarshaling `plan.CustomSettings.ValueString()` into
+- [x] 2.2 In `BuildFromPlan`, after unmarshaling `plan.CustomSettings.ValueString()` into
   `customSettings map[string]any`, re-marshal it into `json.RawMessage` before assigning
   to `u.CustomSettings`, per design.md "Write: `BuildFromPlan` / wire encoding". Keep the
   existing `!plan.CustomSettings.Equal(state.CustomSettings) && !plan.CustomSettings.IsNull()`
   guard — it already correctly skips sending when the plan is null.
-- [ ] 2.3 Confirm `APIModel.CustomSettings` (used by `toPutJobRequest` for create) is
+- [x] 2.3 Confirm `APIModel.CustomSettings` (used by `toPutJobRequest` for create) is
   unaffected — it already flows through an explicit `json.Marshal` into
   `req.CustomSettings json.RawMessage` (`models_api.go:297-300`) and already sends `{}`
   correctly for an empty-but-non-nil map. No change needed there; add a regression test

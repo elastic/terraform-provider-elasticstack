@@ -160,7 +160,7 @@ type UpdateAPIModel struct {
 	ModelPlotConfig                      *ModelPlotConfigAPIModel `json:"model_plot_config,omitempty"`
 	AllowLazyOpen                        *bool                    `json:"allow_lazy_open,omitempty"`
 	BackgroundPersistInterval            *string                  `json:"background_persist_interval,omitempty"`
-	CustomSettings                       map[string]any           `json:"custom_settings,omitempty"`
+	CustomSettings                       json.RawMessage          `json:"custom_settings,omitempty"`
 	DailyModelSnapshotRetentionAfterDays *int64                   `json:"daily_model_snapshot_retention_after_days,omitempty"`
 	ModelSnapshotRetentionDays           *int64                   `json:"model_snapshot_retention_days,omitempty"`
 	RenormalizationWindowDays            *int64                   `json:"renormalization_window_days,omitempty"`
@@ -237,7 +237,12 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 			diags.AddError("Failed to parse custom_settings", err.Error())
 			return false, diags
 		}
-		u.CustomSettings = customSettings
+		raw, err := json.Marshal(customSettings)
+		if err != nil {
+			diags.AddError("Failed to encode custom_settings", err.Error())
+			return false, diags
+		}
+		u.CustomSettings = json.RawMessage(raw)
 		hasChanges = true
 	}
 
