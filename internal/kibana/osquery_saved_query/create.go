@@ -20,6 +20,7 @@ package osquerysavedquery
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -32,34 +33,23 @@ func createOsquerySavedQuery(
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[osquerySavedQueryModel],
 ) (entitycore.KibanaWriteResult[osquerySavedQueryModel], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	body, bodyDiags := plan.toAPICreateRequest(ctx)
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	entity, createDiags := kibanaoapi.CreateOsquerySavedQuery(ctx, oapiClient, req.SpaceID, body)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
-	}
-
-	diags.Append(prebuiltGuardDiagnostic(entity.Prebuilt)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromCreateAPI(ctx, entity)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osquerySavedQueryModel]{}, diags
-	}
-
-	plan.SpaceID = types.StringValue(req.SpaceID)
-
-	return entitycore.KibanaWriteResult[osquerySavedQueryModel]{Model: plan}, diags
+	return entitycore.SimpleKibanaCreate[osquerySavedQueryModel, kbapi.OsqueryCreateSavedQueryJSONRequestBody, kibanaoapi.OsquerySavedQueryCreateEntity](
+		func(plan osquerySavedQueryModel, ctx context.Context) (kbapi.OsqueryCreateSavedQueryJSONRequestBody, diag.Diagnostics) {
+			return plan.toAPICreateRequest(ctx)
+		},
+		kibanaoapi.CreateOsquerySavedQuery,
+		func(plan *osquerySavedQueryModel, ctx context.Context, spaceID string, entity *kibanaoapi.OsquerySavedQueryCreateEntity) diag.Diagnostics {
+			var diags diag.Diagnostics
+			diags.Append(prebuiltGuardDiagnostic(entity.Prebuilt)...)
+			if diags.HasError() {
+				return diags
+			}
+			diags.Append(plan.populateFromCreateAPI(ctx, entity)...)
+			if diags.HasError() {
+				return diags
+			}
+			plan.SpaceID = types.StringValue(spaceID)
+			return diags
+		},
+	)(ctx, client, req)
 }

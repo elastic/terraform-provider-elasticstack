@@ -20,6 +20,7 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -28,25 +29,13 @@ import (
 )
 
 func createMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	body, bodyDiags := plan.toAPICreateRequest(ctx)
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	createMaintenanceWindowResponse, createDiags := kibanaoapi.CreateMaintenanceWindow(ctx, oapiClient, req.SpaceID, body)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	plan.ID = types.StringValue(createMaintenanceWindowResponse.JSON200.Id)
-	plan.SpaceID = types.StringValue(req.SpaceID)
-
-	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
+	return entitycore.SimpleKibanaCreate[Model, kbapi.PostMaintenanceWindowJSONRequestBody, kbapi.PostMaintenanceWindowResponse](
+		Model.toAPICreateRequest,
+		kibanaoapi.CreateMaintenanceWindow,
+		func(plan *Model, _ context.Context, spaceID string, resp *kbapi.PostMaintenanceWindowResponse) diag.Diagnostics {
+			plan.ID = types.StringValue(resp.JSON200.Id)
+			plan.SpaceID = types.StringValue(spaceID)
+			return nil
+		},
+	)(ctx, client, req)
 }

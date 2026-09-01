@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -32,40 +33,23 @@ func createAlertingRule(
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[alertingRuleModel],
 ) (entitycore.KibanaWriteResult[alertingRuleModel], diag.Diagnostics) {
-	m := req.Plan
-	var diags diag.Diagnostics
+	return entitycore.SimpleKibanaCreate[alertingRuleModel, models.AlertingRule, models.AlertingRule](
+		alertingRuleModel.toAPIModel,
+		kibanaoapi.CreateAlertingRule,
+		func(plan *alertingRuleModel, ctx context.Context, spaceID string, createdRule *models.AlertingRule) diag.Diagnostics {
+			// Set identity fields so the envelope can locate the resource for
+			// read-after-write. The envelope will re-read full state.
+			compID := clients.CompositeID{
+				ClusterID:  spaceID,
+				ResourceID: createdRule.RuleID,
+			}
+			plan.ID = types.StringValue(compID.String())
+			plan.RuleID = types.StringValue(createdRule.RuleID)
+			plan.SpaceID = types.StringValue(spaceID)
 
-	// Convert to API model
-	rule, d := m.toAPIModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	createdRule, createDiags := kibanaoapi.CreateAlertingRule(ctx, oapiClient, req.SpaceID, rule)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
-	}
-
-	// Set identity fields so the envelope can locate the resource for
-	// read-after-write. The envelope will re-read full state.
-	compID := clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: createdRule.RuleID,
-	}
-	m.ID = types.StringValue(compID.String())
-	m.RuleID = types.StringValue(createdRule.RuleID)
-	m.SpaceID = types.StringValue(req.SpaceID)
-
-	// Record the concrete investigation-guide checksum (file-based content)
-	// before read-after-write, which preserves it since the API returns no checksum.
-	diags.Append(m.applyInvestigationGuideChecksum(ctx)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[alertingRuleModel]{Model: m}, diags
+			// Record the concrete investigation-guide checksum (file-based content)
+			// before read-after-write, which preserves it since the API returns no checksum.
+			return plan.applyInvestigationGuideChecksum(ctx)
+		},
+	)(ctx, client, req)
 }

@@ -20,6 +20,7 @@ package osquerypack
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -31,32 +32,20 @@ func createOsqueryPack(
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[osqueryPackModel],
 ) (entitycore.KibanaWriteResult[osqueryPackModel], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	body, bodyDiags := plan.toCreateRequestBody(ctx)
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	detail, createDiags := kibanaoapi.CreateOsqueryPack(ctx, oapiClient, req.SpaceID, body)
-	diags.Append(createDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
-	}
-
-	if detail == nil || detail.SavedObjectID == "" {
-		diags.AddError(
-			"Invalid create response",
-			"Create succeeded but the response did not include saved_object_id.",
-		)
-		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
-	}
-
-	plan.setCompositeIdentity(req.SpaceID, detail.SavedObjectID)
-
-	return entitycore.KibanaWriteResult[osqueryPackModel]{Model: plan}, diags
+	return entitycore.SimpleKibanaCreate[osqueryPackModel, kbapi.OsqueryCreatePacksJSONRequestBody, kibanaoapi.OsqueryPackDetail](
+		osqueryPackModel.toCreateRequestBody,
+		kibanaoapi.CreateOsqueryPack,
+		func(plan *osqueryPackModel, _ context.Context, spaceID string, detail *kibanaoapi.OsqueryPackDetail) diag.Diagnostics {
+			var diags diag.Diagnostics
+			if detail == nil || detail.SavedObjectID == "" {
+				diags.AddError(
+					"Invalid create response",
+					"Create succeeded but the response did not include saved_object_id.",
+				)
+				return diags
+			}
+			plan.setCompositeIdentity(spaceID, detail.SavedObjectID)
+			return diags
+		},
+	)(ctx, client, req)
 }

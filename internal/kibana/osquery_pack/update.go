@@ -20,6 +20,7 @@ package osquerypack
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -31,24 +32,16 @@ func updateOsqueryPack(
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[osqueryPackModel],
 ) (entitycore.KibanaWriteResult[osqueryPackModel], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	body, bodyDiags := plan.toUpdateRequestBody(ctx)
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	updateDiags := kibanaoapi.UpdateOsqueryPack(ctx, oapiClient, req.SpaceID, req.WriteID, body)
-	diags.Append(updateDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[osqueryPackModel]{}, diags
-	}
-
-	plan.setCompositeIdentity(req.SpaceID, req.WriteID)
-
-	return entitycore.KibanaWriteResult[osqueryPackModel]{Model: plan}, diags
+	return entitycore.SimpleKibanaUpdate[osqueryPackModel, kbapi.OsqueryUpdatePacksJSONRequestBody, struct{}](
+		func(plan osqueryPackModel, ctx context.Context, _ string) (kbapi.OsqueryUpdatePacksJSONRequestBody, diag.Diagnostics) {
+			return plan.toUpdateRequestBody(ctx)
+		},
+		func(ctx context.Context, oapiClient *kibanaoapi.Client, spaceID, writeID string, body kbapi.OsqueryUpdatePacksJSONRequestBody) (*struct{}, diag.Diagnostics) {
+			return nil, kibanaoapi.UpdateOsqueryPack(ctx, oapiClient, spaceID, writeID, body)
+		},
+		func(plan *osqueryPackModel, _ context.Context, spaceID string, _ *struct{}) diag.Diagnostics {
+			plan.setCompositeIdentity(spaceID, req.WriteID)
+			return nil
+		},
+	)(ctx, client, req)
 }

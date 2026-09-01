@@ -20,39 +20,23 @@ package serverhost
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[serverHostModel]) (entitycore.KibanaWriteResult[serverHostModel], diag.Diagnostics) {
-	var diags diag.Diagnostics
-	fleetClient := client.GetFleetClient()
-
-	hostID := req.Plan.HostID.ValueString()
-	body, d := req.Plan.toAPIUpdateModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-	}
-
-	spaceID := req.SpaceID
-	if req.Prior != nil {
-		spaceID = req.Prior.GetSpaceID().ValueString()
-	}
-
-	host, d := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-	}
-
-	d = req.Plan.populateFromAPI(ctx, host)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[serverHostModel]{Model: req.Plan}, diags
+	return entitycore.SimpleFleetUpdate[serverHostModel, kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, kbapi.ServerHost](
+		func(plan serverHostModel, ctx context.Context, _ string) (kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diag.Diagnostics) {
+			return plan.toAPIUpdateModel(ctx)
+		},
+		func(ctx context.Context, client *fleetclient.Client, spaceID, writeID string, body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+			return fleetclient.UpdateFleetServerHost(ctx, client, writeID, spaceID, body)
+		},
+		func(plan *serverHostModel, ctx context.Context, _ string, host *kbapi.ServerHost) diag.Diagnostics {
+			return plan.populateFromAPI(ctx, host)
+		},
+	)(ctx, client, req)
 }

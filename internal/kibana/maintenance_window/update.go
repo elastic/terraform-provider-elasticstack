@@ -20,6 +20,7 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -28,24 +29,17 @@ import (
 )
 
 func updateMaintenanceWindow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	body, bodyDiags := plan.toAPIUpdateRequest(ctx)
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	diags.Append(kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, req.SpaceID, req.WriteID, body)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	plan.ID = types.StringValue(req.WriteID)
-	plan.SpaceID = types.StringValue(req.SpaceID)
-
-	return entitycore.KibanaWriteResult[Model]{Model: plan}, diags
+	return entitycore.SimpleKibanaUpdate[Model, kbapi.PatchMaintenanceWindowIdJSONRequestBody, struct{}](
+		func(plan Model, ctx context.Context, _ string) (kbapi.PatchMaintenanceWindowIdJSONRequestBody, diag.Diagnostics) {
+			return plan.toAPIUpdateRequest(ctx)
+		},
+		func(ctx context.Context, oapiClient *kibanaoapi.Client, spaceID, writeID string, body kbapi.PatchMaintenanceWindowIdJSONRequestBody) (*struct{}, diag.Diagnostics) {
+			return nil, kibanaoapi.UpdateMaintenanceWindow(ctx, oapiClient, spaceID, writeID, body)
+		},
+		func(plan *Model, _ context.Context, spaceID string, _ *struct{}) diag.Diagnostics {
+			plan.ID = types.StringValue(req.WriteID)
+			plan.SpaceID = types.StringValue(spaceID)
+			return nil
+		},
+	)(ctx, client, req)
 }

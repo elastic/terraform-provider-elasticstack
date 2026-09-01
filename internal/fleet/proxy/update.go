@@ -20,6 +20,7 @@ package proxy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -27,27 +28,13 @@ import (
 )
 
 func updateProxy(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[proxyModel]) (entitycore.KibanaWriteResult[proxyModel], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	fleetClient := client.GetFleetClient()
-
-	body, bodyDiags := plan.toAPIUpdateModel()
-	diags.Append(bodyDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
-
-	updated, updateDiags := fleetclient.UpdateProxy(ctx, fleetClient, req.SpaceID, req.WriteID, body)
-	diags.Append(updateDiags...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
-
-	diags.Append(plan.populateFromAPI(req.SpaceID, *updated)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[proxyModel]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[proxyModel]{Model: plan}, diags
+	return entitycore.SimpleFleetUpdate[proxyModel, kbapi.PutFleetProxiesItemidJSONRequestBody, kbapi.FleetProxyItem](
+		func(plan proxyModel, _ context.Context, _ string) (kbapi.PutFleetProxiesItemidJSONRequestBody, diag.Diagnostics) {
+			return plan.toAPIUpdateModel()
+		},
+		fleetclient.UpdateProxy,
+		func(plan *proxyModel, _ context.Context, spaceID string, updated *kbapi.FleetProxyItem) diag.Diagnostics {
+			return plan.populateFromAPI(spaceID, *updated)
+		},
+	)(ctx, client, req)
 }
