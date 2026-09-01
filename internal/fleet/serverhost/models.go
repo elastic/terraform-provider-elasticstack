@@ -63,10 +63,9 @@ func (m *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.Serve
 
 	// Note: SpaceIDs is not returned by the API for server hosts, so we preserve it from existing state.
 	// It's only used to determine which API endpoint to call.
-	// If space_ids is unknown (not provided by user), set to null to satisfy Terraform's requirement.
-	if m.SpaceIDs.IsUnknown() {
-		m.SpaceIDs = types.SetNull(types.StringType)
-	}
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty[string](ctx, nil, m.SpaceIDs)
+	diags.Append(d...)
+	m.SpaceIDs = spaceIDs
 
 	return
 }

@@ -196,18 +196,12 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 		}
 	}
 
-	// Preserve space_ids if it was originally set in the plan/state
-	// The API response may not include space_ids, so we keep the original value
-	originallySetSpaceIDs := typeutils.IsKnown(model.SpaceIDs)
-	if data.SpaceIds != nil {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
-		diags.Append(d...)
-		model.SpaceIDs = spaceIDs
-	} else if !originallySetSpaceIDs {
-		// Only set to null if it wasn't originally set
-		model.SpaceIDs = types.SetNull(types.StringType)
-	}
-	// If originally set but API didn't return it, keep the original value
+	// Preserve space_ids if it was originally set in the plan/state; the API
+	// response may not include space_ids, so we keep the original value.
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
+	diags.Append(d...)
+	model.SpaceIDs = spaceIDs
+
 	// Extract mapped inputs from the union Inputs field (simplified format returns mapped inputs).
 	// The union field may be empty (nil JSON) when inputs are not present in the response.
 	mappedInputs, err := data.Inputs.AsPackagePolicyMappedInputs()

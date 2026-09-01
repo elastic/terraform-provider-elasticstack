@@ -200,15 +200,11 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 
 	}
 
-	if data.SpaceIds != nil && len(*data.SpaceIds) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
-		if d.HasError() {
-			return d
-		}
-		model.SpaceIDs = spaceIDs
-	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
+	if d.HasError() {
+		return d
 	}
+	model.SpaceIDs = spaceIDs
 
 	// Handle required_versions
 	if data.RequiredVersions != nil {
