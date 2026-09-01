@@ -58,39 +58,27 @@ func datatableNoESQLConfigFromAPI(
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	if len(api.Metrics) > 0 {
-		m.Metrics = make([]models.DatatableMetricModel, len(api.Metrics))
-		for i, metric := range api.Metrics {
-			metricBytes, err := json.Marshal(metric)
-			mv, ok := lenscommon.WrapNormalizedJSON(metricBytes, err, "metric", &diags)
-			if !ok {
-				return diags
-			}
-			m.Metrics[i].ConfigJSON = mv
+		metrics, ok := lenscommon.PopulateNormalizedJSONSlice(api.Metrics, datatableMetricConfigOf, "metric", &diags)
+		if !ok {
+			return diags
 		}
+		m.Metrics = metrics
 	}
 
 	if api.Rows != nil && len(*api.Rows) > 0 {
-		m.Rows = make([]models.DatatableRowModel, len(*api.Rows))
-		for i, row := range *api.Rows {
-			rowBytes, err := json.Marshal(row)
-			rv, ok := lenscommon.WrapNormalizedJSON(rowBytes, err, "row", &diags)
-			if !ok {
-				return diags
-			}
-			m.Rows[i].ConfigJSON = rv
+		rows, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Rows, datatableRowConfigOf, "row", &diags)
+		if !ok {
+			return diags
 		}
+		m.Rows = rows
 	}
 
 	if api.SplitMetricsBy != nil && len(*api.SplitMetricsBy) > 0 {
-		m.SplitMetricsBy = make([]models.DatatableSplitByModel, len(*api.SplitMetricsBy))
-		for i, splitBy := range *api.SplitMetricsBy {
-			splitBytes, err := json.Marshal(splitBy)
-			sv, ok := lenscommon.WrapNormalizedJSON(splitBytes, err, "split_metrics_by", &diags)
-			if !ok {
-				return diags
-			}
-			m.SplitMetricsBy[i].ConfigJSON = sv
+		splits, ok := lenscommon.PopulateNormalizedJSONSlice(*api.SplitMetricsBy, datatableSplitByConfigOf, "split_metrics_by", &diags)
+		if !ok {
+			return diags
 		}
+		m.SplitMetricsBy = splits
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
@@ -98,6 +86,18 @@ func datatableNoESQLConfigFromAPI(
 	}
 
 	return diags
+}
+
+func datatableMetricConfigOf(m *models.DatatableMetricModel) *jsontypes.Normalized {
+	return &m.ConfigJSON
+}
+
+func datatableRowConfigOf(m *models.DatatableRowModel) *jsontypes.Normalized {
+	return &m.ConfigJSON
+}
+
+func datatableSplitByConfigOf(m *models.DatatableSplitByModel) *jsontypes.Normalized {
+	return &m.ConfigJSON
 }
 
 func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
@@ -205,39 +205,27 @@ func datatableESQLConfigFromAPI(
 	}
 
 	if api.Metrics != nil && len(*api.Metrics) > 0 {
-		m.Metrics = make([]models.DatatableMetricModel, len(*api.Metrics))
-		for i, metric := range *api.Metrics {
-			metricBytes, err := json.Marshal(metric)
-			mv, ok := lenscommon.WrapNormalizedJSON(metricBytes, err, "metric", &diags)
-			if !ok {
-				return diags
-			}
-			m.Metrics[i].ConfigJSON = mv
+		metrics, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Metrics, datatableMetricConfigOf, "metric", &diags)
+		if !ok {
+			return diags
 		}
+		m.Metrics = metrics
 	}
 
 	if api.Rows != nil && len(*api.Rows) > 0 {
-		m.Rows = make([]models.DatatableRowModel, len(*api.Rows))
-		for i, row := range *api.Rows {
-			rowBytes, err := json.Marshal(row)
-			rv, ok := lenscommon.WrapNormalizedJSON(rowBytes, err, "row", &diags)
-			if !ok {
-				return diags
-			}
-			m.Rows[i].ConfigJSON = rv
+		rows, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Rows, datatableRowConfigOf, "row", &diags)
+		if !ok {
+			return diags
 		}
+		m.Rows = rows
 	}
 
 	if api.SplitMetricsBy != nil && len(*api.SplitMetricsBy) > 0 {
-		m.SplitMetricsBy = make([]models.DatatableSplitByModel, len(*api.SplitMetricsBy))
-		for i, splitBy := range *api.SplitMetricsBy {
-			splitBytes, err := json.Marshal(splitBy)
-			sv, ok := lenscommon.WrapNormalizedJSON(splitBytes, err, "split_metrics_by", &diags)
-			if !ok {
-				return diags
-			}
-			m.SplitMetricsBy[i].ConfigJSON = sv
+		splits, ok := lenscommon.PopulateNormalizedJSONSlice(*api.SplitMetricsBy, datatableSplitByConfigOf, "split_metrics_by", &diags)
+		if !ok {
+			return diags
 		}
+		m.SplitMetricsBy = splits
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {

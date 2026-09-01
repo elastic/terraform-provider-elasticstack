@@ -98,33 +98,13 @@ func pieChartConfigFromAPINoESQL(
 	lenscommon.FilterSimpleFromAPI(m.Query, apiChart.Query)
 
 	if len(apiChart.Metrics) > 0 {
-		m.Metrics = make([]models.PieMetricModel, len(apiChart.Metrics))
-		for i, metric := range apiChart.Metrics {
-			metricJSON, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(metricJSON),
-				lenscommon.PopulatePieChartMetricDefaults,
-			)
-		}
+		m.Metrics = lenscommon.PopulateJSONWithDefaultsSlice(ctx, apiChart.Metrics, nil,
+			pieMetricConfigOf, lenscommon.PopulatePieChartMetricDefaults, "metric", &diags)
 	}
 
 	if apiChart.GroupBy != nil && len(*apiChart.GroupBy) > 0 {
-		m.GroupBy = make([]models.PieGroupByModel, len(*apiChart.GroupBy))
-		for i, groupBy := range *apiChart.GroupBy {
-			groupByJSON, err := json.Marshal(groupBy)
-			if err != nil {
-				diags.AddError("Failed to marshal group_by", err.Error())
-				continue
-			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(groupByJSON),
-				lenscommon.PopulateLensGroupByDefaults,
-			)
-		}
+		m.GroupBy = lenscommon.PopulateJSONWithDefaultsSlice(ctx, *apiChart.GroupBy, nil,
+			pieGroupByConfigOf, lenscommon.PopulateLensGroupByDefaults, "group_by", &diags)
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(
@@ -135,6 +115,14 @@ func pieChartConfigFromAPINoESQL(
 	}
 
 	return diags
+}
+
+func pieMetricConfigOf(m *models.PieMetricModel) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.Config
+}
+
+func pieGroupByConfigOf(m *models.PieGroupByModel) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.Config
 }
 
 func pieChartConfigFromAPIESQL(
@@ -171,33 +159,13 @@ func pieChartConfigFromAPIESQL(
 	m.Query = nil
 
 	if len(apiChart.Metrics) > 0 {
-		m.Metrics = make([]models.PieMetricModel, len(apiChart.Metrics))
-		for i, metric := range apiChart.Metrics {
-			metricJSON, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(metricJSON),
-				lenscommon.PopulatePieChartMetricDefaults,
-			)
-		}
+		m.Metrics = lenscommon.PopulateJSONWithDefaultsSlice(ctx, apiChart.Metrics, nil,
+			pieMetricConfigOf, lenscommon.PopulatePieChartMetricDefaults, "metric", &diags)
 	}
 
 	if apiChart.GroupBy != nil && len(*apiChart.GroupBy) > 0 {
-		m.GroupBy = make([]models.PieGroupByModel, len(*apiChart.GroupBy))
-		for i, groupBy := range *apiChart.GroupBy {
-			groupByJSON, err := json.Marshal(groupBy)
-			if err != nil {
-				diags.AddError("Failed to marshal group_by", err.Error())
-				continue
-			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(groupByJSON),
-				lenscommon.PopulateLensGroupByDefaults,
-			)
-		}
+		m.GroupBy = lenscommon.PopulateJSONWithDefaultsSlice(ctx, *apiChart.GroupBy, nil,
+			pieGroupByConfigOf, lenscommon.PopulateLensGroupByDefaults, "group_by", &diags)
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(
