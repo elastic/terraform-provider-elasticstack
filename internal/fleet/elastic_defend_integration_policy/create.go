@@ -23,6 +23,7 @@ import (
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -79,13 +80,9 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		planModel.ID = types.StringValue(bootstrapID)
 	}
 	// Normalize space_ids from bootstrap response to avoid unknown state values
-	if bootstrapPolicy.SpaceIds != nil && len(*bootstrapPolicy.SpaceIds) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *bootstrapPolicy.SpaceIds)
-		resp.Diagnostics.Append(d...)
-		planModel.SpaceIDs = spaceIDs
-	} else if planModel.SpaceIDs.IsNull() || planModel.SpaceIDs.IsUnknown() {
-		planModel.SpaceIDs = types.SetNull(types.StringType)
-	}
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, bootstrapPolicy.SpaceIds, planModel.SpaceIDs)
+	resp.Diagnostics.Append(d...)
+	planModel.SpaceIDs = spaceIDs
 	resp.Diagnostics.Append(resp.State.Set(ctx, &planModel)...)
 	resp.Diagnostics.Append(savePrivateState(ctx, resp.Private, ps)...)
 	if resp.Diagnostics.HasError() {
