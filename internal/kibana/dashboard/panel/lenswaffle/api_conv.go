@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -115,43 +114,13 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	}
 
 	if len(api.Metrics) > 0 {
-		priorMetrics := m.Metrics
-		m.Metrics = make([]models.WaffleDSLMetric, len(api.Metrics))
-		for i, metric := range api.Metrics {
-			b, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			cfg := customtypes.NewJSONWithDefaultsValue(
-				string(b),
-				lenscommon.PopulatePieChartMetricDefaults,
-			)
-			if i < len(priorMetrics) {
-				cfg = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, priorMetrics[i].Config, cfg, &diags)
-			}
-			m.Metrics[i].Config = cfg
-		}
+		m.Metrics = lenscommon.PopulateJSONWithDefaultsSlice(ctx, api.Metrics, m.Metrics,
+			waffleMetricConfigOf, lenscommon.PopulatePieChartMetricDefaults, "metric", &diags)
 	}
 
 	if api.GroupBy != nil && len(*api.GroupBy) > 0 {
-		priorGroupBy := m.GroupBy
-		m.GroupBy = make([]models.WaffleDSLGroupBy, len(*api.GroupBy))
-		for i, gb := range *api.GroupBy {
-			b, err := json.Marshal(gb)
-			if err != nil {
-				diags.AddError("Failed to marshal group_by", err.Error())
-				continue
-			}
-			cfg := customtypes.NewJSONWithDefaultsValue(
-				string(b),
-				lenscommon.PopulateLensGroupByDefaults,
-			)
-			if i < len(priorGroupBy) {
-				cfg = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, priorGroupBy[i].Config, cfg, &diags)
-			}
-			m.GroupBy[i].Config = cfg
-		}
+		m.GroupBy = lenscommon.PopulateJSONWithDefaultsSlice(ctx, *api.GroupBy, m.GroupBy,
+			waffleGroupByConfigOf, lenscommon.PopulateLensGroupByDefaults, "group_by", &diags)
 	}
 
 	m.EsqlMetrics = nil
@@ -162,6 +131,14 @@ func waffleConfigFromAPINoESQL(ctx context.Context, m *models.WaffleConfigModel,
 	}
 
 	return diags
+}
+
+func waffleMetricConfigOf(m *models.WaffleDSLMetric) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.Config
+}
+
+func waffleGroupByConfigOf(m *models.WaffleDSLGroupBy) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.Config
 }
 
 func waffleConfigFromAPIESQL(ctx context.Context, m *models.WaffleConfigModel, prior *models.WaffleConfigModel, api kbapi.KibanaHTTPAPIsWaffleESQLByValuePanel) diag.Diagnostics {
