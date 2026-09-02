@@ -18,9 +18,6 @@
 package trainedmodeldeployment
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,6 +31,7 @@ var (
 
 type trainedModelDeploymentResource struct {
 	*entitycore.ElasticsearchResource[TrainedModelDeploymentData]
+	*entitycore.CompositeIDImporter
 }
 
 func newTrainedModelDeploymentResource() *trainedModelDeploymentResource {
@@ -45,23 +43,10 @@ func newTrainedModelDeploymentResource() *trainedModelDeploymentResource {
 			Create: createTrainedModelDeployment,
 			Update: updateTrainedModelDeployment,
 		}),
+		CompositeIDImporter: entitycore.NewCompositeIDImporter(path.Root("id"), path.Root("deployment_id"), path.Root("model_id")),
 	}
 }
 
 func NewTrainedModelDeploymentResource() resource.Resource {
 	return newTrainedModelDeploymentResource()
-}
-
-func (r *trainedModelDeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	deploymentID := compID.ResourceID
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("deployment_id"), deploymentID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("model_id"), deploymentID)...)
 }
