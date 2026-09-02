@@ -404,7 +404,7 @@ func TestAccResourceSecurityRoleAllowRestrictedIndicesAppend(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("append"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"role_name": config.StringVariable(roleName),
 					"index_names": config.ListVariable(
@@ -452,7 +452,7 @@ func TestAccResourceSecurityRoleRemoteAllowRestrictedIndicesAppend(t *testing.T)
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("append"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"role_name": config.StringVariable(roleName),
 					"index_names": config.ListVariable(

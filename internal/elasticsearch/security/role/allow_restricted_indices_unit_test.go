@@ -36,56 +36,37 @@ const (
 	mockRoleName    = "tf-test-allow-restricted-indices"
 )
 
+const (
+	oneIndexPermission = `[{
+      names      = ["logs-*"]
+      privileges = ["read"]
+    }]`
+	twoIndexPermissions = `[{
+      names      = ["logs-*"]
+      privileges = ["read"]
+    },
+    {
+      names      = ["metrics-*"]
+      privileges = ["read"]
+    }]`
+)
+
 // TestUnitResourceSecurityRoleAllowRestrictedIndicesOmittedOnAppend reproduces
 // GitHub issue #4759: appending a new indices Set element that omits
 // allow_restricted_indices during Update. The mock Elasticsearch normalizes an
 // omitted field to false, matching Put Role API behavior.
 func TestUnitResourceSecurityRoleAllowRestrictedIndicesOmittedOnAppend(t *testing.T) {
-	srv := newMockSecurityRoleServer(t)
-	t.Setenv("ELASTICSEARCH_ENDPOINTS", srv.URL)
-
-	resourceName := "elasticstack_elasticsearch_security_role.test"
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV6ProviderFactories: acctest.Providers,
-		Steps: []resource.TestStep{
-			{
-				Config: mockRoleAllowRestrictedIndicesConfig(srv.URL, `[{
-      names      = ["logs-*"]
-      privileges = ["read"]
-    }]`),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", mockRoleName),
-					resource.TestCheckResourceAttr(resourceName, "indices.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "indices.0.allow_restricted_indices", "false"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "indices.*.names.*", "logs-*"),
-				),
-			},
-			{
-				Config: mockRoleAllowRestrictedIndicesConfig(srv.URL, `[{
-      names      = ["logs-*"]
-      privileges = ["read"]
-    },
-    {
-      names      = ["metrics-*"]
-      privileges = ["read"]
-    }]`),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", mockRoleName),
-					resource.TestCheckResourceAttr(resourceName, "indices.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "indices.0.allow_restricted_indices", "false"),
-					resource.TestCheckResourceAttr(resourceName, "indices.1.allow_restricted_indices", "false"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "indices.*.names.*", "logs-*"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "indices.*.names.*", "metrics-*"),
-				),
-			},
-		},
-	})
+	runOmittedAllowRestrictedIndicesAppendUnitTest(t, "indices", "")
 }
 
-// TestUnitResourceSecurityRoleRemoteAllowRestrictedIndicesOmittedOnAppend is
-// the remote_indices sibling of the indices mock UnitTest: append a new
-// remote_indices Set element that omits allow_restricted_indices during Update.
 func TestUnitResourceSecurityRoleRemoteAllowRestrictedIndicesOmittedOnAppend(t *testing.T) {
+	runOmittedAllowRestrictedIndicesAppendUnitTest(t, "remote_indices", `      clusters   = ["test-cluster"]
+`)
+}
+
+func runOmittedAllowRestrictedIndicesAppendUnitTest(t *testing.T, block, extraAttrs string) {
+	t.Helper()
+
 	srv := newMockSecurityRoleServer(t)
 	t.Setenv("ELASTICSEARCH_ENDPOINTS", srv.URL)
 
@@ -94,41 +75,30 @@ func TestUnitResourceSecurityRoleRemoteAllowRestrictedIndicesOmittedOnAppend(t *
 		ProtoV6ProviderFactories: acctest.Providers,
 		Steps: []resource.TestStep{
 			{
-				Config: mockRoleRemoteAllowRestrictedIndicesConfig(srv.URL, `[{
-      names      = ["logs-*"]
-      privileges = ["read"]
-    }]`),
+				Config: mockRoleDynamicBlockConfig(srv.URL, block, extraAttrs, oneIndexPermission),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", mockRoleName),
-					resource.TestCheckResourceAttr(resourceName, "remote_indices.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "remote_indices.0.allow_restricted_indices", "false"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.names.*", "logs-*"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.clusters.*", "test-cluster"),
+					resource.TestCheckResourceAttr(resourceName, block+".#", "1"),
+					resource.TestCheckResourceAttr(resourceName, block+".0.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr(resourceName, block+".*.names.*", "logs-*"),
 				),
 			},
 			{
-				Config: mockRoleRemoteAllowRestrictedIndicesConfig(srv.URL, `[{
-      names      = ["logs-*"]
-      privileges = ["read"]
-    },
-    {
-      names      = ["metrics-*"]
-      privileges = ["read"]
-    }]`),
+				Config: mockRoleDynamicBlockConfig(srv.URL, block, extraAttrs, twoIndexPermissions),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", mockRoleName),
-					resource.TestCheckResourceAttr(resourceName, "remote_indices.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "remote_indices.0.allow_restricted_indices", "false"),
-					resource.TestCheckResourceAttr(resourceName, "remote_indices.1.allow_restricted_indices", "false"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.names.*", "logs-*"),
-					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.names.*", "metrics-*"),
+					resource.TestCheckResourceAttr(resourceName, block+".#", "2"),
+					resource.TestCheckResourceAttr(resourceName, block+".0.allow_restricted_indices", "false"),
+					resource.TestCheckResourceAttr(resourceName, block+".1.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr(resourceName, block+".*.names.*", "logs-*"),
+					resource.TestCheckTypeSetElemAttr(resourceName, block+".*.names.*", "metrics-*"),
 				),
 			},
 		},
 	})
 }
 
-func mockRoleAllowRestrictedIndicesConfig(endpoint, indexPermissions string) string {
+func mockRoleDynamicBlockConfig(endpoint, block, extraAttrs, indexPermissions string) string {
 	return fmt.Sprintf(`
 provider "elasticstack" {
   elasticsearch {
@@ -145,44 +115,15 @@ locals {
 resource "elasticstack_elasticsearch_security_role" "test" {
   name = %q
 
-  dynamic "indices" {
+  dynamic %q {
     for_each = local.index_permissions
     content {
-      names      = indices.value.names
-      privileges = indices.value.privileges
+%s      names      = %s.value.names
+      privileges = %s.value.privileges
     }
   }
 }
-`, endpoint, indexPermissions, mockRoleName)
-}
-
-func mockRoleRemoteAllowRestrictedIndicesConfig(endpoint, indexPermissions string) string {
-	return fmt.Sprintf(`
-provider "elasticstack" {
-  elasticsearch {
-    endpoints = ["%s"]
-    username  = "elastic"
-    password  = "changeme"
-  }
-}
-
-locals {
-  index_permissions = %s
-}
-
-resource "elasticstack_elasticsearch_security_role" "test" {
-  name = %q
-
-  dynamic "remote_indices" {
-    for_each = local.index_permissions
-    content {
-      clusters   = ["test-cluster"]
-      names      = remote_indices.value.names
-      privileges = remote_indices.value.privileges
-    }
-  }
-}
-`, endpoint, indexPermissions, mockRoleName)
+`, endpoint, indexPermissions, mockRoleName, block, extraAttrs, block, block)
 }
 
 // newMockSecurityRoleServer persists Put Role bodies and echoes omitted
