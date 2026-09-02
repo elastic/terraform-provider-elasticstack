@@ -21,6 +21,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -34,13 +35,7 @@ func getSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Manages Machine Learning trained model aliases. A trained model alias is a logical name used to reference a single trained model. " +
 			"See the [ML Trained Model Alias API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/put-trained-models-aliases.html) for more details.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource.",
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": entitycore.IDAttribute("Internal identifier of the resource."),
 			"model_alias": schema.StringAttribute{
 				MarkdownDescription: "The alias to create or update. This value cannot end in numbers.",
 				Required:            true,
