@@ -380,6 +380,99 @@ func TestAccResourceSecurityRoleDetectsOutOfBandDrift(t *testing.T) {
 	})
 }
 
+func TestAccResourceSecurityRoleAllowRestrictedIndicesAppend(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_security_role.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"role_name":   config.StringVariable(roleName),
+					"index_names": config.ListVariable(config.StringVariable("logs-*")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", roleName),
+					resource.TestCheckResourceAttr(resourceName, "indices.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "indices.0.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "indices.*.names.*", "logs-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("append"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+					"index_names": config.ListVariable(
+						config.StringVariable("logs-*"),
+						config.StringVariable("metrics-*"),
+					),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", roleName),
+					resource.TestCheckResourceAttr(resourceName, "indices.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "indices.0.allow_restricted_indices", "false"),
+					resource.TestCheckResourceAttr(resourceName, "indices.1.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "indices.*.names.*", "logs-*"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "indices.*.names.*", "metrics-*"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityRoleRemoteAllowRestrictedIndicesAppend(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_security_role.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"role_name":   config.StringVariable(roleName),
+					"index_names": config.ListVariable(config.StringVariable("logs-*")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", roleName),
+					resource.TestCheckResourceAttr(resourceName, "remote_indices.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "remote_indices.0.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.names.*", "logs-*"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.clusters.*", "test-cluster"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(role.MinSupportedRemoteIndicesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("append"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+					"index_names": config.ListVariable(
+						config.StringVariable("logs-*"),
+						config.StringVariable("metrics-*"),
+					),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", roleName),
+					resource.TestCheckResourceAttr(resourceName, "remote_indices.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "remote_indices.0.allow_restricted_indices", "false"),
+					resource.TestCheckResourceAttr(resourceName, "remote_indices.1.allow_restricted_indices", "false"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.names.*", "logs-*"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "remote_indices.*.names.*", "metrics-*"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceSecurityRoleApplicationsUpdate(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	resourceName := "elasticstack_elasticsearch_security_role.test"
