@@ -25,7 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -127,9 +127,7 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: allowRestrictedIndicesDescription,
 							Optional:            true,
 							Computed:            true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
-							},
+							Default:             booldefault.StaticBool(false),
 						},
 					},
 				},
@@ -192,9 +190,7 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: allowRestrictedIndicesDescription,
 							Optional:            true,
 							Computed:            true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
-							},
+							Default:             booldefault.StaticBool(false),
 						},
 					},
 				},

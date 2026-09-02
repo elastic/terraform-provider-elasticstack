@@ -38,6 +38,7 @@ A `resource.UnitTest` against a mock Elasticsearch that echoes omitted `allow_re
 ## Risks / Trade-offs
 
 - [Risk] PUT bodies for omitted `allow_restricted_indices` gain an explicit `false`. → Mitigation: Elasticsearch already normalizes omit to `false`; no practitioner-visible privilege change. Document as a bug fix, not a breaking change.
+- [Risk] An omitted field after an explicit `true` in state now plans `false` for pre-existing set elements, not only newly appended ones, and the next apply revokes restricted-index access. → Mitigation: this matches REQ-039 and the Elasticsearch omit-means-false contract; call it out in the PR changelog so practitioners in that narrow situation are not surprised.
 - [Risk] Practitioners inspecting state after Create-with-omit already see `false` today (EmptySets acc test). After this change they also see `false` in the *plan* before apply. → Mitigation: intended; removes the Create/Update inconsistency.
 - [Risk] A live-only test would hide the Framework correlation bug when no stack is available. → Mitigation: the mock UnitTest is the merge gate for the correlation failure; live acc tests are additional coverage.
 
