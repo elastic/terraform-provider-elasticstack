@@ -1,12 +1,12 @@
 ## 1. Add explicit `noop` calls to the verification-failure branches
 
-- [ ] 1.1 In `.github/workflows/ci-deadcode-removal-rotation.md`, step 4 ("Verify"), `make build` failure/timeout branch: after the existing `go run ./scripts/ci-deadcode-removal-rotation record ...` instruction, add "Then call `noop` with a concise reason." before "Stop without creating a PR."
-- [ ] 1.2 In the same step 4, `go test` failure branch: after the "Record the attempt as `tests_failed`" instruction, add "Then call `noop` with a concise reason." before "Stop without creating a PR."
-- [ ] 1.3 Confirm the companion-test backstop branch (step 3) already has this phrasing and needs no change; use it as the reference wording for 1.1/1.2.
+- [x] 1.1 In `.github/workflows/ci-deadcode-removal-rotation.md`, step 4 ("Verify"), `make build` failure/timeout branch: after the existing `go run ./scripts/ci-deadcode-removal-rotation record ...` instruction, add "Then call `noop` with a concise reason." before "Stop without creating a PR."
+- [x] 1.2 In the same step 4, `go test` failure branch: after the "Record the attempt as `tests_failed`" instruction, add "Then call `noop` with a concise reason." before "Stop without creating a PR."
+- [x] 1.3 Confirm the companion-test backstop branch (step 3) already has this phrasing and needs no change; use it as the reference wording for 1.1/1.2.
 
 ## 2. Add the run-level "must terminate with a safe output" guardrail
 
-- [ ] 2.1 In the "Guardrails" section of `.github/workflows/ci-deadcode-removal-rotation.md`, add: "Every run MUST end with exactly one safe-output call — either `create-pull-request` or `noop`. Never stop mid-task without calling one of them."
+- [x] 2.1 In the "Guardrails" section of `.github/workflows/ci-deadcode-removal-rotation.md`, add: "Every run MUST end with exactly one safe-output call — either `create-pull-request` or `noop`. Never stop mid-task without calling one of them."
 
 ## 3. Regenerate the compiled workflow
 

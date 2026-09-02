@@ -246,6 +246,7 @@ After recording the filtered candidates, proceed with the main task below.
          --reason <reason>
        ```
 
+     - Then call `noop` with a concise reason.
      - Stop without creating a PR.
    - Run unit tests for the impacted packages:
 
@@ -255,6 +256,7 @@ After recording the filtered candidates, proceed with the main task below.
 
      If any test fails:
      - Record the attempt as `tests_failed`.
+     - Then call `noop` with a concise reason.
      - Stop without creating a PR.
 5. **Format** the cleaned files:
    - Run `make fmt`.
@@ -283,4 +285,5 @@ After recording the filtered candidates, proceed with the main task below.
 - Never delete tests unless pre-activation has explicitly marked the candidate as eligible for companion test cleanup.
 - Never bypass the `resource.Test` / `resource.ParallelTest` backstop.
 - Do not open a PR if verification fails.
+- Every run MUST end with exactly one safe-output call — either `create-pull-request` or `noop`. Never stop mid-task without calling one of them.
 - Keep changes minimal and focused.
