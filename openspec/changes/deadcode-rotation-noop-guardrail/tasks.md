@@ -10,7 +10,7 @@
 
 ## 3. Regenerate the compiled workflow
 
-- [ ] 3.1 Rebuild the compiled workflow lock artifact by running `make workflow-generate` (or the equivalent `workflows generate` command for this repo) and commit the updated `.github/workflows/ci-deadcode-removal-rotation.lock.yml`.
+- [x] 3.1 Rebuild the compiled workflow lock artifact by running `make workflow-generate` (or the equivalent `workflows generate` command for this repo) and commit the updated `.github/workflows/ci-deadcode-removal-rotation.lock.yml`.
 
 ## 4. Update the capability spec
 
