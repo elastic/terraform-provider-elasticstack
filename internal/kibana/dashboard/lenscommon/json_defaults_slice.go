@@ -23,9 +23,44 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
+
+// jsonConfigValue is the JSON-string config value type used by lens panel model fields: either
+// jsontypes.Normalized directly, or customtypes.JSONWithDefaultsValue[T] (which embeds it), or a
+// pointer to either.
+type jsonConfigValue interface {
+	attr.Value
+	ValueString() string
+}
+
+// UnmarshalJSONSliceInto fills each index of dest by json.Unmarshal-ing the known JSON config
+// value at the matching index of models, read via configOf. Indices whose config is null/unknown
+// are left at dest's zero value. A decode failure on any item records fieldLabel on diags and
+// returns false immediately, matching the early-return-on-error behavior of the panel ToAPI
+// converters this replaces. Callers are expected to pass a dest slice of the same length as models.
+func UnmarshalJSONSliceInto[TFModel, APIItem any, Cfg jsonConfigValue](
+	models []TFModel,
+	dest []APIItem,
+	configOf func(*TFModel) Cfg,
+	fieldLabel string,
+	diags *diag.Diagnostics,
+) bool {
+	for i := range models {
+		cfg := configOf(&models[i])
+		if !typeutils.IsKnown(cfg) {
+			continue
+		}
+		if err := json.Unmarshal([]byte(cfg.ValueString()), &dest[i]); err != nil {
+			diags.AddError("Failed to unmarshal "+fieldLabel, err.Error())
+			return false
+		}
+	}
+	return true
+}
 
 // PopulateJSONWithDefaultsSlice marshals each element of items and wraps it as a
 // customtypes.JSONWithDefaultsValue via populateDefaults, writing the result into a new []TFModel
