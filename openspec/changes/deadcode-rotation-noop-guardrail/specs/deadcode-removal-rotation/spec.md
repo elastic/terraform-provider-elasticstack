@@ -37,7 +37,7 @@ When the agent stops the run without opening a pull request because `make build`
 
 ### Requirement: Every run terminates with exactly one safe output (REQ-NOOP-002)
 
-Every run of the dead-code removal rotation agent SHALL end by calling exactly one safe output — either `create-pull-request` or `noop` — and SHALL NOT stop mid-task without calling one of them.
+Every run where pre-activation finds a dead-code candidate and the dead-code removal rotation agent task executes SHALL end by calling exactly one safe output — either `create-pull-request` or `noop` — and SHALL NOT stop mid-task without calling one of them.
 
 #### Scenario: Run stops for a reason not covered by a specific branch — `noop` is still called
 
