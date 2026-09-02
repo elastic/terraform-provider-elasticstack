@@ -96,15 +96,6 @@ func isDashboardOptionsDefaultSet(options *kbapi.KibanaHTTPAPIsKbnDashboardOptio
 		typeutils.PtrEqual(options.SyncColors, new(false)) &&
 		typeutils.PtrEqual(options.SyncTooltips, new(false)) &&
 		typeutils.PtrEqual(options.SyncCursor, new(true)) &&
-		boolPtrEqualsOrOmitted(options.AutoApplyFilters, true) &&
-		boolPtrEqualsOrOmitted(options.HidePanelBorders, false)
-}
-
-// boolPtrEqualsOrOmitted reports whether value equals expected, treating a nil value (an omitted
-// field) as matching any expected default.
-func boolPtrEqualsOrOmitted(value *bool, expected bool) bool {
-	if value == nil {
-		return true
-	}
-	return *value == expected
+		typeutils.PtrEqualOrOmitted(options.AutoApplyFilters, true) &&
+		typeutils.PtrEqualOrOmitted(options.HidePanelBorders, false)
 }

@@ -90,17 +90,9 @@ func (m *tagBaseModel) populateFromAPI(spaceID string, detail *kibanaoapi.TagDet
 	m.setCompositeIdentity(spaceID, detail.ID)
 	m.Name = types.StringValue(detail.Name)
 	m.Color = types.StringValue(detail.Color)
-	m.Description = optionalStringPointerValue(detail.Description)
+	m.Description = typeutils.TrimmedStringishPointerValue(detail.Description)
 	m.CreatedAt = types.StringPointerValue(detail.CreatedAt)
 	m.UpdatedAt = types.StringPointerValue(detail.UpdatedAt)
-}
-
-// optionalStringPointerValue treats blank descriptions as absent to match write-side normalization.
-func optionalStringPointerValue(value *string) types.String {
-	if value == nil || strings.TrimSpace(*value) == "" {
-		return types.StringNull()
-	}
-	return types.StringValue(*value)
 }
 
 func (m tagModel) toAPIModel() kbapi.KibanaHTTPAPIsKbnTagsRequestAttributes {

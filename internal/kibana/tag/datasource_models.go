@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -72,7 +73,7 @@ func tagItemFromAPI(detail kibanaoapi.TagDetail) tagItemModel {
 		Name:  types.StringValue(detail.Name),
 		Color: types.StringValue(detail.Color),
 
-		Description: optionalStringPointerValue(detail.Description),
+		Description: typeutils.TrimmedStringishPointerValue(detail.Description),
 		Managed:     types.BoolPointerValue(detail.Managed),
 		CreatedAt:   types.StringPointerValue(detail.CreatedAt),
 		UpdatedAt:   types.StringPointerValue(detail.UpdatedAt)}

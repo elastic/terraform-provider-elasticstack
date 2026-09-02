@@ -274,7 +274,7 @@ func versionFromCreateAPI(version *kbapi.SecurityOsqueryAPICreateSavedQueryRespo
 	}
 
 	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion1(); err == nil {
-		return versionStringValue(value), nil
+		return typeutils.TrimmedStringishValue(value), nil
 	}
 
 	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion0(); err == nil {
@@ -292,7 +292,7 @@ func versionFromGetAPI(version *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResp
 	}
 
 	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion1(); err == nil {
-		return versionStringValue(value), nil
+		return typeutils.TrimmedStringishValue(value), nil
 	}
 
 	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion0(); err == nil {
@@ -309,15 +309,7 @@ func versionFromUpdateAPI(version *string) types.String {
 		return types.StringNull()
 	}
 
-	return versionStringValue(*version)
-}
-
-func versionStringValue(value string) types.String {
-	if strings.TrimSpace(value) == "" {
-		return types.StringNull()
-	}
-
-	return types.StringValue(value)
+	return typeutils.TrimmedStringishValue(*version)
 }
 
 func parseIntervalString(value string) (types.Int64, diag.Diagnostics) {

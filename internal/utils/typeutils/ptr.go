@@ -114,3 +114,12 @@ func PtrEqual[T comparable](a, b *T) bool {
 		return *a == *b
 	}
 }
+
+// PtrEqualOrOmitted reports whether value equals expected, treating a nil value (an omitted
+// field) as matching any expected default.
+func PtrEqualOrOmitted[T comparable](value *T, expected T) bool {
+	if value == nil {
+		return true
+	}
+	return *value == expected
+}
