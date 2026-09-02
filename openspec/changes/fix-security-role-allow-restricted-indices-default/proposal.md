@@ -8,9 +8,9 @@
 
 - Replace the `Optional + Computed + boolplanmodifier.UseStateForUnknown()` definition of `allow_restricted_indices` with `Optional + Computed + Default: booldefault.StaticBool(false)` on both the `indices` and `remote_indices` nested blocks of the `elasticstack_elasticsearch_security_role` resource schema.
 - `Default` fires whenever the **config** value is null, independent of whatever Core's Set-element correlation decided the intermediate planned value should be, so it is not vulnerable to the gap that defeats `UseStateForUnknown` for newly-appended Set elements.
-- Matches the value Elasticsearch's Put Role API normalizes an omitted `allow_restricted_indices` to (`false`), so the change is a plan-time-only fix with no behavior change for the API payload or the read-back mapping.
-- Add acceptance test coverage reproducing the issue's exact scenario (append a new `indices` element via a `dynamic` block on `Update`, omitting `allow_restricted_indices`) for both `indices` and `remote_indices`.
-- Out of scope for this change: `field_security.except` and any other `Optional+Computed` nested-block attribute using `UseStateForUnknown()`, and migrating `indices`/`remote_indices` from `SetNestedBlock` to `ListNestedBlock`/`SetNestedAttribute`.
+- Matches the value Elasticsearch's Put Role API normalizes an omitted `allow_restricted_indices` to (`false`). After the default resolves, `toAPIModel` will send `"allow_restricted_indices": false` instead of omitting the field; that is semantically identical for Elasticsearch and is required so the planned set element matches the read-back.
+- Add a `resource.UnitTest` (mock Elasticsearch) that reproduces the issue's exact update-append sequence, plus live acceptance coverage for the same scenario on both `indices` and `remote_indices`.
+- Out of scope for this change: `field_security.except` and any other `Optional+Computed` nested-block attribute using `UseStateForUnknown()`, migrating `indices`/`remote_indices` from `SetNestedBlock` to `ListNestedBlock`/`SetNestedAttribute`, and a state-schema version bump.
 
 ## Capabilities
 
@@ -20,11 +20,11 @@ None.
 
 ### Modified Capabilities
 
-- `elasticsearch-security-role`: replace REQ-023's `indices.allow_restricted_indices` and `remote_indices.allow_restricted_indices` "preserve prior state value when unknown" behavior with schema-level default semantics (`Default: booldefault.StaticBool(false)`), and update REQ-037 accordingly to describe the new plan modifier semantics for `remote_indices.allow_restricted_indices`.
+- `elasticsearch-security-role`: narrow REQ-023–REQ-024 to `field_security.except` only; add REQ-039 for schema-level `Default: false` on `indices.allow_restricted_indices` and `remote_indices.allow_restricted_indices`; update REQ-037 to the same default semantics; update REQ-038 so an omitted config value is sent as `false` after default resolution. Update the capability Schema sketch to show `default false` on both blocks.
 
 ## Impact
 
-- `internal/elasticsearch/security/role/schema.go` — change `attrAllowRestrictedIndices` on both the `indices` and `remote_indices` `SetNestedBlock` definitions from `PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()}` to `Default: booldefault.StaticBool(false)`.
-- `internal/elasticsearch/security/role/models_test.go` (and any other unit test asserting `allow_restricted_indices` stays `types.BoolNull()`) — update expectations, since the schema default now resolves the config-null case to `false` rather than leaving it null pre-apply.
-- Acceptance tests (`internal/elasticsearch/security/role/`) — add a test reproducing the append-new-`indices`-element-on-update scenario from the issue, for both `indices` and `remote_indices`, asserting the second `apply` succeeds without a "does not correlate" error and without a required third apply.
-- No API payload or read-mapping changes: `toAPIModel`/`fromAPIModel` in `models.go` already build/parse `allow_restricted_indices` correctly; only the plan-time default mechanism changes.
+- `internal/elasticsearch/security/role/schema.go` — change `attrAllowRestrictedIndices` on both the `indices` and `remote_indices` `SetNestedBlock` definitions from `PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()}` to `Default: booldefault.StaticBool(false)`. Do not bump `CurrentSchemaVersion`.
+- `internal/elasticsearch/security/role/` tests — add a mock `resource.UnitTest` that creates one `indices` element (field omitted) then appends a second on update; add the equivalent live acceptance tests (remote steps gated at Elasticsearch 8.10). Do not rewrite hand-built `types.BoolNull()` fixtures in `models_test.go`; those are not plan-time values.
+- Generated resource docs via `make docs-generate` — the schema `Default` will surface as the documented default. No wording change is required in `descriptions/allow_restricted_indices.md` unless it currently implies “unset means preserve prior state” (it does not today).
+- `toAPIModel` / `fromAPIModel` mapping logic is unchanged. The Put Role payload for an omitted field changes from “omit key” to `"allow_restricted_indices": false` because the plan value is now known `false`. Read-back is already `false`.
