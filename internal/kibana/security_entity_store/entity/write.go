@@ -51,7 +51,7 @@ func writeEntity(
 		}
 	}
 
-	spaceID := NormalizeSpaceID(plan.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(plan.SpaceID)
 	entityType := plan.EntityType.ValueString()
 	entityID := plan.EntityID.ValueString()
 
