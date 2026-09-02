@@ -39,7 +39,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"the next refresh or apply may fail if the ID is wrong or the assignment does not exist. " +
 			"API reference: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job",
 		Attributes: map[string]schema.Attribute{
-			"id": entitycore.IDAttribute("Internal composite identifier of the resource."),
+			"id": entitycore.IDAttribute(),
 			"calendar_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the ML calendar. Must contain lowercase alphanumeric characters " +
 					"(a-z and 0-9), dots, hyphens, or underscores. Must start and end with an alphanumeric character.",

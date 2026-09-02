@@ -37,7 +37,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"See the [ML post calendar events API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-post-calendar-events) for more details. " +
 			"**Import** id format: `<cluster_uuid>/<calendar_id>/<event_id>` (the same value as the computed `id` attribute).",
 		Attributes: map[string]schema.Attribute{
-			"id": entitycore.IDAttribute("Internal composite identifier of the resource."),
+			"id": entitycore.IDAttribute(),
 			"calendar_id": schema.StringAttribute{
 				MarkdownDescription: "The identifier for the calendar that owns the event. Must contain lowercase alphanumeric characters " +
 					"(a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",

@@ -38,7 +38,7 @@ func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Attributes: map[string]schema.Attribute{
-			"id": entitycore.IDAttribute("Internal identifier of the resource in the format `<cluster_uuid>/<deployment_id>`."),
+			"id": entitycore.IDAttribute(),
 			"model_id": schema.StringAttribute{
 				MarkdownDescription: "The unique identifier of the trained model to deploy.",
 				Required:            true,

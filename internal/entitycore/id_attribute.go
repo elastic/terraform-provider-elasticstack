@@ -26,17 +26,12 @@ import (
 const defaultIDAttributeDescription = "Internal identifier of the resource"
 
 // IDAttribute returns the computed "id" string attribute shared by resource
-// schemas across the provider: a server-assigned identifier that is pinned to
-// its prior state value via UseStateForUnknown so unrelated attribute changes
-// don't show it as unknown in the plan. Pass a description to override the
-// default text, for example for resources with a composite ID.
-func IDAttribute(description ...string) schema.StringAttribute {
-	desc := defaultIDAttributeDescription
-	if len(description) > 0 && description[0] != "" {
-		desc = description[0]
-	}
+// schemas across the provider: an internal identifier that is pinned to its
+// prior state value via UseStateForUnknown so unrelated attribute changes
+// don't show it as unknown in the plan.
+func IDAttribute() schema.StringAttribute {
 	return schema.StringAttribute{
-		MarkdownDescription: desc,
+		MarkdownDescription: defaultIDAttributeDescription,
 		Computed:            true,
 		PlanModifiers: []planmodifier.String{
 			stringplanmodifier.UseStateForUnknown(),

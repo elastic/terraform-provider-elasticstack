@@ -37,7 +37,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"in the `custom_rules` property of detector configuration objects. " +
 			"See the [ML Filter API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-filter.html) for more details.",
 		Attributes: map[string]schema.Attribute{
-			"id": entitycore.IDAttribute("Internal identifier of the resource."),
+			"id": entitycore.IDAttribute(),
 			"filter_id": schema.StringAttribute{
 				MarkdownDescription: "A string that uniquely identifies a filter.",
 				Required:            true,

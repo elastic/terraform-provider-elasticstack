@@ -36,18 +36,3 @@ func TestIDAttribute_DefaultDescription(t *testing.T) {
 	require.Len(t, attr.PlanModifiers, 1)
 	assert.IsType(t, stringplanmodifier.UseStateForUnknown(), attr.PlanModifiers[0])
 }
-
-func TestIDAttribute_CustomDescription(t *testing.T) {
-	t.Parallel()
-	attr := IDAttribute("Internal composite identifier of the resource.")
-
-	assert.Equal(t, "Internal composite identifier of the resource.", attr.MarkdownDescription)
-	require.Len(t, attr.PlanModifiers, 1)
-}
-
-func TestIDAttribute_EmptyDescriptionFallsBackToDefault(t *testing.T) {
-	t.Parallel()
-	attr := IDAttribute("")
-
-	assert.Equal(t, defaultIDAttributeDescription, attr.MarkdownDescription)
-}

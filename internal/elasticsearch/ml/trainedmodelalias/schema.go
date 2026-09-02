@@ -35,7 +35,7 @@ func getSchema(_ context.Context) schema.Schema {
 		MarkdownDescription: "Manages Machine Learning trained model aliases. A trained model alias is a logical name used to reference a single trained model. " +
 			"See the [ML Trained Model Alias API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/put-trained-models-aliases.html) for more details.",
 		Attributes: map[string]schema.Attribute{
-			"id": entitycore.IDAttribute("Internal identifier of the resource."),
+			"id": entitycore.IDAttribute(),
 			"model_alias": schema.StringAttribute{
 				MarkdownDescription: "The alias to create or update. This value cannot end in numbers.",
 				Required:            true,
