@@ -43,8 +43,9 @@ func GetSchema(_ context.Context) schema.Schema {
 			"username": schema.StringAttribute{
 				MarkdownDescription: "An identifier for the system user (see the [built-in users documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/built-in-users.html)).",
 				Required:            true,
+				// Username is the resource identity; built-in users cannot be renamed.
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
 					security.UsernameValidator(),
