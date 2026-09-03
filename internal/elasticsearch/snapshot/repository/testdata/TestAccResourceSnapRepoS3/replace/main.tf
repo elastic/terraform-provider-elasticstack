@@ -12,12 +12,12 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_s3_repo" {
   verify = false
 
   s3 {
-    bucket                     = "test-bucket"
+    bucket                     = "test-bucket-replaced"
     endpoint                   = "https://minio-alt.example.com:9000"
     path_style_access          = false
     client                     = "secondary"
     canned_acl                 = "public-read"
-    storage_class               = "reduced_redundancy"
+    storage_class              = "reduced_redundancy"
     server_side_encryption     = true
     base_path                  = "snapshots/v2"
     buffer_size                = "10mb"
