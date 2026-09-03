@@ -98,9 +98,11 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 		return nil, diagutil.ErrDiag("Unable to get connector", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		cr := ConnectorResponse{
+	cr, diags := HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *ConnectorResponse {
+		if resp.JSON200 == nil {
+			return nil
+		}
+		return &ConnectorResponse{
 			Config:           resp.JSON200.Config,
 			ConnectorTypeID:  resp.JSON200.ConnectorTypeId,
 			ID:               resp.JSON200.Id,
@@ -109,12 +111,11 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 			IsPreconfigured:  resp.JSON200.IsPreconfigured,
 			Name:             resp.JSON200.Name,
 		}
-		return ConnectorResponseToModel(spaceID, &cr)
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	})
+	if diags.HasError() || cr == nil {
+		return nil, diags
 	}
+	return ConnectorResponseToModel(spaceID, cr)
 }
 
 func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, fwdiag.Diagnostics) {
