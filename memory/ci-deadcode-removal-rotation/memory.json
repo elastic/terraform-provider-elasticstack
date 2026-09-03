@@ -966,6 +966,30 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface",
       "attemptedAt": "2026-08-30T03:17:03.751260988Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.NewKibanaAction",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-09-03T04:26:18.099684418Z",
+      "reason": "verification_timeout"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-09-03T04:26:29.196359472Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingsElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-09-03T04:26:29.196359632Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event.parseCalendarEventFullCompositeID",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event",
+      "attemptedAt": "2026-09-03T04:26:29.196359713Z",
+      "reason": "invalid_candidate_references"
     }
   ]
 }
