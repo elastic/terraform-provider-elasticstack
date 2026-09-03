@@ -15,8 +15,6 @@ resource "elasticstack_elasticsearch_security_api_key" "test" {
       {
         names                    = ["logs-*", "metrics-*"]
         allow_restricted_indices = true
-        field_security           = jsonencode({ grant = ["field1", "field2"] })
-        query                    = jsonencode({ match = { field1 = "value1" } })
       }
     ]
     replication = [
