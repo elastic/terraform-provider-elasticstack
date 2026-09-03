@@ -969,6 +969,18 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 			commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
 				Comment: comment.Comment.ValueString(),
 			}
+			// Pass the existing comment id through so Kibana recognises this
+			// as an existing entry rather than treating it as a brand-new
+			// comment and appending a duplicate. The id flows from prior
+			// state via the `UseStateForUnknown` plan modifier on the nested
+			// `id` attribute; without that modifier, the framework would
+			// mark the id Unknown on every plan and this branch could never
+			// fire. Both pieces are required together — see issue #3549.
+			if !comment.ID.IsNull() && !comment.ID.IsUnknown() {
+				if idStr := comment.ID.ValueString(); idStr != "" {
+					commentsArray[i].Id = &idStr
+				}
+			}
 		}
 		genericReq.Comments = &commentsArray
 	}
