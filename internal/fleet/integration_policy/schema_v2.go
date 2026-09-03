@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -35,7 +36,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -137,14 +137,7 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			attrSpaceIDs: schema.SetAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			attrSpaceIDs: kbschema.SpaceIDsAttribute(""),
 			"inputs": schema.MapNestedAttribute{
 				CustomType: NewInputsType(NewInputType(getInputsAttributeTypesV2())),
 				Computed:   true,
