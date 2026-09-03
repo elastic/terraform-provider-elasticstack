@@ -140,12 +140,6 @@ func enforceDataStreamNameSupported(
 // followerIndexGetter fetches a follower index document for polling.
 type followerIndexGetter func(ctx context.Context, indexName string) (*estypes.FollowerIndex, diag.Diagnostics)
 
-// errFollowerGetFailed is a sentinel returned by the state checker to bail out
-// of the shared poll loop while preserving the original framework diagnostics
-// in a closure-captured variable. Relies on WaitForStateTransition invoking the
-// checker synchronously from the calling goroutine.
-var errFollowerGetFailed = errors.New("ccr follower index get failed")
-
 // waitForFollowerActive polls GET /_ccr/info until the follower reports an active
 // status with readable parameters, or the timeout elapses. It returns the most
 // recent follower observed so callers can still map known fields on timeout.
@@ -160,7 +154,7 @@ func waitForFollowerActive(
 }
 
 // waitForFollowerActiveWithInterval polls via the shared
-// [asyncutils.WaitForStateTransition] helper, performing an immediate first
+// [asyncutils.WaitWithGetterDiagnostics] helper, performing an immediate first
 // check so an already-active follower returns without waiting a poll interval.
 // pollInterval and timeout are parameters so the poll/timeout/cancellation
 // logic is unit-testable without a live cluster or a real two-minute wait.
@@ -174,64 +168,48 @@ func waitForFollowerActiveWithInterval(
 	waitCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var (
-		last     *estypes.FollowerIndex
-		getDiags diag.Diagnostics
+	return asyncutils.WaitWithGetterDiagnostics(
+		waitCtx,
+		"ccr follower index",
+		indexName,
+		func(checkCtx context.Context) (*estypes.FollowerIndex, diag.Diagnostics) {
+			return get(checkCtx, indexName)
+		},
+		func(follower *estypes.FollowerIndex) (bool, diag.Diagnostics) {
+			done := follower != nil && follower.Status.String() == statusActive && follower.Parameters != nil
+			return done, nil
+		},
+		func(_ *estypes.FollowerIndex, waitErr error) diag.Diagnostics {
+			var diags diag.Diagnostics
+			switch {
+			case errors.Is(waitErr, context.DeadlineExceeded):
+				if ctx.Err() != nil {
+					// The parent context expired (e.g. the resource create timeout),
+					// not the dedicated follower wait budget.
+					diags.AddError(
+						"Context canceled while waiting for CCR follower to start",
+						waitErr.Error(),
+					)
+				} else {
+					diags.AddError(
+						"Timed out waiting for CCR follower to start",
+						fmt.Sprintf(
+							"Follower index %q did not begin following within %s. The leader index may be unreachable or ineligible for replication.",
+							indexName,
+							timeout,
+						),
+					)
+				}
+			case errors.Is(waitErr, context.Canceled):
+				diags.AddError(
+					"Context canceled while waiting for CCR follower to start",
+					waitErr.Error(),
+				)
+			default:
+				diags.AddError("Failed waiting for CCR follower to start", waitErr.Error())
+			}
+			return diags
+		},
+		asyncutils.WithPollInterval(pollInterval),
 	)
-
-	stateChecker := func(checkCtx context.Context) (bool, error) {
-		follower, diags := get(checkCtx, indexName)
-		if diags.HasError() {
-			if checkCtx.Err() != nil {
-				return false, checkCtx.Err()
-			}
-			getDiags = diags
-			return false, errFollowerGetFailed
-		}
-		if follower != nil {
-			last = follower
-			if follower.Status.String() == statusActive && follower.Parameters != nil {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-
-	isActive, waitErr := stateChecker(waitCtx)
-	if waitErr == nil && !isActive {
-		waitErr = asyncutils.WaitForStateTransition(waitCtx, "ccr follower index", indexName, stateChecker, asyncutils.WithPollInterval(pollInterval))
-	}
-
-	var diags diag.Diagnostics
-	switch {
-	case errors.Is(waitErr, errFollowerGetFailed):
-		diags.Append(getDiags...)
-	case errors.Is(waitErr, context.DeadlineExceeded):
-		if ctx.Err() != nil {
-			// The parent context expired (e.g. the resource create timeout),
-			// not the dedicated follower wait budget.
-			diags.AddError(
-				"Context canceled while waiting for CCR follower to start",
-				waitErr.Error(),
-			)
-		} else {
-			diags.AddError(
-				"Timed out waiting for CCR follower to start",
-				fmt.Sprintf(
-					"Follower index %q did not begin following within %s. The leader index may be unreachable or ineligible for replication.",
-					indexName,
-					timeout,
-				),
-			)
-		}
-	case errors.Is(waitErr, context.Canceled):
-		diags.AddError(
-			"Context canceled while waiting for CCR follower to start",
-			waitErr.Error(),
-		)
-	case waitErr != nil:
-		diags.AddError("Failed waiting for CCR follower to start", waitErr.Error())
-	}
-
-	return last, diags
 }
