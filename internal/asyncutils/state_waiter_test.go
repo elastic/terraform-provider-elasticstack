@@ -128,9 +128,30 @@ func TestWaitForStateTransition_WithPollInterval(t *testing.T) {
 	err := WaitForStateTransition(ctx, "test-resource", "test-id", stateChecker, WithPollInterval(20*time.Millisecond))
 	require.NoError(t, err)
 	require.Equal(t, 3, callCount)
-	// Three ticks at ~20ms each should complete well under one second; this
-	// just asserts the override actually shortens the cadence.
+	// Immediate first check plus two 20ms ticks should complete well under
+	// one second; this just asserts the override actually shortens the cadence.
 	require.Less(t, time.Since(start), 1*time.Second)
+}
+
+func TestWaitForStateTransition_ChecksImmediately(t *testing.T) {
+	t.Parallel()
+
+	callCount := 0
+	stateChecker := func(_ context.Context) (bool, error) {
+		callCount++
+		return true, nil
+	}
+
+	// A poll interval longer than the context deadline would time out if the
+	// first check waited for a tick instead of running immediately.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	err := WaitForStateTransition(ctx, "test-resource", "test-id", stateChecker, WithPollInterval(10*time.Second))
+	require.NoError(t, err)
+	require.Equal(t, 1, callCount)
+	require.Less(t, time.Since(start), time.Second, "must observe already-desired state before the first poll tick")
 }
 
 func TestWithPollInterval_IgnoresNonPositive(t *testing.T) {
