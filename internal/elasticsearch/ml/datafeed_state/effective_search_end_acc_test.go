@@ -18,19 +18,14 @@
 package datafeedstate_test
 
 // TestAccResourceMLDatafeedState_effectiveSearchEndPopulated verifies that
-// effective_search_end is populated with a real value for a started datafeed
-// whose running_state.real_time_configured is false. Providing an explicit
-// `end` after the indexed document's timestamp makes real_time_configured
-// false and gives Elasticsearch a finite lookback whose search_interval.end_ms
-// matches that configured end.
+// effective_search_end is populated for a started datafeed whose
+// running_state.real_time_configured is false. An explicit far-future `end`
+// keeps the datafeed started (no lookback race) while still disabling
+// real-time mode so search_interval.end_ms is exposed.
 //
-// Lookback of this short empty range finishes in about a second, so the write
-// path must snapshot search_interval immediately after start (see
-// asyncutils.WaitForStateTransition). Check functions run against that
-// apply-time state. The post-apply refresh plan is non-empty because
-// Elasticsearch has then stopped the datafeed (and typically closed the job).
-//
-// Gated to ES >= 8.1.0 for the same reason as
+// The reported end tracks search progress rather than the configured `end`,
+// so this asserts presence rather than an exact timestamp. Gated to ES >=
+// 8.1.0 for the same reason as
 // TestAccResourceMLDatafeedState_explicitStartPreserved: 8.0.x does not
 // reliably expose running_state.search_interval.
 
@@ -53,7 +48,7 @@ func TestAccResourceMLDatafeedState_effectiveSearchEndPopulated(t *testing.T) {
 
 	const docTimestamp = "2022-01-01T00:10:00Z"
 	const plannedStart = "2022-01-01T00:00:00Z"
-	const plannedEnd = "2022-01-01T01:00:00Z"
+	const plannedEnd = "2099-01-01T00:00:00Z"
 
 	configVars := config.Variables{
 		"job_id":      config.StringVariable(jobID),
@@ -88,20 +83,16 @@ func TestAccResourceMLDatafeedState_effectiveSearchEndPopulated(t *testing.T) {
 				),
 			},
 			{
-				// Step 2: start the datafeed with an explicit end after the
-				// indexed document. real_time_configured is false, and
-				// effective_search_end is surfaced from
-				// running_state.search_interval.end_ms (the configured end).
-				// ExpectNonEmptyPlan: lookback completes before the post-apply
-				// refresh, so the refresh plan shows state stopped→started.
+				// Step 2: start the datafeed with an explicit far-future end.
+				// real_time_configured is false and the datafeed stays started
+				// long enough for search_interval.end_ms to be snapshotted.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("full"),
 				ConfigVariables:          fullConfigVars,
-				ExpectNonEmptyPlan:       true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "end", plannedEnd),
-					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "effective_search_end", plannedEnd),
+					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "effective_search_end"),
 				),
 			},
 		},

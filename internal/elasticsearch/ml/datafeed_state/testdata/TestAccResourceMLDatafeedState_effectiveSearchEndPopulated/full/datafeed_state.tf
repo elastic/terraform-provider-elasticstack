@@ -69,10 +69,9 @@ resource "elasticstack_elasticsearch_ml_datafeed" "test" {
   query       = jsonencode({ match_all = {} })
 }
 
-# An explicit end after the indexed document makes
-# running_state.real_time_configured = false. The write path snapshots
-# search_interval.end_ms immediately after start; lookback of this short
-# range then finishes and Elasticsearch stops the datafeed.
+# An explicit far-future end makes running_state.real_time_configured
+# false while keeping the datafeed started so search_interval.end_ms can
+# be snapshotted.
 resource "elasticstack_elasticsearch_ml_datafeed_state" "test" {
   datafeed_id = elasticstack_elasticsearch_ml_datafeed.test.datafeed_id
   state       = "started"

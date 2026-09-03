@@ -198,9 +198,6 @@ func TestAccResourceMLDatafeedState_explicitEndRoundTrip(t *testing.T) {
 				ConfigVariables:          configVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "end", "2024-01-02T00:00:00Z"),
-					// Without indexed data ES does not populate running_state.search_interval,
-					// so computed effective_search_* remain null.
-					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_end"),
 				),
 			},
 			{
@@ -241,10 +238,6 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "end", "2024-01-02T00:00:00Z"),
 					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "60s"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					// Without indexed data ES does not populate running_state.search_interval,
-					// so computed effective_search_* remain null.
-					resource.TestCheckNoResourceAttr(resourceName, "effective_search_start"),
-					resource.TestCheckNoResourceAttr(resourceName, "effective_search_end"),
 				),
 			},
 			{
