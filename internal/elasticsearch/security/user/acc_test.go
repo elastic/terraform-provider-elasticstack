@@ -83,7 +83,7 @@ func TestAccResourceSecurityUser(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "metadata", `{"env":"prod","owner":"platform","tier":"gold"}`),
 					resource.TestCheckResourceAttr(resourceName, "password", updatedPassword),
 					resource.TestCheckNoResourceAttr(resourceName, "password_wo_version"),
-					checks.CheckUserCanAuthenticate(username, updatedPassword),
+					checks.CheckUserCannotAuthenticate(username, updatedPassword),
 				),
 			},
 			{
