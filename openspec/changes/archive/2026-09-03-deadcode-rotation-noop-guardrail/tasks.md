@@ -14,4 +14,4 @@
 
 ## 4. Update the capability spec
 
-- [ ] 4.1 Apply the delta in `openspec/changes/deadcode-rotation-noop-guardrail/specs/deadcode-removal-rotation/spec.md` to `openspec/specs/deadcode-removal-rotation/spec.md` when this change is archived, adding the new `REQ-NOOP-001` requirement alongside the existing `REQ-FMT-001`.
+- [x] 4.1 Apply the delta in `openspec/changes/deadcode-rotation-noop-guardrail/specs/deadcode-removal-rotation/spec.md` to `openspec/specs/deadcode-removal-rotation/spec.md` when this change is archived, adding the new `REQ-NOOP-001` requirement alongside the existing `REQ-FMT-001`.
