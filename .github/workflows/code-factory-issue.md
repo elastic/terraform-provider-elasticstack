@@ -6,7 +6,7 @@ name: Code Factory Issue Intake
 timeout-minutes: 65
 sandbox:
   agent:
-    legacy-security: enable
+    runtime: docker-sudo-iptables
 description: >-
   Reacts to trusted qualifying `code-factory` issue events or internal workflow dispatch requests,
   suppresses duplicate linked pull requests, and delegates implementation to an agent that creates
