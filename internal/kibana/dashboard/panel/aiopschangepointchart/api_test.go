@@ -186,7 +186,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 		AggregationFunction: &agg,
 		SplitField:          new("host.name"),
 		Partitions:          &[]string{"host-a", "host-b"},
-		MaxSeriesToPlot:     new(float32(6)),
+		MaxSeriesToPlot:     new(6),
 		ViewType:            &vt,
 	}
 

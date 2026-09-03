@@ -101,14 +101,14 @@ func heatmapConfigFromAPINoESQL(
 		return diags
 	}
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric_json", lenscommon.PopulateTagcloudMetricDefaults, &diags)
 	if !ok {
 		return diags
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	xAxisBytes, err := api.X.MarshalJSON()
+	xAxisBytes, err := json.Marshal(api.X)
 	xv, ok := lenscommon.WrapNormalizedJSON(xAxisBytes, err, "x_axis", &diags)
 	if !ok {
 		return diags
@@ -116,7 +116,7 @@ func heatmapConfigFromAPINoESQL(
 	m.XAxisJSON = xv
 
 	if api.Y != nil {
-		yAxisBytes, err := api.Y.MarshalJSON()
+		yAxisBytes, err := json.Marshal(api.Y)
 		yv, ok := lenscommon.WrapNormalizedJSON(yAxisBytes, err, "y_axis", &diags)
 		if !ok {
 			return diags

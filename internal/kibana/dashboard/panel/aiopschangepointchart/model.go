@@ -54,7 +54,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		panel.Config.Partitions = &items
 	}
 	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
-		v := cfg.MaxSeriesToPlot.ValueFloat32()
+		v := int(cfg.MaxSeriesToPlot.ValueFloat32())
 		panel.Config.MaxSeriesToPlot = &v
 	}
 	if typeutils.IsKnown(cfg.ViewType) {
@@ -105,7 +105,11 @@ func aiopsChangePointChartConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsChang
 		HideTitle:           types.BoolPointerValue(api.HideTitle),
 		HideBorder:          types.BoolPointerValue(api.HideBorder),
 	}
-	cfg.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
+	if api.MaxSeriesToPlot != nil {
+		cfg.MaxSeriesToPlot = types.Float32Value(float32(*api.MaxSeriesToPlot))
+	} else {
+		cfg.MaxSeriesToPlot = types.Float32Null()
+	}
 	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 	return cfg
 }

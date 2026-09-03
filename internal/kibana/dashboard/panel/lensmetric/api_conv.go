@@ -277,12 +277,7 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommo
 
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var breakdownBy kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_BreakdownBy
-		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
-		diags.Append(breakdownDiags...)
-		if !breakdownDiags.HasError() {
-			variant0.BreakdownBy = &breakdownBy
-		}
+		diags.Append(m.BreakdownByJSON.Unmarshal(&variant0.BreakdownBy)...)
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)

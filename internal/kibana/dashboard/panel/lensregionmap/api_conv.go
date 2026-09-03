@@ -50,14 +50,14 @@ func regionMapConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateRegionMapMetricDefaults, &diags)
 	if !ok {
 		return diags
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	regionBytes, err := api.Region.MarshalJSON()
+	regionBytes, err := json.Marshal(api.Region)
 	rv, ok := lenscommon.WrapNormalizedJSON(regionBytes, err, "region", &diags)
 	if !ok {
 		return diags

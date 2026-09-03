@@ -501,6 +501,9 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirection(cfg.Sort.Direction.ValueString()),
 		}
 	}
+	if olPanel.Config == nil {
+		olPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{}
+	}
 	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build options list control config", err.Error())
@@ -557,6 +560,9 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 			By:        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortBy(cfg.Sort.By.ValueString()),
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortDirection(cfg.Sort.Direction.ValueString()),
 		}
+	}
+	if olPanel.Config == nil {
+		olPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{}
 	}
 	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(c); err != nil {
 		var diags diag.Diagnostics

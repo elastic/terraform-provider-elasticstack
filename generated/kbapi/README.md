@@ -7,7 +7,7 @@ This readme serves to document the status quo, contributions improving this curr
 
 ## `dashboard-paths.json` (paths-only overlay)
 
-The full `dashboards.json` schema overlay was removed when `lens-dashboard-app` left the upstream Kibana spec. Dashboard **schemas** now come only from upstream `oas.yaml` (with `fixDashboardPanelItemRefs` and related transforms).
+The full `dashboards.json` schema overlay was removed when `lens-dashboard-app` left the upstream Kibana spec. Dashboard **schemas** now come only from upstream `oas.yaml` (with `fixDashboardPanelItemRefs` and related transforms). Upstream already emits the panel-type union as `oneOf` with a `type` discriminator; `fixDashboardPanelItemRefs` only extracts reusable components (`dashboard_panel_item`, `dashboard_panels`, `dashboard_filters`, `dashboard_pinned_panels`) from that shape. Related transforms collapse Kibana's string-enum `anyOf` unions, strip object-level `allOf` defaults that break oapi-codegen, drop incomplete control `values_source` discriminators (so `From*` does not emit `values_source: field`, which older Kibana rejects), flatten vis by-value config (`allOf` + `lensApiConfig`) back into `*ByValuePanel` chart leaves, unwrap single-branch drilldown `anyOf` wrappers, and unwrap `allOf` wrappers around Lens operation unions so oapi-codegen keeps `*_Item` types.
 
 Upstream still ships **redirect stubs** for `/api/dashboards/*` routes without real operation definitions. `generated/kbapi/dashboard-paths.json` is a **paths-only** supplement: it injects dashboard HTTP paths (GET/POST/PUT/DELETE) via `injectDashboardAPIPaths` in `transform_schema.go`. It must not add or override component schemas or panel types.
 

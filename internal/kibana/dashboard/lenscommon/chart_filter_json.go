@@ -129,3 +129,28 @@ func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagn
 	}
 	return &items
 }
+
+// DecodeNormalizedJSONSlice unmarshals a list of normalized JSON strings into dest,
+// which must be a pointer to a slice (including slices of anonymous generated structs).
+func DecodeNormalizedJSONSlice(values []jsontypes.Normalized, dest any) diag.Diagnostics {
+	var diags diag.Diagnostics
+	raw := make([]json.RawMessage, 0, len(values))
+	for _, n := range values {
+		if !typeutils.IsKnown(n) {
+			continue
+		}
+		raw = append(raw, json.RawMessage(n.ValueString()))
+	}
+	if len(raw) == 0 {
+		return diags
+	}
+	b, err := json.Marshal(raw)
+	if err != nil {
+		diags.AddError("Failed to encode JSON array", err.Error())
+		return diags
+	}
+	if err := json.Unmarshal(b, dest); err != nil {
+		diags.AddError("Failed to decode JSON array", err.Error())
+	}
+	return diags
+}

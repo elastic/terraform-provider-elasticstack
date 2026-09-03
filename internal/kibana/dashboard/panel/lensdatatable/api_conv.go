@@ -319,7 +319,17 @@ func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaH
 	}
 
 	if api.Paging != nil {
-		m.Paging = types.Int64Value(int64(*api.Paging))
+		raw, err := json.Marshal(api.Paging)
+		if err != nil {
+			diags.AddError("Failed to marshal datatable paging", err.Error())
+		} else {
+			var n float64
+			if err := json.Unmarshal(raw, &n); err != nil {
+				diags.AddError("Failed to decode datatable paging", err.Error())
+			} else {
+				m.Paging = types.Int64Value(int64(n))
+			}
+		}
 	} else {
 		m.Paging = types.Int64Null()
 	}
@@ -354,7 +364,16 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAP
 	}
 
 	if typeutils.IsKnown(m.Paging) {
-		paging := kbapi.KibanaHTTPAPIsDatatableStylingPaging(m.Paging.ValueInt64())
+		raw, err := json.Marshal(m.Paging.ValueInt64())
+		if err != nil {
+			diags.AddError("Failed to encode datatable paging", err.Error())
+			return styling, diags
+		}
+		var paging kbapi.KibanaHTTPAPIsDatatableStyling_Paging
+		if err := json.Unmarshal(raw, &paging); err != nil {
+			diags.AddError("Failed to unmarshal datatable paging", err.Error())
+			return styling, diags
+		}
 		styling.Paging = &paging
 	}
 

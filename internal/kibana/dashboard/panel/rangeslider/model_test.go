@@ -36,7 +36,9 @@ func apiRangeSliderFieldConfig(t *testing.T, opts ...func(*rsFieldCfg)) *kbapi.K
 	for _, o := range opts {
 		o(&c)
 	}
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{},
+	}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c))
 	return p
 }
@@ -49,7 +51,9 @@ func apiRangeSliderEsqlConfig(t *testing.T, opts ...func(*rsEsqlCfg)) *kbapi.Kib
 	for _, o := range opts {
 		o(&c)
 	}
-	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{}
+	p := &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl{
+		Config: &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{},
+	}
 	require.NoError(t, p.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(c))
 	return p
 }
