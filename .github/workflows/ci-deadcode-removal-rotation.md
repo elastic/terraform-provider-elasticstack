@@ -285,5 +285,5 @@ After recording the filtered candidates, proceed with the main task below.
 - Never delete tests unless pre-activation has explicitly marked the candidate as eligible for companion test cleanup.
 - Never bypass the `resource.Test` / `resource.ParallelTest` backstop.
 - Do not open a PR if verification fails.
-- Every run MUST end with exactly one safe-output call — either `create-pull-request` or `noop`. Never stop mid-task without calling one of them.
+- Every run MUST end with exactly one safe-output call — either `create-pull-request` or `noop`. Never stop mid-task without calling one of them. Recording the attempt after `create-pull-request` is expected and is not a second safe output.
 - Keep changes minimal and focused.
