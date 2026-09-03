@@ -20,9 +20,7 @@ package datafeedstate
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
@@ -72,9 +70,6 @@ func writeMLDatafeedState(
 
 	var finalData MLDatafeedStateData
 	if inDesiredState {
-		if desiredState == string(datafeed.StateStarted) {
-			waitForSearchInterval(ctx, client, datafeedID)
-		}
 		result, found, readDiags := readMLDatafeedState(ctx, client, datafeedID, data)
 		diags.Append(readDiags...)
 		if diags.HasError() {
@@ -99,32 +94,4 @@ func writeMLDatafeedState(
 	}
 
 	return entitycore.WriteResult[MLDatafeedStateData]{Model: finalData}, diags
-}
-
-// waitForSearchInterval polls briefly after start so running_state.search_interval
-// can land before we snapshot effective_search_*. Lookback-only datafeeds often
-// expose the interval a moment after State=started. This is best-effort: a
-// timeout or a stop leaves computed attributes null instead of failing the write.
-func waitForSearchInterval(ctx context.Context, client *clients.ElasticsearchScopedClient, datafeedID string) {
-	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	checker := func(ctx context.Context) (bool, error) {
-		stats, diags := elasticsearch.GetDatafeedStats(ctx, client, datafeedID)
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to read datafeed stats while waiting for search interval: %v", diags)
-		}
-		if stats == nil {
-			return true, nil
-		}
-		if datafeed.State(stats.State.String()) != datafeed.StateStarted {
-			return true, nil
-		}
-		if stats.RunningState != nil && stats.RunningState.SearchInterval != nil {
-			return true, nil
-		}
-		return false, nil
-	}
-
-	_ = asyncutils.WaitForStateTransition(waitCtx, "datafeed_search_interval", datafeedID, checker)
 }
