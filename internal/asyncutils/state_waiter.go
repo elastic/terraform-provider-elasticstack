@@ -53,14 +53,19 @@ func WithPollInterval(d time.Duration) Option {
 }
 
 // WaitForStateTransition waits for a resource to reach the desired state by polling its current state.
-// The first check runs immediately so transitions that complete in under one
-// poll interval (for example a lookback-only ML datafeed that starts and
-// stops in well under two seconds) are observed. Subsequent checks use the
+// If ctx is already done, it returns ctx.Err() without calling the checker.
+// Otherwise the first check runs immediately so transitions that complete in
+// under one poll interval (for example a lookback-only ML datafeed that starts
+// and stops in well under two seconds) are observed. Subsequent checks use the
 // default poll interval of two seconds; pass [WithPollInterval] to customize it.
 func WaitForStateTransition(ctx context.Context, resourceType, resourceID string, stateChecker StateChecker, opts ...Option) error {
 	cfg := waitConfig{pollInterval: defaultPollInterval}
 	for _, opt := range opts {
 		opt(&cfg)
+	}
+
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 
 	check := func() (bool, error) {

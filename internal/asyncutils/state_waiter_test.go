@@ -154,6 +154,23 @@ func TestWaitForStateTransition_ChecksImmediately(t *testing.T) {
 	require.Less(t, time.Since(start), time.Second, "must observe already-desired state before the first poll tick")
 }
 
+func TestWaitForStateTransition_ExpiredContextDoesNotCheck(t *testing.T) {
+	t.Parallel()
+
+	callCount := 0
+	stateChecker := func(_ context.Context) (bool, error) {
+		callCount++
+		return false, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), -time.Millisecond)
+	defer cancel()
+
+	err := WaitForStateTransition(ctx, "test-resource", "test-id", stateChecker)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Equal(t, 0, callCount)
+}
+
 func TestWithPollInterval_IgnoresNonPositive(t *testing.T) {
 	t.Parallel()
 
