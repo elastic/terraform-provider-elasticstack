@@ -68,7 +68,7 @@ func (t IndexSettingsType) Equal(o attr.Type) bool {
 
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t IndexSettingsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return IndexSettingsValue{Normalized: jsontypes.Normalized{StringValue: in}}, nil
+	return IndexSettingsValue{StringValue: in}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
@@ -139,17 +139,8 @@ func (v IndexSettingsValue) ValidateAttribute(ctx context.Context, req xattr.Val
 // Terraform drift and apply consistency between the user's input form and the canonical
 // {"index":{...}} shape Elasticsearch returns.
 func (v IndexSettingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(IndexSettingsValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic equality check error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 
@@ -330,29 +321,7 @@ func UnflattenDottedMap(flat map[string]any) map[string]any {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		v := flat[k]
-		parts := strings.Split(k, ".")
-		cur := root
-		for i := range parts {
-			p := parts[i]
-			if i == len(parts)-1 {
-				cur[p] = v
-				break
-			}
-			existing, ok := cur[p]
-			if !ok {
-				nm := make(map[string]any)
-				cur[p] = nm
-				cur = nm
-				continue
-			}
-			nm, ok := existing.(map[string]any)
-			if !ok {
-				nm = make(map[string]any)
-				cur[p] = nm
-			}
-			cur = nm
-		}
+		typeutils.SetAtPath(root, strings.Split(k, "."), flat[k])
 	}
 	return root
 }

@@ -40,9 +40,7 @@ resource "elasticstack_elasticsearch_data_stream_lifecycle" "example" {
   }
 }
 ```
-
 ## Requirements
-
 ### Requirement: Data stream lifecycle CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Elasticsearch Put Data Lifecycle API (`IndicesPutDataLifecycle`) to create and update data stream lifecycle settings ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-stream-apis.html)). The resource SHALL use the Elasticsearch Get Data Lifecycle API (`IndicesGetDataLifecycle`) to read lifecycle settings. The resource SHALL use the Elasticsearch Delete Data Lifecycle API (`IndicesDeleteDataLifecycle`) to remove lifecycle settings. When Elasticsearch returns a non-success response (other than 404 on read), the resource SHALL surface the API error as a Terraform diagnostic and SHALL not update state.
@@ -61,13 +59,28 @@ The resource SHALL use the Elasticsearch Put Data Lifecycle API (`IndicesPutData
 
 ### Requirement: Identity (REQ-005–REQ-006)
 
-The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<name>`. During create (and update, which reuses the create path), the resource SHALL compute `id` by calling `client.ID(ctx, name)`, which combines the current cluster UUID with the configured `name` value. The `id` attribute SHALL use the `UseStateForUnknown` plan modifier so that it is preserved across plan/apply cycles once set.
+The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<name>`. The resource SHALL compute `id` by calling `client.ID(ctx, name)`, which combines the current cluster UUID with the configured `name` value, only during create. During update, the resource SHALL NOT recompute `id` from the currently connected cluster's UUID. When the configured `name` is unchanged, the resource SHALL preserve the `id` already present in prior state unchanged, and `UseStateForUnknown` on `id` SHALL apply so the prior value is planned as known. When `name` changes in place, the planned `id` SHALL be unknown and apply SHALL write `<prior-uuid>/<new-name>`: the cluster UUID prefix from prior state is kept and the name segment is replaced with the new `name`.
 
 #### Scenario: ID computed on create
 
 - GIVEN a new resource with `name = "my-data-stream"`
 - WHEN create completes successfully
 - THEN `id` SHALL be set to `<cluster_uuid>/my-data-stream`
+
+#### Scenario: Id preserved after update
+
+- GIVEN an existing resource whose stored `id` carries a cluster UUID that no longer matches the UUID of the cluster the provider is currently connected to
+- WHEN a non-id attribute (for example `data_retention`) is changed and applied
+- THEN the update SHALL succeed
+- AND `id` in the resulting state SHALL be unchanged from the value in prior state
+
+#### Scenario: Name segment adopted on in-place name change
+
+- GIVEN an existing resource whose stored `id` is `<stale_uuid>/old-name`
+- WHEN `name` is changed to `new-name`
+- THEN the plan SHALL treat `id` as unknown
+- AND when applied, the update SHALL succeed
+- AND `id` in the resulting state SHALL be `<stale_uuid>/new-name`
 
 ### Requirement: Import (REQ-007–REQ-008)
 
@@ -117,7 +130,7 @@ The resource SHALL declare `MinVersion = "8.11.0"` to indicate that Data Lifecyc
 
 ### Requirement: Create and update (REQ-013–REQ-015)
 
-On create and update, the resource SHALL read the plan model, resolve the Elasticsearch client, compute the composite `id`, convert the plan to a `models.LifecycleSettings` struct, and call `PutDataStreamLifecycle`. The `expand_wildcards` value SHALL be forwarded as the `WithExpandWildcards` option on the Put request. After a successful Put, the resource SHALL perform a read and store the result in state. If any step (client resolution, id computation, API call, or read-back) returns an error, the resource SHALL return the error diagnostic and SHALL not finalize the state.
+On create, the resource SHALL read the plan model, resolve the Elasticsearch client, compute the composite `id` from the live cluster UUID and configured `name`, convert the plan to a `models.LifecycleSettings` struct, and call `PutDataStreamLifecycle`. On update, the resource SHALL reuse the cluster UUID prefix from prior state's `id` rather than recomputing it from the currently connected cluster: if `name` is unchanged the prior `id` is preserved in full, and if `name` changes in place the name segment of `id` is replaced with the new `name`. The `expand_wildcards` value SHALL be forwarded as the `WithExpandWildcards` option on the Put request. After a successful Put, the resource SHALL perform a read and store the result in state. If any step (client resolution, id computation, API call, or read-back) returns an error, the resource SHALL return the error diagnostic and SHALL not finalize the state.
 
 #### Scenario: Successful create
 
@@ -149,13 +162,33 @@ On read, the resource SHALL parse the composite `id` from state using `Composite
 
 ### Requirement: Delete (REQ-019–REQ-020)
 
-On delete, the resource SHALL parse the composite `id` from state to extract the data stream name, then call `DeleteDataStreamLifecycle` with that name and the `expand_wildcards` value. On success, the resource SHALL call `resp.State.RemoveResource`. On API error, the resource SHALL return the error diagnostic and SHALL not remove the resource from state.
+On delete, the resource SHALL parse the composite `id` from state to extract the data stream name, then determine whether the connected Elasticsearch deployment is Elastic Cloud Serverless before deleting lifecycle settings.
 
-#### Scenario: Successful delete
+On a stateful deployment, the resource SHALL call `DeleteDataStreamLifecycle` with that name and the `expand_wildcards` value. On a successful Delete API response, the resource SHALL complete deletion so that the EntityCore resource envelope removes it from Terraform state. If serverless detection fails, or if the Delete API returns an error on a stateful deployment, the resource SHALL return the error diagnostic and SHALL not remove the resource from state.
 
-- GIVEN a resource with a valid `id`
-- WHEN delete runs and the API succeeds
+On Elastic Cloud Serverless, where data stream lifecycle and retention are Elastic-managed, the resource SHALL NOT call the Delete Data Lifecycle API. Instead, it SHALL return a warning diagnostic explaining that lifecycle removal was skipped and allow the EntityCore resource envelope to remove the resource from Terraform state without modifying the data stream on the server.
+
+#### Scenario: Successful delete on a stateful deployment
+
+- GIVEN a resource with a valid `id` on a stateful Elasticsearch deployment
+- WHEN delete runs and the Delete Data Lifecycle API succeeds
 - THEN the resource SHALL be removed from state
+
+#### Scenario: Delete on Elastic Cloud Serverless
+
+- GIVEN a resource with a valid `id` on Elastic Cloud Serverless
+- WHEN delete runs
+- THEN the provider SHALL NOT call the Delete Data Lifecycle API
+- AND Terraform diagnostics SHALL contain a warning that lifecycle removal was skipped
+- AND the resource SHALL be removed from Terraform state
+
+#### Scenario: Serverless detection fails during delete
+
+- GIVEN the provider cannot determine whether Elasticsearch is serverless
+- WHEN delete runs
+- THEN the provider SHALL return the detection error diagnostic
+- AND the Delete Data Lifecycle API SHALL NOT be called
+- AND the resource SHALL remain in Terraform state
 
 ### Requirement: Mapping — config to API (REQ-021–REQ-023)
 
@@ -202,3 +235,4 @@ The `downsampling` list SHALL accept at most 10 entries. Configurations with mor
 - GIVEN a `downsampling` list with 11 or more entries
 - WHEN Terraform validates the configuration
 - THEN the provider SHALL return a validation error indicating the maximum of 10 items
+

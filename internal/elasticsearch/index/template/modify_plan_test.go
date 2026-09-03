@@ -24,6 +24,7 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/datastreamoptions"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -61,7 +62,7 @@ func TestReconcilePlanWithPriorStateForSemanticDrift_settingsNestedPlanDottedSta
 	plan.Template = planTpl
 	state.Template = stateTpl
 	config.Template = planTpl
-	merged, diags := reconcilePlanWithPriorStateForSemanticDrift(ctx, plan, state, config)
+	merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, TemplateAttrTypes)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.NotNil(t, merged)
 	var mt TemplateBlockModel

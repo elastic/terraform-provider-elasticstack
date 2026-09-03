@@ -30,7 +30,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -49,22 +49,22 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
 		Expression: "*",
 	}
-	apiChart := kbapi.KibanaHTTPAPIsMetricNoESQL{
-		Type:                kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric,
+	apiChart := kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel{
+		Type:                kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric,
 		Title:               new("Metric Round-Trip"),
 		Description:         new("Converter test"),
 		IgnoreGlobalFilters: new(false),
 		Sampling:            new(float32(1.0)),
 		Query:               &query,
-		Metrics:             []kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item{},
+		Metrics:             []kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Metrics_Item{},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &apiChart.DataSource))
-	metric := kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item{}
+	metric := kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Metrics_Item{}
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &metric))
-	apiChart.Metrics = []kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item{metric}
+	apiChart.Metrics = []kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Metrics_Item{metric}
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricNoESQL(apiChart))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricNoESQLByValuePanel(apiChart))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -74,16 +74,16 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	variant0, err := attrs2.AsKibanaHTTPAPIsMetricNoESQL()
+	variant0, err := attrs2.AsKibanaHTTPAPIsMetricNoESQLByValuePanel()
 	require.NoError(t, err)
 	assert.Equal(t, "Metric Round-Trip", *variant0.Title)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric, variant0.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric, variant0.Type)
 }
 
 func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	var metricItem kbapi.KibanaHTTPAPIsMetricESQL_Metrics_Item
+	var metricItem kbapi.KibanaHTTPAPIsMetricESQLByValuePanel_Metrics_Item
 	require.NoError(t, json.Unmarshal([]byte(`{
 		"type": "primary",
 		"operation": "count",
@@ -93,15 +93,15 @@ func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	}`), &metricItem))
 
 	title := "Metric ESQL RT"
-	apiChart := kbapi.KibanaHTTPAPIsMetricESQL{
-		Type:    kbapi.KibanaHTTPAPIsMetricESQLTypeMetric,
+	apiChart := kbapi.KibanaHTTPAPIsMetricESQLByValuePanel{
+		Type:    kbapi.KibanaHTTPAPIsMetricESQLByValuePanelTypeMetric,
 		Title:   &title,
-		Metrics: []kbapi.KibanaHTTPAPIsMetricESQL_Metrics_Item{metricItem},
+		Metrics: []kbapi.KibanaHTTPAPIsMetricESQLByValuePanel_Metrics_Item{metricItem},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT(*) | LIMIT 1"}`), &apiChart.DataSource))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricESQL(apiChart))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsMetricESQLByValuePanel(apiChart))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -114,9 +114,9 @@ func TestConverter_roundTrip_ESQL_metric(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsKibanaHTTPAPIsMetricESQL()
+	out, err := attrs2.AsKibanaHTTPAPIsMetricESQLByValuePanel()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsMetricESQLTypeMetric, out.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsMetricESQLByValuePanelTypeMetric, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "Metric ESQL RT", *out.Title)
 	dsBytes, err := json.Marshal(out.DataSource)

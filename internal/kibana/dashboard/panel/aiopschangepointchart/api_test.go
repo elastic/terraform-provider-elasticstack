@@ -186,7 +186,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 		AggregationFunction: &agg,
 		SplitField:          new("host.name"),
 		Partitions:          &[]string{"host-a", "host-b"},
-		MaxSeriesToPlot:     new(float32(6)),
+		MaxSeriesToPlot:     new(6),
 		ViewType:            &vt,
 	}
 
@@ -202,18 +202,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			TimeRange:           nil,
 		},
 	}
-	pm := &models.PanelModel{
-		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
-			DataViewID:          stringVal("metrics-*"),
-			MetricField:         stringVal("system.cpu.total.pct"),
-			AggregationFunction: stringNull(),
-			SplitField:          stringNull(),
-			Partitions:          types.SetNull(types.StringType),
-			MaxSeriesToPlot:     float32Null(),
-			ViewType:            stringNull(),
-			TimeRange:           nil,
-		},
-	}
+	pm := &models.PanelModel{}
 
 	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
@@ -254,6 +243,45 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.AiopsChangePointChartConfig is nil, e.g. prior held a
+// different type's config), there is no null intent to honor and the config is rebuilt entirely
+// from the API, including TimeRange.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	agg := kbapi.KibanaHTTPAPIsAiopsChangePointChartAggregationFunction("avg")
+	vt := kbapi.KibanaHTTPAPIsAiopsChangePointChartViewType("charts")
+	from, to := "now-15m", "now"
+	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
+	api := kbapi.KibanaHTTPAPIsAiopsChangePointChart{
+		DataViewId:          "logs-*",
+		MetricField:         "system.memory.used.pct",
+		AggregationFunction: &agg,
+		ViewType:            &vt,
+		TimeRange:           &tr,
+	}
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: types.StringValue("ml_anomaly_charts"),
+	}
+
+	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.AiopsChangePointChartConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
+	require.Equal(t, "system.memory.used.pct", cfg.MetricField.ValueString())
+	require.Equal(t, "avg", cfg.AggregationFunction.ValueString())
+	require.Equal(t, "charts", cfg.ViewType.ValueString())
+	require.NotNil(t, cfg.TimeRange)
+	require.Equal(t, from, cfg.TimeRange.From.ValueString())
+	require.Equal(t, to, cfg.TimeRange.To.ValueString())
+	require.True(t, cfg.TimeRange.Mode.IsNull())
+}
+
 func TestPopulateFromAPI_partitionsOrderInsensitive(t *testing.T) {
 	t.Parallel()
 
@@ -270,13 +298,7 @@ func TestPopulateFromAPI_partitionsOrderInsensitive(t *testing.T) {
 			Partitions:  stringSet("host-a", "host-b", "host-c"),
 		},
 	}
-	pm := &models.PanelModel{
-		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
-			DataViewID:  stringVal("metrics-*"),
-			MetricField: stringVal("system.cpu.total.pct"),
-			Partitions:  stringSet("host-a", "host-b", "host-c"),
-		},
-	}
+	pm := &models.PanelModel{}
 
 	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
@@ -300,8 +322,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 			DataViewID:  stringVal("metrics-*"),
 			MetricField: stringVal("system.cpu.total.pct"),
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := aiopschangepointchart.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

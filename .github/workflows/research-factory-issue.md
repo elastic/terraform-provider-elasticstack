@@ -26,7 +26,7 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -283,15 +283,26 @@ steps:
     with:
       name: research-factory-issue-context
       path: /tmp/gh-aw/agent/
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
 permissions:
   contents: read
   issues: read
@@ -316,7 +327,7 @@ tools:
     mode: gh-proxy
     toolsets: [issues, repos]
 network:
-  allowed: [defaults, node, elastic.litellm-prod.ai, www.elastic.co]
+  allowed: [defaults, node, openrouter.ai, www.elastic.co]
 mcp-servers:
   elastic-docs:
     url: "https://www.elastic.co/docs/_mcp/"
@@ -339,7 +350,7 @@ safe-outputs:
           type: string
       steps:
         - name: Checkout repository
-          uses: actions/checkout@v7.0.0
+          uses: actions/checkout@v7.0.1
           with:
             persist-credentials: false
             fetch-depth: 1
@@ -403,7 +414,7 @@ do not block the run waiting for documentation.
 ## Comparison requirement
 
 You SHALL compare at least two distinct candidate approaches under `### Approaches considered`. Each
-approach needs its own `#### ` H4 heading. Do not emit a comment with only one approach.
+approach needs its own `####` H4 heading. Do not emit a comment with only one approach.
 
 ## Research comment format
 
@@ -419,7 +430,7 @@ this social-contract notice:
    > durable feedback, post a comment or edit the issue body.
 
 2. `### Problem framing` — Restate the requested change in concrete terms.
-3. `### Approaches considered` — Two or more `#### ` H4 child headings, each describing a distinct
+3. `### Approaches considered` — Two or more `####` H4 child headings, each describing a distinct
 candidate approach with sketch, Terraform shape (when applicable), Elastic API surface (when
 applicable), and pros/cons.
 4. `### Recommendation` — Name exactly one of the approaches above as the chosen spine, with a brief

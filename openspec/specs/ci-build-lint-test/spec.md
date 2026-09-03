@@ -1,22 +1,19 @@
 # `build-lint-test` — Workflow Requirements
 
-Workflow implementation: `.github/workflows/test.yml`
+Workflow implementation: `.github/workflows/provider.yml`
 
 ## Purpose
 
-Define the main CI workflow: preflight gate, build, lint (including OpenSpec validation), matrix acceptance tests against Elastic Stack versions, diagnostics, teardown, and optional PR auto-approve.
+Define the main CI workflow: build, lint (including OpenSpec validation), matrix acceptance tests against Elastic Stack versions, diagnostics, teardown, and optional PR auto-approve.
 
 ## Schema
 
 ```yaml
 on:
   push:
-    branches: ['**']
-    tags-ignore: ['v*']
-    paths-ignore: ['README.md', 'CHANGELOG.md']
+    branches: [main, "renovate/**"]
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore: ['README.md', 'CHANGELOG.md']
+    types: [opened, synchronize, reopened]
   workflow_dispatch: {}
 
 permissions:
@@ -25,13 +22,19 @@ permissions:
 ## Requirements
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
-The workflow name SHALL be `Build/Lint/Test`. The workflow SHALL run on `push` to any branch, excluding tag refs matching `v*` and excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request`, excluding changes limited to `README.md` and `CHANGELOG.md`. The workflow SHALL run on `pull_request` events of type `ready_for_review` (in addition to default types `opened`, `synchronize`, `reopened`). The workflow SHALL support manual execution via `workflow_dispatch`.
+The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
 
-#### Scenario: Push to feature branch
+#### Scenario: Push to main
 
-- GIVEN a push that is not a `v*` tag and not only ignored paths
-- WHEN the preflight gate allows execution
+- GIVEN a `push` to `main`
+- WHEN the change-classification job reports `provider_changes=true`
 - THEN build, lint, and test jobs MAY run per other requirements
+
+#### Scenario: Push to a Renovate branch
+
+- GIVEN a `push` to a branch matching `renovate/**`
+- WHEN the workflow is dispatched
+- THEN the workflow SHALL run so commit check runs exist for branch automerge
 
 ### Requirement: Build and lint jobs (REQ-007–REQ-008, REQ-031)
 
@@ -52,16 +55,15 @@ The `build` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, set up No
 
 ### Requirement: Acceptance test job structure (REQ-009–REQ-014)
 
-The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the preflight gate outputs `should_run=true` and the change-classification job reports `provider_changes=true`.
+The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
 
-For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet setup and forced synthetics installation SHALL run only for configured version subsets. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
+For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. Forced synthetics installation SHALL run only for configured version subsets. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
 
 The stack-start step SHALL have a step-level timeout so that a hung container image pull fails fast instead of consuming the full job timeout.
 
 #### Scenario: Provider change runs stack and tests
 
 - **GIVEN** a matrix version and runner
-- **AND** the preflight gate allows execution
 - **AND** the change-classification job reports `provider_changes=true`
 - **WHEN** the test job executes
 - **THEN** the stack SHALL be provisioned, readiness waits SHALL pass, and `make testacc` SHALL run with the documented policy for snapshots
@@ -83,6 +85,14 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 
 - **WHEN** the acceptance matrix is evaluated
 - **THEN** every configured stack version SHALL be `8.0.0` or higher, except snapshot labels that represent later unreleased stack versions
+
+#### Scenario: Fleet bootstrap runs uniformly for every matrix entry
+
+- **GIVEN** any configured matrix version, including one that is not part of any explicit per-version allowlist
+- **WHEN** the test job starts the stack via `make docker-fleet`
+- **THEN** a default Fleet Server host, a `fleet-server` agent policy, and a `fleet_server` package policy SHALL exist before `make testacc` runs
+- **AND** `make testacc`'s `acctest.PreCheck` SHALL ensure a default agent download source exists
+- **AND** no separate per-version-gated Fleet setup step SHALL be required for this coverage
 
 ### Requirement: Pre-pull fallback fleet image with retry
 
@@ -125,13 +135,19 @@ The workflow SHALL emit Docker Compose logs when the job fails or acceptance tes
 
 ### Requirement: Auto-approve job (REQ-018–REQ-021)
 
-The `auto-approve` job SHALL depend on the `Test Validation` job and SHALL only run on `pull_request` events. For non-`ready_for_review` events, `auto-approve` SHALL require `Test Validation` to succeed before it runs. For `ready_for_review` events, `auto-approve` SHALL be eligible to run regardless of `Test Validation`'s outcome (because the preflight gate intentionally skips acceptance work, and `Test Validation` succeeds on the preflight-skip path). The `auto-approve` job SHALL execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in [`openspec/specs/ci-pr-auto-approve/spec.md`](../ci-pr-auto-approve/spec.md). The `auto-approve` job SHALL request `contents: read` and `pull-requests: write` permissions.
+The `auto-approve` job SHALL depend on the `gate` job and SHALL only run on `pull_request` events. `auto-approve` SHALL require the `gate` job to succeed before it runs, unconditionally — there is no event-type carve-out. The `auto-approve` job SHALL execute `go run ./scripts/auto-approve`; approval policy and gate behavior are defined in [`openspec/specs/ci-pr-auto-approve/spec.md`](../ci-pr-auto-approve/spec.md). The `auto-approve` job SHALL request `contents: read` and `pull-requests: write` permissions.
 
 #### Scenario: Auto-approve after satisfied validation
 
-- **GIVEN** a pull request workflow and successful `Test Validation`
+- **GIVEN** a pull request workflow and a successful `gate` job result
 - **WHEN** auto-approve runs
 - **THEN** it SHALL invoke `go run ./scripts/auto-approve` with the specified permissions
+
+#### Scenario: Auto-approve does not run when the gate fails
+
+- **GIVEN** a pull request workflow and a `gate` job result other than `success`
+- **WHEN** the workflow evaluates whether to run `auto-approve`
+- **THEN** the `auto-approve` job SHALL NOT run
 
 ### Requirement: Supply chain for actions (REQ-022)
 
@@ -143,143 +159,112 @@ Third-party actions in the workflow SHALL be pinned by commit SHA.
 - WHEN the workflow YAML is inspected
 - THEN the action reference SHALL use a commit SHA
 
-### Requirement: Preflight gate (REQ-023–REQ-027)
-
-The workflow SHALL evaluate whether to execute CI jobs via a dedicated preflight gate job that emits a `should_run` output.
-
-For `push` events, the preflight gate SHALL set `should_run=true` when either:
-
-* No open pull request exists for the pushed branch in the same repository
-* All commits in the push event were authored by an allowed bot user: Copilot coding agent (`198982749+Copilot@users.noreply.github.com`) or GitHub Actions (`41898282+github-actions[bot]@users.noreply.github.com`)
-
-For `push` events where **neither** of the above holds, the preflight gate SHALL set `should_run=false`.
-
-For non-`push` events (`pull_request` and `workflow_dispatch`), the preflight gate SHALL set `should_run=true`, except for `pull_request` events of type `ready_for_review` where it SHALL set `should_run=false`.
-
-The `build`, `lint`, and matrix acceptance `test` jobs SHALL only execute when the preflight gate outputs `should_run=true`.
-
-#### Scenario: Push without open PR
-
-- GIVEN a push to a branch with no open PR in the same repository
-- WHEN preflight runs
-- THEN `should_run` SHALL be `true`
-
-#### Scenario: Push with open PR and all commits by an allowed bot user
-
-- GIVEN a push to a branch that has an open PR from the same repo
-- AND every commit in the push event was authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`) or GitHub Actions (`41898282+github-actions[bot]@users.noreply.github.com`)
-- WHEN preflight runs
-- THEN `should_run` SHALL be `true`
-
-#### Scenario: Push with open PR and a commit not by an allowed bot user
-
-- GIVEN a push to a branch that has an open PR from the same repo
-- AND at least one commit in the push event was not authored by Copilot coding agent (`198982749+Copilot@users.noreply.github.com`) or GitHub Actions (`41898282+github-actions[bot]@users.noreply.github.com`)
-- WHEN preflight runs
-- THEN `should_run` SHALL be `false` and downstream jobs SHALL be skipped
-
 ### Requirement: Job permissions (REQ-028–REQ-029)
 
-The preflight gate job SHALL request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`). The acceptance test job SHALL request `contents: read`, `issues: write`, and `pull-requests: write` permissions.
+The change-classification job SHALL request the minimum permissions required to inspect pull requests (`contents: read`, `pull-requests: read`). The acceptance test job SHALL request `contents: read`, `issues: write`, and `pull-requests: write` permissions.
 
-#### Scenario: Preflight permissions
+#### Scenario: Change-classification permissions
 
-- GIVEN the preflight job definition
+- GIVEN the change-classification job definition
 - WHEN permissions are evaluated
 - THEN they SHALL match the minimum set for listing PRs
 
-### Requirement: Ready-for-review behavior (REQ-030)
-
-On `ready_for_review` `pull_request` events, the workflow SHALL keep the preflight gate behavior that prevents the `build`, `lint`, change-classification, and matrix acceptance `test` jobs from running. The `Test Validation` job SHALL succeed based on the intentional preflight skip, and `auto-approve` SHALL remain eligible to run.
-
-#### Scenario: Ready for review event
-
-- **GIVEN** a `pull_request` with action `ready_for_review`
-- **WHEN** the workflow runs
-- **THEN** `build`, `lint`, change-classification, and matrix acceptance `test` SHALL be skipped by the preflight gate
-- **AND** `Test Validation` SHALL succeed
-- **AND** auto-approve SHALL be eligible to run
-
 ### Requirement: Change classification gate (REQ-032–REQ-033)
 
-The workflow SHALL evaluate whether matrix acceptance tests are required for the current change set via a dedicated change-classification job, but only when the preflight gate permits downstream CI execution by outputting `should_run=true`. When the preflight gate outputs `should_run=false`, the change-classification job SHALL be intentionally skipped. In the first iteration, when the classifier runs, it SHALL set `provider_changes=false` only when every changed file for the workflow run is under `openspec/`; any change set containing a path outside `openspec/` SHALL set `provider_changes=true`.
+The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push` and `workflow_dispatch`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
 
-When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether acceptance coverage is required.
+When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether those jobs are required.
 
 #### Scenario: OpenSpec-only change set
 
-- **GIVEN** a workflow run whose changed files are all under `openspec/`
-- **AND** the preflight gate outputs `should_run=true`
+- **GIVEN** a `pull_request` workflow run whose changed files are all under `openspec/`
 - **WHEN** the change-classification job evaluates the diff
 - **THEN** it SHALL report `provider_changes=false`
 
 #### Scenario: Provider-impacting change set
 
-- **GIVEN** a workflow run whose changed files include at least one path outside `openspec/`
-- **AND** the preflight gate outputs `should_run=true`
+- **GIVEN** a `pull_request` workflow run whose changed files include at least one path outside the non-impacting set
 - **WHEN** the change-classification job evaluates the diff
 - **THEN** it SHALL report `provider_changes=true`
 
-### Requirement: Test validation job (REQ-034–REQ-036)
+#### Scenario: Non-pull_request event always classifies as provider-impacting
 
-The workflow SHALL publish a `Test Validation` job that always reports a final acceptance-gate result for the workflow run. The validation job SHALL evaluate the preflight output, the change-classification output, and the matrix acceptance job result.
+- **GIVEN** a non-`pull_request` event triggering the workflow (including `push` or `workflow_dispatch`)
+- **WHEN** the change-classification job runs
+- **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
 
-The `Test Validation` job SHALL succeed when any of the following is true:
+### Requirement: Provider gate job (REQ-034–REQ-036)
 
-* The preflight gate intentionally disables downstream CI execution
-* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job is intentionally skipped
-* The matrix acceptance `test` job completes successfully
+The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` job results.
 
-When the preflight gate allows downstream execution, the `Test Validation` job SHALL fail if either of the following is true:
+The `gate` job SHALL succeed when either of the following is true:
 
-* The change-classification job reports `provider_changes=true` and the matrix acceptance `test` job does not complete successfully
-* The change-classification job reports `provider_changes=false` and the matrix acceptance `test` job still runs but does not complete successfully
+* The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job are all intentionally skipped
+* `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job all complete successfully (regardless of the classify result)
 
-The validation job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks.
+The `gate` job SHALL fail when any of the following is true:
+
+* Any of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `failure` or `cancelled`
+* The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports an unexpected `skipped` result
+* Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
+
+The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint` checks.
 
 #### Scenario: OpenSpec-only pull request
 
 - **GIVEN** a pull request whose changed files are all under `openspec/`
-- **WHEN** the workflow reaches `Test Validation`
-- **THEN** the matrix acceptance `test` job SHALL be treated as intentionally skipped
-- **AND** `Test Validation` SHALL succeed
+- **WHEN** the workflow reaches the `gate` job
+- **THEN** `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job SHALL be treated as intentionally skipped
+- **AND** the `gate` job SHALL succeed
 
 #### Scenario: Provider change with failing acceptance coverage
 
 - **GIVEN** a workflow run with `provider_changes=true`
 - **AND** the matrix acceptance `test` job does not complete successfully
-- **WHEN** `Test Validation` evaluates the workflow state
-- **THEN** `Test Validation` SHALL fail
+- **WHEN** the `gate` job evaluates the workflow state
+- **THEN** the `gate` job SHALL fail
 
-### Requirement: Generated changelog pull requests can reach auto-approve without full CI
-The `Build/Lint/Test` workflow SHALL allow same-repository pull requests from branch `generated-changelog` that are authored by `github-actions[bot]` and modify only `CHANGELOG.md` to reach the `auto-approve` job without requiring the full build, lint, change-classification, or matrix acceptance test path to run. The skip condition MUST verify all three criteria — branch name, PR author, and file list — in the preflight gate before setting `should_run=false`.
+#### Scenario: Provider change with an unexpected skip
 
-#### Scenario: Generated changelog PR reaches auto-approve path
-- **GIVEN** a same-repository pull request from branch `generated-changelog`
-- **AND** the PR author is `github-actions[bot]`
-- **AND** the pull request changes only `CHANGELOG.md`
-- **WHEN** the workflow evaluates its execution path
-- **THEN** the workflow SHALL produce a successful path that leaves `auto-approve` eligible to run
-- **AND** it SHALL NOT require the full build, lint, and matrix acceptance test jobs for that PR
+- **GIVEN** a workflow run with `provider_changes=true`
+- **AND** at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `skipped`
+- **WHEN** the `gate` job evaluates the workflow state
+- **THEN** the `gate` job SHALL fail
 
-#### Scenario: Auto-merge is gated on the approval outcome
-- **GIVEN** a `generated-changelog` PR
-- **WHEN** the `auto-approve` job runs
-- **THEN** auto-merge SHALL only be enabled if the auto-approve script determined `ShouldApprove` or `AlreadyApproved` is true (reported via a `GITHUB_OUTPUT` step output)
-- **AND** auto-merge SHALL NOT be enabled if the auto-approve gates reject the PR
+### Requirement: Snapshot-to-GA version promotion
 
-### Requirement: Changelog-only bypass remains narrowly scoped
-The `Build/Lint/Test` workflow SHALL keep the changelog-only bypass narrowly scoped to the generated changelog automation shape. Other changelog-only pull requests SHALL NOT gain the same bypass unless they satisfy all three repository-authored generated-changelog conditions: branch name `generated-changelog`, PR author `github-actions[bot]`, and files limited to `CHANGELOG.md`.
+When the Elastic Stack release tracked by the acceptance matrix's snapshot-labeled entry
+(`<version>-SNAPSHOT`) reaches general availability, the workflow SHALL replace that matrix entry
+with the released version string rather than adding a separate, additional matrix entry for the same
+stack line. The promoted entry SHALL be added to every per-version step condition (such as Fleet
+setup) that had matched the snapshot label only via the `-SNAPSHOT` suffix, so the promoted version
+does not lose step coverage it received while labeled as a snapshot. The promoted entry SHALL no
+longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be treated as blocking
+(`continue-on-error: false`) like every other non-snapshot matrix entry, and SHALL NOT trigger the
+snapshot-failure PR warning comment.
 
-#### Scenario: Manual changelog-only PR does not inherit generated-changelog bypass
-- **GIVEN** a pull request changes only `CHANGELOG.md`
-- **AND** its head branch name is not `generated-changelog`
-- **WHEN** the workflow evaluates bypass conditions
-- **THEN** it SHALL NOT treat that pull request as the generated-changelog special case
+#### Scenario: Snapshot entry is promoted to its GA release
 
-#### Scenario: Wrong author does not inherit generated-changelog bypass
-- **GIVEN** a pull request from branch `generated-changelog` changes only `CHANGELOG.md`
-- **AND** the PR author is not `github-actions[bot]`
-- **WHEN** the workflow evaluates bypass conditions
-- **THEN** it SHALL run full CI rather than skipping to the auto-approve path
+- **GIVEN** the acceptance matrix contains a snapshot-labeled entry `X.Y.0-SNAPSHOT` tracking an
+  in-development stack line
+- **AND** that stack line reaches general availability as `X.Y.0`
+- **WHEN** the matrix is updated for the release
+- **THEN** the `X.Y.0-SNAPSHOT` entry SHALL be rewritten to `X.Y.0`
+- **AND** no additional matrix entry SHALL be added for the same `X.Y` stack line
+
+#### Scenario: Promoted entry keeps per-version step coverage
+
+- **GIVEN** a per-version step condition that previously matched a snapshot entry only via
+  `endsWith(matrix.version, '-SNAPSHOT')` (for example, Fleet setup)
+- **WHEN** that snapshot entry is promoted to its GA version string
+- **THEN** the promoted version string SHALL be added explicitly to that step's condition
+- **AND** the step SHALL continue to run for the promoted version exactly as it did while the entry
+  was labeled as a snapshot
+
+#### Scenario: Promoted entry becomes blocking
+
+- **GIVEN** a matrix entry that was promoted from a snapshot label to its GA version string
+- **WHEN** the acceptance test step (`make testacc`) fails for that entry
+- **THEN** `continue-on-error` SHALL NOT apply to that failure
+- **AND** the snapshot-failure PR warning comment step SHALL NOT fire for that entry
 

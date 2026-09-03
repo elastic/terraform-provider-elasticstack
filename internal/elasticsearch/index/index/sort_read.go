@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 
+	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,10 +48,10 @@ func readSortTuple(model tfModel) (sortTuple, bool, diag.Diagnostics) {
 		return sortTuple{}, false, diags
 	}
 	return sortTuple{
-		Fields:  extractSortSetting(settings, settingSortField),
-		Orders:  extractSortSetting(settings, settingSortOrder),
-		Missing: extractSortSetting(settings, settingSortMissing),
-		Mode:    extractSortSetting(settings, settingSortMode),
+		Fields:  extractSortSetting(settings, indexparent.SettingSortField),
+		Orders:  extractSortSetting(settings, indexparent.SettingSortOrder),
+		Missing: extractSortSetting(settings, indexparent.SettingSortMissing),
+		Mode:    extractSortSetting(settings, indexparent.SettingSortMode),
 	}, true, nil
 }
 

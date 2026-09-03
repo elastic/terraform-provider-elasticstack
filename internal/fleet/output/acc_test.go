@@ -710,6 +710,66 @@ func TestAccResourceOutputKafkaUserPass(t *testing.T) {
 	})
 }
 
+func TestAccResourceOutputKafkaGzipDefaultCompressionLevel(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.compression", "gzip"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.compression_level", "4"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.compression", "gzip"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.compression_level", "8"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputKafkaUserPassNoSasl(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.auth_type", "user_pass"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.username", "testuser"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceOutputKafkaPartitions(t *testing.T) {
 	policyName := sdkacctest.RandString(22)
 	versionutils.SkipIfUnsupported(t, output.MinVersionOutputKafka, versionutils.FlavorAny)

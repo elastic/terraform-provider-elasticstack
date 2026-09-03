@@ -41,20 +41,20 @@ func alignImagePanelConfigFromPlan(plan, state *models.ImagePanelConfigModel) {
 		return
 	}
 
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.AltText, &state.AltText)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.BackgroundColor, &state.BackgroundColor)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Title, &state.Title)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Description, &state.Description)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.HideTitle, &state.HideTitle)
-	lenscommon.PreserveKnownTfBoolIfStateNull(plan.HideBorder, &state.HideBorder)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.ObjectFit, &state.ObjectFit)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.AltText, &state.AltText)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.BackgroundColor, &state.BackgroundColor)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Title, &state.Title)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Description, &state.Description)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.HideTitle, &state.HideTitle)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.HideBorder, &state.HideBorder)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.ObjectFit, &state.ObjectFit)
 
 	if plan.Src.URL != nil {
 		if state.Src.URL == nil {
 			url := *plan.Src.URL
 			state.Src.URL = &url
 		} else {
-			lenscommon.PreserveKnownTfStringIfStateNull(plan.Src.URL.URL, &state.Src.URL.URL)
+			lenscommon.PreserveKnownTfValueIfStateNull(plan.Src.URL.URL, &state.Src.URL.URL)
 		}
 	}
 	if plan.Src.File != nil {
@@ -62,16 +62,16 @@ func alignImagePanelConfigFromPlan(plan, state *models.ImagePanelConfigModel) {
 			file := *plan.Src.File
 			state.Src.File = &file
 		} else {
-			lenscommon.PreserveKnownTfStringIfStateNull(plan.Src.File.FileID, &state.Src.File.FileID)
+			lenscommon.PreserveKnownTfValueIfStateNull(plan.Src.File.FileID, &state.Src.File.FileID)
 		}
 	}
 }
 
 func cloneImagePanelConfigModel(model *models.ImagePanelConfigModel) *models.ImagePanelConfigModel {
-	if model == nil {
+	cloned := lenscommon.CloneModel(model)
+	if cloned == nil {
 		return nil
 	}
-	cloned := *model
 	if model.Src.URL != nil {
 		url := *model.Src.URL
 		cloned.Src.URL = &url
@@ -80,5 +80,5 @@ func cloneImagePanelConfigModel(model *models.ImagePanelConfigModel) *models.Ima
 		file := *model.Src.File
 		cloned.Src.File = &file
 	}
-	return &cloned
+	return cloned
 }

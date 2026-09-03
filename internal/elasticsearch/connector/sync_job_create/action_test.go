@@ -255,14 +255,14 @@ func TestWaitForSyncJobCompletion_timeout(t *testing.T) {
 func TestWaitForSyncJobCompletion_timeoutBeforeFirstPoll(t *testing.T) {
 	t.Parallel()
 
-	// ctx times out long before the first 5s poll tick; the underlying
-	// asyncutils helper short-circuits on ctx.Done() and the wrapper
-	// surfaces a timeoutDiagnostic with lastStatus = "unknown".
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-	defer cancel()
+	// An already-done ctx is short-circuited by WaitForStateTransition before
+	// the immediate first check, so get is never called and lastStatus stays
+	// "unknown".
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
 	get := func(_ context.Context, _ string) (*syncjobget.Response, fwdiag.Diagnostics) {
-		t.Fatal("get should not be called when ctx times out before first poll tick")
+		t.Fatal("get should not be called when ctx is already done")
 		return nil, nil
 	}
 

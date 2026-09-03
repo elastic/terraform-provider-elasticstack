@@ -37,6 +37,14 @@ func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks.*", "private"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_missing", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "tag"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "source_ip"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "destination_ip"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirection),
 				),
 			},
@@ -56,6 +64,7 @@ func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "tag", "network-direction"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_missing", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_failure", "true"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirectionAllAttributes),
 				),
 			},
@@ -80,6 +89,7 @@ func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks.*", "private"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_missing", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_failure", "true"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirectionBooleanVariations),
 				),
 			},
@@ -90,9 +100,26 @@ func TestAccDataSourceIngestProcessorNetworkDirection(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks.#", "1"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks.*", "private"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "on_failure.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "on_failure.#", "2"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "on_failure.0", `{"set":{"field":"error.message","value":"network direction failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "on_failure.1", `{"set":{"field":"error.type","value":"network_direction"}}`),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks_field"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirectionOnFailure),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "source_ip", "src.address"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "destination_ip", "dst.address"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "target_field", "net.direction"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks_field", "network.trusted_ranges"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "internal_networks.#"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_network_direction.test", "json", expectedJSONNetworkDirectionUpdatedValues),
 				),
 			},
 		},
@@ -153,11 +180,28 @@ const expectedJSONNetworkDirectionOnFailure = `{
 					"field": "error.message",
 					"value": "network direction failed"
 				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "network_direction"
+				}
 			}
 		],
 		"internal_networks": [
 			"private"
 		],
+		"ignore_missing": true
+	}
+}`
+
+const expectedJSONNetworkDirectionUpdatedValues = `{
+	"network_direction": {
+		"source_ip": "src.address",
+		"destination_ip": "dst.address",
+		"target_field": "net.direction",
+		"internal_networks_field": "network.trusted_ranges",
+		"ignore_failure": false,
 		"ignore_missing": true
 	}
 }`

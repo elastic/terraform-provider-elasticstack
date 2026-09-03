@@ -17,64 +17,14 @@
 
 package ingest
 
-import (
-	"maps"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-type processorLowercaseModel struct {
-	CommonProcessorModel
-	WithIgnorableTargetField
-}
-
-func (m *processorLowercaseModel) TypeName() string { return "lowercase" }
-
-func (m *processorLowercaseModel) MarshalBody() (any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	body := processorLowercaseBody{}
-
-	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
-	if diags.HasError() {
-		return nil, diags
-	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
-
-	return body, diags
-}
+import "github.com/hashicorp/terraform-plugin-framework/datasource"
 
 // NewProcessorLowercaseDataSource returns a PF data source for the lowercase processor.
 func NewProcessorLowercaseDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-		attrField: schema.StringAttribute{
-			Description: "The field to make lowercase.",
-			Required:    true,
-		},
-		attrTargetField: schema.StringAttribute{
-			Description: descTargetFieldInPlace,
-			Optional:    true,
-		},
-		attrIgnoreMissing: schema.BoolAttribute{
-			Description: descIgnoreMissingDocStop,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-
-	maps.Copy(attrs, CommonProcessorSchemaAttributes())
-
-	return NewProcessorDataSource(&processorLowercaseModel{}, schema.Schema{
-		Description: processorLowercaseDataSourceDescription,
-		Attributes:  attrs,
+	return newSimpleIgnorableTargetFieldDataSource(simpleProcessorConfig{
+		typeName:        "lowercase",
+		description:     processorLowercaseDataSourceDescription,
+		fieldDesc:       "The field to make lowercase.",
+		targetFieldDesc: descTargetFieldInPlace,
 	})
 }

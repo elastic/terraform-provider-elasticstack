@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -46,20 +47,20 @@ func Expand(obj types.Object) (*models.DataStreamOptions, diag.Diagnostics) {
 	out := &models.DataStreamOptions{
 		FailureStore: &models.FailureStoreOptions{},
 	}
-	if en, ok := fsAttrs["enabled"]; ok && !en.IsNull() && !en.IsUnknown() {
+	if en, ok := fsAttrs["enabled"]; ok && typeutils.IsKnown(en) {
 		if b, ok := en.(types.Bool); ok {
 			v := b.ValueBool()
 			out.FailureStore.Enabled = &v
 		}
 	}
-	if lcVal, ok := fsAttrs["lifecycle"]; ok && !lcVal.IsNull() && !lcVal.IsUnknown() {
+	if lcVal, ok := fsAttrs["lifecycle"]; ok && typeutils.IsKnown(lcVal) {
 		lcObj, ok := lcVal.(types.Object)
 		if !ok {
 			diags.AddError("Internal error", fmt.Sprintf("expected Object for failure_store.lifecycle, got %T", lcVal))
 			return nil, diags
 		}
 		lcAttrs := lcObj.Attributes()
-		if drAttr, ok := lcAttrs["data_retention"]; ok && !drAttr.IsNull() && !drAttr.IsUnknown() {
+		if drAttr, ok := lcAttrs["data_retention"]; ok && typeutils.IsKnown(drAttr) {
 			if drStr, ok := drAttr.(types.String); ok {
 				out.FailureStore.Lifecycle = &models.FailureStoreLifecycle{
 					DataRetention: drStr.ValueString(),

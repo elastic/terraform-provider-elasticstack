@@ -61,14 +61,6 @@ func (m *processorJoinModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorJoinDataSource returns a PF data source for the join processor.
 func NewProcessorJoinDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "Field containing array values to join.",
 			Required:    true,

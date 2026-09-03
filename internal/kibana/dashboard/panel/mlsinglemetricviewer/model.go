@@ -83,31 +83,34 @@ func BuildConfig(ctx context.Context, pm models.PanelModel, panel *kbapi.KibanaH
 	return nil
 }
 
-// PopulateFromAPI maps Kibana ML single metric viewer config into Terraform panel state while preserving prior null intent.
+// PopulateFromAPI maps Kibana ML single metric viewer config into Terraform panel state while
+// preserving prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with MlSingleMetricViewerConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.MlSingleMetricViewerConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(ctx context.Context, pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsMlSingleMetricViewer) diag.Diagnostics {
-	if prior == nil {
+	if prior == nil || prior.MlSingleMetricViewerConfig == nil {
 		cfg, diags := mlSingleMetricViewerConfigFromAPIImport(ctx, apiConfig)
 		if diags.HasError() {
 			return diags
 		}
 		pm.MlSingleMetricViewerConfig = cfg
-		return nil
+		return diags
 	}
 
-	if pm.MlSingleMetricViewerConfig == nil && prior.MlSingleMetricViewerConfig != nil {
-		cfg, diags := mlSingleMetricViewerConfigFromAPIImport(ctx, apiConfig)
-		if diags.HasError() {
-			return diags
-		}
-		pm.MlSingleMetricViewerConfig = cfg
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing, diags := mlSingleMetricViewerConfigFromAPIImport(ctx, apiConfig)
+	if diags.HasError() {
+		return diags
 	}
-
-	existing := pm.MlSingleMetricViewerConfig
-	if existing == nil {
-		return nil
-	}
-
-	return mlSingleMetricViewerMergeFromAPI(ctx, existing, prior.MlSingleMetricViewerConfig, apiConfig)
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, apiConfig.TimeRange, prior.MlSingleMetricViewerConfig.TimeRange)
+	mlSingleMetricViewerPreserveNullIntentFromPrior(prior.MlSingleMetricViewerConfig, existing)
+	pm.MlSingleMetricViewerConfig = existing
+	return diags
 }
 
 func mlSingleMetricViewerConfigFromAPIImport(ctx context.Context, apiConfig kbapi.KibanaHTTPAPIsMlSingleMetricViewer) (*models.MlSingleMetricViewerConfigModel, diag.Diagnostics) {
@@ -125,37 +128,6 @@ func mlSingleMetricViewerConfigFromAPIImport(ctx context.Context, apiConfig kbap
 		TimeRange:             panelkit.TimeRangeFromAPI(apiConfig.TimeRange, nil),
 	}
 	return out, diags
-}
-
-func mlSingleMetricViewerMergeFromAPI(
-	ctx context.Context,
-	existing, prior *models.MlSingleMetricViewerConfigModel,
-	apiConfig kbapi.KibanaHTTPAPIsMlSingleMetricViewer,
-) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	existing.JobIDs = typeutils.StringSliceValue(apiConfig.JobIds)
-	existing.SelectedDetectorIndex = panelkit.PreserveFloat32(existing.SelectedDetectorIndex, apiConfig.SelectedDetectorIndex)
-	existing.ForecastID = panelkit.PreserveString(existing.ForecastID, apiConfig.ForecastId)
-	existing.FunctionDescription = panelkit.PreserveString(existing.FunctionDescription, apiConfig.FunctionDescription)
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
-
-	var priorTR *models.TimeRangeModel
-	if prior != nil {
-		priorTR = prior.TimeRange
-	}
-	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, apiConfig.TimeRange, priorTR)
-
-	if prior != nil && typeutils.IsKnown(prior.SelectedEntities) {
-		existing.SelectedEntities = mlSingleMetricViewerSelectedEntitiesFromAPI(ctx, apiConfig.SelectedEntities, &diags)
-	}
-
-	if prior != nil {
-		mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing)
-	}
-
-	return diags
 }
 
 func mlSingleMetricViewerSelectedEntitiesToAPI(
@@ -251,18 +223,10 @@ func mlSingleMetricViewerPreserveNullIntentFromPrior(prior, existing *models.MlS
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SelectedDetectorIndex) {
-		existing.SelectedDetectorIndex = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.ForecastID) {
-		existing.ForecastID = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.FunctionDescription) {
-		existing.FunctionDescription = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SelectedEntities) {
-		existing.SelectedEntities = prior.SelectedEntities
-	}
+	panelkit.NullPreserveFromPrior(prior.SelectedDetectorIndex, &existing.SelectedDetectorIndex)
+	panelkit.NullPreserveFromPrior(prior.ForecastID, &existing.ForecastID)
+	panelkit.NullPreserveFromPrior(prior.FunctionDescription, &existing.FunctionDescription)
+	panelkit.NullPreserveFromPrior(prior.SelectedEntities, &existing.SelectedEntities)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)

@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -57,19 +58,7 @@ func (model outputModel) GetResourceID() types.String     { return model.OutputI
 func (model outputModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 
 func (model outputModel) GetSpaceID() types.String {
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		return types.StringValue("")
-	}
-	for _, elem := range model.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue("")
+	return fleet.SpaceIDFromSetOrDefault(model.SpaceIDs, "")
 }
 
 // IsUnscopedSpace implements entitycore.KibanaUnscopedSpace.
@@ -109,15 +98,15 @@ func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.Outp
 	}
 
 	switch output := output.(type) {
-	case kbapi.KibanaHTTPAPIsOutputElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputResponseElasticsearch:
 		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
 
-	case kbapi.KibanaHTTPAPIsOutputLogstash:
+	case kbapi.KibanaHTTPAPIsOutputResponseLogstash:
 		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
 
-	case kbapi.KibanaHTTPAPIsOutputKafka:
+	case kbapi.KibanaHTTPAPIsOutputResponseKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch:
 		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
@@ -181,7 +170,7 @@ type commonOutputReadData struct {
 	isDefault            *bool
 	isDefaultMonitoring  *bool
 	configYaml           *string
-	ssl                  *kbapi.KibanaHTTPAPIsOutputSsl
+	ssl                  *kbapi.KibanaHTTPAPIsOutputResponseSsl
 }
 
 func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutputReadData) (diags diag.Diagnostics) {
@@ -214,7 +203,12 @@ func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutpu
 		model.ConfigYaml = customtypes.NewNormalizedYamlNull()
 	}
 	if d.ssl != nil {
-		model.Ssl, diags = sslToObjectValue(ctx, d.ssl.Certificate, d.ssl.CertificateAuthorities, d.ssl.Key, d.ssl.VerificationMode)
+		verificationMode := (*kbapi.KibanaHTTPAPIsOutputSslVerificationMode)(nil)
+		if d.ssl.VerificationMode != nil {
+			mode := kbapi.KibanaHTTPAPIsOutputSslVerificationMode(*d.ssl.VerificationMode)
+			verificationMode = &mode
+		}
+		model.Ssl, diags = sslToObjectValue(ctx, d.ssl.Certificate, d.ssl.CertificateAuthorities, d.ssl.Key, verificationMode)
 	} else {
 		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
 	}

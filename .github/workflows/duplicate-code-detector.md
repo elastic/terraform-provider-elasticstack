@@ -8,7 +8,7 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -39,15 +39,26 @@ safe-outputs:
     max: 3
 
 timeout-minutes: 15
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
 jobs:
@@ -93,6 +104,7 @@ Detect and report code duplication by:
 ### 1. Changed Files Analysis
 
 Identify and analyze modified files:
+
 - Determine files changed in the recent commits using `git log` and `git diff`
 - Focus on source code files (programming language files)
 - **Exclude test files** from analysis (files matching patterns: `*_test.*`, `*.test.*`, `*.spec.*`, `test_*.*`, or located in directories named `test`, `tests`, `__tests__`, or `spec`)
@@ -106,6 +118,7 @@ Identify and analyze modified files:
 Apply analysis to find duplicates:
 
 **Pattern Search**:
+
 - Search for duplication indicators using grep and code search:
   - Similar function signatures
   - Repeated logic blocks
@@ -115,6 +128,7 @@ Apply analysis to find duplicates:
 - Identify structural similarities in code organization
 
 **Semantic Analysis**:
+
 - Compare code blocks for logical similarity beyond textual matching
 - Identify different implementations of the same functionality
 - Look for copy-paste patterns with minor variations
@@ -124,12 +138,14 @@ Apply analysis to find duplicates:
 Assess findings to identify true code duplication:
 
 **Duplication Types**:
+
 - **Exact Duplication**: Identical code blocks in multiple locations
 - **Structural Duplication**: Same logic with minor variations (different variable names, etc.)
 - **Functional Duplication**: Different implementations of the same functionality
 - **Copy-Paste Programming**: Similar code blocks that could be extracted into shared utilities
 
 **Assessment Criteria**:
+
 - **Severity**: Amount of duplicated code (lines of code, number of occurrences)
 - **Impact**: Where duplication occurs (critical paths, frequently called code)
 - **Maintainability**: How duplication affects code maintainability
@@ -140,12 +156,14 @@ Assess findings to identify true code duplication:
 Create separate issues for each distinct duplication pattern found, up to `${{ needs.pre_activation.outputs.issue_slots_available }}` patterns this run. Each pattern should get its own issue to enable focused remediation.
 
 **When to Create Issues**:
+
 - Only create issues if significant duplication is found (threshold: >10 lines of duplicated code OR 3+ instances of similar patterns)
 - **Create one issue per distinct duplication pattern** - do NOT bundle multiple patterns in a single issue
 - Limit to the top `${{ needs.pre_activation.outputs.issue_slots_available }}` most significant patterns if more are found
 - Use the `create_issue` tool from safe-outputs MCP **once for each pattern**
 
 **Issue Contents for Each Pattern**:
+
 - **Executive Summary**: Brief description of this specific duplication pattern
 - **Duplication Details**: Specific locations and code blocks for this pattern only
 - **Severity Assessment**: Impact and maintainability concerns for this pattern
@@ -237,6 +255,7 @@ For each distinct duplication pattern found, create a separate issue using this 
 - **Detection Method**: Semantic code analysis
 - **Commit**: ${{ github.event.head_commit.id }}
 - **Analysis Date**: [timestamp]
+
 ````
 
 ## Operational Guidelines
@@ -267,7 +286,25 @@ For each distinct duplication pattern found, create a separate issue using this 
 - Assign issue to @copilot for automated remediation
 - Use descriptive titles that clearly identify the specific pattern (e.g., "Duplicate Code: Error Handling Pattern in Parser Module")
 
+#### Issue title length guardrail
+
+GitHub issue titles are limited to **256 characters total**, including the
+`title-prefix` that `create-issue` prepends automatically.
+
+- This workflow's prefix is `"[duplicate-code] "` (17 characters),
+  leaving **239** characters for the title you provide.
+- Before calling `create-issue`, verify that
+  `len("[duplicate-code] ") + len(your title)` is **≤ 256**.
+- Keep titles concise. Move full file paths, function signatures, attribute
+  lists, failure excerpts, and detailed descriptions into the issue body.
+- If the natural title would exceed the limit, shorten the variable portion.
+  Prefer a short pattern label over long descriptive phrases (e.g., use
+  "validation helper duplication in elasticsearch package" rather than a title
+  containing multiple file paths).
+- Do not include markdown heading markers (`#`), emoji, or the prefix label
+  redundantly in the title. The title field is plain text.
+
 ## Dispatch
-After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once with `dispatch: true` to dispatch the `code-factory` workflow for each created issue.
 
 **Objective**: Improve code quality by identifying and reporting meaningful code duplication that impacts maintainability. Focus on actionable findings that enable automated or manual refactoring.

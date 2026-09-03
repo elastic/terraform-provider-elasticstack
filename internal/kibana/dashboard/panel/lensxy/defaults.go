@@ -30,11 +30,7 @@ func populateXYChartLensAttributes(attrs map[string]any) map[string]any {
 				continue
 			}
 			if yArr, ok := layerMap["y"].([]any); ok {
-				for i, y := range yArr {
-					if yMap, ok := y.(map[string]any); ok {
-						yArr[i] = lenscommon.PopulateLensMetricDefaults(yMap)
-					}
-				}
+				lenscommon.PopulateAnySliceDefaults(yArr, lenscommon.PopulateLensMetricDefaults)
 			}
 		}
 	}

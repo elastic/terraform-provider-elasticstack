@@ -4,6 +4,7 @@ context: |
   Tech stack: Go, Terraform Plugin Framework
   Domain: Terraform provider for Elastic Stack
   Requirements: Canonical specs in openspec/specs/ (OpenSpec). See dev-docs/high-level/openspec-requirements.md
+  MANDATORY: Invoke the 'openspec-plus-apply' skill immediately when openspec-apply-change is invoked
 
 
 # Per-artifact rules (optional)
@@ -15,3 +16,13 @@ context: |
 #       - Always include a "Non-goals" section
 #     tasks:
 #       - Break tasks into chunks of max 2 hours
+
+rules:
+  proposal:
+    - "MANDATORY: Invoke the 'openspec-plus-proposal' skill BEFORE writing the proposal."
+  specs:
+    - "MANDATORY: Invoke the 'openspec-plus-spec' skill BEFORE writing any specification."
+  design:
+    - "MANDATORY: Invoke the 'openspec-plus-design' skill BEFORE writing the design document."
+  tasks:
+    - "MANDATORY: Invoke the 'openspec-plus-tasks' skill BEFORE writing the tasks file."

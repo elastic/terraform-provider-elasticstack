@@ -68,13 +68,31 @@ func TestAccDataSourceIngestProcessorRename(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_rename.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "service.name"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "target_field", "service.type"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "description", "Rename service name field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "if", "ctx.service != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.#"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "tag", "rename-service"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRenameUpdated),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_rename.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "field", "provider"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "target_field", "cloud.provider"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "description", "Rename provider field with multiple on_failure handlers"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "if", "ctx.provider == null"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_missing", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "ignore_failure", "false"),
-					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "description"),
-					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "if"),
-					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.#"),
-					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "tag"),
-					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRenameUpdated),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.0", `{"set":{"field":"error.message","value":"rename failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "on_failure.1", `{"set":{"field":"error.type","value":"rename_error"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_rename.test", "tag", "rename-provider-multi"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_rename.test", "json", expectedJSONRenameMultiOnFailure),
 				),
 			},
 		},
@@ -112,9 +130,38 @@ const expectedJSONRenameAllAttributes = `{
 
 const expectedJSONRenameUpdated = `{
 	"rename": {
+		"description": "Rename service name field",
 		"field": "service.name",
-		"target_field": "service.type",
+		"if": "ctx.service != null",
 		"ignore_failure": false,
-		"ignore_missing": false
+		"ignore_missing": true,
+		"tag": "rename-service",
+		"target_field": "service.type"
+	}
+}`
+
+const expectedJSONRenameMultiOnFailure = `{
+	"rename": {
+		"description": "Rename provider field with multiple on_failure handlers",
+		"field": "provider",
+		"if": "ctx.provider == null",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "rename failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "rename_error"
+				}
+			}
+		],
+		"tag": "rename-provider-multi",
+		"target_field": "cloud.provider"
 	}
 }`

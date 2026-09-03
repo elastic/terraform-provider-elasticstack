@@ -19,7 +19,6 @@ package serverhost
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -33,7 +32,7 @@ var (
 // Resource implements the Fleet Server Host resource.
 type Resource struct {
 	*entitycore.KibanaResource[serverHostModel]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newResource() *Resource {
@@ -49,7 +48,7 @@ func newResource() *Resource {
 				Update: updateServerHost,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("host_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("host_id")),
 	}
 }
 

@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,6 +45,11 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	fleetClient := client.GetFleetClient()
 
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	feat, diags := resolveIntegrationPolicyFeatures(ctx, client)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -58,11 +64,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	// Determine space context for creating the package policy.
 	// The package policy must be created in the same space as the agent policy it references.
-	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	spaceID := fleetutils.SpaceIDFromSet(planModel.SpaceIDs)
 
 	// Create package policy with appropriate space context
 	policy, diags := fleet.CreatePackagePolicy(ctx, fleetClient, spaceID, body)
@@ -91,7 +93,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	if policy.Package == nil {
 		resp.Diagnostics.AddError(
 			"Missing package information",
-			fmt.Sprintf("The integration policy '%s' does not contain package information.", typeutils.Deref(policy.Id)),
+			fmt.Sprintf("The integration policy '%s' does not contain package information.", policy.Id),
 		)
 		return
 	}

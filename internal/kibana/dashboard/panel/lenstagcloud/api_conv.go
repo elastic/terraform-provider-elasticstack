@@ -32,11 +32,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func isTagcloudNoESQLCandidateActuallyESQL(api kbapi.KibanaHTTPAPIsTagcloudNoESQL) bool {
-	return lenscommon.LensDataSourceIsESQLOrTable(api.DataSource.MarshalJSON())
+func tagcloudStylingToAPI(m *models.TagcloudConfigModel) *kbapi.KibanaHTTPAPIsTagcloudStyling {
+	var styling *kbapi.KibanaHTTPAPIsTagcloudStyling
+
+	if !m.Orientation.IsNull() {
+		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
+		styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
+	}
+
+	if m.FontSize != nil {
+		fontSize := struct {
+			Max *float32 `json:"max,omitempty"`
+			Min *float32 `json:"min,omitempty"`
+		}{}
+		if !m.FontSize.Min.IsNull() {
+			minValue := float32(m.FontSize.Min.ValueFloat64())
+			fontSize.Min = &minValue
+		}
+		if !m.FontSize.Max.IsNull() {
+			maxValue := float32(m.FontSize.Max.ValueFloat64())
+			fontSize.Max = &maxValue
+		}
+		if styling == nil {
+			styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
+		}
+		styling.FontSize = &fontSize
+	}
+
+	return styling
 }
 
-// applyStylingFromAPI populates the typed `orientation` and `font_size`
+// tagcloudConfigApplyStylingFromAPI populates the typed `orientation` and `font_size`
 // attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
 // reads so the two paths stay in lockstep.
 func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.KibanaHTTPAPIsTagcloudStyling) {
@@ -71,38 +97,34 @@ func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
 	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudNoESQL,
+	api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-
-	datasetBytes, err := api.DataSource.MarshalJSON()
-	v, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = v
-
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
+	m.LensChartBaseTFModel = base
 
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateTagcloudMetricDefaults, &diags)
 	if !ok {
 		return diags
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	tagByBytes, err := api.TagBy.MarshalJSON()
+	tagByBytes, err := json.Marshal(api.TagBy)
 	tv, ok := lenscommon.MarshalToJSONWithDefaults(tagByBytes, err, "tag_by", lenscommon.PopulateTagcloudTagByDefaults, &diags)
 	if !ok {
 		return diags
@@ -123,24 +145,21 @@ func tagcloudConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
 	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudESQL,
+	api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.Title = types.StringPointerValue(api.Title)
-	m.Description = types.StringPointerValue(api.Description)
-	m.IgnoreGlobalFilters = types.BoolPointerValue(api.IgnoreGlobalFilters)
-	m.Sampling = typeutils.Float32PointerToFloat64Value(api.Sampling)
-
-	datasetBytes, err := json.Marshal(api.DataSource)
-	dv, ok := lenscommon.WrapNormalizedJSON(datasetBytes, err, "data_source_json", &diags)
+	datasetBytes, datasetErr := json.Marshal(api.DataSource)
+	base, ok := lenscommon.PopulateLensChartBaseFromAPI(
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling,
+		datasetBytes, datasetErr, "data_source_json", api.Filters, &diags,
+	)
 	if !ok {
 		return diags
 	}
-	m.DataSourceJSON = dv
+	m.LensChartBaseTFModel = base
 
 	m.Query = nil
-	m.Filters = lenscommon.PopulateFiltersFromAPI(api.Filters, &diags)
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
 	m.MetricJSON = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulateTagcloudMetricDefaults)
@@ -182,64 +201,37 @@ func tagcloudConfigFromAPIESQL(
 }
 
 func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var attrs lenscommon.VisByValueConfig0
-	var diags diag.Diagnostics
-
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	if lenscommon.ConfigUsesESQL(m.Query) {
-		esql, d := tagcloudConfigToAPIESQL(m)
-		diags.Append(d...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsTagcloudESQL(esql); err != nil {
-			diags.AddError("Failed to create tagcloud ES|QL attributes", err.Error())
-		}
-		return attrs, diags
-	}
-
-	noESQL, d := tagcloudConfigToAPINoESQL(m)
-	diags.Append(d...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsTagcloudNoESQL(noESQL); err != nil {
-		diags.AddError("Failed to create tagcloud attributes", err.Error())
-	}
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
+			return tagcloudConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudESQLByValuePanel,
+		"Failed to create tagcloud ES|QL attributes",
+		func() (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
+			return tagcloudConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel,
+		"Failed to create tagcloud attributes",
+	)
 }
 
-func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQL, diag.Diagnostics) {
+func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudNoESQL
+	var api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel
 
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLTypeTagCloud
+	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud
 
-	if !m.Title.IsNull() {
-		api.Title = m.Title.ValueStringPointer()
-	}
-
-	if !m.Description.IsNull() {
-		api.Description = m.Description.ValueStringPointer()
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if !m.DataSourceJSON.IsNull() {
 		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &api.DataSource); err != nil {
 			diags.AddError("Failed to unmarshal tagcloud_config.data_source_json", err.Error())
 			return api, diags
 		}
-	}
-
-	if !m.IgnoreGlobalFilters.IsNull() {
-		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-	}
-
-	if !m.Sampling.IsNull() {
-		sampling := float32(m.Sampling.ValueFloat64())
-		api.Sampling = &sampling
 	}
 
 	if m.Query == nil {
@@ -250,29 +242,7 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	if !m.Orientation.IsNull() {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
-		api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
-	}
-
-	if m.FontSize != nil {
-		fontSize := struct {
-			Max *float32 `json:"max,omitempty"`
-			Min *float32 `json:"min,omitempty"`
-		}{}
-		if !m.FontSize.Min.IsNull() {
-			minValue := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &minValue
-		}
-		if !m.FontSize.Max.IsNull() {
-			maxValue := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &maxValue
-		}
-		if api.Styling == nil {
-			api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
-		}
-		api.Styling.FontSize = &fontSize
-	}
+	api.Styling = tagcloudStylingToAPI(m)
 
 	if m.MetricJSON.IsNull() {
 		diags.AddError("Missing metric_json", "tagcloud_config.metric_json must be set for non-ES|QL tagclouds (or use `esql_metric` in ES|QL mode)")
@@ -298,31 +268,19 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQL, diag.Diagnostics) {
+func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudESQL
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLTypeTagCloud
+	var api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel
+	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanelTypeTagCloud
 
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		api.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		s := float32(m.Sampling.ValueFloat64())
-		api.Sampling = &s
-	}
+	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	if m.DataSourceJSON.IsNull() {
 		diags.AddError("Missing data_source_json", "tagcloud_config.data_source_json must be provided")
@@ -335,28 +293,7 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	if !m.Orientation.IsNull() {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
-		api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
-	}
-	if m.FontSize != nil {
-		fontSize := struct {
-			Max *float32 `json:"max,omitempty"`
-			Min *float32 `json:"min,omitempty"`
-		}{}
-		if !m.FontSize.Min.IsNull() {
-			minValue := float32(m.FontSize.Min.ValueFloat64())
-			fontSize.Min = &minValue
-		}
-		if !m.FontSize.Max.IsNull() {
-			maxValue := float32(m.FontSize.Max.ValueFloat64())
-			fontSize.Max = &maxValue
-		}
-		if api.Styling == nil {
-			api.Styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
-		}
-		api.Styling.FontSize = &fontSize
-	}
+	api.Styling = tagcloudStylingToAPI(m)
 
 	if m.EsqlMetric == nil {
 		diags.AddError("Missing esql_metric", "tagcloud_config.esql_metric must be set in ES|QL mode")
@@ -396,7 +333,7 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 

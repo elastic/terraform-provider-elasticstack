@@ -73,13 +73,13 @@ func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.
 	}
 
 	switch output := output.(type) {
-	case kbapi.KibanaHTTPAPIsOutputElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputResponseElasticsearch:
 		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputLogstash:
+	case kbapi.KibanaHTTPAPIsOutputResponseLogstash:
 		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputKafka:
+	case kbapi.KibanaHTTPAPIsOutputResponseKafka:
 		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch:
+	case kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch:
 		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
 	default:
 		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
@@ -116,7 +116,7 @@ func (model *outputItemModel) fromAPICommonFields(ctx context.Context, d outputA
 	return
 }
 
-func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputElasticsearch) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseElasticsearch) (diags diag.Diagnostics) {
 	return model.fromAPICommonFields(ctx, outputAPICommonData{
 		id: data.Id, name: data.Name, outputType: string(data.Type),
 		hosts: data.Hosts, caSha256: data.CaSha256,
@@ -126,7 +126,7 @@ func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, dat
 	})
 }
 
-func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputKafka) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseKafka) (diags diag.Diagnostics) {
 	return model.fromAPICommonFields(ctx, outputAPICommonData{
 		id: data.Id, name: data.Name, outputType: string(data.Type),
 		hosts: data.Hosts, caSha256: data.CaSha256,
@@ -136,7 +136,7 @@ func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi
 	})
 }
 
-func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputLogstash) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseLogstash) (diags diag.Diagnostics) {
 	return model.fromAPICommonFields(ctx, outputAPICommonData{
 		id: data.Id, name: data.Name, outputType: string(data.Type),
 		hosts: data.Hosts, caSha256: data.CaSha256,
@@ -146,7 +146,7 @@ func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kb
 	})
 }
 
-func (model *outputItemModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputRemoteElasticsearch) (diags diag.Diagnostics) {
+func (model *outputItemModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch) (diags diag.Diagnostics) {
 	return model.fromAPICommonFields(ctx, outputAPICommonData{
 		id: data.Id, name: data.Name, outputType: string(data.Type),
 		hosts: data.Hosts, caSha256: data.CaSha256,

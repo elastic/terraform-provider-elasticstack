@@ -53,50 +53,13 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
-		m.TargetField = types.StringValue("@timestamp")
-		body.TargetField = "@timestamp"
-	} else {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if typeutils.IsKnown(m.Formats) {
-		elems := make([]string, 0, len(m.Formats.Elements()))
-		for _, elem := range m.Formats.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid formats element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown formats element", "formats elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Formats = elems
-	}
-	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
-		m.Timezone = types.StringValue("UTC")
-		body.Timezone = "UTC"
-	} else {
-		body.Timezone = m.Timezone.ValueString()
-	}
-	if m.Locale.IsNull() || m.Locale.IsUnknown() {
-		m.Locale = types.StringValue("ENGLISH")
-		body.Locale = "ENGLISH"
-	} else {
-		body.Locale = m.Locale.ValueString()
-	}
-	if m.OutputFormat.IsNull() || m.OutputFormat.IsUnknown() {
-		m.OutputFormat = types.StringValue("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-		body.OutputFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
-	} else {
-		body.OutputFormat = m.OutputFormat.ValueString()
-	}
+	body.TargetField = typeutils.StringDefault(&m.TargetField, "@timestamp")
+	body.Formats = typeutils.StringElements(m.Formats, &diags)
+	body.Timezone = typeutils.StringDefault(&m.Timezone, "UTC")
+	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
+	body.OutputFormat = typeutils.StringDefault(&m.OutputFormat, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -104,14 +67,6 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDateDataSource returns a PF data source for the date processor.
 func NewProcessorDateDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to get the date from.",
 			Required:    true,

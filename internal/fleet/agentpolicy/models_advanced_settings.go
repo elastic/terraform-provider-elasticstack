@@ -26,7 +26,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -53,6 +52,7 @@ type advancedSettingsAPIValues = struct {
 	AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
 	AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
 	AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+	AgentFeaturesIncludeTagsInEventsEnabled     any `json:"agent_features_include_tags_in_events_enabled,omitempty"`
 	AgentInternal                               any `json:"agent_internal,omitempty"`
 	AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
 	AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
@@ -198,7 +198,10 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	}
 
 	var settings advancedSettingsModel
-	model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+	diags := model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return nil, diags
+	}
 
 	// Check if any values are set
 	hasValues := typeutils.IsKnown(settings.LoggingLevel) ||
@@ -245,18 +248,9 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	if typeutils.IsKnown(settings.DownloadTargetDirectory) {
 		result.AgentDownloadTargetDirectory = settings.DownloadTargetDirectory.ValueString()
 	}
-	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) {
-		if !feat.SupportsMonitoringRuntimeExperimental {
-			return nil, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_settings").AtName("monitoring_runtime_experimental"),
-					"Unsupported Elasticsearch version",
-					"monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above",
-				),
-			}
-		}
+	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) && feat.SupportsMonitoringRuntimeExperimental {
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
 	}
 
-	return result, nil
+	return result, diags
 }

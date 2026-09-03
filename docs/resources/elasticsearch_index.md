@@ -5,6 +5,7 @@ subcategory: "Index"
 description: |-
   Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
   Set use_existing = true to tolerate or adopt an index that already exists at create time (for example after a replacement race or when adopting an out-of-band index); see the use_existing attribute description for details.
+  Set deletion_protection = false and apply that change on its own before any apply that destroys or replaces the index (for example a change that forces replacement); see the deletion_protection attribute description for the required two-step workflow.
 ---
 
 # elasticstack_elasticsearch_index (Resource)
@@ -12,6 +13,8 @@ description: |-
 Creates Elasticsearch indices. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
 
 Set `use_existing` = true to tolerate or adopt an index that already exists at create time (for example after a replacement race or when adopting an out-of-band index); see the `use_existing` attribute description for details.
+
+Set `deletion_protection = false` and apply that change on its own **before** any apply that destroys or replaces the index (for example a change that forces replacement); see the `deletion_protection` attribute description for the required two-step workflow.
 ## Example Usage
 
 ```terraform
@@ -74,7 +77,12 @@ resource "elasticstack_elasticsearch_index" "my_index" {
 - `blocks_write` (Boolean) Set to `true` to disable data write operations against the index. This setting does not affect metadata.
 - `codec` (String) The `default` value compresses stored data with LZ4 compression, but this can be set to `best_compression` which uses DEFLATE for a higher compression ratio. This can be set only on creation.
 - `default_pipeline` (String) The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.
-- `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to false in Terraform state, a terraform destroy or terraform apply command that deletes the instance will fail.
+- `deletion_protection` (Boolean) Whether to allow Terraform to destroy the index. Unless this field is set to `false` in Terraform state, a `terraform destroy` or `terraform apply` command that deletes the index will fail.
+
+Destroying (or replacing) a protected index is a **two-step process**: the check always runs against the index's last-applied state, not the new plan, so you cannot set `deletion_protection = false` in the same `terraform apply` that also destroys or replaces the index (for example, a configuration change that forces replacement).
+
+1. Apply a change that sets `deletion_protection = false` on its own.
+2. Only then run the `terraform apply` or `terraform destroy` that removes or replaces the index.
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `final_pipeline` (String) Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). The special pipeline name `_none` indicates no ingest pipeline will run.
 - `gc_deletes` (String) The length of time that a deleted document's version number remains available for further versioned operations.

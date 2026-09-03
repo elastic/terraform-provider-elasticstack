@@ -55,6 +55,12 @@ type Model struct {
 // GetID satisfies [entitycore.ElasticsearchResourceModel].
 func (m Model) GetID() types.String { return m.ID }
 
+// GetTemplate satisfies [templateutil.TemplateModel].
+func (m Model) GetTemplate() types.Object { return m.Template }
+
+// WithTemplate satisfies [templateutil.TemplateModel].
+func (m Model) WithTemplate(t types.Object) Model { m.Template = t; return m }
+
 // GetResourceID satisfies [entitycore.ElasticsearchResourceModel].
 // For index templates the write identity is the template name.
 func (m Model) GetResourceID() types.String { return m.Name }

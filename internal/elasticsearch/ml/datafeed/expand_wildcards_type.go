@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -32,6 +33,8 @@ var (
 	_ basetypes.SetTypable                    = (*ExpandWildcardsType)(nil)
 	_ basetypes.SetValuableWithSemanticEquals = (*ExpandWildcardsValue)(nil)
 )
+
+const expandWildcardNone = "none"
 
 // expandWildcardsAllTokens are the constituent values that Elasticsearch
 // normalizes "all" into when returning a datafeed configuration.
@@ -93,7 +96,7 @@ type ExpandWildcardsValue struct {
 }
 
 func (v ExpandWildcardsValue) Type(_ context.Context) attr.Type {
-	return ExpandWildcardsType{SetType: basetypes.SetType{ElemType: types.StringType}}
+	return ExpandWildcardsType{ElemType: types.StringType}
 }
 
 func (v ExpandWildcardsValue) Equal(o attr.Value) bool {
@@ -109,20 +112,12 @@ func (v ExpandWildcardsValue) ToSetValue(_ context.Context) (basetypes.SetValue,
 }
 
 // SetSemanticEquals returns true if the two ExpandWildcardsValue instances are
-// semantically equal. The key rule: "all" expands to {"open","closed","hidden"},
-// so ["all"] and ["open","closed","hidden"] (in any order) are equal.
+// semantically equal. Key rules: "all" expands to {"open","closed","hidden"};
+// an empty set is equivalent to {"none"} because Elasticsearch serializes
+// expand_wildcards:"none" as [].
 func (v ExpandWildcardsValue) SetSemanticEquals(_ context.Context, priorValuable basetypes.SetValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	priorValue, ok := priorValuable.(ExpandWildcardsValue)
+	priorValue, ok, diags := typeutils.AssertSameType(v, priorValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", priorValuable),
-		)
 		return false, diags
 	}
 
@@ -154,8 +149,9 @@ func (v ExpandWildcardsValue) SetSemanticEquals(_ context.Context, priorValuable
 }
 
 // normalizeExpandWildcards returns a set of string tokens after expanding
-// the shorthand "all" into its constituent values {"open","closed","hidden"}.
-// All other tokens are kept as-is.
+// the shorthand "all" into its constituent values {"open","closed","hidden"}
+// and treating an empty set as {"none"} (Elasticsearch's serialization of
+// expand_wildcards:"none"). All other tokens are kept as-is.
 func normalizeExpandWildcards(v ExpandWildcardsValue) map[string]struct{} {
 	result := make(map[string]struct{})
 	for _, elem := range v.Elements() {
@@ -173,14 +169,26 @@ func normalizeExpandWildcards(v ExpandWildcardsValue) map[string]struct{} {
 			result[s.ValueString()] = struct{}{}
 		}
 	}
+	// Elasticsearch stores "none" as an empty WildcardStates set and
+	// serializes it as []. An empty known set is therefore "none".
+	if len(result) == 0 {
+		result[expandWildcardNone] = struct{}{}
+	}
 	return result
 }
 
-// NewExpandWildcardsNull returns an ExpandWildcardsValue with a null value.
-func NewExpandWildcardsNull() ExpandWildcardsValue {
-	return ExpandWildcardsValue{
-		SetValue: basetypes.NewSetNull(types.StringType),
+// expandWildcardsValueFromAPI maps Get Datafeeds expand_wildcards tokens
+// into Terraform state. An empty or omitted list means "none": Elasticsearch
+// serializes IndicesOptions with no OPEN/CLOSED/HIDDEN states as [].
+func expandWildcardsValueFromAPI(tokens []string) (ExpandWildcardsValue, diag.Diagnostics) {
+	if len(tokens) == 0 {
+		tokens = []string{expandWildcardNone}
 	}
+	elems := make([]attr.Value, len(tokens))
+	for i, s := range tokens {
+		elems[i] = types.StringValue(s)
+	}
+	return NewExpandWildcardsValue(elems)
 }
 
 // NewExpandWildcardsValue returns an ExpandWildcardsValue with a known value

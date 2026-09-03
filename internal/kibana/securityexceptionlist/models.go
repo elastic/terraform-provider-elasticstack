@@ -19,11 +19,11 @@ package securityexceptionlist
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -183,44 +183,23 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	m.NamespaceType = typeutils.StringishValue(apiList.NamespaceType)
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
-	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.CreatedBy = types.StringValue(apiList.CreatedBy)
-	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional os_types
-	if apiList.OsTypes != nil && len(*apiList.OsTypes) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, apiList.OsTypes)
-		diags.Append(d...)
-		m.OsTypes = set
-	} else if m.OsTypes.IsUnknown() {
-		m.OsTypes = types.SetNull(types.StringType)
-	}
+	osTypes, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiList.OsTypes, m.OsTypes)
+	diags.Append(d...)
+	m.OsTypes = osTypes
 
 	// Set optional tags
-	if apiList.Tags != nil && len(*apiList.Tags) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, *apiList.Tags)
-		diags.Append(d...)
-		m.Tags = set
-	} else if m.Tags.IsUnknown() {
-		// Same as os_types above (fixed in #1740): only collapse to null when
-		// the plan value was Unknown. Preserving a Known-empty Set avoids
-		// "produced inconsistent result after apply: .tags: was null, but now
-		// ..." when config sets `tags = []`.
-		m.Tags = types.SetNull(types.StringType)
-	}
+	tags, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiList.Tags, m.Tags)
+	diags.Append(d...)
+	m.Tags = tags
 
 	// Set optional meta
-	if apiList.Meta != nil {
-		metaBytes, err := json.Marshal(apiList.Meta)
-		if err != nil {
-			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)
 
 	return diags
 }

@@ -105,10 +105,22 @@ func JSONBytesEqual(a, b []byte) (bool, error) {
 	return reflect.DeepEqual(j, j2), nil
 }
 
+// UnmarshalJSONDiag unmarshals a JSON string into T, returning a single-element
+// Diagnostics slice on error instead of a raw error value.
+func UnmarshalJSONDiag[T any](data string, errSummary string) (T, diag.Diagnostics) {
+	var out T
+	if err := json.Unmarshal([]byte(data), &out); err != nil {
+		return out, diag.Diagnostics{
+			diag.NewErrorDiagnostic(errSummary, err.Error()),
+		}
+	}
+	return out, nil
+}
+
 // MarshalToNormalized marshals v to a jsontypes.Normalized value.
 //
-//   - If v is nil, or a nil pointer/map/slice/channel/function stored inside
-//     an interface{}, it returns jsontypes.NewNormalizedNull().
+//   - If v is nil, a nil pointer/map/slice/channel/function stored inside an
+//     interface{}, or marshals to JSON null, it returns jsontypes.NewNormalizedNull().
 //   - On a marshal error it appends an attribute error at p to diags and
 //     returns jsontypes.NewNormalizedNull().
 func MarshalToNormalized(v any, p path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
@@ -118,6 +130,9 @@ func MarshalToNormalized(v any, p path.Path, diags *diag.Diagnostics) jsontypes.
 	b, err := json.Marshal(v)
 	if err != nil {
 		diags.AddAttributeError(p, "marshal failure", err.Error())
+		return jsontypes.NewNormalizedNull()
+	}
+	if string(b) == "null" {
 		return jsontypes.NewNormalizedNull()
 	}
 	return jsontypes.NewNormalizedValue(string(b))

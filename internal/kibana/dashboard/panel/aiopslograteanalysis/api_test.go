@@ -138,16 +138,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 		},
 	}
 
-	pm := &models.PanelModel{
-		AiopsLogRateAnalysisConfig: &models.AiopsLogRateAnalysisConfigModel{
-			DataViewID:  stringVal("logs-*"),
-			Title:       stringNull(),
-			Description: stringNull(),
-			HideTitle:   boolNull(),
-			HideBorder:  boolNull(),
-			TimeRange:   nil,
-		},
-	}
+	pm := &models.PanelModel{}
 
 	diags := aiopslograteanalysis.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
@@ -184,6 +175,39 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.AiopsLogRateAnalysisConfig is nil, e.g. prior held a
+// different type's config), there is no null intent to honor and the config is rebuilt entirely
+// from the API, including TimeRange.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	from, to := "now-30m", "now"
+	tr := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{From: from, To: to}
+	api := kbapi.KibanaHTTPAPIsAiopsLogRateAnalysis{
+		DataViewId: "logs-*",
+		Title:      new("Recovered title"),
+		TimeRange:  &tr,
+	}
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: stringVal("ml_anomaly_charts"),
+	}
+
+	diags := aiopslograteanalysis.PopulateFromAPI(pm, prior, api)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.AiopsLogRateAnalysisConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
+	require.Equal(t, "Recovered title", cfg.Title.ValueString())
+	require.NotNil(t, cfg.TimeRange)
+	require.Equal(t, from, cfg.TimeRange.From.ValueString())
+	require.Equal(t, to, cfg.TimeRange.To.ValueString())
+	require.True(t, cfg.TimeRange.Mode.IsNull())
+}
+
 // TestToAPI_rejectsConfigJSON verifies simultaneous typed config and config_json is rejected.
 func TestToAPI_rejectsConfigJSON(t *testing.T) {
 	t.Parallel()
@@ -193,8 +217,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 		AiopsLogRateAnalysisConfig: &models.AiopsLogRateAnalysisConfigModel{
 			DataViewID: stringVal("logs-*"),
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := aiopslograteanalysis.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

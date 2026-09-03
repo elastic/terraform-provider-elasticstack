@@ -33,6 +33,7 @@ resource "elasticstack_elasticsearch_index_template_ilm_attachment" "test" {
   elasticsearch_connection {
     endpoints = [var.endpoint]
     api_key   = elasticstack_elasticsearch_security_api_key.test.encoded
+    insecure  = false
     headers = {
       XTerraformTest = "api-key"
     }

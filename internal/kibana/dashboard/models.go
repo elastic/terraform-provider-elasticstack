@@ -151,8 +151,8 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 
 // toAPICreateRequest converts the Terraform model to an API create request
 func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
-	req := kbapi.PostDashboardsJSONRequestBody{}
-	req.Title = m.Title.ValueString()
+	req := kbapi.PostDashboardsJSONRequestBody{
+		Title: m.Title.ValueString()}
 	if m.RefreshInterval != nil {
 		req.RefreshInterval = &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
 			Pause: m.RefreshInterval.Pause.ValueBool(),
@@ -214,8 +214,8 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 
 // toAPIUpdateRequest converts the Terraform model to an API update request
 func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
-	req := kbapi.PutDashboardsIdJSONRequestBody{}
-	req.Title = m.Title.ValueString()
+	req := kbapi.PutDashboardsIdJSONRequestBody{
+		Title: m.Title.ValueString()}
 	if m.RefreshInterval != nil {
 		req.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
 		req.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())

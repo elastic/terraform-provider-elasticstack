@@ -32,7 +32,25 @@ func TestAccDataSourceIngestProcessorForeach(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "field", "values"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "json", expectedJSONForeach),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "field", "values"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "description", "foreach test"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "if", "ctx.values != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "tag", "foreach-tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "on_failure.0", `{"set":{"field":"error.message","value":"foreach failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_foreach.test", "json", expectedJSONForeachAllAttributes),
 				),
 			},
 		},
@@ -55,3 +73,30 @@ const expectedJSONForeach = `{
 	}
 }
 `
+
+const expectedJSONForeachAllAttributes = `{
+	"foreach": {
+		"description": "foreach test",
+		"field": "values",
+		"if": "ctx.values != null",
+		"ignore_failure": true,
+		"ignore_missing": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "foreach failed"
+				}
+			}
+		],
+		"processor": {
+			"convert": {
+				"field": "_ingest._value",
+				"ignore_failure": false,
+				"ignore_missing": false,
+				"type": "integer"
+			}
+		},
+		"tag": "foreach-tag"
+	}
+}`

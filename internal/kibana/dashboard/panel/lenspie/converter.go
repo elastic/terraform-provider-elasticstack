@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -42,7 +41,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie)
+	return string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -116,22 +115,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "pie_chart_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.PieChartConfigModel
-	if blocks.PieChartConfig != nil {
-		cpy := *blocks.PieChartConfig
-		prior = &cpy
-	}
-	blocks.PieChartConfig = &models.PieChartConfigModel{}
-
-	if noESQL, err := attrs.AsKibanaHTTPAPIsPieNoESQL(); err == nil && !isPieNoESQLCandidateActuallyESQL(noESQL) {
-		return pieChartConfigFromAPINoESQL(ctx, blocks.PieChartConfig, prior, noESQL)
-	}
-
-	esql, err := attrs.AsKibanaHTTPAPIsPieESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return pieChartConfigFromAPIESQL(ctx, blocks.PieChartConfig, prior, esql)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.PieChartConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.PieChartConfig, prior,
+		attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsPieESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		pieChartConfigFromAPINoESQL,
+		pieChartConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

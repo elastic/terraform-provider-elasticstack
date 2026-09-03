@@ -41,6 +41,10 @@ const (
 	colorTypeAuto     = "auto"
 	sortDirectionDesc = "desc"
 
+	// JSONNullString is the JSON representation of a null value, used to detect
+	// empty union types returned by the Kibana API.
+	JSONNullString = "null"
+
 	// Drilldown discriminator values stored on Lens panels.
 	drilldownTypeDashboard = "dashboard_drilldown"
 	drilldownTypeDiscover  = "discover_drilldown"

@@ -30,7 +30,7 @@ import (
 )
 
 // GetEnrollmentTokens reads all enrollment tokens from the API.
-func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([]kbapi.KibanaHTTPAPIsEnrollmentApiKey, diag.Diagnostics) {
 	resp, err := client.API.GetFleetEnrollmentApiKeysWithResponse(ctx, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -45,7 +45,7 @@ func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([
 }
 
 // GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID.
-func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID string) ([]kbapi.KibanaHTTPAPIsEnrollmentApiKey, diag.Diagnostics) {
 	params := kbapi.GetFleetEnrollmentApiKeysParams{
 		Kuery: new("policy_id:" + policyID),
 	}
@@ -64,7 +64,7 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 }
 
 // GetEnrollmentTokensByPolicyInSpace Get enrollment tokens by policy ID within a specific Kibana space.
-func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, policyID string, spaceID string) ([]kbapi.EnrollmentApiKey, diag.Diagnostics) {
+func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, policyID string, spaceID string) ([]kbapi.KibanaHTTPAPIsEnrollmentApiKey, diag.Diagnostics) {
 	path := kibanautil.BuildSpaceAwarePath(spaceID, "/api/fleet/enrollment_api_keys?kuery=policy_id:"+policyID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", client.URL+path, nil)
@@ -81,7 +81,7 @@ func GetEnrollmentTokensByPolicyInSpace(ctx context.Context, client *Client, pol
 	switch httpResp.StatusCode {
 	case http.StatusOK:
 		var result struct {
-			Items []kbapi.EnrollmentApiKey `json:"items"`
+			Items []kbapi.KibanaHTTPAPIsEnrollmentApiKey `json:"items"`
 		}
 		if err := json.NewDecoder(httpResp.Body).Decode(&result); err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)

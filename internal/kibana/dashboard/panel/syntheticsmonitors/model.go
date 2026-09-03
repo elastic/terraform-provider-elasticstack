@@ -158,12 +158,20 @@ func toSyntheticsFilterItems(items []models.SyntheticsFilterItemModel) []struct 
 	return result
 }
 
-// PopulateFromAPI reads the Kibana API panel into Terraform panel state.
+// PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
+// prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with SyntheticsMonitorsConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.SyntheticsMonitorsConfig is the only reliable signal:
+// non-nil means the panel was already this type with a configured block and its null intent must
+// be honored. Unlike most other panel config blocks, this entire block is optional even when the
+// panel type matches, so prior.SyntheticsMonitorsConfig == nil is ambiguous (a type change, or a
+// practitioner who simply never configured this block) and either way there is no null intent to
+// honor and nothing should be conjured from API-only data.
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) diag.Diagnostics {
-	apiFilters := apiPanel.Config.Filters
-
 	if prior == nil {
-		filters := fromSyntheticsAPIFilters(apiFilters)
+		filters := fromSyntheticsAPIFilters(apiPanel.Config.Filters)
 		if apiPanel.Config.Title == nil &&
 			apiPanel.Config.Description == nil &&
 			apiPanel.Config.HideTitle == nil &&
@@ -172,53 +180,48 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 			filters == nil {
 			return nil
 		}
-		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
-			Title:       types.StringPointerValue(apiPanel.Config.Title),
-			Description: types.StringPointerValue(apiPanel.Config.Description),
-			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
-			HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
-			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
-			Filters:     filters,
-		}
+		pm.SyntheticsMonitorsConfig = syntheticsMonitorsConfigFromAPIImport(apiPanel)
 		return nil
 	}
 
-	if pm.SyntheticsMonitorsConfig == nil && prior.SyntheticsMonitorsConfig != nil {
-		filters := fromSyntheticsAPIFilters(apiFilters)
-		pm.SyntheticsMonitorsConfig = &models.SyntheticsMonitorsConfigModel{
-			Title:       types.StringPointerValue(apiPanel.Config.Title),
-			Description: types.StringPointerValue(apiPanel.Config.Description),
-			HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
-			HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
-			View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
-			Filters:     filters,
-		}
-	}
-
-	existing := pm.SyntheticsMonitorsConfig
-	if existing == nil {
+	if prior.SyntheticsMonitorsConfig == nil {
 		return nil
 	}
 
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		apiPanel.Config.Title, apiPanel.Config.Description, apiPanel.Config.HideTitle, apiPanel.Config.HideBorder)
-	if typeutils.IsKnown(existing.View) {
-		existing.View = syntheticsMonitorsViewValue(apiPanel.Config.View)
-	}
-
-	if apiFilters == nil {
-		return nil
-	}
-
-	filters := fromSyntheticsAPIFilters(apiFilters)
-	if filters == nil {
-		if existing.Filters == nil {
-			return nil
-		}
-		return nil
-	}
-	existing.Filters = filters
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := syntheticsMonitorsConfigFromAPIImport(apiPanel)
+	syntheticsMonitorsPreserveNullIntentFromPrior(prior.SyntheticsMonitorsConfig, existing)
+	pm.SyntheticsMonitorsConfig = existing
 	return nil
+}
+
+func syntheticsMonitorsPreserveNullIntentFromPrior(prior, existing *models.SyntheticsMonitorsConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
+	if !typeutils.IsKnown(prior.View) {
+		existing.View = types.StringNull()
+	}
+	// The API config's filters sub-object is entirely optional; if the freshly imported filters
+	// came back nil (nothing to show) but the practitioner had explicitly configured a (possibly
+	// empty) filters block, keep that block rather than dropping it to avoid a perpetual diff.
+	if existing.Filters == nil && prior.Filters != nil {
+		existing.Filters = prior.Filters
+	}
+}
+
+func syntheticsMonitorsConfigFromAPIImport(apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsMonitors) *models.SyntheticsMonitorsConfigModel {
+	return &models.SyntheticsMonitorsConfigModel{
+		Title:       types.StringPointerValue(apiPanel.Config.Title),
+		Description: types.StringPointerValue(apiPanel.Config.Description),
+		HideTitle:   types.BoolPointerValue(apiPanel.Config.HideTitle),
+		HideBorder:  types.BoolPointerValue(apiPanel.Config.HideBorder),
+		View:        syntheticsMonitorsViewValue(apiPanel.Config.View),
+		Filters:     fromSyntheticsAPIFilters(apiPanel.Config.Filters),
+	}
 }
 
 func fromSyntheticsAPIFilters(apiFilters *struct {

@@ -284,6 +284,9 @@ func upgradeV2ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *
 		Inputs:             inputs,
 		VarsJSON:           prior.VarsJSON,
 		SpaceIDs:           prior.SpaceIDs,
+
+		// V2 state predates the attribute, so there is nothing to carry over.
+		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
 	}
 
 	if prior.KibanaConnection.IsNull() || prior.KibanaConnection.IsUnknown() {

@@ -28,15 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// InstallSecurityEntityStore installs the entity store with the given types and options.
-func InstallSecurityEntityStore(ctx context.Context, client *Client, spaceID string, body kbapi.PostSecurityEntityStoreInstallJSONRequestBody) diag.Diagnostics {
-	statusCode, respBody, err := InstallSecurityEntityStoreStatus(ctx, client, spaceID, body)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(statusCode, respBody, http.StatusOK, http.StatusCreated)
-}
-
 // InstallSecurityEntityStoreStatus installs the entity store and returns the raw
 // HTTP status code and response body without collapsing them into diagnostics.
 // This lets callers retry on HTTP 500 while the store is still initializing.
@@ -82,15 +73,6 @@ func StopSecurityEntityStore(ctx context.Context, client *Client, spaceID string
 		return diagutil.FrameworkDiagFromError(err)
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
-}
-
-// CreateSecurityEntityStoreEntity creates a single entity record.
-func CreateSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceID string, entityType string, body io.Reader) diag.Diagnostics {
-	statusCode, respBody, err := CreateSecurityEntityStoreEntityStatus(ctx, client, spaceID, entityType, body)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(statusCode, respBody, http.StatusOK)
 }
 
 // CreateSecurityEntityStoreEntityStatus creates a single entity record and

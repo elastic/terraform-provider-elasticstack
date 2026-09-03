@@ -389,6 +389,27 @@ func TestAccIndexTemplateDataSourceAllowAutoCreate(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create", "true"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"template_name":     config.StringVariable(templateName),
+					"allow_auto_create": config.BoolVariable(false),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testCheckAttrZeroOrAbsent("data.elasticstack_elasticsearch_index_template.test", "allow_auto_create"),
+				),
+			},
 		},
 	})
 }
@@ -505,6 +526,38 @@ func TestAccIndexTemplateDataSourceLifecycle(t *testing.T) {
 	})
 }
 
+// TestAccIndexTemplateDataSourceDataStreamOptions covers template.data_stream_options.failure_store.enabled
+// and template.data_stream_options.failure_store.lifecycle.data_retention on the data source.
+func TestAccIndexTemplateDataSourceDataStreamOptions(t *testing.T) {
+	templateName := "test-ds-dso-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"template_name": config.StringVariable(templateName)},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.enabled", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.lifecycle.data_retention", "14d"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(index.MinSupportedDataStreamOptionsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"template_name": config.StringVariable(templateName)},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.enabled", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.data_stream_options.failure_store.lifecycle.data_retention"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccIndexTemplateDataSourcePriorityAndPatterns(t *testing.T) {
 	templateName := "test-ds-priority-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	idPattern := regexp.MustCompile(fmt.Sprintf(".+/%s$", templateName))
@@ -610,9 +663,9 @@ func TestAccIndexTemplateDataSourceAliasLifecycleRemoval(t *testing.T) {
 					),
 					testCheckDataSourceTemplateAliasBoolAttrFalseOrAbsent("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_hidden"),
 					testCheckDataSourceTemplateAliasBoolAttrFalseOrAbsent("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "is_write_index"),
-					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "filter"),
-					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "search_routing"),
-					testCheckDataSourceTemplateAliasAttrCleared("data.elasticstack_elasticsearch_index_template.test", "detailed_alias_reset", "index_routing"),
+					testCheckDataSourceTemplateAliasAttrCleared("detailed_alias_reset", "filter"),
+					testCheckDataSourceTemplateAliasAttrCleared("detailed_alias_reset", "search_routing"),
+					testCheckDataSourceTemplateAliasAttrCleared("detailed_alias_reset", "index_routing"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.lifecycle.data_retention"),
 					testCheckDataSourceTemplateLifecycleAttrCleared("data.elasticstack_elasticsearch_index_template.test", "data_retention"),
 				),
@@ -646,6 +699,17 @@ func TestAccIndexTemplateDataSourceAliasRoutingFromRoutingOnly(t *testing.T) {
 							"routing":        "",
 						},
 					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_index_template.test", "template.alias.#", "1"),
+					testCheckDataSourceTemplateAliasAttrCleared("routing_only_alias", "routing"),
 				),
 			},
 		},
@@ -839,7 +903,9 @@ func testCheckDataSourceTemplateLifecycleAttrCleared(resourceName, attrName stri
 	}
 }
 
-func testCheckDataSourceTemplateAliasAttrCleared(resourceName, aliasName, attrName string) resource.TestCheckFunc {
+func testCheckDataSourceTemplateAliasAttrCleared(aliasName, attrName string) resource.TestCheckFunc {
+	const resourceName = "data.elasticstack_elasticsearch_index_template.test"
+
 	return func(s *terraform.State) error {
 		aliasPrefix, err := templateAliasPrefix(s, resourceName, aliasName)
 		if err != nil {

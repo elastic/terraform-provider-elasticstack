@@ -19,11 +19,18 @@ package templateilmattachment_test
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -72,6 +79,8 @@ func TestAccResourceIndexTemplateIlmAttachment_fleet(t *testing.T) {
 					"fleet_system_version": config.StringVariable(fleetSystemVersion),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(
+						"elasticstack_elasticsearch_index_template_ilm_attachment.test", "id"),
 					resource.TestCheckResourceAttr(
 						"elasticstack_elasticsearch_index_template_ilm_attachment.test",
 						"index_template", "logs-system.syslog"),
@@ -194,6 +203,7 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideAPIKey(t *testi
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.endpoints.0", endpoint),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.headers.%", "1"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.headers.XTerraformTest", "api-key"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.insecure", "false"),
 					checkComponentTemplateHasILM(indexTemplate+"@custom", policyName),
 				),
 			},
@@ -238,6 +248,85 @@ func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideBearerToken(t *
 			},
 		},
 	})
+}
+
+func TestAccResourceIndexTemplateIlmAttachment_connectionOverrideCAFile(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, templateilmattachment.MinVersion, versionutils.FlavorAny)
+
+	indexTemplate := fmt.Sprintf("logs-ilm-cafile-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	policyName := fmt.Sprintf("test-ilm-cafile-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
+	endpoint := primaryESEndpoint()
+	tlsMaterial := createILMAttachmentTLSMaterial(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { preCheckESBasicAuth(t) },
+		CheckDestroy: checkResourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"endpoint":       config.StringVariable(endpoint),
+					"index_template": config.StringVariable(indexTemplate),
+					"password":       config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
+					"policy_name":    config.StringVariable(policyName),
+					"username":       config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
+					"ca_file":        config.StringVariable(tlsMaterial.caFile),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "index_template", indexTemplate),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "lifecycle_name", policyName),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.ca_file", tlsMaterial.caFile),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.username", os.Getenv("ELASTICSEARCH_USERNAME")),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_index_template_ilm_attachment.test", "elasticsearch_connection.0.password"),
+					checkComponentTemplateHasILM(indexTemplate+"@custom", policyName),
+				),
+			},
+		},
+	})
+}
+
+type ilmAttachmentTLSMaterial struct {
+	caFile string
+}
+
+func createILMAttachmentTLSMaterial(t *testing.T) ilmAttachmentTLSMaterial {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate private key: %v", err)
+	}
+
+	certificateDER, err := x509.CreateCertificate(rand.Reader, &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "ilm-attachment-test"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}, &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "ilm-attachment-test"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		t.Fatalf("failed to generate certificate: %v", err)
+	}
+
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificateDER})
+	caFile := t.TempDir() + "/ca.pem"
+	if err := os.WriteFile(caFile, certPEM, 0o600); err != nil {
+		t.Fatalf("failed to write CA file: %v", err)
+	}
+
+	return ilmAttachmentTLSMaterial{caFile: caFile}
 }
 
 func TestAccResourceIndexTemplateIlmAttachment_connectionValidationConflictingAuth(t *testing.T) {

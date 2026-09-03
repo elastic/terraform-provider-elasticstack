@@ -88,16 +88,9 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	} else {
 		body.Seed = typeutils.OptionalInt(m.Seed)
 	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -105,14 +98,6 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorCommunityIDDataSource returns a PF data source for the community_id processor.
 func NewProcessorCommunityIDDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"source_ip": schema.StringAttribute{
 			Description: "Field containing the source IP address.",
 			Optional:    true,

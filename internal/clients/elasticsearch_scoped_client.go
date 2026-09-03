@@ -121,18 +121,7 @@ func (e *ElasticsearchScopedClient) ID(ctx context.Context, resourceID string) (
 // equal to minVersion, or when the server is running in serverless mode.
 // If minVersion is nil, no minimum is enforced and the method returns true.
 func (e *ElasticsearchScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
-	if minVersion == nil {
-		return true, nil
-	}
-
-	info, diags := e.serverInfo(ctx)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	return applyVersionConstraint(info.Version.BuildFlavor, info.Version.Int, func(sv *version.Version) bool {
-		return sv.GreaterThanOrEqual(minVersion)
-	})
+	return enforceMinVersion(ctx, minVersion, e.fetchVersion)
 }
 
 // IsServerless returns true when the connected Elasticsearch cluster is running
@@ -148,12 +137,17 @@ func (e *ElasticsearchScopedClient) IsServerless(ctx context.Context) (bool, fwd
 // EnforceVersionCheck returns true when the given version check function
 // returns true, or when the server is running in serverless mode.
 func (e *ElasticsearchScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
+	return enforceVersionCheck(ctx, check, e.fetchVersion)
+}
+
+// fetchVersion adapts serverInfo into the versionFetcher signature expected by
+// the shared enforceMinVersion and enforceVersionCheck helpers.
+func (e *ElasticsearchScopedClient) fetchVersion(ctx context.Context) (rawVersion, flavor string, diags fwdiag.Diagnostics) {
 	info, diags := e.serverInfo(ctx)
 	if diags.HasError() {
-		return false, diags
+		return "", "", diags
 	}
-
-	return applyVersionConstraint(info.Version.BuildFlavor, info.Version.Int, check)
+	return info.Version.Int, info.Version.BuildFlavor, nil
 }
 
 // elasticsearchScopedClientFromAPIClient constructs an ElasticsearchScopedClient

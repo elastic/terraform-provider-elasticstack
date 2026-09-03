@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -31,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
 func TestAccResourceKibanaSecurityRole(t *testing.T) {
@@ -161,6 +163,50 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 //go:embed testdata/TestAccKibanaSecurityRoleResourceFromSDK/create/main.tf
 var kibanaSecurityRoleFromSDKCreateConfig string
 
+func TestAccResourceKibanaSecurityRoleDynamicFeature(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "name", roleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.#", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.base.#"),
+					resource.TestCheckTypeSetElemNestedAttrs("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.*", map[string]string{
+						"name": "discover",
+					}),
+					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.feature.*.privileges.*", "read"),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.dynamic_feature", "kibana.0.spaces", []string{"*"}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaSecurityRoleDynamicFeatureEmptyForEach(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				ExpectError: regexp.MustCompile(
+					`Either one of the ` + "`feature`" + ` or ` + "`base`" + ` privileges must be set for kibana role!`,
+				),
+			},
+		},
+	})
+}
+
 func TestAccKibanaSecurityRoleResourceFromSDK(t *testing.T) {
 	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -184,13 +230,23 @@ func TestAccKibanaSecurityRoleResourceFromSDK(t *testing.T) {
 				),
 			},
 			{
+				// Verify that the SDKv2 state (schema version 0) applies cleanly
+				// under the Plugin Framework implementation (schema version 1).
+				// Use ConfigPlanChecks with ExpectEmptyPlan instead of PlanOnly so
+				// that Terraform performs an apply and persists the upgraded
+				// state. With PlanOnly the state remains at version 0, and on
+				// Terraform 1.15.8+ the post-test state cleanup fails because
+				// `terraform show -json` rejects schema version mismatches.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"role_name": config.StringVariable(roleName),
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 		},
 	})
@@ -219,6 +275,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "description"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.0.field_security.%"),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.run_as", []string{"elastic", "kibana"}),
@@ -244,8 +301,10 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.clusters", []string{"test-cluster"}),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.grant", []string{"sample"}),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.except.#", "0"),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.names", []string{"sample"}),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices", "false"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.cluster.*", "create_snapshot"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.names.*", "sample"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.privileges.*", "create"),
@@ -272,6 +331,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("index_field_security"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "ds_test_idx_field_sec"),
+					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "kibana.0.base", []string{"read"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.cluster.*", "monitor"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.names.*", "sample-index"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.privileges.*", "read"),
@@ -309,7 +369,8 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "ds_test_desc_metadata"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "description", "Test role description"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_role.test", "metadata"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "metadata", `{"custom_key":"custom_value"}`),
+					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "kibana.0.base", []string{"read"}),
 				),
 			},
 		},

@@ -158,6 +158,44 @@ func TestExpandAction(t *testing.T) {
 			settings:     []string{"include"},
 			errorSummary: "Invalid JSON",
 		},
+		{
+			name:            "omits default force_merge_on_clone on unsupported server",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
+			action: []any{map[string]any{
+				"snapshot_repository":  "repo-a",
+				"force_merge_index":    true,
+				"force_merge_on_clone": true,
+			}},
+			settings: []string{"snapshot_repository", "force_merge_index", "force_merge_on_clone"},
+			expected: map[string]any{
+				"snapshot_repository": "repo-a",
+				"force_merge_index":   true,
+			},
+		},
+		{
+			name:            "errors on non-default force_merge_on_clone on unsupported server",
+			settingsSupport: ilmSettingsSupportForVersion(v80),
+			action: []any{map[string]any{
+				"snapshot_repository":  "repo-a",
+				"force_merge_on_clone": false,
+			}},
+			settings:     []string{"snapshot_repository", "force_merge_on_clone"},
+			errorSummary: "Unsupported ILM setting",
+			errorDetail:  "[force_merge_on_clone] is not supported",
+		},
+		{
+			name:            "includes force_merge_on_clone false on supported server",
+			settingsSupport: ilmSettingsSupportForVersion(version.Must(version.NewVersion("9.2.1"))),
+			action: []any{map[string]any{
+				"snapshot_repository":  "repo-a",
+				"force_merge_on_clone": false,
+			}},
+			settings: []string{"snapshot_repository", "force_merge_on_clone"},
+			expected: map[string]any{
+				"snapshot_repository":  "repo-a",
+				"force_merge_on_clone": false,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -278,6 +316,47 @@ func TestExpandPhase(t *testing.T) {
 				}
 			},
 			errorSummary: "Invalid JSON",
+		},
+		{
+			name:            "omits force_merge_on_clone when force_merge_index is false",
+			settingsSupport: ilmSettingsSupportForVersion(version.Must(version.NewVersion("9.2.1"))),
+			input: func() map[string]any {
+				return map[string]any{
+					"searchable_snapshot": []any{map[string]any{
+						"snapshot_repository":  "repo-a",
+						"force_merge_index":    false,
+						"force_merge_on_clone": true,
+					}},
+				}
+			},
+			expected: &models.Phase{
+				Actions: map[string]models.Action{
+					"searchable_snapshot": {
+						"snapshot_repository": "repo-a",
+						"force_merge_index":   false,
+					},
+				},
+			},
+		},
+		{
+			name:            "omits unset force_merge_on_clone when force_merge_index is false",
+			settingsSupport: ilmSettingsSupportForVersion(version.Must(version.NewVersion("9.2.1"))),
+			input: func() map[string]any {
+				return map[string]any{
+					"searchable_snapshot": []any{map[string]any{
+						"snapshot_repository": "repo-a",
+						"force_merge_index":   false,
+					}},
+				}
+			},
+			expected: &models.Phase{
+				Actions: map[string]models.Action{
+					"searchable_snapshot": {
+						"snapshot_repository": "repo-a",
+						"force_merge_index":   false,
+					},
+				},
+			},
 		},
 	}
 

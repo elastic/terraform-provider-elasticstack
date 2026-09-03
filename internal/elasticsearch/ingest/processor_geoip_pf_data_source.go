@@ -45,39 +45,14 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
-	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
-		m.TargetField = types.StringValue("geoip")
-		body.TargetField = "geoip"
-	} else {
-		body.TargetField = m.TargetField.ValueString()
-	}
+	body.TargetField = typeutils.StringDefault(&m.TargetField, "geoip")
 	if typeutils.IsKnown(m.DatabaseFile) {
 		body.DatabaseFile = m.DatabaseFile.ValueString()
 	}
-	if typeutils.IsKnown(m.Properties) {
-		elems := make([]string, 0, len(m.Properties.Elements()))
-		for _, elem := range m.Properties.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid properties element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown properties element", "properties elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Properties = elems
-	}
-	if m.FirstOnly.IsNull() || m.FirstOnly.IsUnknown() {
-		m.FirstOnly = types.BoolValue(true)
-		body.FirstOnly = true
-	} else {
-		body.FirstOnly = m.FirstOnly.ValueBool()
-	}
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
+	body.FirstOnly = typeutils.BoolDefault(&m.FirstOnly, true)
 
 	return body, diags
 }
@@ -85,14 +60,6 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorGeoIPDataSource returns a PF data source for the geoip processor.
 func NewProcessorGeoIPDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to get the ip address from for the geographical lookup.",
 			Required:    true,

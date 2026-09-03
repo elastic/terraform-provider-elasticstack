@@ -30,8 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-const jsonNullString = "null"
-
 func metricChartAttrsFromPayload(payload any) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
@@ -89,16 +87,11 @@ func stripMetricBreakdownByAPIFields(jsonStr string) string {
 	return string(out)
 }
 
-func isMetricNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsMetricNoESQL) bool {
-	body, err := json.Marshal(apiChart.DataSource)
-	return lenscommon.LensDataSourceIsESQLOrTable(body, err)
-}
-
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
 	prior *models.MetricChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsMetricNoESQL,
+	apiChart kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -161,7 +154,7 @@ func metricChartConfigFromAPIVariant1(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
 	prior *models.MetricChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsMetricESQL,
+	apiChart kbapi.KibanaHTTPAPIsMetricESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -219,6 +212,10 @@ func metricChartConfigFromAPIVariant1(
 	return diags
 }
 
+func metricItemConfigOf(m *models.MetricItemModel) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.ConfigJSON
+}
+
 func metricChartConfigUsesESQL(m *models.MetricChartConfigModel) bool {
 	if m == nil || !typeutils.IsKnown(m.DataSourceJSON) {
 		return false
@@ -242,30 +239,18 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommo
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
-	variant0 := kbapi.KibanaHTTPAPIsMetricNoESQL{
-		Type: kbapi.KibanaHTTPAPIsMetricNoESQLTypeMetric,
+	variant0 := kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric,
 	}
 	styling0 := kbapi.KibanaHTTPAPIsMetricStyling{}
 	variant0.Styling = &styling0
 
 	// Set simple fields
-	if typeutils.IsKnown(m.Title) {
-		variant0.Title = new(m.Title.ValueString())
-	}
-	if typeutils.IsKnown(m.Description) {
-		variant0.Description = new(m.Description.ValueString())
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant0.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		sampling := float32(m.Sampling.ValueFloat64())
-		variant0.Sampling = &sampling
-	}
+	variant0.Title, variant0.Description, variant0.IgnoreGlobalFilters, variant0.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	// Set dataset
 	if typeutils.IsKnown(m.DataSourceJSON) {
-		var dataset kbapi.KibanaHTTPAPIsMetricNoESQL_DataSource
+		var dataset kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_DataSource
 		datasetDiags := m.DataSourceJSON.Unmarshal(&dataset)
 		diags.Append(datasetDiags...)
 		if !datasetDiags.HasError() {
@@ -283,28 +268,16 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommo
 
 	// Set metrics
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item, len(m.Metrics))
-		for i, metric := range m.Metrics {
-			if typeutils.IsKnown(metric.ConfigJSON) {
-				var metricItem kbapi.KibanaHTTPAPIsMetricNoESQL_Metrics_Item
-				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
-				diags.Append(metricDiags...)
-				if !metricDiags.HasError() {
-					metrics[i] = metricItem
-				}
-			}
+		metrics := make([]kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, metricItemConfigOf, "metric", &diags) {
+			return lenscommon.VisByValueConfig0{}, diags
 		}
 		variant0.Metrics = metrics
 	}
 
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var breakdownBy kbapi.KibanaHTTPAPIsMetricNoESQL_BreakdownBy
-		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
-		diags.Append(breakdownDiags...)
-		if !breakdownDiags.HasError() {
-			variant0.BreakdownBy = &breakdownBy
-		}
+		diags.Append(m.BreakdownByJSON.Unmarshal(&variant0.BreakdownBy)...)
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
@@ -313,7 +286,7 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommo
 		return lenscommon.VisByValueConfig0{}, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMetricNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Drilldowns_Item](
 		writes, &variant0.TimeRange, &variant0.HideTitle, &variant0.HideBorder, &variant0.References, &variant0.Drilldowns,
 	)...)
 
@@ -326,26 +299,14 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 	var diags diag.Diagnostics
 	var attrs lenscommon.VisByValueConfig0
 
-	variant1 := kbapi.KibanaHTTPAPIsMetricESQL{
-		Type: kbapi.KibanaHTTPAPIsMetricESQLTypeMetric,
+	variant1 := kbapi.KibanaHTTPAPIsMetricESQLByValuePanel{
+		Type: kbapi.KibanaHTTPAPIsMetricESQLByValuePanelTypeMetric,
 	}
 	styling1 := kbapi.KibanaHTTPAPIsMetricStyling{}
 	variant1.Styling = &styling1
 
 	// Set simple fields
-	if typeutils.IsKnown(m.Title) {
-		variant1.Title = new(m.Title.ValueString())
-	}
-	if typeutils.IsKnown(m.Description) {
-		variant1.Description = new(m.Description.ValueString())
-	}
-	if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-		variant1.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-	}
-	if typeutils.IsKnown(m.Sampling) {
-		sampling := float32(m.Sampling.ValueFloat64())
-		variant1.Sampling = &sampling
-	}
+	variant1.Title, variant1.Description, variant1.IgnoreGlobalFilters, variant1.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 	// Set dataset
 	if typeutils.IsKnown(m.DataSourceJSON) {
@@ -362,16 +323,9 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 
 	// Set metrics
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsMetricESQL_Metrics_Item, len(m.Metrics))
-		for i, metric := range m.Metrics {
-			if typeutils.IsKnown(metric.ConfigJSON) {
-				var metricItem kbapi.KibanaHTTPAPIsMetricESQL_Metrics_Item
-				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
-				diags.Append(metricDiags...)
-				if !metricDiags.HasError() {
-					metrics[i] = metricItem
-				}
-			}
+		metrics := make([]kbapi.KibanaHTTPAPIsMetricESQLByValuePanel_Metrics_Item, len(m.Metrics))
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, metricItemConfigOf, "metric", &diags) {
+			return lenscommon.VisByValueConfig0{}, diags
 		}
 		variant1.Metrics = metrics
 	}
@@ -390,7 +344,7 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 		if !breakdownDiags.HasError() {
 			if breakdownBy.Format != nil {
 				fb, _ := json.Marshal(breakdownBy.Format)
-				if string(fb) == jsonNullString || len(fb) == 0 {
+				if string(fb) == lenscommon.JSONNullString || len(fb) == 0 {
 					var format kbapi.KibanaHTTPAPIsFormatType
 					_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
 					breakdownBy.Format = &format
@@ -406,7 +360,7 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 		return lenscommon.VisByValueConfig0{}, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMetricESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsMetricESQLByValuePanel_Drilldowns_Item](
 		writes, &variant1.TimeRange, &variant1.HideTitle, &variant1.HideBorder, &variant1.References, &variant1.Drilldowns,
 	)...)
 

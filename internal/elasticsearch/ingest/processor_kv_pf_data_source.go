@@ -50,7 +50,7 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.FieldSplit) {
 		body.FieldSplit = m.FieldSplit.ValueString()
@@ -58,8 +58,8 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.ValueSplit) {
 		body.ValueSplit = m.ValueSplit.ValueString()
 	}
-	body.IncludeKeys = typeutils.StringSetElements(m.IncludeKeys, &diags)
-	body.ExcludeKeys = typeutils.StringSetElements(m.ExcludeKeys, &diags)
+	body.IncludeKeys = typeutils.StringElements(m.IncludeKeys, &diags)
+	body.ExcludeKeys = typeutils.StringElements(m.ExcludeKeys, &diags)
 	if typeutils.IsKnown(m.Prefix) {
 		body.Prefix = m.Prefix.ValueString()
 	}
@@ -69,12 +69,7 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TrimValue) {
 		body.TrimValue = m.TrimValue.ValueString()
 	}
-	if m.StripBrackets.IsNull() || m.StripBrackets.IsUnknown() {
-		m.StripBrackets = types.BoolValue(false)
-		body.StripBrackets = false
-	} else {
-		body.StripBrackets = m.StripBrackets.ValueBool()
-	}
+	body.StripBrackets = typeutils.BoolDefault(&m.StripBrackets, false)
 
 	return body, diags
 }
@@ -82,14 +77,6 @@ func (m *processorKVModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorKVDataSource returns a PF data source for the kv processor.
 func NewProcessorKVDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to be parsed. Supports template snippets.",
 			Required:    true,

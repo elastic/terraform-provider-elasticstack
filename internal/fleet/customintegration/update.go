@@ -20,13 +20,12 @@ package customintegration
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -85,7 +84,7 @@ func updateCustomIntegration(
 			}
 		}
 
-		checksum, err := computeSHA256(filePath)
+		checksum, err := fileutil.SHA256HexDigest(filePath)
 		if err != nil {
 			diags.AddError("Failed to compute checksum", err.Error())
 			return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
@@ -111,40 +110,7 @@ func updateCustomIntegration(
 }
 
 func waitForInstalledCustomIntegration(ctx context.Context, fleetClient *fleet.Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
-	waitCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-	defer cancel()
-
-	waitErr := asyncutils.WaitForStateTransition(waitCtx, "fleet custom integration", getPackageID(packageName, packageVersion), func(ctx context.Context) (bool, error) {
-		pkg, diags := fleet.GetPackage(ctx, fleetClient, packageName, packageVersion, spaceID)
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to read package installation status: %s", diags[0].Summary())
-		}
-		if pkg != nil && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
-			return true, nil
-		}
-		if pkg != nil && pkg.Status != nil && strings.EqualFold(*pkg.Status, "install_failed") {
-			return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
-		}
-
-		packages, diags := fleet.GetPackages(ctx, fleetClient, true, spaceID)
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to list packages during verification: %s", diags[0].Summary())
-		}
-		for _, candidate := range packages {
-			if candidate.Name != packageName || candidate.Version != packageVersion {
-				continue
-			}
-			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "installed") {
-				return true, nil
-			}
-			if candidate.Status != nil && strings.EqualFold(*candidate.Status, "install_failed") {
-				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
-			}
-		}
-
-		return false, nil
-	})
-	if waitErr != nil {
+	if waitErr := fleet.WaitForPackageInstalled(ctx, fleetClient, packageName, packageVersion, spaceID, 45*time.Second, true); waitErr != nil {
 		return diag.Diagnostics{
 			diag.NewErrorDiagnostic(
 				"Package not ready after update",

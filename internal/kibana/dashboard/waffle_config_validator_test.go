@@ -21,31 +21,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/lenswaffle"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
-
-func Test_waffleModeListStateFromTF_unknownSkipsCountRules(t *testing.T) {
-	unknown := types.ListUnknown(types.StringType)
-	st := waffleModeListStateFromTF(unknown)
-	require.True(t, st.Unknown)
-
-	diags := lenswaffle.WaffleConfigModeValidateDiags(false,
-		st,
-		lenswaffle.WaffleModeListStateFromSlice(0),
-		lenswaffle.WaffleModeListStateFromSlice(0),
-		lenswaffle.WaffleModeListStateFromSlice(0),
-	)
-	require.False(t, diags.HasError(), "unknown metrics must not trigger Missing metrics")
-
-	diags2 := lenswaffle.WaffleConfigModeValidateDiags(true,
-		lenswaffle.WaffleModeListStateFromSlice(0),
-		lenswaffle.WaffleModeListStateFromSlice(0),
-		st,
-		lenswaffle.WaffleModeListStateFromSlice(0),
-	)
-	require.False(t, diags2.HasError(), "unknown esql_metrics must not trigger Missing esql_metrics")
-}
 
 func Test_waffleConfigModeValidateDiags_crossMode(t *testing.T) {
 	diags := lenswaffle.WaffleConfigModeValidateDiags(true,

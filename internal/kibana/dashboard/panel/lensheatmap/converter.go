@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +34,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLTypeHeatmap)
+	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -50,21 +49,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "heatmap_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.HeatmapConfigModel
-	if blocks.HeatmapConfig != nil {
-		cpy := *blocks.HeatmapConfig
-		prior = &cpy
-	}
-	blocks.HeatmapConfig = &models.HeatmapConfigModel{}
-
-	if heatmapNoESQL, err := attrs.AsKibanaHTTPAPIsHeatmapNoESQL(); err == nil && !isHeatmapNoESQLCandidateActuallyESQL(heatmapNoESQL) {
-		return heatmapConfigFromAPINoESQL(ctx, blocks.HeatmapConfig, prior, heatmapNoESQL)
-	}
-	heatmapESQL, err := attrs.AsKibanaHTTPAPIsHeatmapESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return heatmapConfigFromAPIESQL(ctx, blocks.HeatmapConfig, prior, heatmapESQL)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.HeatmapConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.HeatmapConfig, prior,
+		attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsHeatmapESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		heatmapConfigFromAPINoESQL,
+		heatmapConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

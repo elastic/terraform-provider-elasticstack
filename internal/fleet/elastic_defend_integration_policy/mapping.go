@@ -53,12 +53,12 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 				"Not an Elastic Defend policy",
 				fmt.Sprintf("Package policy %q belongs to package %q, not %q. "+
 					"Only Elastic Defend package policies can be managed by elasticstack_fleet_elastic_defend_integration_policy.",
-					typeutils.Deref(policy.Id), pkgName, endpointPackageName),
+					policy.Id, pkgName, endpointPackageName),
 			),
 		}
 	}
 
-	policyID := typeutils.Deref(policy.Id)
+	policyID := policy.Id
 	model.PolicyID = types.StringValue(policyID)
 	model.Name = types.StringValue(policy.Name)
 	model.Namespace = types.StringPointerValue(policy.Namespace)

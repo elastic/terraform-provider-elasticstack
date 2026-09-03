@@ -76,6 +76,32 @@ resource "elasticstack_kibana_dashboard" "example" {
       })>
     })> # only with type = "markdown"; exactly one of by_value or by_reference (REQ-012); conflicts with all other config blocks
 
+    links_config = <optional, object({
+      by_value = <optional, object({
+        layout      = <required, string> # "horizontal" | "vertical"
+        title       = <optional, string>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        hide_border = <optional, bool>
+        links       = <required, list(object({
+          type            = <required, string> # "dashboard" | "external"
+          destination     = <required, string>
+          label           = <optional, string>
+          open_in_new_tab = <optional, bool>
+          use_filters     = <optional, bool>   # only with type = "dashboard"
+          use_time_range  = <optional, bool>   # only with type = "dashboard"
+          encode_url      = <optional, bool>   # only with type = "external"
+        }))> # at least 1
+      })>
+      by_reference = <optional, object({
+        ref_id      = <required, string>
+        title       = <optional, string>
+        description = <optional, string>
+        hide_title  = <optional, bool>
+        hide_border = <optional, bool>
+      })>
+    })> # only with type = "links"; exactly one of by_value or by_reference (REQ-054); conflicts with all other config blocks
+
     xy_chart_config = <optional, object({
       title       = <optional, string>
       description = <optional, string>
@@ -491,6 +517,10 @@ When Kibana omits or defaults fields on read, the resource SHALL preserve prior 
 
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
 
+For typed panel config blocks whose `PopulateFromAPI` receives both `pm` (the panel model being built, which callers always pass zero-valued to avoid aliasing plan pointers) and `prior` (the prior plan or state panel at the same index), the null-preservation decision for that block SHALL key on `prior.<Type>Config`, not on `pm`'s own field: `prior.<Type>Config != nil` SHALL be treated as a same-type update (honor the practitioner's null intent for optional fields), and `prior.<Type>Config == nil` SHALL be treated as creation, import, or a genuine type change: there is no prior null intent to honor, so the block SHALL be rebuilt from the API. For config blocks that are optional even when the panel type matches (`synthetics_monitors_config`, `synthetics_stats_overview_config`), the block SHALL instead be left null when the API response carries no content for it, rather than materializing an empty block. `pm`'s own field state SHALL NOT be used for this decision, since it never carries prior intent into `PopulateFromAPI`.
+
+As of Kibana 9.5.0 GA, several typed panel config blocks' optional enum-shaped fields (for example `aiops_pattern_analysis_config.minimum_time_range` and `.random_sampler_mode`) receive concrete server-side default values on read where earlier Kibana versions returned no value at all. The provider SHALL apply REQ-009 null-preservation to these fields exactly as it does for any other Kibana-injected default: when the practitioner left the field unset (null in prior state/plan), the resource SHALL keep it null in state even though the API now returns a concrete default, rather than materializing that default and producing "Provider produced inconsistent result after apply".
+
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
 
 The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
@@ -507,6 +537,16 @@ The provider SHALL treat an API-returned `""` for `description` as semantically 
 - GIVEN Terraform configuration omitted the `options` block
 - WHEN Kibana read-back contains only the dashboard option defaults
 - THEN the resource SHALL keep `options` unset in state
+
+#### Scenario: Typed panel config null-preservation keys on prior, not on pm
+
+- GIVEN a typed panel config block (e.g. `aiops_pattern_analysis_config`) whose practitioner-authored value left an optional enum field (e.g. `minimum_time_range`) unset, applied and read back at least once (so `prior.<Type>Config` is non-nil on the next read)
+- WHEN a subsequent refresh or post-update read runs against Kibana 9.5.0 GA or later, which now returns a concrete default for that field instead of omitting it
+- THEN the resource SHALL keep the field null in state because `prior.<Type>Config` is non-nil (same-type update), regardless of what `pm`'s own (zero-valued) field state would otherwise suggest
+- AND the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+---
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
@@ -526,7 +566,7 @@ For XY chart `fitting` round-trips, the resource SHALL treat an empty string ret
 
 For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_stacked`, `bar_horizontal`), Kibana injects server-side bar-styling defaults — `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1` — even when the practitioner omitted those fields. When the plan value for such a field is null and the API read-back returns the matching default, the resource SHALL preserve the null plan value in state instead of materializing the server default.
 
-For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, and XY data/reference-line layers), Kibana injects `"time_field":"@timestamp"` into the read-back payload when the practitioner omits it. When the practitioner-authored `data_source_json` does not include `time_field`, the resource SHALL strip that injected key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
+For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, metric, and XY data/reference-line layers), Kibana injects certain optional keys into the read-back payload when the practitioner omits them: `"time_field":"@timestamp"`, and — as of Kibana 9.5.0 GA — `"name"` (echoing the underlying data view's display name for `data_view_spec` sources; earlier Kibana versions omitted this key). When the practitioner-authored `data_source_json` does not include one of these injected keys, the resource SHALL strip that key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
 
 For each Lens chart panel listed below, Kibana materializes hard-coded server defaults for optional fields when the practitioner omits them. The resource SHALL preserve the practitioner's null/unset plan value in state when the API read-back matches the documented default. The known defaults are:
 
@@ -569,6 +609,13 @@ When the metric-default normalization injects the `empty_as_null` default into a
 
 - GIVEN a Lens chart panel of any supported type whose `data_source_json` omits `time_field`
 - WHEN create runs and Kibana's read-back returns the same payload with `"time_field":"@timestamp"` injected
+- THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: data_source_json without name round-trips on every Lens chart (Kibana 9.5.0 GA)
+
+- GIVEN a Lens chart panel of any supported type whose `data_source_json` uses a `data_view_spec` source and omits `name`
+- WHEN create runs against Kibana 9.5.0 GA (or later) and its read-back returns the same payload with a `"name"` key injected (echoing the data view's display name)
 - THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
 - AND a subsequent plan SHALL show no changes
 
@@ -624,6 +671,8 @@ When the metric-default normalization injects the `empty_as_null` default into a
 - GIVEN an XY panel whose `y[].config_json` uses `operation = "count"` and omits `empty_as_null`
 - WHEN create runs and the provider builds the Kibana API request and reads the panel back
 - THEN the provider SHALL inject the `empty_as_null = false` default for that metric and the metric SHALL round-trip without drift
+
+---
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
@@ -1066,6 +1115,8 @@ On write, the provider SHALL map all configured fields from `slo_error_budget_co
 
 On read, the provider SHALL repopulate `slo_error_budget_config` from the API response. For `slo_instance_id`, the provider SHALL preserve the prior Terraform state value when the prior value was null: if the practitioner did not configure `slo_instance_id`, the provider SHALL NOT write the API-returned default `"*"` into state. For `encode_url` and `open_in_new_tab` drilldown fields, the provider SHALL normalize the API default value of `true` so that practitioners who omit those fields do not observe spurious drift after apply. On import, the provider SHALL populate API-returned optional display fields such as `title`, `description`, `hide_title`, and `hide_border`.
 
+For `title`, `description`, `hide_title`, and `hide_border`, the provider SHALL apply REQ-009 null-preservation on every read (create read-back, update read-back, and refresh): the null-intent decision for each field SHALL key on the corresponding field of `prior.SloErrorBudgetConfig` (the prior plan on create/update read-back, or prior state on refresh), not on the panel model under construction. On import (`prior == nil`), each field SHALL be populated directly from the API response when the API supplies a value. On a same-type update or refresh (`prior.SloErrorBudgetConfig != nil`), each field SHALL first be populated from the API response and then, if the corresponding prior field was null or unknown (the practitioner never configured it), reset to null in state rather than left at the API-supplied value.
+
 `drilldowns` SHALL be represented as a list of typed objects. Each drilldown object SHALL contain required `url` (string) and `label` (string), and optional `encode_url` (bool, default `true`) and `open_in_new_tab` (bool, default `true`). On write, the provider SHALL set Kibana's fixed `trigger = "on_open_panel_menu"` and `type = "url_drilldown"` values in the API request.
 
 #### Scenario: Minimal slo_error_budget panel with only slo_id
@@ -1089,6 +1140,22 @@ On read, the provider SHALL repopulate `slo_error_budget_config` from the API re
 - THEN the provider SHALL round-trip the typed drilldown fields
 - AND SHALL apply default normalization for `encode_url` and `open_in_new_tab` so that omitting them in configuration does not produce drift
 - AND SHALL write Kibana's fixed `trigger` and `type` values into the API request
+
+#### Scenario: title, description, hide_title, and hide_border survive a refresh after create
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` setting `title`, `description`, `hide_title`, and `hide_border` to explicit practitioner-configured values
+- WHEN the dashboard is created, read back, and then refreshed in a subsequent plan/apply cycle
+- THEN state SHALL contain the practitioner-configured values for all four fields after every read
+- AND the provider SHALL NOT report "Provider produced inconsistent result after apply" on the refresh
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: title, description, hide_title, and hide_border null-preservation on refresh
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` that omits `title`, `description`, `hide_title`, and `hide_border` (prior state: null for all four)
+- WHEN the dashboard is refreshed and Kibana's read-back response includes concrete values for one or more of these fields
+- THEN the provider SHALL key the null-preservation decision on `prior.SloErrorBudgetConfig`'s corresponding field, not on the panel model under construction
+- AND SHALL keep each field null in state because the prior value was null
+- AND a subsequent plan SHALL show no changes
 
 ### Requirement: ES|QL control panel behavior (REQ-026)
 
@@ -2416,139 +2483,68 @@ The `ml_single_metric_viewer_config` block SHALL conflict with all other typed p
 
 ### Requirement: APM service map panel support (REQ-049)
 
-The `elasticstack_kibana_dashboard` resource SHALL support `type = "apm_service_map"` panels through a typed `apm_service_map_config` block. The block exposes the full flat configuration surface of `KibanaHTTPAPIsApmServiceMapEmbeddable`.
+The provider SHALL treat `environment = "ENVIRONMENT_ALL"` returned by the Kibana API as a
+server-injected default (equivalent to the field being absent) and suppress it to null in state
+when the practitioner's configuration does not explicitly set `environment`. This suppression
+applies on both the normal read path and the import path.
 
-#### Schema attributes
+Background: Kibana 9.5+ injects `environment = "ENVIRONMENT_ALL"` into APM service-map panel
+configs when the practitioner omits the field. Because `"ENVIRONMENT_ALL"` means "no environment
+filter" — identical in effect to the field being absent — storing it in state against a config
+that omits `environment` causes spurious drift on every refresh and import.
 
-All attributes within `apm_service_map_config` are optional unless stated otherwise.
+#### Read-path suppression
 
-**Service selectors** (all optional strings — freely combinable, no mutual exclusion):
-- `environment` — APM service environment (e.g. `"production"`).
-- `service_name` — Focus the map on a specific service.
-- `service_group_id` — Reference to a saved APM service group (opaque string; no foreign-key validation by the provider).
+On read (post-create/update refresh and standalone `terraform refresh`), the provider SHALL continue to apply REQ-049/REQ-009 null-preservation semantics for `apm_service_map_config.environment`: when the prior state has `environment` null or unknown, state SHALL keep it null regardless of the API value (including `"ENVIRONMENT_ALL"`).
+When the prior state has a known `environment` value, the provider SHALL leave `environment` as returned by the API.
 
-**Query**:
-- `kuery` — KQL query string (plain `StringAttribute`; always KQL, not an object).
+#### Import-path suppression
 
-**Layout**:
-- `map_orientation` — String enum: `horizontal` or `vertical`. The resource SHALL return an error diagnostic at plan time when a value outside this set is supplied.
-- `sync_with_dashboard_filters` — Boolean; when null, the attribute is omitted from the API payload.
+On import (no prior state), when the API returns `environment = "ENVIRONMENT_ALL"`, the provider
+SHALL set `environment` to null in the imported state. Any other `environment` value SHALL be
+imported verbatim.
 
-**Filter lists** (each a set of validated strings; order does not affect plan stability):
-- `alert_status_filter` — Set of strings; allowed values: `active`, `delayed`, `recovered`, `untracked`.
-- `anomaly_severity_filter` — Set of strings; allowed values: `low`, `warning`, `minor`, `major`, `critical`, `unknown`.
-- `connection_filter` — Set of strings; allowed values: `connected`, `orphaned`.
-- `slo_status_filter` — Set of strings; allowed values: `degrading`, `healthy`, `noData`, `violated`.
+The rationale is that `"ENVIRONMENT_ALL"` is not a meaningful configuration choice — it is the
+server's representation of "unfiltered". Importing it would produce an immediate diff against any
+configuration that omits `environment`, breaking `ImportStateVerify` and forcing practitioners to
+add a redundant `environment = "ENVIRONMENT_ALL"` to their configs.
 
-Invalid values for any filter set attribute SHALL produce an error diagnostic at plan time.
+#### Explicit `environment = "ENVIRONMENT_ALL"` is preserved
 
-**Presentation passthroughs** (reuse `panelkit.PanelPresentationAttributes()`):
-- `title`, `description`, `hide_title`, `hide_border`
+When a practitioner explicitly sets `environment = "ENVIRONMENT_ALL"` in their configuration, the
+prior state SHALL have a known value for `environment`. The suppression condition (prior
+`environment` is null or unknown) SHALL NOT fire, so the value SHALL be preserved in state without
+modification. A subsequent plan against that configuration SHALL show no changes.
 
-**Time range**:
-- `time_range` — Optional sub-block `{ from: string, to: string, mode: optional string ("absolute" | "relative") }`.
+#### Scenario: Server default suppressed when environment not configured
 
-#### Write (ToAPI) behaviour
+- GIVEN a panel with `type = "apm_service_map"` and `apm_service_map_config` that does not set
+  `environment`
+- WHEN Kibana 9.5+ returns `environment = "ENVIRONMENT_ALL"` in the API response
+- THEN the provider SHALL set `environment` to null in state
+- AND a subsequent plan against a configuration that omits `environment` SHALL show no changes
 
-When `apm_service_map_config` is set, the provider SHALL:
-- Set `type` to `"apm_service_map"` in the API panel payload.
-- Map each set attribute that is non-null and non-empty to the corresponding slice in the `config` object; omit null/empty sets from the payload.
-- Map scalar optional attributes (strings, bools) only when non-null.
-- Map `time_range` only when the block is non-null.
+#### Scenario: Import with server-injected ENVIRONMENT_ALL
 
-`config_json` SHALL NOT be accepted for `apm_service_map` panels; the registry guard (REQ-044A) SHALL return an error diagnostic if `config_json` is set on a panel with `type = "apm_service_map"`. The `apm_service_map` panel type SHALL be managed exclusively through the typed `apm_service_map_config` block.
+- GIVEN an APM service-map dashboard panel whose Terraform config does not set `environment`
+- WHEN the panel is imported from Kibana 9.5+ (which returns `environment = "ENVIRONMENT_ALL"`)
+- THEN the imported state SHALL have `environment = null`
+- AND `ImportStateVerify` SHALL pass against a configuration that omits `environment`
 
-#### Read (FromAPI) behaviour and null-preservation
+#### Scenario: Explicit ENVIRONMENT_ALL is preserved
 
-On read, the provider SHALL apply REQ-009 null-preservation for every optional field:
-- When prior state had a field null, the provider SHALL keep it null in state even if the API returns a value.
-- When prior state had a field set, the provider SHALL update it from the API response.
-- For filter set attributes: when prior state had the attribute null, the provider SHALL keep it null regardless of the API response. When prior state had the attribute set (including empty set), the provider SHALL reconstruct the `types.Set` from the API slice; the set implementation guarantees that element order is ignored for plan comparison, so re-ordered API responses SHALL produce no plan diff.
-- `time_range` — when prior state had it null and the API echoes a value (e.g. the dashboard-level time range), state SHALL remain null.
-- On import (no prior state): when the API returns a non-empty config object, populate all non-null API fields into state; when the API returns a nil or empty config, leave `apm_service_map_config` null in state.
-
-The `apm_service_map_config` block SHALL be mutually exclusive with all other typed panel config blocks and with `config_json`. The registry-driven mutual-exclusion guard (REQ-044A) enforces this.
-
-#### Scenarios
-
-##### Scenario: Create apm_service_map panel with environment selector
-
-- GIVEN a dashboard configuration with a panel of `type = "apm_service_map"` and `apm_service_map_config = { environment = "production" }`
-- WHEN the resource creates the dashboard
-- THEN the API payload SHALL include `"config": { "environment": "production" }` in the panel body
+- GIVEN a panel with `apm_service_map_config.environment = "ENVIRONMENT_ALL"` explicitly set in
+  the configuration
+- WHEN apply runs and Kibana returns `environment = "ENVIRONMENT_ALL"` in the API response
+- THEN the provider SHALL keep `environment = "ENVIRONMENT_ALL"` in state (suppression SHALL NOT
+  apply)
 - AND a subsequent plan SHALL show no changes
 
-##### Scenario: Create apm_service_map panel with service_name selector
+#### Scenario: Non-default environment values are preserved
 
-- GIVEN a dashboard configuration with `apm_service_map_config = { service_name = "checkout" }`
-- WHEN the resource creates the dashboard
-- THEN the API payload SHALL include `"config": { "service_name": "checkout" }` in the panel body
-- AND a subsequent plan SHALL show no changes
-
-##### Scenario: Create apm_service_map panel with service_group_id selector
-
-- GIVEN a dashboard configuration with `apm_service_map_config = { service_group_id = "group-abc" }`
-- WHEN the resource creates the dashboard
-- THEN the API payload SHALL include `"config": { "service_group_id": "group-abc" }` in the panel body
-
-##### Scenario: Create apm_service_map panel with all three service selectors combined
-
-- GIVEN a dashboard configuration with `apm_service_map_config = { environment = "staging", service_name = "checkout", service_group_id = "group-abc" }`
-- WHEN the resource creates the dashboard
-- THEN all three fields SHALL appear in the API payload
-- AND no mutual-exclusion error SHALL be returned
-
-##### Scenario: Filter sets with multiple values and order independence
-
-- GIVEN a dashboard with `apm_service_map_config.alert_status_filter = ["active", "delayed"]`
-- WHEN the resource reads back the dashboard and the API returns `["delayed", "active"]` (reversed order)
-- THEN the provider SHALL produce no plan diff
-- AND state SHALL contain a set with values `"active"` and `"delayed"`
-
-##### Scenario: All filter sets populated
-
-- GIVEN a panel with all four filter attributes set with multiple valid enum values
-- WHEN the resource creates the dashboard and reads it back
-- THEN each filter set in state SHALL contain the expected values
-- AND a subsequent plan SHALL show no changes
-
-##### Scenario: Invalid alert_status_filter value rejected
-
-- GIVEN a panel with `apm_service_map_config = { alert_status_filter = ["invalid_value"] }`
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the value is not an allowed enum member
-
-##### Scenario: Invalid map_orientation value rejected
-
-- GIVEN a panel with `apm_service_map_config = { map_orientation = "diagonal" }`
-- WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the value must be `horizontal` or `vertical`
-
-##### Scenario: config_json rejected for apm_service_map panel
-
-- GIVEN a panel with `type = "apm_service_map"` and `config_json` also set
-- WHEN Terraform plans the configuration
-- THEN the resource SHALL return an error diagnostic indicating `config_json` is unsupported for the `apm_service_map` panel type
-
-##### Scenario: Null-preservation on optional scalars
-
-- GIVEN a prior state where `apm_service_map_config.environment` is null
-- WHEN the API read returns an `environment` value
-- THEN state SHALL keep `environment` null
-- AND the subsequent plan SHALL show no changes
-
-##### Scenario: Import null-preservation
-
-- GIVEN an existing dashboard with `apm_service_map` panels that have API-side defaults for optional fields
-- WHEN the resource imports the dashboard
-- THEN optional fields not explicitly configured SHALL remain null in state
-- AND a subsequent plan against a configuration that omits those fields SHALL show no changes
-
-##### Scenario: Full configuration round-trip
-
-- GIVEN an `apm_service_map_config` block with every attribute populated
-- WHEN the resource creates the dashboard and reads it back
-- THEN all attribute values SHALL appear in state
+- GIVEN a panel with `apm_service_map_config.environment = "production"`
+- WHEN apply runs and Kibana returns `environment = "production"` in the API response
+- THEN state SHALL contain `environment = "production"`
 - AND a subsequent plan SHALL show no changes
 
 ### Requirement: AIOps log rate analysis panel behavior (REQ-050)
@@ -2714,7 +2710,7 @@ The block accepts the following attributes:
 - `max_series_to_plot` (optional int64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request. The Kibana API represents this field as a JSON number (`*float32` in the generated client); the provider exposes it as an integer since a series count cannot be fractional, converting to/from the API's numeric type at the boundary.
 - `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
   - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
-  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
+  - `min` (int64) plus optional `max` (int64): an alternative, numeric spelling of one of the canonical severity bands. The Kibana API models `severity_threshold` items as a union of exactly five members, each pinning **both** `min` and `max` to a single canonical pair (see the canonical-band table below); the `critical` member has no `max` field at all. The provider does not validate this constraint client-side, so on Kibana 9.5.0 GA and later (the pre-GA `9.5.0-SNAPSHOT` build accepted arbitrary `min`/`max` values) any `{min, max}` pair that does not exactly match one of the five canonical pairs — including a canonical `min` combined with a non-canonical `max`, or any `max` set alongside `min = 75` — SHALL be rejected by the Kibana API at `terraform apply` time with an HTTP 400 error, not caught earlier as a plan-time diagnostic. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
 - `title` (optional string): panel title. Subject to REQ-009 null-preservation.
 - `description` (optional string): panel description. Subject to REQ-009 null-preservation.
 - `hide_title` (optional bool): when true, hides the panel title. Subject to REQ-009 null-preservation.
@@ -2730,6 +2726,8 @@ The model layer SHALL expand named severity values to the following canonical `{
 | `minor`     | 25        | 50           |
 | `major`     | 50        | 75           |
 | `critical`  | 75        | (omitted — open-ended upper bound) |
+
+The raw `min`/`max` form exists so a practitioner can spell one of these same five bands numerically instead of via the `severity` enum; it is not a general-purpose custom-range escape hatch on Kibana 9.5.0 GA and later, which validates the `{min, max}` pair against the canonical band list server-side.
 
 On write, the provider SHALL map `ml_anomaly_charts_config` to the `config` object in the `KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts` API schema. Optional fields SHALL be included only when set in state; absent optional fields SHALL NOT be sent to the API.
 
@@ -2762,10 +2760,10 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: Raw range escape hatch
 
-- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]`
-- WHEN create runs and the post-apply read returns `{min: 10, max: 20}`
-- THEN state SHALL contain `min = 10` and `max = 20` (not coerced to a named severity)
-- AND a subsequent plan SHALL show no changes
+- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]` (a `{min, max}` pair that does not match any of the five canonical pairs)
+- WHEN create runs against Kibana 9.5.0 GA or later
+- THEN the Kibana API SHALL reject the request with an HTTP 400 error identifying `severity_threshold` as invalid
+- AND `terraform apply` SHALL fail with that error, since the provider does not validate the canonical-boundary constraint client-side and this form is not a general-purpose custom-range escape hatch on supported GA versions
 
 #### Scenario: Raw range coinciding with a canonical band is preserved (no diff)
 
@@ -2776,9 +2774,9 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: severity_threshold form is preserved across refresh
 
-- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 10, max = 20 }]`
-- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 10, max: 20}]`
-- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 10, max = 20`
+- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 25, max = 50 }]`
+- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 25, max: 50}]`
+- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 25, max = 50`
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: critical severity preserved in raw form when authored raw
@@ -2831,7 +2829,98 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 - GIVEN an existing `ml_anomaly_charts` panel with `job_ids = ["job-a"]`
 - WHEN the configuration changes to `job_ids = ["job-a", "job-b"]` and update runs
 - THEN the resource SHALL NOT destroy and recreate the dashboard
-- AND state SHALL reflect both job IDs after the update
+- AND a subsequent plan SHALL show no changes
+
+### Requirement: Field statistics table panel behavior (REQ-054)
+
+When a panel entry sets `type = "field_stats_table"`, the resource SHALL accept a `field_stats_table_config` block and SHALL require that block to be present when the panel type is `field_stats_table`. The block SHALL expose two mutually exclusive sub-blocks mirroring the API's `view_type` discriminated union:
+
+- `by_dataview` — backed by a Kibana data view (API `view_type = "dataview"`).
+- `by_esql` — backed by an ES|QL query (API `view_type = "esql"`).
+
+Exactly one of `by_dataview` or `by_esql` SHALL be set; setting both or neither SHALL produce an error diagnostic at plan time.
+
+The `field_stats_table_config` block SHALL conflict with all other typed panel config blocks and with panel-level `config_json`. When `type = "field_stats_table"`, `config_json` SHALL NOT be set on the same panel entry; if it is, the resource SHALL return an error diagnostic indicating `config_json` is not supported for `field_stats_table`.
+
+#### The `by_dataview` sub-block
+
+The `by_dataview` sub-block SHALL accept:
+
+- `data_view_id` (required, string) — the identifier of the source data view.
+- `show_distributions` (optional, bool) — whether to show distribution mini-charts in the table; null-preserved on read per REQ-009: when prior state has it null, the provider keeps it null even if Kibana returns a server-side default.
+- `title` (optional, string) — panel display title; null-preserved on read.
+- `description` (optional, string) — panel description; null-preserved on read.
+- `hide_title` (optional, bool) — whether to hide the panel title; null-preserved on read.
+- `hide_border` (optional, bool) — whether to hide the panel border; null-preserved on read.
+- `time_range` (optional, object `{ from = required string, to = required string, mode = optional string }`) — panel-level time range override; null-preserved on read: when prior state has `time_range` null, the provider keeps it null even if Kibana returns values.
+
+On write, the provider SHALL set `view_type = "dataview"` internally and map `data_view_id` and optional fields to the API payload. The `view_type` field is not exposed as a user-facing attribute.
+
+#### The `by_esql` sub-block
+
+The `by_esql` sub-block SHALL accept:
+
+- `query` (required, string) — the ES|QL query string; mapped to `query.esql` in the API payload.
+- `show_distributions` (optional, bool) — null-preserved on read per REQ-009.
+- `title` (optional, string) — null-preserved on read.
+- `description` (optional, string) — null-preserved on read.
+- `hide_title` (optional, bool) — null-preserved on read.
+- `hide_border` (optional, bool) — null-preserved on read.
+- `time_range` (optional, object `{ from = required string, to = required string, mode = optional string }`) — null-preserved on read.
+
+On write, the provider SHALL set `view_type = "esql"` internally and map `query` to `query.esql` and optional fields to the API payload.
+
+#### Read behavior
+
+On read, the resource SHALL detect the `view_type` field in the API response and populate the matching sub-block (`by_dataview` or `by_esql`), leaving the other sub-block null. For each optional attribute, the resource SHALL apply REQ-009 null-preservation: if prior state had the attribute null, the provider SHALL keep it null even if the API response contains a value for it.
+
+#### Scenario: by_dataview branch create/read round-trip
+
+- GIVEN a panel with `type = "field_stats_table"` and `field_stats_table_config.by_dataview = { data_view_id = "logs-view", show_distributions = true, time_range = { from = "now-24h", to = "now" } }`
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL contain `by_dataview` populated with the same values, `by_esql` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: by_esql branch create/read round-trip
+
+- GIVEN a panel with `type = "field_stats_table"` and `field_stats_table_config.by_esql = { query = "FROM logs | STATS count = COUNT(*) BY service.name", show_distributions = false }`
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL contain `by_esql` populated with the same values, `by_dataview` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: Exactly one of by_dataview or by_esql
+
+- GIVEN a panel with both `field_stats_table_config.by_dataview` and `field_stats_table_config.by_esql` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `by_dataview` or `by_esql` must be set
+
+#### Scenario: Neither branch set
+
+- GIVEN a panel with `field_stats_table_config = {}` (neither `by_dataview` nor `by_esql` set)
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one of `by_dataview` or `by_esql` must be set
+
+#### Scenario: time_range null-preservation
+
+- GIVEN a `field_stats_table_config.by_dataview` panel whose prior state has `time_range = null`
+- WHEN the post-apply read returns a panel where Kibana populated `time_range` with values
+- THEN state SHALL keep `time_range` null and a subsequent plan against configuration that omits `time_range` SHALL show no changes
+
+#### Scenario: show_distributions null-preservation
+
+- GIVEN a `field_stats_table_config.by_esql` panel whose prior state has `show_distributions = null`
+- WHEN the post-apply read returns a panel where Kibana populated `show_distributions`
+- THEN state SHALL keep `show_distributions` null and a subsequent plan against configuration that omits it SHALL show no changes
+
+#### Scenario: config_json rejected for field_stats_table panel type
+
+- GIVEN a panel with `type = "field_stats_table"` configured through `config_json`
+- WHEN the provider builds the API request on create or update
+- THEN it SHALL return an error diagnostic stating that `config_json` is not supported for `field_stats_table`
+
+#### Scenario: Drift detection — Kibana returns branch data intact
+
+- GIVEN an existing dashboard with a `field_stats_table` panel in state
+- WHEN Kibana returns the same panel configuration on a subsequent read
+- THEN a plan SHALL show no changes
 
 ---
 
@@ -2860,6 +2949,144 @@ The resource schema version SHALL be incremented to 1. No data SHALL be lost dur
 - WHEN the state upgrader runs
 - THEN the `markdown` panel entries SHALL be unchanged in v1 state
 
+### Requirement: `links_config` panel block (REQ-054)
+
+For `type = "links"` panels, the resource SHALL accept a `links_config` block whose shape mirrors the API's by-value/by-reference union: `links_config = object({ by_value = object({ layout, title, description, hide_title, hide_border, links[] }), by_reference = object({ ref_id, title, description, hide_title, hide_border }) })`. Exactly one of `by_value` or `by_reference` SHALL be set; setting both or neither SHALL produce an error diagnostic at plan time. The block SHALL conflict with all other typed panel config blocks and with practitioner-authored `config_json`. See the delta spec REQ-LINKS-001 for full behavioral scenarios, scenarios for link item type-specific field isolation, and null-preservation requirements for optional display fields and link item fields.
+
+The `by_value` block SHALL require `layout` (string enum `"horizontal"` | `"vertical"`) and `links` (non-empty list). Each link item SHALL require `type` (string enum `"dashboard"` | `"external"`) and `destination` (string), and SHALL accept optional `label` (string) and `open_in_new_tab` (bool). `use_filters` and `use_time_range` SHALL only be valid when `type = "dashboard"`; `encode_url` SHALL only be valid when `type = "external"`.
+
+The `"dashboard"` type SHALL map to the API discriminator `"dashboardLink"`; the `"external"` type SHALL map to the API discriminator `"externalLink"`. On write, the provider SHALL build either the by-value or by-reference API payload according to which sub-block is set. On read, it SHALL detect the returned API branch and populate the matching sub-block.
+
+`by_reference` SHALL require `ref_id` (string) as the identifier of an existing Kibana Links library saved object, and SHALL accept the same optional display fields as `by_value`.
+
+Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on both branches and optional link item fields SHALL follow null-preservation on refresh/read after a user-managed apply: they remain null in state when omitted by the user, even if Kibana echoes server-side defaults.
+
+#### Scenario: By-value links panel round-trip
+
+- GIVEN a panel with `type = "links"` and `links_config.by_value` containing one `"dashboard"` link and one `"external"` link
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_value` shape, `by_reference` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: By-reference links panel round-trip
+
+- GIVEN a panel with `type = "links"` and `links_config.by_reference` carrying a `ref_id` and optional `title`
+- WHEN create runs and the post-apply read returns the same panel
+- THEN state SHALL contain the same `by_reference` shape, `by_value` SHALL be null, and a subsequent plan SHALL show no changes
+
+#### Scenario: `links_config` required for `type = "links"`
+
+- GIVEN a panel with `type = "links"` and no `links_config` block
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `links_config` is required
+
+### Requirement: `links_config` panel block (REQ-LINKS-001)
+
+The `panels` list in `elasticstack_kibana_dashboard` SHALL accept entries with `type = "links"` by providing a `links_config` block. The block SHALL follow the same mutual-exclusion, `AllowedIf`/`RequiredIf`, and sibling `ConflictsWith` patterns as all other typed panel blocks. When a panel carries `type = "links"`, the `links_config` block SHALL be required; omitting it SHALL produce a plan-time error.
+
+The block accepts exactly one of two branches:
+
+**`by_value`** — inline link configuration:
+- `layout` (required string, enum `"horizontal"` | `"vertical"`)
+- `links` (required list, at least 1 item)
+- `title`, `description`, `hide_title`, `hide_border` (all optional)
+
+**`by_reference`** — references a Kibana Links library saved object:
+- `ref_id` (required string, non-empty)
+- `title`, `description`, `hide_title`, `hide_border` (all optional)
+
+Setting both `by_value` and `by_reference`, or neither, SHALL produce a plan-time error.
+
+Each item in `by_value.links[]` is a flat object with:
+- `type` (required string, enum `"dashboard"` | `"external"`)
+- `destination` (required string — dashboard saved-object id or URL)
+- `label` (optional string)
+- `open_in_new_tab` (optional bool — all types)
+- `use_filters` (optional bool — `type = "dashboard"` only)
+- `use_time_range` (optional bool — `type = "dashboard"` only)
+- `encode_url` (optional bool — `type = "external"` only)
+
+The `"dashboard"` type maps to the API discriminator `"dashboardLink"`; `"external"` maps to `"externalLink"`.
+
+Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on both branches and optional link item fields SHALL follow REQ-009 null-preservation on refresh/read after a user-managed apply: they remain null in state when omitted by the user, even if Kibana echoes server-side defaults. On import, these fields SHALL be left null in state when Kibana returns only server-side defaults, so practitioners are not forced to manage those defaults in HCL.
+
+#### Scenario: `by_value` panel with dashboard and external links
+
+- GIVEN a `links` panel with `links_config.by_value` containing a `"dashboard"` link (`destination`, `label`, `open_in_new_tab`, `use_filters`, `use_time_range`) and an `"external"` link (`destination`, `label`, `open_in_new_tab`, `encode_url`)
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL reflect all configured fields and a subsequent plan SHALL show no changes
+
+#### Scenario: `by_reference` panel referencing a library saved object
+
+- GIVEN a `links` panel with `links_config.by_reference` carrying a `ref_id` and optional `title`
+- WHEN create runs and the post-apply read returns the panel
+- THEN state SHALL contain `ref_id` and `title` and a subsequent plan SHALL show no changes
+
+#### Scenario: Mutual exclusion — both branches set
+
+- GIVEN a `links_config` block with both `by_value` and `by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one must be set
+
+#### Scenario: Mutual exclusion — neither branch set
+
+- GIVEN a `links_config` block with neither `by_value` nor `by_reference` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating exactly one must be set
+
+#### Scenario: `links_config` required for `type = "links"`
+
+- GIVEN a panel with `type = "links"` and no `links_config` block
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `links_config` is required
+
+#### Scenario: `layout` validation
+
+- GIVEN a `by_value` block with `layout = "diagonal"`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating the value must be `horizontal` or `vertical`
+
+#### Scenario: `links` minimum length
+
+- GIVEN a `by_value` block with an empty `links = []`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating at least one item is required
+
+#### Scenario: Link item type-specific field isolation — `encode_url` on `dashboard` link
+
+- GIVEN a link item with `type = "dashboard"` and `encode_url` set to a concrete value
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `encode_url` is not valid for `type = "dashboard"`
+
+#### Scenario: Link item type-specific field isolation — `use_filters` on `external` link
+
+- GIVEN a link item with `type = "external"` and `use_filters` set to a concrete value
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic indicating `use_filters` is not valid for `type = "external"`
+
+#### Scenario: Null-preservation of optional display fields
+
+- GIVEN a `by_value` links panel whose `title` and `hide_border` are not set in configuration
+- WHEN Kibana returns `title = "Links"` and `hide_border = false` in the API response
+- THEN state SHALL keep `title` and `hide_border` null and a subsequent plan SHALL show no changes
+
+#### Scenario: Import — `by_value` panel
+
+- GIVEN an existing Kibana dashboard with a `links` panel in `by_value` configuration
+- WHEN the resource imports the dashboard
+- THEN the `links_config.by_value` block SHALL be populated from the API response — including `layout`, all `links[]` items, and any optional display fields returned by Kibana — and a subsequent plan against a matching configuration SHALL show no changes
+
+#### Scenario: Import — `by_reference` panel
+
+- GIVEN an existing Kibana dashboard with a `links` panel in `by_reference` configuration
+- WHEN the resource imports the dashboard
+- THEN the `links_config.by_reference` block SHALL be populated from the API response — including `ref_id` and any optional display fields returned by Kibana — and a subsequent plan against a matching configuration SHALL show no changes
+
+#### Scenario: Optional display fields null on import
+
+- GIVEN an existing Kibana dashboard whose `links` panel has server-side defaults for `hide_title` (`false`) and `hide_border` (`false`)
+- WHEN the resource imports the dashboard and the user's configuration omits those attributes
+- THEN `hide_title` and `hide_border` SHALL remain null in state and a subsequent plan against a matching configuration SHALL show no changes
+
 ## Traceability
 
 | Area | Primary files |
@@ -2872,6 +3099,7 @@ The resource schema version SHALL be incremented to 1. No data SHALL be lost dur
 | Panels / sections mapping | `internal/kibana/dashboard/models_panels.go` |
 | Visualization-specific panel converters | `internal/kibana/dashboard/models_*_panel.go` |
 | `viz` panel / `vis_config` / REQ-042 | `internal/kibana/dashboard/models_panels.go`, `internal/kibana/dashboard/models_lens_panel.go`, `internal/kibana/dashboard/schema.go` |
+| `links` panel / REQ-054 / REQ-LINKS-001 | `internal/kibana/dashboard/panel/links/schema.go`, `internal/kibana/dashboard/panel/links/api.go`, `internal/kibana/dashboard/panel/links/populate.go`, `internal/kibana/dashboard/models/links.go`, `internal/kibana/dashboard/registry.go` |
 | Drift normalization | `internal/kibana/dashboard/panel_config_defaults.go`, `internal/kibana/dashboard/models_plan_state_alignment.go`, `internal/kibana/dashboard/models_xy_chart_panel.go` |
 | Waffle validation | `internal/kibana/dashboard/waffle_config_validator.go` |
 | Dashboard API status handling | `internal/clients/kibanaoapi/dashboards.go` |

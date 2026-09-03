@@ -29,9 +29,7 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapC
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	alignHeatmapAxisStateFromPlan(plan.Axis, state.Axis)
 	alignHeatmapStylingStateFromPlan(plan.Styling, state.Styling)
 	alignHeatmapLegendStateFromPlan(plan.Legend, &state.Legend)
@@ -77,15 +75,15 @@ func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **mo
 		return
 	}
 	if *state == nil || heatmapLegendEffectivelyUnset(*state) {
-		*state = cloneHeatmapLegendModel(plan)
+		*state = lenscommon.CloneModel(plan)
 		return
 	}
 	// Kibana renders the legend by default; preserve the null plan when the
 	// API read-back returns the default "visible" value.
 	lenscommon.PreserveNullStringIfStateEquals(plan.Visibility, &(*state).Visibility, "visible")
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Visibility, &(*state).Visibility)
-	lenscommon.PreserveKnownTfStringIfStateNull(plan.Size, &(*state).Size)
-	lenscommon.PreserveKnownTfInt64IfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Visibility, &(*state).Visibility)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.Size, &(*state).Size)
+	lenscommon.PreserveKnownTfValueIfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)
 }
 
 func heatmapLegendEffectivelyUnset(m *models.HeatmapLegendModel) bool {
@@ -93,12 +91,4 @@ func heatmapLegendEffectivelyUnset(m *models.HeatmapLegendModel) bool {
 		return true
 	}
 	return !typeutils.IsKnown(m.Visibility) && !typeutils.IsKnown(m.Size) && !typeutils.IsKnown(m.TruncateAfterLines)
-}
-
-func cloneHeatmapLegendModel(model *models.HeatmapLegendModel) *models.HeatmapLegendModel {
-	if model == nil {
-		return nil
-	}
-	cloned := *model
-	return &cloned
 }

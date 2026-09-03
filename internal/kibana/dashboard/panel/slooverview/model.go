@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -30,18 +31,6 @@ import (
 )
 
 // Exactly one of Single or Groups must be set.
-//
-// trigger and type are always hardcoded to "on_open_panel_menu" / "url_drilldown" — they
-// are not exposed to users (matching the slo_burn_rate_config drilldowns approach).
-
-type sloDrilldownWireJSON struct {
-	EncodeURL    *bool  `json:"encode_url,omitempty"`
-	Label        string `json:"label"`
-	OpenInNewTab *bool  `json:"open_in_new_tab,omitempty"`
-	Trigger      string `json:"trigger"`
-	Type         string `json:"type"`
-	URL          string `json:"url"`
-}
 
 // BuildConfig writes Terraform panel state into the typed API panel's config union (Grid/Id are set separately).
 func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview) diag.Diagnostics {
@@ -102,18 +91,8 @@ func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.KibanaHTTPAPIsSloSingl
 	if typeutils.IsKnown(m.RemoteName) {
 		api.RemoteName = m.RemoteName.ValueStringPointer()
 	}
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.HideTitle) {
-		api.HideTitle = m.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.HideBorder) {
-		api.HideBorder = m.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(m.Title, m.Description, m.HideTitle, m.HideBorder,
+		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 
 	if len(m.Drilldowns) > 0 {
 		d := setDrilldownsOnSingle(&api, m.Drilldowns)
@@ -124,7 +103,7 @@ func singleToAPI(m *models.SloOverviewSingleModel) (kbapi.KibanaHTTPAPIsSloSingl
 }
 
 func setDrilldownsOnSingle(api *kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
-	return injectDrilldownsJSON(api, drilldowns)
+	return panelkit.InjectDrilldownsJSON(api, drilldowns)
 }
 
 func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, diag.Diagnostics) {
@@ -133,18 +112,8 @@ func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroup
 		OverviewMode: kbapi.Groups,
 	}
 
-	if typeutils.IsKnown(m.Title) {
-		api.Title = m.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		api.Description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.HideTitle) {
-		api.HideTitle = m.HideTitle.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(m.HideBorder) {
-		api.HideBorder = m.HideBorder.ValueBoolPointer()
-	}
+	panelkit.BuildPresentationConfig(m.Title, m.Description, m.HideTitle, m.HideBorder,
+		&api.Title, &api.Description, &api.HideTitle, &api.HideBorder)
 
 	if len(m.Drilldowns) > 0 {
 		d := setDrilldownsOnGroups(&api, m.Drilldowns)
@@ -163,50 +132,7 @@ func groupsToAPI(m *models.SloOverviewGroupsModel) (kbapi.KibanaHTTPAPIsSloGroup
 }
 
 func setDrilldownsOnGroups(api *kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
-	return injectDrilldownsJSON(api, drilldowns)
-}
-
-func injectDrilldownsJSON(api any, drilldowns []models.URLDrilldownModel) diag.Diagnostics {
-	ddsJSON, err := json.Marshal(buildDrilldownsWire(drilldowns))
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal drilldowns", err.Error())}
-	}
-	base, err := json.Marshal(api)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to marshal SLO config", err.Error())}
-	}
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal(base, &m); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to unmarshal SLO config", err.Error())}
-	}
-	m["drilldowns"] = ddsJSON
-	merged, err := json.Marshal(m)
-	if err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to re-marshal SLO config", err.Error())}
-	}
-	if err := json.Unmarshal(merged, api); err != nil {
-		return diag.Diagnostics{diag.NewErrorDiagnostic("Failed to apply drilldowns to SLO config", err.Error())}
-	}
-	return nil
-}
-
-func buildDrilldownsWire(drilldowns []models.URLDrilldownModel) []sloDrilldownWireJSON {
-	result := make([]sloDrilldownWireJSON, len(drilldowns))
-	for i, dd := range drilldowns {
-		result[i] = sloDrilldownWireJSON{
-			URL:     dd.URL.ValueString(),
-			Label:   dd.Label.ValueString(),
-			Trigger: "on_open_panel_menu",
-			Type:    "url_drilldown",
-		}
-		if typeutils.IsKnown(dd.EncodeURL) {
-			result[i].EncodeURL = dd.EncodeURL.ValueBoolPointer()
-		}
-		if typeutils.IsKnown(dd.OpenInNewTab) {
-			result[i].OpenInNewTab = dd.OpenInNewTab.ValueBoolPointer()
-		}
-	}
-	return result
+	return panelkit.InjectDrilldownsJSON(api, drilldowns)
 }
 
 func groupFiltersToAPI(m *models.SloGroupFiltersModel) (*struct {
@@ -293,16 +219,6 @@ func sloStringFromAPIOrPrior(apiVal *string, priorVal types.String) types.String
 	return types.StringNull()
 }
 
-func sloBoolFromAPIOrPrior(apiVal *bool, priorVal types.Bool) types.Bool {
-	if apiVal != nil {
-		return types.BoolPointerValue(apiVal)
-	}
-	if typeutils.IsKnown(priorVal) {
-		return priorVal
-	}
-	return types.BoolNull()
-}
-
 func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -315,22 +231,12 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 
 	m.SloID = types.StringValue(api.SloId)
 
-	if api.SloInstanceId != nil {
-		switch {
-		case priorSingle == nil && *api.SloInstanceId == "*":
-			m.SloInstanceID = types.StringNull()
-		case priorSingle != nil && priorSingle.SloInstanceID.IsNull() && *api.SloInstanceId == "*":
-			m.SloInstanceID = types.StringNull()
-		default:
-			m.SloInstanceID = types.StringPointerValue(api.SloInstanceId)
-		}
-	} else {
-		if priorSingle != nil && typeutils.IsKnown(priorSingle.SloInstanceID) {
-			m.SloInstanceID = priorSingle.SloInstanceID
-		} else {
-			m.SloInstanceID = types.StringNull()
-		}
+	hasPriorSingle := priorSingle != nil
+	var priorInstanceID types.String
+	if hasPriorSingle {
+		priorInstanceID = priorSingle.SloInstanceID
 	}
+	m.SloInstanceID = panelkit.PreserveSloInstanceID(api.SloInstanceId, hasPriorSingle, priorInstanceID)
 
 	var priorRemoteName types.String
 	if priorSingle != nil {
@@ -338,29 +244,16 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 	}
 	m.RemoteName = sloStringFromAPIOrPrior(api.RemoteName, priorRemoteName)
 
-	var priorSingleTitle types.String
+	m.Title = types.StringPointerValue(api.Title)
+	m.Description = types.StringPointerValue(api.Description)
+	m.HideTitle = types.BoolPointerValue(api.HideTitle)
+	m.HideBorder = types.BoolPointerValue(api.HideBorder)
 	if priorSingle != nil {
-		priorSingleTitle = priorSingle.Title
+		panelkit.NullPreservePresentationFromPrior(
+			priorSingle.Title, priorSingle.Description, priorSingle.HideTitle, priorSingle.HideBorder,
+			&m.Title, &m.Description, &m.HideTitle, &m.HideBorder,
+		)
 	}
-	m.Title = sloStringFromAPIOrPrior(api.Title, priorSingleTitle)
-
-	var priorSingleDesc types.String
-	if priorSingle != nil {
-		priorSingleDesc = priorSingle.Description
-	}
-	m.Description = sloStringFromAPIOrPrior(api.Description, priorSingleDesc)
-
-	var priorSingleHideTitle types.Bool
-	if priorSingle != nil {
-		priorSingleHideTitle = priorSingle.HideTitle
-	}
-	m.HideTitle = sloBoolFromAPIOrPrior(api.HideTitle, priorSingleHideTitle)
-
-	var priorSingleHideBorder types.Bool
-	if priorSingle != nil {
-		priorSingleHideBorder = priorSingle.HideBorder
-	}
-	m.HideBorder = sloBoolFromAPIOrPrior(api.HideBorder, priorSingleHideBorder)
 
 	if api.Drilldowns != nil {
 		dds, err := json.Marshal(*api.Drilldowns)
@@ -383,29 +276,16 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 
 	m := &models.SloOverviewGroupsModel{}
 
-	var priorGroupsTitle types.String
+	m.Title = types.StringPointerValue(api.Title)
+	m.Description = types.StringPointerValue(api.Description)
+	m.HideTitle = types.BoolPointerValue(api.HideTitle)
+	m.HideBorder = types.BoolPointerValue(api.HideBorder)
 	if priorGroups != nil {
-		priorGroupsTitle = priorGroups.Title
+		panelkit.NullPreservePresentationFromPrior(
+			priorGroups.Title, priorGroups.Description, priorGroups.HideTitle, priorGroups.HideBorder,
+			&m.Title, &m.Description, &m.HideTitle, &m.HideBorder,
+		)
 	}
-	m.Title = sloStringFromAPIOrPrior(api.Title, priorGroupsTitle)
-
-	var priorGroupsDesc types.String
-	if priorGroups != nil {
-		priorGroupsDesc = priorGroups.Description
-	}
-	m.Description = sloStringFromAPIOrPrior(api.Description, priorGroupsDesc)
-
-	var priorGroupsHideTitle types.Bool
-	if priorGroups != nil {
-		priorGroupsHideTitle = priorGroups.HideTitle
-	}
-	m.HideTitle = sloBoolFromAPIOrPrior(api.HideTitle, priorGroupsHideTitle)
-
-	var priorGroupsHideBorder types.Bool
-	if priorGroups != nil {
-		priorGroupsHideBorder = priorGroups.HideBorder
-	}
-	m.HideBorder = sloBoolFromAPIOrPrior(api.HideBorder, priorGroupsHideBorder)
 
 	if api.Drilldowns != nil {
 		dds, err := json.Marshal(*api.Drilldowns)
@@ -460,7 +340,7 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 }
 
 func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
-	var wire []sloDrilldownWireJSON
+	var wire []panelkit.URLDrilldownWire
 	if err := json.Unmarshal(b, &wire); err != nil {
 		return nil
 	}

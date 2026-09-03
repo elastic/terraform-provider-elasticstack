@@ -33,7 +33,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 
 	fleetClient := kbClient.GetFleetClient()
 
-	var tokens []kbapi.EnrollmentApiKey
+	var tokens []kbapi.KibanaHTTPAPIsEnrollmentApiKey
 	policyID := config.PolicyID.ValueString()
 	spaceID := config.SpaceID.ValueString()
 

@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,12 +42,18 @@ var (
 var (
 	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
 	MinVersionOutputID  = version.Must(version.NewVersion("8.16.0"))
+
+	// MinVersionAdditionalDatastreamsPermissions is the minimum Kibana version
+	// that accepts `additional_datastreams_permissions` on the package policy
+	// API. The field landed in 9.1.0 (elastic/kibana#210452) and was not
+	// backported, so there is no 8.x variant to accommodate.
+	MinVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
 
 // MinVersionCondition is the minimum Kibana version that accepts the
 // `condition` field on package-policy inputs/streams. It now lives in
 // policyshape (see that package's version.go) since `condition` is part of
-// the shared InputType/StreamType shape and internal/fleet/agentlesspolicy
+// the shared InputType/StreamType shape and internal/fleet/managedintegration
 // gates the same attribute against the same requirement; kept as a
 // package-level alias here so existing call sites in this package
 // (capabilities.go, models.go, models_test.go) don't all need an import
@@ -58,13 +63,13 @@ var MinVersionCondition = policyshape.MinVersionCondition
 
 type integrationPolicyResource struct {
 	*entitycore.ResourceBase
-	*fleetpkg.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newIntegrationPolicyResource() *integrationPolicyResource {
 	return &integrationPolicyResource{
 		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "integration_policy"),
-		SpaceImporter: fleetpkg.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 

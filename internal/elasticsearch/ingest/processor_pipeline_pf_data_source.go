@@ -53,14 +53,6 @@ func (m *processorPipelineModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorPipelineDataSource returns a PF data source for the pipeline processor.
 func NewProcessorPipelineDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"name": schema.StringAttribute{
 			Description: "The name of the pipeline to execute.",
 			Required:    true,

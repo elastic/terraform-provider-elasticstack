@@ -153,12 +153,162 @@ func TestPopulateFromAPI_import_withFields(t *testing.T) {
 	assert.Equal(t, "staging", pm.ApmServiceMapConfig.Environment.ValueString())
 }
 
+func TestPopulateFromAPI_environmentServerDefault_readPath(t *testing.T) {
+	t.Run("prior null environment bootstrapped from API ENVIRONMENT_ALL stays null", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringNull(),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
+	t.Run("prior null API ENVIRONMENT_ALL stays null", func(t *testing.T) {
+		// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never
+		// pre-populated with a value to merge against, only `prior` (the plan/state) carries intent.
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringNull(),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
+	t.Run("prior production API ENVIRONMENT_ALL reflects API value", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringValue("production"),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.Equal(t, "ENVIRONMENT_ALL", pm.ApmServiceMapConfig.Environment.ValueString())
+	})
+
+	t.Run("prior ENVIRONMENT_ALL explicit API same preserved", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		prior := &models.PanelModel{
+			ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
+				Environment: types.StringValue("ENVIRONMENT_ALL"),
+			},
+		}
+
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.Equal(t, "ENVIRONMENT_ALL", pm.ApmServiceMapConfig.Environment.ValueString())
+	})
+}
+
+func TestPopulateFromAPI_environmentServerDefault_importPath(t *testing.T) {
+	t.Run("API only ENVIRONMENT_ALL yields nil config block", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		env := "ENVIRONMENT_ALL"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		assert.Nil(t, pm.ApmServiceMapConfig)
+	})
+
+	t.Run("API ENVIRONMENT_ALL with other fields imported with null environment", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		env := "ENVIRONMENT_ALL"
+		serviceName := "checkout"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+				ServiceName: &serviceName,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+		assert.Equal(t, "checkout", pm.ApmServiceMapConfig.ServiceName.ValueString())
+	})
+
+	t.Run("API nil environment imported as null", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		serviceName := "checkout"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				ServiceName: &serviceName,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.True(t, pm.ApmServiceMapConfig.Environment.IsNull())
+	})
+
+	t.Run("API production imported verbatim", func(t *testing.T) {
+		pm := &models.PanelModel{}
+		env := "production"
+		panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+			Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+				Environment: &env,
+			},
+		}
+		diags := apmservicemap.PopulateFromAPI(pm, nil, panel)
+		require.False(t, diags.HasError(), "%v", diags)
+
+		require.NotNil(t, pm.ApmServiceMapConfig)
+		assert.Equal(t, "production", pm.ApmServiceMapConfig.Environment.ValueString())
+	})
+}
+
 func TestPopulateFromAPI_nullPreservation_scalars(t *testing.T) {
-	pm := &models.PanelModel{
-		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-			Environment: types.StringNull(),
-		},
-	}
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never pre-populated
+	// with a value to merge against, only `prior` (the plan/state) carries intent.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			Environment: types.StringNull(),
@@ -270,12 +420,9 @@ func TestPopulateFromAPI_filterSet_emptySetPreservedAcrossRead(t *testing.T) {
 
 func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
 	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
-	pm := &models.PanelModel{
-		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
-			Environment: types.StringNull(),
-			TimeRange:   nil,
-		},
-	}
+	// pm starts empty, matching the real dashboardMapPanelFromAPI flow: it is never pre-populated
+	// with a value to merge against, only `prior` (the plan/state) carries intent.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		ApmServiceMapConfig: &models.ApmServiceMapConfigModel{
 			Environment: types.StringNull(),
@@ -297,6 +444,34 @@ func TestPopulateFromAPI_timeRange_nullPreservation(t *testing.T) {
 
 	require.NotNil(t, pm.ApmServiceMapConfig)
 	assert.Nil(t, pm.ApmServiceMapConfig.TimeRange)
+}
+
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.ApmServiceMapConfig is nil, e.g. prior held a different
+// type's config), there is no null intent to honor and the config is rebuilt entirely from the
+// API rather than left nil.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	env := "production"
+	serviceName := "checkout"
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{
+		Config: kbapi.KibanaHTTPAPIsApmServiceMapEmbeddable{
+			Environment: &env,
+			ServiceName: &serviceName,
+		},
+	}
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: types.StringValue("ml_anomaly_charts"),
+	}
+
+	diags := apmservicemap.PopulateFromAPI(pm, prior, panel)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	cfg := pm.ApmServiceMapConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	assert.Equal(t, "production", cfg.Environment.ValueString())
+	assert.Equal(t, "checkout", cfg.ServiceName.ValueString())
 }
 
 func Test_mapOrientationValidator_rejectsInvalidValue(t *testing.T) {

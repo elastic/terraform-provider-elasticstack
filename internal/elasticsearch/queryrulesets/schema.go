@@ -145,7 +145,7 @@ func queryRuleActionsSingleNestedAttributeResource() schema.SingleNestedAttribut
 		MarkdownDescription: "Actions to take when the rule matches; exactly one of `ids` or `docs` must be set.",
 		Required:            true,
 		Validators: []validator.Object{
-			queryRuleActionsValidator{},
+			queryRuleActionsValidator(),
 		},
 		Attributes: map[string]schema.Attribute{
 			queryRuleActionsIDsAttrName: schema.ListAttribute{

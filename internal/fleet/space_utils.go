@@ -26,20 +26,34 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SpaceIDFromSet extracts the first space ID from a space_ids set attribute for use in
-// Fleet resource CREATE requests. Returns the first element of the set, or an empty string
-// if the set is null, unknown, or empty (directing API calls to the default space).
-func SpaceIDFromSet(ctx context.Context, spaceIDs types.Set) (string, diag.Diagnostics) {
+// SpaceIDFromSet extracts the first known, non-empty space ID from a space_ids set
+// attribute. Returns an empty string if the set is null, unknown, empty, or contains
+// only empty/unknown elements (directing API calls to the default space).
+func SpaceIDFromSet(spaceIDs types.Set) string {
 	if spaceIDs.IsNull() || spaceIDs.IsUnknown() {
-		return "", nil
+		return ""
 	}
-	var diags diag.Diagnostics
-	var ids []string
-	diags.Append(spaceIDs.ElementsAs(ctx, &ids, false)...)
-	if diags.HasError() || len(ids) == 0 {
-		return "", diags
+	for _, elem := range spaceIDs.Elements() {
+		s, ok := elem.(types.String)
+		if !ok || s.IsNull() || s.IsUnknown() {
+			continue
+		}
+		if v := s.ValueString(); v != "" {
+			return v
+		}
 	}
-	return ids[0], diags
+	return ""
+}
+
+// SpaceIDFromSetOrDefault returns the first known, non-empty space ID from a
+// space_ids set, or fallback wrapped in types.StringValue when none is set.
+// This is the GetSpaceID helper shared by Fleet resource models, which differ
+// only in their fallback value.
+func SpaceIDFromSetOrDefault(spaceIDs types.Set, fallback string) types.String {
+	if id := SpaceIDFromSet(spaceIDs); id != "" {
+		return types.StringValue(id)
+	}
+	return types.StringValue(fallback)
 }
 
 // GetOperationalSpaceFromState extracts the operational space ID from Terraform state.

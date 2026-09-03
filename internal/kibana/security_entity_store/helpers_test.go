@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/assert"
@@ -95,21 +94,21 @@ func TestMakeUninstallStateChecker(t *testing.T) {
 		{
 			name: "not_installed reaches desired state",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled}, nil, nil
+				return &entityStoreStatus{Status: entityStoreStatusNotInstalled}, nil, nil
 			},
 			wantDone: true,
 		},
 		{
 			name: "installing continues polling",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling}, nil, nil
+				return &entityStoreStatus{Status: entityStoreStatusInstalling}, nil, nil
 			},
 			wantDone: false,
 		},
 		{
 			name: "running continues polling",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusRunning}, nil, nil
+				return &entityStoreStatus{Status: entityStoreStatusValue("running")}, nil, nil
 			},
 			wantDone: false,
 		},
@@ -218,7 +217,7 @@ func TestMakeStartedStateChecker(t *testing.T) {
 		statusFunc     entityStoreStatusFunc
 		wantDone       bool
 		wantCheckerErr bool
-		wantStatus     kbapi.SecurityEntityAnalyticsAPIStoreStatus
+		wantStatus     entityStoreStatusValue
 	}{
 		{
 			name: "status read error is treated as transient retry",
@@ -233,42 +232,42 @@ func TestMakeStartedStateChecker(t *testing.T) {
 		{
 			name: "installing continues polling and captures status",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
+				return &entityStoreStatus{Status: entityStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
 			},
 			wantDone:   false,
-			wantStatus: kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling,
+			wantStatus: entityStoreStatusInstalling,
 		},
 		{
 			name: "running reaches desired state and captures status",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusRunning}, []byte(`{"status":"running"}`), nil
+				return &entityStoreStatus{Status: entityStoreStatusValue("running")}, []byte(`{"status":"running"}`), nil
 			},
 			wantDone:   true,
-			wantStatus: kbapi.SecurityEntityAnalyticsAPIStoreStatusRunning,
+			wantStatus: entityStoreStatusValue("running"),
 		},
 		{
 			name: "not_installed reaches desired state and captures status",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled}, []byte(`{"status":"not_installed"}`), nil
+				return &entityStoreStatus{Status: entityStoreStatusNotInstalled}, []byte(`{"status":"not_installed"}`), nil
 			},
 			wantDone:   true,
-			wantStatus: kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled,
+			wantStatus: entityStoreStatusNotInstalled,
 		},
 		{
 			name: "stopped reaches desired state",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusStopped}, []byte(`{"status":"stopped"}`), nil
+				return &entityStoreStatus{Status: entityStoreStatusValue("stopped")}, []byte(`{"status":"stopped"}`), nil
 			},
 			wantDone:   true,
-			wantStatus: kbapi.SecurityEntityAnalyticsAPIStoreStatusStopped,
+			wantStatus: entityStoreStatusValue("stopped"),
 		},
 		{
 			name: "error reaches desired state",
 			statusFunc: func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-				return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusError}, []byte(`{"status":"error"}`), nil
+				return &entityStoreStatus{Status: entityStoreStatusValue("error")}, []byte(`{"status":"error"}`), nil
 			},
 			wantDone:   true,
-			wantStatus: kbapi.SecurityEntityAnalyticsAPIStoreStatusError,
+			wantStatus: entityStoreStatusValue("error"),
 		},
 	}
 
@@ -300,13 +299,13 @@ func TestWaitForStarted_NotInstalledEarlyExit(t *testing.T) {
 	t.Parallel()
 
 	getStatus := func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-		return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled}, []byte(`{"status":"not_installed"}`), nil
+		return &entityStoreStatus{Status: entityStoreStatusNotInstalled}, []byte(`{"status":"not_installed"}`), nil
 	}
 
 	status, rawBody, diags := waitForStartedFromStatusFunc(context.Background(), getStatus, "default")
 	require.False(t, diags.HasError())
 	assert.Empty(t, diags.Warnings())
-	assert.Equal(t, kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled, status.Status)
+	assert.Equal(t, entityStoreStatusNotInstalled, status.Status)
 	assert.JSONEq(t, `{"status":"not_installed"}`, string(rawBody))
 }
 
@@ -317,15 +316,15 @@ func TestWaitForStarted_InstallingToRunning(t *testing.T) {
 	getStatus := func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
 		callCount++
 		if callCount == 1 {
-			return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
+			return &entityStoreStatus{Status: entityStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
 		}
-		return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusRunning}, []byte(`{"status":"running"}`), nil
+		return &entityStoreStatus{Status: entityStoreStatusValue("running")}, []byte(`{"status":"running"}`), nil
 	}
 
 	status, rawBody, diags := waitForStartedFromStatusFunc(context.Background(), getStatus, "default", asyncutils.WithPollInterval(time.Millisecond))
 	require.False(t, diags.HasError())
 	assert.Empty(t, diags.Warnings())
-	assert.Equal(t, kbapi.SecurityEntityAnalyticsAPIStoreStatusRunning, status.Status)
+	assert.Equal(t, entityStoreStatusValue("running"), status.Status)
 	assert.JSONEq(t, `{"status":"running"}`, string(rawBody))
 }
 
@@ -333,7 +332,7 @@ func TestWaitForStarted_DeadlineExpired(t *testing.T) {
 	t.Parallel()
 
 	getStatus := func(_ context.Context) (*entityStoreStatus, []byte, diag.Diagnostics) {
-		return &entityStoreStatus{Status: kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
+		return &entityStoreStatus{Status: entityStoreStatusInstalling}, []byte(`{"status":"installing"}`), nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), -time.Millisecond)
@@ -345,6 +344,6 @@ func TestWaitForStarted_DeadlineExpired(t *testing.T) {
 	assert.Equal(t, diag.SeverityWarning, diags[0].Severity())
 	assert.Equal(t, "Security Entity Store is still installing; returning partial read data", diags[0].Summary())
 	assert.Contains(t, diags[0].Detail(), "context deadline exceeded")
-	assert.Equal(t, kbapi.SecurityEntityAnalyticsAPIStoreStatusInstalling, status.Status)
+	assert.Equal(t, entityStoreStatusInstalling, status.Status)
 	assert.JSONEq(t, `{"status":"installing"}`, string(rawBody))
 }

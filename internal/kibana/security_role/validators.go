@@ -64,6 +64,16 @@ func (v configValidator) ValidateResource(ctx context.Context, req resource.Vali
 			resp.Diagnostics.AddError("Invalid kibana block", "unexpected element type")
 			return
 		}
+		if obj.IsUnknown() {
+			continue
+		}
+		// Defer per-element privilege validation when values are unknown (e.g.
+		// unresolved dynamic block for_each), matching ExactlyOneOfNestedAttrsValidator.
+		featureAttr, featureOk := obj.Attributes()[attrFeature]
+		baseAttr, baseOk := obj.Attributes()[attrBase]
+		if (featureOk && featureAttr != nil && featureAttr.IsUnknown()) || (baseOk && baseAttr != nil && baseAttr.IsUnknown()) {
+			continue
+		}
 		_, _, baseLen, featureLen := kibanaPrivilegeCounts(obj)
 		resp.Diagnostics.Append(validateKibanaPrivileges(baseLen, featureLen)...)
 		if resp.Diagnostics.HasError() {

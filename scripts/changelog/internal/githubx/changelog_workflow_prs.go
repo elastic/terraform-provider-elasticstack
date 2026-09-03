@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 )
 
 // ChangelogPullSummary captures number and HTML URL returned from pull request APIs.

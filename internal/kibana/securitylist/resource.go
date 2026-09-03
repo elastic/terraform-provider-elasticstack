@@ -20,10 +20,20 @@ package securitylist
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+// deleteSecurityListAPI adapts [kibanaoapi.DeleteList], which takes a params
+// struct rather than a bare resource ID, to the (spaceID, resourceID)
+// signature expected by [entitycore.SimpleKibanaDelete].
+func deleteSecurityListAPI(ctx context.Context, client *kibanaoapi.Client, spaceID, resourceID string) diag.Diagnostics {
+	return kibanaoapi.DeleteList(ctx, client, spaceID, &kbapi.DeleteListParams{Id: resourceID})
+}
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
@@ -44,7 +54,7 @@ func newSecurityListResource() *securityListResource {
 			entitycore.KibanaResourceOptions[Model]{
 				Schema: getSchema,
 				Read:   readSecurityList,
-				Delete: deleteSecurityList,
+				Delete: entitycore.SimpleKibanaDelete[Model](deleteSecurityListAPI),
 				Create: createSecurityList,
 				Update: updateSecurityList,
 			},

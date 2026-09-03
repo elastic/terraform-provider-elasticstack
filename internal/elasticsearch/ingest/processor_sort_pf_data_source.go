@@ -50,12 +50,7 @@ func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if m.Order.IsNull() || m.Order.IsUnknown() {
-		m.Order = types.StringValue("asc")
-		body.Order = "asc"
-	} else {
-		body.Order = m.Order.ValueString()
-	}
+	body.Order = typeutils.StringDefault(&m.Order, "asc")
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
@@ -66,14 +61,6 @@ func (m *processorSortModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorSortDataSource returns a PF data source for the sort processor.
 func NewProcessorSortDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to be sorted",
 			Required:    true,

@@ -61,11 +61,7 @@ type outputHashModel struct {
 	Random types.Bool   `tfsdk:"random"`
 }
 
-type outputRandomModel struct {
-	GroupEvents types.Float64 `tfsdk:"group_events"`
-}
-
-type outputRoundRobinModel struct {
+type outputGroupEventsModel struct {
 	GroupEvents types.Float64 `tfsdk:"group_events"`
 }
 
@@ -126,15 +122,15 @@ func (m outputKafkaModel) toAPIHeaders(ctx context.Context) (*[]struct {
 	return &headers, diags
 }
 
-func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
+func groupEventsObjectToAPI(ctx context.Context, obj types.Object) (*struct {
 	GroupEvents *float32 `json:"group_events,omitempty"`
 }, diag.Diagnostics) {
-	if !typeutils.IsKnown(m.Random) {
+	if !typeutils.IsKnown(obj) {
 		return nil, nil
 	}
 
-	var randomModel outputRandomModel
-	diags := m.Random.As(ctx, &randomModel, basetypes.ObjectAsOptions{})
+	var m outputGroupEventsModel
+	diags := obj.As(ctx, &m, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -143,8 +139,8 @@ func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
 		GroupEvents *float32 `json:"group_events,omitempty"`
 	}{
 		GroupEvents: func() *float32 {
-			if !randomModel.GroupEvents.IsNull() {
-				val := float32(randomModel.GroupEvents.ValueFloat64())
+			if !m.GroupEvents.IsNull() {
+				val := float32(m.GroupEvents.ValueFloat64())
 				return &val
 			}
 			return nil
@@ -152,29 +148,16 @@ func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
 	}, diags
 }
 
+func (m outputKafkaModel) toAPIRandom(ctx context.Context) (*struct {
+	GroupEvents *float32 `json:"group_events,omitempty"`
+}, diag.Diagnostics) {
+	return groupEventsObjectToAPI(ctx, m.Random)
+}
+
 func (m outputKafkaModel) toAPIRoundRobin(ctx context.Context) (*struct {
 	GroupEvents *float32 `json:"group_events,omitempty"`
 }, diag.Diagnostics) {
-	if !typeutils.IsKnown(m.RoundRobin) {
-		return nil, nil
-	}
-
-	var roundRobinModel outputRoundRobinModel
-	diags := m.RoundRobin.As(ctx, &roundRobinModel, basetypes.ObjectAsOptions{})
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &struct {
-		GroupEvents *float32 `json:"group_events,omitempty"`
-	}{
-		GroupEvents: func() *float32 {
-			if !roundRobinModel.GroupEvents.IsNull() {
-				val := float32(roundRobinModel.GroupEvents.ValueFloat64())
-				return &val
-			}
-			return nil
-		}(),
-	}, nil
+	return groupEventsObjectToAPI(ctx, m.RoundRobin)
 }
 
 func (m outputKafkaModel) toAPISasl(ctx context.Context) (*struct {
@@ -252,15 +235,94 @@ func newUpdateKafkaConnectionType(value string) (*kbapi.KibanaHTTPAPIsUpdateOutp
 	return &connectionType, nil
 }
 
-func kafkaStringValue(value types.String) *string {
-	if !typeutils.IsKnown(value) {
-		return nil
+// kafkaComputedFields holds the computed field values shared between create and update.
+type kafkaComputedFields struct {
+	brokerTimeout    *float32
+	compression      *string
+	compressionLevel *float32
+	partition        *string
+	requiredAcks     *int64
+	timeout          *float32
+	hash             *struct {
+		Hash   *string `json:"hash,omitempty"`
+		Random *bool   `json:"random,omitempty"`
 	}
-
-	return value.ValueStringPointer()
+	headers *[]struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+	random *struct {
+		GroupEvents *float32 `json:"group_events,omitempty"`
+	}
+	roundRobin *struct {
+		GroupEvents *float32 `json:"group_events,omitempty"`
+	}
 }
 
-func readOutputKafkaConnectionType(value *kbapi.KibanaHTTPAPIsOutputKafkaConnectionType) *string {
+func computeKafkaFields(ctx context.Context, kafkaModel outputKafkaModel, diags *diag.Diagnostics) kafkaComputedFields {
+	hash, hashDiags := kafkaModel.toAPIHash(ctx)
+	diags.Append(hashDiags...)
+
+	headers, headersDiags := kafkaModel.toAPIHeaders(ctx)
+	diags.Append(headersDiags...)
+
+	random, randomDiags := kafkaModel.toAPIRandom(ctx)
+	diags.Append(randomDiags...)
+
+	roundRobin, rrDiags := kafkaModel.toAPIRoundRobin(ctx)
+	diags.Append(rrDiags...)
+
+	var brokerTimeout *float32
+	if typeutils.IsKnown(kafkaModel.BrokerTimeout) {
+		val := kafkaModel.BrokerTimeout.ValueFloat32()
+		brokerTimeout = &val
+	}
+
+	var compression *string
+	if typeutils.IsKnown(kafkaModel.Compression) {
+		val := kafkaModel.Compression.ValueString()
+		compression = &val
+	}
+
+	var compressionLevel *float32
+	if typeutils.IsKnown(kafkaModel.CompressionLevel) && kafkaModel.Compression.ValueString() == kafkaCompressionGzip {
+		val := float32(kafkaModel.CompressionLevel.ValueInt64())
+		compressionLevel = &val
+	}
+
+	var partition *string
+	if typeutils.IsKnown(kafkaModel.Partition) {
+		val := kafkaModel.Partition.ValueString()
+		partition = &val
+	}
+
+	var requiredAcks *int64
+	if typeutils.IsKnown(kafkaModel.RequiredAcks) {
+		val := kafkaModel.RequiredAcks.ValueInt64()
+		requiredAcks = &val
+	}
+
+	var timeout *float32
+	if typeutils.IsKnown(kafkaModel.Timeout) {
+		val := kafkaModel.Timeout.ValueFloat32()
+		timeout = &val
+	}
+
+	return kafkaComputedFields{
+		brokerTimeout:    brokerTimeout,
+		compression:      compression,
+		compressionLevel: compressionLevel,
+		partition:        partition,
+		requiredAcks:     requiredAcks,
+		timeout:          timeout,
+		hash:             hash,
+		headers:          headers,
+		random:           random,
+		roundRobin:       roundRobin,
+	}
+}
+
+func readOutputKafkaConnectionType(value *kbapi.KibanaHTTPAPIsOutputResponseKafkaConnectionType) *string {
 	if value == nil {
 		return nil
 	}
@@ -284,35 +346,42 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		return kbapi.NewOutputUnion{}, diags
 	}
 
-	// Extract kafka model from nested structure
 	var kafkaModel outputKafkaModel
 	if !model.Kafka.IsNull() {
 		kafkaObj := typeutils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
 		kafkaModel = *kafkaObj
 	}
 
-	hash, hashDiags := kafkaModel.toAPIHash(ctx)
-	diags.Append(hashDiags...)
-
-	headers, headersDiags := kafkaModel.toAPIHeaders(ctx)
-	diags.Append(headersDiags...)
-
-	random, randomDiags := kafkaModel.toAPIRandom(ctx)
-	diags.Append(randomDiags...)
-
-	roundRobin, rrDiags := kafkaModel.toAPIRoundRobin(ctx)
-	diags.Append(rrDiags...)
+	fields := computeKafkaFields(ctx, kafkaModel, &diags)
 
 	sasl, saslDiags := kafkaModel.toAPISasl(ctx)
 	diags.Append(saslDiags...)
 
 	var err error
 	var connectionType *kbapi.KibanaHTTPAPIsNewOutputKafkaConnectionType
-	if connectionTypeValue := kafkaStringValue(kafkaModel.ConnectionType); connectionTypeValue != nil {
+	if connectionTypeValue := typeutils.ValueStringPointer(kafkaModel.ConnectionType); connectionTypeValue != nil {
 		connectionType, err = newCreateKafkaConnectionType(*connectionTypeValue)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 		}
+	}
+
+	var compression *kbapi.KibanaHTTPAPIsNewOutputKafkaCompression
+	if fields.compression != nil {
+		comp := kbapi.KibanaHTTPAPIsNewOutputKafkaCompression(*fields.compression)
+		compression = &comp
+	}
+
+	var partition *kbapi.KibanaHTTPAPIsNewOutputKafkaPartition
+	if fields.partition != nil {
+		part := kbapi.KibanaHTTPAPIsNewOutputKafkaPartition(*fields.partition)
+		partition = &part
+	}
+
+	var requiredAcks *kbapi.KibanaHTTPAPIsNewOutputKafkaRequiredAcks
+	if fields.requiredAcks != nil {
+		val := kbapi.KibanaHTTPAPIsNewOutputKafkaRequiredAcks(*fields.requiredAcks)
+		requiredAcks = &val
 	}
 
 	body := kbapi.KibanaHTTPAPIsNewOutputKafka{
@@ -326,64 +395,25 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
 		Ssl:                  ssl.toAPI(),
-		// Kafka-specific fields
-		AuthType: kafkaModel.toAuthType(),
-		BrokerTimeout: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.BrokerTimeout) {
-				return nil
-			}
-			val := kafkaModel.BrokerTimeout.ValueFloat32()
-			return &val
-		}(),
-		ClientId: kafkaModel.ClientID.ValueStringPointer(),
-		Compression: func() *kbapi.KibanaHTTPAPIsNewOutputKafkaCompression {
-			if !typeutils.IsKnown(kafkaModel.Compression) {
-				return nil
-			}
-			comp := kbapi.KibanaHTTPAPIsNewOutputKafkaCompression(kafkaModel.Compression.ValueString())
-			return &comp
-		}(),
-		CompressionLevel: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
-				return nil
-			}
-
-			compressionLevel := float32(kafkaModel.CompressionLevel.ValueInt64())
-			return &compressionLevel
-		}(),
-		ConnectionType: connectionType,
-		Topic:          kafkaModel.Topic.ValueStringPointer(),
-		Partition: func() *kbapi.KibanaHTTPAPIsNewOutputKafkaPartition {
-			if !typeutils.IsKnown(kafkaModel.Partition) {
-				return nil
-			}
-			part := kbapi.KibanaHTTPAPIsNewOutputKafkaPartition(kafkaModel.Partition.ValueString())
-			return &part
-		}(),
-		RequiredAcks: func() *kbapi.KibanaHTTPAPIsNewOutputKafkaRequiredAcks {
-			if !typeutils.IsKnown(kafkaModel.RequiredAcks) {
-				return nil
-			}
-			val := kbapi.KibanaHTTPAPIsNewOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
-			return &val
-		}(),
-		Timeout: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.Timeout) {
-				return nil
-			}
-
-			val := kafkaModel.Timeout.ValueFloat32()
-			return &val
-		}(),
-		Version:    kafkaModel.Version.ValueStringPointer(),
-		Username:   kafkaStringValue(kafkaModel.Username),
-		Password:   kafkaStringValue(kafkaModel.Password),
-		Key:        kafkaModel.Key.ValueStringPointer(),
-		Headers:    headers,
-		Hash:       hash,
-		Random:     random,
-		RoundRobin: roundRobin,
-		Sasl:       sasl,
+		AuthType:             kafkaModel.toAuthType(),
+		BrokerTimeout:        fields.brokerTimeout,
+		ClientId:             kafkaModel.ClientID.ValueStringPointer(),
+		Compression:          compression,
+		CompressionLevel:     fields.compressionLevel,
+		ConnectionType:       connectionType,
+		Topic:                kafkaModel.Topic.ValueStringPointer(),
+		Partition:            partition,
+		RequiredAcks:         requiredAcks,
+		Timeout:              fields.timeout,
+		Version:              kafkaModel.Version.ValueStringPointer(),
+		Username:             typeutils.ValueStringPointer(kafkaModel.Username),
+		Password:             typeutils.ValueStringPointer(kafkaModel.Password),
+		Key:                  kafkaModel.Key.ValueStringPointer(),
+		Headers:              fields.headers,
+		Hash:                 fields.hash,
+		Random:               fields.random,
+		RoundRobin:           fields.roundRobin,
+		Sasl:                 sasl,
 	}
 
 	var union kbapi.NewOutputUnion
@@ -402,42 +432,47 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 
-	// Extract kafka model from nested structure
 	var kafkaModel outputKafkaModel
 	if !model.Kafka.IsNull() {
 		kafkaObj := typeutils.ObjectTypeAs[outputKafkaModel](ctx, model.Kafka, path.Root("kafka"), &diags)
 		kafkaModel = *kafkaObj
 	}
 
-	hash, hashDiags := kafkaModel.toAPIHash(ctx)
-	diags.Append(hashDiags...)
-
-	headers, headersDiags := kafkaModel.toAPIHeaders(ctx)
-	diags.Append(headersDiags...)
-
-	random, randomDiags := kafkaModel.toAPIRandom(ctx)
-	diags.Append(randomDiags...)
-
-	roundRobin, rrDiags := kafkaModel.toAPIRoundRobin(ctx)
-	diags.Append(rrDiags...)
+	fields := computeKafkaFields(ctx, kafkaModel, &diags)
 
 	sasl, saslDiags := kafkaModel.toUpdateAPISasl(ctx)
 	diags.Append(saslDiags...)
 
 	var err error
 	var connectionType *kbapi.KibanaHTTPAPIsUpdateOutputKafkaConnectionType
-	if connectionTypeValue := kafkaStringValue(kafkaModel.ConnectionType); connectionTypeValue != nil {
+	if connectionTypeValue := typeutils.ValueStringPointer(kafkaModel.ConnectionType); connectionTypeValue != nil {
 		connectionType, err = newUpdateKafkaConnectionType(*connectionTypeValue)
 		if err != nil {
 			diags.AddError(err.Error(), "")
 		}
 	}
 
+	var compression *kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompression
+	if fields.compression != nil {
+		comp := kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompression(*fields.compression)
+		compression = &comp
+	}
+
+	var partition *kbapi.KibanaHTTPAPIsUpdateOutputKafkaPartition
+	if fields.partition != nil {
+		part := kbapi.KibanaHTTPAPIsUpdateOutputKafkaPartition(*fields.partition)
+		partition = &part
+	}
+
+	var requiredAcks *kbapi.KibanaHTTPAPIsUpdateOutputKafkaRequiredAcks
+	if fields.requiredAcks != nil {
+		val := kbapi.KibanaHTTPAPIsUpdateOutputKafkaRequiredAcks(*fields.requiredAcks)
+		requiredAcks = &val
+	}
+
+	outputType := kbapi.Kafka
 	body := kbapi.KibanaHTTPAPIsUpdateOutputKafka{
-		Type: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaType {
-			outputType := kbapi.Kafka
-			return &outputType
-		}(),
+		Type:                 &outputType,
 		CaSha256:             model.CaSha256.ValueStringPointer(),
 		CaTrustedFingerprint: model.CaTrustedFingerprint.ValueStringPointer(),
 		ConfigYaml:           model.ConfigYaml.ValueStringPointer(),
@@ -446,63 +481,25 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		IsDefaultMonitoring:  model.DefaultMonitoring.ValueBoolPointer(),
 		Name:                 model.Name.ValueString(),
 		Ssl:                  ssl.toAPI(),
-		// Kafka-specific fields
-		AuthType: kafkaModel.toUpdateAuthType(),
-		BrokerTimeout: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.BrokerTimeout) {
-				return nil
-			}
-			val := kafkaModel.BrokerTimeout.ValueFloat32()
-			return &val
-		}(),
-		ClientId: kafkaModel.ClientID.ValueStringPointer(),
-		Compression: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompression {
-			if !typeutils.IsKnown(kafkaModel.Compression) {
-				return nil
-			}
-			comp := kbapi.KibanaHTTPAPIsUpdateOutputKafkaCompression(kafkaModel.Compression.ValueString())
-			return &comp
-		}(),
-		CompressionLevel: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.CompressionLevel) || kafkaModel.Compression.ValueString() != "gzip" {
-				return nil
-			}
-
-			compressionLevel := float32(kafkaModel.CompressionLevel.ValueInt64())
-			return &compressionLevel
-		}(),
-		ConnectionType: connectionType,
-		Topic:          kafkaModel.Topic.ValueStringPointer(),
-		Partition: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaPartition {
-			if !typeutils.IsKnown(kafkaModel.Partition) {
-				return nil
-			}
-			part := kbapi.KibanaHTTPAPIsUpdateOutputKafkaPartition(kafkaModel.Partition.ValueString())
-			return &part
-		}(),
-		RequiredAcks: func() *kbapi.KibanaHTTPAPIsUpdateOutputKafkaRequiredAcks {
-			if !typeutils.IsKnown(kafkaModel.RequiredAcks) {
-				return nil
-			}
-			val := kbapi.KibanaHTTPAPIsUpdateOutputKafkaRequiredAcks(kafkaModel.RequiredAcks.ValueInt64())
-			return &val
-		}(),
-		Timeout: func() *float32 {
-			if !typeutils.IsKnown(kafkaModel.Timeout) {
-				return nil
-			}
-			val := kafkaModel.Timeout.ValueFloat32()
-			return &val
-		}(),
-		Version:    kafkaModel.Version.ValueStringPointer(),
-		Username:   kafkaStringValue(kafkaModel.Username),
-		Password:   kafkaStringValue(kafkaModel.Password),
-		Key:        kafkaModel.Key.ValueStringPointer(),
-		Headers:    headers,
-		Hash:       hash,
-		Random:     random,
-		RoundRobin: roundRobin,
-		Sasl:       sasl,
+		AuthType:             kafkaModel.toUpdateAuthType(),
+		BrokerTimeout:        fields.brokerTimeout,
+		ClientId:             kafkaModel.ClientID.ValueStringPointer(),
+		Compression:          compression,
+		CompressionLevel:     fields.compressionLevel,
+		ConnectionType:       connectionType,
+		Topic:                kafkaModel.Topic.ValueStringPointer(),
+		Partition:            partition,
+		RequiredAcks:         requiredAcks,
+		Timeout:              fields.timeout,
+		Version:              kafkaModel.Version.ValueStringPointer(),
+		Username:             typeutils.ValueStringPointer(kafkaModel.Username),
+		Password:             typeutils.ValueStringPointer(kafkaModel.Password),
+		Key:                  kafkaModel.Key.ValueStringPointer(),
+		Headers:              fields.headers,
+		Hash:                 fields.hash,
+		Random:               fields.random,
+		RoundRobin:           fields.roundRobin,
+		Sasl:                 sasl,
 	}
 
 	var union kbapi.UpdateOutputUnion
@@ -515,7 +512,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 	return union, diags
 }
 
-func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputKafka) (diags diag.Diagnostics) {
+func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseKafka) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
@@ -529,25 +526,29 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 		ssl:                  data.Ssl,
 	})
 
-	// Capture the configured password before re-initializing kafkaModel so that
-	// we can preserve it when Fleet omits/redacts it (it is stored as a secret
-	// reference and not returned in plain form).
+	// Capture the configured password and sasl before re-initializing kafkaModel
+	// so that we can preserve them when Fleet omits/redacts or adds server-side
+	// defaults that the user did not configure.
 	configuredPassword := types.StringNull()
+	saslExplicitlyNull := false
 	if typeutils.IsKnown(model.Kafka) {
 		var existing outputKafkaModel
 		existingDiags := model.Kafka.As(ctx, &existing, basetypes.ObjectAsOptions{})
 		diags.Append(existingDiags...)
 		if !existingDiags.HasError() {
 			configuredPassword = existing.Password
+			if !existing.Sasl.IsUnknown() {
+				saslExplicitlyNull = existing.Sasl.IsNull()
+			}
 		}
 	}
 
 	// Kafka-specific fields - initialize kafka nested object
-	kafkaModel := outputKafkaModel{}
-	kafkaModel.AuthType = types.StringValue(string(data.AuthType))
-	kafkaModel.BrokerTimeout = types.Float32PointerValue(data.BrokerTimeout)
-	kafkaModel.ClientID = types.StringPointerValue(data.ClientId)
-	kafkaModel.Compression = types.StringPointerValue((*string)(data.Compression))
+	kafkaModel := outputKafkaModel{
+		AuthType:      types.StringValue(string(data.AuthType)),
+		BrokerTimeout: types.Float32PointerValue(data.BrokerTimeout),
+		ClientID:      types.StringPointerValue(data.ClientId),
+		Compression:   types.StringPointerValue((*string)(data.Compression))}
 	// Handle CompressionLevel
 	if compressionLevel := readOutputKafkaCompressionLevel(data.CompressionLevel); compressionLevel != nil {
 		kafkaModel.CompressionLevel = types.Int64Value(*compressionLevel)
@@ -611,7 +612,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 
 	// Handle random
 	if data.Random != nil {
-		randomModel := outputRandomModel{
+		randomModel := outputGroupEventsModel{
 			GroupEvents: func() types.Float64 {
 				if data.Random.GroupEvents != nil {
 					return types.Float64Value(float64(*data.Random.GroupEvents))
@@ -628,7 +629,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 
 	// Handle round_robin
 	if data.RoundRobin != nil {
-		roundRobinModel := outputRoundRobinModel{
+		roundRobinModel := outputGroupEventsModel{
 			GroupEvents: func() types.Float64 {
 				if data.RoundRobin.GroupEvents != nil {
 					return types.Float64Value(float64(*data.RoundRobin.GroupEvents))
@@ -644,7 +645,13 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 	}
 
 	// Handle sasl
-	if data.Sasl != nil {
+	switch {
+	case saslExplicitlyNull:
+		// Fleet may return a default sasl block (e.g. mechanism=PLAIN for
+		// user_pass auth) even when the user did not configure sasl. Preserve
+		// the configured null so Terraform does not see an inconsistent change.
+		kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes(ctx))
+	case data.Sasl != nil:
 		saslModel := outputSaslModel{
 			Mechanism: func() types.String {
 				if data.Sasl.Mechanism != nil {
@@ -656,7 +663,7 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 		obj, nd := types.ObjectValueFrom(ctx, getSaslAttrTypes(ctx), saslModel)
 		diags.Append(nd...)
 		kafkaModel.Sasl = obj
-	} else {
+	default:
 		kafkaModel.Sasl = types.ObjectNull(getSaslAttrTypes(ctx))
 	}
 

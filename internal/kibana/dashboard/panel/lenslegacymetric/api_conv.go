@@ -38,7 +38,7 @@ func legacyMetricConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.LegacyMetricConfigModel,
 	prior *models.LegacyMetricConfigModel,
-	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQL,
+	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
@@ -54,7 +54,7 @@ func legacyMetricConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateLegacyMetricMetricDefaults, &diags)
 	if !ok {
 		return diags
@@ -85,23 +85,11 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 
 	switch datasetType {
 	case datasetTypeDataViewReference, datasetTypeDataViewSpec:
-		api := kbapi.KibanaHTTPAPIsLegacyMetricNoESQL{
+		api := kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel{
 			Type: kbapi.LegacyMetric,
 		}
 
-		if typeutils.IsKnown(m.Title) {
-			api.Title = new(m.Title.ValueString())
-		}
-		if typeutils.IsKnown(m.Description) {
-			api.Description = new(m.Description.ValueString())
-		}
-		if typeutils.IsKnown(m.IgnoreGlobalFilters) {
-			api.IgnoreGlobalFilters = new(m.IgnoreGlobalFilters.ValueBool())
-		}
-		if typeutils.IsKnown(m.Sampling) {
-			sampling := float32(m.Sampling.ValueFloat64())
-			api.Sampling = &sampling
-		}
+		api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
 		api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
@@ -134,11 +122,11 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 			return result, diags
 		}
 
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsLegacyMetricNoESQL_Drilldowns_Item](
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel_Drilldowns_Item](
 			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 		)...)
 
-		if err := result.FromKibanaHTTPAPIsLegacyMetricNoESQL(api); err != nil {
+		if err := result.FromKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel(api); err != nil {
 			diags.AddError("Failed to marshal legacy metric", err.Error())
 		}
 		return result, diags

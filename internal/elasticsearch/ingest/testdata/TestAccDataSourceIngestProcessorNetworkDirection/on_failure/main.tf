@@ -10,6 +10,12 @@ data "elasticstack_elasticsearch_ingest_processor_network_direction" "test" {
         field = "error.message"
         value = "network direction failed"
       }
+    }),
+    jsonencode({
+      set = {
+        field = "error.type"
+        value = "network_direction"
+      }
     })
   ]
 }

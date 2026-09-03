@@ -23,26 +23,8 @@ func populateDatatableLensAttributes(attrs map[string]any) map[string]any {
 	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
 	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = lenscommon.PopulateLensMetricDefaults(metricMap)
-			}
-		}
-	}
-	if rows, ok := attrs["rows"].([]any); ok {
-		for i, r := range rows {
-			if rowMap, ok := r.(map[string]any); ok {
-				rows[i] = lenscommon.PopulateLensGroupByDefaults(rowMap)
-			}
-		}
-	}
-	if splitBy, ok := attrs["split_metrics_by"].([]any); ok {
-		for i, s := range splitBy {
-			if splitMap, ok := s.(map[string]any); ok {
-				splitBy[i] = lenscommon.PopulateLensGroupByDefaults(splitMap)
-			}
-		}
-	}
+	lenscommon.PopulateMapSliceDefaults(attrs, "metrics", lenscommon.PopulateLensMetricDefaults)
+	lenscommon.PopulateMapSliceDefaults(attrs, "rows", lenscommon.PopulateLensGroupByDefaults)
+	lenscommon.PopulateMapSliceDefaults(attrs, "split_metrics_by", lenscommon.PopulateLensGroupByDefaults)
 	return attrs
 }

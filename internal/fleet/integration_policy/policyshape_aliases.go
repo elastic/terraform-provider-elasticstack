@@ -20,7 +20,8 @@ package integrationpolicy
 // This file re-exports the Fleet package-policy inputs/streams/vars modeling
 // extracted into internal/fleet/policyshape (see that package's doc.go for
 // the extraction rationale). Per the Phase 1 refactor's "thin wrapper"
-// allowance (openspec/changes/fleet-agentless-policy/tasks.md, task 1.3), the
+// allowance (openspec/changes/archive/2026-07-02-fleet-agentless-policy/tasks.md, task 1.3; shared with
+// elasticstack_fleet_managed_integration via internal/fleet/policyshape), the
 // aliases below let the rest of this package (models.go, schema.go,
 // schema_v1.go, schema_v2.go, create.go, read.go, update.go) keep referring
 // to these types/functions by their original, package-local names instead of

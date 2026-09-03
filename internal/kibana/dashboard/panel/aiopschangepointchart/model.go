@@ -54,7 +54,7 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 		panel.Config.Partitions = &items
 	}
 	if typeutils.IsKnown(cfg.MaxSeriesToPlot) {
-		v := cfg.MaxSeriesToPlot.ValueFloat32()
+		v := int(cfg.MaxSeriesToPlot.ValueFloat32())
 		panel.Config.MaxSeriesToPlot = &v
 	}
 	if typeutils.IsKnown(cfg.ViewType) {
@@ -71,101 +71,58 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 
 // PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
 // prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with AiopsChangePointChartConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.AiopsChangePointChartConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsChangePointChart) diag.Diagnostics {
-	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
-	if prior == nil {
-		pm.AiopsChangePointChartConfig = &models.AiopsChangePointChartConfigModel{
-			DataViewID:          types.StringValue(api.DataViewId),
-			MetricField:         types.StringValue(api.MetricField),
-			AggregationFunction: changePointAggregationFunctionValue(api.AggregationFunction),
-			SplitField:          types.StringPointerValue(api.SplitField),
-			Partitions:          changePointPartitionsFromAPI(api.Partitions),
-			ViewType:            changePointViewTypeValue(api.ViewType),
-			Title:               types.StringPointerValue(api.Title),
-			Description:         types.StringPointerValue(api.Description),
-			HideTitle:           types.BoolPointerValue(api.HideTitle),
-			HideBorder:          types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
-		pm.AiopsChangePointChartConfig.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+	if prior == nil || prior.AiopsChangePointChartConfig == nil {
+		pm.AiopsChangePointChartConfig = aiopsChangePointChartConfigFromAPIImport(api)
 		return nil
 	}
 
-	if pm.AiopsChangePointChartConfig == nil && prior.AiopsChangePointChartConfig != nil {
-		pm.AiopsChangePointChartConfig = &models.AiopsChangePointChartConfigModel{
-			DataViewID:          types.StringValue(api.DataViewId),
-			MetricField:         types.StringValue(api.MetricField),
-			AggregationFunction: changePointAggregationFunctionValue(api.AggregationFunction),
-			SplitField:          types.StringPointerValue(api.SplitField),
-			Partitions:          changePointPartitionsFromAPI(api.Partitions),
-			ViewType:            changePointViewTypeValue(api.ViewType),
-			Title:               types.StringPointerValue(api.Title),
-			Description:         types.StringPointerValue(api.Description),
-			HideTitle:           types.BoolPointerValue(api.HideTitle),
-			HideBorder:          types.BoolPointerValue(api.HideBorder),
-		}
-		pm.AiopsChangePointChartConfig.MaxSeriesToPlot = types.Float32PointerValue(api.MaxSeriesToPlot)
-	}
-
-	existing := pm.AiopsChangePointChartConfig
-	if existing == nil {
-		return nil
-	}
-
-	// Required fields always update from the API.
-	existing.DataViewID = types.StringValue(api.DataViewId)
-	existing.MetricField = types.StringValue(api.MetricField)
-
-	// Optional enum/string fields: only update from API when already known in state (REQ-009 null-preservation).
-	if typeutils.IsKnown(existing.AggregationFunction) {
-		existing.AggregationFunction = changePointAggregationFunctionValue(api.AggregationFunction)
-	}
-	existing.SplitField = panelkit.PreserveString(existing.SplitField, api.SplitField)
-	if typeutils.IsKnown(existing.ViewType) {
-		existing.ViewType = changePointViewTypeValue(api.ViewType)
-	}
-	existing.MaxSeriesToPlot = panelkit.PreserveFloat32(existing.MaxSeriesToPlot, api.MaxSeriesToPlot)
-
-	// Partitions set: null-preserve. When the practitioner omitted it (null/unknown in state), keep null
-	// regardless of API-returned values; otherwise refresh from the API set (order-insensitive).
-	if typeutils.IsKnown(existing.Partitions) {
-		existing.Partitions = changePointPartitionsFromAPI(api.Partitions)
-	}
-
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		api.Title, api.Description, api.HideTitle, api.HideBorder)
-
-	var priorTR *models.TimeRangeModel
-	if prior.AiopsChangePointChartConfig != nil {
-		priorTR = prior.AiopsChangePointChartConfig.TimeRange
-	}
-	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
-
-	if prior.AiopsChangePointChartConfig != nil {
-		preserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
-	}
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := aiopsChangePointChartConfigFromAPIImport(api)
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, prior.AiopsChangePointChartConfig.TimeRange)
+	aiopsChangePointChartPreserveNullIntentFromPrior(prior.AiopsChangePointChartConfig, existing)
+	pm.AiopsChangePointChartConfig = existing
 	return nil
 }
 
-func preserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
+func aiopsChangePointChartConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsChangePointChart) *models.AiopsChangePointChartConfigModel {
+	cfg := &models.AiopsChangePointChartConfigModel{
+		DataViewID:          types.StringValue(api.DataViewId),
+		MetricField:         types.StringValue(api.MetricField),
+		AggregationFunction: changePointAggregationFunctionValue(api.AggregationFunction),
+		SplitField:          types.StringPointerValue(api.SplitField),
+		Partitions:          changePointPartitionsFromAPI(api.Partitions),
+		ViewType:            changePointViewTypeValue(api.ViewType),
+		Title:               types.StringPointerValue(api.Title),
+		Description:         types.StringPointerValue(api.Description),
+		HideTitle:           types.BoolPointerValue(api.HideTitle),
+		HideBorder:          types.BoolPointerValue(api.HideBorder),
+	}
+	if api.MaxSeriesToPlot != nil {
+		cfg.MaxSeriesToPlot = types.Float32Value(float32(*api.MaxSeriesToPlot))
+	} else {
+		cfg.MaxSeriesToPlot = types.Float32Null()
+	}
+	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
+	return cfg
+}
+
+func aiopsChangePointChartPreserveNullIntentFromPrior(prior, existing *models.AiopsChangePointChartConfigModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.AggregationFunction) {
-		existing.AggregationFunction = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.SplitField) {
-		existing.SplitField = types.StringNull()
-	}
-	if !typeutils.IsKnown(prior.Partitions) {
-		existing.Partitions = types.SetNull(types.StringType)
-	}
-	if !typeutils.IsKnown(prior.MaxSeriesToPlot) {
-		existing.MaxSeriesToPlot = types.Float32Null()
-	}
-	if !typeutils.IsKnown(prior.ViewType) {
-		existing.ViewType = types.StringNull()
-	}
+	panelkit.NullPreserveFromPrior(prior.AggregationFunction, &existing.AggregationFunction)
+	panelkit.NullPreserveFromPrior(prior.SplitField, &existing.SplitField)
+	panelkit.NullPreserveFromPrior(prior.Partitions, &existing.Partitions)
+	panelkit.NullPreserveFromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
+	panelkit.NullPreserveFromPrior(prior.ViewType, &existing.ViewType)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if prior.TimeRange == nil {

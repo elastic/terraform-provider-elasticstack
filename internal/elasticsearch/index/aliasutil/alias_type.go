@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -68,9 +69,7 @@ type AliasObjectType struct {
 // NewAliasObjectType constructs an AliasObjectType with the standard alias schema.
 func NewAliasObjectType() AliasObjectType {
 	return AliasObjectType{
-		ObjectType: basetypes.ObjectType{
-			AttrTypes: AliasAttributeTypes(),
-		},
+		AttrTypes: AliasAttributeTypes(),
 	}
 }
 
@@ -277,8 +276,8 @@ func aliasOptionalBoolSemanticEqual(a, b types.Bool) bool {
 	if aUnset && bUnset {
 		return true
 	}
-	aFalse := aUnset || (!a.IsNull() && !a.IsUnknown() && !a.ValueBool())
-	bFalse := bUnset || (!b.IsNull() && !b.IsUnknown() && !b.ValueBool())
+	aFalse := aUnset || (typeutils.IsKnown(a) && !a.ValueBool())
+	bFalse := bUnset || (typeutils.IsKnown(b) && !b.ValueBool())
 	return aFalse && bFalse
 }
 
@@ -307,14 +306,14 @@ func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasModel) bool 
 		return false
 	}
 	pr := ""
-	if !prior.Routing.IsNull() && !prior.Routing.IsUnknown() {
+	if typeutils.IsKnown(prior.Routing) {
 		pr = prior.Routing.ValueString()
 	}
 	if pr == "" {
 		return false
 	}
 	incIdx := ""
-	if !incoming.IndexRouting.IsNull() && !incoming.IndexRouting.IsUnknown() {
+	if typeutils.IsKnown(incoming.IndexRouting) {
 		incIdx = incoming.IndexRouting.ValueString()
 	}
 	if incIdx != pr {
@@ -324,7 +323,7 @@ func aliasEsIndexRoutingEchoesPriorMainRouting(prior, incoming AliasModel) bool 
 		return false
 	}
 	pi := ""
-	if !prior.IndexRouting.IsNull() && !prior.IndexRouting.IsUnknown() {
+	if typeutils.IsKnown(prior.IndexRouting) {
 		pi = prior.IndexRouting.ValueString()
 	}
 	if pi == incIdx {
@@ -368,17 +367,17 @@ func aliasMainRoutingSemanticallyEqual(
 	// Elasticsearch may echo the generic routing value into index_routing on GET and omit routing
 	// when all three routing fields were set in the template (observed on 8.x).
 	prStr := ""
-	if !priorRouting.IsNull() && !priorRouting.IsUnknown() {
+	if typeutils.IsKnown(priorRouting) {
 		prStr = priorRouting.ValueString()
 	}
 	if prStr != "" && incomingSearch.Equal(priorSearch) {
 		incIdx := ""
-		if !incomingIndex.IsNull() && !incomingIndex.IsUnknown() {
+		if typeutils.IsKnown(incomingIndex) {
 			incIdx = incomingIndex.ValueString()
 		}
 		if incIdx == prStr {
 			piStr := ""
-			if !priorIndex.IsNull() && !priorIndex.IsUnknown() {
+			if typeutils.IsKnown(priorIndex) {
 				piStr = priorIndex.ValueString()
 			}
 			if piStr != incIdx {
@@ -412,11 +411,11 @@ func aliasMainRoutingSemanticallyEqual(
 	}
 	pr := priorRouting.ValueString()
 	incIdx := ""
-	if !incomingIndex.IsNull() && !incomingIndex.IsUnknown() {
+	if typeutils.IsKnown(incomingIndex) {
 		incIdx = incomingIndex.ValueString()
 	}
 	incSrch := ""
-	if !incomingSearch.IsNull() && !incomingSearch.IsUnknown() {
+	if typeutils.IsKnown(incomingSearch) {
 		incSrch = incomingSearch.ValueString()
 	}
 	if incIdx == "" && incSrch == "" {

@@ -20,7 +20,6 @@ package policyshape
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -39,10 +38,10 @@ type InputValue struct {
 
 // inputModelSansDefaults mirrors InputModel but omits the Defaults field, for
 // InputType configurations that don't declare a `defaults` attribute at all
-// (e.g. the elasticstack_fleet_agentless_policy resource's InputType --
-// see internal/fleet/agentlesspolicy/schema.go's
-// agentlessInputAttributeTypes, which deliberately excludes `defaults`
-// because agentless policies don't surface package-defaults introspection).
+// (e.g. the elasticstack_fleet_managed_integration resource's InputType --
+// see internal/fleet/managedintegration/schema.go's
+// managedIntegrationInputAttributeTypes, which deliberately excludes `defaults`
+// because managed integrations don't surface package-defaults introspection).
 //
 // terraform-plugin-framework's ObjectValue.As() requires an exact
 // field/attribute match: a target struct field with no corresponding object
@@ -80,7 +79,7 @@ func (m inputModelSansDefaults) toInputModel() InputModel {
 // inputModelSansDefaults). This is the shared entry point EnabledByDefault,
 // MaybeEnabled, and ObjectSemanticEquals use instead of calling v.As(ctx,
 // &InputModel{}, ...) directly, so none of them hard-fail against the
-// agentless_policy resource's defaults-less InputType.
+// managed integration resource's defaults-less InputType.
 func decodeInputModel(ctx context.Context, v InputValue, opts basetypes.ObjectAsOptions) (InputModel, diag.Diagnostics) {
 	if _, ok := v.AttributeTypes(ctx)[AttrDefaults]; !ok {
 		var m inputModelSansDefaults
@@ -177,17 +176,8 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 // ObjectSemanticEquals returns true if the given object value is semantically equal to the current object value.
 // Semantic equality applies defaults from the defaults attribute before comparing values.
 func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basetypes.ObjectValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(InputValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 

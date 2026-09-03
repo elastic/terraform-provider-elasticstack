@@ -60,7 +60,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
-	legacyMetric, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQL()
+	legacyMetric, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}

@@ -128,7 +128,7 @@ func (d Data) buildEndpointResponseAction(ctx context.Context, params ResponseAc
 	if typeutils.IsKnown(params.Command) {
 		command := params.Command.ValueString()
 		switch command {
-		case "isolate":
+		case endpointCommandIsolate:
 			// Use DefaultParams for isolate command
 			defaultParams := kbapi.SecurityDetectionsAPIDefaultParams{
 				Command: kbapi.SecurityDetectionsAPIDefaultParamsCommand("isolate"),
@@ -142,35 +142,56 @@ func (d Data) buildEndpointResponseAction(ctx context.Context, params ResponseAc
 				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
 			}
 
-		case "kill-process", "suspend-process":
-			// Use ProcessesParams for process commands
-			processesParams := kbapi.SecurityDetectionsAPIProcessesParams{
-				Command: kbapi.SecurityDetectionsAPIProcessesParamsCommand(command),
+		case endpointCommandKillProcess:
+			killParams := kbapi.SecurityDetectionsAPIKillProcessParams{
+				Command: kbapi.KillProcess,
 			}
 			if typeutils.IsKnown(params.Comment) {
-				processesParams.Comment = params.Comment.ValueStringPointer()
+				killParams.Comment = params.Comment.ValueStringPointer()
 			}
-
-			// Set config if provided
 			if typeutils.IsKnown(params.Config) {
 				config := typeutils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
 					func(item EndpointProcessConfigModel, _ typeutils.ObjectMeta) EndpointProcessConfigModel {
 						return item
 					})
-
-				processesParams.Config = struct {
-					Field     string `json:"field"`
-					Overwrite *bool  `json:"overwrite,omitempty"`
-				}{
-					Field: config.Field.ValueString(),
-				}
+				killParams.Config.Field = config.Field.ValueString()
 				if typeutils.IsKnown(config.Overwrite) {
-					processesParams.Config.Overwrite = config.Overwrite.ValueBoolPointer()
+					killParams.Config.Overwrite = config.Overwrite.ValueBoolPointer()
 				}
 			}
+			var processesParams kbapi.SecurityDetectionsAPIProcessesParams
+			if err := processesParams.FromSecurityDetectionsAPIKillProcessParams(killParams); err != nil {
+				diags.AddError("Error setting endpoint kill-process params", err.Error())
+				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
+			}
+			if err := endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processesParams); err != nil {
+				diags.AddError("Error setting endpoint processes params", err.Error())
+				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
+			}
 
-			err := endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processesParams)
-			if err != nil {
+		case endpointCommandSuspendProcess:
+			suspendParams := kbapi.SecurityDetectionsAPISuspendProcessParams{
+				Command: kbapi.SuspendProcess,
+			}
+			if typeutils.IsKnown(params.Comment) {
+				suspendParams.Comment = params.Comment.ValueStringPointer()
+			}
+			if typeutils.IsKnown(params.Config) {
+				config := typeutils.ObjectTypeToStruct(ctx, params.Config, path.Root("response_actions").AtName("params").AtName("config"), &diags,
+					func(item EndpointProcessConfigModel, _ typeutils.ObjectMeta) EndpointProcessConfigModel {
+						return item
+					})
+				suspendParams.Config.Field = config.Field.ValueString()
+				if typeutils.IsKnown(config.Overwrite) {
+					suspendParams.Config.Overwrite = config.Overwrite.ValueBoolPointer()
+				}
+			}
+			var processesParams kbapi.SecurityDetectionsAPIProcessesParams
+			if err := processesParams.FromSecurityDetectionsAPISuspendProcessParams(suspendParams); err != nil {
+				diags.AddError("Error setting endpoint suspend-process params", err.Error())
+				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
+			}
+			if err := endpointAction.Params.FromSecurityDetectionsAPIProcessesParams(processesParams); err != nil {
 				diags.AddError("Error setting endpoint processes params", err.Error())
 				return kbapi.SecurityDetectionsAPIResponseAction{}, diags
 			}
@@ -883,15 +904,15 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	var unit kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit
 	switch matches[2] {
 	case "s":
-		unit = kbapi.S
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitS
 	case "m":
-		unit = kbapi.M
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitM
 	case "h":
-		unit = kbapi.H
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
 	case "d":
 		// Convert days to hours since API doesn't support days unit
 		value *= 24
-		unit = kbapi.H
+		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitH
 	default:
 		diags.AddError(
 			"Unsupported duration unit",

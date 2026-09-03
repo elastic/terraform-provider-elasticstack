@@ -403,6 +403,47 @@ func TestForbiddenIfDependentPathOneOf_Description(t *testing.T) {
 	require.Equal(t, "value cannot be set when protocol is one of [https tls]", description)
 }
 
+func TestForbiddenIfDependentPathOneOf_MultipleAllowedValuesErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"custom_cert": schema.StringAttribute{Optional: true},
+			"protocol":    schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"custom_cert": tftypes.String,
+				"protocol":    tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"custom_cert": tftypes.NewValue(tftypes.String, "cert"),
+			"protocol":    tftypes.NewValue(tftypes.String, "http"),
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := ForbiddenIfDependentPathOneOf(
+		path.Root("protocol"),
+		[]string{"http", "ftp"},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("custom_cert"),
+		ConfigValue: types.StringValue("cert"),
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "cannot be set when protocol is one of [http ftp]")
+}
+
 func TestRequiredIfDependentPathOneOf(t *testing.T) {
 	t.Parallel()
 
@@ -539,6 +580,47 @@ func TestRequiredIfDependentPathOneOf(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRequiredIfDependentPathOneOf_MultipleAllowedValuesErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"ssl_cert":      schema.StringAttribute{Optional: true},
+			"security_mode": schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"ssl_cert":      tftypes.String,
+				"security_mode": tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"ssl_cert":      tftypes.NewValue(tftypes.String, nil),
+			"security_mode": tftypes.NewValue(tftypes.String, "ssl"),
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := RequiredIfDependentPathOneOf(
+		path.Root("security_mode"),
+		[]string{"ssl", "tls"},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("ssl_cert"),
+		ConfigValue: types.StringNull(),
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "must be set when security_mode is one of [ssl tls]")
 }
 
 func TestRequiredIfDependentPathOneOf_Description(t *testing.T) {
@@ -1606,4 +1688,121 @@ func TestOneOfWhenDependentPathExpressionEquals_Description(t *testing.T) {
 	)
 	require.Contains(t, v.Description(context.Background()), "value must be one of")
 	require.Contains(t, v.Description(context.Background()), "rolling")
+}
+
+func TestForbiddenIfDependentPathExpressionOneOf_forceMergeOnClone(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name              string
+		forceMergeOnClone types.Bool
+		forceMergeIndex   types.Bool
+		expectedError     bool
+	}
+
+	testCases := []testCase{
+		{
+			name:              "valid - force_merge_on_clone unset, force_merge_index false",
+			forceMergeOnClone: types.BoolNull(),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone false, force_merge_index true",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolValue(true),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone true, force_merge_index true",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolValue(true),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone set, force_merge_index unset",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolNull(),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone set, force_merge_index unknown",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolUnknown(),
+			expectedError:     false,
+		},
+		{
+			name:              "invalid - force_merge_on_clone true, force_merge_index false",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     true,
+		},
+		{
+			name:              "invalid - force_merge_on_clone false, force_merge_index false",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     true,
+		},
+	}
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"force_merge_index": schema.BoolAttribute{
+				Optional: true,
+			},
+			"force_merge_on_clone": schema.BoolAttribute{
+				Optional: true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			currentTfValue, err := tc.forceMergeOnClone.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+			dependentTfValue, err := tc.forceMergeIndex.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+
+			rawConfig := tftypes.NewValue(
+				tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"force_merge_index":    tftypes.Bool,
+						"force_merge_on_clone": tftypes.Bool,
+					},
+				},
+				map[string]tftypes.Value{
+					"force_merge_index":    dependentTfValue,
+					"force_merge_on_clone": currentTfValue,
+				},
+			)
+
+			config := tfsdk.Config{
+				Raw:    rawConfig,
+				Schema: testSchema,
+			}
+
+			v := ForbiddenIfDependentPathExpressionOneOf(
+				path.MatchRelative().AtParent().AtName("force_merge_index"),
+				[]string{"false"},
+			)
+
+			request := validator.BoolRequest{
+				Path:        path.Root("force_merge_on_clone"),
+				ConfigValue: tc.forceMergeOnClone,
+				Config:      config,
+			}
+
+			response := &validator.BoolResponse{}
+			v.ValidateBool(context.Background(), request, response)
+
+			if tc.expectedError {
+				require.True(t, response.Diagnostics.HasError(), "Expected validation error but got none")
+				require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "force_merge_on_clone")
+			} else {
+				require.False(t, response.Diagnostics.HasError(), "Expected no validation error but got: %v", response.Diagnostics.Errors())
+			}
+		})
+	}
 }

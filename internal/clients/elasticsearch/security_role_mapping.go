@@ -21,8 +21,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/getrolemapping"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -93,40 +93,21 @@ func PutRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 }
 
 func GetRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) (*types.SecurityRoleMapping, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, diags
-		}
-		diags.AddError("Unable to get role mapping", err.Error())
+	res, diags := CallOrNotFound(func() (getrolemapping.Response, error) {
+		return typedClient.Security.GetRoleMapping().Name(roleMappingName).Do(ctx)
+	}, "Unable to get role mapping")
+	if diags.HasError() || res == nil {
 		return nil, diags
 	}
 
-	if roleMapping, ok := res[roleMappingName]; ok {
-		return &roleMapping, diags
-	}
-
-	diags.AddError("Role mapping not found", fmt.Sprintf("unable to find role mapping '%s' in the cluster", roleMappingName))
-	return nil, diags
+	return LookupOrNotFoundDiag(res, roleMappingName, "role mapping")
 }
 
 func DeleteRoleMapping(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, roleMappingName string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteRoleMapping(roleMappingName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete role mapping", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete role mapping")
 }

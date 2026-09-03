@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -810,7 +811,7 @@ func (m *ExceptionItemModel) setCommonProps(
 			return
 		}
 
-		expireTimeAPI := expireTime.Format("2006-01-02T15:04:05.000Z")
+		expireTimeAPI := expireTime.Format(kbschema.KibanaTimestampLayout)
 		*props.ExpireTime = expireTimeAPI
 	}
 }
@@ -1002,9 +1003,9 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 	m.Description = typeutils.StringishValue(apiResp.Description)
 	m.Type = typeutils.StringishValue(apiResp.Type)
 	m.NamespaceType = typeutils.StringishValue(apiResp.NamespaceType)
-	m.CreatedAt = types.StringValue(apiResp.CreatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.CreatedAt = types.StringValue(apiResp.CreatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.CreatedBy = types.StringValue(apiResp.CreatedBy)
-	m.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format("2006-01-02T15:04:05.000Z"))
+	m.UpdatedAt = types.StringValue(apiResp.UpdatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.UpdatedBy = types.StringValue(apiResp.UpdatedBy)
 	m.TieBreakerID = types.StringValue(apiResp.TieBreakerId)
 
@@ -1022,42 +1023,17 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 	}
 
 	// Set optional os_types
-	if apiResp.OsTypes != nil && len(*apiResp.OsTypes) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.OsTypes)
-		diags.Append(d...)
-		m.OsTypes = set
-	} else if m.OsTypes.IsUnknown() {
-		// Kibana returns nil/[] interchangeably for an empty set; only collapse
-		// to null when the plan value itself was Unknown. Preserving a Known
-		// empty set (e.g. `os_types = []` from config) avoids "produced an
-		// unexpected new value: .os_types: was cty.SetValEmpty, but now null"
-		// on read-after-apply. Mirrors the pattern fixed in #1740 on the
-		// sibling securityexceptionlist resource.
-		m.OsTypes = types.SetNull(types.StringType)
-	}
+	osTypes, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiResp.OsTypes, m.OsTypes)
+	diags.Append(d...)
+	m.OsTypes = osTypes
 
 	// Set optional tags
-	if apiResp.Tags != nil && len(*apiResp.Tags) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, *apiResp.Tags)
-		diags.Append(d...)
-		m.Tags = set
-	} else if m.Tags.IsUnknown() {
-		// Same reasoning as os_types above: preserve a Known empty set so
-		// `tags = []` from config round-trips without an after-apply diff.
-		m.Tags = types.SetNull(types.StringType)
-	}
+	tags, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiResp.Tags, m.Tags)
+	diags.Append(d...)
+	m.Tags = tags
 
 	// Set optional meta
-	if apiResp.Meta != nil {
-		metaBytes, err := json.Marshal(apiResp.Meta)
-		if err != nil {
-			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = typeutils.MarshalToNormalized(apiResp.Meta, path.Root("meta"), &diags)
 
 	// Set entries (convert from API model to Terraform model)
 	entriesList, d := convertEntriesFromAPI(ctx, apiResp.Entries)

@@ -18,15 +18,14 @@
 package securitylist
 
 import (
-	"encoding/json"
-	"time"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -139,24 +138,15 @@ func (m *Model) fromAPI(apiList *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	m.Immutable = types.BoolValue(apiList.Immutable)
 	m.Version = types.Int64Value(int64(apiList.Version))
 	m.TieBreakerID = types.StringValue(apiList.TieBreakerId)
-	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format(time.RFC3339))
+	m.CreatedAt = types.StringValue(apiList.CreatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.CreatedBy = types.StringValue(apiList.CreatedBy)
-	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format(time.RFC3339))
+	m.UpdatedAt = types.StringValue(apiList.UpdatedAt.Format(kbschema.KibanaTimestampLayout))
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional _version field
 	m.VersionID = typeutils.StringishPointerValue(apiList.UnderscoreVersion)
 
-	if apiList.Meta != nil {
-		metaBytes, err := json.Marshal(apiList.Meta)
-		if err != nil {
-			diags.AddError("Failed to marshal meta field from API response to JSON", err.Error())
-			return diags
-		}
-		m.Meta = jsontypes.NewNormalizedValue(string(metaBytes))
-	} else {
-		m.Meta = jsontypes.NewNormalizedNull()
-	}
+	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)
 
 	return diags
 }

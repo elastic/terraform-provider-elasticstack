@@ -25,9 +25,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/stretchr/testify/require"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
 
 // newTestClient creates a fleet.Client backed by the given test server.
 func newTestClient(t *testing.T, server *httptest.Server) *fleet.Client {
@@ -37,6 +44,23 @@ func newTestClient(t *testing.T, server *httptest.Server) *fleet.Client {
 		t.Fatalf("newTestClient: %v", err)
 	}
 	return c
+}
+
+// newTestClientWithRoundTripper creates a fleet.Client that sends all requests
+// through rt without using a real server.
+func newTestClientWithRoundTripper(t *testing.T, rt http.RoundTripper) *fleet.Client {
+	t.Helper()
+	const endpoint = "http://kibana.test/"
+	httpClient := &http.Client{Transport: rt}
+	apiClient, err := kbapi.NewClientWithResponses(endpoint, kbapi.WithHTTPClient(httpClient))
+	if err != nil {
+		t.Fatalf("newTestClientWithRoundTripper: %v", err)
+	}
+	return &fleet.Client{
+		URL:  "http://kibana.test",
+		HTTP: httpClient,
+		API:  apiClient,
+	}
 }
 
 func TestGetPackages_SpaceAwarePath(t *testing.T) {

@@ -116,6 +116,14 @@ func getSchemaV3() schema.Schema {
 				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
 				Optional:    true,
 			},
+			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
+				Description: additionalDatastreamsPermissionsDescription,
+				ElementType: types.StringType,
+				Optional:    true,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
+			},
 			attrVarsJSON: schema.StringAttribute{
 				Description: customtypes.DescriptionWithContextWarning("Integration-level variables as JSON. Variables vary depending on the integration package."),
 				CustomType:  policyshape.NewVarsJSONType(lookupCachedPackageInfo),

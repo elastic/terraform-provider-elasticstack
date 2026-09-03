@@ -41,7 +41,6 @@ const (
 
 // Schema descriptions reused across processor data sources and the pipeline resource.
 const (
-	descIdentifier           = "Internal identifier of the resource"
 	descIdentifierWithPeriod = "Internal identifier of the resource."
 	descJSONDataSource       = "JSON representation of this data source."
 	descIgnoreMissingDocStop = "If `true` and `field` does not exist or is `null`, the processor quietly exits without modifying the document."

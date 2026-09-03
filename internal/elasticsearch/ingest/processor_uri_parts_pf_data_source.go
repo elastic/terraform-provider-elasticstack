@@ -52,18 +52,8 @@ func (m *processorURIPartsModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if m.KeepOriginal.IsNull() || m.KeepOriginal.IsUnknown() {
-		m.KeepOriginal = types.BoolValue(true)
-		body.KeepOriginal = true
-	} else {
-		body.KeepOriginal = m.KeepOriginal.ValueBool()
-	}
-	if m.RemoveIfSuccessful.IsNull() || m.RemoveIfSuccessful.IsUnknown() {
-		m.RemoveIfSuccessful = types.BoolValue(false)
-		body.RemoveIfSuccessful = false
-	} else {
-		body.RemoveIfSuccessful = m.RemoveIfSuccessful.ValueBool()
-	}
+	body.KeepOriginal = typeutils.BoolDefault(&m.KeepOriginal, true)
+	body.RemoveIfSuccessful = typeutils.BoolDefault(&m.RemoveIfSuccessful, false)
 
 	return body, diags
 }
@@ -71,14 +61,6 @@ func (m *processorURIPartsModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorURIPartsDataSource returns a PF data source for the uri_parts processor.
 func NewProcessorURIPartsDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "Field containing the URI string.",
 			Required:    true,

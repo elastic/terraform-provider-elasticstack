@@ -60,12 +60,7 @@ func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Processor = proc
 	}
 
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
 	return body, diags
 }
@@ -73,14 +68,6 @@ func (m *processorForeachModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorForeachDataSource returns a PF data source for the foreach processor.
 func NewProcessorForeachDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "Field containing array or object values.",
 			Required:    true,

@@ -19,9 +19,9 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
-	"fmt"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -48,19 +48,9 @@ func (r *elasticDefendIntegrationPolicyResource) Update(ctx context.Context, req
 		return
 	}
 
-	if !planModel.AgentPolicyIDs.IsNull() && !planModel.AgentPolicyIDs.IsUnknown() {
-		supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if !supported {
-			resp.Diagnostics.AddError(
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("agent_policy_ids requires Elastic Stack >= %s", MinVersionPolicyIDs.String()),
-			)
-			return
-		}
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	fleetClient := client.GetFleetClient()

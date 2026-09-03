@@ -126,6 +126,15 @@ type MinVersionEnforceable interface {
 	EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiags.Diagnostics)
 }
 
+// VersionedClient is a shared interface for clients that can enforce both
+// minimum-version requirements and arbitrary version checks. It is satisfied by
+// both ElasticsearchScopedClient and KibanaScopedClient, allowing callers to
+// accept either without importing concrete types.
+type VersionedClient interface {
+	MinVersionEnforceable
+	EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiags.Diagnostics)
+}
+
 func buildEsClient(cfg config.Client) (*elasticsearch.TypedClient, error) {
 	if cfg.Elasticsearch == nil {
 		return nil, nil

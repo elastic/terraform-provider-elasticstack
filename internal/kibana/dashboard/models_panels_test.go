@@ -50,13 +50,13 @@ func buildLensMosaicPanelForTest(t *testing.T) models.PanelModel {
 		"group_by": ` + groupBy + `,
 		"group_breakdown_by": ` + groupBreakdownBy + `
 	}`
-	var api kbapi.KibanaHTTPAPIsMosaicNoESQL
+	var api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsMosaicNoESQL(api))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsMosaicNoESQLByValuePanel(api))
 
-	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsMosaicNoESQLTypeMosaic))
+	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
 	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
@@ -85,13 +85,13 @@ func buildLensTreemapPanelForTest(t *testing.T) models.PanelModel {
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
 	}`
-	var api kbapi.KibanaHTTPAPIsTreemapNoESQL
+	var api kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsTreemapNoESQL(api))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsTreemapNoESQLByValuePanel(api))
 
-	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap))
+	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
 	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)
@@ -119,13 +119,13 @@ func buildLensWafflePanelForTest(t *testing.T) models.PanelModel {
 		"legend": {"size":"small"},
 		"metrics": [{"operation":"count"}]
 	}`
-	var api kbapi.KibanaHTTPAPIsWaffleNoESQL
+	var api kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQL(api))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQLByValuePanel(api))
 
-	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle))
+	c := lenscommon.ForType(string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle))
 	require.NotNil(t, c)
 	visBv := models.VisByValueModel{}
 	diags := c.PopulateFromAttributes(context.Background(), &visBv.LensByValueChartBlocks, attrs)

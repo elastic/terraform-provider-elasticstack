@@ -41,31 +41,11 @@ func BuildConfig(pm models.PanelModel, sebPanel *kbapi.KibanaHTTPAPIsKbnDashboar
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&sebPanel.Config.Title, &sebPanel.Config.Description, &sebPanel.Config.HideTitle, &sebPanel.Config.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                        `json:"label"`
-			OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                        `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		sebPanel.Config.Drilldowns = &drilldowns
+		diags.Append(panelkit.InjectDrilldownsJSON(&sebPanel.Config, cfg.Drilldowns)...)
 	}
-	return nil
+	return diags
 }
 
 // PopulateFromAPI reads back an SLO error budget config from the API response.
@@ -75,8 +55,6 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	var priorSloInstanceID types.String
 	if prior != nil && prior.SloErrorBudgetConfig != nil {
 		priorSloInstanceID = prior.SloErrorBudgetConfig.SloInstanceID
-	} else if prior == nil {
-		priorSloInstanceID = types.StringValue("*")
 	}
 
 	if existing == nil {
@@ -88,22 +66,23 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	}
 
 	existing.SloID = types.StringValue(apiConfig.SloId)
+	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, prior != nil, priorSloInstanceID)
 
-	if typeutils.IsKnown(priorSloInstanceID) && apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-		existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-	}
-
-	if (prior == nil || typeutils.IsKnown(existing.Title)) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
-	}
-	if (prior == nil || typeutils.IsKnown(existing.Description)) && apiConfig.Description != nil {
-		existing.Description = types.StringValue(*apiConfig.Description)
-	}
-	if (prior == nil || typeutils.IsKnown(existing.HideTitle)) && apiConfig.HideTitle != nil {
-		existing.HideTitle = types.BoolValue(*apiConfig.HideTitle)
-	}
-	if (prior == nil || typeutils.IsKnown(existing.HideBorder)) && apiConfig.HideBorder != nil {
-		existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
+	existing.Title = types.StringPointerValue(apiConfig.Title)
+	existing.Description = types.StringPointerValue(apiConfig.Description)
+	existing.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+	existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+	if prior != nil && prior.SloErrorBudgetConfig != nil {
+		panelkit.NullPreservePresentationFromPrior(
+			prior.SloErrorBudgetConfig.Title,
+			prior.SloErrorBudgetConfig.Description,
+			prior.SloErrorBudgetConfig.HideTitle,
+			prior.SloErrorBudgetConfig.HideBorder,
+			&existing.Title,
+			&existing.Description,
+			&existing.HideTitle,
+			&existing.HideBorder,
+		)
 	}
 
 	if apiConfig.Drilldowns != nil {

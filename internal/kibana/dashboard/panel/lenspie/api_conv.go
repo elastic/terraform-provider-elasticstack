@@ -30,12 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const jsonNullString = "null"
-
-func isPieNoESQLCandidateActuallyESQL(apiChart kbapi.KibanaHTTPAPIsPieNoESQL) bool {
-	return lenscommon.LensDataSourceIsESQLOrTable(apiChart.DataSource.MarshalJSON())
-}
-
 func pieChartConfigPopulateCommonFields(
 	m *models.PieChartConfigModel,
 	title, description *string,
@@ -73,7 +67,7 @@ func pieChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.PieChartConfigModel,
 	prior *models.PieChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsPieNoESQL,
+	apiChart kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -104,33 +98,13 @@ func pieChartConfigFromAPINoESQL(
 	lenscommon.FilterSimpleFromAPI(m.Query, apiChart.Query)
 
 	if len(apiChart.Metrics) > 0 {
-		m.Metrics = make([]models.PieMetricModel, len(apiChart.Metrics))
-		for i, metric := range apiChart.Metrics {
-			metricJSON, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(metricJSON),
-				lenscommon.PopulatePieChartMetricDefaults,
-			)
-		}
+		m.Metrics = lenscommon.PopulateJSONWithDefaultsSlice(ctx, apiChart.Metrics, nil,
+			pieMetricConfigOf, lenscommon.PopulatePieChartMetricDefaults, "metric", &diags)
 	}
 
 	if apiChart.GroupBy != nil && len(*apiChart.GroupBy) > 0 {
-		m.GroupBy = make([]models.PieGroupByModel, len(*apiChart.GroupBy))
-		for i, groupBy := range *apiChart.GroupBy {
-			groupByJSON, err := json.Marshal(groupBy)
-			if err != nil {
-				diags.AddError("Failed to marshal group_by", err.Error())
-				continue
-			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(groupByJSON),
-				lenscommon.PopulateLensGroupByDefaults,
-			)
-		}
+		m.GroupBy = lenscommon.PopulateJSONWithDefaultsSlice(ctx, *apiChart.GroupBy, nil,
+			pieGroupByConfigOf, lenscommon.PopulateLensGroupByDefaults, "group_by", &diags)
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(
@@ -143,11 +117,19 @@ func pieChartConfigFromAPINoESQL(
 	return diags
 }
 
+func pieMetricConfigOf(m *models.PieMetricModel) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.Config
+}
+
+func pieGroupByConfigOf(m *models.PieGroupByModel) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.Config
+}
+
 func pieChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.PieChartConfigModel,
 	prior *models.PieChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsPieESQL,
+	apiChart kbapi.KibanaHTTPAPIsPieESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -177,33 +159,13 @@ func pieChartConfigFromAPIESQL(
 	m.Query = nil
 
 	if len(apiChart.Metrics) > 0 {
-		m.Metrics = make([]models.PieMetricModel, len(apiChart.Metrics))
-		for i, metric := range apiChart.Metrics {
-			metricJSON, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			m.Metrics[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(metricJSON),
-				lenscommon.PopulatePieChartMetricDefaults,
-			)
-		}
+		m.Metrics = lenscommon.PopulateJSONWithDefaultsSlice(ctx, apiChart.Metrics, nil,
+			pieMetricConfigOf, lenscommon.PopulatePieChartMetricDefaults, "metric", &diags)
 	}
 
 	if apiChart.GroupBy != nil && len(*apiChart.GroupBy) > 0 {
-		m.GroupBy = make([]models.PieGroupByModel, len(*apiChart.GroupBy))
-		for i, groupBy := range *apiChart.GroupBy {
-			groupByJSON, err := json.Marshal(groupBy)
-			if err != nil {
-				diags.AddError("Failed to marshal group_by", err.Error())
-				continue
-			}
-			m.GroupBy[i].Config = customtypes.NewJSONWithDefaultsValue(
-				string(groupByJSON),
-				lenscommon.PopulateLensGroupByDefaults,
-			)
-		}
+		m.GroupBy = lenscommon.PopulateJSONWithDefaultsSlice(ctx, *apiChart.GroupBy, nil,
+			pieGroupByConfigOf, lenscommon.PopulateLensGroupByDefaults, "group_by", &diags)
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(
@@ -216,217 +178,170 @@ func pieChartConfigFromAPIESQL(
 	return diags
 }
 
-func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
+// populatePieStyling sets the default styling mode and applies optional donut hole, label
+// position, and legend fields onto styling. It avoids callers duplicating this setup across
+// NoESQL and ESQL branches.
+func populatePieStyling(m *models.PieChartConfigModel, styling **kbapi.KibanaHTTPAPIsPieStyling, legend **kbapi.KibanaHTTPAPIsPieLegend) {
+	defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
+	*styling = &kbapi.KibanaHTTPAPIsPieStyling{
+		Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
+	}
+
+	if !m.DonutHole.IsNull() {
+		val := kbapi.KibanaHTTPAPIsPieStylingDonutHole(m.DonutHole.ValueString())
+		(*styling).DonutHole = &val
+	}
+
+	if !m.LabelPosition.IsNull() {
+		pos := kbapi.KibanaHTTPAPIsPieStylingLabelsPosition(m.LabelPosition.ValueString())
+		(*styling).Labels = &struct {
+			Position *kbapi.KibanaHTTPAPIsPieStylingLabelsPosition `json:"position,omitempty"`
+			Visible  *bool                                         `json:"visible,omitempty"`
+		}{Position: &pos}
+	}
+
+	if m.Legend != nil {
+		*legend = lenscommon.PartitionLegendToPieLegend(m.Legend)
+	}
+	if *legend != nil && ((*legend).Size == nil || *(*legend).Size == "") {
+		size := kbapi.KibanaHTTPAPIsLegendSizeAuto
+		(*legend).Size = &size
+	}
+}
+
+func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var attrs lenscommon.VisByValueConfig0
+	var chart kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel
+
+	chart.Title, chart.Description, chart.IgnoreGlobalFilters, chart.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
+
+	populatePieStyling(m, &chart.Styling, &chart.Legend)
+
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
+		return chart, diags
+	}
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
+		return chart, diags
+	}
+
+	chart.Query = lenscommon.FilterSimpleToAPI(m.Query)
+	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
+
+	if len(m.Metrics) > 0 {
+		metrics := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, pieMetricConfigOf, "metric", &diags) {
+			return chart, diags
+		}
+		chart.Metrics = metrics
+	}
+
+	if len(m.GroupBy) > 0 {
+		groupBy := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_GroupBy_Item, len(m.GroupBy))
+		if !lenscommon.UnmarshalJSONSliceInto(m.GroupBy, groupBy, pieGroupByConfigOf, "group_by", &diags) {
+			return chart, diags
+		}
+		chart.GroupBy = &groupBy
+	}
+
+	chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie
+
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return chart, diags
+	}
+
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Drilldowns_Item](
+		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+	)...)
+
+	return chart, diags
+}
+
+func pieChartConfigToAPIESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPAPIsPieESQLByValuePanel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var chart kbapi.KibanaHTTPAPIsPieESQLByValuePanel
+
+	chart.Title, chart.Description, chart.IgnoreGlobalFilters, chart.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
+
+	populatePieStyling(m, &chart.Styling, &chart.Legend)
+
+	if m.DataSourceJSON.IsNull() {
+		diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
+		return chart, diags
+	}
+	if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
+		diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
+		return chart, diags
+	}
+
+	chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
+
+	if len(m.Metrics) > 0 {
+		metrics := make([]struct {
+			Color  *kbapi.KibanaHTTPAPIsPieESQLByValuePanel_Metrics_Color `json:"color,omitempty"`
+			Column string                                                 `json:"column"`
+			Format *kbapi.KibanaHTTPAPIsFormatType                        `json:"format,omitempty"`
+			Label  *string                                                `json:"label,omitempty"`
+		}, len(m.Metrics))
+		for i, metric := range m.Metrics {
+			if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
+				diags.AddError("Failed to unmarshal metric", err.Error())
+			}
+		}
+		chart.Metrics = metrics
+	}
+
+	if len(m.GroupBy) > 0 {
+		rawEntries := make([]lenscommon.EsqlGroupByAPIFields, len(m.GroupBy))
+		for i, grp := range m.GroupBy {
+			if err := json.Unmarshal([]byte(grp.Config.ValueString()), &rawEntries[i]); err != nil {
+				diags.AddError("Failed to unmarshal group_by", err.Error())
+			}
+			if rawEntries[i].Format != nil {
+				fb, _ := json.Marshal(rawEntries[i].Format)
+				if string(fb) == lenscommon.JSONNullString || len(fb) == 0 {
+					var format kbapi.KibanaHTTPAPIsFormatType
+					_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
+					rawEntries[i].Format = &format
+				}
+			}
+		}
+		lenscommon.SetEsqlGroupByOnAPI(rawEntries, &chart.GroupBy, &diags)
+	}
+
+	chart.Type = kbapi.KibanaHTTPAPIsPieESQLByValuePanelTypePie
+
+	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
+	diags.Append(presDiags...)
+	if presDiags.HasError() {
+		return chart, diags
+	}
+
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieESQLByValuePanel_Drilldowns_Item](
+		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
+	)...)
+
+	return chart, diags
+}
+
+func pieChartConfigToAPI(m *models.PieChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
-
-	isNoESQL := m.Query != nil
-
-	if isNoESQL {
-		var chart kbapi.KibanaHTTPAPIsPieNoESQL
-
-		defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
-		chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{
-			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
-		}
-
-		chart.Title = m.Title.ValueStringPointer()
-		chart.Description = m.Description.ValueStringPointer()
-		chart.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-
-		if !m.Sampling.IsNull() {
-			val := float32(m.Sampling.ValueFloat64())
-			chart.Sampling = &val
-		}
-
-		if !m.DonutHole.IsNull() {
-			val := kbapi.KibanaHTTPAPIsPieStylingDonutHole(m.DonutHole.ValueString())
-			if chart.Styling == nil {
-				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
-			}
-			chart.Styling.DonutHole = &val
-		}
-
-		if !m.LabelPosition.IsNull() {
-			pos := kbapi.KibanaHTTPAPIsPieStylingLabelsPosition(m.LabelPosition.ValueString())
-			if chart.Styling == nil {
-				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
-			}
-			chart.Styling.Labels = &struct {
-				Position *kbapi.KibanaHTTPAPIsPieStylingLabelsPosition `json:"position,omitempty"`
-				Visible  *bool                                         `json:"visible,omitempty"`
-			}{Position: &pos}
-		}
-
-		if m.Legend != nil {
-			chart.Legend = lenscommon.PartitionLegendToPieLegend(m.Legend)
-		}
-		if chart.Legend != nil && (chart.Legend.Size == nil || *chart.Legend.Size == "") {
-			size := kbapi.KibanaHTTPAPIsLegendSizeAuto
-			chart.Legend.Size = &size
-		}
-
-		if m.DataSourceJSON.IsNull() {
-			diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
-			return attrs, diags
-		}
-		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-			diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
-			return attrs, diags
-		}
-
-		chart.Query = lenscommon.FilterSimpleToAPI(m.Query)
-
-		chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-		if len(m.Metrics) > 0 {
-			metrics := make([]kbapi.KibanaHTTPAPIsPieNoESQL_Metrics_Item, len(m.Metrics))
-			for i, metric := range m.Metrics {
-				if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
-					diags.AddError("Failed to unmarshal metric", err.Error())
-				}
-			}
-			chart.Metrics = metrics
-		}
-
-		if len(m.GroupBy) > 0 {
-			groupBy := make([]kbapi.KibanaHTTPAPIsPieNoESQL_GroupBy_Item, len(m.GroupBy))
-			for i, grp := range m.GroupBy {
-				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
-					diags.AddError("Failed to unmarshal group_by", err.Error())
-				}
-			}
-			chart.GroupBy = &groupBy
-		}
-
-		chart.Type = kbapi.KibanaHTTPAPIsPieNoESQLTypePie
-
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-		diags.Append(presDiags...)
-		if presDiags.HasError() {
-			return attrs, diags
-		}
-
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieNoESQL_Drilldowns_Item](
-			writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-		)...)
-
-		if err := attrs.FromKibanaHTTPAPIsPieNoESQL(chart); err != nil {
-			diags.AddError("Failed to create PieNoESQL schema", err.Error())
-		}
-	} else {
-		var chart kbapi.KibanaHTTPAPIsPieESQL
-
-		defaultMode := kbapi.KibanaHTTPAPIsValueDisplayModePercentage
-		chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{
-			Values: &kbapi.KibanaHTTPAPIsValueDisplay{Mode: &defaultMode},
-		}
-
-		chart.Title = m.Title.ValueStringPointer()
-		chart.Description = m.Description.ValueStringPointer()
-		chart.IgnoreGlobalFilters = m.IgnoreGlobalFilters.ValueBoolPointer()
-
-		if !m.Sampling.IsNull() {
-			val := float32(m.Sampling.ValueFloat64())
-			chart.Sampling = &val
-		}
-
-		if !m.DonutHole.IsNull() {
-			val := kbapi.KibanaHTTPAPIsPieStylingDonutHole(m.DonutHole.ValueString())
-			if chart.Styling == nil {
-				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
-			}
-			chart.Styling.DonutHole = &val
-		}
-
-		if !m.LabelPosition.IsNull() {
-			pos := kbapi.KibanaHTTPAPIsPieStylingLabelsPosition(m.LabelPosition.ValueString())
-			if chart.Styling == nil {
-				chart.Styling = &kbapi.KibanaHTTPAPIsPieStyling{}
-			}
-			chart.Styling.Labels = &struct {
-				Position *kbapi.KibanaHTTPAPIsPieStylingLabelsPosition `json:"position,omitempty"`
-				Visible  *bool                                         `json:"visible,omitempty"`
-			}{Position: &pos}
-		}
-
-		if m.Legend != nil {
-			chart.Legend = lenscommon.PartitionLegendToPieLegend(m.Legend)
-		}
-		if chart.Legend != nil && (chart.Legend.Size == nil || *chart.Legend.Size == "") {
-			size := kbapi.KibanaHTTPAPIsLegendSizeAuto
-			chart.Legend.Size = &size
-		}
-
-		if m.DataSourceJSON.IsNull() {
-			diags.AddError("Missing dataset", "pie_chart_config.data_source_json must be provided")
-			return attrs, diags
-		}
-		if err := json.Unmarshal([]byte(m.DataSourceJSON.ValueString()), &chart.DataSource); err != nil {
-			diags.AddError("Failed to unmarshal pie_chart_config.data_source_json", err.Error())
-			return attrs, diags
-		}
-
-		chart.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
-
-		if len(m.Metrics) > 0 {
-			metrics := make([]struct {
-				Color  *kbapi.KibanaHTTPAPIsPieESQL_Metrics_Color `json:"color,omitempty"`
-				Column string                                     `json:"column"`
-				Format *kbapi.KibanaHTTPAPIsFormatType            `json:"format,omitempty"`
-				Label  *string                                    `json:"label,omitempty"`
-			}, len(m.Metrics))
-			for i, metric := range m.Metrics {
-				if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
-					diags.AddError("Failed to unmarshal metric", err.Error())
-				}
-			}
-			chart.Metrics = metrics
-		}
-
-		if len(m.GroupBy) > 0 {
-			groupBy := make([]struct {
-				CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
-				Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
-				Column     string                            `json:"column"`
-				Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
-				Label      *string                           `json:"label,omitempty"`
-			}, len(m.GroupBy))
-			for i, grp := range m.GroupBy {
-				if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
-					diags.AddError("Failed to unmarshal group_by", err.Error())
-				}
-				if groupBy[i].Format != nil {
-					fb, _ := json.Marshal(groupBy[i].Format)
-					if string(fb) == jsonNullString || len(fb) == 0 {
-						var format kbapi.KibanaHTTPAPIsFormatType
-						_ = format.FromKibanaHTTPAPIsNumericFormat(kbapi.KibanaHTTPAPIsNumericFormat{Type: kbapi.Number})
-						groupBy[i].Format = &format
-					}
-				}
-			}
-			chart.GroupBy = &groupBy
-		}
-
-		chart.Type = kbapi.KibanaHTTPAPIsPieESQLTypePie
-
-		writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
-		diags.Append(presDiags...)
-		if presDiags.HasError() {
-			return attrs, diags
-		}
-
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsPieESQL_Drilldowns_Item](
-			writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
-		)...)
-
-		if err := attrs.FromKibanaHTTPAPIsPieESQL(chart); err != nil {
-			diags.AddError("Failed to create PieESQL schema", err.Error())
-		}
-	}
-
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		lenscommon.ConfigUsesESQL(m.Query),
+		func() (kbapi.KibanaHTTPAPIsPieESQLByValuePanel, diag.Diagnostics) {
+			return pieChartConfigToAPIESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsPieESQLByValuePanel,
+		"Failed to create PieESQL schema",
+		func() (kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel, diag.Diagnostics) {
+			return pieChartConfigToAPINoESQL(m)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsPieNoESQLByValuePanel,
+		"Failed to create PieNoESQL schema",
+	)
 }

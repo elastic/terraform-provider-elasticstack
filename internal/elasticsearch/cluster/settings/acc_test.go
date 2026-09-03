@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -310,9 +311,18 @@ func TestAccResourceClusterSettingsFromSDK(t *testing.T) {
 			{
 				// Under the new PF schema (version 1) the same logical state
 				// must produce no plan diff thanks to the v0->v1 state upgrader.
+				// Use ConfigPlanChecks with ExpectEmptyPlan instead of PlanOnly
+				// so that Terraform performs an apply and persists the upgraded
+				// state. With PlanOnly the state remains at version 0, and on
+				// Terraform 1.15.8+ the post-test state cleanup fails because
+				// `terraform show -json` rejects schema version mismatches.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("from-sdk"),
-				PlanOnly:                 true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

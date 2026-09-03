@@ -29,7 +29,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -278,7 +278,7 @@ func TestRunApprovesWhenAllGatesPass(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) (*github.Client, error) {
+	newGitHubClient = func(context.Context, string) (*github.Client, error) { //nolint:unparam // signature must match the newGitHubClient var
 		u, err := url.Parse(server.URL + "/")
 		require.NoError(t, err)
 		client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))
@@ -326,7 +326,7 @@ func TestRunDoesNotApproveWhenGateFails(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) (*github.Client, error) {
+	newGitHubClient = func(context.Context, string) (*github.Client, error) { //nolint:unparam // signature must match the newGitHubClient var
 		u, err := url.Parse(server.URL + "/")
 		require.NoError(t, err)
 		client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))

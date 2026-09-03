@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -33,9 +34,13 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 	plan := req.Plan
 	oapiClient := client.GetKibanaOapiClient()
 
-	features, d := disabledFeaturesSlice(ctx, plan.DisabledFeatures)
-	if d.HasError() {
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, d
+	var diags diag.Diagnostics
+	features := typeutils.SetTypeAs[string](ctx, plan.DisabledFeatures, path.Empty(), &diags)
+	if features == nil {
+		features = []string{}
+	}
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
 	body := kbapi.PostSpacesSpaceJSONRequestBody{
@@ -51,7 +56,6 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 		body.Solution = sol
 	}
 
-	var diags diag.Diagnostics
 	_, apiDiags := kibanaoapi.CreateSpace(ctx, oapiClient, body)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
@@ -63,16 +67,6 @@ func createSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 	// resource identity needs to be set here so the read can resolve it.
 	plan.ID = plan.SpaceID
 	return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
-}
-
-func disabledFeaturesSlice(ctx context.Context, s types.Set) ([]string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if s.IsNull() || s.IsUnknown() {
-		return []string{}, diags
-	}
-	var out []string
-	diags.Append(s.ElementsAs(ctx, &out, false)...)
-	return out, diags
 }
 
 func solutionForPostBody(v types.String) *kbapi.PostSpacesSpaceJSONBodySolution {

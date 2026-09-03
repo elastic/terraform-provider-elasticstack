@@ -31,7 +31,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsGaugeNoESQLTypeGauge), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -47,10 +47,8 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
 	cfg := &models.GaugeConfigModel{
-		LensChartBaseTFModel: models.LensChartBaseTFModel{
-			Title:          types.StringValue("Gauge RT"),
-			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
-		},
+		Title:          types.StringValue("Gauge RT"),
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue(`*`),

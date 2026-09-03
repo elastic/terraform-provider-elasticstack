@@ -13,5 +13,8 @@ data "elasticstack_elasticsearch_ingest_processor_user_agent" "test" {
   description         = "parse user agent"
   if                  = "ctx.agent != null"
   tag                 = "ua-tag"
-  on_failure          = ["{\"set\":{\"field\":\"error.message\",\"value\":\"ua failed\"}}"]
+  on_failure = [
+    "{\"set\":{\"field\":\"error.message\",\"value\":\"ua failed\"}}",
+    "{\"set\":{\"field\":\"error.type\",\"value\":\"user_agent\"}}",
+  ]
 }

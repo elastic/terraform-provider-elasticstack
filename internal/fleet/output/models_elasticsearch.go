@@ -24,7 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputElasticsearch) diag.Diagnostics {
+func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseElasticsearch) diag.Diagnostics {
 	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,

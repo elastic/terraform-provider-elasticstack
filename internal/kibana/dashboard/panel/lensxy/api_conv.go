@@ -252,7 +252,7 @@ func yAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
 }
 
 func yAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -295,16 +295,18 @@ func yAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 		lenscommon.AxisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
-	domainJSON, err := json.Marshal(apiAxis.Domain)
-	if err == nil {
-		m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+	if apiAxis.Domain != nil {
+		domainJSON, err := json.Marshal(apiAxis.Domain)
+		if err == nil {
+			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+		}
 	}
 
 	return diags
 }
 
 func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -326,7 +328,7 @@ func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 
 	var diags diag.Diagnostics
 	yAxis := &struct {
-		Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
+		Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
 		Grid   *struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
@@ -367,15 +369,19 @@ func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 		yAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
-		domainDiags := m.DomainJSON.Unmarshal(&yAxis.Domain)
+		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain
+		domainDiags := m.DomainJSON.Unmarshal(&domain)
 		diags.Append(domainDiags...)
+		if !domainDiags.HasError() {
+			yAxis.Domain = &domain
+		}
 	}
 
 	return yAxis, diags
 }
 
 func yAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -418,16 +424,18 @@ func yAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 		lenscommon.AxisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
-	domainJSON, err := json.Marshal(apiAxis.Domain)
-	if err == nil {
-		m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+	if apiAxis.Domain != nil {
+		domainJSON, err := json.Marshal(apiAxis.Domain)
+		if err == nil {
+			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+		}
 	}
 
 	return diags
 }
 
 func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -449,7 +457,7 @@ func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 
 	var diags diag.Diagnostics
 	yAxis := &struct {
-		Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
+		Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
 		Grid   *struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
@@ -490,8 +498,12 @@ func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 		yAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
-		domainDiags := m.DomainJSON.Unmarshal(&yAxis.Domain)
+		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain
+		domainDiags := m.DomainJSON.Unmarshal(&domain)
 		diags.Append(domainDiags...)
+		if !domainDiags.HasError() {
+			yAxis.Domain = &domain
+		}
 	}
 
 	return yAxis, diags
@@ -717,8 +729,8 @@ func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend *kb
 		legendOutsideVertical.Placement != nil &&
 		*legendOutsideVertical.Placement == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPlacementOutside &&
 		(legendOutsideVertical.Position == nil ||
-			*legendOutsideVertical.Position == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPositionLeft ||
-			*legendOutsideVertical.Position == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPositionRight) &&
+			*legendOutsideVertical.Position == kbapi.Left ||
+			*legendOutsideVertical.Position == kbapi.Right) &&
 		legendOutsideVertical.Size != nil {
 		m.Inside = types.BoolValue(false)
 		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)
@@ -1041,15 +1053,15 @@ func xyChartConfigStylingToAPI(m *models.XYChartConfigModel) *kbapi.KibanaHTTPAP
 	return s
 }
 
-func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQL, diag.Diagnostics) {
+func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	chart := kbapi.KibanaHTTPAPIsXyChartNoESQL{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy}
+	chart := kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy}
 
 	if typeutils.IsKnown(m.Title) {
-		chart.Title = new(m.Title.ValueString())
+		chart.Title = m.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(m.Description) {
-		chart.Description = new(m.Description.ValueString())
+		chart.Description = m.Description.ValueStringPointer()
 	}
 
 	if m.Axis != nil {
@@ -1094,7 +1106,7 @@ func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 		return chart, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel_Drilldowns_Item](
 		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
 	)...)
 
@@ -1102,15 +1114,15 @@ func xyChartConfigToAPINoESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPI
 }
 
 // toAPIESQL converts the XY chart config model to an ES|QL API payload.
-func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartESQL, diag.Diagnostics) {
+func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	chart := kbapi.KibanaHTTPAPIsXyChartESQL{Type: kbapi.KibanaHTTPAPIsXyChartESQLTypeXy}
+	chart := kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsXyChartESQLByValuePanelTypeXy}
 
 	if typeutils.IsKnown(m.Title) {
-		chart.Title = new(m.Title.ValueString())
+		chart.Title = m.Title.ValueStringPointer()
 	}
 	if typeutils.IsKnown(m.Description) {
-		chart.Description = new(m.Description.ValueString())
+		chart.Description = m.Description.ValueStringPointer()
 	}
 
 	if m.Axis != nil {
@@ -1151,7 +1163,7 @@ func xyChartConfigToAPIESQL(m *models.XYChartConfigModel) (kbapi.KibanaHTTPAPIsX
 		return chart, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQL_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel_Drilldowns_Item](
 		writes, &chart.TimeRange, &chart.HideTitle, &chart.HideBorder, &chart.References, &chart.Drilldowns,
 	)...)
 
@@ -1162,7 +1174,7 @@ func xyChartConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
 	prior *models.XYChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsXyChartNoESQL,
+	apiChart kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1232,7 +1244,7 @@ func xyChartConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.XYChartConfigModel,
 	prior *models.XYChartConfigModel,
-	apiChart kbapi.KibanaHTTPAPIsXyChartESQL,
+	apiChart kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1306,7 +1318,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConf
 		if diags.HasError() {
 			return attrs, diags
 		}
-		if err := attrs.FromKibanaHTTPAPIsXyChartESQL(chart); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsXyChartESQLByValuePanel(chart); err != nil {
 			diags.AddError("Failed to convert XY chart ES|QL config", err.Error())
 			return attrs, diags
 		}
@@ -1318,7 +1330,7 @@ func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConf
 	if diags.HasError() {
 		return attrs, diags
 	}
-	if err := attrs.FromKibanaHTTPAPIsXyChartNoESQL(chart); err != nil {
+	if err := attrs.FromKibanaHTTPAPIsXyChartNoESQLByValuePanel(chart); err != nil {
 		diags.AddError("Failed to convert XY chart non-ES|QL config", err.Error())
 		return attrs, diags
 	}

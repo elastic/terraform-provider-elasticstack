@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 )
 
 const (
@@ -113,6 +113,9 @@ func matchedCategory(pr *github.PullRequest) string {
 	if author == "dependabot[bot]" {
 		return "dependabot"
 	}
+	if author == "elastic-renovate-prod[bot]" {
+		return "renovate"
+	}
 	return ""
 }
 
@@ -120,7 +123,7 @@ func evaluateCategoryGates(category string, input EvaluationInput) []string {
 	switch category {
 	case "copilot":
 		return evaluateCopilotCategory(input)
-	case "dependabot":
+	case "dependabot", "renovate":
 		return nil
 	default:
 		return []string{fmt.Sprintf("unknown auto-approve category %q", category)}

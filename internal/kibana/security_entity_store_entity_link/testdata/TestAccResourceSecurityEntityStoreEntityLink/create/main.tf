@@ -2,13 +2,25 @@ provider "elasticstack" {
   kibana {}
 }
 
+variable "space_id" {
+  type = string
+}
+
+resource "elasticstack_kibana_space" "test" {
+  space_id    = var.space_id
+  name        = "acc-entity-store-${var.space_id}"
+  description = "Kibana space for entity store acceptance test"
+}
+
 resource "elasticstack_kibana_security_entity_store" "store" {
+  space_id     = elasticstack_kibana_space.test.space_id
   entity_types = ["generic"]
 }
 
 resource "elasticstack_kibana_security_entity_store_entity" "target" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
+  space_id    = elasticstack_kibana_space.test.space_id
   entity_type = "generic"
   entity_id   = "generic:acc-test-target"
 
@@ -23,6 +35,7 @@ resource "elasticstack_kibana_security_entity_store_entity" "target" {
 resource "elasticstack_kibana_security_entity_store_entity" "alias1" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
+  space_id    = elasticstack_kibana_space.test.space_id
   entity_type = "generic"
   entity_id   = "generic:acc-test-alias1"
 
@@ -37,6 +50,7 @@ resource "elasticstack_kibana_security_entity_store_entity" "alias1" {
 resource "elasticstack_kibana_security_entity_store_entity" "alias2" {
   depends_on = [elasticstack_kibana_security_entity_store.store]
 
+  space_id    = elasticstack_kibana_space.test.space_id
   entity_type = "generic"
   entity_id   = "generic:acc-test-alias2"
 
@@ -55,6 +69,7 @@ resource "elasticstack_kibana_security_entity_store_entity_link" "test" {
     elasticstack_kibana_security_entity_store_entity.alias2,
   ]
 
+  space_id   = elasticstack_kibana_space.test.space_id
   target_id  = "generic:acc-test-target"
   entity_ids = ["generic:acc-test-alias1", "generic:acc-test-alias2"]
 }

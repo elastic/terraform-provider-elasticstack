@@ -20,34 +20,31 @@ package agentbuilderworkflow
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[workflowModel]) (entitycore.KibanaWriteResult[workflowModel], diag.Diagnostics) {
-	plan := req.Plan
+var updateWorkflow = entitycore.SimpleKibanaUpdate[workflowModel, kbapi.PutWorkflowsWorkflowIdJSONRequestBody, kibanaoapi.PartialWorkflow](
+	func(plan workflowModel, _ context.Context, _ string) (kbapi.PutWorkflowsWorkflowIdJSONRequestBody, diag.Diagnostics) {
+		return plan.toAPIUpdateModel(), nil
+	},
+	kibanaoapi.UpdateWorkflow,
+	(*workflowModel).populateWrittenUpdate,
+)
+
+// populateWrittenUpdate sets SpaceID explicitly so the returned model
+// carries the resolved space for the envelope's read-after-write step.
+func (model *workflowModel) populateWrittenUpdate(_ context.Context, spaceID string, updated *kibanaoapi.PartialWorkflow) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	body := plan.toAPIUpdateModel()
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	updated, d := kibanaoapi.UpdateWorkflow(ctx, oapiClient, req.SpaceID, req.WriteID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[workflowModel]{}, diags
-	}
-
-	// SpaceID is set explicitly so the returned model carries the resolved
-	// space for the envelope's read-after-write step.
-	plan.SpaceID = types.StringValue(req.SpaceID)
+	model.SpaceID = types.StringValue(spaceID)
 
 	if updated != nil && !updated.Valid {
 		diags.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
 	}
 
-	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
+	return diags
 }

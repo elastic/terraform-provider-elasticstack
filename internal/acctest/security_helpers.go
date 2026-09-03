@@ -89,7 +89,7 @@ func CleanupEntityStore(t *testing.T, spaceID string) {
 			t.Logf("CleanupEntityStore: transient error decoding status, retrying: %v", err)
 			return false, nil
 		}
-		return status.Status == string(kbapi.SecurityEntityAnalyticsAPIStoreStatusNotInstalled), nil
+		return status.Status == "not_installed", nil
 	}
 
 	if err := asyncutils.WaitForStateTransition(ctx, "security entity store", spaceID, checker, asyncutils.WithPollInterval(5*time.Second)); err != nil {

@@ -44,32 +44,10 @@ func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if typeutils.IsKnown(m.Field) {
-		elems := make([]string, 0, len(m.Field.Elements()))
-		for _, elem := range m.Field.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid field element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown field element", "field elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Field = elems
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.Field = typeutils.StringElements(m.Field, &diags)
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -77,14 +55,6 @@ func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorRemoveDataSource returns a PF data source for the remove processor.
 func NewProcessorRemoveDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.SetAttribute{
 			Description: "Fields to be removed.",
 			Required:    true,

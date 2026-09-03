@@ -49,114 +49,62 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&embeddable.Title, &embeddable.Description, &embeddable.HideTitle, &embeddable.HideBorder)
 
+	var diags diag.Diagnostics
 	if len(cfg.Drilldowns) > 0 {
-		drilldowns := make([]struct {
-			EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-			Label        string                                                     `json:"label"`
-			OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-			Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-			Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-			Url          string                                                     `json:"url"` //nolint:revive
-		}, len(cfg.Drilldowns))
-
-		for i, d := range cfg.Drilldowns {
-			drilldowns[i].Url = d.URL.ValueString()
-			drilldowns[i].Label = d.Label.ValueString()
-			drilldowns[i].Trigger = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu
-			drilldowns[i].Type = kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown
-			if typeutils.IsKnown(d.EncodeURL) {
-				drilldowns[i].EncodeUrl = d.EncodeURL.ValueBoolPointer()
-			}
-			if typeutils.IsKnown(d.OpenInNewTab) {
-				drilldowns[i].OpenInNewTab = d.OpenInNewTab.ValueBoolPointer()
-			}
-		}
-		embeddable.Drilldowns = &drilldowns
+		diags.Append(panelkit.InjectDrilldownsJSON(&embeddable, cfg.Drilldowns)...)
 	}
 
 	panel.Config = embeddable
+	return diags
+}
+
+// PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while
+// preserving prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with SloBurnRateConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.SloBurnRateConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
+func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) diag.Diagnostics {
+	if prior == nil || prior.SloBurnRateConfig == nil {
+		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
+		return nil
+	}
+
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := sloBurnRateConfigFromAPIImport(apiConfig)
+	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, prior.SloBurnRateConfig.Drilldowns)
+	// sloBurnRateConfigFromAPIImport computes slo_instance_id assuming there is no prior value to
+	// consult (creation/import). On an update there is a prior value, so recompute it using that
+	// knowledge instead: this is the only way a practitioner who explicitly set slo_instance_id =
+	// "*" sees it round-trip as "*" rather than be silently nulled.
+	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, true, prior.SloBurnRateConfig.SloInstanceID)
+	sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
+	pm.SloBurnRateConfig = existing
 	return nil
 }
 
-// PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while preserving prior null intent.
-func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) diag.Diagnostics {
-	// On import (prior == nil) populate from API unconditionally.
-	if prior == nil {
-		cfg := &models.SloBurnRateConfigModel{
-			SloID:    types.StringValue(apiConfig.SloId),
-			Duration: types.StringValue(apiConfig.Duration),
-		}
-		// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
-		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-		} else {
-			cfg.SloInstanceID = types.StringNull()
-		}
-		cfg.Title = types.StringPointerValue(apiConfig.Title)
-		cfg.Description = types.StringPointerValue(apiConfig.Description)
-		cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-		cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
-		cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
-		pm.SloBurnRateConfig = cfg
-		return nil
+func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) *models.SloBurnRateConfigModel {
+	cfg := &models.SloBurnRateConfigModel{
+		SloID:    types.StringValue(apiConfig.SloId),
+		Duration: types.StringValue(apiConfig.Duration),
 	}
-
-	if pm.SloBurnRateConfig == nil && prior.SloBurnRateConfig != nil {
-		cfg := &models.SloBurnRateConfigModel{
-			SloID:    types.StringValue(apiConfig.SloId),
-			Duration: types.StringValue(apiConfig.Duration),
-		}
-		if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-			cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-		} else {
-			cfg.SloInstanceID = types.StringNull()
-		}
-		cfg.Title = types.StringPointerValue(apiConfig.Title)
-		cfg.Description = types.StringPointerValue(apiConfig.Description)
-		cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
-		cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
-		cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
-		pm.SloBurnRateConfig = cfg
-	}
-
-	existing := pm.SloBurnRateConfig
-	if existing == nil {
-		return nil
-	}
-
-	// Block exists in state — update required fields always, optional fields using null-preservation.
-	existing.SloID = types.StringValue(apiConfig.SloId)
-	existing.Duration = types.StringValue(apiConfig.Duration)
-
-	// slo_instance_id null-preservation: if state is null (practitioner omitted it), keep null
-	// regardless of what the API returns — the API echoes "*" for all-instances which has no
-	// meaningful TF representation.
-	existing.SloInstanceID = panelkit.PreserveString(existing.SloInstanceID, apiConfig.SloInstanceId)
-
-	// Optional fields: only update from API when they were already known in state.
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
-
-	var priorDrilldowns []models.URLDrilldownModel
-	if prior != nil && prior.SloBurnRateConfig != nil {
-		priorDrilldowns = prior.SloBurnRateConfig.Drilldowns
-	}
-	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
-
-	if prior != nil && prior.SloBurnRateConfig != nil {
-		sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
-	}
-
-	return nil
+	cfg.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, false, types.StringNull())
+	cfg.Title = types.StringPointerValue(apiConfig.Title)
+	cfg.Description = types.StringPointerValue(apiConfig.Description)
+	cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+	cfg.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+	cfg.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, nil)
+	return cfg
 }
 
 func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateConfigModel) {
 	if prior == nil || existing == nil {
 		return
 	}
-	if !typeutils.IsKnown(prior.SloInstanceID) {
-		existing.SloInstanceID = types.StringNull()
-	}
+	// SloInstanceID's null intent is already applied by panelkit.PreserveSloInstanceID above.
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
@@ -164,54 +112,26 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	}
 }
 
+type sloBurnRateAPIDrilldown = struct {
+	EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                     `json:"label"`
+	OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                     `json:"url"` //nolint:revive
+}
+
 func readSloBurnRateDrilldownsFromAPI(
-	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                     `json:"label"`
-		OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                                     `json:"url"` //nolint:revive
-	},
+	apiDrilldowns *[]sloBurnRateAPIDrilldown,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
-	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
-		return nil
-	}
-
-	result := make([]models.URLDrilldownModel, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(d.Url),
-			Label: types.StringValue(d.Label),
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloBurnRateAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
-
-		// Determine prior state for this drilldown (if it exists at this index).
-		var prior *models.URLDrilldownModel
-		if i < len(priorDrilldowns) {
-			prior = &priorDrilldowns[i]
-		}
-
-		// encode_url: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.EncodeURL.IsNull():
-			result[i].EncodeURL = types.BoolNull()
-		case d.EncodeUrl != nil:
-			result[i].EncodeURL = types.BoolValue(*d.EncodeUrl)
-		default:
-			result[i].EncodeURL = types.BoolNull()
-		}
-
-		// open_in_new_tab: null-preserve if prior was null, otherwise populate from API.
-		switch {
-		case prior != nil && prior.OpenInNewTab.IsNull():
-			result[i].OpenInNewTab = types.BoolNull()
-		case d.OpenInNewTab != nil:
-			result[i].OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-		default:
-			result[i].OpenInNewTab = types.BoolNull()
-		}
-	}
-
-	return result
+	})
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }

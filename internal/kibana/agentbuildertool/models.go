@@ -88,7 +88,7 @@ type toolDataSourceModel struct {
 
 var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
-func (model *toolBaseModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+func (model *toolBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -96,10 +96,7 @@ func (model *toolBaseModel) populateFromAPI(ctx context.Context, data *models.To
 	var diags diag.Diagnostics
 	var d diag.Diagnostics
 
-	spaceID := model.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
 	model.ToolID = types.StringValue(data.ID)
@@ -121,12 +118,12 @@ func (model *toolBaseModel) populateFromAPI(ctx context.Context, data *models.To
 	return diags
 }
 
-func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, data *models.Tool) diag.Diagnostics {
+func (model *toolDataSourceModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
 
-	diags := model.toolBaseModel.populateFromAPI(ctx, data)
+	diags := model.toolBaseModel.populateFromAPI(ctx, spaceID, data)
 	model.ReadOnly = types.BoolValue(data.ReadOnly)
 	return diags
 }
@@ -179,8 +176,7 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 		body.Description = &desc
 	}
 
-	tags, d := optionalTagsFromSet(ctx, model.Tags)
-	diags.Append(d...)
+	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 	if len(tags) > 0 {
 		body.Tags = &tags
 	}
@@ -207,20 +203,10 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		body.Description = &desc
 	}
 
-	tags, d := optionalTagsFromSet(ctx, model.Tags)
-	diags.Append(d...)
+	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 	if len(tags) > 0 {
 		body.Tags = &tags
 	}
 
 	return body, diags
-}
-
-func optionalTagsFromSet(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return nil, nil
-	}
-	var diags diag.Diagnostics
-	tags := typeutils.SetTypeAs[string](ctx, set, path.Empty(), &diags)
-	return tags, diags
 }

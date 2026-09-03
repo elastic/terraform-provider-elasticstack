@@ -116,3 +116,25 @@ func NonEmptyStringOrNull(s *string) types.String {
 	}
 	return types.StringNull()
 }
+
+// BoolDefault resolves value to its known bool. When value is null or unknown,
+// it writes types.BoolValue(def) back into *value (so plan/state stay consistent)
+// and returns def; otherwise it returns value.ValueBool() unchanged.
+func BoolDefault(value *types.Bool, def bool) bool {
+	if value.IsNull() || value.IsUnknown() {
+		*value = types.BoolValue(def)
+		return def
+	}
+	return value.ValueBool()
+}
+
+// StringDefault resolves value to its known string. When value is null or unknown,
+// it writes types.StringValue(def) back into *value (so plan/state stay consistent)
+// and returns def; otherwise it returns value.ValueString() unchanged.
+func StringDefault(value *types.String, def string) string {
+	if value.IsNull() || value.IsUnknown() {
+		*value = types.StringValue(def)
+		return def
+	}
+	return value.ValueString()
+}

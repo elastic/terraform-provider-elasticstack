@@ -209,7 +209,7 @@ func elasticsearchConnectionFromSnapshot(snapshot *ephemeralESConnectionSnapshot
 	}
 
 	if len(snapshot.Endpoints) > 0 {
-		conn.Endpoints = typeutils.StringsToList(snapshot.Endpoints)
+		conn.Endpoints = typeutils.StringsToListMust(snapshot.Endpoints)
 	} else {
 		conn.Endpoints = types.ListNull(types.StringType)
 	}
@@ -290,13 +290,13 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) c
 	}
 
 	if len(snapshot.Endpoints) > 0 {
-		conn.Endpoints = typeutils.StringsToList(snapshot.Endpoints)
+		conn.Endpoints = typeutils.StringsToListMust(snapshot.Endpoints)
 	} else {
 		conn.Endpoints = types.ListNull(types.StringType)
 	}
 
 	if len(snapshot.CACerts) > 0 {
-		conn.CACerts = typeutils.StringsToList(snapshot.CACerts)
+		conn.CACerts = typeutils.StringsToListMust(snapshot.CACerts)
 	} else {
 		conn.CACerts = types.ListNull(types.StringType)
 	}

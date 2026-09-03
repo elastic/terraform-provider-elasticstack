@@ -119,29 +119,19 @@ func (k *KibanaScopedClient) getServerStatusRaw(ctx context.Context) (rawVersion
 // or equal to minVersion, or when the server is running in serverless mode.
 // If minVersion is nil, no minimum is enforced and the method returns true.
 func (k *KibanaScopedClient) EnforceMinVersion(ctx context.Context, minVersion *version.Version) (bool, fwdiag.Diagnostics) {
-	if minVersion == nil {
-		return true, nil
-	}
-
-	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	return applyVersionConstraint(flavor, rawVersion, func(sv *version.Version) bool {
-		return sv.GreaterThanOrEqual(minVersion)
-	})
+	return enforceMinVersion(ctx, minVersion, k.fetchVersion)
 }
 
 // EnforceVersionCheck returns true when the given version check function
 // returns true, or when the server is running in serverless mode.
 func (k *KibanaScopedClient) EnforceVersionCheck(ctx context.Context, check func(*version.Version) bool) (bool, fwdiag.Diagnostics) {
-	rawVersion, flavor, diags := k.getServerStatusRaw(ctx)
-	if diags.HasError() {
-		return false, diags
-	}
+	return enforceVersionCheck(ctx, check, k.fetchVersion)
+}
 
-	return applyVersionConstraint(flavor, rawVersion, check)
+// fetchVersion adapts getServerStatusRaw into the versionFetcher signature
+// expected by the shared enforceMinVersion and enforceVersionCheck helpers.
+func (k *KibanaScopedClient) fetchVersion(ctx context.Context) (rawVersion, flavor string, diags fwdiag.Diagnostics) {
+	return k.getServerStatusRaw(ctx)
 }
 
 // kibanaScopedClientFromAPIClient constructs a KibanaScopedClient from the

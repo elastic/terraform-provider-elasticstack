@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
@@ -60,11 +61,6 @@ func agentFeaturesFromPolicy(p *kbapi.KibanaHTTPAPIsAgentPolicyResponse) []apiAg
 	return out
 }
 
-type globalDataTagsItemModel struct {
-	StringValue types.String  `tfsdk:"string_value"`
-	NumberValue types.Float32 `tfsdk:"number_value"`
-}
-
 type agentPolicyModel struct {
 	ID                        types.String         `tfsdk:"id"`
 	KibanaConnection          types.List           `tfsdk:"kibana_connection"`
@@ -85,7 +81,7 @@ type agentPolicyModel struct {
 	SupportsAgentless         types.Bool           `tfsdk:"supports_agentless"`
 	InactivityTimeout         customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout       customtypes.Duration `tfsdk:"unenrollment_timeout"`
-	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globalDataTagsModel
+	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globaldatatags.Item
 	SpaceIDs                  types.Set            `tfsdk:"space_ids"`
 	RequiredVersions          types.Map            `tfsdk:"required_versions"`
 	AdvancedMonitoringOptions types.Object         `tfsdk:"advanced_monitoring_options"`
@@ -183,40 +179,32 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	}
 	if typeutils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
-		var map0 = make(map[string]globalDataTagsItemModel)
-		for _, v := range typeutils.Deref(data.GlobalDataTags) {
-			maybeFloat, err := v.Value.AsAgentPolicyGlobalDataTagsItemValue1()
+		tags := typeutils.Deref(data.GlobalDataTags)
+		map0 := make(map[string]globaldatatags.Item, len(tags))
+		for _, v := range tags {
+			item, err := globaldatatags.Flatten(v.Value,
+				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue1,
+				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue0,
+			)
 			if err != nil {
-				maybeString, err := v.Value.AsAgentPolicyGlobalDataTagsItemValue0()
-				if err != nil {
-					diags.AddError("Failed to unmarshal global data tags", err.Error())
-				}
-				map0[v.Name] = globalDataTagsItemModel{
-					StringValue: types.StringValue(maybeString),
-				}
-			} else {
-				map0[v.Name] = globalDataTagsItemModel{
-					NumberValue: types.Float32Value(float32(maybeFloat)),
-				}
+				diags.AddError("Failed to unmarshal global data tags", err.Error())
+				continue
 			}
+			map0[v.Name] = item
 		}
 
-		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, getGlobalDataTagsAttrTypes().(attr.TypeWithElementType).ElementType(), path.Root("global_data_tags"), &diags)
+		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, globaldatatags.ElementType(), path.Root("global_data_tags"), &diags)
 		if diags.HasError() {
 			return diags
 		}
 
 	}
 
-	if data.SpaceIds != nil && len(*data.SpaceIds) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
-		if d.HasError() {
-			return d
-		}
-		model.SpaceIDs = spaceIDs
-	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
+	if d.HasError() {
+		return d
 	}
+	model.SpaceIDs = spaceIDs
 
 	// Handle required_versions
 	if data.RequiredVersions != nil {
@@ -250,8 +238,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	return nil
 }
 
-// convertGlobalDataTags converts the global data tags from terraform model to API model
-// and performs version validation
+// convertGlobalDataTags converts the global data tags from the Terraform model
+// to the API model after version requirements have been enforced.
 func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat agentPolicyFeatures) (*[]kbapi.AgentPolicyGlobalDataTagsItem, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -264,31 +252,21 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat a
 	}
 
 	if !feat.SupportsGlobalDataTags {
-		diags.AddError("global_data_tags ES version error", fmt.Sprintf("Global data tags are only supported in Elastic Stack %s and above", MinVersionGlobalDataTags))
 		return nil, diags
 	}
 
 	items := typeutils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
-		func(item globalDataTagsItemModel, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-			var value kbapi.AgentPolicyGlobalDataTagsItem_Value
-			var err error
-			switch {
-			case !item.StringValue.IsNull() && !item.StringValue.IsUnknown():
-				err = value.FromAgentPolicyGlobalDataTagsItemValue0(item.StringValue.ValueString())
-			case !item.NumberValue.IsNull() && !item.NumberValue.IsUnknown():
-				err = value.FromAgentPolicyGlobalDataTagsItemValue1(item.NumberValue.ValueFloat32())
-			default:
-				diags.AddAttributeError(
-					meta.Path,
-					"Invalid global_data_tags entry",
-					"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
-				)
-				return kbapi.AgentPolicyGlobalDataTagsItem{}
-			}
-			if err != nil {
-				diags.AddError("global_data_tags validation_error_converting_values", err.Error())
-				return kbapi.AgentPolicyGlobalDataTagsItem{}
-			}
+		func(item globaldatatags.Item, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
+			value := globaldatatags.Expand(item, meta,
+				func(s string) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
+					var v kbapi.AgentPolicyGlobalDataTagsItem_Value
+					return v, v.FromAgentPolicyGlobalDataTagsItemValue0(s)
+				},
+				func(n float32) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
+					var v kbapi.AgentPolicyGlobalDataTagsItem_Value
+					return v, v.FromAgentPolicyGlobalDataTagsItemValue1(n)
+				},
+			)
 			return kbapi.AgentPolicyGlobalDataTagsItem{
 				Name:  meta.Key,
 				Value: value,
@@ -318,15 +296,10 @@ func (model *agentPolicyModel) convertRequiredVersions(feat agentPolicyFeatures)
 		return nil, diags
 	}
 
-	// Check if required_versions is supported
+	// Omit the field when the connected API does not support it. A configured
+	// value has already been rejected by GetVersionRequirements.
 	if !feat.SupportsRequiredVersions {
-		return nil, diag.Diagnostics{
-			diag.NewAttributeErrorDiagnostic(
-				path.Root("required_versions"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Required versions (automatic agent upgrades) are only supported in Elastic Stack %s and above", MinVersionRequiredVersions),
-			),
-		}
+		return nil, diags
 	}
 
 	elements := model.RequiredVersions.Elements()
@@ -395,95 +368,21 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if typeutils.IsKnown(model.IsProtected) {
-		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("is_protected"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
-				),
-			}
-		}
-		if feat.SupportsTamperProtection {
-			v := model.IsProtected.ValueBool()
-			body.IsProtected = &v
-		}
+	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	if diags.HasError() {
+		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
-
-	if typeutils.IsKnown(model.SupportsAgentless) {
-		if !feat.SupportsSupportsAgentless {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("supports_agentless"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-				),
-			}
-		}
-		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
-	}
-
-	if typeutils.IsKnown(model.InactivityTimeout) {
-		if !feat.SupportsInactivityTimeout {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("inactivity_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-				),
-			}
-		}
-		duration, diags := model.InactivityTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.InactivityTimeout = &seconds
-	}
-
-	if typeutils.IsKnown(model.UnenrollmentTimeout) {
-		if !feat.SupportsUnenrollmentTimeout {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("unenrollment_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
-				),
-			}
-		}
-		duration, diags := model.UnenrollmentTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.UnenrollTimeout = &seconds
-	}
+	body.IsProtected = gated.isProtected
+	body.SupportsAgentless = gated.supportsAgentless
+	body.InactivityTimeout = gated.inactivityTimeout
+	body.UnenrollTimeout = gated.unenrollTimeout
+	body.SpaceIds = gated.spaceIDs
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
 	body.GlobalDataTags = tags
-
-	if typeutils.IsKnown(model.SpaceIDs) {
-		if !feat.SupportsSpaceIDs {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("space_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
-				),
-			}
-		}
-		var spaceIDs []string
-		d := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		body.SpaceIds = &spaceIDs
-	}
 
 	// Handle required_versions
 	requiredVersions, d := model.convertRequiredVersions(feat)
@@ -494,35 +393,13 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 
 	// Handle host_name_format via AgentFeatures
 	if agentFeature := model.convertHostNameFormatToAgentFeature(); agentFeature != nil {
-		if !feat.SupportsAgentFeatures {
-			// Only error if user explicitly requests FQDN on unsupported version
-			// Default "hostname" is fine - just don't send agent_features
-			if agentFeature.Enabled {
-				return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-					diag.NewAttributeErrorDiagnostic(
-						path.Root("host_name_format"),
-						"Unsupported Elasticsearch version",
-						fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
-					),
-				}
-			}
-			// On unsupported version with default "hostname", don't send agent_features
-		} else {
+		if feat.SupportsAgentFeatures {
 			body.AgentFeatures = &[]apiAgentFeature{*agentFeature}
 		}
 	}
 
 	// Handle advanced_settings
-	if typeutils.IsKnown(model.AdvancedSettings) {
-		if !feat.SupportsAdvancedSettings {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_settings"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
-				),
-			}
-		}
+	if typeutils.IsKnown(model.AdvancedSettings) && feat.SupportsAdvancedSettings {
 		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
 		if diags.HasError() {
 			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
@@ -531,17 +408,7 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 	}
 
 	// Handle advanced monitoring options
-	if typeutils.IsKnown(model.AdvancedMonitoringOptions) {
-		if !feat.SupportsAdvancedMonitoring {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_monitoring_options"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
-				),
-			}
-		}
-
+	if typeutils.IsKnown(model.AdvancedMonitoringOptions) && feat.SupportsAdvancedMonitoring {
 		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
 		body.MonitoringHttp = monitoringHTTP
 		body.MonitoringPprofEnabled = pprofEnabled
@@ -556,12 +423,12 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	feat agentPolicyFeatures,
 	existingFeatures []apiAgentFeature,
 ) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
-	monitoring := make([]kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabled, 0, 2)
+	monitoring := make([]kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabled, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledLogs)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledLogs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledMetrics)
 	}
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
@@ -575,94 +442,43 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	if typeutils.IsKnown(model.IsProtected) {
-		if model.IsProtected.ValueBool() && !feat.SupportsTamperProtection {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("is_protected"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Tamper protection (`is_protected`) is only supported in Elastic Stack %s and above", MinVersionTamperProtection),
-				),
-			}
-		}
-		if feat.SupportsTamperProtection {
-			v := model.IsProtected.ValueBool()
-			body.IsProtected = &v
-		}
+	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	if diags.HasError() {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
-
-	if typeutils.IsKnown(model.SupportsAgentless) {
-		if !feat.SupportsSupportsAgentless {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("supports_agentless"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Supports agentless is only supported in Elastic Stack %s and above", MinSupportsAgentlessVersion),
-				),
-			}
-		}
-		body.SupportsAgentless = model.SupportsAgentless.ValueBoolPointer()
-	}
-
-	if typeutils.IsKnown(model.InactivityTimeout) {
-		if !feat.SupportsInactivityTimeout {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("inactivity_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Inactivity timeout is only supported in Elastic Stack %s and above", MinVersionInactivityTimeout),
-				),
-			}
-		}
-		duration, diags := model.InactivityTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.InactivityTimeout = &seconds
-	}
-
-	if typeutils.IsKnown(model.UnenrollmentTimeout) {
-		if !feat.SupportsUnenrollmentTimeout {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("unenrollment_timeout"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Unenrollment timeout is only supported in Elastic Stack %s and above", MinVersionUnenrollmentTimeout),
-				),
-			}
-		}
-		duration, diags := model.UnenrollmentTimeout.Parse()
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		seconds := float32(duration.Seconds())
-		body.UnenrollTimeout = &seconds
-	}
+	body.IsProtected = gated.isProtected
+	body.SupportsAgentless = gated.supportsAgentless
+	body.InactivityTimeout = gated.inactivityTimeout
+	body.UnenrollTimeout = gated.unenrollTimeout
+	body.SpaceIds = gated.spaceIDs
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
-	body.GlobalDataTags = tags
-
-	if typeutils.IsKnown(model.SpaceIDs) {
-		if !feat.SupportsSpaceIDs {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("space_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Space IDs are only supported in Elastic Stack %s and above", MinVersionSpaceIDs),
-				),
+	if tags != nil {
+		updateTags := make([]struct {
+			Name  string                                                                `json:"name"`
+			Value kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBody_GlobalDataTags_Value `json:"value"`
+		}, len(*tags))
+		for i, tag := range *tags {
+			updateTags[i].Name = tag.Name
+			if value, err := tag.Value.AsAgentPolicyGlobalDataTagsItemValue0(); err == nil {
+				if err := updateTags[i].Value.FromKibanaHTTPAPIsUpdateAgentPolicyRequestBodyGlobalDataTagsValue0(value); err != nil {
+					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+				}
+			} else if value, err := tag.Value.AsAgentPolicyGlobalDataTagsItemValue1(); err == nil {
+				if err := updateTags[i].Value.FromKibanaHTTPAPIsUpdateAgentPolicyRequestBodyGlobalDataTagsValue1(value); err != nil {
+					diags.AddError("global_data_tags validation_error_converting_values", err.Error())
+				}
+			} else {
+				diags.AddError("global_data_tags validation_error_converting_values", "unsupported global data tag value")
 			}
 		}
-		var spaceIDs []string
-		d := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
-		diags.Append(d...)
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		body.SpaceIds = &spaceIDs
+		body.GlobalDataTags = &updateTags
+	}
+	if diags.HasError() {
+		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
 
 	// Handle required_versions
@@ -674,20 +490,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 
 	// Handle host_name_format via AgentFeatures, preserving other existing features
 	if agentFeature := model.convertHostNameFormatToAgentFeature(); agentFeature != nil {
-		if !feat.SupportsAgentFeatures {
-			// Only error if user explicitly requests FQDN on unsupported version
-			// Default "hostname" is fine - just don't send agent_features
-			if agentFeature.Enabled {
-				return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-					diag.NewAttributeErrorDiagnostic(
-						path.Root("host_name_format"),
-						"Unsupported Elasticsearch version",
-						fmt.Sprintf("host_name_format (agent_features) is only supported in Elastic Stack %s and above", MinVersionAgentFeatures),
-					),
-				}
-			}
-			// On unsupported version with default "hostname", don't send agent_features
-		} else {
+		if feat.SupportsAgentFeatures {
 			body.AgentFeatures = mergeAgentFeature(existingFeatures, agentFeature)
 		}
 	} else if feat.SupportsAgentFeatures && len(existingFeatures) > 0 {
@@ -696,16 +499,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	}
 
 	// Handle advanced_settings
-	if typeutils.IsKnown(model.AdvancedSettings) {
-		if !feat.SupportsAdvancedSettings {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_settings"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced settings are only supported in Elastic Stack %s and above", MinVersionAdvancedSettings),
-				),
-			}
-		}
+	if typeutils.IsKnown(model.AdvancedSettings) && feat.SupportsAdvancedSettings {
 		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
 		if diags.HasError() {
 			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
@@ -714,17 +508,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	}
 
 	// Handle advanced monitoring options
-	if typeutils.IsKnown(model.AdvancedMonitoringOptions) {
-		if !feat.SupportsAdvancedMonitoring {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("advanced_monitoring_options"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Advanced monitoring options are only supported in Elastic Stack %s and above", MinVersionAdvancedMonitoring),
-				),
-			}
-		}
-
+	if typeutils.IsKnown(model.AdvancedMonitoringOptions) && feat.SupportsAdvancedMonitoring {
 		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
 		body.MonitoringHttp = monitoringHTTP
 		body.MonitoringPprofEnabled = pprofEnabled
@@ -732,6 +516,74 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	}
 
 	return body, nil
+}
+
+// featureGatedFields holds values for attributes gated behind minimum-version
+// feature flags. Nil means the attribute was not set or is unavailable.
+type featureGatedFields struct {
+	isProtected       *bool
+	supportsAgentless *bool
+	inactivityTimeout *float32
+	unenrollTimeout   *float32
+	spaceIDs          *[]string
+}
+
+// computeFeatureGatedFields shapes version-gated attributes after
+// GetVersionRequirements has rejected unsupported configured values.
+func (model *agentPolicyModel) computeFeatureGatedFields(ctx context.Context, feat agentPolicyFeatures) (featureGatedFields, diag.Diagnostics) {
+	var f featureGatedFields
+
+	if typeutils.IsKnown(model.IsProtected) {
+		if feat.SupportsTamperProtection {
+			v := model.IsProtected.ValueBool()
+			f.isProtected = &v
+		}
+	}
+
+	if typeutils.IsKnown(model.SupportsAgentless) {
+		if !feat.SupportsSupportsAgentless {
+			return f, nil
+		}
+		f.supportsAgentless = model.SupportsAgentless.ValueBoolPointer()
+	}
+
+	if typeutils.IsKnown(model.InactivityTimeout) {
+		if !feat.SupportsInactivityTimeout {
+			return f, nil
+		}
+		duration, diags := model.InactivityTimeout.Parse()
+		if diags.HasError() {
+			return f, diags
+		}
+		seconds := float32(duration.Seconds())
+		f.inactivityTimeout = &seconds
+	}
+
+	if typeutils.IsKnown(model.UnenrollmentTimeout) {
+		if !feat.SupportsUnenrollmentTimeout {
+			return f, nil
+		}
+		duration, diags := model.UnenrollmentTimeout.Parse()
+		if diags.HasError() {
+			return f, diags
+		}
+		seconds := float32(duration.Seconds())
+		f.unenrollTimeout = &seconds
+	}
+
+	if typeutils.IsKnown(model.SpaceIDs) {
+		if !feat.SupportsSpaceIDs {
+			return f, nil
+		}
+		var spaceIDs []string
+		diags := model.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)
+		if diags.HasError() {
+			return f, diags
+		}
+		f.spaceIDs = &spaceIDs
+	}
+
+	return f, nil
 }
 
 // convertHostNameFormatToAgentFeature converts the host_name_format field to a single AgentFeature.

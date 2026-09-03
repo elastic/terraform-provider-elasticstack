@@ -17,64 +17,14 @@
 
 package ingest
 
-import (
-	"maps"
-
-	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-type processorTrimModel struct {
-	CommonProcessorModel
-	WithIgnorableTargetField
-}
-
-func (m *processorTrimModel) TypeName() string { return "trim" }
-
-func (m *processorTrimModel) MarshalBody() (any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	body := processorTrimBody{}
-
-	body.CommonProcessorBody, diags = m.toCommonProcessorBody()
-	if diags.HasError() {
-		return nil, diags
-	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
-
-	return body, diags
-}
+import "github.com/hashicorp/terraform-plugin-framework/datasource"
 
 // NewProcessorTrimDataSource returns a PF data source for the trim processor.
 func NewProcessorTrimDataSource() datasource.DataSource {
-	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
-		attrField: schema.StringAttribute{
-			Description: "The string-valued field to trim whitespace from.",
-			Required:    true,
-		},
-		attrTargetField: schema.StringAttribute{
-			Description: "The field to assign the trimmed value to, by default `field` is updated in-place.",
-			Optional:    true,
-		},
-		attrIgnoreMissing: schema.BoolAttribute{
-			Description: descIgnoreMissingDocStop,
-			Optional:    true,
-			Computed:    true,
-		},
-	}
-
-	maps.Copy(attrs, CommonProcessorSchemaAttributes())
-
-	return NewProcessorDataSource(&processorTrimModel{}, schema.Schema{
-		Description: processorTrimDataSourceDescription,
-		Attributes:  attrs,
+	return newSimpleIgnorableTargetFieldDataSource(simpleProcessorConfig{
+		typeName:        "trim",
+		description:     processorTrimDataSourceDescription,
+		fieldDesc:       "The string-valued field to trim whitespace from.",
+		targetFieldDesc: "The field to assign the trimmed value to, by default `field` is updated in-place.",
 	})
 }

@@ -6,6 +6,22 @@ description: |-
   Creates or updates a Kibana synthetics parameter.
   See Working with secrets and sensitive values https://www.elastic.co/docs/solutions/observability/synthetics/work-with-params-secrets
   and API docs https://www.elastic.co/docs/api/doc/kibana/group/endpoint-synthetics
+  Parameters are scoped to a Kibana space. Set space_id to the target space identifier; when omitted, the resource uses the default space (space_id is computed as "default"). Changing space_id forces replacement of the parameter.
+  The computed id is a composite identifier: <space_id>/<parameter_uuid>, where the UUID is assigned by Kibana.
+  Import accepts a bare parameter UUID (treated as the default space, with id set to default/<parameter_uuid>) or the composite form <space_id>/<parameter_uuid>.
+  Example (parameter in a named space):
+  
+  provider "elasticstack" {
+    kibana {}
+  }
+  
+  resource "elasticstack_kibana_synthetics_parameter" "example" {
+    space_id    = "my-space"
+    key         = "example_key"
+    value       = "example_value"
+    description = "Example description in a named space"
+    tags        = ["tag-a", "tag-b"]
+  }
 ---
 
 # elasticstack_kibana_synthetics_parameter (Resource)
@@ -14,6 +30,29 @@ Creates or updates a Kibana synthetics parameter.
 
 See [Working with secrets and sensitive values](https://www.elastic.co/docs/solutions/observability/synthetics/work-with-params-secrets)
 and [API docs](https://www.elastic.co/docs/api/doc/kibana/group/endpoint-synthetics)
+
+Parameters are scoped to a Kibana space. Set `space_id` to the target space identifier; when omitted, the resource uses the `default` space (`space_id` is computed as `"default"`). Changing `space_id` forces replacement of the parameter.
+
+The computed `id` is a composite identifier: `<space_id>/<parameter_uuid>`, where the UUID is assigned by Kibana.
+
+Import accepts a bare parameter UUID (treated as the `default` space, with `id` set to `default/<parameter_uuid>`) or the composite form `<space_id>/<parameter_uuid>`.
+
+**Example** (parameter in a named space):
+
+
+```terraform
+provider "elasticstack" {
+  kibana {}
+}
+
+resource "elasticstack_kibana_synthetics_parameter" "example" {
+  space_id    = "my-space"
+  key         = "example_key"
+  value       = "example_value"
+  description = "Example description in a named space"
+  tags        = ["tag-a", "tag-b"]
+}
+```
 ## Example Usage
 
 ```terraform
@@ -42,12 +81,13 @@ resource "elasticstack_kibana_synthetics_parameter" "example" {
 - `description` (String) A description of the parameter.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `share_across_spaces` (Boolean) Whether the parameter should be shared across spaces.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) An array of tags to categorize the parameter.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
-- `id` (String) Generated id for the parameter.
+- `id` (String) The composite ID of the parameter: `<space_id>/<parameter_uuid>`.
 
 <a id="nestedblock--kibana_connection"></a>
 ### Nested Schema for `kibana_connection`
@@ -80,5 +120,9 @@ Import is supported using the following syntax:
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import elasticstack_kibana_synthetics_parameter.my_param <space id>/<param_id>
+# Import using a bare parameter UUID (default space; state id becomes default/<parameter_uuid>)
+terraform import elasticstack_kibana_synthetics_parameter.my_param <parameter_uuid>
+
+# Or using the composite <space_id>/<parameter_uuid> form
+terraform import elasticstack_kibana_synthetics_parameter.my_param <space_id>/<parameter_uuid>
 ```

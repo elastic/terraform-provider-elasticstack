@@ -19,10 +19,10 @@ package elasticsearch
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/getapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/invalidateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
@@ -60,48 +60,25 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 }
 
 func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) (*types.ApiKey, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Security.GetApiKey().Id(id).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, diags
-		}
-		diags.AddError("Unable to get an apikey", err.Error())
+	res, diags := CallOrNotFound(func() (*getapikey.Response, error) {
+		return typedClient.Security.GetApiKey().Id(id).Do(ctx)
+	}, "Unable to get apikey")
+	if diags.HasError() || res == nil {
 		return nil, diags
 	}
 
-	if len(res.ApiKeys) != 1 {
-		diags.AddError(
-			"Unable to find an apikey in the cluster",
-			fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
-		)
-		return nil, diags
-	}
-
-	apiKey := res.ApiKeys[0]
-	return &apiKey, diags
+	return SingleOrNotFoundDiag(res.ApiKeys, id, "apikey")
 }
 
 func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
 		Ids: []string{id},
 	}).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete an apikey", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete an apikey")
 }
 
 func CreateCrossClusterAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, req *createcrossclusterapikey.Request) (*createcrossclusterapikey.Response, fwdiag.Diagnostics) {

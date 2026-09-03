@@ -55,7 +55,7 @@ func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, dia
 		Service: data.Service.ValueString(),
 	}
 
-	if !data.ServiceSettings.IsNull() && !data.ServiceSettings.IsUnknown() {
+	if typeutils.IsKnown(data.ServiceSettings) {
 		var ss map[string]any
 		if err := json.Unmarshal([]byte(data.ServiceSettings.ValueString()), &ss); err != nil {
 			diags.AddError("Invalid service_settings JSON", fmt.Sprintf("Error parsing service_settings: %s", err))
@@ -69,7 +69,7 @@ func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, dia
 		endpoint.ServiceSettings = b
 	}
 
-	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
+	if typeutils.IsKnown(data.TaskSettings) {
 		var ts map[string]any
 		if err := json.Unmarshal([]byte(data.TaskSettings.ValueString()), &ts); err != nil {
 			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
@@ -83,7 +83,7 @@ func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, dia
 		endpoint.TaskSettings = b
 	}
 
-	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
+	if typeutils.IsKnown(data.ChunkingSettings) {
 		var cs map[string]any
 		if err := json.Unmarshal([]byte(data.ChunkingSettings.ValueString()), &cs); err != nil {
 			diags.AddError("Invalid chunking_settings JSON", fmt.Sprintf("Error parsing chunking_settings: %s", err))
@@ -127,7 +127,7 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEnd
 	// the user never set are dropped — those are server-applied defaults and should not
 	// cause drift. If a key the user set disagrees with what the API returns, that is a
 	// real drift and will surface on the next plan.
-	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
+	if typeutils.IsKnown(data.TaskSettings) {
 		var stateTS map[string]any
 		if err := json.Unmarshal([]byte(data.TaskSettings.ValueString()), &stateTS); err != nil {
 			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
@@ -148,7 +148,7 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEnd
 		}
 	}
 
-	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
+	if typeutils.IsKnown(data.ChunkingSettings) {
 		if endpoint.ChunkingSettings != nil {
 			b, err := json.Marshal(endpoint.ChunkingSettings)
 			if err != nil {

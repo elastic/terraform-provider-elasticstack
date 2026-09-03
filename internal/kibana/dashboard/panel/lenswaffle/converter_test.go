@@ -31,7 +31,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -56,11 +56,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		"metrics": [{"operation":"count"}],
 		"group_by": [{"operation":"terms","field":"host.name","collapse_by":"avg"}]
 	}`
-	var waffle kbapi.KibanaHTTPAPIsWaffleNoESQL
+	var waffle kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &waffle))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQL(waffle))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsWaffleNoESQLByValuePanel(waffle))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -70,9 +70,9 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%s", diags)
 
-	noESQL2, err := attrs2.AsKibanaHTTPAPIsWaffleNoESQL()
+	noESQL2, err := attrs2.AsKibanaHTTPAPIsWaffleNoESQLByValuePanel()
 	require.NoError(t, err)
 	assert.Equal(t, "Waffle NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsWaffleNoESQLTypeWaffle, noESQL2.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle, noESQL2.Type)
 	require.Len(t, noESQL2.Metrics, 1)
 }

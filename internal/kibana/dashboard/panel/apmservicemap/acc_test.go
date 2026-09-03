@@ -91,6 +91,47 @@ func TestAccDashboardPanelApmServiceMap_environmentOnly(t *testing.T) {
 	})
 }
 
+// TestAccDashboardPanelApmServiceMap_environmentAllExplicit covers the read-path guarantee that an
+// explicitly configured `environment = "ENVIRONMENT_ALL"` is preserved rather than suppressed to
+// null (the suppression only fires when the prior state has no known `environment` value). This
+// test intentionally has no import step: on import there is no prior state to distinguish an
+// explicit `"ENVIRONMENT_ALL"` from an omitted `environment`, so the import path always suppresses
+// the server default to null (see the "Import has no prior plan..." risk in
+// openspec/changes/apm-service-map-environment-default/design.md). That is an accepted, documented
+// trade-off, not something `ImportStateVerify` should assert against here.
+func TestAccDashboardPanelApmServiceMap_environmentAllExplicit(t *testing.T) {
+	dashboardTitle := "Test Dashboard APM Service Map Environment All Explicit " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, apmservicemap.MinKibanaAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("environment_all_explicit"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "apm_service_map"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.apm_service_map_config.environment", "ENVIRONMENT_ALL"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("environment_all_explicit"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 func TestAccDashboardPanelApmServiceMap_serviceNameOnly(t *testing.T) {
 	dashboardTitle := "Test Dashboard APM Service Map Service Name " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 

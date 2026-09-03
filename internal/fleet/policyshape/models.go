@@ -38,6 +38,10 @@ type InputModel struct {
 	Streams   types.Map            `tfsdk:"streams"`  // > InputStreamModel
 }
 
+// GetStreams returns the Streams field, satisfying the streamsGetter interface
+// used by DecodeInputs.
+func (m InputModel) GetStreams() types.Map { return m.Streams }
+
 // InputStreamModel is the Go representation of a single stream nested under
 // an input.
 type InputStreamModel struct {

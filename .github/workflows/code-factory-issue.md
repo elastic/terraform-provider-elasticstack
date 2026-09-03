@@ -4,6 +4,9 @@ imports:
   - shared/elastic-stack.md
 name: Code Factory Issue Intake
 timeout-minutes: 65
+sandbox:
+  agent:
+    runtime: docker-sudo-iptables
 description: >-
   Reacts to trusted qualifying `code-factory` issue events or internal workflow dispatch requests,
   suppresses duplicate linked pull requests, and delegates implementation to an agent that creates
@@ -30,7 +33,7 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -274,15 +277,26 @@ steps:
     with:
       name: code-factory-issue-context
       path: /tmp/code-factory-context/
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
 permissions:
   contents: read
   issues: read
@@ -312,7 +326,9 @@ tools:
     mode: gh-proxy
     toolsets: [issues, pull_requests, repos]
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai, www.elastic.co]
+  allowed: [defaults, node, go, openrouter.ai, www.elastic.co]
+env:
+  CHECKPOINT_DISABLE: "1"
 mcp-servers:
   elastic-docs:
     url: "https://www.elastic.co/docs/_mcp/"
@@ -358,6 +374,7 @@ ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
 ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
 KIBANA_ENDPOINT=http://host.docker.internal:5602 \
+CHECKPOINT_DISABLE=1 \
 TF_ACC=1 \
 go test -v -run TestAccResourceName ./path/to/package
 ```
@@ -411,12 +428,14 @@ The pull request body must include all three of the following blocks, in order:
 ### Changelog (required — CI validates this)
 
 Select `Customer impact` based on the nature of the change:
+
 - `fix` — user-visible bug fix
 - `enhancement` — new capability or attribute exposed to users
 - `breaking` — removes or incompatibly changes existing behaviour
 - `none` — internal only (refactoring, test coverage, CI, docs)
 
 Most code-factory issues fall into one of these categories:
+
 - Refactoring / deduplication / test-coverage gaps → `none`
 - User-visible bug fixes → `fix`
 - New resource attributes or resources → `enhancement`

@@ -22,7 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prmgmt"
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 )
 
 // changelogGitHubRESTAdapter binds go-github pulls/issues calls to prmgmt.ChangelogWorkflowREST.

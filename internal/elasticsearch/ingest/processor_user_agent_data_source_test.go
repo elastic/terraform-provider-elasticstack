@@ -35,6 +35,15 @@ func TestAccDataSourceIngestProcessorUserAgent(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "field", "agent"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "regex_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "extract_device_type"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "tag"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.#"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJSONUserAgent),
 				),
 			},
@@ -52,12 +61,34 @@ func TestAccDataSourceIngestProcessorUserAgent(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "description", "parse user agent"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "if", "ctx.agent != null"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "tag", "ua-tag"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "on_failure.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "on_failure.0", `{"set":{"field":"error.message","value":"ua failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "on_failure.1", `{"set":{"field":"error.type","value":"user_agent"}}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.#", "3"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.*", "name"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.*", "os"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.*", "device"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJSONUserAgentAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_property"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "field", "agent"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "extract_device_type", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "ignore_failure", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "properties.*", "name"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "regex_file"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "tag"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "on_failure.#"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_user_agent.test", "json", expectedJSONUserAgentSingleProperty),
 				),
 			},
 		},
@@ -83,6 +114,12 @@ const expectedJSONUserAgentAllAttributes = `{
           "field": "error.message",
           "value": "ua failed"
         }
+      },
+      {
+        "set": {
+          "field": "error.type",
+          "value": "user_agent"
+        }
       }
     ],
     "tag": "ua-tag",
@@ -96,5 +133,17 @@ const expectedJSONUserAgentAllAttributes = `{
       "os"
     ],
     "extract_device_type": true
+  }
+}`
+
+const expectedJSONUserAgentSingleProperty = `{
+  "user_agent": {
+    "field": "agent",
+    "ignore_failure": false,
+    "ignore_missing": false,
+    "properties": [
+      "name"
+    ],
+    "extract_device_type": false
   }
 }`

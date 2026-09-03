@@ -19,9 +19,9 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
-	"fmt"
 
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,29 +43,15 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		return
 	}
 
-	if !planModel.AgentPolicyIDs.IsNull() && !planModel.AgentPolicyIDs.IsUnknown() {
-		supported, d := client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
-		resp.Diagnostics.Append(d...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if !supported {
-			resp.Diagnostics.AddError(
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("agent_policy_ids requires Elastic Stack >= %s", MinVersionPolicyIDs.String()),
-			)
-			return
-		}
+	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, client, &planModel)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	fleetClient := client.GetFleetClient()
 
 	// Determine space context for creating the package policy
-	spaceID, d := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
-	resp.Diagnostics.Append(d...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	spaceID := fleetutils.SpaceIDFromSet(planModel.SpaceIDs)
 
 	// Step 1: Bootstrap create using ENDPOINT_INTEGRATION_CONFIG input type
 	bootstrapReq, d := buildBootstrapRequest(ctx, &planModel)
@@ -86,7 +72,7 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 	// resource can be recovered if finalize fails. Populate basic fields from
 	// the bootstrap response to ensure no unknown values remain in state
 	// (the framework rejects unknown values after apply).
-	bootstrapID := typeutils.Deref(bootstrapPolicy.Id)
+	bootstrapID := bootstrapPolicy.Id
 	planModel.PolicyID = types.StringValue(bootstrapID)
 	if spaceID != "" {
 		planModel.ID = types.StringValue(spaceID + "/" + bootstrapID)
@@ -94,13 +80,9 @@ func (r *elasticDefendIntegrationPolicyResource) Create(ctx context.Context, req
 		planModel.ID = types.StringValue(bootstrapID)
 	}
 	// Normalize space_ids from bootstrap response to avoid unknown state values
-	if bootstrapPolicy.SpaceIds != nil && len(*bootstrapPolicy.SpaceIds) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *bootstrapPolicy.SpaceIds)
-		resp.Diagnostics.Append(d...)
-		planModel.SpaceIDs = spaceIDs
-	} else if planModel.SpaceIDs.IsNull() || planModel.SpaceIDs.IsUnknown() {
-		planModel.SpaceIDs = types.SetNull(types.StringType)
-	}
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, bootstrapPolicy.SpaceIds, planModel.SpaceIDs)
+	resp.Diagnostics.Append(d...)
+	planModel.SpaceIDs = spaceIDs
 	resp.Diagnostics.Append(resp.State.Set(ctx, &planModel)...)
 	resp.Diagnostics.Append(savePrivateState(ctx, resp.Private, ps)...)
 	if resp.Diagnostics.HasError() {

@@ -20,6 +20,7 @@ package validators
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -27,6 +28,11 @@ import (
 type ExactlyOneOfNestedAttrsOpts struct {
 	// AttrNames lists the mutually exclusive nested attribute names; must contain at least two.
 	AttrNames []string
+	// IsSet reports whether a known, non-null attribute value counts as set. It is only
+	// invoked for values already known to be non-null and non-unknown, so callers only need
+	// to decide whether a definite value counts as set (e.g. to treat an empty list as
+	// unset). A nil IsSet means every known, non-null value counts as set.
+	IsSet func(attr.Value) bool
 	// Summary is the error summary used for both "missing" and "too many" diagnostics.
 	Summary string
 	// MissingDetail is the diagnostic detail when zero of AttrNames are set.
@@ -64,29 +70,50 @@ func (v exactlyOneOfNestedAttrsValidator) ValidateObject(_ context.Context, req 
 		return
 	}
 	attrs := req.ConfigValue.Attributes()
-	setCount := 0
-	hasUnknown := false
-	for _, name := range v.opts.AttrNames {
-		av, ok := attrs[name]
-		if !ok || av == nil {
-			continue
-		}
-		switch {
-		case av.IsUnknown():
-			hasUnknown = true
-		case av.IsNull():
-		default:
-			setCount++
-		}
-	}
+	setCount, unknownCount, _ := CountNestedAttrs(attrs, v.opts.AttrNames, v.isSet())
 	if setCount > 1 {
 		resp.Diagnostics.AddAttributeError(req.Path, v.opts.Summary, v.opts.TooManyDetail)
 		return
 	}
-	if hasUnknown {
+	if unknownCount > 0 {
 		return
 	}
 	if setCount == 0 {
 		resp.Diagnostics.AddAttributeError(req.Path, v.opts.Summary, v.opts.MissingDetail)
 	}
+}
+
+// CountNestedAttrs inspects the named attributes on a nested object's attribute map and
+// reports how many are considered "set", how many are unknown, and which names were set (in
+// attrNames order). Attributes that are null are counted as neither. isSet is only invoked for
+// attribute values that are already known to be non-null and non-unknown, so callers only need
+// to decide whether a definite value counts as set (e.g. to treat an empty list as unset).
+//
+// This is shared by ExactlyOneOfNestedAttrsValidator and by packages whose "exactly one of N"
+// validator needs custom deferral or error-message semantics beyond what that validator offers.
+func CountNestedAttrs(attrs map[string]attr.Value, attrNames []string, isSet func(attr.Value) bool) (setCount, unknownCount int, setNames []string) {
+	for _, name := range attrNames {
+		val, ok := attrs[name]
+		if !ok || val == nil {
+			continue
+		}
+		switch {
+		case val.IsUnknown():
+			unknownCount++
+		case val.IsNull():
+		case isSet(val):
+			setCount++
+			setNames = append(setNames, name)
+		}
+	}
+	return setCount, unknownCount, setNames
+}
+
+// isSet returns the configured IsSet predicate, defaulting to one that counts every known,
+// non-null value as set.
+func (v exactlyOneOfNestedAttrsValidator) isSet() func(attr.Value) bool {
+	if v.opts.IsSet != nil {
+		return v.opts.IsSet
+	}
+	return func(attr.Value) bool { return true }
 }

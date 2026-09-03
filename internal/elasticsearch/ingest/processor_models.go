@@ -124,8 +124,10 @@ type processorForeachBody struct {
 	Processor     map[string]any `json:"processor"`
 }
 
-// processorBytesBody is the JSON body for the bytes processor.
-type processorBytesBody struct {
+// simpleIgnorableTargetFieldBody is the shared JSON body for processors that
+// transform a single field with an optional target_field (bytes, html_strip,
+// lowercase, registered_domain, rename, trim, uppercase, urldecode).
+type simpleIgnorableTargetFieldBody struct {
 	CommonProcessorBody
 	WithIgnorableTargetFieldBody
 }
@@ -266,12 +268,6 @@ type processorGsubBody struct {
 	Replacement string `json:"replacement"`
 }
 
-// processorHTMLStripBody is the JSON body for the html_strip processor.
-type processorHTMLStripBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
-}
-
 // processorInferenceInputOutputBody is the JSON body for the inference input_output.
 type processorInferenceInputOutputBody struct {
 	InputField  string `json:"input_field"`
@@ -317,12 +313,6 @@ type processorKVBody struct {
 	StripBrackets bool     `json:"strip_brackets"`
 }
 
-// processorLowercaseBody is the JSON body for the lowercase processor.
-type processorLowercaseBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
-}
-
 // processorNetworkDirectionBody is the JSON body for the network_direction processor.
 type processorNetworkDirectionBody struct {
 	CommonProcessorBody
@@ -340,23 +330,11 @@ type processorPipelineBody struct {
 	Name string `json:"name"`
 }
 
-// processorRegisteredDomainBody is the JSON body for the registered_domain processor.
-type processorRegisteredDomainBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
-}
-
 // processorRemoveBody is the JSON body for the remove processor.
 type processorRemoveBody struct {
 	CommonProcessorBody
 	Field         []string `json:"field"`
 	IgnoreMissing bool     `json:"ignore_missing"`
-}
-
-// processorRenameBody is the JSON body for the rename processor.
-type processorRenameBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
 }
 
 // processorRerouteBody is the JSON body for the reroute processor.
@@ -400,30 +378,12 @@ type processorSplitBody struct {
 	PreserveTrailing bool   `json:"preserve_trailing"`
 }
 
-// processorTrimBody is the JSON body for the trim processor.
-type processorTrimBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
-}
-
-// processorUppercaseBody is the JSON body for the uppercase processor.
-type processorUppercaseBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
-}
-
 // processorURIPartsBody is the JSON body for the uri_parts processor.
 type processorURIPartsBody struct {
 	CommonProcessorBody
 	WithTargetFieldBody
 	KeepOriginal       bool `json:"keep_original"`
 	RemoveIfSuccessful bool `json:"remove_if_successful"`
-}
-
-// processorURLDecodeBody is the JSON body for the urldecode processor.
-type processorURLDecodeBody struct {
-	CommonProcessorBody
-	WithIgnorableTargetFieldBody
 }
 
 // processorUserAgentBody is the JSON body for the user_agent processor.

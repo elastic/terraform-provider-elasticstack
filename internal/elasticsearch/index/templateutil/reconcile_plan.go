@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -56,8 +57,8 @@ func ReconcileTemplateWithPriorStateForSemanticDrift(
 	stateAttrs := stateTemplate.Attributes()
 	changed := false
 
-	if ps, ok := planAttrs[AttrSettings]; ok && !ps.IsNull() && !ps.IsUnknown() {
-		if ss, ok := stateAttrs[AttrSettings]; ok && !ss.IsNull() && !ss.IsUnknown() {
+	if ps, ok := planAttrs[AttrSettings]; ok && typeutils.IsKnown(ps) {
+		if ss, ok := stateAttrs[AttrSettings]; ok && typeutils.IsKnown(ss) {
 			pSet, okP := ps.(customtypes.IndexSettingsValue)
 			sSet, okS := ss.(customtypes.IndexSettingsValue)
 			if okP && okS {
@@ -74,16 +75,16 @@ func ReconcileTemplateWithPriorStateForSemanticDrift(
 		}
 	}
 
-	if pa, ok := planAttrs[AttrAlias]; ok && !pa.IsNull() && !pa.IsUnknown() {
-		if sa, ok := stateAttrs[AttrAlias]; ok && !sa.IsNull() && !sa.IsUnknown() {
+	if pa, ok := planAttrs[AttrAlias]; ok && typeutils.IsKnown(pa) {
+		if sa, ok := stateAttrs[AttrAlias]; ok && typeutils.IsKnown(sa) {
 			newAlias, aliasChanged, d := aliasutil.MergePlanAliasSetWithPriorState(ctx, pa, sa)
 			diags.Append(d...)
 			if diags.HasError() {
 				return planTemplate, false, diags
 			}
-			if !aliasChanged && !configTemplate.IsNull() && !configTemplate.IsUnknown() {
+			if !aliasChanged && typeutils.IsKnown(configTemplate) {
 				cfgAttrs := configTemplate.Attributes()
-				if ca, ok := cfgAttrs[AttrAlias]; ok && !ca.IsNull() && !ca.IsUnknown() {
+				if ca, ok := cfgAttrs[AttrAlias]; ok && typeutils.IsKnown(ca) {
 					// Use config encodings to match state (handles plan unknowns), but project
 					// the result back onto the plan's element set so plan-only aliases are
 					// preserved. mergePlanAliasSetWithPriorState alone would build the result

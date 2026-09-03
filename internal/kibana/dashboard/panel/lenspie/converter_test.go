@@ -33,7 +33,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsPieNoESQLTypePie), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -51,15 +51,13 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	nested := true
 	truncate := int64(3)
 	cfg := &models.PieChartConfigModel{
-		LensChartBaseTFModel: models.LensChartBaseTFModel{
-			Title:               types.StringValue("Pie RT"),
-			Description:         types.StringValue("d"),
-			IgnoreGlobalFilters: types.BoolValue(true),
-			Sampling:            types.Float64Value(0.75),
-			DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
-		},
-		DonutHole:     types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingDonutHoleS)),
-		LabelPosition: types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingLabelsPositionInside)),
+		Title:               types.StringValue("Pie RT"),
+		Description:         types.StringValue("d"),
+		IgnoreGlobalFilters: types.BoolValue(true),
+		Sampling:            types.Float64Value(0.75),
+		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
+		DonutHole:           types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingDonutHoleS)),
+		LabelPosition:       types.StringValue(string(kbapi.KibanaHTTPAPIsPieStylingLabelsPositionInside)),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue("response:200"),
@@ -114,11 +112,11 @@ func TestConverter_roundTrip_ESQL(t *testing.T) {
 		"metrics": [{"operation":"value","column":"bytes","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}],
 		"group_by": [{"operation":"value","column":"host.name","collapse_by":"avg","color":{"mode":"categorical","palette":"default","mapping":[],"unassignedColor":{"type":"color_code","value":"#D3DAE6"}}}]
 	}`
-	var apiESQL kbapi.KibanaHTTPAPIsPieESQL
+	var apiESQL kbapi.KibanaHTTPAPIsPieESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &apiESQL))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsPieESQL(apiESQL))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsPieESQLByValuePanel(apiESQL))
 
 	out := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, out, attrs)
@@ -128,7 +126,7 @@ func TestConverter_roundTrip_ESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(out)
 	require.False(t, diags.HasError())
 
-	p2, err := attrs2.AsKibanaHTTPAPIsPieESQL()
+	p2, err := attrs2.AsKibanaHTTPAPIsPieESQLByValuePanel()
 	require.NoError(t, err)
 	assert.Equal(t, "ESQL Pie Chart", *p2.Title)
 	assert.Len(t, p2.Metrics, 1)

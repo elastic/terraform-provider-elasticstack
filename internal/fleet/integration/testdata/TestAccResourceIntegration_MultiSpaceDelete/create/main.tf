@@ -35,4 +35,11 @@ resource "elasticstack_fleet_integration" "test_b" {
   force        = true
   skip_destroy = false
   space_id     = elasticstack_kibana_space.space_b.space_id
+
+  # Serialize the two space-scoped kibana_assets installs of the same
+  # package. Installing the same package into two spaces concurrently has
+  # been observed to leave one install stuck in Fleet indefinitely (see
+  # CI timeouts on TestAccResourceIntegration_MultiSpaceInstall), so force
+  # test_a to complete first to keep this test deterministic.
+  depends_on = [elasticstack_fleet_integration.test_a]
 }

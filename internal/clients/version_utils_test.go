@@ -18,9 +18,11 @@
 package clients
 
 import (
+	"context"
 	"testing"
 
 	goversion "github.com/hashicorp/go-version"
+	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,4 +111,86 @@ func TestElasticsearchScopedClient_EnforceMinVersion_NilVersion(t *testing.T) {
 	ok, diags := sc.EnforceMinVersion(t.Context(), nil)
 	require.False(t, diags.HasError())
 	assert.True(t, ok, "nil minVersion must short-circuit to true without a network call")
+}
+
+// --- shared helper tests ---
+
+func makeFetcher(rawVersion, flavor string) versionFetcher {
+	return func(_ context.Context) (string, string, fwdiag.Diagnostics) {
+		return rawVersion, flavor, nil
+	}
+}
+
+func makeErrorFetcher() versionFetcher {
+	return func(_ context.Context) (string, string, fwdiag.Diagnostics) {
+		return "", "", fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("fetch error", "simulated fetch failure")}
+	}
+}
+
+func TestEnforceMinVersion_NilVersion(t *testing.T) {
+	t.Parallel()
+	// fetch must never be called when minVersion is nil.
+	ok, diags := enforceMinVersion(t.Context(), nil, makeErrorFetcher())
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestEnforceMinVersion_ServerlessShortCircuit(t *testing.T) {
+	t.Parallel()
+	minVer := goversion.Must(goversion.NewVersion("99.0.0"))
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("8.10.0", ServerlessFlavor))
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must satisfy any version gate")
+}
+
+func TestEnforceMinVersion_Satisfied(t *testing.T) {
+	t.Parallel()
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("8.19.0", "default"))
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestEnforceMinVersion_NotSatisfied(t *testing.T) {
+	t.Parallel()
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeFetcher("7.17.0", "default"))
+	require.False(t, diags.HasError())
+	assert.False(t, ok)
+}
+
+func TestEnforceMinVersion_FetchError(t *testing.T) {
+	t.Parallel()
+	minVer := goversion.Must(goversion.NewVersion("8.0.0"))
+	ok, diags := enforceMinVersion(t.Context(), minVer, makeErrorFetcher())
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
+}
+
+func TestEnforceVersionCheck_ServerlessShortCircuit(t *testing.T) {
+	t.Parallel()
+	ok, diags := enforceVersionCheck(t.Context(), func(_ *goversion.Version) bool { return false }, makeFetcher("8.10.0", ServerlessFlavor))
+	require.False(t, diags.HasError())
+	assert.True(t, ok, "serverless must short-circuit to true even when check returns false")
+}
+
+func TestEnforceVersionCheck_CheckTrue(t *testing.T) {
+	t.Parallel()
+	ok, diags := enforceVersionCheck(t.Context(), func(_ *goversion.Version) bool { return true }, makeFetcher("8.15.0", "default"))
+	require.False(t, diags.HasError())
+	assert.True(t, ok)
+}
+
+func TestEnforceVersionCheck_CheckFalse(t *testing.T) {
+	t.Parallel()
+	ok, diags := enforceVersionCheck(t.Context(), func(_ *goversion.Version) bool { return false }, makeFetcher("8.15.0", "default"))
+	require.False(t, diags.HasError())
+	assert.False(t, ok)
+}
+
+func TestEnforceVersionCheck_FetchError(t *testing.T) {
+	t.Parallel()
+	ok, diags := enforceVersionCheck(t.Context(), func(_ *goversion.Version) bool { return true }, makeErrorFetcher())
+	assert.False(t, ok)
+	require.True(t, diags.HasError())
 }

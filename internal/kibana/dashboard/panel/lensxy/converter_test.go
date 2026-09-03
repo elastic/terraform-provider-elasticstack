@@ -63,7 +63,7 @@ func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsXyChartNoESQLTypeXy), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -107,7 +107,7 @@ func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
 	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in})
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQL()
+	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel()
 	require.NoError(t, err)
 	assert.Nil(t, out.TimeRange)
 }
@@ -138,11 +138,11 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 		"styling": { "line": { "curve": "linear" } },
 		"time_range": { "from": "now-7d", "to": "now" }
 	}`
-	var chart kbapi.KibanaHTTPAPIsXyChartESQL
+	var chart kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(xyESQLJSON), &chart))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsXyChartESQL(chart))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsXyChartESQLByValuePanel(chart))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -154,9 +154,9 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQL()
+	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQLByValuePanel()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsXyChartESQLTypeXy, out.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsXyChartESQLByValuePanelTypeXy, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "XY ESQL RT", *out.Title)
 	require.Len(t, out.Layers, 1)

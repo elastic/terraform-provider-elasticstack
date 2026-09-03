@@ -21,8 +21,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -46,6 +49,75 @@ type integrationPolicyModel struct {
 	Inputs             InputsValue   `tfsdk:"inputs"` // > integrationPolicyInputsModel
 	VarsJSON           VarsJSONValue `tfsdk:"vars_json"`
 	SpaceIDs           types.Set     `tfsdk:"space_ids"`
+
+	AdditionalDatastreamsPermissions types.List `tfsdk:"additional_datastreams_permissions"` // > string
+}
+
+func (model integrationPolicyModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	var reqs []entitycore.VersionRequirement
+
+	if typeutils.IsKnown(model.AgentPolicyIDs) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("agent_policy_ids"),
+			*MinVersionPolicyIDs,
+			fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIDs),
+		))
+	}
+	if typeutils.IsKnown(model.OutputID) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("output_id"),
+			*MinVersionOutputID,
+			fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputID),
+		))
+	}
+	if typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root(attrAdditionalDatastreamsPermissions),
+			*MinVersionAdditionalDatastreamsPermissions,
+			fmt.Sprintf("Additional data stream permissions are only supported in Elastic Stack %s and above", MinVersionAdditionalDatastreamsPermissions),
+		))
+	}
+
+	var diags diag.Diagnostics
+	decodedInputs := model.decodeInputs(ctx, &diags)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	inputIDs := make([]string, 0, len(decodedInputs))
+	for inputID := range decodedInputs {
+		inputIDs = append(inputIDs, inputID)
+	}
+	sort.Strings(inputIDs)
+
+	for _, inputID := range inputIDs {
+		decodedInput := decodedInputs[inputID]
+		inputPath := path.Root("inputs").AtMapKey(inputID)
+		if typeutils.IsKnown(decodedInput.Model.Condition) {
+			reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+				inputPath.AtName("condition"),
+				*MinVersionCondition,
+				fmt.Sprintf("Input condition is only supported in Elastic Stack %s and above", MinVersionCondition),
+			))
+		}
+
+		streamIDs := make([]string, 0, len(decodedInput.Streams))
+		for streamID := range decodedInput.Streams {
+			streamIDs = append(streamIDs, streamID)
+		}
+		sort.Strings(streamIDs)
+		for _, streamID := range streamIDs {
+			if typeutils.IsKnown(decodedInput.Streams[streamID].Condition) {
+				reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
+					*MinVersionCondition,
+					fmt.Sprintf("Stream condition is only supported in Elastic Stack %s and above", MinVersionCondition),
+				))
+			}
+		}
+	}
+
+	return reqs, diags
 }
 
 // integrationPolicyInputsModel and integrationPolicyInputStreamModel are
@@ -59,7 +131,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 
 	var diags diag.Diagnostics
 
-	dataID := typeutils.Deref(data.Id)
+	dataID := data.Id
 	model.ID = types.StringValue(dataID)
 	model.PolicyID = types.StringValue(dataID)
 	model.Name = types.StringValue(data.Name)
@@ -102,6 +174,14 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
 	model.OutputID = types.StringPointerValue(data.OutputId)
 
+	if data.AdditionalDatastreamsPermissions != nil && len(*data.AdditionalDatastreamsPermissions) > 0 {
+		perms, d := types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)
+		diags.Append(d...)
+		model.AdditionalDatastreamsPermissions = perms
+	} else {
+		model.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
+	}
+
 	varsMap := varsAnyToMap(data.Vars)
 	if len(varsMap) == 0 {
 		model.VarsJSON = NewVarsJSONNull()
@@ -116,18 +196,12 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 		}
 	}
 
-	// Preserve space_ids if it was originally set in the plan/state
-	// The API response may not include space_ids, so we keep the original value
-	originallySetSpaceIDs := typeutils.IsKnown(model.SpaceIDs)
-	if data.SpaceIds != nil {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
-		diags.Append(d...)
-		model.SpaceIDs = spaceIDs
-	} else if !originallySetSpaceIDs {
-		// Only set to null if it wasn't originally set
-		model.SpaceIDs = types.SetNull(types.StringType)
-	}
-	// If originally set but API didn't return it, keep the original value
+	// Preserve space_ids if it was originally set in the plan/state; the API
+	// response may not include space_ids, so we keep the original value.
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
+	diags.Append(d...)
+	model.SpaceIDs = spaceIDs
+
 	// Extract mapped inputs from the union Inputs field (simplified format returns mapped inputs).
 	// The union field may be empty (nil JSON) when inputs are not present in the response.
 	mappedInputs, err := data.Inputs.AsPackagePolicyMappedInputs()
@@ -216,44 +290,9 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integrationPolicyFeatures) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Check if agent_policy_ids is configured and version supports it
-	if typeutils.IsKnown(model.AgentPolicyIDs) {
-		if !feat.SupportsPolicyIDs {
-			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("agent_policy_ids"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Agent policy IDs are only supported in Elastic Stack %s and above", MinVersionPolicyIDs),
-				),
-			}
-		}
-	}
-
-	// Check if output_id is configured and version supports it
-	if typeutils.IsKnown(model.OutputID) {
-		if !feat.SupportsOutputID {
-			return kbapi.PackagePolicyRequest{}, diag.Diagnostics{
-				diag.NewAttributeErrorDiagnostic(
-					path.Root("output_id"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Output ID is only supported in Elastic Stack %s and above", MinVersionOutputID),
-				),
-			}
-		}
-	}
-
 	// Decode the 'inputs' attribute (including each input's nested 'streams'
-	// map) exactly once: validateConditionSupport and
-	// toAPIInputsFromInputsAttribute below both need it, and the decode is
-	// reflection-based (typeutils.MapTypeAs) over the same structure, so
-	// decoding it independently in each would do the same work twice.
+	// map) exactly once for conversion to the API request.
 	decodedInputs := model.decodeInputs(ctx, &diags)
-
-	// Check if any input/stream condition is configured and version supports it
-	if condDiags := model.validateConditionSupport(feat, decodedInputs); condDiags.HasError() {
-		diags.Append(condDiags...)
-		return kbapi.PackagePolicyRequest{}, diags
-	}
 
 	mappedBody := kbapi.PackagePolicyRequestMappedInputs{
 		Description: model.Description.ValueStringPointer(),
@@ -299,7 +338,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 	mappedBody.OutputId = model.OutputID.ValueStringPointer()
 	mappedBody.PolicyId = model.AgentPolicyID.ValueStringPointer()
 	mappedBody.PolicyIds = func() *[]string {
-		if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+		if typeutils.IsKnown(model.AgentPolicyIDs) {
 			var policyIDs []string
 			d := model.AgentPolicyIDs.ElementsAs(ctx, &policyIDs, false)
 			diags.Append(d...)
@@ -307,6 +346,23 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		}
 		// 8.15+ accepts an empty array to clear any existing associations.
 		if feat.SupportsPolicyIDs {
+			emptyArray := []string{}
+			return &emptyArray
+		}
+		return nil
+	}()
+	mappedBody.AdditionalDatastreamsPermissions = func() *[]string {
+		if typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+			var perms []string
+			d := model.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)
+			diags.Append(d...)
+			return &perms
+		}
+		// Create and Update share this conversion and neither passes prior
+		// state, so an unset attribute must also revoke permissions granted by
+		// an earlier apply. 9.1+ accepts an empty array to do that; older
+		// servers reject the field outright, so omit it there.
+		if feat.SupportsAdditionalDatastreamsPermissions {
 			emptyArray := []string{}
 			return &emptyArray
 		}
@@ -322,76 +378,14 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 }
 
 // decodedInput is the once-decoded form of a single `inputs` map element,
-// with its nested `streams` map (if any) already decoded too. decodeInputs
-// produces this so that toAPIModel's two downstream consumers
-// (validateConditionSupport, toAPIInputsFromInputsAttribute) don't each
-// independently re-run the reflection-based typeutils.MapTypeAs decode over
-// the same inputs+streams structure.
-type decodedInput struct {
-	model   integrationPolicyInputsModel
-	streams map[string]integrationPolicyInputStreamModel // nil if streams is null/unknown
-}
+// with its nested `streams` map (if any) already decoded too.
+type decodedInput = policyshape.DecodedInput[integrationPolicyInputsModel]
 
 // decodeInputs decodes the 'inputs' attribute, and each input's nested
 // 'streams' map, exactly once. Returns nil if 'inputs' itself is null/unknown
 // or fails to decode.
 func (model integrationPolicyModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedInput {
-	if !typeutils.IsKnown(model.Inputs.MapValue) {
-		return nil
-	}
-
-	inputsMap := typeutils.MapTypeAs[integrationPolicyInputsModel](ctx, model.Inputs.MapValue, path.Root("inputs"), diags)
-	if inputsMap == nil {
-		return nil
-	}
-
-	decoded := make(map[string]decodedInput, len(inputsMap))
-	for inputID, inputModel := range inputsMap {
-		d := decodedInput{model: inputModel}
-		if typeutils.IsKnown(inputModel.Streams) {
-			inputPath := path.Root("inputs").AtMapKey(inputID)
-			d.streams = typeutils.MapTypeAs[integrationPolicyInputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
-		}
-		decoded[inputID] = d
-	}
-	return decoded
-}
-
-// validateConditionSupport returns an attribute-scoped error diagnostic for
-// every input/stream `condition` value that is set when the connected Kibana
-// version does not support the `condition` field on package-policy
-// inputs/streams (added in Kibana 9.5.0; see MinVersionCondition). It is a
-// no-op when the version supports condition or when no inputs are configured.
-func (model integrationPolicyModel) validateConditionSupport(feat integrationPolicyFeatures, decoded map[string]decodedInput) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if feat.SupportsCondition {
-		return diags
-	}
-
-	for inputID, di := range decoded {
-		inputPath := path.Root("inputs").AtMapKey(inputID)
-
-		if typeutils.IsKnown(di.model.Condition) {
-			diags.AddAttributeError(
-				inputPath.AtName("condition"),
-				"Unsupported Elasticsearch version",
-				fmt.Sprintf("Input condition is only supported in Elastic Stack %s and above", MinVersionCondition),
-			)
-		}
-
-		for streamID, streamModel := range di.streams {
-			if typeutils.IsKnown(streamModel.Condition) {
-				diags.AddAttributeError(
-					inputPath.AtName("streams").AtMapKey(streamID).AtName("condition"),
-					"Unsupported Elasticsearch version",
-					fmt.Sprintf("Stream condition is only supported in Elastic Stack %s and above", MinVersionCondition),
-				)
-			}
-		}
-	}
-
-	return diags
+	return policyshape.DecodeInputs[integrationPolicyInputsModel](ctx, model.Inputs, path.Root("inputs"), diags)
 }
 
 // toAPIInputsFromInputsAttribute converts the already-decoded 'inputs' map
@@ -403,15 +397,15 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(decoded map[s
 		inputPath := path.Root("inputs").AtMapKey(inputID)
 
 		apiInput := kbapi.PackagePolicyRequestMappedInput{
-			Enabled:   di.model.Enabled.ValueBoolPointer(),
-			Condition: di.model.Condition.ValueStringPointer(),
-			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](di.model.Vars, inputPath.AtName("vars"), diags)),
+			Enabled:   di.Model.Enabled.ValueBoolPointer(),
+			Condition: di.Model.Condition.ValueStringPointer(),
+			Vars:      varsMapToTypedMap[kbapi.PackagePolicyRequestMappedInput_Vars_AdditionalProperties](typeutils.NormalizedTypeToMap[any](di.Model.Vars, inputPath.AtName("vars"), diags)),
 		}
 
 		// Convert streams if present
-		if len(di.streams) > 0 {
-			streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(di.streams))
-			for streamID, streamModel := range di.streams {
+		if len(di.Streams) > 0 {
+			streams := make(map[string]kbapi.PackagePolicyRequestMappedInputStream, len(di.Streams))
+			for streamID, streamModel := range di.Streams {
 				streamVarsPath := inputPath.AtName("streams").AtMapKey(streamID).AtName("vars")
 				streamVars := typeutils.NormalizedTypeToMap[any](streamModel.Vars, streamVarsPath, diags)
 				streams[streamID] = kbapi.PackagePolicyRequestMappedInputStream{

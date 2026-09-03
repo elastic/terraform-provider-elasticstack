@@ -103,8 +103,7 @@ func readToolDataSource(ctx context.Context, client *clients.KibanaScopedClient,
 		return config, diags
 	}
 
-	config.SpaceID = types.StringValue(spaceID)
-	d = config.populateFromAPI(ctx, tool)
+	d = config.populateFromAPI(ctx, spaceID, tool)
 	diags.Append(d...)
 	if diags.HasError() {
 		return config, diags

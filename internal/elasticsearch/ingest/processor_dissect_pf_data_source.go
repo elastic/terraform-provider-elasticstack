@@ -52,15 +52,8 @@ func (m *processorDissectModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Pattern) {
 		body.Pattern = m.Pattern.ValueString()
 	}
-	if typeutils.IsKnown(m.AppendSeparator) {
-		body.AppendSeparator = m.AppendSeparator.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.AppendSeparator = typeutils.StringDefault(&m.AppendSeparator, "")
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
 	return body, diags
 }
@@ -68,14 +61,6 @@ func (m *processorDissectModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDissectDataSource returns a PF data source for the dissect processor.
 func NewProcessorDissectDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifier,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to dissect.",
 			Required:    true,

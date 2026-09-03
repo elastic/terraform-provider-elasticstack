@@ -114,6 +114,8 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_inference_endpoint.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_inference_endpoint.test", "service_settings"),
 				),
 			},
 			{
@@ -125,6 +127,7 @@ func TestAccResourceInferenceEndpoint(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "completion"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_inference_endpoint.test", "service_settings"),
 				),
 			},
 			// Re-apply with no change should produce no diff.
@@ -329,6 +332,58 @@ func TestAccResourceInferenceEndpointTaskSettingsDrift(t *testing.T) {
 				SkipFunc:                 skipIfUsingFakeAPIKey,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceInferenceEndpointChunkingSettings verifies that chunking_settings
+// can be configured, does not drift after the server echoes defaults, and can be
+// removed cleanly.
+func TestAccResourceInferenceEndpointChunkingSettings(t *testing.T) {
+	skipFunc := versionutils.CheckIfVersionIsUnsupported(inferenceendpoint.MinSupportedVersion)
+	if skip, err := skipFunc(); err != nil {
+		t.Fatalf("failed to check version: %v", err)
+	} else if skip {
+		t.Skipf("Test requires Elasticsearch v%s or higher", inferenceendpoint.MinSupportedVersion)
+	}
+
+	inferenceID := fmt.Sprintf("test-inference-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	apiKey, usingFakeAPIKey := inferenceEndpointTestAPIKey()
+	skipIfUsingFakeAPIKey := skipWhenUsingFakeInferenceEndpointAPIKey(usingFakeAPIKey)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t); skipValidateAndStart(t) },
+		CheckDestroy: checkInferenceEndpointDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: create with chunking_settings configured.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_chunking"),
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "inference_id", inferenceID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "task_type", "text_embedding"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "service", "openai"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_inference_endpoint.test", "chunking_settings"),
+				),
+			},
+			// Step 2: re-plan — server-applied chunking defaults must not cause drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_chunking"),
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			// Step 3: remove chunking_settings — must apply cleanly and leave no trace.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_chunking"),
+				ConfigVariables:          inferenceEndpointConfigVariables(inferenceID, apiKey),
+				SkipFunc:                 skipIfUsingFakeAPIKey,
+				Check:                    resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_inference_endpoint.test", "chunking_settings"),
 			},
 		},
 	})

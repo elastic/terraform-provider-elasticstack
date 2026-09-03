@@ -81,7 +81,7 @@ resource "elasticstack_elasticsearch_ingest_pipeline" "ingest" {
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource
+- `id` (String) Internal identifier of the resource.
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

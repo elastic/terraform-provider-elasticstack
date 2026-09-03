@@ -24,14 +24,19 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 var minVersionEntityStoreResolution = version.Must(version.NewVersion("9.4.0"))
 
 func TestAccDataSourceSecurityEntityStoreResolutionGroup(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionEntityStoreResolution, versionutils.FlavorAny)
-	t.Cleanup(func() { acctest.CleanupEntityStore(t, "default") })
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -39,10 +44,11 @@ func TestAccDataSourceSecurityEntityStoreResolutionGroup(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          config.Variables{"space_id": config.StringVariable(spaceID)},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "entity_id", "generic:acc-test-target"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "space_id", "default"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "id", "default/generic:acc-test-target"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "space_id", spaceID),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "id", spaceID+"/generic:acc-test-target"),
 					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_resolution_group.test", "resolution_group_json"),
 					resource.TestMatchResourceAttr("data.elasticstack_kibana_security_entity_store_resolution_group.test", "resolution_group_json", regexp.MustCompile(`generic:acc-test-target`)),
 				),

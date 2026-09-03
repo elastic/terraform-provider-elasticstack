@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/sloburnrate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit/contracttest"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -100,9 +101,11 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.True(t, dd0.EncodeURL.IsNull())
 	require.True(t, dd0.OpenInNewTab.IsNull())
 
+	// encode_url=true and open_in_new_tab=false both equal the Kibana server defaults,
+	// so import-mode null-preservation returns null for both (aligned with sloalerts behavior).
 	dd1 := pm.SloBurnRateConfig.Drilldowns[1]
-	require.True(t, dd1.EncodeURL.ValueBool())
-	require.False(t, dd1.OpenInNewTab.ValueBool())
+	require.True(t, dd1.EncodeURL.IsNull())
+	require.True(t, dd1.OpenInNewTab.IsNull())
 
 	item1, d2 := handler.ToAPI(pm, nil)
 	require.False(t, d2.HasError(), "%s", d2)
@@ -120,8 +123,86 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTriggerOnOpenPanelMenu), ddB[0]["trigger"])
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTypeUrlDrilldown), ddB[0]["type"])
 
-	require.Equal(t, true, drillsFromConfig(cfg1)[1]["encode_url"])
-	require.Equal(t, false, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
+	// null state → omit from API payload (no encode_url or open_in_new_tab keys in output).
+	require.Nil(t, drillsFromConfig(cfg1)[1]["encode_url"])
+	require.Nil(t, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
+}
+
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.SloBurnRateConfig is nil, e.g. prior held a different
+// type's config), there is no null intent to honor and the config is rebuilt entirely from the API.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	title := "Recovered"
+	apiConfig := kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable{
+		SloId:    "slo-abc",
+		Duration: "1h",
+		Title:    &title,
+	}
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: types.StringValue("ml_anomaly_charts"),
+	}
+
+	diags := sloburnrate.PopulateFromAPI(pm, prior, apiConfig)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.SloBurnRateConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	// Required fields come from the API.
+	require.Equal(t, "slo-abc", cfg.SloID.ValueString())
+	require.Equal(t, "1h", cfg.Duration.ValueString())
+	require.Equal(t, "Recovered", cfg.Title.ValueString())
+	require.True(t, cfg.SloInstanceID.IsNull())
+}
+
+func TestPopulateFromAPI_nullPreservation(t *testing.T) {
+	t.Parallel()
+
+	// Kibana 9.5.0 GA returns concrete defaults for these optional fields instead of omitting
+	// them, unlike earlier stack versions. A prior config that left them unset must still see
+	// them as null after Read/apply, matching the calling convention where pm always arrives
+	// zero-valued (dashboardMapPanelFromAPI never shallow-copies the plan into pm).
+	instanceID := "host-1"
+	title := "Burn Rate"
+	description := "desc"
+	hideTitle := false
+	hideBorder := false
+	apiConfig := kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable{
+		SloId:         "my-slo",
+		Duration:      "5m",
+		SloInstanceId: &instanceID,
+		Title:         &title,
+		Description:   &description,
+		HideTitle:     &hideTitle,
+		HideBorder:    &hideBorder,
+	}
+
+	prior := &models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
+			SloID:         types.StringValue("my-slo"),
+			Duration:      types.StringValue("5m"),
+			SloInstanceID: types.StringNull(),
+			Title:         types.StringNull(),
+			Description:   types.StringNull(),
+			HideTitle:     types.BoolNull(),
+			HideBorder:    types.BoolNull(),
+		},
+	}
+	pm := &models.PanelModel{}
+	diags := sloburnrate.PopulateFromAPI(pm, prior, apiConfig)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.SloBurnRateConfig
+	require.Equal(t, "my-slo", cfg.SloID.ValueString())
+	require.Equal(t, "5m", cfg.Duration.ValueString())
+	require.True(t, cfg.SloInstanceID.IsNull())
+	require.True(t, cfg.Title.IsNull())
+	require.True(t, cfg.Description.IsNull())
+	require.True(t, cfg.HideTitle.IsNull())
+	require.True(t, cfg.HideBorder.IsNull())
 }
 
 func jsonPanelMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {

@@ -33,6 +33,9 @@ func TestAccDataSourceIngestProcessorGeoip(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "field", "ip"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "target_field", "geoip"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "first_only", "true"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoip),
 				),
 			},
@@ -49,6 +52,30 @@ func TestAccDataSourceIngestProcessorGeoip(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "tag", "geoip-tag"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "on_failure.#", "1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoipAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("first_only_false"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "first_only", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoipFirstOnlyFalse),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_properties"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "properties.#", "3"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoipWithProperties),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_database_file"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "database_file", "GeoLite2-City.mmdb"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_geoip.test", "json", expectedJSONGeoipWithDatabaseFile),
 				),
 			},
 		},
@@ -84,6 +111,45 @@ const expectedJSONGeoipAllAttributes = `{
     "target_field": "geoip",
     "ignore_missing": true,
     "first_only": true
+  }
+}
+`
+
+const expectedJSONGeoipFirstOnlyFalse = `{
+  "geoip": {
+    "ignore_failure": false,
+    "field": "ip",
+    "target_field": "geoip",
+    "ignore_missing": false,
+    "first_only": false
+  }
+}
+`
+
+const expectedJSONGeoipWithProperties = `{
+  "geoip": {
+    "ignore_failure": false,
+    "field": "ip",
+    "target_field": "geoip",
+    "ignore_missing": false,
+    "first_only": true,
+    "properties": [
+      "city_name",
+      "country_name",
+      "ip"
+    ]
+  }
+}
+`
+
+const expectedJSONGeoipWithDatabaseFile = `{
+  "geoip": {
+    "ignore_failure": false,
+    "field": "ip",
+    "target_field": "geoip",
+    "ignore_missing": false,
+    "first_only": true,
+    "database_file": "GeoLite2-City.mmdb"
   }
 }
 `

@@ -8,7 +8,7 @@ on:
   - cron: daily
   steps:
   - name: Checkout repository
-    uses: actions/checkout@v7.0.0
+    uses: actions/checkout@v7.0.1
     with:
       fetch-depth: 1
       persist-credentials: false
@@ -34,7 +34,7 @@ network:
   allowed:
   - defaults
   - go
-  - elastic.litellm-prod.ai
+  - openrouter.ai
 safe-outputs:
   create-issue:
     labels:
@@ -48,15 +48,26 @@ safe-outputs:
 checkout:
   fetch-depth: 0
 description: Analyzes Go source organization and identifies actionable semantic refactoring opportunities
+model: anthropic/claude-sonnet-5
 engine:
   args:
   - --effort
   - high
   env:
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
-    ANTHROPIC_BASE_URL: https://elastic.litellm-prod.ai/
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    ANTHROPIC_BASE_URL: https://openrouter.ai/api
   id: claude
-  model: llm-gateway/claude-sonnet-4-6
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
 jobs:
   pre-activation:
     outputs:
@@ -71,6 +82,7 @@ tools:
     mode: gh-proxy
     toolsets: [default, issues]
 ---
+
 # Semantic Function Refactor
 
 Analyze Go source organization to identify actionable semantic refactoring opportunities: misplaced functions, duplicate or near-duplicate functions, scattered helpers, and extraction opportunities.
@@ -110,6 +122,7 @@ Detect and report semantic refactoring opportunities by:
 ## Serena Configuration
 
 The Serena MCP server is configured for this workspace:
+
 - **Workspace**: ${{ github.workspace }}
 - **Context**: codex
 - **Language service**: Go (gopls)
@@ -134,6 +147,7 @@ find . -name "*.go" ! -name "*_test.go" -type f | sort
 ```
 
 Group files by package/directory to understand the organization. Exclude:
+
 - **Test files** (`*_test.go`, `test/`, `tests/`, `__tests__/`, `spec/` directories)
 - **Generated files** and build artifacts
 - **Workflow files** (`.github/workflows/*`)
@@ -153,6 +167,7 @@ For each discovered Go file:
    - Brief purpose inferred from naming and content
 
 Example structure:
+
 ```
 File: pkg/workflow/compiler.go
 Package: workflow
@@ -167,6 +182,7 @@ Functions:
 Analyze the collected functions to identify patterns:
 
 **Clustering by Naming Patterns:**
+
 - Group functions with similar prefixes (`create*`, `parse*`, `validate*`)
 - Group functions with similar suffixes (`*Helper`, `*Config`, `*Step`)
 - Identify functions operating on the same data types
@@ -174,6 +190,7 @@ Analyze the collected functions to identify patterns:
 
 **File Organization Rules:**
 According to Go best practices, files should be organized by feature:
+
 - `compiler.go` — compilation-related functions
 - `parser.go` — parsing-related functions
 - `validator.go` — validation-related functions
@@ -181,6 +198,7 @@ According to Go best practices, files should be organized by feature:
 
 **Identify Outliers:**
 Look for functions that don't match their file's primary purpose:
+
 - Validation functions in a compiler file
 - Parser functions in a network file
 - Helper functions scattered across multiple files
@@ -199,6 +217,7 @@ For each cluster of similar functions, use Serena to detect duplicates:
    - **Functional duplicates** — different implementations, same purpose
 
 Example Serena tool usage:
+
 ```
 Tool: find_symbol
 Args: { "symbol_name": "processData", "workspace": "${{ github.workspace }}" }
@@ -209,12 +228,14 @@ Args: { "symbol_name": "processData", "workspace": "${{ github.workspace }}" }
 Apply deep reasoning to identify refactoring opportunities:
 
 **Duplicate Detection Criteria:**
+
 - Functions with >80% code similarity
 - Functions with identical logic but different variable names
 - Functions performing the same operation on different types (candidates for generics)
 - Helper functions repeated across multiple files
 
 **Refactoring Patterns to Suggest:**
+
 - **Extract Common Function** — When 2+ functions share significant code
 - **Move to Appropriate File** — When a function is in the wrong file
 - **Create Utility File** — When helper functions are scattered
@@ -226,12 +247,14 @@ Apply deep reasoning to identify refactoring opportunities:
 Create separate issues for each distinct actionable refactoring opportunity, up to `${{ needs.pre_activation.outputs.issue_slots_available }}` opportunities this run.
 
 **When to Create Issues:**
+
 - Only create issues if significant refactoring opportunities are found
 - **Create one issue per distinct opportunity** — do NOT bundle multiple patterns
 - Limit to the top `${{ needs.pre_activation.outputs.issue_slots_available }}` most significant opportunities
 - Use the `create_issue` tool from safe-outputs MCP **once for each opportunity**
 
 **Issue Contents for Each Opportunity:**
+
 - **Executive Summary**: Brief description of this specific opportunity
 - **Concrete Evidence**: Specific file paths, function names, signatures, line numbers
 - **Impact Analysis**: How this affects code organization, maintainability, duplication
@@ -329,6 +352,7 @@ For each distinct refactoring opportunity, create a separate issue using this st
 - **Duplicates Detected**: [count]
 - **Detection Method**: Serena semantic code analysis + naming pattern analysis
 - **Analysis Date**: [timestamp]
+
 ````
 
 ## Serena Tool Usage Guide
@@ -396,7 +420,24 @@ Args: { "file_path": "pkg/workflow/compiler.go" }
 - Suggest practical refactoring approaches
 - Use descriptive titles that clearly identify the specific opportunity (e.g., "Semantic Refactor: Scattered validation helpers across provider package")
 
+#### Issue title length guardrail
+
+GitHub issue titles are limited to **256 characters total**, including the
+`title-prefix` that `create-issue` prepends automatically.
+
+- This workflow's prefix is `"[semantic-refactor] "` (20 characters),
+  leaving **236** characters for the title you provide.
+- Before calling `create-issue`, verify that
+  `len("[semantic-refactor] ") + len(your title)` is **≤ 256**.
+- Keep titles concise. Move full file paths, function signatures, attribute
+  lists, failure excerpts, and detailed descriptions into the issue body.
+- If the natural title would exceed the limit, shorten the variable portion.
+  Prefer a short opportunity label over long descriptive phrases (e.g.,
+  "scattered validation helpers in provider package").
+- Do not include markdown heading markers (`#`), emoji, or the prefix label
+  redundantly in the title. The title field is plain text.
+
 ### Dispatch
-After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once with `dispatch: true` to dispatch the `code-factory` workflow for each created issue.
 
 **Objective**: Improve code organization and reduce duplication by identifying actionable semantic refactoring opportunities through Serena semantic function clustering and duplicate detection. Focus on high-impact, actionable findings that enable automated or manual refactoring.

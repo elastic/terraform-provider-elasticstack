@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -38,13 +39,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"the next refresh or apply may fail if the ID is wrong or the assignment does not exist. " +
 			"API reference: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-ml-put-calendar-job",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal composite identifier of the resource.",
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": entitycore.IDAttribute(),
 			"calendar_id": schema.StringAttribute{
 				MarkdownDescription: "Identifier of the ML calendar. Must contain lowercase alphanumeric characters " +
 					"(a-z and 0-9), dots, hyphens, or underscores. Must start and end with an alphanumeric character.",

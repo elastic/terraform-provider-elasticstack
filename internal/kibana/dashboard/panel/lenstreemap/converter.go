@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -38,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsTreemapNoESQLTypeTreemap)
+	return string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -95,22 +94,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "treemap_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.TreemapConfigModel
-	if blocks.TreemapConfig != nil {
-		cpy := *blocks.TreemapConfig
-		prior = &cpy
-	}
-	blocks.TreemapConfig = &models.TreemapConfigModel{}
-
-	if noESQL, err := attrs.AsKibanaHTTPAPIsTreemapNoESQL(); err == nil && !isTreemapNoESQLCandidateActuallyESQL(noESQL) {
-		return treemapConfigFromAPINoESQL(ctx, blocks.TreemapConfig, prior, noESQL)
-	}
-
-	esql, err := attrs.AsKibanaHTTPAPIsTreemapESQL()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return treemapConfigFromAPIESQL(ctx, blocks.TreemapConfig, prior, esql)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.TreemapConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.TreemapConfig, prior,
+		attrs.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsTreemapESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		treemapConfigFromAPINoESQL,
+		treemapConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

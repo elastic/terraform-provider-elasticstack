@@ -39,7 +39,7 @@ resource "elasticstack_fleet_output" "example" {
     broker_timeout    = <optional+computed, float32>
     client_id         = <optional+computed, string>
     compression       = <optional, string>   # one of: "gzip", "snappy", "lz4", "none"
-    compression_level = <optional+computed, int64> # only valid when compression = "gzip"; one of: -1, 0, 1
+    compression_level = <optional+computed, int64> # only valid when compression = "gzip"; defaults to 4 when omitted; one of: -1, 0, 1
     connection_type   = <optional, string>   # one of: "plaintext", "encryption"; only when auth_type = "none"
     topic             = <optional, string>
     partition         = <optional, string>   # one of: "random", "round_robin", "hash"
@@ -90,7 +90,9 @@ data "elasticstack_fleet_output" "example" {
   }))>
 }
 ```
+
 ## Requirements
+
 ### Requirement: Fleet Output CRUD APIs (REQ-001–REQ-004)
 
 The resource SHALL use the Fleet Create output API to create outputs. The resource SHALL use the Fleet Get output API to read outputs. The resource SHALL use the Fleet Update output API to update outputs. The resource SHALL use the Fleet Delete output API to delete outputs. When the Fleet API returns a non-success status for any create, update, or delete operation, the resource SHALL surface the error to Terraform diagnostics.
@@ -242,15 +244,47 @@ When `type = "kafka"` is configured, the resource SHALL verify that the Kibana/F
 - WHEN create or update runs
 - THEN the resource SHALL error with "Unsupported version for Kafka output" and SHALL NOT call the Fleet API
 
-### Requirement: Kafka compression_level constraint (REQ-011)
+### Requirement: Kafka compression_level constraint and default (REQ-011)
 
 The `kafka.compression_level` attribute SHALL only be accepted when `kafka.compression` equals `"gzip"`. The schema validator SHALL enforce this constraint. When building the API request, `compression_level` SHALL only be sent when `compression` is `"gzip"`.
+
+When `kafka.compression` is `"gzip"` and `kafka.compression_level` is omitted, the resource SHALL set `compression_level` to `4` during planning. An explicitly configured level SHALL be preserved. An unknown level value SHALL remain unknown so Terraform can resolve interpolated configuration. The resource SHALL NOT set a default level for non-gzip compression.
 
 #### Scenario: compression_level with non-gzip
 
 - GIVEN `kafka.compression = "snappy"` and `kafka.compression_level` is set
 - WHEN the resource is configured
 - THEN schema validation SHALL return an error
+
+#### Scenario: gzip compression level defaults during planning
+
+- GIVEN `kafka.compression = "gzip"` and `kafka.compression_level` is omitted
+- WHEN Terraform generates a plan
+- THEN `kafka.compression_level` SHALL be planned as `4`
+
+#### Scenario: explicit gzip compression level is preserved
+
+- GIVEN `kafka.compression = "gzip"` and `kafka.compression_level = 8`
+- WHEN Terraform generates a plan
+- THEN `kafka.compression_level` SHALL remain `8`
+
+### Requirement: Kafka SASL server default preservation
+
+When `kafka.sasl` is explicitly null in the configured Kafka model, the resource SHALL preserve null for `kafka.sasl` in state if Fleet returns a server-injected SASL block. This includes Fleet returning `mechanism = "PLAIN"` for `kafka.auth_type = "user_pass"`. This preservation SHALL prevent post-apply inconsistency and perpetual drift. When `kafka.sasl` is configured, the resource SHALL map the SASL block returned by Fleet into state.
+
+#### Scenario: Fleet injects SASL for an omitted block
+
+- GIVEN `kafka.auth_type = "user_pass"` and `kafka.sasl` is omitted
+- AND Fleet returns `kafka.sasl.mechanism = "PLAIN"`
+- WHEN the resource reads the output after create or update
+- THEN `kafka.sasl` SHALL remain null in Terraform state
+
+#### Scenario: configured SASL is read from Fleet
+
+- GIVEN `kafka.sasl.mechanism = "SCRAM-SHA-256"` is configured
+- AND Fleet returns `kafka.sasl.mechanism = "SCRAM-SHA-256"`
+- WHEN the resource reads the output
+- THEN Terraform state SHALL contain `kafka.sasl.mechanism = "SCRAM-SHA-256"`
 
 ### Requirement: Kafka connection_type constraint (REQ-012)
 
@@ -569,4 +603,3 @@ The resource documentation SHALL note that removing `config_yaml` from configura
 - AND someone changes the value to `"a: 2\n"` outside of Terraform
 - WHEN refresh runs
 - THEN `config_yaml` SHALL be updated to `"a: 2\n"` in state and the next plan SHALL show the drift
-
