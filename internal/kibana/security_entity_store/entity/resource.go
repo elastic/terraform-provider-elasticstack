@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -63,13 +62,6 @@ func newResource() *Resource {
 
 func NewResource() resource.Resource {
 	return newResource()
-}
-
-func NormalizeSpaceID(v types.String) string {
-	if v.IsNull() || v.IsUnknown() {
-		return clients.DefaultSpaceID
-	}
-	return clients.EffectiveSpaceID(v.ValueString())
 }
 
 // ValidateConfig implements resource.ResourceWithValidateConfig.

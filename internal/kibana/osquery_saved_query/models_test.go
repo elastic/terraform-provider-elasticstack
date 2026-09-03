@@ -88,15 +88,6 @@ func TestSetCompositeIdentity(t *testing.T) {
 	})
 }
 
-func TestCompositeSpaceID(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "production", compositeSpaceID(types.StringValue("production")))
-	assert.Equal(t, "default", compositeSpaceID(types.StringNull()))
-	assert.Equal(t, "default", compositeSpaceID(types.StringUnknown()))
-	assert.Equal(t, "default", compositeSpaceID(types.StringValue("")))
-}
-
 func TestPlatformConversion(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

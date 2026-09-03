@@ -39,7 +39,7 @@ func readEntityStoreEntitiesDataSource(
 	client *clients.KibanaScopedClient,
 	model dsModel,
 ) (dsModel, diag.Diagnostics) {
-	spaceID := entity.NormalizeSpaceID(model.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(model.SpaceID)
 
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
 	var diags diag.Diagnostics

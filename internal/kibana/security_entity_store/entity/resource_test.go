@@ -67,44 +67,6 @@ func TestCompositeIDForEntity(t *testing.T) {
 	}
 }
 
-func TestNormalizeSpaceID(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  string
-		isNull bool
-		want   string
-	}{
-		{
-			name:  "default space from empty",
-			input: "",
-			want:  "default",
-		},
-		{
-			name:  "custom space preserved",
-			input: "production",
-			want:  "production",
-		},
-		{
-			name:   "null returns default",
-			isNull: true,
-			want:   "default",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var v = types.StringValue(tt.input)
-			if tt.isNull {
-				v = types.StringNull()
-			}
-			got := NormalizeSpaceID(v)
-			if got != tt.want {
-				t.Errorf("NormalizeSpaceID(%v) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestResource_importState_seedsCompositeIdentity(t *testing.T) {
 	t.Parallel()
 

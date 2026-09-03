@@ -153,14 +153,6 @@ func TestEcsMappingDataSourceElemType_matchesSchema(t *testing.T) {
 		"getEcsMappingElemType() drifted from data source ecs_mapping nested object; update both together")
 }
 
-func TestResolveDataSourceSpaceID(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "production", resolveDataSourceSpaceID(types.StringValue("production")))
-	assert.Equal(t, clients.DefaultSpaceID, resolveDataSourceSpaceID(types.StringNull()))
-	assert.Equal(t, clients.DefaultSpaceID, resolveDataSourceSpaceID(types.StringValue("")))
-}
-
 func TestDataSourceModel_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
 

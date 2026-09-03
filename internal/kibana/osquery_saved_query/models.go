@@ -171,7 +171,7 @@ func (m *osquerySavedQueryBaseModel) populateSharedFields(
 }
 
 func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) {
-	spaceID := compositeSpaceID(m.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(m.SpaceID)
 
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
@@ -185,16 +185,6 @@ func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.Sec
 	if m.SpaceID.IsNull() || (typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() == "") {
 		m.SpaceID = types.StringValue(spaceID)
 	}
-}
-
-// compositeSpaceID returns the space segment for composite IDs. Unknown space_id
-// falls back to clients.DefaultSpaceID for ID composition without overwriting unknown state.
-func compositeSpaceID(spaceID types.String) string {
-	if typeutils.IsKnown(spaceID) {
-		return clients.EffectiveSpaceID(spaceID.ValueString())
-	}
-
-	return clients.DefaultSpaceID
 }
 
 func knownSavedObjectID(savedObjectID types.String) (string, bool) {
