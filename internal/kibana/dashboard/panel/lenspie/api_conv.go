@@ -231,20 +231,16 @@ func pieChartConfigToAPINoESQL(m *models.PieChartConfigModel) (kbapi.KibanaHTTPA
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
-		for i, metric := range m.Metrics {
-			if err := json.Unmarshal([]byte(metric.Config.ValueString()), &metrics[i]); err != nil {
-				diags.AddError("Failed to unmarshal metric", err.Error())
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, pieMetricConfigOf, "metric", &diags) {
+			return chart, diags
 		}
 		chart.Metrics = metrics
 	}
 
 	if len(m.GroupBy) > 0 {
 		groupBy := make([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_GroupBy_Item, len(m.GroupBy))
-		for i, grp := range m.GroupBy {
-			if err := json.Unmarshal([]byte(grp.Config.ValueString()), &groupBy[i]); err != nil {
-				diags.AddError("Failed to unmarshal group_by", err.Error())
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.GroupBy, groupBy, pieGroupByConfigOf, "group_by", &diags) {
+			return chart, diags
 		}
 		chart.GroupBy = &groupBy
 	}

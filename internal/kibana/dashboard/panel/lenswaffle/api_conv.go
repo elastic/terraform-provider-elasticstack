@@ -368,19 +368,15 @@ func waffleConfigToAPINoESQL(m *models.WaffleConfigModel) (kbapi.KibanaHTTPAPIsW
 	}
 
 	metrics := make([]kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
-	for i, met := range m.Metrics {
-		if err := json.Unmarshal([]byte(met.Config.ValueString()), &metrics[i]); err != nil {
-			diags.AddError("Failed to unmarshal metric config", err.Error())
-		}
+	if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, waffleMetricConfigOf, "metric config", &diags) {
+		return api, diags
 	}
 	api.Metrics = metrics
 
 	if len(m.GroupBy) > 0 {
 		gb := make([]kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel_GroupBy_Item, len(m.GroupBy))
-		for i, g := range m.GroupBy {
-			if err := json.Unmarshal([]byte(g.Config.ValueString()), &gb[i]); err != nil {
-				diags.AddError("Failed to unmarshal group_by config", err.Error())
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.GroupBy, gb, waffleGroupByConfigOf, "group_by config", &diags) {
+			return api, diags
 		}
 		api.GroupBy = &gb
 	}
