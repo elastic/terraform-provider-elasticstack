@@ -537,7 +537,7 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 	commandParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams()
 	if err == nil {
 		switch commandParams.Command {
-		case "isolate":
+		case endpointCommandIsolate:
 			defaultParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams()
 			if err != nil {
 				diags.AddError("Failed to parse endpoint default params", fmt.Sprintf("Error: %s", err.Error()))
@@ -550,34 +550,60 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 				}
 				paramsModel.Config = types.ObjectNull(getEndpointProcessConfigType())
 			}
-		case "kill-process", "suspend-process":
+		case endpointCommandKillProcess, endpointCommandSuspendProcess:
 			processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams()
 			if err != nil {
 				diags.AddError("Failed to parse endpoint processes params", fmt.Sprintf("Error: %s", err.Error()))
+				break
+			}
+			var (
+				command   string
+				comment   *string
+				field     string
+				overwrite *bool
+			)
+			if commandParams.Command == endpointCommandKillProcess {
+				killParams, killErr := processesParams.AsSecurityDetectionsAPIKillProcessParams()
+				if killErr != nil {
+					diags.AddError("Failed to parse endpoint kill-process params", fmt.Sprintf("Error: %s", killErr.Error()))
+					break
+				}
+				command = string(killParams.Command)
+				comment = killParams.Comment
+				field = killParams.Config.Field
+				overwrite = killParams.Config.Overwrite
 			} else {
-				paramsModel.Command = types.StringValue(string(processesParams.Command))
-				if processesParams.Comment != nil {
-					paramsModel.Comment = types.StringPointerValue(processesParams.Comment)
-				} else {
-					paramsModel.Comment = types.StringNull()
+				suspendParams, suspendErr := processesParams.AsSecurityDetectionsAPISuspendProcessParams()
+				if suspendErr != nil {
+					diags.AddError("Failed to parse endpoint suspend-process params", fmt.Sprintf("Error: %s", suspendErr.Error()))
+					break
 				}
+				command = string(suspendParams.Command)
+				comment = suspendParams.Comment
+				field = suspendParams.Config.Field
+				overwrite = suspendParams.Config.Overwrite
+			}
+			paramsModel.Command = types.StringValue(command)
+			if comment != nil {
+				paramsModel.Comment = types.StringPointerValue(comment)
+			} else {
+				paramsModel.Comment = types.StringNull()
+			}
 
-				// Convert config
-				configModel := EndpointProcessConfigModel{
-					Field: types.StringValue(processesParams.Config.Field),
-				}
-				if processesParams.Config.Overwrite != nil {
-					configModel.Overwrite = types.BoolPointerValue(processesParams.Config.Overwrite)
-				} else {
-					configModel.Overwrite = types.BoolNull()
-				}
+			configModel := EndpointProcessConfigModel{
+				Field: types.StringValue(field),
+			}
+			if overwrite != nil {
+				configModel.Overwrite = types.BoolPointerValue(overwrite)
+			} else {
+				configModel.Overwrite = types.BoolNull()
+			}
 
-				configObjectValue, configDiags := types.ObjectValueFrom(ctx, getEndpointProcessConfigType(), configModel)
-				if configDiags.HasError() {
-					diags.Append(configDiags...)
-				} else {
-					paramsModel.Config = configObjectValue
-				}
+			configObjectValue, configDiags := types.ObjectValueFrom(ctx, getEndpointProcessConfigType(), configModel)
+			if configDiags.HasError() {
+				diags.Append(configDiags...)
+			} else {
+				paramsModel.Config = configObjectValue
 			}
 		}
 	} else {
