@@ -308,8 +308,11 @@ func resolveArtifactsUnknowns(am artifactsModel) artifactsModel {
 // preserved and the blob is not surfaced as `content`.
 //
 // On stacks older than 9.5.0 the Kibana GET API does not return artifacts
-// (elastic/kibana#247279); in that case the prior (plan/state) value is
-// preserved so write-only management does not thrash state.
+// (elastic/kibana#247279); when the entire artifacts key is omitted the
+// prior (plan/state) value is preserved so write-only management does not
+// thrash state. When the API does return artifacts, omitted siblings are
+// cleared so out-of-band deletion of just the guide or just dashboards is
+// visible on refresh.
 func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *models.AlertingRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -325,12 +328,12 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 		return diags
 	}
 
-	apiHasIG := rule.Artifacts != nil && rule.Artifacts.InvestigationGuide != nil
-	apiHasDashboards := rule.Artifacts != nil && len(rule.Artifacts.Dashboards) > 0
-
-	if !apiHasIG && !apiHasDashboards {
+	if rule.Artifacts == nil {
 		// Nothing returned by the API (nothing configured, or a pre-9.5.0 stack
-		// that does not return artifacts).
+		// that does not return artifacts). Preserve configured values only when
+		// the entire artifacts key is omitted — not per-field — so that on
+		// 9.5.0+ an out-of-band deletion of just the guide or just dashboards
+		// is visible on refresh.
 		if prior == nil {
 			// Nothing configured: resolve a lingering unknown object to null.
 			if m.Artifacts.IsUnknown() {
@@ -358,8 +361,8 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 		Dashboards:         types.ListNull(getDashboardsElementType()),
 	}
 
-	// Investigation guide.
-	if apiHasIG {
+	// Investigation guide. Omitted sibling stays null (do not preserve prior).
+	if rule.Artifacts.InvestigationGuide != nil {
 		blob := rule.Artifacts.InvestigationGuide.Blob
 		ig := investigationGuideModel{}
 		if priorIG != nil && typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
@@ -379,13 +382,10 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 			return diags
 		}
 		am.InvestigationGuide = igObj
-	} else if prior != nil && typeutils.IsKnown(prior.InvestigationGuide) {
-		// API omitted the guide but one was configured: preserve prior value.
-		am.InvestigationGuide = prior.InvestigationGuide
 	}
 
-	// Dashboards.
-	if apiHasDashboards {
+	// Dashboards. Omitted sibling stays null (do not preserve prior).
+	if len(rule.Artifacts.Dashboards) > 0 {
 		dashboards := make([]dashboardModel, len(rule.Artifacts.Dashboards))
 		for i, dash := range rule.Artifacts.Dashboards {
 			dashboards[i] = dashboardModel{ID: types.StringValue(dash.ID)}
@@ -396,9 +396,6 @@ func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *
 			return diags
 		}
 		am.Dashboards = dashList
-	} else if prior != nil && typeutils.IsKnown(prior.Dashboards) {
-		// API omitted dashboards but some were configured: preserve prior value.
-		am.Dashboards = prior.Dashboards
 	}
 
 	artObj, d := buildArtifactsObject(ctx, am)
@@ -756,9 +753,11 @@ func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.Alerting
 			}
 			blob = string(data)
 		}
-		if blob != "" {
-			out.InvestigationGuide = &models.AlertingRuleInvestigationGuide{Blob: blob}
-		}
+		// Send the guide whenever it is configured, including an explicit
+		// empty `content = ""`. Dropping empty blobs omitted the artifacts
+		// key entirely and produced a silent no-op (or inconsistent-result
+		// after apply) instead of writing the empty guide.
+		out.InvestigationGuide = &models.AlertingRuleInvestigationGuide{Blob: blob}
 	}
 
 	if typeutils.IsKnown(am.Dashboards) && !am.Dashboards.IsNull() {

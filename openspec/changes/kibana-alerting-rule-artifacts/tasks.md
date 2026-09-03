@@ -20,12 +20,12 @@
 ### Dashboards (this follow-up)
 
 - [x] 2.1d Added `AlertingRuleArtifactDashboard` model type and dashboards mapping in the client builders (`artifactsWire.Dashboards` on the request; `ConvertResponseToModel` reads `artifacts.dashboards[].id`).
-- [x] 2.3d Added the `dashboards` list nested **attribute** (required `id` string) to the schema, `Optional`+`Computed` with `listplanmodifier.UseStateForUnknown()`. Consistent with the attribute-based `artifacts` (no revert to blocks needed). The `artifacts` object validator was relaxed from `AlsoRequires(investigation_guide)` to a `ValidateConfig` "at least one of investigation_guide or dashboards" check.
+- [x] 2.3d Added the `dashboards` list nested **attribute** (required `id` string) to the schema, `Optional`+`Computed` with `listplanmodifier.UseStateForUnknown()`. Consistent with the attribute-based `artifacts` (no revert to blocks needed). At-least-one of `investigation_guide` / `dashboards` is enforced by `listvalidator.AtLeastOneOf` / `objectvalidator.AtLeastOneOf`; `listvalidator.SizeAtLeast(1)` rejects `dashboards = []`.
 - [x] 2.4d Added `dashboardModel` and dashboards conversion in `models.go`; refactored the artifacts rebuild sites (`populateArtifactsFromAPI`, `artifactsToAPI`, `applyInvestigationGuideChecksum`, `setInvestigationGuideChecksumUnknown`) onto a shared `buildArtifactsObject` helper so touching one field never drops the other. Read path preserves prior dashboards when the API omits artifacts (pre-9.5.0).
 
 ## 3. Testing
 
-- [x] 3.1 Added `TestAccResourceAlertingRuleArtifactsDashboards`: create with two linked dashboards, update the list (add/remove), and a 9.5.0-gated import step that proves the GET round-trip. Plus unit tests for dashboards request/response mapping and model conversion, and `validateArtifactsNotEmpty`.
+- [x] 3.1 Added `TestAccResourceAlertingRuleArtifactsDashboards`: create with two linked dashboards, update the list (add/remove), and a 9.5.0-gated import step that proves the GET round-trip. Plus unit tests for dashboards request/response mapping and model conversion, empty-`content` write, omitted-sibling refresh, and schema validators rejecting an empty dashboards list.
 - [x] 3.2 Added `TestAccResourceAlertingRuleInvestigationGuide` inline-`content` steps (create + update text; asserts state stores/updates the text). Gated at Stack `>= 9.1.0`.
 - [x] 3.3 Added `TestAccResourceAlertingRuleInvestigationGuide` `content_path` steps: writes a temp file, creates the rule, asserts `checksum` is set, mutates the file via `PreConfig`, and asserts a non-empty (update) plan via `plancheck.ExpectResourceAction`.
 - [x] 3.4 The dashboards acceptance test's update step exercises replacing the dashboards list; unit tests cover the empty-`artifacts` rejection and dashboards preservation when the API omits artifacts.

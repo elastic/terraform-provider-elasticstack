@@ -158,6 +158,35 @@ func Test_buildRequestBody_includesDashboards(t *testing.T) {
 	require.NotContains(t, string(raw), `"investigation_guide"`)
 }
 
+func Test_buildRequestBody_includesEmptyInvestigationGuideBlob(t *testing.T) {
+	blob := ""
+	body, err := buildCreateRequestBody(ruleWithArtifacts(&blob))
+	require.NoError(t, err)
+	raw, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(raw), `"artifacts"`)
+	require.Contains(t, string(raw), `"investigation_guide"`)
+	require.Contains(t, string(raw), `"blob":""`)
+}
+
+func Test_ConvertResponseToModel_emptyArtifactsObject(t *testing.T) {
+	resp := map[string]any{
+		"id":           "r1",
+		"name":         "rule",
+		"consumer":     "alerts",
+		"rule_type_id": ".index-threshold",
+		"schedule":     map[string]any{"interval": "1m"},
+		"params":       map[string]any{},
+		"artifacts":    map[string]any{},
+	}
+
+	model, diags := ConvertResponseToModel("default", resp)
+	require.False(t, diags.HasError())
+	require.NotNil(t, model.Artifacts)
+	require.Nil(t, model.Artifacts.InvestigationGuide)
+	require.Empty(t, model.Artifacts.Dashboards)
+}
+
 func Test_ConvertResponseToModel_readsDashboards(t *testing.T) {
 	resp := map[string]any{
 		"id":           "r1",

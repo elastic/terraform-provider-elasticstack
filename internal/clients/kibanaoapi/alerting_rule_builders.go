@@ -165,17 +165,17 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 
 	var artifacts *models.AlertingRuleArtifacts
 	if intermediate.Artifacts != nil {
+		// Keep a non-nil artifacts object whenever the API returned the key,
+		// even if both sub-fields are empty, so the read path can distinguish
+		// "GET omitted artifacts" (pre-9.5.0) from "artifacts present but a
+		// sibling was cleared".
+		artifacts = &models.AlertingRuleArtifacts{}
 		if intermediate.Artifacts.InvestigationGuide != nil {
-			artifacts = &models.AlertingRuleArtifacts{
-				InvestigationGuide: &models.AlertingRuleInvestigationGuide{
-					Blob: intermediate.Artifacts.InvestigationGuide.Blob,
-				},
+			artifacts.InvestigationGuide = &models.AlertingRuleInvestigationGuide{
+				Blob: intermediate.Artifacts.InvestigationGuide.Blob,
 			}
 		}
 		if len(intermediate.Artifacts.Dashboards) > 0 {
-			if artifacts == nil {
-				artifacts = &models.AlertingRuleArtifacts{}
-			}
 			dashboards := make([]models.AlertingRuleArtifactDashboard, len(intermediate.Artifacts.Dashboards))
 			for i, d := range intermediate.Artifacts.Dashboards {
 				dashboards[i] = models.AlertingRuleArtifactDashboard{ID: d.ID}

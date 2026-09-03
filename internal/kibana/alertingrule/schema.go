@@ -208,9 +208,6 @@ func getSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: artifactsDescription,
 				Optional:            true,
 				Computed:            true,
-				// At least one of investigation_guide / dashboards must be set when
-				// artifacts is present; this is enforced in ValidateConfig because
-				// object validators cannot express "at least one nested attribute".
 				PlanModifiers: []planmodifier.Object{
 					objectplanmodifier.UseStateForUnknown(),
 				},
@@ -219,6 +216,13 @@ func getSchema(_ context.Context) schema.Schema {
 						MarkdownDescription: dashboardsDescription,
 						Optional:            true,
 						Computed:            true,
+						Validators: []validator.List{
+							listvalidator.AtLeastOneOf(
+								path.MatchRelative().AtParent().AtName(attrInvestigationGuide),
+								path.MatchRelative().AtParent().AtName(attrDashboards),
+							),
+							listvalidator.SizeAtLeast(1),
+						},
 						PlanModifiers: []planmodifier.List{
 							listplanmodifier.UseStateForUnknown(),
 						},
@@ -235,6 +239,12 @@ func getSchema(_ context.Context) schema.Schema {
 						MarkdownDescription: investigationGuideDescription,
 						Optional:            true,
 						Computed:            true,
+						Validators: []validator.Object{
+							objectvalidator.AtLeastOneOf(
+								path.MatchRelative().AtParent().AtName(attrInvestigationGuide),
+								path.MatchRelative().AtParent().AtName(attrDashboards),
+							),
+						},
 						PlanModifiers: []planmodifier.Object{
 							objectplanmodifier.UseStateForUnknown(),
 						},

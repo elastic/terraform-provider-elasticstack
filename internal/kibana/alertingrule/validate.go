@@ -119,7 +119,6 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 	}
 
 	validateNotifyWhenThrottleFrequencyExclusivity(ctx, &data, &resp.Diagnostics)
-	validateArtifactsNotEmpty(ctx, &data, &resp.Diagnostics)
 
 	if !typeutils.IsKnown(data.Params) || !typeutils.IsKnown(data.RuleTypeID) {
 		return
@@ -443,34 +442,6 @@ func formatParamsValidationErrors(errs []string) string {
 const frequencyExclusivityDetail = "Rule-level notify_when and throttle cannot be combined with actions[*].frequency " +
 	"(per-action notification). Use either rule-level notify_when/throttle or per-action frequency blocks, not both. " +
 	"Kibana does not allow these parameters when notify_when or throttle are defined at the rule level."
-
-// validateArtifactsNotEmpty rejects an `artifacts` object that sets neither
-// investigation_guide nor dashboards (e.g. `artifacts = {}`), which would be a
-// silent no-op that still trips the version gate.
-func validateArtifactsNotEmpty(ctx context.Context, data *alertingRuleModel, diags *diag.Diagnostics) {
-	if !typeutils.IsKnown(data.Artifacts) || data.Artifacts.IsNull() {
-		return
-	}
-	var am artifactsModel
-	diags.Append(data.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
-	if diags.HasError() {
-		return
-	}
-	// Reject when neither nested attribute is meaningfully set, i.e. `artifacts = {}`
-	// or `artifacts = { dashboards = [] }`. An unknown value (e.g. a dashboards list
-	// built from a variable/for-expression or sourced from another resource) is
-	// treated as possibly-set so we do not emit a false positive during validation.
-	guideAbsent := am.InvestigationGuide.IsNull() // unknown -> false (possibly set)
-	dashboardsAbsent := am.Dashboards.IsNull() ||
-		(!am.Dashboards.IsUnknown() && len(am.Dashboards.Elements()) == 0)
-	if guideAbsent && dashboardsAbsent {
-		diags.AddAttributeError(
-			path.Root("artifacts"),
-			"Empty artifacts",
-			"artifacts must set at least one of investigation_guide or a non-empty dashboards list.",
-		)
-	}
-}
 
 func validateNotifyWhenThrottleFrequencyExclusivity(ctx context.Context, data *alertingRuleModel, diags *diag.Diagnostics) {
 	if !configActionsIncludeKnownFrequencyBlock(ctx, data.Actions, diags) {

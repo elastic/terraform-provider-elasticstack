@@ -29,7 +29,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
@@ -281,6 +283,23 @@ func Test_applyInvestigationGuideChecksum_inlineContentClearsChecksum(t *testing
 	require.True(t, ig.Checksum.IsNull())
 }
 
+func Test_toAPIModel_investigationGuide_emptyContent(t *testing.T) {
+	ctx := context.Background()
+
+	m := baseModel()
+	m.Artifacts = artifactsObject(ctx, t, investigationGuideModel{
+		Content:     types.StringValue(""),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringNull(),
+	})
+
+	rule, diags := m.toAPIModel(ctx)
+	require.False(t, diags.HasError())
+	require.NotNil(t, rule.Artifacts)
+	require.NotNil(t, rule.Artifacts.InvestigationGuide)
+	require.Equal(t, "", rule.Artifacts.InvestigationGuide.Blob)
+}
+
 func Test_toAPIModel_dashboardsOnly(t *testing.T) {
 	ctx := context.Background()
 
@@ -399,49 +418,111 @@ func Test_setInvestigationGuideChecksumUnknown_preservesDashboards(t *testing.T)
 	require.True(t, ig.Checksum.IsUnknown())
 }
 
-func Test_validateArtifactsNotEmpty(t *testing.T) {
+func Test_schema_dashboardsValidatorsRejectEmptyList(t *testing.T) {
+	ctx := context.Background()
+	s := getSchema(ctx)
+	artifacts := s.Attributes[attrArtifacts].(schema.SingleNestedAttribute)
+	dashboards := artifacts.Attributes[attrDashboards].(schema.ListNestedAttribute)
+	require.NotEmpty(t, dashboards.Validators)
+
+	empty := dashboardsList(ctx, t)
+	var resp validator.ListResponse
+	for _, v := range dashboards.Validators {
+		v.ValidateList(ctx, validator.ListRequest{
+			Path:           path.Root(attrArtifacts).AtName(attrDashboards),
+			PathExpression: path.MatchRoot(attrArtifacts).AtName(attrDashboards),
+			ConfigValue:    empty,
+		}, &resp)
+	}
+	require.True(t, resp.Diagnostics.HasError(), "empty dashboards = [] must be rejected")
+}
+
+// On 9.5.0+ GET returns artifacts. If the guide is deleted out-of-band while
+// dashboards remain, the omitted sibling must be cleared rather than preserved.
+func Test_populateArtifactsFromAPI_clearsOmittedGuideWhenAPIReturnsDashboards(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("empty artifacts rejected", func(t *testing.T) {
-		var diags diag.Diagnostics
-		data := baseModel()
-		data.Artifacts = artifactsObjectWith(ctx, t,
-			types.ObjectNull(getInvestigationGuideAttrTypes()),
-			types.ListNull(getDashboardsElementType()),
-		)
-		validateArtifactsNotEmpty(ctx, &data, &diags)
-		require.True(t, diags.HasError())
+	igObj, diags := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), investigationGuideModel{
+		Content:     types.StringValue("stale guide"),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringNull(),
 	})
+	require.False(t, diags.HasError())
 
-	t.Run("empty dashboards list rejected", func(t *testing.T) {
-		var diags diag.Diagnostics
-		data := baseModel()
-		data.Artifacts = artifactsObjectWith(ctx, t,
-			types.ObjectNull(getInvestigationGuideAttrTypes()),
-			dashboardsList(ctx, t), // zero elements
-		)
-		validateArtifactsNotEmpty(ctx, &data, &diags)
-		require.True(t, diags.HasError())
-	})
+	m := baseModel()
+	m.Artifacts = artifactsObjectWith(ctx, t, igObj, dashboardsList(ctx, t, "d1"))
 
-	t.Run("dashboards-only accepted", func(t *testing.T) {
-		var diags diag.Diagnostics
-		data := baseModel()
-		data.Artifacts = artifactsObjectWith(ctx, t,
-			types.ObjectNull(getInvestigationGuideAttrTypes()),
-			dashboardsList(ctx, t, "d1"),
-		)
-		validateArtifactsNotEmpty(ctx, &data, &diags)
-		require.False(t, diags.HasError())
-	})
+	rule := &models.AlertingRule{
+		Artifacts: &models.AlertingRuleArtifacts{
+			Dashboards: []models.AlertingRuleArtifactDashboard{{ID: "d1"}},
+		},
+	}
 
-	t.Run("null artifacts accepted", func(t *testing.T) {
-		var diags diag.Diagnostics
-		data := baseModel()
-		data.Artifacts = types.ObjectNull(getArtifactsAttrTypes())
-		validateArtifactsNotEmpty(ctx, &data, &diags)
-		require.False(t, diags.HasError())
+	require.False(t, m.populateArtifactsFromAPI(ctx, rule).HasError())
+
+	am, d := m.artifactsModelFrom(ctx)
+	require.False(t, d.HasError())
+	require.NotNil(t, am)
+	require.True(t, am.InvestigationGuide.IsNull(), "omitted guide must be cleared when API returned artifacts")
+	var dashboards []dashboardModel
+	require.False(t, am.Dashboards.ElementsAs(ctx, &dashboards, false).HasError())
+	require.Len(t, dashboards, 1)
+	require.Equal(t, "d1", dashboards[0].ID.ValueString())
+}
+
+func Test_populateArtifactsFromAPI_clearsOmittedDashboardsWhenAPIReturnsGuide(t *testing.T) {
+	ctx := context.Background()
+
+	igObj, diags := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), investigationGuideModel{
+		Content:     types.StringValue("keep me"),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringNull(),
 	})
+	require.False(t, diags.HasError())
+
+	m := baseModel()
+	m.Artifacts = artifactsObjectWith(ctx, t, igObj, dashboardsList(ctx, t, "stale-dash"))
+
+	rule := &models.AlertingRule{
+		Artifacts: &models.AlertingRuleArtifacts{
+			InvestigationGuide: &models.AlertingRuleInvestigationGuide{Blob: "keep me"},
+		},
+	}
+
+	require.False(t, m.populateArtifactsFromAPI(ctx, rule).HasError())
+
+	am, d := m.artifactsModelFrom(ctx)
+	require.False(t, d.HasError())
+	require.NotNil(t, am)
+	require.True(t, am.Dashboards.IsNull(), "omitted dashboards must be cleared when API returned artifacts")
+	ig, igDiags := m.investigationGuideFrom(ctx)
+	require.False(t, igDiags.HasError())
+	require.NotNil(t, ig)
+	require.Equal(t, "keep me", ig.Content.ValueString())
+}
+
+func Test_populateArtifactsFromAPI_clearsBothWhenAPIReturnsEmptyArtifacts(t *testing.T) {
+	ctx := context.Background()
+
+	igObj, diags := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), investigationGuideModel{
+		Content:     types.StringValue("stale guide"),
+		ContentPath: types.StringNull(),
+		Checksum:    types.StringNull(),
+	})
+	require.False(t, diags.HasError())
+
+	m := baseModel()
+	m.Artifacts = artifactsObjectWith(ctx, t, igObj, dashboardsList(ctx, t, "stale-dash"))
+
+	require.False(t, m.populateArtifactsFromAPI(ctx, &models.AlertingRule{
+		Artifacts: &models.AlertingRuleArtifacts{},
+	}).HasError())
+
+	am, d := m.artifactsModelFrom(ctx)
+	require.False(t, d.HasError())
+	require.NotNil(t, am)
+	require.True(t, am.InvestigationGuide.IsNull())
+	require.True(t, am.Dashboards.IsNull())
 }
 
 // On pre-9.5.0 stacks, a rule that configures only dashboards has an unknown

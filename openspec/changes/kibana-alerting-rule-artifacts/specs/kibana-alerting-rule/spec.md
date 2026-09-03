@@ -4,10 +4,10 @@
 
 The `elasticstack_kibana_alerting_rule` resource SHALL expose an optional **`artifacts`** single nested **attribute** (not a nested block; HCL uses attribute-assignment syntax `artifacts = { … }`) at the rule level. When configured, it MAY contain:
 
-- A **`dashboards`** list nested attribute (zero or more entries, each with a required `id` string attribute), `Optional`+`Computed` with `UseStateForUnknown()`.
+- A **`dashboards`** list nested attribute (one or more entries when set, each with a required `id` string attribute), `Optional`+`Computed` with `UseStateForUnknown()`. An explicitly empty `dashboards = []` SHALL be rejected.
 - An **`investigation_guide`** single nested attribute with optional `content` (string), optional `content_path` (string), and computed `checksum` (string).
 
-When `artifacts` is present in configuration, **at least one** of `investigation_guide` or `dashboards` SHALL be set; an empty `artifacts = {}` SHALL be rejected at validate time (object validators cannot express "at least one nested attribute", so this is enforced in `ValidateConfig`).
+When `artifacts` is present in configuration, **at least one** of `investigation_guide` or `dashboards` SHALL be set. The provider SHALL enforce this with schema validators (`listvalidator.AtLeastOneOf` / `objectvalidator.AtLeastOneOf` and `listvalidator.SizeAtLeast(1)`), which reject `artifacts = {}` and `artifacts = { dashboards = [] }` while deferring when a referenced value is unknown.
 
 The `artifacts` attribute SHALL be entirely optional. When absent from configuration, the provider SHALL treat it as unconfigured and SHALL omit the `artifacts` key from create and update request bodies (allowing Kibana to preserve any previously stored artifact values).
 
@@ -22,6 +22,12 @@ The `artifacts` attribute SHALL be entirely optional. When absent from configura
 - GIVEN a configuration that sets `artifacts = {}` with neither `investigation_guide` nor `dashboards`
 - WHEN Terraform validates configuration
 - THEN the provider SHALL return a validation diagnostic requiring at least one of `investigation_guide` or `dashboards`
+
+#### Scenario: Empty dashboards list rejected
+
+- GIVEN a configuration that sets `artifacts = { dashboards = [] }`
+- WHEN Terraform validates configuration
+- THEN the provider SHALL return a validation diagnostic requiring at least one dashboard id
 
 #### Scenario: Rule without artifacts
 
@@ -64,7 +70,7 @@ When the practitioner configures an `investigation_guide` block, **exactly one**
 When the practitioner configures `artifacts`, the create and update request bodies sent to Kibana SHALL include an `artifacts` JSON object whose structure mirrors the configured values:
 
 - `artifacts.dashboards`: JSON array of `{"id": "<id>"}` objects, one per configured `dashboards` entry. When only `dashboards` is configured, the request SHALL omit `investigation_guide` (and vice versa).
-- `artifacts.investigation_guide.blob`: the investigation guide content. When `content` is configured, `blob` SHALL equal the `content` string. When `content_path` is configured, the provider SHALL read the file at that path and send its content as `blob`.
+- `artifacts.investigation_guide.blob`: the investigation guide content. When `content` is configured (including an empty string), `blob` SHALL equal the `content` string and the investigation guide SHALL still be sent. When `content_path` is configured, the provider SHALL read the file at that path and send its content as `blob`.
 
 When the practitioner does **not** configure `artifacts`, the provider SHALL **omit** the `artifacts` key from the update request body so Kibana does not alter existing rule-level artifact state for that field.
 
@@ -86,6 +92,12 @@ When the practitioner does **not** configure `artifacts`, the provider SHALL **o
 - WHEN create runs
 - THEN the create request body SHALL include `artifacts.investigation_guide.blob` equal to the file's contents
 
+#### Scenario: Create with empty investigation guide content
+
+- GIVEN a configured `artifacts` attribute with `investigation_guide.content` set to an empty string and no dashboards
+- WHEN create runs
+- THEN the create request body SHALL include `artifacts.investigation_guide.blob` equal to the empty string
+
 ### Requirement: Read path — `artifacts` state mapping (REQ-048)
 
 After a successful create or update (and on refresh reads), if the Kibana API response includes `artifacts`, the provider SHALL populate `artifacts` in state as follows:
@@ -94,7 +106,9 @@ After a successful create or update (and on refresh reads), if the Kibana API re
 - `artifacts.investigation_guide.content`: if prior state used `content` (i.e., `content_path` was null in prior state), the provider SHALL set `content` in state from the API-returned `blob`. If prior state used `content_path` (i.e., `content` was null), the provider SHALL leave `content` null and SHALL NOT overwrite `content_path` from the API response.
 - `artifacts.investigation_guide.checksum`: NOT updated from the API on read; it is managed exclusively by the plan modifier (see REQ-049).
 
-If the API response omits `artifacts` and the prior state value was null, the provider SHALL set `artifacts` to null. If the API omits `artifacts` and the prior state had a known non-null value, the provider SHALL keep the prior known value (consistent with the preserve-on-partial-response pattern used for `scheduled_task_id` and `alert_delay`).
+If the API response omits the entire `artifacts` key and the prior state value was null, the provider SHALL set `artifacts` to null. If the API omits the entire `artifacts` key and the prior state had a known non-null value, the provider SHALL keep the prior known value (pre-9.5.0 write-only GET; elastic/kibana#247279).
+
+When the API response includes `artifacts` (even if only one sub-field is present, or both are empty), the provider SHALL map present fields from the API and SHALL set omitted sibling fields to null rather than preserving prior state, so out-of-band deletion of just the guide or just dashboards is visible on refresh.
 
 #### Scenario: Read maps blob to content when prior state used content
 
@@ -107,6 +121,12 @@ If the API response omits `artifacts` and the prior state value was null, the pr
 - GIVEN prior state has `investigation_guide.content_path` set and `investigation_guide.content` null
 - WHEN the provider reads the rule from Kibana
 - THEN `investigation_guide.content_path` SHALL remain unchanged and `investigation_guide.content` SHALL remain null in state
+
+#### Scenario: Read clears omitted sibling when API returns artifacts
+
+- GIVEN prior state has both an investigation guide and dashboards, and the API returns `artifacts` containing only dashboards
+- WHEN the provider reads the rule from Kibana
+- THEN `artifacts.dashboards` SHALL reflect the API ids and `artifacts.investigation_guide` SHALL be null
 
 ### Requirement: `content_path` checksum and drift detection (REQ-049)
 
