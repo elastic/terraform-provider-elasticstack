@@ -31,6 +31,14 @@ The `compute-packages` step SHALL:
 - **AND** the acceptance test step is skipped
 - **AND** the job exits 0
 
+#### Scenario: Tool invocation fails — job fails rather than skipping the suite
+
+- **WHEN** a PR event triggers the workflow
+- **AND** the `go run ./scripts/targeted-testacc/...` invocation in the compute-packages step exits non-zero
+- **THEN** the step SHALL emit an error annotation and fail
+- **AND** `has_packages` SHALL NOT be set to a skipping value
+- **AND** the acceptance test suite SHALL NOT be silently skipped with a green job
+
 #### Scenario: Push to main — stack starts and full suite runs
 
 - **WHEN** a push to `main` triggers the workflow
@@ -84,6 +92,30 @@ The stack teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL
 
 ## MODIFIED Requirements
 
+### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
+
+The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`. The workflow SHALL also run on `merge_group` events so that merge-queue runs execute the authoritative full acceptance suite.
+
+#### Scenario: Push to main
+
+- GIVEN a `push` to `main`
+- WHEN the change-classification job reports `provider_changes=true`
+- THEN build, lint, and test jobs MAY run per other requirements
+
+#### Scenario: Push to a Renovate branch
+
+- GIVEN a `push` to a branch matching `renovate/**`
+- WHEN the workflow is dispatched
+- THEN the workflow SHALL run so commit check runs exist for branch automerge
+
+#### Scenario: Merge queue event triggers workflow
+
+- GIVEN a `merge_group` event from the pull request merge queue
+- WHEN the workflow is triggered
+- THEN the workflow SHALL run and execute the full acceptance test suite for the merged result
+
+---
+
 ### Requirement: Acceptance test job structure (REQ-009–REQ-014)
 
 The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
@@ -127,7 +159,7 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 
 - **GIVEN** a workflow run whose changed files are all under `openspec/`
 - **WHEN** the acceptance test job evaluates its execution conditions
-- **THEN** the matrix acceptance `test` job SHALL be skipped (via the change-classification gate, unchanged)
+- **THEN** the matrix acceptance `test` job SHALL be skipped
 
 #### Scenario: Compose step timeout prevents hung pull
 
@@ -138,8 +170,8 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 
 #### Scenario: Matrix excludes 7.x stack versions
 
-- **GIVEN** the matrix version list
-- **THEN** no version below `8.0.0` SHALL appear in the default matrix entries
+- **WHEN** the acceptance matrix is evaluated
+- **THEN** every configured stack version SHALL be 8.0.0 or higher, except snapshot labels that represent later unreleased stack versions
 
 #### Scenario: Provider change runs stack and tests
 

@@ -18,7 +18,11 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -92,25 +96,95 @@ func init() {
 	}
 }
 
-func TestExtractFromSource_AllFourPatterns(t *testing.T) {
+func TestExtractFromSource_AllCoveredConstructors(t *testing.T) {
 	src := `package mixed
 
 func init() {
 	_ = entitycore.NewResourceBase(entitycore.ComponentKibana, "space")
+	_ = entitycore.NewDataSourceBase(entitycore.ComponentKibana, "data_view")
+	_ = entitycore.NewEphemeralBase(entitycore.ComponentFleet, "agent")
+	_ = entitycore.NewActionBase(entitycore.ComponentAPM, "source_map")
 	_ = entitycore.NewElasticsearchResource[Model]("index_template", opts)
+	_ = entitycore.NewElasticsearchDataSource[Model]("role", schema, read)
+	_ = entitycore.NewElasticsearchEphemeralResource[Model, State]("apikey", opts)
+	_ = entitycore.NewElasticsearchAction[Model]("snapshot_create", opts)
 	_ = entitycore.NewKibanaResource[Model](entitycore.ComponentKibana, "slo", opts)
 	_ = entitycore.NewKibanaDataSource[Model](entitycore.ComponentKibana, "spaces", opts)
+	_ = entitycore.NewKibanaEphemeralResource[Model, State]("synthetic", opts)
+	_ = entitycore.NewKibanaAction[Model]("bulk_upload", opts)
 }`
 
 	got := extractFromSource(src, nil)
 	want := []EntityRef{
+		// baseEntityRE
 		{Component: "kibana", Name: "space"},
-		{Component: "elasticsearch", Name: "index_template"},
+		{Component: "kibana", Name: "data_view"},
+		{Component: "fleet", Name: "agent"},
+		{Component: "apm", Name: "source_map"},
+		// kibanaComponentRE
 		{Component: "kibana", Name: "slo"},
 		{Component: "kibana", Name: "spaces"},
+		// elasticsearchNameRE
+		{Component: "elasticsearch", Name: "index_template"},
+		{Component: "elasticsearch", Name: "role"},
+		{Component: "elasticsearch", Name: "apikey"},
+		{Component: "elasticsearch", Name: "snapshot_create"},
+		// kibanaNameRE
+		{Component: "kibana", Name: "synthetic"},
+		{Component: "kibana", Name: "bulk_upload"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
+	}
+}
+
+// TestEntitycoreConstructorsCovered guards against constructor drift: every
+// exported New* constructor in internal/entitycore must be classified either
+// as a covered entity constructor (extracted by phase 2) or as a non-entity
+// constructor. A new envelope type added to entitycore without a matching
+// extraction pattern fails this test.
+func TestEntitycoreConstructorsCovered(t *testing.T) {
+	const entitycoreDir = "../../internal/entitycore"
+
+	entries, err := os.ReadDir(entitycoreDir)
+	if err != nil {
+		t.Skipf("cannot read %s: %v (not running inside the repository?)", entitycoreDir, err)
+	}
+
+	covered := make(map[string]bool, len(coveredEntityConstructors)+len(nonEntityConstructors))
+	for _, name := range coveredEntityConstructors {
+		covered[name] = true
+	}
+	for _, name := range nonEntityConstructors {
+		covered[name] = true
+	}
+	coveredRE := regexp.MustCompile(`^func (New\w+)\(`)
+
+	var unclassified []string
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(entitycoreDir, name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		for line := range strings.SplitSeq(string(data), "\n") {
+			m := coveredRE.FindStringSubmatch(line)
+			if m == nil {
+				continue
+			}
+			if !covered[m[1]] {
+				unclassified = append(unclassified, m[1])
+			}
+		}
+	}
+
+	if len(unclassified) > 0 {
+		t.Errorf("internal/entitycore exports New* constructors not classified by scripts/targeted-testacc: %v\n"+
+			"Add the constructor to coveredEntityConstructors (with an extraction pattern in entityname.go) "+
+			"or to nonEntityConstructors in the same file.", unclassified)
 	}
 }
 

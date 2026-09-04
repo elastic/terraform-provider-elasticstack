@@ -64,14 +64,12 @@ func run() error {
 
 	baseline := ResolveBaseline(base)
 	if verbose {
-		fmt.Fprintf(os.Stderr, "using diff baseline: %s\n", baseline)
+		fmt.Fprintf(os.Stderr, "using diff baseline: %s\n", baseline.Ref)
 	}
 
 	changedFiles, err := GitDiff(baseline)
 	if err != nil {
-		if verbose {
-			fmt.Fprintf(os.Stderr, "git diff failed: %v\n", err)
-		}
+		fmt.Fprintf(os.Stderr, "warning: git diff against %s failed (%v); falling back to the full acceptance test suite\n", baseline.Ref, err)
 		changedFiles = nil
 	}
 

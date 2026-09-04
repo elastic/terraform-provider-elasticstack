@@ -3,7 +3,7 @@
 - [x] 1.1 Create `scripts/targeted-testacc/` directory with `main.go` (package main, flag parsing, orchestration, stdout output)
 - [x] 1.2 Create `scripts/targeted-testacc/classifier.go` — maps changed file paths to Go package paths; detects force-all prefixes; treats testdata/* files as belonging to their nearest ancestor Go package
 - [x] 1.3 Create `scripts/targeted-testacc/depgraph.go` — builds forward import graph via `go list -f '{{.ImportPath}} {{join .Imports " "}}'`; exposes `BuildReverseDepGraph` and `WalkReverseDeps`
-- [x] 1.4 Create `scripts/targeted-testacc/entityname.go` — scans `.go` files in a directory for `NewResourceBase`, `NewElasticsearchResource`, `NewKibanaResource`, `NewKibanaDataSource` calls via regex; returns `[]EntityRef{Component, Name}` → full type string `elasticstack_<component>_<name>`
+- [x] 1.4 Create `scripts/targeted-testacc/entityname.go` — scans `.go` files in a directory for calls to every entity-declaring constructor exported by `entitycore` (`NewResourceBase`, `NewDataSourceBase`, `NewEphemeralBase`, `NewActionBase`, `NewElasticsearchResource`, `NewElasticsearchDataSource`, `NewElasticsearchEphemeralResource`, `NewElasticsearchAction`, `NewKibanaResource`, `NewKibanaDataSource`, `NewKibanaEphemeralResource`, `NewKibanaAction`) via regex; returns `[]EntityRef{Component, Name}` → full type string `elasticstack_<component>_<name>`
 - [x] 1.5 Create `scripts/targeted-testacc/testconsumers.go` — greps `internal/` recursively for an entity name string in `*.tf` and `*_test.go` files; maps matching file paths to their owning Go package paths
 - [x] 1.6 Create `scripts/targeted-testacc/acctestpackages.go` — walks `internal/` to enumerate all Go packages containing at least one `func TestAcc` in a `*_test.go` file; returns `[]string` of import paths
 - [x] 1.7 Create `scripts/targeted-testacc/selector.go` — accepts force-all check result, phase 1 packages, phase 2 packages, full acc-test package list, and thresholds; returns final sorted package list (or all packages if run-all triggered); exposes `ApplyShard` for shard-aware output
@@ -11,11 +11,12 @@
 
 ## 2. Tool unit tests
 
-- [x] 2.1 `classifier_test.go` — test file-to-package mapping for `.go` files, `testdata/*.tf` files, and non-Go files; test force-all prefix detection for all five prefixes
-- [x] 2.2 `entityname_test.go` — test regex extraction for all four call patterns (`NewResourceBase`, `NewElasticsearchResource`, `NewKibanaResource`, `NewKibanaDataSource`) from source snippets; test component string mapping to `elasticstack_<component>_<name>`
+- [x] 2.1 `classifier_test.go` — test file-to-package mapping for `.go` files, `testdata/*.tf` files, and non-Go files; test force-all prefix detection for all force-all prefixes
+- [x] 2.2 `entityname_test.go` — test regex extraction for every entity-declaring constructor from source snippets; test component string mapping to `elasticstack_<component>_<name>`; guard test that every exported `entitycore` constructor is classified so future envelope types fail the test
 - [x] 2.3 `depgraph_test.go` — test reverse dep walk on a synthetic graph (A imports B, B imports C → change C → reverse walk finds B and A)
 - [x] 2.4 `selector_test.go` — test force-all short-circuit; test run-all threshold (70%); test union/dedup of phase 1 + phase 2; test `ApplyShard` for all cases: `index >= total` → empty, `count < 30 && index > 0` → empty, `count < 30 && index == 0` → all, `count >= 30` → round-robin split
 - [x] 2.5 `acctestpackages_test.go` — test enumeration using a minimal synthetic directory tree with `*_test.go` files
+- [x] 2.6 `testonlyimports_test.go` — guard test that fails when a package under `internal/` is imported only from test files and is neither force-all nor entity-declaring
 
 ## 3. Makefile targets
 

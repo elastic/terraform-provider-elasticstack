@@ -2,7 +2,7 @@
 
 The `provider.yml` CI workflow runs `make testacc` on every PR across a static matrix of 20+ Elastic Stack versions × 2 shards = 40+ parallel jobs, each spinning up a full Elastic Stack and running ~66 acceptance test packages per shard (132 packages across 2 shards). Most PR changes touch one or two resources, and the only acceptance packages that actually need to run are those that test (or depend on) the changed code.
 
-The provider codebase has a consistent, greppable structure: every resource and data source declares its Terraform type name via `entitycore.NewResourceBase`, `entitycore.NewElasticsearchResource`, `entitycore.NewKibanaResource`, or `entitycore.NewKibanaDataSource`. Test fixtures live under `internal/<domain>/<resource>/testdata/` as `.tf` files and reference resource type strings directly. This structure is stable enough to support automated analysis.
+The provider codebase has a consistent, greppable structure: entity declarations use a set of entity-declaring constructors exported by `entitycore` (`NewResourceBase`, `NewDataSourceBase`, `NewEphemeralBase`, `NewActionBase`, `NewElasticsearchResource`, `NewElasticsearchDataSource`, `NewElasticsearchEphemeralResource`, `NewElasticsearchAction`, `NewKibanaResource`, `NewKibanaDataSource`, `NewKibanaEphemeralResource`, `NewKibanaAction`). The tool covers this listed set; a guard unit test asserts that every exported `entitycore` constructor is classified, so future envelope types fail the test rather than silently producing selection gaps. Test fixtures live under `internal/<domain>/<resource>/testdata/` as `.tf` files and reference resource type strings directly. This structure is stable enough to support automated analysis. A known accepted extraction gap: the SDKv2 `elasticstack_elasticsearch_ingest_processor_*` data sources do not use entitycore constructors; all 40 live in `internal/elasticsearch/ingest`, so phase 1 still selects that package when it changes, and only cross-package testdata consumers of those names would be missed.
 
 ## Goals / Non-Goals
 
@@ -32,7 +32,7 @@ The provider codebase has a consistent, greppable structure: every resource and 
 
 Phase 1 (reverse-dep walk): catches packages that *import* changed code — e.g. changing `internal/kibana/dashboard/panel/lensdashboardapp` triggers `internal/kibana/dashboard` because `dashboard` imports `lensdashboardapp`. Uses `go list -f '{{.ImportPath}} {{join .Imports " "}}'` to build a forward-dep map, then inverts it. Non-test imports only (avoids test-only dep cascades).
 
-Phase 2 (entity grep): catches test suites that *use* changed resources in their testdata but have no Go import relationship — e.g. `internal/fleet/agentpolicy` uses `elasticstack_kibana_space` in its testdata `.tf` files but doesn't import `internal/kibana/spaces`. Phase 1 would miss this. Entity names are extracted from the changed package's source via regex on `NewResourceBase`/`NewElasticsearchResource`/`NewKibanaResource`/`NewKibanaDataSource` calls; full type name is `elasticstack_<component>_<name>`. The grep targets both `testdata/**/*.tf` and `*_test.go` files.
+Phase 2 (entity grep): catches test suites that *use* changed resources in their testdata but have no Go import relationship — e.g. `internal/fleet/agentpolicy` uses `elasticstack_kibana_space` in its testdata `.tf` files but doesn't import `internal/kibana/spaces`. Phase 1 would miss this. Entity names are extracted from the changed package's source via regex on the entity-declaring constructors exported by `entitycore` (see Context for the covered list); full type name is `elasticstack_<component>_<name>`. The grep targets both `testdata/**/*.tf` and `*_test.go` files.
 
 **Alternative considered:** Phase 1 alone. Rejected: misses cross-domain testdata consumers (fleet tests using kibana_space, etc.).
 
@@ -42,9 +42,11 @@ Phase 2 (entity grep): catches test suites that *use* changed resources in their
 
 **Choice:** Certain path prefixes and module-level files unconditionally emit the full package set, bypassing analysis.
 
-Prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `.github/workflows/`.
+Prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `.github/workflows/`, plus shared acceptance-test helper packages `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, and `internal/providerfwtest/`.
 
-Files: `go.mod`, `go.sum`, `Makefile`, and `docker-compose*.yml` (e.g. `docker-compose.yml`, `docker-compose.tls.yml`) — these affect every build or the test harness itself, so a diff touching them cannot be narrowed to a subset of packages.
+Files: `go.mod`, `go.sum`, `Makefile`, and `docker-compose*.yml` / `docker-compose*.yaml` matched on base name at any repository path (e.g. `docker-compose.yml`, `docker-compose.tls.yml`) — these affect every build or the test harness itself, so a diff touching them cannot be narrowed to a subset of packages.
+
+**Trade-off — non-test imports only:** Phase 1 builds its reverse-dep graph from `go list` non-test imports, so packages imported *only from test files* are invisible to the reverse walk (e.g. a change to `internal/kibana/dashboard/dashboardacctest` would otherwise not select the 33 dashboard acceptance test consumers). The shared helper packages above are force-all for exactly this reason; a guard unit test walks `internal/` including `TestImports`/`XTestImports` and fails when a package is imported only from test files but is neither force-all nor entity-declaring.
 
 **Rationale:** These packages have test-only import paths (provider, acctest) or fan out to nearly the entire acceptance suite (transitive importers of 132 total acc-test packages: internal/clients — 130/132 (98%), internal/entitycore — 130/132 (98%), generated/kbapi — 131/132 (99%)) — all above the 70% threshold of 132 total acc-test packages. Running analysis on them is pointless; the result will always be "run all". Hard-coding them avoids false confidence in partial analysis and keeps the tool fast.
 
@@ -92,7 +94,7 @@ Empty diff (on main, or when only non-code files changed) → tool emits all acc
 → Accepted. Checkout + setup-go + get-dependencies + compute-packages takes ~2–3 minutes before the tool outputs `has_packages=false`. All expensive steps (fleet image pull ~3min, stack start ~5min, stack wait ~3min) are skipped. Net waste per unnecessary shard-1 job: ~3 min. With 25 matrix entries × 1 unnecessary shard-1 job each = 75 min of CI machine time, all running in parallel so elapsed impact is ~3 min. This is acceptable vs. the alternative of restructuring the matrix.
 
 **[Risk] Entity name regex fails to extract names from non-standard source patterns.**
-→ All resources in the codebase use one of four consistent patterns. The regex is validated against the full codebase as part of the tool's unit tests. New resources that deviate from these patterns would need the regex updated — this is a known, low-frequency maintenance burden.
+→ entitycore exports multiple entity-declaring constructors and the tool covers the listed set (see Context). The unit tests validate the regexes against synthetic source snippets, not the full codebase; constructor drift is instead caught by the guard test that asserts every exported `entitycore` constructor is classified, and by the guard test for test-only-imported packages. The SDKv2 `elasticstack_elasticsearch_ingest_processor_*` data sources are a known accepted gap (see Context). New resources that deviate from the covered patterns would need the regex updated — this is a known, low-frequency maintenance burden.
 
 ## Migration Plan
 

@@ -33,6 +33,12 @@ var forceAllPrefixes = []string{
 	"internal/entitycore/",
 	"generated/",
 	".github/workflows/",
+	// Shared acceptance-test helper packages: imported only from test files,
+	// so the phase-1 reverse-dependency walk (non-test imports) cannot see
+	// them and they do not declare Terraform entities for phase 2.
+	"internal/kibana/dashboard/dashboardacctest/",
+	"internal/kibana/dashboard/panelkit/contracttest/",
+	"internal/providerfwtest/",
 }
 
 // Force-all files. When any changed file path equals one of these, the tool
@@ -45,11 +51,15 @@ var forceAllFiles = []string{
 	"Makefile",
 }
 
-// isForceAllFileName reports whether the file name matches the docker-compose
-// compose-file glob (docker-compose*.yml) that triggers a force-all run.
+// isForceAllDockerComposeFile reports whether the file name matches the
+// docker-compose compose-file glob (docker-compose*.yml or docker-compose*.yaml,
+// at any repository path) that triggers a force-all run.
 func isForceAllDockerComposeFile(file string) bool {
 	name := filepath.Base(file)
-	return strings.HasPrefix(name, "docker-compose") && strings.HasSuffix(name, ".yml")
+	if !strings.HasPrefix(name, "docker-compose") {
+		return false
+	}
+	return strings.HasSuffix(name, ".yml") || strings.HasSuffix(name, ".yaml")
 }
 
 // Classifier maps changed file paths to Go package import paths and detects

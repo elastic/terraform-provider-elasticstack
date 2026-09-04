@@ -202,6 +202,7 @@ jobs:
 
       - id: targeted
         name: Compute targeted acceptance test packages
+        shell: bash
         run: |
           if [[ "${{ github.event_name }}" != "pull_request" ]]; then
             echo "has_packages=true" >> "$GITHUB_OUTPUT"
@@ -212,11 +213,19 @@ jobs:
           # merge-base / HEAD~1 resolution fails and the tool falls back to the
           # full suite. Fetch the PR base commit and pass it explicitly so the
           # tool can compute the real diff for this PR.
+          compute_targeted() {
+            local out
+            if ! out=$(go run ./scripts/targeted-testacc/... "$@"); then
+              echo "::error::targeted-testacc failed; refusing to skip tests"
+              exit 1
+            fi
+            targeted=$(printf '%s' "$out" | tr '\n' ' ')
+          }
           base_ref="refs/remotes/origin/pr-base"
           if git fetch origin +${{ github.event.pull_request.base.sha }}:"${base_ref}" --depth=1; then
-            targeted=$(go run ./scripts/targeted-testacc/... --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+            compute_targeted --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }}
           else
-            targeted=$(go run ./scripts/targeted-testacc/... --total-shards=2 --shard-index=${{ matrix.shard }} | tr '\n' ' ')
+            compute_targeted --total-shards=2 --shard-index=${{ matrix.shard }}
           fi
           targeted=$(echo "$targeted" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           if [[ -n "$targeted" ]]; then
