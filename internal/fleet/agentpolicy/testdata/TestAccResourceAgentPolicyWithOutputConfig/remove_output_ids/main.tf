@@ -25,6 +25,7 @@ resource "elasticstack_fleet_server_host" "test_host" {
 resource "elasticstack_fleet_agent_policy" "test_policy" {
   name            = "Policy ${var.policy_name}"
   namespace       = "default"
+  description     = "Test Agent Policy without Output IDs"
   monitor_logs    = false
   monitor_metrics = false
 }

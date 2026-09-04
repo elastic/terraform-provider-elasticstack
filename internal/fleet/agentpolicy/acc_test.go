@@ -41,6 +41,10 @@ import (
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
 var minVersionAgentPolicyTamperProtectionWithDefend = version.Must(version.NewVersion("8.14.0"))
 
+// Output-config coverage creates elasticstack_fleet_agent_download_source,
+// which requires stack 8.13.0+.
+var minVersionAgentPolicyOutputConfig = version.Must(version.NewVersion("8.13.0"))
+
 //go:embed testdata/TestAccResourceAgentPolicyFromSDK/main.tf
 var sdkCreateTestConfig string
 
@@ -616,7 +620,7 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 }
 
 func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicyOutputConfig, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -669,7 +673,9 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 				),
 			},
 			// Step 3: Remove data_output_id, monitoring_output_id, download_source_id,
-			// fleet_server_host_id and description entirely
+			// and fleet_server_host_id. Keep description set — omitting it after a
+			// non-empty value is set makes Fleet return the previous description and
+			// the provider adopts that into state (inconsistent apply).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_output_ids"),
@@ -679,7 +685,7 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
-					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy without Output IDs"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "data_output_id"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitoring_output_id"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "download_source_id"),
