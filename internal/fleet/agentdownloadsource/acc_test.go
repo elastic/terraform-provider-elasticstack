@@ -292,6 +292,8 @@ func TestAccResourceFleetAgentDownloadSource_ProxyID(t *testing.T) {
 
 // TestAccResourceFleetAgentDownloadSource_DefaultTrue exercises the IsDefault boolean
 // round-trip in read.go for the true branch, and toggling the value via update.
+// The final step returns default to false because the Fleet API rejects deleting
+// the current default download source.
 func TestAccResourceFleetAgentDownloadSource_DefaultTrue(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
 
@@ -319,6 +321,16 @@ func TestAccResourceFleetAgentDownloadSource_DefaultTrue(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_false"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
 				),
 			},
 		},
