@@ -149,6 +149,9 @@ func TestAccResourceSnapRepoFsExtended(t *testing.T) {
 						),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.location", "/tmp/replace"),
+				),
 			},
 		},
 	})
@@ -196,7 +199,7 @@ func TestAccResourceSnapRepoURLExtended(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				ResourceName:             "elasticstack_elasticsearch_snapshot_repository.test_url_repo",
 				ImportState:              true,
@@ -220,6 +223,9 @@ func TestAccResourceSnapRepoURLExtended(t *testing.T) {
 						),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.url", "file:/tmp/replace"),
+				),
 			},
 		},
 	})
@@ -286,7 +292,7 @@ func TestAccResourceSnapRepoS3(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				ResourceName:             resourceName,
 				ImportState:              true,
@@ -310,6 +316,9 @@ func TestAccResourceSnapRepoS3(t *testing.T) {
 						),
 					},
 				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "s3.bucket", "test-bucket-replaced"),
+				),
 			},
 		},
 	})
