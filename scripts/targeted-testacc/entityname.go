@@ -79,8 +79,10 @@ func componentName(suffix string) (string, bool) {
 	return "", false
 }
 
-// ExtractEntities scans all .go files in dir and returns the unique set of
-// Terraform entities declared in that package directory.
+// ExtractEntities scans all non-test .go files (files ending in _test.go are
+// excluded to avoid phantom entities from string literals in test source) in
+// dir and returns the unique set of Terraform entities declared in that
+// package directory.
 func ExtractEntities(dir string) ([]EntityRef, error) {
 	entities := make(map[string]EntityRef)
 
@@ -94,7 +96,7 @@ func ExtractEntities(dir string) ([]EntityRef, error) {
 			continue
 		}
 		name := e.Name()
-		if !strings.HasSuffix(name, ".go") {
+		if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
 			continue
 		}
 		path := filepath.Join(dir, name)

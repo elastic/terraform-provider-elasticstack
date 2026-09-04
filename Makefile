@@ -1,6 +1,8 @@
 # Preserve environment and command-line variable values across .env inclusion.
 # The .env file (auto-created from .env.template) may contain defaults that
 # would otherwise silently override values set via workflow matrices or local shell.
+# These defines use make function syntax that shellcheck cannot parse; the
+# guard is applied via $(eval $(call ...)) below, not executed as shell.
 # shellcheck disable=SC1073,SC1065,SC1064,SC1072
 define _env_guard_save
 _$(1)_ORIGIN := $(origin $(1))

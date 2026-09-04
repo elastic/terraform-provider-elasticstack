@@ -112,9 +112,30 @@ func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
 		"internal/clients/clients.go",
 		"internal/entitycore/resource.go",
 		"generated/kibana/client.go",
+		".github/workflows/provider.yml",
 	}
 
 	for _, file := range prefixes {
+		t.Run(file, func(t *testing.T) {
+			c := NewClassifier("github.com/example/mod")
+			res := c.Classify([]string{file})
+			if !res.ForceAll {
+				t.Errorf("ForceAll = false for %s, want true", file)
+			}
+		})
+	}
+}
+
+func TestClassifier_Classify_ForceAllFiles(t *testing.T) {
+	files := []string{
+		"go.mod",
+		"go.sum",
+		"Makefile",
+		"docker-compose.yml",
+		"docker-compose.tls.yml",
+	}
+
+	for _, file := range files {
 		t.Run(file, func(t *testing.T) {
 			c := NewClassifier("github.com/example/mod")
 			res := c.Classify([]string{file})
@@ -130,6 +151,9 @@ func TestClassifier_Classify_NoForceAllForSimilarPaths(t *testing.T) {
 		"internal/clientspkg/client.go",
 		"providerx/config.go",
 		"internal/entitycorepkg/base.go",
+		"my-go.mod",
+		"docs/Makefile",
+		"internal/a/docker-compose.yml.txt",
 	}
 
 	for _, file := range files {
@@ -140,6 +164,26 @@ func TestClassifier_Classify_NoForceAllForSimilarPaths(t *testing.T) {
 				t.Errorf("ForceAll = true for %s, want false", file)
 			}
 		})
+	}
+}
+
+func TestClassifier_Classify_DeletedPackageDirIsSkipped(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// The deleted package's directory does not exist on disk; only internal/a
+	// exists.
+	writeFile(t, root, "internal/a/main.go", "package a")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/a/main.go", "internal/deleted/main.go"})
+
+	want := []string{"github.com/example/mod/internal/a"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
 	}
 }
 

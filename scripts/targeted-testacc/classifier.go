@@ -31,6 +31,24 @@ var forceAllPrefixes = []string{
 	"internal/clients/",
 	"internal/entitycore/",
 	"generated/",
+	".github/workflows/",
+}
+
+// Force-all files. When any changed file path equals one of these, the tool
+// selects the full acceptance test package set. These are module-level files
+// that affect every build, so a diff touching them cannot be narrowed to a
+// subset of packages.
+var forceAllFiles = []string{
+	"go.mod",
+	"go.sum",
+	"Makefile",
+}
+
+// isForceAllFileName reports whether the file name matches the docker-compose
+// compose-file glob (docker-compose*.yml) that triggers a force-all run.
+func isForceAllDockerComposeFile(file string) bool {
+	name := filepath.Base(file)
+	return strings.HasPrefix(name, "docker-compose") && strings.HasSuffix(name, ".yml")
 }
 
 // Classifier maps changed file paths to Go package import paths and detects
@@ -75,6 +93,13 @@ func (c *Classifier) Classify(changedFiles []string) *ClassifyResult {
 		}
 
 		res.HasCode = true
+
+		// Skip packages whose directory no longer exists (e.g. the diff
+		// includes a deleted package); they cannot contribute packages.
+		if _, err := os.Stat(pkgDir); err != nil {
+			continue
+		}
+
 		importPath := c.ModulePath + "/" + pkgDir
 		if _, exists := seen[importPath]; exists {
 			continue
@@ -151,5 +176,10 @@ func matchesForceAll(file string) bool {
 			return true
 		}
 	}
-	return false
+	for _, exact := range forceAllFiles {
+		if file == exact {
+			return true
+		}
+	}
+	return isForceAllDockerComposeFile(file)
 }

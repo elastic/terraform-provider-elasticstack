@@ -39,9 +39,13 @@ func (realGitDiffRunner) DiffNameOnly(base string) ([]string, error) {
 	if base == "" {
 		return nil, fmt.Errorf("diff base cannot be empty")
 	}
-	out, err := exec.Command("git", "diff", "--name-only", base+"..HEAD").Output()
+	// Use the three-dot (merge-base) form so the diff compares against the
+	// merge base of the baseline and HEAD rather than the baseline tip. A
+	// two-dot diff against a moving base (e.g. origin/main in CI) would
+	// over-select by including changes that have already been merged.
+	out, err := exec.Command("git", "diff", "--name-only", base+"...HEAD").Output()
 	if err != nil {
-		return nil, fmt.Errorf("git diff --name-only %s..HEAD: %w", base, err)
+		return nil, fmt.Errorf("git diff --name-only %s...HEAD: %w", base, err)
 	}
 	return splitLines(string(out)), nil
 }

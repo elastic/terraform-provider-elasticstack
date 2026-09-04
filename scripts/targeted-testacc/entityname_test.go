@@ -208,3 +208,33 @@ func init() {
 		t.Errorf("ExtractEntities = %v, want %v", got, want)
 	}
 }
+
+func TestExtractEntities_SkipsTestFiles(t *testing.T) {
+	root := t.TempDir()
+	// A resource declared in the package source.
+	writeFile(t, root, "resource.go", `
+package slo
+
+func init() {
+	_ = NewResourceBase(ComponentKibana, "slo")
+}
+`)
+	// A phantom entity declared only in a test file; it must be ignored
+	// because _test.go files are excluded from entity extraction.
+	writeFile(t, root, "resource_test.go", `
+package slo_test
+
+func init() {
+	_ = NewResourceBase(ComponentKibana, "space")
+}
+`)
+
+	got, err := ExtractEntities(root)
+	if err != nil {
+		t.Fatalf("ExtractEntities: %v", err)
+	}
+	want := []EntityRef{{Component: "kibana", Name: "slo"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("ExtractEntities = %v, want %v", got, want)
+	}
+}
