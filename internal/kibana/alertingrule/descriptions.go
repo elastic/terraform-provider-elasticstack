@@ -54,3 +54,6 @@ var artifactsDescription string
 
 //go:embed descriptions/investigation_guide.md
 var investigationGuideDescription string
+
+//go:embed descriptions/dashboards.md
+var dashboardsDescription string
