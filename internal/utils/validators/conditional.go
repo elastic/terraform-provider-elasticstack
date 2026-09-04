@@ -21,8 +21,10 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -126,7 +128,7 @@ func (v Condition) evaluatePathExpression(ctx context.Context, config tfsdk.Conf
 			if getDiags.HasError() {
 				continue
 			}
-			if !obj.IsNull() && !obj.IsUnknown() {
+			if typeutils.IsKnown(obj) {
 				return dependentEvaluation{matchesAllowed: true}, diags
 			}
 		}
@@ -136,23 +138,22 @@ func (v Condition) evaluatePathExpression(ctx context.Context, config tfsdk.Conf
 	var eval dependentEvaluation
 	sawNonNullNonUnknown := false
 	for _, matchedPath := range matchedPaths {
-		var pathValue types.String
-		getDiags := config.GetAttribute(ctx, matchedPath, &pathValue)
+		pathEval, getDiags := readDependentAttr(ctx, config, matchedPath)
 		if getDiags.HasError() {
 			diags.Append(getDiags...)
 			continue
 		}
 
-		if pathValue.IsUnknown() {
+		if pathEval.isUnknown {
 			eval.isUnknown = true
 			continue
 		}
-		if pathValue.IsNull() {
+		if pathEval.isNull {
 			continue
 		}
 
 		sawNonNullNonUnknown = true
-		eval.valueStr = pathValue.ValueString()
+		eval.valueStr = pathEval.valueStr
 		if slices.Contains(v.allowedValues, eval.valueStr) {
 			eval.matchesAllowed = true
 			return eval, diags
@@ -168,18 +169,9 @@ func (v Condition) evaluatePathExpression(ctx context.Context, config tfsdk.Conf
 
 // evaluateStaticPath reads the dependent value at a static path.
 func (v Condition) evaluateStaticPath(ctx context.Context, config tfsdk.Config) (dependentEvaluation, diag.Diagnostics) {
-	var dependentValue types.String
-	var diags diag.Diagnostics
-
-	diags.Append(config.GetAttribute(ctx, *v.dependentPath, &dependentValue)...)
+	eval, diags := readDependentAttr(ctx, config, *v.dependentPath)
 	if diags.HasError() {
 		return dependentEvaluation{}, diags
-	}
-
-	eval := dependentEvaluation{
-		isNull:    dependentValue.IsNull(),
-		isUnknown: dependentValue.IsUnknown(),
-		valueStr:  dependentValue.ValueString(),
 	}
 
 	if !eval.isNull && !eval.isUnknown {
@@ -187,6 +179,38 @@ func (v Condition) evaluateStaticPath(ctx context.Context, config tfsdk.Config) 
 	}
 
 	return eval, diags
+}
+
+// readDependentAttr reads a dependent attribute as either types.String or
+// types.Bool. Bool values are compared as "true"/"false" so existing
+// string-valued constructors can key off a boolean sibling.
+func readDependentAttr(ctx context.Context, config tfsdk.Config, p path.Path) (dependentEvaluation, diag.Diagnostics) {
+	var val attr.Value
+	diags := config.GetAttribute(ctx, p, &val)
+	if diags.HasError() {
+		return dependentEvaluation{}, diags
+	}
+	return dependentEvaluationFromAttr(val), diags
+}
+
+func dependentEvaluationFromAttr(val attr.Value) dependentEvaluation {
+	eval := dependentEvaluation{}
+	if val == nil || val.IsNull() {
+		eval.isNull = true
+		return eval
+	}
+	if val.IsUnknown() {
+		eval.isUnknown = true
+		return eval
+	}
+
+	switch v := val.(type) {
+	case types.String:
+		eval.valueStr = v.ValueString()
+	case types.Bool:
+		eval.valueStr = strconv.FormatBool(v.ValueBool())
+	}
+	return eval
 }
 
 // dependentFieldHasAllowedValue checks if the dependent field specified by the condition's
@@ -304,19 +328,41 @@ func DependantPathOneOf(dependentPath path.Path, allowedValues []string) Conditi
 	}
 }
 
+// oneOfClause renders the singular/plural clause shared by the descriptions and error
+// messages of allowedIfOneOf, requiredIfOneOf, and forbiddenIfOneOf: e.g.
+// `can only be set when protocol equals "https"` when there is a single allowed value,
+// or `can only be set when protocol is one of [https wss]` when there are several.
+func oneOfClause(verb, label string, allowedValues []string) string {
+	if len(allowedValues) == 1 {
+		return fmt.Sprintf("%s when %s equals %q", verb, label, allowedValues[0])
+	}
+	return fmt.Sprintf("%s when %s is one of %v", verb, label, allowedValues)
+}
+
+// oneOfDescription builds the "value <clause>" description shared by allowedIfOneOf,
+// requiredIfOneOf, and forbiddenIfOneOf.
+func oneOfDescription(verb, label string, allowedValues []string) string {
+	return "value " + oneOfClause(verb, label, allowedValues)
+}
+
+// oneOfAttributeError builds the "Attribute <p> <clause><trailer>" error message shared by
+// allowedIfOneOf, requiredIfOneOf, and forbiddenIfOneOf. trailer is appended verbatim and is
+// empty for the variants that don't also report the dependent's current value.
+func oneOfAttributeError(p path.Path, verb, label string, allowedValues []string, trailer string) string {
+	return fmt.Sprintf("Attribute %s %s%s", p, oneOfClause(verb, label, allowedValues), trailer)
+}
+
 // allowedIfOneOf builds the shared Condition for AllowedIfDependentPathOneOf and
 // AllowedIfDependentPathExpressionOneOf. label is the display name of the dependent
 // field used in the description and error message; it is the only thing that differs
 // between the static-path and path-expression variants.
 func allowedIfOneOf(label string, allowedValues []string, options AllowedIfOptions) Condition {
+	const verb = "can only be set"
 	return Condition{
 		allowedValues:    allowedValues,
 		allowedIfOptions: &options,
 		description: func() string {
-			if len(allowedValues) == 1 {
-				return fmt.Sprintf("value can only be set when %s equals %q", label, allowedValues[0])
-			}
-			return fmt.Sprintf("value can only be set when %s is one of %v", label, allowedValues)
+			return oneOfDescription(verb, label, allowedValues)
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
@@ -328,27 +374,8 @@ func allowedIfOneOf(label string, allowedValues []string, options AllowedIfOptio
 
 			if isSet {
 				dependentValueLabel := dependentEval.valueForErrorMessage()
-				if len(allowedValues) == 1 {
-					diags.AddAttributeError(p, "Invalid Configuration",
-						fmt.Sprintf("Attribute %s can only be set when %s equals %q, but %s is %q",
-							p,
-							label,
-							allowedValues[0],
-							label,
-							dependentValueLabel,
-						),
-					)
-				} else {
-					diags.AddAttributeError(p, "Invalid Configuration",
-						fmt.Sprintf("Attribute %s can only be set when %s is one of %v, but %s is %q",
-							p,
-							label,
-							allowedValues,
-							label,
-							dependentValueLabel,
-						),
-					)
-				}
+				trailer := fmt.Sprintf(", but %s is %q", label, dependentValueLabel)
+				diags.AddAttributeError(p, "Invalid Configuration", oneOfAttributeError(p, verb, label, allowedValues, trailer))
 			}
 
 			return diags
@@ -414,10 +441,7 @@ func requiredIfOneOf(label string, allowedValues []string) Condition {
 	return Condition{
 		allowedValues: allowedValues,
 		description: func() string {
-			if len(allowedValues) == 1 {
-				return fmt.Sprintf("value required when %s equals %q", label, allowedValues[0])
-			}
-			return fmt.Sprintf("value required when %s is one of %v", label, allowedValues)
+			return oneOfDescription("required", label, allowedValues)
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
@@ -431,13 +455,7 @@ func requiredIfOneOf(label string, allowedValues []string) Condition {
 			}
 
 			if isEmpty {
-				var msg string
-				if len(allowedValues) == 1 {
-					msg = fmt.Sprintf("Attribute %s must be set when %s equals %q", p, label, allowedValues[0])
-				} else {
-					msg = fmt.Sprintf("Attribute %s must be set when %s is one of %v", p, label, allowedValues)
-				}
-				diags.AddAttributeError(p, "Invalid Configuration", msg)
+				diags.AddAttributeError(p, "Invalid Configuration", oneOfAttributeError(p, "must be set", label, allowedValues, ""))
 			}
 			return diags
 		},
@@ -476,13 +494,11 @@ func RequiredIfDependentPathOneOf(dependentPath path.Path, allowedValues []strin
 // field used in the description and error message; it is the only thing that differs
 // between the static-path and path-expression variants.
 func forbiddenIfOneOf(label string, allowedValues []string) Condition {
+	const verb = "cannot be set"
 	return Condition{
 		allowedValues: allowedValues,
 		description: func() string {
-			if len(allowedValues) == 1 {
-				return fmt.Sprintf("value cannot be set when %s equals %q", label, allowedValues[0])
-			}
-			return fmt.Sprintf("value cannot be set when %s is one of %v", label, allowedValues)
+			return oneOfDescription(verb, label, allowedValues)
 		},
 		validateValue: func(dependentFieldHasAllowedValue bool, _ dependentEvaluation, val attr.Value, p path.Path) diag.Diagnostics {
 			var diags diag.Diagnostics
@@ -493,13 +509,7 @@ func forbiddenIfOneOf(label string, allowedValues []string) Condition {
 
 			isSet := !attrValueIsUnsetForConditionalValidation(val)
 			if isSet {
-				var msg string
-				if len(allowedValues) == 1 {
-					msg = fmt.Sprintf("Attribute %s cannot be set when %s equals %q", p, label, allowedValues[0])
-				} else {
-					msg = fmt.Sprintf("Attribute %s cannot be set when %s is one of %v", p, label, allowedValues)
-				}
-				diags.AddAttributeError(p, "Invalid Configuration", msg)
+				diags.AddAttributeError(p, "Invalid Configuration", oneOfAttributeError(p, verb, label, allowedValues, ""))
 			}
 			return diags
 		},

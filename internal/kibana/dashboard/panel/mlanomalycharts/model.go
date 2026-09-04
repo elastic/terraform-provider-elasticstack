@@ -41,9 +41,8 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 
 	apiConfig := kbapi.KibanaHTTPAPIsMlAnomalyCharts{
 		JobIds: typeutils.ValueStringSlice(cfg.JobIDs),
-	}
 
-	apiConfig.MaxSeriesToPlot = typeutils.Int64ToFloat32Ptr(cfg.MaxSeriesToPlot)
+		MaxSeriesToPlot: typeutils.Int64ToFloat32Ptr(cfg.MaxSeriesToPlot)}
 	panelkit.BuildPresentationConfig(cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder,
 		&apiConfig.Title, &apiConfig.Description, &apiConfig.HideTitle, &apiConfig.HideBorder)
 	if cfg.TimeRange != nil {
@@ -145,7 +144,7 @@ func mlAnomalyChartsPreserveNullIntentFromPrior(prior, existing *models.MlAnomal
 	if prior == nil || existing == nil {
 		return
 	}
-	panelkit.NullPreserveInt64FromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
+	panelkit.NullPreserveFromPrior(prior.MaxSeriesToPlot, &existing.MaxSeriesToPlot)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.SeverityThreshold) == 0 {

@@ -64,11 +64,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 
 	// Determine space context for creating the package policy.
 	// The package policy must be created in the same space as the agent policy it references.
-	spaceID, diags := fleetutils.SpaceIDFromSet(ctx, planModel.SpaceIDs)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	spaceID := fleetutils.SpaceIDFromSet(planModel.SpaceIDs)
 
 	// Create package policy with appropriate space context
 	policy, diags := fleet.CreatePackagePolicy(ctx, fleetClient, spaceID, body)

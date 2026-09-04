@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -64,7 +65,7 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, 
 		Enabled:       model.Enabled.ValueBool(),
 	}
 
-	if !model.Downsampling.IsNull() && !model.Downsampling.IsUnknown() && len(model.Downsampling.Elements()) > 0 {
+	if typeutils.IsKnown(model.Downsampling) && len(model.Downsampling.Elements()) > 0 {
 		downsampling := make([]downsamplingTfModel, len(model.Downsampling.Elements()))
 		if d := model.Downsampling.ElementsAs(ctx, &downsampling, true); d.HasError() {
 			return models.LifecycleSettings{}, d

@@ -118,9 +118,7 @@ func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 			configValue: func() VarsJSONValue {
 				// Manually construct invalid JSON with context
 				return VarsJSONValue{
-					JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
-						Normalized: jsontypes.Normalized{StringValue: basetypes.NewStringValue(`{invalid`)},
-					},
+					StringValue: basetypes.NewStringValue(`{invalid`),
 				}
 			}(),
 			otherValue: func() VarsJSONValue {
@@ -139,9 +137,7 @@ func TestVarsJSONValue_StringSemanticEquals(t *testing.T) {
 			}(),
 			otherValue: func() VarsJSONValue {
 				return VarsJSONValue{
-					JSONWithContextualDefaultsValue: customtypes.JSONWithContextualDefaultsValue{
-						Normalized: jsontypes.Normalized{StringValue: basetypes.NewStringValue(`{invalid`)},
-					},
+					StringValue: basetypes.NewStringValue(`{invalid`),
 				}
 			}(),
 			expectEqual:   false,

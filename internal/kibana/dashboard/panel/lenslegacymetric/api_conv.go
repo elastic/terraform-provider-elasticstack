@@ -54,7 +54,7 @@ func legacyMetricConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateLegacyMetricMetricDefaults, &diags)
 	if !ok {
 		return diags

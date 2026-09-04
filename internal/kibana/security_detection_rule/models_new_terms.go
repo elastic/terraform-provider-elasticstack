@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,13 +33,11 @@ type NewTermsRuleProcessor struct {
 
 func newNewTermsRuleProcessor() NewTermsRuleProcessor {
 	return NewTermsRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPINewTermsRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPINewTermsRule, d *Data) diag.Diagnostics {
-				return d.updateFromNewTermsRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPINewTermsRule, d *Data) diag.Diagnostics {
+			return d.updateFromNewTermsRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPINewTermsRule) string {
+			return v.Id.String()
 		},
 	}
 }
@@ -276,7 +273,7 @@ func (d *Data) updateFromNewTermsRule(ctx context.Context, rule *kbapi.SecurityD
 	if len(rule.NewTermsFields) > 0 {
 		d.NewTermsFields = typeutils.ListValueFrom(ctx, rule.NewTermsFields, types.StringType, path.Root("new_terms_fields"), &diags)
 	} else {
-		d.NewTermsFields = types.ListValueMust(types.StringType, []attr.Value{})
+		d.NewTermsFields = typeutils.StringsToListMust(nil)
 	}
 
 	return diags

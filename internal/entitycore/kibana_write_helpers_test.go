@@ -18,12 +18,37 @@
 package entitycore
 
 import (
+	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// simpleWriteTestModel is a minimal [KibanaResourceModel] used to exercise
+// [SimpleKibanaCreate] and [SimpleKibanaUpdate] without pulling in a real
+// resource package.
+type simpleWriteTestModel struct {
+	ResourceTimeoutsField
+	ID      string
+	SpaceID string
+}
+
+func (m simpleWriteTestModel) GetID() types.String         { return types.StringValue(m.ID) }
+func (m simpleWriteTestModel) GetResourceID() types.String { return types.StringValue(m.ID) }
+func (m simpleWriteTestModel) GetSpaceID() types.String    { return types.StringValue(m.SpaceID) }
+func (m simpleWriteTestModel) GetKibanaConnection() types.List {
+	return types.ListNull(types.StringType)
+}
+
+func (m *simpleWriteTestModel) setSpaceID(_ context.Context, spaceID string, _ *string) diag.Diagnostics {
+	m.SpaceID = spaceID
+	return nil
+}
 
 func TestRequireNonNilKibanaWriteResponse(t *testing.T) {
 	t.Run("non-nil response reports false and appends no diagnostics", func(t *testing.T) {
@@ -53,4 +78,144 @@ func TestRequireNonNilKibanaWriteResponse(t *testing.T) {
 func TestKibanaResourceID(t *testing.T) {
 	got := KibanaResourceID("default", "abc-123")
 	require.Equal(t, types.StringValue("default/abc-123"), got)
+}
+
+func TestSimpleKibanaCreate(t *testing.T) {
+	t.Run("happy path calls toBody then apiCreate then populate", func(t *testing.T) {
+		var gotSpaceID string
+		var gotBody string
+		resp := "created-body"
+
+		writeFn := SimpleKibanaCreate[simpleWriteTestModel, string, string](
+			func(plan simpleWriteTestModel, _ context.Context) (string, diag.Diagnostics) {
+				return "body-for-" + plan.ID, nil
+			},
+			func(_ context.Context, _ *kibanaoapi.Client, spaceID string, body string) (*string, diag.Diagnostics) {
+				gotSpaceID = spaceID
+				gotBody = body
+				return &resp, nil
+			},
+			(*simpleWriteTestModel).setSpaceID,
+		)
+
+		result, diags := writeFn(context.Background(), &clients.KibanaScopedClient{}, KibanaWriteRequest[simpleWriteTestModel]{
+			Plan:    simpleWriteTestModel{ID: "abc"},
+			SpaceID: "default",
+		})
+
+		require.False(t, diags.HasError())
+		assert.Equal(t, "default", gotSpaceID)
+		assert.Equal(t, "body-for-abc", gotBody)
+		assert.Equal(t, "default", result.Model.SpaceID)
+	})
+
+	t.Run("toBody error short-circuits before apiCreate", func(t *testing.T) {
+		apiCreateCalled := false
+
+		writeFn := SimpleKibanaCreate[simpleWriteTestModel, string, string](
+			func(_ simpleWriteTestModel, _ context.Context) (string, diag.Diagnostics) {
+				var diags diag.Diagnostics
+				diags.AddError("bad plan", "cannot convert")
+				return "", diags
+			},
+			func(_ context.Context, _ *kibanaoapi.Client, _ string, _ string) (*string, diag.Diagnostics) {
+				apiCreateCalled = true
+				resp := "unused"
+				return &resp, nil
+			},
+			(*simpleWriteTestModel).setSpaceID,
+		)
+
+		_, diags := writeFn(context.Background(), &clients.KibanaScopedClient{}, KibanaWriteRequest[simpleWriteTestModel]{
+			Plan: simpleWriteTestModel{ID: "abc"},
+		})
+
+		require.True(t, diags.HasError())
+		assert.False(t, apiCreateCalled)
+	})
+
+	t.Run("apiCreate error short-circuits before populate", func(t *testing.T) {
+		populateCalled := false
+
+		writeFn := SimpleKibanaCreate[simpleWriteTestModel, string, string](
+			func(_ simpleWriteTestModel, _ context.Context) (string, diag.Diagnostics) {
+				return "body", nil
+			},
+			func(_ context.Context, _ *kibanaoapi.Client, _ string, _ string) (*string, diag.Diagnostics) {
+				var diags diag.Diagnostics
+				diags.AddError("api failed", "boom")
+				return nil, diags
+			},
+			func(_ *simpleWriteTestModel, _ context.Context, _ string, _ *string) diag.Diagnostics {
+				populateCalled = true
+				return nil
+			},
+		)
+
+		_, diags := writeFn(context.Background(), &clients.KibanaScopedClient{}, KibanaWriteRequest[simpleWriteTestModel]{
+			Plan: simpleWriteTestModel{ID: "abc"},
+		})
+
+		require.True(t, diags.HasError())
+		assert.False(t, populateCalled)
+	})
+}
+
+func TestSimpleKibanaUpdate(t *testing.T) {
+	t.Run("happy path forwards writeID to toBody and spaceID/writeID to apiUpdate then populate", func(t *testing.T) {
+		var gotToBodyWriteID, gotSpaceID, gotWriteID string
+		resp := "updated-body"
+
+		writeFn := SimpleKibanaUpdate[simpleWriteTestModel, string, string](
+			func(plan simpleWriteTestModel, _ context.Context, writeID string) (string, diag.Diagnostics) {
+				gotToBodyWriteID = writeID
+				return "body-for-" + plan.ID, nil
+			},
+			func(_ context.Context, _ *kibanaoapi.Client, spaceID, writeID string, _ string) (*string, diag.Diagnostics) {
+				gotSpaceID = spaceID
+				gotWriteID = writeID
+				return &resp, nil
+			},
+			(*simpleWriteTestModel).setSpaceID,
+		)
+
+		result, diags := writeFn(context.Background(), &clients.KibanaScopedClient{}, KibanaWriteRequest[simpleWriteTestModel]{
+			Plan:    simpleWriteTestModel{ID: "abc"},
+			SpaceID: "default",
+			WriteID: "abc-123",
+		})
+
+		require.False(t, diags.HasError())
+		assert.Equal(t, "abc-123", gotToBodyWriteID)
+		assert.Equal(t, "default", gotSpaceID)
+		assert.Equal(t, "abc-123", gotWriteID)
+		assert.Equal(t, "default", result.Model.SpaceID)
+	})
+
+	t.Run("apiUpdate error short-circuits before populate", func(t *testing.T) {
+		populateCalled := false
+
+		writeFn := SimpleKibanaUpdate[simpleWriteTestModel, string, string](
+			func(_ simpleWriteTestModel, _ context.Context, _ string) (string, diag.Diagnostics) {
+				return "body", nil
+			},
+			func(_ context.Context, _ *kibanaoapi.Client, _, _ string, _ string) (*string, diag.Diagnostics) {
+				var diags diag.Diagnostics
+				diags.AddError("api failed", "boom")
+				return nil, diags
+			},
+			func(_ *simpleWriteTestModel, _ context.Context, _ string, _ *string) diag.Diagnostics {
+				populateCalled = true
+				return nil
+			},
+		)
+
+		_, diags := writeFn(context.Background(), &clients.KibanaScopedClient{}, KibanaWriteRequest[simpleWriteTestModel]{
+			Plan:    simpleWriteTestModel{ID: "abc"},
+			WriteID: "abc-123",
+		})
+
+		require.True(t, diags.HasError())
+		assert.False(t, populateCalled)
+	})
 }

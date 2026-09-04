@@ -64,7 +64,7 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	}
 
 	result := prior
-	if !prior.TargetID.IsNull() && !prior.TargetID.IsUnknown() {
+	if typeutils.IsKnown(prior.TargetID) {
 		result.TargetID = prior.TargetID
 	} else {
 		result.TargetID = types.StringValue(targetID)

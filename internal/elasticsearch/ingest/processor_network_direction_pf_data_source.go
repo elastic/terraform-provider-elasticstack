@@ -57,20 +57,13 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	body.InternalNetworks = typeutils.StringSetElements(m.InternalNetworks, &diags)
+	body.InternalNetworks = typeutils.StringElements(m.InternalNetworks, &diags)
 	if typeutils.IsKnown(m.InternalNetworksField) {
 		body.InternalNetworksField = m.InternalNetworksField.ValueString()
 	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(true)
-		body.IgnoreMissing = true
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, true)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

@@ -23,7 +23,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 func deleteEntityStore(
@@ -33,7 +35,8 @@ func deleteEntityStore(
 	spaceID string,
 	model tfModel,
 ) diag.Diagnostics {
-	entityTypes, diags := expandEntityTypes(ctx, model.EntityTypes)
+	var diags diag.Diagnostics
+	entityTypes := typeutils.SetTypeAs[string](ctx, model.EntityTypes, path.Empty(), &diags)
 	if diags.HasError() {
 		return diags
 	}

@@ -45,12 +45,12 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.RegexFile) {
 		body.RegexFile = m.RegexFile.ValueString()
 	}
-	body.Properties = typeutils.StringSetElements(m.Properties, &diags)
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
 	if typeutils.IsKnown(m.ExtractDeviceType) {
 		v := m.ExtractDeviceType.ValueBool()
 		body.ExtractDeviceType = &v

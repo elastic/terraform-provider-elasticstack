@@ -11,7 +11,7 @@ Define the main CI workflow: build, lint (including OpenSpec validation), matrix
 ```yaml
 on:
   push:
-    branches: [main]
+    branches: [main, "renovate/**"]
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch: {}
@@ -22,13 +22,19 @@ permissions:
 ## Requirements
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
-The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
+The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
 
 #### Scenario: Push to main
 
 - GIVEN a `push` to `main`
 - WHEN the change-classification job reports `provider_changes=true`
 - THEN build, lint, and test jobs MAY run per other requirements
+
+#### Scenario: Push to a Renovate branch
+
+- GIVEN a `push` to a branch matching `renovate/**`
+- WHEN the workflow is dispatched
+- THEN the workflow SHALL run so commit check runs exist for branch automerge
 
 ### Requirement: Build and lint jobs (REQ-007–REQ-008, REQ-031)
 
@@ -224,3 +230,41 @@ The `gate` job SHALL provide a stable required-check target that can be used by 
 - **AND** at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `skipped`
 - **WHEN** the `gate` job evaluates the workflow state
 - **THEN** the `gate` job SHALL fail
+
+### Requirement: Snapshot-to-GA version promotion
+
+When the Elastic Stack release tracked by the acceptance matrix's snapshot-labeled entry
+(`<version>-SNAPSHOT`) reaches general availability, the workflow SHALL replace that matrix entry
+with the released version string rather than adding a separate, additional matrix entry for the same
+stack line. The promoted entry SHALL be added to every per-version step condition (such as Fleet
+setup) that had matched the snapshot label only via the `-SNAPSHOT` suffix, so the promoted version
+does not lose step coverage it received while labeled as a snapshot. The promoted entry SHALL no
+longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be treated as blocking
+(`continue-on-error: false`) like every other non-snapshot matrix entry, and SHALL NOT trigger the
+snapshot-failure PR warning comment.
+
+#### Scenario: Snapshot entry is promoted to its GA release
+
+- **GIVEN** the acceptance matrix contains a snapshot-labeled entry `X.Y.0-SNAPSHOT` tracking an
+  in-development stack line
+- **AND** that stack line reaches general availability as `X.Y.0`
+- **WHEN** the matrix is updated for the release
+- **THEN** the `X.Y.0-SNAPSHOT` entry SHALL be rewritten to `X.Y.0`
+- **AND** no additional matrix entry SHALL be added for the same `X.Y` stack line
+
+#### Scenario: Promoted entry keeps per-version step coverage
+
+- **GIVEN** a per-version step condition that previously matched a snapshot entry only via
+  `endsWith(matrix.version, '-SNAPSHOT')` (for example, Fleet setup)
+- **WHEN** that snapshot entry is promoted to its GA version string
+- **THEN** the promoted version string SHALL be added explicitly to that step's condition
+- **AND** the step SHALL continue to run for the promoted version exactly as it did while the entry
+  was labeled as a snapshot
+
+#### Scenario: Promoted entry becomes blocking
+
+- **GIVEN** a matrix entry that was promoted from a snapshot label to its GA version string
+- **WHEN** the acceptance test step (`make testacc`) fails for that entry
+- **THEN** `continue-on-error` SHALL NOT apply to that failure
+- **AND** the snapshot-failure PR warning comment step SHALL NOT fire for that entry
+

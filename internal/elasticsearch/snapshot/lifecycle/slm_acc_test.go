@@ -49,6 +49,7 @@ func TestAccResourceSLM(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "schedule", "0 30 1 * * ?"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "repository", fmt.Sprintf("%s-repo", name)),
@@ -59,6 +60,10 @@ func TestAccResourceSLM(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.0", "data-*"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.1", "abc"),
+					// metadata and feature_states are never configured on this
+					// resource, so a fresh create must leave them unset/null.
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "metadata"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "feature_states.#"),
 				),
 			},
 			{
@@ -93,6 +98,7 @@ func TestAccResourceSLMWithMetadata(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "schedule", "0 30 1 * * ?"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm_metadata", "repository", fmt.Sprintf("%s-repo", name)),
@@ -120,6 +126,7 @@ func TestAccResourceSLMExtended(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "schedule", "0 30 1 * * ?"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "snapshot_name", "<daily-snap-{now/d}>"),
@@ -169,8 +176,10 @@ func TestAccResourceSLMExtended(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "schedule", "0 30 2 * * ?"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "repository", fmt.Sprintf("%s-repo2", name)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expand_wildcards", "all"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.#", "2"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.0", "data-*"),
@@ -182,6 +191,7 @@ func TestAccResourceSLMExtended(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expire_after", "60d"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "min_count", "3"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "max_count", "30"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "metadata", `{"created_by":"terraform","purpose":"weekly backup"}`),
 				),
 			},
 			{
@@ -190,12 +200,24 @@ func TestAccResourceSLMExtended(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("defaults"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "repository", fmt.Sprintf("%s-repo", name)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "snapshot_name", "<snap-{now/d}>"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expand_wildcards", "open,hidden"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "partial", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "true"),
+					// Optional+Computed fields without schema defaults (indices,
+					// feature_states, expire_after, min_count, max_count, metadata)
+					// are omitted from the Put payload when unknown. Elasticsearch
+					// then omits them from Get, and mapSlmToData stores null.
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "feature_states.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expire_after"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "min_count"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "max_count"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "metadata"),
 				),
 			},
 		},

@@ -58,6 +58,11 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   // Optional: specify a custom output to send data to
   // output_id           = "my-custom-output-id"
 
+  // Optional (Elastic Stack 9.1.0+): grant the integration's API key write
+  // access to data streams a `reroute` processor targets. Shown in Kibana as
+  // "Add a reroute processor permission".
+  // additional_datastreams_permissions = ["logs-tcp.rerouted-default"]
+
   inputs = {
     "tcp-tcp" = {
       enabled = true
@@ -92,6 +97,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 
 ### Optional
 
+- `additional_datastreams_permissions` (List of String) Data streams the integration's Elasticsearch API key may write to in addition to those the integration package declares. Set this when a custom ingest pipeline uses a `reroute` processor whose destination lies outside the package's own data streams; without it, rerouted documents are rejected with a `security_exception`. In the Kibana UI this control appears as "Add a reroute processor permission" under the policy's advanced options. Entries may be exact data stream names (`metrics-elastic_agent.my_dataset-default`) or patterns (`logs-custom-*`), and Kibana validates them against the space's allowed namespace prefixes. Requires Elastic Stack 9.1.0 or above. To revoke previously granted permissions, remove this attribute; an empty list is not accepted.
 - `agent_policy_id` (String) ID of the agent policy.
 - `agent_policy_ids` (List of String) List of agent policy IDs.
 - `description` (String) The description of the integration policy.

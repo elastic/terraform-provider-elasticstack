@@ -46,17 +46,12 @@ func (m *processorEnrichModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.PolicyName) {
 		body.PolicyName = m.PolicyName.ValueString()
 	}
-	if m.Override.IsNull() || m.Override.IsUnknown() {
-		m.Override = types.BoolValue(true)
-		body.Override = true
-	} else {
-		body.Override = m.Override.ValueBool()
-	}
+	body.Override = typeutils.BoolDefault(&m.Override, true)
 	if m.MaxMatches.IsNull() || m.MaxMatches.IsUnknown() {
 		m.MaxMatches = types.Int64Value(1)
 		body.MaxMatches = 1

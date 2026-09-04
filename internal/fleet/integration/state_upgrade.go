@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -119,10 +120,10 @@ func (r *integrationResource) UpgradeState(ctx context.Context) map[int64]resour
 					IgnoreConstraints:         priorState.IgnoreConstraints,
 					SkipDestroy:               priorState.SkipDestroy,
 					SpaceID:                   types.StringNull(),
-				}
-				upgradedState.Timeouts = priorState.Timeouts
 
-				if !priorState.SpaceIDs.IsNull() && !priorState.SpaceIDs.IsUnknown() {
+					Timeouts: priorState.Timeouts}
+
+				if typeutils.IsKnown(priorState.SpaceIDs) {
 					var spaceIDs []string
 					resp.Diagnostics.Append(priorState.SpaceIDs.ElementsAs(ctx, &spaceIDs, false)...)
 					if resp.Diagnostics.HasError() {

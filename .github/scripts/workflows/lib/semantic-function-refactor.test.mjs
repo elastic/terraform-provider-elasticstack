@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { normalizeCompiledLock } from "./compiled-lock.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,7 +23,7 @@ function workflowSource() {
 }
 
 function lockSource() {
-	return readFileSync(lockPath, "utf8");
+	return normalizeCompiledLock(readFileSync(lockPath, "utf8"));
 }
 
 test("semantic-function-refactor workflow references the upstream baseline and deterministic issue-slot gate", () => {
@@ -124,9 +125,12 @@ test("workflow configures Serena MCP server for semantic Go analysis", () => {
 	assert.match(lock, /"serena":\s*\{/);
 	assert.match(
 		lock,
-		/"container":\s*"ghcr\.io\/github\/serena-mcp-server:latest"/,
+		/"container":\s*"ghcr\.io\/oraios\/serena:latest"/,
 	);
-	assert.match(lock, /"entrypoint":\s*"serena"/);
+	assert.match(
+		lock,
+		/"entrypoint":\s*"\/workspaces\/serena\/\.venv\/bin\/serena"/,
+	);
 });
 
 test("compiled lock includes Serena tools in agent allowed-tools", () => {

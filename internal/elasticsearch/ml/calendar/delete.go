@@ -19,35 +19,21 @@ package calendar
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func deleteCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
 	calendarID := resourceID
-
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar: %s", calendarID))
+	if diags := ml.RequireNonEmptyID(calendarID, "calendar_id"); diags.HasError() {
+		return diags
+	}
 
 	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.DeleteCalendar(calendarID).Do(ctx)
-	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			tflog.Debug(ctx, fmt.Sprintf("ML calendar %s already deleted", calendarID))
-			return diags
-		}
-		diags.AddError("Failed to delete ML calendar", fmt.Sprintf("Unable to delete ML calendar: %s — %s", calendarID, err.Error()))
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML calendar: %s", calendarID))
-	return diags
+	return elasticsearch.DeleteWithNotFoundAsSuccess(err, "Failed to delete ML calendar")
 }

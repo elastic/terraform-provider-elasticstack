@@ -20,6 +20,7 @@ package entity
 import (
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -129,12 +130,8 @@ func appendStringSetToMap(m map[string]any, key string, set types.Set) {
 	if set.IsNull() || set.IsUnknown() || len(set.Elements()) == 0 {
 		return
 	}
-	vals := make([]string, 0, len(set.Elements()))
-	for _, v := range set.Elements() {
-		if s, ok := v.(types.String); ok {
-			vals = append(vals, s.ValueString())
-		}
-	}
+	var diags diag.Diagnostics
+	vals := typeutils.StringElements(set, &diags)
 	if len(vals) > 0 {
 		m[key] = vals
 	}

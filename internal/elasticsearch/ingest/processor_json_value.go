@@ -19,10 +19,10 @@ package ingest
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -110,24 +110,24 @@ func (v ProcessorJSONValue) Equal(o attr.Value) bool {
 // StringSemanticEquals returns true when two processor JSON values are
 // equivalent after normalizing single-element arrays to scalars.
 func (v ProcessorJSONValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	newValue, ok := newValuable.(ProcessorJSONValue)
 	if !ok {
 		return v.Normalized.StringSemanticEquals(ctx, newValuable)
 	}
 
+	var diags diag.Diagnostics
+
 	if v.IsNull() || v.IsUnknown() || newValue.IsNull() || newValue.IsUnknown() {
 		return v.Normalized.Equal(newValue.Normalized), diags
 	}
 
-	var vMap, newMap any
-	if err := json.Unmarshal([]byte(v.ValueString()), &vMap); err != nil {
-		diags.AddError("Semantic Equality Check Error", err.Error())
+	vMap, diags := typeutils.UnmarshalJSONForSemanticEquals[any](v.ValueString())
+	if diags.HasError() {
 		return false, diags
 	}
-	if err := json.Unmarshal([]byte(newValue.ValueString()), &newMap); err != nil {
-		diags.AddError("Semantic Equality Check Error", err.Error())
+
+	newMap, diags := typeutils.UnmarshalJSONForSemanticEquals[any](newValue.ValueString())
+	if diags.HasError() {
 		return false, diags
 	}
 

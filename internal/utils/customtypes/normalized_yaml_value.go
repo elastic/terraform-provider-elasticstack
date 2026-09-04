@@ -61,6 +61,11 @@ func (v NormalizedYamlValue) Type(_ context.Context) attr.Type {
 	return NormalizedYamlType{}
 }
 
+// Equal returns true if the given value is equivalent.
+func (v NormalizedYamlValue) Equal(o attr.Value) bool {
+	return typeutils.StringValuableEqual(v.StringValue, o, func(y NormalizedYamlValue) basetypes.StringValue { return y.StringValue })
+}
+
 // ValidateAttribute validates that the string value is valid YAML.
 func (v NormalizedYamlValue) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
 	if v.IsNull() || v.IsUnknown() {
@@ -80,17 +85,8 @@ func (v NormalizedYamlValue) ValidateAttribute(_ context.Context, req xattr.Vali
 // StringSemanticEquals returns true if both values are semantically equal YAML
 // (i.e. parse to the same structure), regardless of whitespace or key ordering.
 func (v NormalizedYamlValue) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(NormalizedYamlValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 

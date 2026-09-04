@@ -1,3 +1,25 @@
+## [Unreleased]
+
+### Changes
+
+- Add `additional_datastreams_permissions` to `elasticstack_fleet_integration_policy`, granting an integration's Elasticsearch API key write access to data streams targeted by a `reroute` processor. Requires Elastic Stack 9.1.0 or above. ([#4657](https://github.com/elastic/terraform-provider-elasticstack/pull/4657))
+
+## [0.16.4] - 2026-08-25
+
+### Changes
+
+- Add searchable_snapshot.force_merge_on_clone to elasticsearch_index_lifecycle (ES ≥ 9.2.1). ([#4625](https://github.com/elastic/terraform-provider-elasticstack/pull/4625))
+- Promote elasticstack_fleet_managed_integration to GA so it no longer requires the experimental opt-in. ([#4617](https://github.com/elastic/terraform-provider-elasticstack/pull/4617))
+- Preserve composite resource IDs on update when the cluster UUID changes after deployment recreation ([#4545](https://github.com/elastic/terraform-provider-elasticstack/pull/4545))
+- Prevent false inconsistent-result errors when index mappings use template-injected dynamic templates. ([#4581](https://github.com/elastic/terraform-provider-elasticstack/pull/4581))
+- Treat Watcher-injected search-request and script defaults as equal so omitted keys no longer fail apply. ([#4538](https://github.com/elastic/terraform-provider-elasticstack/pull/4538))
+- Add `artifacts.investigation_guide` support to `elasticstack_kibana_alerting_rule` (inline `content` or file-based `content_path` with drift-detecting checksum). Requires ([#4489](https://github.com/elastic/terraform-provider-elasticstack/pull/4489))
+- Call Put Mapping when adding fields to an existing index's mappings ([#4507](https://github.com/elastic/terraform-provider-elasticstack/pull/4507))
+- Preserve slo_overview panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh, and dedupe the merge logic onto the shared panelkit helpers. ([#4472](https://github.com/elastic/terraform-provider-elasticstack/pull/4472))
+- Preserve slo_error_budget panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh. ([#4450](https://github.com/elastic/terraform-provider-elasticstack/pull/4450))
+- Fix Fleet integration installation with credentials restricted to a non-default Kibana space. ([#4300](https://github.com/elastic/terraform-provider-elasticstack/pull/4300))
+- Add `space_id` support for Kibana Synthetics parameters with composite IDs and space-scoped CRUD and import. ([#4278](https://github.com/elastic/terraform-provider-elasticstack/pull/4278))
+
 ## [0.16.3] - 2026-07-22
 
 ### Breaking changes
@@ -1061,7 +1083,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...v0.16.1

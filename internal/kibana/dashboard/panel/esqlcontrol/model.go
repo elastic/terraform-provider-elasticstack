@@ -213,9 +213,9 @@ func esqlControlPreserveNullIntentFromPrior(prior, existing *models.EsqlControlC
 	if prior == nil || existing == nil {
 		return
 	}
-	panelkit.NullPreserveBoolFromPrior(prior.SingleSelect, &existing.SingleSelect)
-	panelkit.NullPreserveStringFromPrior(prior.Title, &existing.Title)
-	panelkit.NullPreserveListFromPrior(prior.AvailableOptions, &existing.AvailableOptions)
+	panelkit.NullPreserveFromPrior(prior.SingleSelect, &existing.SingleSelect)
+	panelkit.NullPreserveFromPrior(prior.Title, &existing.Title)
+	panelkit.NullPreserveFromPrior(prior.AvailableOptions, &existing.AvailableOptions)
 	if prior.DisplaySettings == nil {
 		existing.DisplaySettings = nil
 	}

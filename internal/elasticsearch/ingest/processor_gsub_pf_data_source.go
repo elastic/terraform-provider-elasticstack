@@ -44,7 +44,7 @@ func (m *processorGsubModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.Pattern) {
 		body.Pattern = m.Pattern.ValueString()

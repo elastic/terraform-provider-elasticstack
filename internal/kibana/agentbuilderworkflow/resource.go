@@ -20,7 +20,9 @@ package agentbuilderworkflow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -42,8 +44,8 @@ func newWorkflowResource() *WorkflowResource {
 			"agentbuilder_workflow",
 			entitycore.KibanaResourceOptions[workflowModel]{
 				Schema: getResourceSchema,
-				Read:   readWorkflow,
-				Delete: deleteWorkflow,
+				Read:   entitycore.SimpleKibanaRead[workflowModel, models.Workflow](kibanaoapi.GetWorkflow, (*workflowModel).populateFromAPI),
+				Delete: entitycore.SimpleKibanaDelete[workflowModel](kibanaoapi.DeleteWorkflow),
 				Create: createWorkflow,
 				Update: updateWorkflow,
 			},

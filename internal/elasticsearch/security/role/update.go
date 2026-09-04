@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -40,7 +39,7 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	data := req.Plan
 	roleID := req.WriteID
 
-	id, idDiags := client.ID(ctx, roleID)
+	id, idDiags := entitycore.CompositeIDForWrite(ctx, client, req)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
@@ -59,6 +58,6 @@ func writeRole(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		return entitycore.WriteResult[Data]{}, diags
 	}
 
-	data.ID = types.StringValue(id.String())
+	data.ID = id
 	return entitycore.WriteResult[Data]{Model: data}, diags
 }

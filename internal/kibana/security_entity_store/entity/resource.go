@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -65,13 +64,6 @@ func NewResource() resource.Resource {
 	return newResource()
 }
 
-func NormalizeSpaceID(v types.String) string {
-	if v.IsNull() || v.IsUnknown() {
-		return clients.DefaultSpaceID
-	}
-	return clients.EffectiveSpaceID(v.ValueString())
-}
-
 // ValidateConfig implements resource.ResourceWithValidateConfig.
 func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var model tfModel
@@ -86,13 +78,13 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		return
 	}
 
-	if !model.Entity.IsNull() && !model.Entity.IsUnknown() {
+	if typeutils.IsKnown(model.Entity) {
 		var entityModel entityBlockModel
 		resp.Diagnostics.Append(model.Entity.As(ctx, &entityModel, basetypes.ObjectAsOptions{})...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		if !entityModel.ID.IsNull() && !entityModel.ID.IsUnknown() && entityModel.ID.ValueString() != entityID {
+		if typeutils.IsKnown(entityModel.ID) && entityModel.ID.ValueString() != entityID {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("entity_id"),
 				"entity_id mismatch",

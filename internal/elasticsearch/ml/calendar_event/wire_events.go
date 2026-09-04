@@ -189,24 +189,13 @@ func calendarEventWireFromTFModel(m *CalendarEventTFModel) (calendarEventWire, f
 
 // optionalBoolPtrEqualLenientMLCalendarBool compares optional ML calendar booleans for POST/list identity.
 // Elasticsearch may omit JSON false values; POST echoes may include server defaults (typically true) while
-// Terraform leaves unconfigured attributes unset (nil in the plan wire).
+// Terraform leaves unconfigured attributes unset (nil in the plan wire). Either side being omitted (nil) is
+// therefore treated as compatible with whatever concrete value the other side has.
 func optionalBoolPtrEqualLenientMLCalendarBool(a, b *bool) bool {
 	if typeutils.PtrEqual(a, b) {
 		return true
 	}
-	if a != nil && !*a && b == nil {
-		return true
-	}
-	if b != nil && !*b && a == nil {
-		return true
-	}
-	if a != nil && *a && b == nil {
-		return true
-	}
-	if b != nil && *b && a == nil {
-		return true
-	}
-	return false
+	return typeutils.PtrEqualOrOmitted(a, typeutils.Deref(b)) || typeutils.PtrEqualOrOmitted(b, typeutils.Deref(a))
 }
 
 func calendarEventWireTimesMillis(w *calendarEventWire) (startMs, endMs int64, ok bool) {

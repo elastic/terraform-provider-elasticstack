@@ -45,24 +45,14 @@ func (m *processorGeoIPModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
-	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
-		m.TargetField = types.StringValue("geoip")
-		body.TargetField = "geoip"
-	} else {
-		body.TargetField = m.TargetField.ValueString()
-	}
+	body.TargetField = typeutils.StringDefault(&m.TargetField, "geoip")
 	if typeutils.IsKnown(m.DatabaseFile) {
 		body.DatabaseFile = m.DatabaseFile.ValueString()
 	}
-	body.Properties = typeutils.StringSetElements(m.Properties, &diags)
-	if m.FirstOnly.IsNull() || m.FirstOnly.IsUnknown() {
-		m.FirstOnly = types.BoolValue(true)
-		body.FirstOnly = true
-	} else {
-		body.FirstOnly = m.FirstOnly.ValueBool()
-	}
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
+	body.FirstOnly = typeutils.BoolDefault(&m.FirstOnly, true)
 
 	return body, diags
 }

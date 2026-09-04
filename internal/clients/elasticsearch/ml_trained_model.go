@@ -33,7 +33,7 @@ func GetTrainedModel(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	res, diags := CallOrNotFound(func() (*gettrainedmodels.Response, error) {
 		return typedClient.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)
-	})
+	}, "Unable to get trained model")
 	if diags.HasError() || res == nil {
 		return nil, false, diags
 	}

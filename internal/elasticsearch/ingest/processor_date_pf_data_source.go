@@ -53,35 +53,13 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
-		m.TargetField = types.StringValue("@timestamp")
-		body.TargetField = "@timestamp"
-	} else {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	body.Formats = typeutils.StringListElements(m.Formats, &diags)
-	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
-		m.Timezone = types.StringValue("UTC")
-		body.Timezone = "UTC"
-	} else {
-		body.Timezone = m.Timezone.ValueString()
-	}
-	if m.Locale.IsNull() || m.Locale.IsUnknown() {
-		m.Locale = types.StringValue("ENGLISH")
-		body.Locale = "ENGLISH"
-	} else {
-		body.Locale = m.Locale.ValueString()
-	}
-	if m.OutputFormat.IsNull() || m.OutputFormat.IsUnknown() {
-		m.OutputFormat = types.StringValue("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
-		body.OutputFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
-	} else {
-		body.OutputFormat = m.OutputFormat.ValueString()
-	}
+	body.TargetField = typeutils.StringDefault(&m.TargetField, "@timestamp")
+	body.Formats = typeutils.StringElements(m.Formats, &diags)
+	body.Timezone = typeutils.StringDefault(&m.Timezone, "UTC")
+	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
+	body.OutputFormat = typeutils.StringDefault(&m.OutputFormat, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

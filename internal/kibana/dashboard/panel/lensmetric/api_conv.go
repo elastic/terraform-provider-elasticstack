@@ -212,6 +212,10 @@ func metricChartConfigFromAPIVariant1(
 	return diags
 }
 
+func metricItemConfigOf(m *models.MetricItemModel) *customtypes.JSONWithDefaultsValue[map[string]any] {
+	return &m.ConfigJSON
+}
+
 func metricChartConfigUsesESQL(m *models.MetricChartConfigModel) bool {
 	if m == nil || !typeutils.IsKnown(m.DataSourceJSON) {
 		return false
@@ -265,27 +269,15 @@ func metricChartConfigToAPIVariant0(m *models.MetricChartConfigModel) (lenscommo
 	// Set metrics
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
-		for i, metric := range m.Metrics {
-			if typeutils.IsKnown(metric.ConfigJSON) {
-				var metricItem kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_Metrics_Item
-				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
-				diags.Append(metricDiags...)
-				if !metricDiags.HasError() {
-					metrics[i] = metricItem
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, metricItemConfigOf, "metric", &diags) {
+			return lenscommon.VisByValueConfig0{}, diags
 		}
 		variant0.Metrics = metrics
 	}
 
 	// Set breakdown_by
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var breakdownBy kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel_BreakdownBy
-		breakdownDiags := m.BreakdownByJSON.Unmarshal(&breakdownBy)
-		diags.Append(breakdownDiags...)
-		if !breakdownDiags.HasError() {
-			variant0.BreakdownBy = &breakdownBy
-		}
+		diags.Append(m.BreakdownByJSON.Unmarshal(&variant0.BreakdownBy)...)
 	}
 
 	writes, presDiags := lenscommon.LensChartPresentationWritesFor(m.LensChartPresentationTFModel)
@@ -332,15 +324,8 @@ func metricChartConfigToAPIVariant1(m *models.MetricChartConfigModel) (lenscommo
 	// Set metrics
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsMetricESQLByValuePanel_Metrics_Item, len(m.Metrics))
-		for i, metric := range m.Metrics {
-			if typeutils.IsKnown(metric.ConfigJSON) {
-				var metricItem kbapi.KibanaHTTPAPIsMetricESQLByValuePanel_Metrics_Item
-				metricDiags := metric.ConfigJSON.Unmarshal(&metricItem)
-				diags.Append(metricDiags...)
-				if !metricDiags.HasError() {
-					metrics[i] = metricItem
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, metricItemConfigOf, "metric", &diags) {
+			return lenscommon.VisByValueConfig0{}, diags
 		}
 		variant1.Metrics = metrics
 	}

@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { normalizeCompiledLock } from './compiled-lock.mjs';
 
 const require = createRequire(import.meta.url);
 const { classifyRuns, computeGate, filterIssues } = require('./flaky-test-catcher.js');
@@ -208,7 +209,7 @@ test('filterIssues keeps only real issues in a mixed list', () => {
 
 test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
   const source = readFileSync(workflowPath, 'utf8');
-  const lock = readFileSync(lockPath, 'utf8');
+  const lock = normalizeCompiledLock(readFileSync(lockPath, 'utf8'));
   assert.match(source, /imports:\s*\[shared\/dispatch-code-factory\.md\]/);
   assert.match(source, /dispatch_code_factory/);
   assert.match(source, /Dispatch/);

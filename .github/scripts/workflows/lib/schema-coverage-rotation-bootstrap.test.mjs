@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { normalizeCompiledLock } from "./compiled-lock.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +21,7 @@ function workflowSource() {
 }
 
 function lockSource() {
-	return readFileSync(lockPath, "utf8");
+	return normalizeCompiledLock(readFileSync(lockPath, "utf8"));
 }
 
 /** Body between "## Repository toolchain" and the next "## Execution steps" (exclusive). */

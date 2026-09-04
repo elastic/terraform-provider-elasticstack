@@ -21,8 +21,10 @@ import (
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
@@ -60,6 +62,19 @@ func ResourceSpaceIDAttributeRequiresReplaceOnly() schema.StringAttribute {
 	)
 }
 
+// ResourceSpaceIDAttributeNoDefault returns the canonical space_id attribute
+// for Kibana resources that leave space_id defaulted server-side rather than
+// defaulting it to "default" (Optional+Computed, no Default), with the
+// supplied plan modifiers.
+func ResourceSpaceIDAttributeNoDefault(modifiers ...planmodifier.String) schema.StringAttribute {
+	return schema.StringAttribute{
+		MarkdownDescription: spaceIDDescription,
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers:       modifiers,
+	}
+}
+
 // DataSourceSpaceIDAttribute returns the canonical space_id attribute for
 // Kibana data sources (Optional+Computed, no plan modifiers).
 func DataSourceSpaceIDAttribute() dsschema.StringAttribute {
@@ -67,5 +82,19 @@ func DataSourceSpaceIDAttribute() dsschema.StringAttribute {
 		MarkdownDescription: spaceIDDescription,
 		Optional:            true,
 		Computed:            true,
+	}
+}
+
+// SpaceIDsAttribute returns the canonical space_ids Set attribute shared by
+// Fleet resources that support multi-space assignment: Optional+Computed
+// with UseStateForUnknown, plus any additional plan modifiers (e.g.
+// RequiresReplace) appended after it.
+func SpaceIDsAttribute(description string, extraModifiers ...planmodifier.Set) schema.SetAttribute {
+	return schema.SetAttribute{
+		MarkdownDescription: description,
+		ElementType:         types.StringType,
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers:       append([]planmodifier.Set{setplanmodifier.UseStateForUnknown()}, extraModifiers...),
 	}
 }

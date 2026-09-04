@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
@@ -57,17 +58,17 @@ func (d *entitiesDataSource) ValidateConfig(ctx context.Context, req datasource.
 	}
 
 	// Check for mixed pagination modes (cannot use page-mode + cursor-mode together)
-	hasPageMode := !model.SortField.IsNull() && !model.SortField.IsUnknown() ||
-		!model.SortOrder.IsNull() && !model.SortOrder.IsUnknown() ||
-		!model.Page.IsNull() && !model.Page.IsUnknown() ||
-		!model.PerPage.IsNull() && !model.PerPage.IsUnknown() ||
-		!model.FilterQuery.IsNull() && !model.FilterQuery.IsUnknown()
+	hasPageMode := typeutils.IsKnown(model.SortField) ||
+		typeutils.IsKnown(model.SortOrder) ||
+		typeutils.IsKnown(model.Page) ||
+		typeutils.IsKnown(model.PerPage) ||
+		typeutils.IsKnown(model.FilterQuery)
 
-	hasCursorMode := !model.Filter.IsNull() && !model.Filter.IsUnknown() ||
-		!model.Size.IsNull() && !model.Size.IsUnknown() ||
-		!model.SearchAfter.IsNull() && !model.SearchAfter.IsUnknown() ||
-		!model.Source.IsNull() && !model.Source.IsUnknown() ||
-		!model.Fields.IsNull() && !model.Fields.IsUnknown()
+	hasCursorMode := typeutils.IsKnown(model.Filter) ||
+		typeutils.IsKnown(model.Size) ||
+		typeutils.IsKnown(model.SearchAfter) ||
+		typeutils.IsKnown(model.Source) ||
+		typeutils.IsKnown(model.Fields)
 
 	if hasPageMode && hasCursorMode {
 		resp.Diagnostics.AddError(

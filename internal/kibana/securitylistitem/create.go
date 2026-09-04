@@ -20,37 +20,34 @@ package securitylistitem
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func createSecurityListItem(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	m := req.Plan
+var createSecurityListItem = entitycore.SimpleKibanaCreate[Model, kbapi.CreateListItemJSONRequestBody, kbapi.SecurityListsAPIListItem](
+	func(plan Model, ctx context.Context) (kbapi.CreateListItemJSONRequestBody, diag.Diagnostics) {
+		req, diags := plan.toAPICreateModel(ctx)
+		if diags.HasError() {
+			return kbapi.CreateListItemJSONRequestBody{}, diags
+		}
+		return *req, diags
+	},
+	kibanaoapi.CreateListItem,
+	(*Model).populateCreated,
+)
+
+// populateCreated captures the list item ID assigned by the create response.
+func (m *Model) populateCreated(_ context.Context, spaceID string, created *kbapi.SecurityListsAPIListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	createReq, d := m.toAPICreateModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, created, "create", "security list item") {
+		return diags
 	}
 
-	createdListItem, d := kibanaoapi.CreateListItem(ctx, oapiClient, req.SpaceID, *createReq)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	m.ListItemID = typeutils.StringishValue(created.Id)
+	m.ID = entitycore.KibanaResourceID(spaceID, created.Id)
 
-	if entitycore.RequireNonNilKibanaWriteResponse(&diags, createdListItem, "create", "security list item") {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	m.ListItemID = typeutils.StringishValue(createdListItem.Id)
-	m.ID = entitycore.KibanaResourceID(req.SpaceID, createdListItem.Id)
-
-	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
+	return diags
 }

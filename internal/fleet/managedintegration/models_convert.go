@@ -40,6 +40,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -52,7 +53,7 @@ import (
 
 // packageModel and cloudConnectorModel are the Go representations of the
 // `package` and `cloud_connector` nested attributes (see models.go's field-level
-// doc comment). global_data_tags uses globalDataTagsItemModel in models.go.
+// doc comment). global_data_tags uses globaldatatags.Item.
 type packageModel struct {
 	Name    types.String `tfsdk:"name"`
 	Version types.String `tfsdk:"version"`
@@ -122,12 +123,12 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 // globalDataTagsToModel converts managed_integrations global_data_tags into
 // the Terraform map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
-	elemType := globalDataTagsElementType()
+	elemType := globaldatatags.ElementType()
 	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
 		return types.MapNull(elemType)
 	}
 
-	map0 := make(map[string]globalDataTagsItemModel, len(*item.GlobalDataTags))
+	map0 := make(map[string]globaldatatags.Item, len(*item.GlobalDataTags))
 	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
 	for _, tag := range *item.GlobalDataTags {
 		tagPath := path.Root(attrGlobalDataTags).AtMapKey(tag.Name)
@@ -140,12 +141,11 @@ func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManage
 			continue
 		}
 		seenNames[tag.Name] = struct{}{}
-		tagItem := globalDataTagsItemModel{}
-		if num, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1(); err == nil {
-			tagItem.NumberValue = types.Float32Value(num)
-		} else if str, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0(); err == nil {
-			tagItem.StringValue = types.StringValue(str)
-		} else {
+		tagItem, err := globaldatatags.Flatten(tag.Value,
+			kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1,
+			kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0,
+		)
+		if err != nil {
 			diags.AddAttributeError(
 				tagPath,
 				"Unsupported global_data_tags value type",
@@ -169,7 +169,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 	if !typeutils.IsKnown(tags) {
 		return nil
 	}
-	items := typeutils.MapTypeAs[globalDataTagsItemModel](ctx, tags, path.Root(attrGlobalDataTags), diags)
+	items := typeutils.MapTypeAs[globaldatatags.Item](ctx, tags, path.Root(attrGlobalDataTags), diags)
 	if diags.HasError() {
 		return nil
 	}
@@ -177,25 +177,17 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 	raw := make([]globalDataTagRaw, 0, len(items))
 	for key, item := range items {
 		tagPath := path.Root(attrGlobalDataTags).AtMapKey(key)
-		var value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
-		var err error
-		switch {
-		case typeutils.IsKnown(item.StringValue):
-			err = value.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(item.StringValue.ValueString())
-		case typeutils.IsKnown(item.NumberValue):
-			err = value.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(item.NumberValue.ValueFloat32())
-		default:
-			diags.AddAttributeError(
-				tagPath,
-				"Invalid global_data_tags entry",
-				"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
-			)
-			continue
-		}
-		if err != nil {
-			diags.AddAttributeError(tagPath, "Failed to encode global_data_tags", err.Error())
-			continue
-		}
+		meta := typeutils.MapMeta{Key: key, Path: tagPath, Diags: diags}
+		value := globaldatatags.Expand(item, meta,
+			func(s string) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+				var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+				return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(s)
+			},
+			func(n float32) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+				var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+				return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(n)
+			},
+		)
 		raw = append(raw, globalDataTagRaw{Name: key, Value: value})
 	}
 	if diags.HasError() {

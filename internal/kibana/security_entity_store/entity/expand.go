@@ -40,13 +40,13 @@ func setBlockOrJSON(
 	jsonPath path.Path,
 	diags *diag.Diagnostics,
 ) {
-	if !block.IsNull() && !block.IsUnknown() {
+	if typeutils.IsKnown(block) {
 		if m := blockToMap(ctx, block, diags); m != nil {
 			body[key] = m
 		}
 		return
 	}
-	if !jsonVal.IsNull() && !jsonVal.IsUnknown() {
+	if typeutils.IsKnown(jsonVal) {
 		if m := typeutils.NormalizedTypeToMap[any](jsonVal, jsonPath, diags); m != nil {
 			body[key] = m
 		}
@@ -57,21 +57,17 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 	body := make(map[string]any)
 	var diags diag.Diagnostics
 
-	if !model.Timestamp.IsNull() && !model.Timestamp.IsUnknown() {
+	if typeutils.IsKnown(model.Timestamp) {
 		body["@timestamp"] = model.Timestamp.ValueString()
 	}
 
-	if !model.Tags.IsNull() && !model.Tags.IsUnknown() {
-		tags := make([]string, 0)
-		for _, v := range model.Tags.Elements() {
-			if s, ok := v.(types.String); ok {
-				tags = append(tags, s.ValueString())
-			}
-		}
-		body["tags"] = tags
+	if typeutils.IsKnown(model.Tags) {
+		var tagsDiags diag.Diagnostics
+		body["tags"] = typeutils.StringElements(model.Tags, &tagsDiags)
+		diags.Append(tagsDiags...)
 	}
 
-	if !model.Labels.IsNull() && !model.Labels.IsUnknown() {
+	if typeutils.IsKnown(model.Labels) {
 		labels := make(map[string]any)
 		for k, v := range model.Labels.Elements() {
 			if s, ok := v.(types.String); ok {
@@ -79,7 +75,7 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 			}
 		}
 		body["labels"] = labels
-	} else if !model.LabelsJSON.IsNull() && !model.LabelsJSON.IsUnknown() {
+	} else if typeutils.IsKnown(model.LabelsJSON) {
 		labels := typeutils.NormalizedTypeToMap[any](model.LabelsJSON, path.Root("labels_json"), &diags)
 		if labels != nil {
 			body["labels"] = labels
@@ -110,19 +106,19 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 	}
 
 	m := map[string]any{"id": model.ID.ValueString()}
-	if !model.Name.IsNull() && !model.Name.IsUnknown() {
+	if typeutils.IsKnown(model.Name) {
 		m[attrName] = model.Name.ValueString()
 	}
-	if !model.Type.IsNull() && !model.Type.IsUnknown() {
+	if typeutils.IsKnown(model.Type) {
 		m[attrType] = model.Type.ValueString()
 	}
-	if !model.SubType.IsNull() && !model.SubType.IsUnknown() {
+	if typeutils.IsKnown(model.SubType) {
 		m["sub_type"] = model.SubType.ValueString()
 	}
-	if !model.Source.IsNull() && !model.Source.IsUnknown() {
+	if typeutils.IsKnown(model.Source) {
 		appendStringSetToMap(m, "source", model.Source)
 	}
-	if !model.Attributes.IsNull() && !model.Attributes.IsUnknown() {
+	if typeutils.IsKnown(model.Attributes) {
 		var attr entityAttributesBlockModel
 		d := model.Attributes.As(ctx, &attr, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -145,7 +141,7 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 			}
 		}
 	}
-	if !model.Behaviors.IsNull() && !model.Behaviors.IsUnknown() {
+	if typeutils.IsKnown(model.Behaviors) {
 		var beh entityBehaviorsBlockModel
 		d := model.Behaviors.As(ctx, &beh, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -165,7 +161,7 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 			}
 		}
 	}
-	if !model.Lifecycle.IsNull() && !model.Lifecycle.IsUnknown() {
+	if typeutils.IsKnown(model.Lifecycle) {
 		var lc entityLifecycleBlockModel
 		d := model.Lifecycle.As(ctx, &lc, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -185,12 +181,12 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 			}
 		}
 	}
-	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
+	if typeutils.IsKnown(model.Risk) {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
 			m[attrRisk] = rm
 		}
 	}
-	if !model.Relationships.IsNull() && !model.Relationships.IsUnknown() {
+	if typeutils.IsKnown(model.Relationships) {
 		var rel entityRelationshipsBlockModel
 		d := model.Relationships.As(ctx, &rel, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -255,7 +251,7 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	appendStringSetToMap(m, "mac", model.Mac)
 	appendStringSetToMap(m, attrType, model.Type)
 	appendStringSetToMap(m, "architecture", model.Architecture)
-	if !model.Os.IsNull() && !model.Os.IsUnknown() {
+	if typeutils.IsKnown(model.Os) {
 		var osModel hostOsBlockModel
 		d := model.Os.As(ctx, &osModel, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -287,7 +283,7 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 			}
 		}
 	}
-	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
+	if typeutils.IsKnown(model.Risk) {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
 			m[attrRisk] = rm
 		}
@@ -312,7 +308,7 @@ func userBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	appendStringSetToMap(m, "hash", model.Hash)
 	appendStringSetToMap(m, "id", model.ID)
 	appendStringSetToMap(m, "roles", model.Roles)
-	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
+	if typeutils.IsKnown(model.Risk) {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
 			m[attrRisk] = rm
 		}
@@ -331,7 +327,7 @@ func serviceBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagno
 		return nil
 	}
 	m := map[string]any{attrName: model.Name.ValueString()}
-	if !model.Risk.IsNull() && !model.Risk.IsUnknown() {
+	if typeutils.IsKnown(model.Risk) {
 		if rm := riskBlockToMap(ctx, model.Risk, diags); rm != nil {
 			m[attrRisk] = rm
 		}
@@ -488,7 +484,7 @@ func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 	if !model.Value.IsNull() {
 		m[attrValue] = model.Value.ValueFloat64()
 	}
-	if !model.CriticalityFeedback.IsNull() && !model.CriticalityFeedback.IsUnknown() {
+	if typeutils.IsKnown(model.CriticalityFeedback) {
 		var fb assetCriticalityFeedbackBlockModel
 		d := model.CriticalityFeedback.As(ctx, &fb, basetypes.ObjectAsOptions{})
 		diags.Append(d...)
@@ -505,7 +501,7 @@ func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 			}
 		}
 	}
-	if !model.Owner.IsNull() && !model.Owner.IsUnknown() {
+	if typeutils.IsKnown(model.Owner) {
 		var owner assetOwnerBlockModel
 		d := model.Owner.As(ctx, &owner, basetypes.ObjectAsOptions{})
 		diags.Append(d...)

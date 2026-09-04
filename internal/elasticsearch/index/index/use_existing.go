@@ -82,7 +82,7 @@ func compareStaticSettings(ctx context.Context, plan *tfModel, existing models.I
 		}
 
 		// Determine if the plan uses the new sort ListNestedAttribute
-		sortIsListNested := !plan.Sort.IsNull() && !plan.Sort.IsUnknown()
+		sortIsListNested := typeutils.IsKnown(plan.Sort)
 
 		if mm := compareStaticPlanAndES(tfAttr, key, planVal, actualRaw, sortIsListNested); mm != nil {
 			mismatches = append(mismatches, *mm)

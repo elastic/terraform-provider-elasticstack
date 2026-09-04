@@ -18,6 +18,7 @@
 package ingest
 
 import (
+	"context"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -26,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -54,42 +56,17 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	body.Patterns = typeutils.StringListElements(m.Patterns, &diags)
+	body.Patterns = typeutils.StringElements(m.Patterns, &diags)
 	if typeutils.IsKnown(m.PatternDefinitions) {
-		defs := make(map[string]string, len(m.PatternDefinitions.Elements()))
-		for k, v := range m.PatternDefinitions.Elements() {
-			str, ok := v.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid pattern_definitions element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown pattern_definitions element", "pattern_definitions elements cannot be unknown")
-				}
-				continue
-			}
-			defs[k] = str.ValueString()
-		}
-		body.PatternDefinitions = defs
+		body.PatternDefinitions = typeutils.MapTypeAs[string](context.Background(), m.PatternDefinitions, path.Root("pattern_definitions"), &diags)
 	}
 	if typeutils.IsKnown(m.EcsCompatibility) {
 		body.EcsCompatibility = m.EcsCompatibility.ValueString()
 	}
-	if m.TraceMatch.IsNull() || m.TraceMatch.IsUnknown() {
-		m.TraceMatch = types.BoolValue(false)
-		body.TraceMatch = false
-	} else {
-		body.TraceMatch = m.TraceMatch.ValueBool()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.TraceMatch = typeutils.BoolDefault(&m.TraceMatch, false)
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

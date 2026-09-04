@@ -17,6 +17,8 @@
 
 package clients
 
+import "github.com/hashicorp/terraform-plugin-framework/types"
+
 // DefaultSpaceID is the Kibana default space identifier used when the resource
 // does not target a specific space.
 const DefaultSpaceID = "default"
@@ -28,4 +30,18 @@ func EffectiveSpaceID(spaceID string) string {
 		return DefaultSpaceID
 	}
 	return spaceID
+}
+
+// EffectiveSpaceIDFromValue resolves a Terraform space_id attribute to its
+// effective Kibana space string. Null and unknown values fall back to
+// DefaultSpaceID; known values (including empty strings) are resolved via
+// EffectiveSpaceID. This is the single canonical bridge between a
+// types.String space_id attribute and the effective space string, and should
+// be used by every Kibana space-scoped resource and data source instead of
+// re-implementing the null/unknown/empty handling locally.
+func EffectiveSpaceIDFromValue(spaceID types.String) string {
+	if spaceID.IsNull() || spaceID.IsUnknown() {
+		return DefaultSpaceID
+	}
+	return EffectiveSpaceID(spaceID.ValueString())
 }

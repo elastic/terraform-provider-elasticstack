@@ -25,35 +25,18 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (r *EnableRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.upsert(ctx, req.Plan, &resp.State)...)
-}
+func writeSecurityEnableRule(
+	ctx context.Context,
+	client *clients.KibanaScopedClient,
+	req entitycore.KibanaWriteRequest[enableRuleModel],
+) (entitycore.KibanaWriteResult[enableRuleModel], diag.Diagnostics) {
+	model := req.Plan
+	var diags diag.Diagnostics
 
-func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state *tfsdk.State) diag.Diagnostics {
-	var model enableRuleModel
-
-	diags := plan.Get(ctx, &model)
-	if diags.HasError() {
-		return diags
-	}
-
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, model.KibanaConnection)
-	diags.Append(apiClientDiags...)
-	if diags.HasError() {
-		return diags
-	}
-
-	diags.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &model)...)
-	if diags.HasError() {
-		return diags
-	}
-
-	client := apiClient.GetKibanaOapiClient()
+	oapiClient := client.GetKibanaOapiClient()
 
 	spaceID := model.SpaceID.ValueString()
 	key := model.Key.ValueString()
@@ -65,13 +48,12 @@ func (r *EnableRuleResource) upsert(ctx context.Context, plan tfsdk.Plan, state 
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: fmt.Sprintf("%s:%s", key, value)}).String())
 
-	diags.Append(kibanaoapi.EnableRulesByTag(ctx, client, spaceID, key, value)...)
+	diags.Append(kibanaoapi.EnableRulesByTag(ctx, oapiClient, spaceID, key, value)...)
 	if diags.HasError() {
-		return diags
+		return entitycore.KibanaWriteResult[enableRuleModel]{}, diags
 	}
 
 	model.AllRulesEnabled = types.BoolValue(true)
 
-	diags.Append(state.Set(ctx, model)...)
-	return diags
+	return entitycore.KibanaWriteResult[enableRuleModel]{Model: model, SkipReadAfterWrite: true}, diags
 }

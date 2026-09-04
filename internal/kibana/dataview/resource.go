@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -47,7 +48,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[dataViewModel]{
 				Schema: getSchema,
 				Read:   readDataView,
-				Delete: deleteDataView,
+				Delete: entitycore.SimpleKibanaDelete[dataViewModel](kibanaoapi.DeleteDataView),
 				Create: createDataView,
 				Update: updateDataView,
 			},
@@ -82,12 +83,12 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	id := (&clients.CompositeID{ClusterID: spaceID, ResourceID: composite.ResourceID}).String()
 
 	stateModel := dataViewModel{
-		ResourceTimeoutsField: entitycore.ResourceTimeoutsField{Timeouts: timeoutsValue},
-		ID:                    types.StringValue(id),
-		SpaceID:               types.StringValue(spaceID),
-		Override:              types.BoolValue(false),
-		DataView:              types.ObjectUnknown(getDataViewAttrTypes(ctx)),
-		KibanaConnection:      providerschema.KibanaConnectionNullList(),
+		Timeouts:         timeoutsValue,
+		ID:               types.StringValue(id),
+		SpaceID:          types.StringValue(spaceID),
+		Override:         types.BoolValue(false),
+		DataView:         types.ObjectUnknown(getDataViewAttrTypes(ctx)),
+		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, stateModel)...)

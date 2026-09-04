@@ -158,19 +158,6 @@ func ListTypeToSliceString(ctx context.Context, value types.List, p path.Path, d
 	return ListTypeAs[string](ctx, value, p, diags)
 }
 
-// ListTypeToSliceStringPtr extracts a *[]string from an optional list attribute,
-// returning nil when the list is null or unknown.
-func ListTypeToSliceStringPtr(ctx context.Context, l types.List, p path.Path, diags *diag.Diagnostics) *[]string {
-	if l.IsNull() || l.IsUnknown() {
-		return nil
-	}
-	result := ListTypeToSliceString(ctx, l, p, diags)
-	if diags.HasError() {
-		return nil
-	}
-	return &result
-}
-
 // ListTypeAs converts a types.List into a tfsdk aware []T.
 func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics) []T {
 	return elementsAs[[]T](ctx, value, p, diags)
@@ -179,27 +166,4 @@ func ListTypeAs[T any](ctx context.Context, value types.List, p path.Path, diags
 // ListValueFrom converts a tfsdk aware []T to a types.List.
 func ListValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p path.Path, diags *diag.Diagnostics) types.List {
 	return collectionValueFrom(ctx, value, elemType, p, diags, types.ListValueFrom)
-}
-
-// StringListElements extracts the string values from a types.List of strings
-// without requiring a context.Context. Returns nil for null/unknown lists and
-// appends an error diagnostic for non-string, null, or unknown elements.
-func StringListElements(list types.List, diags *diag.Diagnostics) []string {
-	if list.IsNull() || list.IsUnknown() {
-		return nil
-	}
-	elems := make([]string, 0, len(list.Elements()))
-	for _, elem := range list.Elements() {
-		str, ok := elem.(types.String)
-		if !ok || str.IsNull() || str.IsUnknown() {
-			if !ok {
-				diags.AddError("Invalid list element type", "expected types.String")
-			} else {
-				diags.AddError("Unknown list element", "list elements cannot be null or unknown")
-			}
-			continue
-		}
-		elems = append(elems, str.ValueString())
-	}
-	return elems
 }

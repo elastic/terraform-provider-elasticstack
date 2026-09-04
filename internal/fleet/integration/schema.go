@@ -23,6 +23,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/fleetschema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 )
 
 func integrationSchema(_ context.Context) schema.Schema {
@@ -58,30 +61,16 @@ set ` + "`skip_destroy` to `true`.",
 				Description: "Set to true to allow installation of prerelease (beta, non-GA) packages.",
 				Optional:    true,
 			},
-			"ignore_mapping_update_errors": schema.BoolAttribute{
-				Description: "Set to true to ignore mapping update errors during package installation.",
-				Optional:    true,
-			},
-			"skip_data_stream_rollover": schema.BoolAttribute{
-				Description: "Set to true to skip data stream rollover during package installation.",
-				Optional:    true,
-			},
+			"ignore_mapping_update_errors": fleetschema.IgnoreMappingUpdateErrorsAttribute(false, nil),
+			"skip_data_stream_rollover":    fleetschema.SkipDataStreamRolloverAttribute(false, nil),
 			"ignore_constraints": schema.BoolAttribute{
 				Description: "Set to true to ignore constraint errors during package installation.",
 				Optional:    true,
 			},
-			"skip_destroy": schema.BoolAttribute{
-				Description: "Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.",
-				Optional:    true,
-			},
-			"space_id": schema.StringAttribute{
-				Description: "The Kibana space ID where this integration package should be installed.",
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
+			"skip_destroy": fleetschema.SkipDestroyAttribute(false, nil),
+			"space_id": kbschema.ResourceSpaceIDAttributeNoDefault(
+				stringplanmodifier.RequiresReplace(),
+			),
 		},
 	}
 }

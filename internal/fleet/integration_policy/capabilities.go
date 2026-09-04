@@ -25,9 +25,10 @@ import (
 )
 
 type integrationPolicyFeatures struct {
-	SupportsPolicyIDs bool
-	SupportsOutputID  bool
-	SupportsCondition bool
+	SupportsPolicyIDs                        bool
+	SupportsOutputID                         bool
+	SupportsCondition                        bool
+	SupportsAdditionalDatastreamsPermissions bool
 }
 
 func resolveIntegrationPolicyFeatures(ctx context.Context, client *clients.KibanaScopedClient) (integrationPolicyFeatures, diag.Diagnostics) {
@@ -40,6 +41,8 @@ func resolveIntegrationPolicyFeatures(ctx context.Context, client *clients.Kiban
 	f.SupportsOutputID, bitDiags = client.EnforceMinVersion(ctx, MinVersionOutputID)
 	diags.Append(bitDiags...)
 	f.SupportsCondition, bitDiags = client.EnforceMinVersion(ctx, MinVersionCondition)
+	diags.Append(bitDiags...)
+	f.SupportsAdditionalDatastreamsPermissions, bitDiags = client.EnforceMinVersion(ctx, MinVersionAdditionalDatastreamsPermissions)
 	diags.Append(bitDiags...)
 
 	return f, diags

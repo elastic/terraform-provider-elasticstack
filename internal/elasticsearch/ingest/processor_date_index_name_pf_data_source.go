@@ -60,29 +60,12 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.DateRounding) {
 		body.DateRounding = m.DateRounding.ValueString()
 	}
-	body.DateFormats = typeutils.StringListElements(m.DateFormats, &diags)
-	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
-		m.Timezone = types.StringValue("UTC")
-		body.Timezone = "UTC"
-	} else {
-		body.Timezone = m.Timezone.ValueString()
-	}
-	if m.Locale.IsNull() || m.Locale.IsUnknown() {
-		m.Locale = types.StringValue("ENGLISH")
-		body.Locale = "ENGLISH"
-	} else {
-		body.Locale = m.Locale.ValueString()
-	}
-	if m.IndexNameFormat.IsNull() || m.IndexNameFormat.IsUnknown() {
-		m.IndexNameFormat = types.StringValue("yyyy-MM-dd")
-		body.IndexNameFormat = "yyyy-MM-dd"
-	} else {
-		body.IndexNameFormat = m.IndexNameFormat.ValueString()
-	}
+	body.DateFormats = typeutils.StringElements(m.DateFormats, &diags)
+	body.Timezone = typeutils.StringDefault(&m.Timezone, "UTC")
+	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
+	body.IndexNameFormat = typeutils.StringDefault(&m.IndexNameFormat, "yyyy-MM-dd")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

@@ -18,5 +18,5 @@ resource "elasticstack_elasticsearch_security_user" "test" {
     owner = "platform"
     tier  = "gold"
   })
-  password = "qwerty123"
+  password = "qwerty456!"
 }

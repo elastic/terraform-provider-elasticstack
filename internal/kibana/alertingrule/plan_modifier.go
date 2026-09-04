@@ -20,6 +20,7 @@ package alertingrule
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -104,7 +105,7 @@ func contentPathChecksumChanged(planIG *investigationGuideModel, priorChecksum s
 		return false, diags
 	}
 
-	newChecksum, err := fileSHA256(planIG.ContentPath.ValueString())
+	_, changed, err := fileutil.FileChecksumDrifted(planIG.ContentPath.ValueString(), priorChecksum, hasPriorState)
 	if err != nil {
 		diags.AddAttributeError(
 			path.Root("artifacts").AtName("investigation_guide").AtName("content_path"),
@@ -114,7 +115,7 @@ func contentPathChecksumChanged(planIG *investigationGuideModel, priorChecksum s
 		return false, diags
 	}
 
-	return !hasPriorState || newChecksum != priorChecksum, diags
+	return changed, diags
 }
 
 // setInvestigationGuideChecksumUnknown rebuilds plan.Artifacts with the

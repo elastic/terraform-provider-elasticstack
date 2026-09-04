@@ -171,7 +171,7 @@ func (m *osquerySavedQueryBaseModel) populateSharedFields(
 }
 
 func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) {
-	spaceID := compositeSpaceID(m.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(m.SpaceID)
 
 	compID := clients.CompositeID{
 		ClusterID:  spaceID,
@@ -185,16 +185,6 @@ func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.Sec
 	if m.SpaceID.IsNull() || (typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() == "") {
 		m.SpaceID = types.StringValue(spaceID)
 	}
-}
-
-// compositeSpaceID returns the space segment for composite IDs. Unknown space_id
-// falls back to clients.DefaultSpaceID for ID composition without overwriting unknown state.
-func compositeSpaceID(spaceID types.String) string {
-	if typeutils.IsKnown(spaceID) {
-		return clients.EffectiveSpaceID(spaceID.ValueString())
-	}
-
-	return clients.DefaultSpaceID
 }
 
 func knownSavedObjectID(savedObjectID types.String) (string, bool) {
@@ -274,7 +264,7 @@ func versionFromCreateAPI(version *kbapi.SecurityOsqueryAPICreateSavedQueryRespo
 	}
 
 	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion1(); err == nil {
-		return versionStringValue(value), nil
+		return typeutils.TrimmedStringishValue(value), nil
 	}
 
 	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion0(); err == nil {
@@ -292,7 +282,7 @@ func versionFromGetAPI(version *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResp
 	}
 
 	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion1(); err == nil {
-		return versionStringValue(value), nil
+		return typeutils.TrimmedStringishValue(value), nil
 	}
 
 	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion0(); err == nil {
@@ -309,15 +299,7 @@ func versionFromUpdateAPI(version *string) types.String {
 		return types.StringNull()
 	}
 
-	return versionStringValue(*version)
-}
-
-func versionStringValue(value string) types.String {
-	if strings.TrimSpace(value) == "" {
-		return types.StringNull()
-	}
-
-	return types.StringValue(value)
+	return typeutils.TrimmedStringishValue(*version)
 }
 
 func parseIntervalString(value string) (types.Int64, diag.Diagnostics) {

@@ -51,12 +51,7 @@ func (m *processorDotExpanderModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Path) {
 		body.Path = m.Path.ValueString()
 	}
-	if m.Override.IsNull() || m.Override.IsUnknown() {
-		m.Override = types.BoolValue(false)
-		body.Override = false
-	} else {
-		body.Override = m.Override.ValueBool()
-	}
+	body.Override = typeutils.BoolDefault(&m.Override, false)
 
 	return body, diags
 }

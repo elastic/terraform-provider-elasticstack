@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -172,7 +173,7 @@ func valuesAttributeIsSet(val attr.Value) bool {
 		return true
 	}
 
-	return !normalized.IsNull() && !normalized.IsUnknown()
+	return typeutils.IsKnown(normalized)
 }
 
 // Ensure validators satisfy interfaces at compile time.

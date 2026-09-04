@@ -165,5 +165,5 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete SLM policy")
 }

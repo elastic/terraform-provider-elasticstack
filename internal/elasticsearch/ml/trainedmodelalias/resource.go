@@ -56,9 +56,8 @@ func NewTrainedModelAliasResource() resource.Resource {
 func (r *trainedModelAliasResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Support import IDs in the form <cluster>/<alias> or <cluster>/<alias>/<model_id>.
 	// The optional model_id helps when the ES GET API cannot resolve aliases.
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	compID, ok := entitycore.ParseCompositeID(req, resp)
+	if !ok {
 		return
 	}
 

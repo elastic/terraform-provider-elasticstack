@@ -32,11 +32,9 @@ type EqlRuleProcessor struct {
 
 func newEqlRuleProcessor() EqlRuleProcessor {
 	return EqlRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIEqlRule]{
-			updateFn: updateFromEqlRule,
-			idFn: func(v kbapi.SecurityDetectionsAPIEqlRule) string {
-				return v.Id.String()
-			},
+		updateFn: updateFromEqlRule,
+		idFn: func(v kbapi.SecurityDetectionsAPIEqlRule) string {
+			return v.Id.String()
 		},
 	}
 }

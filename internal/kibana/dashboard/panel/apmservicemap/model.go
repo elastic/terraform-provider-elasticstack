@@ -193,7 +193,7 @@ func mapOrientationFromAPI(v *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrie
 // stringSetToEnumSlice converts a validated Set of strings into a slice of the API's enum type,
 // returning nil when the set has no elements (so the field is omitted from the API payload).
 func stringSetToEnumSlice[T ~string](set types.Set, diags *diag.Diagnostics) *[]T {
-	vals := typeutils.StringSetElements(set, diags)
+	vals := typeutils.StringElements(set, diags)
 	if len(vals) == 0 {
 		return nil
 	}
@@ -232,15 +232,15 @@ func apmServiceMapPreserveNullIntentFromPrior(prior, existing *models.ApmService
 	}
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	panelkit.NullPreserveStringFromPrior(prior.Environment, &existing.Environment)
-	panelkit.NullPreserveStringFromPrior(prior.ServiceName, &existing.ServiceName)
-	panelkit.NullPreserveStringFromPrior(prior.ServiceGroupID, &existing.ServiceGroupID)
-	panelkit.NullPreserveStringFromPrior(prior.Kuery, &existing.Kuery)
-	panelkit.NullPreserveStringFromPrior(prior.MapOrientation, &existing.MapOrientation)
-	panelkit.NullPreserveBoolFromPrior(prior.SyncWithDashboardFilters, &existing.SyncWithDashboardFilters)
-	panelkit.NullPreserveSetFromPrior(prior.AlertStatusFilter, &existing.AlertStatusFilter)
-	panelkit.NullPreserveSetFromPrior(prior.AnomalySeverityFilter, &existing.AnomalySeverityFilter)
-	panelkit.NullPreserveSetFromPrior(prior.ConnectionFilter, &existing.ConnectionFilter)
-	panelkit.NullPreserveSetFromPrior(prior.SloStatusFilter, &existing.SloStatusFilter)
+	panelkit.NullPreserveFromPrior(prior.Environment, &existing.Environment)
+	panelkit.NullPreserveFromPrior(prior.ServiceName, &existing.ServiceName)
+	panelkit.NullPreserveFromPrior(prior.ServiceGroupID, &existing.ServiceGroupID)
+	panelkit.NullPreserveFromPrior(prior.Kuery, &existing.Kuery)
+	panelkit.NullPreserveFromPrior(prior.MapOrientation, &existing.MapOrientation)
+	panelkit.NullPreserveFromPrior(prior.SyncWithDashboardFilters, &existing.SyncWithDashboardFilters)
+	panelkit.NullPreserveFromPrior(prior.AlertStatusFilter, &existing.AlertStatusFilter)
+	panelkit.NullPreserveFromPrior(prior.AnomalySeverityFilter, &existing.AnomalySeverityFilter)
+	panelkit.NullPreserveFromPrior(prior.ConnectionFilter, &existing.ConnectionFilter)
+	panelkit.NullPreserveFromPrior(prior.SloStatusFilter, &existing.SloStatusFilter)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

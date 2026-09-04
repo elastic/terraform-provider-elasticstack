@@ -20,6 +20,7 @@ package alertingrule
 import (
 	_ "embed"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -50,7 +51,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[alertingRuleModel]{
 				Schema: getSchema,
 				Read:   readAlertingRule,
-				Delete: deleteAlertingRule,
+				Delete: entitycore.SimpleKibanaDelete[alertingRuleModel](kibanaoapi.DeleteAlertingRule),
 				Create: createAlertingRule,
 				Update: updateAlertingRule,
 			},

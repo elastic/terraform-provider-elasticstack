@@ -37,7 +37,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 
 	res, diags := CallOrNotFound(func() (*getpolicy.Response, error) {
 		return typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
-	})
+	}, "Unable to get enrich policy")
 	if diags.HasError() || res == nil {
 		return nil, diags
 	}
@@ -81,7 +81,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		}
 		// The typed client can return a non-nil *types.Query that still marshals to JSON null.
 		// Avoid storing the literal string "null" in state, which would trigger replacement.
-		if string(queryBytes) != "null" {
+		if string(queryBytes) != jsonNullLiteral {
 			queryStr = string(queryBytes)
 		}
 	}
@@ -139,7 +139,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
-	return DiagsOrNotFound(err)
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete enrich policy")
 }
 
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {

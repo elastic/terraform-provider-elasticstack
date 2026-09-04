@@ -44,17 +44,10 @@ func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	body.Field = typeutils.StringSetElements(m.Field, &diags)
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.Field = typeutils.StringElements(m.Field, &diags)
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }

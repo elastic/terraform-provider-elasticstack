@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -71,12 +72,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
-			"space_ids": schema.SetAttribute{
-				Description: spaceIDsDescription,
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-			},
+			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 	}
 }

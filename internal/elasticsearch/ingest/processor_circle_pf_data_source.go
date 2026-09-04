@@ -46,7 +46,7 @@ func (m *processorCircleModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.ErrorDistance) {
 		body.ErrorDistance = m.ErrorDistance.ValueFloat64()

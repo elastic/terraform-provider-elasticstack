@@ -19,7 +19,6 @@ package elasticsearch
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -73,33 +72,14 @@ func GetUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	if user, ok := res[username]; ok {
-		return &user, nil
-	}
-
-	return nil, fwdiag.Diagnostics{
-		fwdiag.NewErrorDiagnostic(
-			"Unable to find a user in the cluster",
-			fmt.Sprintf(`Unable to find "%s" user in the cluster`, username),
-		),
-	}
+	return LookupOrNotFoundDiag(res, username, "user")
 }
 
 func DeleteUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteUser(username).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete a user", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete a user")
 }
 
 func EnableUser(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, username string) fwdiag.Diagnostics {

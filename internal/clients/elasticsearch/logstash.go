@@ -77,17 +77,12 @@ func GetLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchSc
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	if pipeline, ok := logstashPipeline[pipelineID]; ok {
-		pipeline.PipelineID = pipelineID
-		return &pipeline, nil
+	pipeline, diags := LookupOrNotFoundDiag(logstashPipeline, pipelineID, "logstash pipeline")
+	if diags.HasError() {
+		return nil, diags
 	}
-
-	return nil, fwdiag.Diagnostics{
-		fwdiag.NewErrorDiagnostic(
-			"Unable to find logstash pipeline in the cluster",
-			fmt.Sprintf(`Unable to find "%s" logstash pipeline in the cluster`, pipelineID),
-		),
-	}
+	pipeline.PipelineID = pipelineID
+	return pipeline, nil
 }
 
 func DeleteLogstashPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, pipelineID string) fwdiag.Diagnostics {

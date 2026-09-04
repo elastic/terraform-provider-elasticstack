@@ -30,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -60,6 +61,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 						resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "true"),
 						checks.TestCheckResourceListAttr(roleMappingResourceName, "roles", []string{"admin"}),
+						resource.TestCheckNoResourceAttr(roleMappingResourceName, "role_templates"),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{"version":1}`),
 					),
@@ -75,6 +77,7 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 						resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "false"),
 						checks.TestCheckResourceListAttr(roleMappingResourceName, "roles", []string{"admin", "user"}),
+						resource.TestCheckNoResourceAttr(roleMappingResourceName, "role_templates"),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "rules", `{"any":[{"field":{"username":"esadmin"}},{"field":{"groups":"cn=admins,dc=example,dc=com"}}]}`),
 						resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{}`),
 					),
@@ -130,9 +133,50 @@ func TestAccResourceSecurityRoleMapping(t *testing.T) {
 					// rules here.
 					ImportStateVerifyIgnore: []string{"rules"},
 				},
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+					ConfigVariables: config.Variables{
+						"name": config.StringVariable(roleMappingName + "-renamed"),
+					},
+					ConfigPlanChecks: resource.ConfigPlanChecks{
+						PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(roleMappingResourceName, plancheck.ResourceActionReplace),
+						},
+					},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttrSet(roleMappingResourceName, "id"),
+						resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName+"-renamed"),
+					),
+				},
 			},
 		})
 	}
+}
+
+func TestAccResourceSecurityRoleMappingDefaults(t *testing.T) {
+	roleMappingName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityRoleMappingDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(roleMappingName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(roleMappingResourceName, "id"),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "name", roleMappingName),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttr(roleMappingResourceName, "metadata", `{}`),
+					checks.TestCheckResourceListAttr(roleMappingResourceName, "roles", []string{"admin"}),
+				),
+			},
+		},
+	})
 }
 
 func TestAccResourceSecurityRoleMappingRulesSingleElementArray(t *testing.T) {

@@ -21,8 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -109,16 +107,10 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 	}
 	defer httpRes.Body.Close()
 
-	if httpRes.StatusCode == http.StatusNotFound {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(httpRes, fmt.Sprintf("Unable to get role %q: unexpected status code from server", rolename)); notFound {
 		return nil, nil
-	}
-
-	if httpRes.StatusCode >= 400 {
-		body, _ := io.ReadAll(httpRes.Body)
-		return nil, fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
-			fmt.Sprintf("Unable to get role %q: unexpected status code from server: got HTTP %d", rolename, httpRes.StatusCode),
-			string(body),
-		)}
+	} else if d.HasError() {
+		return nil, d
 	}
 
 	var roles map[string]json.RawMessage
@@ -141,7 +133,7 @@ func GetRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, 
 
 	// Treat an explicit JSON null the same as an absent global so state is
 	// stored as null rather than the literal string "null".
-	if strings.TrimSpace(string(role.Global)) == "null" {
+	if strings.TrimSpace(string(role.Global)) == jsonNullLiteral {
 		role.Global = nil
 	}
 
@@ -152,12 +144,5 @@ func DeleteRole(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Security.DeleteRole(rolename).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic("Unable to delete a role", err.Error())}
-	}
-
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete a role")
 }

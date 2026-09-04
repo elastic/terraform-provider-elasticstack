@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
@@ -60,11 +61,6 @@ func agentFeaturesFromPolicy(p *kbapi.KibanaHTTPAPIsAgentPolicyResponse) []apiAg
 	return out
 }
 
-type globalDataTagsItemModel struct {
-	StringValue types.String  `tfsdk:"string_value"`
-	NumberValue types.Float32 `tfsdk:"number_value"`
-}
-
 type agentPolicyModel struct {
 	ID                        types.String         `tfsdk:"id"`
 	KibanaConnection          types.List           `tfsdk:"kibana_connection"`
@@ -85,7 +81,7 @@ type agentPolicyModel struct {
 	SupportsAgentless         types.Bool           `tfsdk:"supports_agentless"`
 	InactivityTimeout         customtypes.Duration `tfsdk:"inactivity_timeout"`
 	UnenrollmentTimeout       customtypes.Duration `tfsdk:"unenrollment_timeout"`
-	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globalDataTagsModel
+	GlobalDataTags            types.Map            `tfsdk:"global_data_tags"` // > globaldatatags.Item
 	SpaceIDs                  types.Set            `tfsdk:"space_ids"`
 	RequiredVersions          types.Map            `tfsdk:"required_versions"`
 	AdvancedMonitoringOptions types.Object         `tfsdk:"advanced_monitoring_options"`
@@ -183,40 +179,32 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	}
 	if typeutils.Deref(data.GlobalDataTags) != nil {
 		diags := diag.Diagnostics{}
-		var map0 = make(map[string]globalDataTagsItemModel)
-		for _, v := range typeutils.Deref(data.GlobalDataTags) {
-			maybeFloat, err := v.Value.AsAgentPolicyGlobalDataTagsItemValue1()
+		tags := typeutils.Deref(data.GlobalDataTags)
+		map0 := make(map[string]globaldatatags.Item, len(tags))
+		for _, v := range tags {
+			item, err := globaldatatags.Flatten(v.Value,
+				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue1,
+				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue0,
+			)
 			if err != nil {
-				maybeString, err := v.Value.AsAgentPolicyGlobalDataTagsItemValue0()
-				if err != nil {
-					diags.AddError("Failed to unmarshal global data tags", err.Error())
-				}
-				map0[v.Name] = globalDataTagsItemModel{
-					StringValue: types.StringValue(maybeString),
-				}
-			} else {
-				map0[v.Name] = globalDataTagsItemModel{
-					NumberValue: types.Float32Value(float32(maybeFloat)),
-				}
+				diags.AddError("Failed to unmarshal global data tags", err.Error())
+				continue
 			}
+			map0[v.Name] = item
 		}
 
-		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, getGlobalDataTagsAttrTypes().(attr.TypeWithElementType).ElementType(), path.Root("global_data_tags"), &diags)
+		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, globaldatatags.ElementType(), path.Root("global_data_tags"), &diags)
 		if diags.HasError() {
 			return diags
 		}
 
 	}
 
-	if data.SpaceIds != nil && len(*data.SpaceIds) > 0 {
-		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *data.SpaceIds)
-		if d.HasError() {
-			return d
-		}
-		model.SpaceIDs = spaceIDs
-	} else if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		model.SpaceIDs = types.SetNull(types.StringType)
+	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
+	if d.HasError() {
+		return d
 	}
+	model.SpaceIDs = spaceIDs
 
 	// Handle required_versions
 	if data.RequiredVersions != nil {
@@ -268,26 +256,17 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat a
 	}
 
 	items := typeutils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
-		func(item globalDataTagsItemModel, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-			var value kbapi.AgentPolicyGlobalDataTagsItem_Value
-			var err error
-			switch {
-			case !item.StringValue.IsNull() && !item.StringValue.IsUnknown():
-				err = value.FromAgentPolicyGlobalDataTagsItemValue0(item.StringValue.ValueString())
-			case !item.NumberValue.IsNull() && !item.NumberValue.IsUnknown():
-				err = value.FromAgentPolicyGlobalDataTagsItemValue1(item.NumberValue.ValueFloat32())
-			default:
-				diags.AddAttributeError(
-					meta.Path,
-					"Invalid global_data_tags entry",
-					"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
-				)
-				return kbapi.AgentPolicyGlobalDataTagsItem{}
-			}
-			if err != nil {
-				diags.AddError("global_data_tags validation_error_converting_values", err.Error())
-				return kbapi.AgentPolicyGlobalDataTagsItem{}
-			}
+		func(item globaldatatags.Item, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
+			value := globaldatatags.Expand(item, meta,
+				func(s string) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
+					var v kbapi.AgentPolicyGlobalDataTagsItem_Value
+					return v, v.FromAgentPolicyGlobalDataTagsItemValue0(s)
+				},
+				func(n float32) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
+					var v kbapi.AgentPolicyGlobalDataTagsItem_Value
+					return v, v.FromAgentPolicyGlobalDataTagsItemValue1(n)
+				},
+			)
 			return kbapi.AgentPolicyGlobalDataTagsItem{
 				Name:  meta.Key,
 				Value: value,

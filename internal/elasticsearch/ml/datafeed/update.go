@@ -22,21 +22,20 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // updateDatafeed updates the datafeed configuration. It stops the datafeed if
-// running, applies the update, restarts it, and sets the composite ID. The
-// envelope handles read-after-write and state persistence.
+// running, applies the update, restarts it, and preserves the composite ID from
+// prior state. The envelope handles read-after-write and state persistence.
 func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[Datafeed]) (entitycore.WriteResult[Datafeed], fwdiags.Diagnostics) {
 	var diags fwdiags.Diagnostics
 	plan := req.Plan
 	datafeedID := req.WriteID
 
-	if datafeedID == "" {
-		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(datafeedID, "datafeed_id"); diags.HasError() {
 		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 	}
 
@@ -72,12 +71,7 @@ func updateDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClie
 		}
 	}
 
-	compID, idDiags := client.ID(ctx, datafeedID)
-	diags.Append(idDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[Datafeed]{Model: plan}, diags
-	}
-
-	plan.ID = types.StringValue(compID.String())
+	// Prior is always non-nil: this callback is registered only as Update.
+	plan.ID = req.Prior.ID
 	return entitycore.WriteResult[Datafeed]{Model: plan}, diags
 }

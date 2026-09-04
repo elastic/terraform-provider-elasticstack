@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -57,8 +58,8 @@ func (m customIntegrationModel) GetID() types.String {
 }
 
 func (m customIntegrationModel) GetResourceID() types.String {
-	if !m.PackageName.IsNull() && !m.PackageName.IsUnknown() &&
-		!m.PackageVersion.IsNull() && !m.PackageVersion.IsUnknown() {
+	if typeutils.IsKnown(m.PackageName) &&
+		typeutils.IsKnown(m.PackageVersion) {
 		return types.StringValue(getPackageID(m.PackageName.ValueString(), m.PackageVersion.ValueString()))
 	}
 	return m.ID

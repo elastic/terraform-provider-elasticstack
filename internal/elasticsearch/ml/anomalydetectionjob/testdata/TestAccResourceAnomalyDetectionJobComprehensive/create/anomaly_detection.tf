@@ -16,6 +16,8 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
     bucket_span              = "10m"
     latency                  = "30s"
     summary_count_field_name = "event_count"
+    model_prune_window       = "1d"
+    multivariate_by_fields   = true
     detectors = [
       {
         function             = "count"
@@ -28,6 +30,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
         by_field_name        = "status"
         over_field_name      = "clientip"
         detector_description = "Mean response time by status over client"
+        exclude_frequent     = "over"
       }
     ]
     influencers = ["status_code"]
@@ -44,8 +47,9 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
   }
 
   model_plot_config = {
-    enabled = true
-    terms   = "host1"
+    enabled             = true
+    annotations_enabled = true
+    terms               = "host1"
   }
 
   allow_lazy_open                           = true
