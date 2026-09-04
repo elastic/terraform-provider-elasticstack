@@ -1394,14 +1394,14 @@ func TestAccResourceAgentPolicyKibanaConnection(t *testing.T) {
 				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				}),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeTestCheckFunc(append([]resource.TestCheckFunc{
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.#", "1"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "policy_id"),
-				),
+				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_agent_policy.test_policy")...)...),
 			},
 		},
 	})
