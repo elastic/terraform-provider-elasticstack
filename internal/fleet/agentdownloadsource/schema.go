@@ -20,13 +20,15 @@ package agentdownloadsource
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+const spaceIDsDescription = "The Kibana space IDs where this download source is available. When set, the download source will be created " +
+	"and managed within the specified space. Note: The order of space IDs does not matter as this is a set."
 
 const (
 	attrDefault = "default"
@@ -70,16 +72,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "The ID of the proxy to use for this download source.",
 				Optional:    true,
 			},
-			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this download source is available. When set, the download source will be created " +
-					"and managed within the specified space. Note: The order of space IDs does not matter as this is a set.",
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 	}
 }

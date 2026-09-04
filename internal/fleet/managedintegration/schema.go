@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -127,16 +128,10 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			"space_ids": schema.SetAttribute{
-				Computed:            true,
-				Optional:            true,
-				ElementType:         types.StringType,
-				MarkdownDescription: "The list of spaces the managed integration belongs to; defaults to `[\"default\"]`; forces replacement on change.",
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-					setplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_ids": kbschema.SpaceIDsAttribute(
+				"The list of spaces the managed integration belongs to; defaults to `[\"default\"]`; forces replacement on change.",
+				setplanmodifier.RequiresReplace(),
+			),
 			attrPackage: schema.SingleNestedAttribute{
 				Required:            true,
 				MarkdownDescription: "The Fleet integration package this managed integration is based on.",

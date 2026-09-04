@@ -18,6 +18,7 @@
 package elasticdefendintegrationpolicy
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -27,7 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -98,17 +98,9 @@ func resourceSchema() schema.Schema {
 				Description: "The version of the Elastic Defend integration package.",
 				Required:    true,
 			},
-			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this integration policy is available. " +
-					"When set, must match the space_ids of the referenced agent policy. " +
-					"If not set, will be inherited from the agent policy.",
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"space_ids": kbschema.SpaceIDsAttribute("The Kibana space IDs where this integration policy is available. " +
+				"When set, must match the space_ids of the referenced agent policy. " +
+				"If not set, will be inherited from the agent policy."),
 			attrPreset: schema.StringAttribute{
 				Description: "Elastic Defend preset configuration. Maps to `endpointConfig.preset` in the Defend API. " +
 					"Common values include `\"NGAv1\"`, `\"NGAV\"`, `\"dataCollection\"`, `\"EDRComplete\"`, `\"EDREssential\"`.",
