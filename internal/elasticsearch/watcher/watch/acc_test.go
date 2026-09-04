@@ -37,20 +37,22 @@ import (
 )
 
 const (
-	watchTriggerCreateExpected   = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
-	watchTriggerUpdateExpected   = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
-	watchInputNoneExpected       = `{"none":{}}`
-	watchConditionAlways         = `{"always":{}}`
-	watchActionsEmpty            = `{}`
-	watchMetadataEmpty           = `{}`
-	watchInputSimpleExpected     = `{"simple":{"name":"example"}}`
-	watchInputSecondExpected     = `{"simple":{"count":2,"environment":"staging"}}`
-	watchConditionNever          = `{"never":{}}`
-	watchConditionScriptExpected = `{"script":{"lang":"painless","source":"return true"}}`
-	watchActionsLogExpected      = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
-	watchMetadataExample         = `{"example_key":"example_value"}`
-	watchMetadataSecondExpected  = `{"env":"staging","priority":2}`
-	watchTransformExpected       = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
+	watchTriggerCreateExpected         = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
+	watchTriggerUpdateExpected         = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
+	watchTriggerIntervalExpected       = `{"schedule":{"interval":"10s"}}`
+	watchTriggerIntervalUpdateExpected = `{"schedule":{"interval":"30s"}}`
+	watchInputNoneExpected             = `{"none":{}}`
+	watchConditionAlways               = `{"always":{}}`
+	watchActionsEmpty                  = `{}`
+	watchMetadataEmpty                 = `{}`
+	watchInputSimpleExpected           = `{"simple":{"name":"example"}}`
+	watchInputSecondExpected           = `{"simple":{"count":2,"environment":"staging"}}`
+	watchConditionNever                = `{"never":{}}`
+	watchConditionScriptExpected       = `{"script":{"lang":"painless","source":"return true"}}`
+	watchActionsLogExpected            = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
+	watchMetadataExample               = `{"example_key":"example_value"}`
+	watchMetadataSecondExpected        = `{"env":"staging","priority":2}`
+	watchTransformExpected             = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
 		`"search_type":"query_then_fetch"}}}`
 	watchTransformScriptExpected = `{"script":{"lang":"painless","source":"return ctx.payload"}}`
 
@@ -746,6 +748,47 @@ func TestResourceWatch_searchRequestExplicitNonDefaults(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputExplicitNonDefaultsUpdate),
+				),
+			},
+		},
+	})
+}
+
+// TestResourceWatch_triggerIntervalSchedule verifies that a non-cron
+// schedule trigger (schedule.interval) is configured, stored, and updated
+// correctly. Every other watch test in this suite exercises only
+// schedule.cron triggers, so this closes that trigger-type diversity gap.
+func TestResourceWatch_triggerIntervalSchedule(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerIntervalExpected),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerIntervalUpdateExpected),
 				),
 			},
 		},

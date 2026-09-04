@@ -542,16 +542,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	}
 
 	// Metadata
-	if role.Metadata != nil {
-		metadata, err := json.Marshal(role.Metadata)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
-			return diags
-		}
-		data.Metadata = jsontypes.NewNormalizedValue(string(metadata))
-	} else {
-		data.Metadata = jsontypes.NewNormalizedNull()
-	}
+	data.Metadata = typeutils.MarshalToNormalized(role.Metadata, path.Root("metadata"), &diags)
 
 	// Run As
 	var runAsDiags diag.Diagnostics

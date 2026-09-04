@@ -12,7 +12,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_s3_repo" {
   verify = false
 
   s3 {
-    bucket                     = "test-bucket"
+    bucket                     = "test-bucket-replaced"
     endpoint                   = "https://minio-alt.example.com:9000"
     path_style_access          = false
     client                     = "secondary"

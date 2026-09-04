@@ -22,6 +22,7 @@ import (
 	_ "embed" // Used for embedding schema descriptions
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -262,12 +263,7 @@ func getSchemaV1() *schema.Schema {
 				Optional:    true,
 				Sensitive:   true,
 			},
-			attrSpaceIDs: schema.SetAttribute{
-				Description: spaceIDsDescription,
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-			},
+			attrSpaceIDs: kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 		Blocks: map[string]schema.Block{
 			"input": schema.ListNestedBlock{

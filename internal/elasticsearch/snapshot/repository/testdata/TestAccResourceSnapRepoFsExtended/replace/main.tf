@@ -12,7 +12,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
   verify = true
 
   fs {
-    location                   = "/tmp"
+    location                   = "/tmp/replace"
     compress                   = true
     chunk_size                 = "500mb"
     max_snapshot_bytes_per_sec = "40mb"

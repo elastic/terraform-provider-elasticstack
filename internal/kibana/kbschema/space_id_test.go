@@ -20,7 +20,9 @@ package kbschema
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,4 +52,24 @@ func TestResourceSpaceIDAttributeHasDefaultUnlikeNoDefaultVariant(t *testing.T) 
 
 	require.NotNil(t, withDefault.Default)
 	require.Nil(t, noDefault.Default)
+}
+
+func TestSpaceIDsAttribute(t *testing.T) {
+	const description = "The Kibana space IDs where this resource is available."
+
+	attr := SpaceIDsAttribute(description)
+
+	require.Equal(t, description, attr.MarkdownDescription)
+	require.Empty(t, attr.Description)
+	require.True(t, attr.Optional)
+	require.True(t, attr.Computed)
+	require.Equal(t, types.StringType, attr.ElementType)
+	require.Len(t, attr.PlanModifiers, 1)
+}
+
+func TestSpaceIDsAttribute_ExtraModifiers(t *testing.T) {
+	attr := SpaceIDsAttribute("spaces", setplanmodifier.RequiresReplace())
+
+	require.Equal(t, "spaces", attr.MarkdownDescription)
+	require.Len(t, attr.PlanModifiers, 2)
 }
