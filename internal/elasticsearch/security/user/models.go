@@ -42,3 +42,12 @@ type Data struct {
 func (d Data) GetID() types.String                    { return d.ID }
 func (d Data) GetResourceID() types.String            { return d.Username }
 func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+
+// stringOrEmptyValue converts a pointer to a Terraform string, treating a nil pointer as
+// an empty string rather than null since email/full_name are never null in this schema.
+func stringOrEmptyValue(ptr *string) types.String {
+	if ptr == nil {
+		return types.StringValue("")
+	}
+	return types.StringValue(*ptr)
+}
