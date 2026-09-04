@@ -18,7 +18,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_url_repo" {
     compress                   = false
     max_snapshot_bytes_per_sec = "5mb"
     max_restore_bytes_per_sec  = "10mb"
-    readonly                   = true
+    readonly                   = false
     max_number_of_snapshots    = 100
   }
 }
