@@ -41,6 +41,10 @@ import (
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
 var minVersionAgentPolicyTamperProtectionWithDefend = version.Must(version.NewVersion("8.14.0"))
 
+// Output-config coverage creates elasticstack_fleet_agent_download_source,
+// which requires stack 8.13.0+.
+var minVersionAgentPolicyOutputConfig = version.Must(version.NewVersion("8.13.0"))
+
 //go:embed testdata/TestAccResourceAgentPolicyFromSDK/main.tf
 var sdkCreateTestConfig string
 
@@ -408,6 +412,24 @@ func TestAccResourceAgentPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "supports_agentless", "true"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfNotServerless(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_with_supports_agentless_false"),
+				ConfigVariables: config.Variables{
+					"policy_name":  config.StringVariable(fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					"skip_destroy": config.BoolVariable(false),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Updated Policy %s", policyNameGlobalDataTags)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "This policy was updated with supports_agentless false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_logs", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitor_metrics", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "skip_destroy", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "supports_agentless", "false"),
+				),
+			},
 		},
 	})
 }
@@ -574,12 +596,31 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				// Step 4: Empty space_ids ([]) - should fall back to the computed ["default"]
+				ConfigDirectory: acctest.NamedTestCaseDirectory("step4"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 4: empty space_ids reverts to default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						if value != originalPolicyID {
+							return fmt.Errorf("policy_id changed from %s to %s", originalPolicyID, value)
+						}
+						return nil
+					}),
+				),
+			},
 		},
 	})
 }
 
 func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicyOutputConfig, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -587,7 +628,8 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: Create policy with data_output_id and monitoring_output_id
+			// Step 1: Create policy with data_output_id, monitoring_output_id,
+			// download_source_id and fleet_server_host_id
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_output_ids"),
@@ -602,9 +644,38 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 						"elasticstack_fleet_output.test_output", "output_id"),
 					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "monitoring_output_id",
 						"elasticstack_fleet_output.test_output", "output_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "download_source_id",
+						"elasticstack_fleet_agent_download_source.test_download_source", "source_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "fleet_server_host_id",
+						"elasticstack_fleet_server_host.test_host", "host_id"),
 				),
 			},
-			// Step 2: Remove data_output_id and monitoring_output_id
+			// Step 2: Update data_output_id/monitoring_output_id to a different, non-null output,
+			// keeping download_source_id/fleet_server_host_id unchanged
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_to_second_output"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with Second Output"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "data_output_id",
+						"elasticstack_fleet_output.test_output_2", "output_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "monitoring_output_id",
+						"elasticstack_fleet_output.test_output_2", "output_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "download_source_id",
+						"elasticstack_fleet_agent_download_source.test_download_source", "source_id"),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_policy.test_policy", "fleet_server_host_id",
+						"elasticstack_fleet_server_host.test_host", "host_id"),
+				),
+			},
+			// Step 3: Remove data_output_id, monitoring_output_id, download_source_id,
+			// and fleet_server_host_id. Keep description set — omitting it after a
+			// non-empty value is set makes Fleet return the previous description and
+			// the provider adopts that into state (inconsistent apply).
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_output_ids"),
@@ -617,6 +688,8 @@ func TestAccResourceAgentPolicyWithOutputConfig(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy without Output IDs"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "data_output_id"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "monitoring_output_id"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "download_source_id"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "fleet_server_host_id"),
 				),
 			},
 		},
@@ -628,21 +701,51 @@ func TestAccResourceAgentPolicyWithSysMonitoring(t *testing.T) {
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
+	var originalPolicyID string
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceAgentPolicyDestroy,
 		Steps: []resource.TestStep{
+			// Step 1: Create with sys_monitoring = false
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_sys_monitoring"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_with_sys_monitoring_false"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with sys_monitoring"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with sys_monitoring disabled"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "sys_monitoring", "false"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						originalPolicyID = value
+						if len(value) == 0 {
+							return errors.New("expected policy_id to be non-empty")
+						}
+						return nil
+					}),
+				),
+			},
+			// Step 2: Update sys_monitoring to true - RequiresReplace must force a recreate
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_sys_monitoring_true"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test Agent Policy with sys_monitoring enabled"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "sys_monitoring", "true"),
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
+						if value == originalPolicyID {
+							return fmt.Errorf("expected policy_id to change after sys_monitoring update (ForceNew), but it stayed %s", value)
+						}
+						return nil
+					}),
 				),
 			},
 		},
@@ -1275,4 +1378,37 @@ func maxVersion(v1 *version.Version, v2 *version.Version) *version.Version {
 	}
 
 	return v2
+}
+
+// TestAccResourceAgentPolicyKibanaConnection exercises the kibana_connection block
+// (per-resource, scoped Kibana client via r.Client().GetKibanaClient).
+func TestAccResourceAgentPolicyKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				}),
+				Check: resource.ComposeTestCheckFunc(append([]resource.TestCheckFunc{
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "name", fmt.Sprintf("Policy %s", policyName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "namespace", "default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "policy_id"),
+				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_agent_policy.test_policy")...)...),
+			},
+		},
+	})
 }
