@@ -17,7 +17,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_s3_repo" {
     path_style_access          = false
     client                     = "secondary"
     canned_acl                 = "public-read"
-    storage_class               = "reduced_redundancy"
+    storage_class              = "reduced_redundancy"
     server_side_encryption     = true
     base_path                  = "snapshots/v2"
     buffer_size                = "10mb"
