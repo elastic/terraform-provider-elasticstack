@@ -202,22 +202,22 @@ func TestAccResourceSLMExtended(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "id"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "repository", fmt.Sprintf("%s-repo", name)),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "snapshot_name", "<snap-{now/d}>"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expand_wildcards", "open,hidden"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "partial", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "ignore_unavailable", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "include_global_state", "true"),
-					// indices, feature_states, expire_after, min_count, max_count, and
-					// metadata are Optional+Computed with no PlanModifier, so omitting
-					// them from config is sticky: the prior step's values persist.
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.#", "2"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.0", "data-*"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.1", "metrics-*"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "feature_states.#", "0"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expire_after", "60d"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "min_count", "3"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "max_count", "30"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "metadata", `{"created_by":"terraform","purpose":"weekly backup"}`),
+					// Optional+Computed fields without schema defaults (indices,
+					// feature_states, expire_after, min_count, max_count, metadata)
+					// are omitted from the Put payload when unknown. Elasticsearch
+					// then omits them from Get, and mapSlmToData stores null.
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "indices.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "feature_states.#"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "expire_after"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "min_count"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "max_count"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_snapshot_lifecycle.test_slm", "metadata"),
 				),
 			},
 		},
