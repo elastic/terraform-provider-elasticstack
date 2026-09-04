@@ -326,14 +326,16 @@ func TestAccResourceFleetAgentDownloadSource_DefaultTrue(t *testing.T) {
 }
 
 // TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate exercises an in-place update that
-// changes space_ids from a single-element set to a different, larger (2+ element) set. This
-// covers update.go's prior-space resolution: the update must target the space where the
-// resource currently exists (prior state), not an arbitrary element of the new plan set.
+// changes space_ids from a single-element set to a different, larger (2+ element) set
+// that does not include the prior operational space. This covers update.go's prior-space
+// resolution: the update must target the space where the resource currently exists
+// (prior state), not an arbitrary element of the new plan set.
 func TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
 
 	random := sdkacctest.RandString(8)
 	secondSpaceID := fmt.Sprintf("fleet-agent-download-source-space-update-%s", random)
+	thirdSpaceID := fmt.Sprintf("fleet-agent-download-source-space-update-b-%s", random)
 	var idBeforeUpdate string
 
 	resource.Test(t, resource.TestCase{
@@ -346,6 +348,7 @@ func TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"suffix":          config.StringVariable(random),
 					"second_space_id": config.StringVariable(secondSpaceID),
+					"third_space_id":  config.StringVariable(thirdSpaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					testCheckFleetAgentDownloadSourceCaptureID("elasticstack_fleet_agent_download_source.test", &idBeforeUpdate),
@@ -359,12 +362,15 @@ func TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"suffix":          config.StringVariable(random),
 					"second_space_id": config.StringVariable(secondSpaceID),
+					"third_space_id":  config.StringVariable(thirdSpaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "2"),
-					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", secondSpaceID),
-					// The resource must be updated in-place (not replaced) when space_ids grows.
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", thirdSpaceID),
+					// id mirrors source_id for this resource, so a stable id is a
+					// sanity check that source_id did not change — not proof of an
+					// in-place update versus destroy/recreate with the same source_id.
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_download_source.test", "id", func(value string) error {
 						if value != idBeforeUpdate {
 							return fmt.Errorf("expected id to remain %q after space_ids update, got %q", idBeforeUpdate, value)
