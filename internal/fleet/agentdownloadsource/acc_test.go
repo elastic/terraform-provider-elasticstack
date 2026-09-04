@@ -59,6 +59,8 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-%s", random)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "id", fmt.Sprintf("agent-download-source-%s", random)),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_download_source.test", "id", "elasticstack_fleet_agent_download_source.test", "source_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
 				),
@@ -153,6 +155,8 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCheckFleetAgentDownloadSourceIDChanged("elasticstack_fleet_agent_download_source.test", &idBeforeReplacement),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-replaced-%s", random)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "id", fmt.Sprintf("agent-download-source-replaced-%s", random)),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_download_source.test", "id", "elasticstack_fleet_agent_download_source.test", "source_id"),
 				),
 			},
 			{
@@ -247,4 +251,128 @@ func getOperationalSpaceFromResourceState(rs *terraform.ResourceState) string {
 		}
 	}
 	return ""
+}
+
+// TestAccResourceFleetAgentDownloadSource_ProxyID exercises the proxy_id attribute with a
+// real value, wiring in an elasticstack_fleet_proxy resource. This covers the non-empty
+// ProxyId code paths in create.go/update.go, and the update path back to an unset proxy_id.
+func TestAccResourceFleetAgentDownloadSource_ProxyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_proxy"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id", fmt.Sprintf("agent-download-source-proxy-%s", random)),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_download_source.test", "proxy_id", "elasticstack_fleet_proxy.test", "proxy_id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_proxy"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceFleetAgentDownloadSource_DefaultTrue exercises the IsDefault boolean
+// round-trip in read.go for the true branch, and toggling the value via update.
+func TestAccResourceFleetAgentDownloadSource_DefaultTrue(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_false"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_true"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate exercises an in-place update that
+// changes space_ids from a single-element set to a different, larger (2+ element) set. This
+// covers update.go's prior-space resolution: the update must target the space where the
+// resource currently exists (prior state), not an arbitrary element of the new plan set.
+func TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	secondSpaceID := fmt.Sprintf("fleet-agent-download-source-space-update-%s", random)
+	var idBeforeUpdate string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_space"),
+				ConfigVariables: config.Variables{
+					"suffix":          config.StringVariable(random),
+					"second_space_id": config.StringVariable(secondSpaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckFleetAgentDownloadSourceCaptureID("elasticstack_fleet_agent_download_source.test", &idBeforeUpdate),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_space"),
+				ConfigVariables: config.Variables{
+					"suffix":          config.StringVariable(random),
+					"second_space_id": config.StringVariable(secondSpaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", secondSpaceID),
+					// The resource must be updated in-place (not replaced) when space_ids grows.
+					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_download_source.test", "id", func(value string) error {
+						if value != idBeforeUpdate {
+							return fmt.Errorf("expected id to remain %q after space_ids update, got %q", idBeforeUpdate, value)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
 }
