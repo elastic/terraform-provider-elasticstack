@@ -88,23 +88,13 @@ func DataSourceSpaceIDAttribute() dsschema.StringAttribute {
 // SpaceIDsAttribute returns the canonical space_ids Set attribute shared by
 // Fleet resources that support multi-space assignment: Optional+Computed
 // with UseStateForUnknown, plus any additional plan modifiers (e.g.
-// RequiresReplace) appended after it. The description is set on the plain
-// Description field; use SpaceIDsAttributeMarkdown for schemas that render
-// descriptions as Markdown throughout.
+// RequiresReplace) appended after it.
 func SpaceIDsAttribute(description string, extraModifiers ...planmodifier.Set) schema.SetAttribute {
 	return schema.SetAttribute{
-		Description:   description,
-		ElementType:   types.StringType,
-		Optional:      true,
-		Computed:      true,
-		PlanModifiers: append([]planmodifier.Set{setplanmodifier.UseStateForUnknown()}, extraModifiers...),
+		MarkdownDescription: description,
+		ElementType:         types.StringType,
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers:       append([]planmodifier.Set{setplanmodifier.UseStateForUnknown()}, extraModifiers...),
 	}
-}
-
-// SpaceIDsAttributeMarkdown is identical to SpaceIDsAttribute but sets
-// MarkdownDescription instead of Description.
-func SpaceIDsAttributeMarkdown(markdownDescription string, extraModifiers ...planmodifier.Set) schema.SetAttribute {
-	attr := SpaceIDsAttribute("", extraModifiers...)
-	attr.MarkdownDescription = markdownDescription
-	return attr
 }

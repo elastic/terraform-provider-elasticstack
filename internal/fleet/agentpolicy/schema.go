@@ -160,7 +160,9 @@ func getSchema() schema.Schema {
 				},
 			},
 			"global_data_tags": globaldatatags.Schema(map[string]attr.Value{}),
-			"space_ids":        kbschema.SpaceIDsAttribute("The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set."),
+			"space_ids": kbschema.SpaceIDsAttribute(
+				"The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
+			),
 			"required_versions": schema.MapAttribute{
 				Description: "Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.",
 				ElementType: types.Int32Type,

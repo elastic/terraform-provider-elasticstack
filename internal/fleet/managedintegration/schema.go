@@ -128,7 +128,7 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			"space_ids": kbschema.SpaceIDsAttributeMarkdown(
+			"space_ids": kbschema.SpaceIDsAttribute(
 				"The list of spaces the managed integration belongs to; defaults to `[\"default\"]`; forces replacement on change.",
 				setplanmodifier.RequiresReplace(),
 			),
