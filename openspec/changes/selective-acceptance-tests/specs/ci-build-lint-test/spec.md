@@ -1,4 +1,4 @@
-# `ci-provider-acceptance-tests` — Provider CI Acceptance Test Job
+# `ci-build-lint-test` — Workflow Requirements
 
 Delta spec for the `test` job in `.github/workflows/provider.yml`.
 
@@ -6,7 +6,7 @@ Delta spec for the `test` job in `.github/workflows/provider.yml`.
 
 ### Requirement: compute-packages step gates stack startup
 
-Each matrix test job SHALL include a `compute-packages` step that runs before the fleet image pull, stack startup, and all other expensive steps. The step SHALL set a `has_packages` output (`true` or `false`). All subsequent expensive steps — fleet image pull, stack start, stack readiness wait, API key creation, fleet setup, forced synthetics installation, and the acceptance test run — SHALL be conditioned on `steps.targeted.outputs.has_packages == 'true'`.
+Each matrix test job SHALL include a `compute-packages` step that runs before the fleet image pull, stack startup, and all other expensive steps. The step SHALL set a `has_packages` output (`true` or `false`). All subsequent expensive steps — fleet image pull, stack start, stack readiness wait, API key creation, forced synthetics installation, and the acceptance test run — SHALL be conditioned on `steps.targeted.outputs.has_packages == 'true'`.
 
 The `compute-packages` step SHALL:
 
@@ -86,9 +86,9 @@ The stack teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL
 
 ### Requirement: Acceptance test job structure (REQ-009–REQ-014)
 
-The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the preflight gate outputs `should_run=true` and the change-classification job reports `provider_changes=true`.
+The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
 
-For each matrix entry, the job SHALL free disk space, set up Go and Terraform, and run `make vendor`. It SHALL then run a `compute-packages` step to determine whether this shard has acceptance test packages to run. Fleet image pull, stack startup via Docker Compose, Elasticsearch and Kibana readiness waits, API key creation, fleet setup, and forced synthetics installation SHALL run only when `compute-packages` outputs `has_packages=true`. For PR events with packages, acceptance tests SHALL run via `make targeted-testacc`; for all other events (push, workflow_dispatch, merge_group), acceptance tests SHALL run via `make testacc`. Snapshot versions are allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
+For each matrix entry, the job SHALL free disk space, set up Go and Terraform, and run `make vendor`. It SHALL then run a `compute-packages` step to determine whether this shard has acceptance test packages to run. Fleet image pull, stack startup via Docker Compose, Elasticsearch and Kibana readiness waits, API key creation, and forced synthetics installation SHALL run only when `compute-packages` outputs `has_packages=true`; forced synthetics installation SHALL additionally remain limited to configured version subsets. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. For PR events with packages, acceptance tests SHALL run via `make targeted-testacc`; for all other events (push, workflow_dispatch, merge_group), acceptance tests SHALL run via `make testacc`. Snapshot versions are allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
 
 The stack-start step SHALL have a step-level timeout so that a hung container image pull fails fast instead of consuming the full job timeout.
 

@@ -1,6 +1,6 @@
 ## Why
 
-Running the full acceptance test suite on every PR is expensive and slow — the suite spans 101 test packages across 20+ Elastic Stack versions and takes up to 35 minutes per shard. Most PR changes affect only a small number of resources, and the relevant tests can be identified automatically from the diff. Adding `make targeted-testacc` lets developers (and CI on PRs) run only the tests that matter for a given branch, while the full suite remains authoritative on pushes to `main` and in the GitHub merge queue (when enabled).
+Running the full acceptance test suite on every PR is expensive and slow — the suite spans 132 test packages across 20+ Elastic Stack versions and takes up to 35 minutes per shard. Most PR changes affect only a small number of resources, and the relevant tests can be identified automatically from the diff. Adding `make targeted-testacc` lets developers (and CI on PRs) run only the tests that matter for a given branch, while the full suite remains authoritative on pushes to `main` and in the GitHub merge queue (when enabled).
 
 ## What Changes
 
@@ -18,7 +18,7 @@ Running the full acceptance test suite on every PR is expensive and slow — the
 
 ### Modified Capabilities
 
-- `ci-provider-acceptance-tests`: The `provider.yml` acceptance test job gains a `compute-packages` step before stack startup. For PRs, this step runs the targeting tool and gates all expensive downstream steps (fleet pull, stack start, stack wait, API key, fleet setup, test run) on whether the shard has packages to test. For non-PR events (push to main, workflow_dispatch, merge_group), the step signals `has_packages=true` unconditionally and the test step falls back to `make testacc` (full suite, unchanged behaviour).
+- `ci-build-lint-test`: The `provider.yml` acceptance test job gains a `compute-packages` step before stack startup. For PRs, this step runs the targeting tool and gates all expensive downstream steps (fleet image pull, stack start, stack wait, API key, forced synthetics, test run) on whether the shard has packages to test. For non-PR events (push to main, workflow_dispatch, merge_group), the step signals `has_packages=true` unconditionally and the test step falls back to `make testacc` (full suite, unchanged behaviour).
 
 ## Impact
 

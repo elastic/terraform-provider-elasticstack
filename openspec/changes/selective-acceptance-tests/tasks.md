@@ -32,10 +32,9 @@
 - [x] 4.3 Add `if: steps.targeted.outputs.has_packages == 'true'` to the `Start stack with docker compose` step
 - [x] 4.4 Add `if: steps.targeted.outputs.has_packages == 'true'` to the `Wait for stack readiness` step
 - [x] 4.5 Add `if: steps.targeted.outputs.has_packages == 'true'` to the `Get ES API key` step
-- [x] 4.6 Add `steps.targeted.outputs.has_packages == 'true'` condition to the `Setup Fleet` step (AND with existing version condition)
-- [x] 4.7 Add `steps.targeted.outputs.has_packages == 'true'` condition to the `Force install synthetics` step (AND with existing version condition)
-- [x] 4.8 Update the `TF acceptance tests` step: add `if: steps.targeted.outputs.has_packages == 'true'`; route between `make targeted-testacc TARGETED_PKGS=...` (when `targeted_pkgs` non-empty) and `make testacc` (when empty), both with `ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
-- [x] 4.9 Verify `Tear down docker compose stack` step retains `if: always()` and runs `make docker-clean` (no-op when stack was never started)
+- [x] 4.6 Add `steps.targeted.outputs.has_packages == 'true'` condition to the `Force install synthetics` step (AND with existing version condition)
+- [x] 4.7 Update the `TF acceptance tests` step: add `if: steps.targeted.outputs.has_packages == 'true'`; route between `make targeted-testacc TARGETED_PKGS=...` (when `targeted_pkgs` non-empty) and `make testacc` (when empty), both with `ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
+- [x] 4.8 Verify `Tear down docker compose stack` step retains `if: always()` and runs `make docker-clean` (no-op when stack was never started)
 
 ## 5. Validation
 

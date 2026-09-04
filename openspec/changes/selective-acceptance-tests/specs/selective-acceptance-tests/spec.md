@@ -24,7 +24,7 @@ The tool SHALL compute the set of relevant acceptance test packages via two inde
 
 **Phase 1 — Go reverse-dependency walk:** For each changed Go package, the tool SHALL walk the reverse import graph (non-test imports only) to find all packages that transitively import the changed package. Only packages that contain at least one `func TestAcc` function in a `*_test.go` file SHALL be included.
 
-**Phase 2 — TF entity name grep:** For each changed Go package, the tool SHALL extract Terraform type name suffixes by scanning the package's `.go` files for calls matching:
+**Phase 2 — TF entity name grep:** For each changed Go package, the tool SHALL extract Terraform type name suffixes by scanning the package's non-test `.go` files (files ending in `_test.go` SHALL be excluded, so that entity declarations only in test source are ignored) for calls matching:
 
 - `NewResourceBase(entitycore.Component<X>, "<name>")`
 - `NewElasticsearchResource[...]("<name>", ...)`
@@ -55,9 +55,11 @@ The tool SHALL construct the full entity name as `elasticstack_<component>_<name
 
 ### Requirement: Force-all prefix table
 
-When any changed file path has a prefix matching one of the force-all prefixes, the tool SHALL immediately emit all acceptance test packages (equivalent to a "run all" result) without performing phase 1 or phase 2 analysis.
+When any changed file path has a prefix matching one of the force-all prefixes, or equals one of the force-all files, the tool SHALL immediately emit all acceptance test packages (equivalent to a "run all" result) without performing phase 1 or phase 2 analysis.
 
-Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`.
+Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `.github/workflows/`.
+
+Force-all files: `go.mod`, `go.sum`, `Makefile`, and any `docker-compose*.yml` (e.g. `docker-compose.yml`, `docker-compose.tls.yml`) at the repository root.
 
 #### Scenario: Change to shared client triggers full suite
 
@@ -68,6 +70,11 @@ Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `inte
 #### Scenario: Change to entitycore triggers full suite
 
 - **WHEN** a file under `internal/entitycore/` is changed
+- **THEN** the tool emits all acceptance test packages
+
+#### Scenario: Module-level file change triggers full suite
+
+- **WHEN** `go.mod`, `go.sum`, `Makefile`, a `docker-compose*.yml` file, or a file under `.github/workflows/` is changed
 - **THEN** the tool emits all acceptance test packages
 
 ---
@@ -145,10 +152,12 @@ The tool SHALL resolve the diff baseline in order:
 3. `git merge-base origin/main HEAD` (if the command succeeds).
 4. `HEAD~1` (fallback).
 
+The diff SHALL be computed with the three-dot form (`git diff --name-only <base>...HEAD`), i.e. comparing against the merge base of `<base>` and `HEAD`, so that a moving base (e.g. `origin/main` in CI) does not over-select changes that have already been merged.
+
 #### Scenario: Explicit base overrides auto-detection
 
 - **WHEN** `--base=HEAD~5` is passed
-- **THEN** the tool diffs `HEAD~5..HEAD` to determine changed files
+- **THEN** the tool diffs against the merge base of `HEAD~5` and `HEAD` (three-dot diff) to determine changed files
 
 ---
 
@@ -166,7 +175,7 @@ When `--dry-run` is passed, the tool SHALL print a human-readable summary to std
 
 ### Requirement: make targeted-testacc target
 
-A `targeted-testacc` Make target SHALL exist. It SHALL invoke the tool, passing `ACCTEST_TOTAL_SHARDS` and `ACCTEST_SHARD_INDEX` as `--total-shards` and `--shard-index`. If the tool emits no packages, the target SHALL print a notice and exit 0 without invoking `gotestsum`. If packages are emitted, it SHALL invoke `go tool gotestsum` with the same flags as `make testacc` (format, rerun-fails, package parallelism, test parallelism, count, timeout) and pass the package list via `--packages`.
+A `targeted-testacc` Make target SHALL exist. It SHALL invoke the tool, passing `ACCTEST_TOTAL_SHARDS` and `ACCTEST_SHARD_INDEX` as `--total-shards` and `--shard-index`. If the tool emits no packages, the target SHALL print a notice and exit 0 without invoking `gotestsum`. If packages are emitted, it SHALL invoke `go tool gotestsum` with the same flags as `make testacc` (format, rerun-fails, package parallelism, test parallelism, count, timeout) and pass the package list via `--packages`. When `TARGETED_PKGS` is set, the target SHALL use its value verbatim as the package list and SHALL NOT invoke the selection tool (no re-sharding; the package list is used as-is).
 
 #### Scenario: No packages selected exits cleanly
 
@@ -179,6 +188,12 @@ A `targeted-testacc` Make target SHALL exist. It SHALL invoke the tool, passing 
 
 - **WHEN** `make targeted-testacc` is run and the tool emits packages
 - **THEN** `TF_ACC=1 go tool gotestsum` is invoked with the emitted package list
+
+#### Scenario: TARGETED_PKGS bypasses the selection tool
+
+- **WHEN** `make targeted-testacc TARGETED_PKGS="github.com/example/mod/internal/a github.com/example/mod/internal/b"` is run
+- **THEN** the selection tool is not invoked
+- **AND** `gotestsum` runs with exactly those two packages (no re-sharding)
 
 ---
 

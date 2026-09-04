@@ -1,6 +1,6 @@
 ## Context
 
-The `provider.yml` CI workflow runs `make testacc` on every PR across a static matrix of 20+ Elastic Stack versions × 2 shards = 40+ parallel jobs, each spinning up a full Elastic Stack and running ~50 acceptance test packages. Most PR changes touch one or two resources, and the only acceptance packages that actually need to run are those that test (or depend on) the changed code.
+The `provider.yml` CI workflow runs `make testacc` on every PR across a static matrix of 20+ Elastic Stack versions × 2 shards = 40+ parallel jobs, each spinning up a full Elastic Stack and running ~66 acceptance test packages per shard (132 packages across 2 shards). Most PR changes touch one or two resources, and the only acceptance packages that actually need to run are those that test (or depend on) the changed code.
 
 The provider codebase has a consistent, greppable structure: every resource and data source declares its Terraform type name via `entitycore.NewResourceBase`, `entitycore.NewElasticsearchResource`, `entitycore.NewKibanaResource`, or `entitycore.NewKibanaDataSource`. Test fixtures live under `internal/<domain>/<resource>/testdata/` as `.tf` files and reference resource type strings directly. This structure is stable enough to support automated analysis.
 
@@ -40,13 +40,15 @@ Phase 2 (entity grep): catches test suites that *use* changed resources in their
 
 ### Decision: Force-all prefix table
 
-**Choice:** Certain path prefixes unconditionally emit the full package set, bypassing analysis.
+**Choice:** Certain path prefixes and module-level files unconditionally emit the full package set, bypassing analysis.
 
-Prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`.
+Prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `.github/workflows/`.
 
-**Rationale:** These packages have test-only import paths (provider, acctest) or fan out to 70+ importers (clients: 74, entitycore: 77, generated/kbapi: 69) — all above the 70% threshold of 101 total acc-test packages. Running analysis on them is pointless; the result will always be "run all". Hard-coding them avoids false confidence in partial analysis and keeps the tool fast.
+Files: `go.mod`, `go.sum`, `Makefile`, and `docker-compose*.yml` (e.g. `docker-compose.yml`, `docker-compose.tls.yml`) — these affect every build or the test harness itself, so a diff touching them cannot be narrowed to a subset of packages.
 
-A 70% threshold (`run-all-threshold`) also acts as a safety net for any shared package not in the table: if phase 1+2 selects more than ~71 packages, the tool emits all packages.
+**Rationale:** These packages have test-only import paths (provider, acctest) or fan out to nearly the entire acceptance suite (transitive importers of 132 total acc-test packages: internal/clients — 130/132 (98%), internal/entitycore — 130/132 (98%), generated/kbapi — 131/132 (99%)) — all above the 70% threshold of 132 total acc-test packages. Running analysis on them is pointless; the result will always be "run all". Hard-coding them avoids false confidence in partial analysis and keeps the tool fast.
+
+A 70% threshold (`run-all-threshold`) also acts as a safety net for any shared package not in the table: if phase 1+2 selects more than 70% of the 132 acc-test packages, the tool emits all packages.
 
 ### Decision: Shard-count determined by the tool, not CI matrix
 
