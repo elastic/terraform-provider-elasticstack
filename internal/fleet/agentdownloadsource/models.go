@@ -54,12 +54,10 @@ func (m model) GetSpaceID() types.String {
 }
 
 func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *agentDownloadSourceMinVersion,
-			ErrorMessage: fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentDownloadSourceMinVersion,
+		fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
+	), nil
 }
 
 func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadSourcesJSONRequestBody {

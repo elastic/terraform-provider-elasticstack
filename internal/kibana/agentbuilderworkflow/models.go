@@ -47,10 +47,10 @@ type workflowDataSourceModel struct {
 }
 
 func (workflowDataSourceModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *agentbuilder.MinExtendedAPIVersion,
-		ErrorMessage: fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentbuilder.MinExtendedAPIVersion,
+		fmt.Sprintf("Agent Builder workflows require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
+	), nil
 }
 
 var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}

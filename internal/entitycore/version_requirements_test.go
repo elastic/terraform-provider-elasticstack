@@ -70,6 +70,19 @@ func TestEnforceVersionRequirementsAttributePath(t *testing.T) {
 	require.Equal(t, path.Root("feature"), withPath.Path())
 }
 
+func TestSingleVersionRequirement(t *testing.T) {
+	t.Parallel()
+
+	minVersion := *version.Must(version.NewVersion("8.13.0"))
+	reqs := SingleVersionRequirement(minVersion, "This resource requires stack version 8.13.0 or higher.")
+
+	require.Len(t, reqs, 1)
+	require.Equal(t, minVersion, reqs[0].MinVersion)
+	require.Equal(t, "This resource requires stack version 8.13.0 or higher.", reqs[0].ErrorMessage)
+	require.Nil(t, reqs[0].AttributePath)
+	require.Nil(t, reqs[0].VersionCheck)
+}
+
 func TestEnforceVersionRequirementsCustomCheck(t *testing.T) {
 	t.Parallel()
 

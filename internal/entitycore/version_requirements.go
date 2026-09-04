@@ -65,6 +65,13 @@ func NewAttributeVersionCheckRequirement(attr path.Path, check VersionCheck, err
 	}
 }
 
+// SingleVersionRequirement builds a one-element resource-level minimum-version
+// requirement slice, for the common case of a model whose
+// GetVersionRequirements has exactly one resource-level requirement.
+func SingleVersionRequirement(minVersion version.Version, errorMessage string) []VersionRequirement {
+	return []VersionRequirement{{MinVersion: minVersion, ErrorMessage: errorMessage}}
+}
+
 // WithVersionRequirements is an optional interface that entity models may
 // implement to declare server version requirements. When a decoded model
 // satisfies this interface, Kibana and Elasticsearch envelopes evaluate the
