@@ -20,6 +20,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -68,7 +69,39 @@ func newAPIKeyScopedClient(t *testing.T, srv *httptest.Server) *clients.Elastics
 	return clients.NewElasticsearchScopedClientForTest(esClient, []string{srv.URL})
 }
 
-func TestGetAPIKey_OwnerTrue_NotFoundTreatedAsNonExistent(t *testing.T) {
+// newSequencedDeleteServer returns an httptest.Server that responds to
+// successive DELETE /_security/api_key requests with the bodies in
+// deleteResponses, in order, recording the request body seen on each request
+// in deleteRequestBodies (the `owner` flag is sent in the Invalidate API Key
+// request body, not the query string). Used to test DeleteAPIKey's
+// owner=true-then-owner=false fallback, which issues up to two requests.
+func newSequencedDeleteServer(t *testing.T, deleteResponses []string, deleteRequestBodies *[]string) *httptest.Server {
+	t.Helper()
+	var callCount int
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete && r.URL.Path == "/_security/api_key" {
+			idx := callCount
+			callCount++
+			if deleteRequestBodies != nil {
+				body, _ := io.ReadAll(r.Body)
+				*deleteRequestBodies = append(*deleteRequestBodies, string(body))
+			}
+			if idx >= len(deleteResponses) {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprint(w, `{"error":"unexpected extra delete request"}`)
+				return
+			}
+			fmt.Fprint(w, deleteResponses[idx])
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, `{"error":"unexpected request: %s %s"}`, r.Method, r.URL.Path)
+	}))
+}
+
+func TestGetAPIKey_RestrictToOwnedTrue_NotFoundTreatedAsNonExistent(t *testing.T) {
 	t.Parallel()
 	var lastQuery string
 	srv := newAPIKeyServer(t, `{"api_keys":[]}`, "", &lastQuery, nil)
@@ -81,7 +114,7 @@ func TestGetAPIKey_OwnerTrue_NotFoundTreatedAsNonExistent(t *testing.T) {
 	require.Contains(t, lastQuery, "owner=true")
 }
 
-func TestGetAPIKey_OwnerFalse_DoesNotFilterByOwner(t *testing.T) {
+func TestGetAPIKey_RestrictToOwnedFalse_DoesNotFilterByOwner(t *testing.T) {
 	t.Parallel()
 	var lastQuery string
 	srv := newAPIKeyServer(t, `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"other","realm":"default"}]}`, "", &lastQuery, nil)
@@ -107,7 +140,7 @@ func TestGetAPIKey_Found(t *testing.T) {
 	require.Equal(t, "some-id", apiKey.Id)
 }
 
-func TestDeleteAPIKey_InvalidatedApiKeys_NoError(t *testing.T) {
+func TestDeleteAPIKey_RestrictToOwnedTrue_InvalidatedApiKeys_NoError(t *testing.T) {
 	t.Parallel()
 	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":["some-id"],"previously_invalidated_api_keys":[],"error_count":0}`, nil, nil)
 	defer srv.Close()
@@ -117,7 +150,7 @@ func TestDeleteAPIKey_InvalidatedApiKeys_NoError(t *testing.T) {
 	require.False(t, diags.HasError())
 }
 
-func TestDeleteAPIKey_PreviouslyInvalidatedApiKeys_NoError(t *testing.T) {
+func TestDeleteAPIKey_RestrictToOwnedTrue_PreviouslyInvalidatedApiKeys_NoError(t *testing.T) {
 	t.Parallel()
 	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":[],"previously_invalidated_api_keys":["some-id"],"error_count":0}`, nil, nil)
 	defer srv.Close()
@@ -127,27 +160,60 @@ func TestDeleteAPIKey_PreviouslyInvalidatedApiKeys_NoError(t *testing.T) {
 	require.False(t, diags.HasError())
 }
 
-func TestDeleteAPIKey_IDNotInResponse_ErrorsInsteadOfSilentlyDropping(t *testing.T) {
+func TestDeleteAPIKey_RestrictToOwnedTrue_IDNotInResponse_ErrorsWithoutFallback(t *testing.T) {
 	t.Parallel()
 	// Elasticsearch can return a 200 with error_count == 0 while silently
 	// omitting an id that didn't match the request's filters (e.g. an
 	// `owner` mismatch). This must surface as an error rather than being
-	// treated as a successful delete.
-	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":[],"previously_invalidated_api_keys":[],"error_count":0}`, nil, nil)
+	// treated as a successful delete, and restrict_to_owned=true must not
+	// fall back to an unscoped delete.
+	var bodies []string
+	srv := newSequencedDeleteServer(t, []string{
+		`{"invalidated_api_keys":[],"previously_invalidated_api_keys":[],"error_count":0}`,
+	}, &bodies)
 	defer srv.Close()
 
 	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
 
 	require.True(t, diags.HasError())
+	require.Len(t, bodies, 1, "restrict_to_owned=true must not fall back to an unscoped delete")
+	require.Contains(t, bodies[0], `"owner":true`)
 }
 
-func TestDeleteAPIKey_OwnerFlagSentOnRequest(t *testing.T) {
+func TestDeleteAPIKey_RestrictToOwnedFalse_FallsBackWhenOwnerTrueDoesNotInvalidate(t *testing.T) {
 	t.Parallel()
-	var lastQuery string
-	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":["some-id"],"previously_invalidated_api_keys":[],"error_count":0}`, nil, &lastQuery)
+	// The common case: the connection only holds `manage_own_api_key`, so
+	// the owner=true attempt succeeds and no fallback is needed. This test
+	// instead exercises the case where owner=true does not invalidate the
+	// key (e.g. it's owned by someone else), and confirms DeleteAPIKey
+	// falls back to an unscoped (owner=false) request rather than erroring
+	// immediately.
+	var bodies []string
+	srv := newSequencedDeleteServer(t, []string{
+		`{"invalidated_api_keys":[],"previously_invalidated_api_keys":[],"error_count":0}`,
+		`{"invalidated_api_keys":["some-id"],"previously_invalidated_api_keys":[],"error_count":0}`,
+	}, &bodies)
 	defer srv.Close()
 
-	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
+	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
 
 	require.False(t, diags.HasError())
+	require.Len(t, bodies, 2, "expected an owner=true attempt followed by an owner=false fallback")
+	require.Contains(t, bodies[0], `"owner":true`)
+	require.Contains(t, bodies[1], `"owner":false`)
+}
+
+func TestDeleteAPIKey_RestrictToOwnedFalse_ErrorsWhenBothAttemptsFail(t *testing.T) {
+	t.Parallel()
+	var bodies []string
+	srv := newSequencedDeleteServer(t, []string{
+		`{"invalidated_api_keys":[],"previously_invalidated_api_keys":[],"error_count":0}`,
+		`{"invalidated_api_keys":[],"previously_invalidated_api_keys":[],"error_count":0}`,
+	}, &bodies)
+	defer srv.Close()
+
+	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
+
+	require.True(t, diags.HasError())
+	require.Len(t, bodies, 2, "expected both the owner=true attempt and the owner=false fallback to have been made")
 }
