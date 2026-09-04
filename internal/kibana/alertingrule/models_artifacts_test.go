@@ -297,7 +297,7 @@ func Test_toAPIModel_investigationGuide_emptyContent(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, rule.Artifacts)
 	require.NotNil(t, rule.Artifacts.InvestigationGuide)
-	require.Equal(t, "", rule.Artifacts.InvestigationGuide.Blob)
+	require.Empty(t, rule.Artifacts.InvestigationGuide.Blob)
 }
 
 func Test_toAPIModel_dashboardsOnly(t *testing.T) {
