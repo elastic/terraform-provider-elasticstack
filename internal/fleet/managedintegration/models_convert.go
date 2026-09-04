@@ -123,75 +123,39 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 // globalDataTagsToModel converts managed_integrations global_data_tags into
 // the Terraform map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
-	elemType := globaldatatags.ElementType()
-	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
-		return types.MapNull(elemType)
+	if item == nil || item.GlobalDataTags == nil {
+		return types.MapNull(globaldatatags.ElementType())
 	}
 
-	map0 := make(map[string]globaldatatags.Item, len(*item.GlobalDataTags))
-	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
-	for _, tag := range *item.GlobalDataTags {
-		tagPath := path.Root(attrGlobalDataTags).AtMapKey(tag.Name)
-		if _, dup := seenNames[tag.Name]; dup {
-			diags.AddAttributeError(
-				tagPath,
-				"Duplicate global_data_tags name",
-				fmt.Sprintf("API returned global_data_tags name %q more than once.", tag.Name),
-			)
-			continue
-		}
-		seenNames[tag.Name] = struct{}{}
-		tagItem, err := globaldatatags.Flatten(tag.Value,
-			kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1,
-			kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0,
-		)
-		if err != nil {
-			diags.AddAttributeError(
-				tagPath,
-				"Unsupported global_data_tags value type",
-				fmt.Sprintf("API returned an unsupported value for tag %q; expected string or number.", tag.Name),
-			)
-			continue
-		}
-		map0[tag.Name] = tagItem
+	tags := make([]globaldatatags.Tag[kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value], len(*item.GlobalDataTags))
+	for i, t := range *item.GlobalDataTags {
+		tags[i] = globaldatatags.Tag[kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value]{Name: t.Name, Value: t.Value}
 	}
-
-	if diags.HasError() {
-		return types.MapNull(elemType)
-	}
-
-	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root(attrGlobalDataTags), diags)
+	return globaldatatags.ToModel(ctx, tags, path.Root(attrGlobalDataTags), diags,
+		kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1,
+		kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0,
+	)
 }
 
 // globalDataTagsRawFromModel converts the `global_data_tags` map attribute
 // into request-body global_data_tags using typed union values.
 func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) *[]globalDataTagRaw {
-	if !typeutils.IsKnown(tags) {
+	items := globaldatatags.FromModel(ctx, tags, path.Root(attrGlobalDataTags), diags,
+		func(s string) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+			var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+			return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(s)
+		},
+		func(n float32) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+			var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+			return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(n)
+		},
+	)
+	if items == nil {
 		return nil
 	}
-	items := typeutils.MapTypeAs[globaldatatags.Item](ctx, tags, path.Root(attrGlobalDataTags), diags)
-	if diags.HasError() {
-		return nil
-	}
-
-	raw := make([]globalDataTagRaw, 0, len(items))
-	for key, item := range items {
-		tagPath := path.Root(attrGlobalDataTags).AtMapKey(key)
-		meta := typeutils.MapMeta{Key: key, Path: tagPath, Diags: diags}
-		value := globaldatatags.Expand(item, meta,
-			func(s string) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
-				var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
-				return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(s)
-			},
-			func(n float32) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
-				var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
-				return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(n)
-			},
-		)
-		raw = append(raw, globalDataTagRaw{Name: key, Value: value})
-	}
-	if diags.HasError() {
-		return nil
+	raw := make([]globalDataTagRaw, len(items))
+	for i, t := range items {
+		raw[i] = globalDataTagRaw{Name: t.Name, Value: t.Value}
 	}
 	return &raw
 }
