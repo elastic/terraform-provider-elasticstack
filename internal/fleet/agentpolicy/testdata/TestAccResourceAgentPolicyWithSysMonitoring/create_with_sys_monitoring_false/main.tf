@@ -4,7 +4,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
-  name            = "Policy ${var.policy_name}"
+  name            = var.policy_name
   namespace       = "default"
   description     = "Test Agent Policy with sys_monitoring disabled"
   monitor_logs    = false
