@@ -277,6 +277,105 @@ func TestAccDataSourceKibanaAgentBuilderWorkflow(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceID, "workflow_id", resourceID, "workflow_id"),
 					resource.TestCheckResourceAttrPair(dataSourceID, "configuration_yaml", resourceID, "configuration_yaml"),
 					resource.TestCheckResourceAttr(dataSourceID, "space_id", "default"),
+					// kibana_connection is not set on the data source block: confirm the default/absent state.
+					resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.#", "0"),
+					// Assert configuration_yaml directly on the data source (independent of the paired resource)
+					// to exercise the data-source-side YAML normalization path on its own.
+					resource.TestMatchResourceAttr(dataSourceID, "configuration_yaml", regexp.MustCompile(`name: Test Workflow`)),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaAgentBuilderWorkflowNotFound verifies that looking up
+// a nonexistent workflow ID surfaces the "Workflow not found" diagnostic from
+// readWorkflowDataSource, mirroring TestAccResourceAgentBuilderWorkflowInvalidCreate's
+// resource-side error-path coverage.
+func TestAccDataSourceKibanaAgentBuilderWorkflowNotFound(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	missingID := "workflow-does-not-exist-" + uuid.New().String()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_found"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(missingID),
+				},
+				ExpectError: regexp.MustCompile(`(?i)workflow not found`),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaAgentBuilderWorkflowSpacePrecedence verifies that an
+// explicit space_id set directly on the data source block wins over the space
+// segment embedded in a composite id, per clients.ResolveCompositeSpaceAndID.
+// The id passed in embeds a space that doesn't exist; the explicit space_id
+// (matching the space the workflow actually lives in) must take precedence for
+// the lookup to succeed.
+func TestAccDataSourceKibanaAgentBuilderWorkflowSpacePrecedence(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	const (
+		resourceID   = "elasticstack_kibana_agentbuilder_workflow.test"
+		dataSourceID = "data.elasticstack_kibana_agentbuilder_workflow.test"
+	)
+
+	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrPair(dataSourceID, "workflow_id", resourceID, "workflow_id"),
+					resource.TestCheckResourceAttrPair(dataSourceID, "configuration_yaml", resourceID, "configuration_yaml"),
+					// The explicit space_id must win, not the "does-not-exist" space embedded in id.
+					resource.TestCheckResourceAttr(dataSourceID, "space_id", spaceID),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaAgentBuilderWorkflowBareID verifies that a bare
+// (non-composite) workflow_id combined with an explicit space_id resolves to
+// the same workflow as the composite-id lookup form, per
+// clients.ResolveCompositeSpaceAndID.
+func TestAccDataSourceKibanaAgentBuilderWorkflowBareID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	const (
+		resourceID   = "elasticstack_kibana_agentbuilder_workflow.test"
+		dataSourceID = "data.elasticstack_kibana_agentbuilder_workflow.test"
+	)
+
+	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrPair(dataSourceID, "id", resourceID, "id"),
+					resource.TestCheckResourceAttrPair(dataSourceID, "workflow_id", resourceID, "workflow_id"),
+					resource.TestCheckResourceAttrPair(dataSourceID, "configuration_yaml", resourceID, "configuration_yaml"),
+					resource.TestCheckResourceAttr(dataSourceID, "space_id", spaceID),
 				),
 			},
 		},

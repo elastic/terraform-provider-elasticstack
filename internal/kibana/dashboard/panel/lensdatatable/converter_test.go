@@ -48,13 +48,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
 	noESQL := &models.DatatableNoESQLConfigModel{
-		LensChartBaseTFModel: models.LensChartBaseTFModel{
-			Title:               types.StringValue("Datatable RT"),
-			Description:         types.StringValue("desc"),
-			IgnoreGlobalFilters: types.BoolValue(true),
-			Sampling:            types.Float64Value(0.5),
-			DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
-		},
+		Title:               types.StringValue("Datatable RT"),
+		Description:         types.StringValue("desc"),
+		IgnoreGlobalFilters: types.BoolValue(true),
+		Sampling:            types.Float64Value(0.5),
+		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"dataView","id":"metrics-*"}`),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue(`*`),

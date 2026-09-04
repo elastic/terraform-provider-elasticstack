@@ -22,6 +22,7 @@ import (
 	_ "embed" // Used for embedding schema descriptions
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -98,6 +99,10 @@ func (m integrationPolicyModelV1) toV3(ctx context.Context) (integrationPolicyMo
 		OutputID:           m.OutputID,
 		SpaceIDs:           m.SpaceIDs,
 		VarsJSON:           varsJSONVal,
+
+		// V0 and V1 state predate the attribute. The zero-value types.List
+		// carries no element type, which fails when state is set.
+		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
 	}
 
 	inputsV1 := typeutils.ListTypeAs[integrationPolicyInputModelV1](ctx, m.Input, path.Root("input"), &diags)
@@ -258,12 +263,7 @@ func getSchemaV1() *schema.Schema {
 				Optional:    true,
 				Sensitive:   true,
 			},
-			attrSpaceIDs: schema.SetAttribute{
-				Description: spaceIDsDescription,
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-			},
+			attrSpaceIDs: kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 		Blocks: map[string]schema.Block{
 			"input": schema.ListNestedBlock{

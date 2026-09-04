@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,8 +35,7 @@ func createFilter(ctx context.Context, client *clients.ElasticsearchScopedClient
 	plan := req.Plan
 	filterID := req.WriteID
 
-	if filterID == "" {
-		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(filterID, "filter_id"); diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 

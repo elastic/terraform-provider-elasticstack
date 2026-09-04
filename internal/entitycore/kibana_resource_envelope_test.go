@@ -1067,7 +1067,7 @@ func TestNewKibanaResource_Read_nilReadCallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	var nilRead kibanaReadFunc[testKibanaResourceModel]
+	var nilRead KibanaReadFunc[testKibanaResourceModel]
 	opts := defaultTestKibanaResourceOptions()
 	opts.Read = nilRead
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
@@ -1629,7 +1629,7 @@ func TestNewKibanaResource_Delete_nilDeleteCallback(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	factory := newTestConfiguredFactory(ctx, t)
-	var nilDelete kibanaDeleteFunc[testKibanaResourceModel]
+	var nilDelete KibanaDeleteFunc[testKibanaResourceModel]
 	opts := defaultTestKibanaResourceOptions()
 	opts.Delete = nilDelete
 	r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)

@@ -32,19 +32,15 @@ func TestExtractSettings(t *testing.T) {
 	ctx := context.Background()
 
 	fsObj, _ := types.ObjectValueFrom(ctx, fsAttrTypes(), FsSettings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-		},
-		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
-		Location:          types.StringValue("/tmp"),
+		Compress:             types.BoolValue(true),
+		MaxNumberOfSnapshots: types.Int64Value(500),
+		Location:             types.StringValue("/tmp"),
 	})
 
 	urlObj, _ := types.ObjectValueFrom(ctx, urlAttrTypes(), URLSettings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-		},
-		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
-		URL:               types.StringValue("file:///tmp"),
+		Compress:             types.BoolValue(true),
+		MaxNumberOfSnapshots: types.Int64Value(500),
+		URL:                  types.StringValue("file:///tmp"),
 	})
 
 	cases := []struct {
@@ -102,15 +98,13 @@ func TestFsToSettingsDefaults(t *testing.T) {
 	t.Parallel()
 
 	fs := FsSettings{
-		CommonSettings: CommonSettings{
-			ChunkSize:              types.StringNull(),
-			Compress:               types.BoolValue(true),
-			MaxSnapshotBytesPerSec: types.StringNull(),
-			MaxRestoreBytesPerSec:  types.StringNull(),
-			Readonly:               types.BoolValue(false),
-		},
-		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
-		Location:          types.StringValue("/tmp"),
+		ChunkSize:              types.StringNull(),
+		Compress:               types.BoolValue(true),
+		MaxSnapshotBytesPerSec: types.StringNull(),
+		MaxRestoreBytesPerSec:  types.StringNull(),
+		Readonly:               types.BoolValue(false),
+		MaxNumberOfSnapshots:   types.Int64Value(500),
+		Location:               types.StringValue("/tmp"),
 	}
 
 	m := fsToSettings(fs)
@@ -126,10 +120,8 @@ func TestS3ToSettingsWithDefaults(t *testing.T) {
 	t.Parallel()
 
 	s3 := S3Settings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-			Readonly: types.BoolValue(false),
-		},
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
 		Bucket:               types.StringValue("mybucket"),
 		Endpoint:             types.StringNull(),
 		Client:               types.StringValue("default"),
@@ -158,10 +150,8 @@ func TestS3ToSettingsWithEndpoint(t *testing.T) {
 	t.Parallel()
 
 	s3 := S3Settings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-			Readonly: types.BoolValue(false),
-		},
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
 		Bucket:               types.StringValue("mybucket"),
 		Endpoint:             types.StringValue("https://minio.example.com:9000"),
 		Client:               types.StringValue("default"),
@@ -293,10 +283,8 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 
 func s3SettingsForState(endpoint types.String, pathStyleAccess types.Bool) S3Settings {
 	return S3Settings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-			Readonly: types.BoolValue(false),
-		},
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
 		Bucket:               types.StringValue("state-bucket"),
 		Endpoint:             endpoint,
 		Client:               types.StringValue("default"),

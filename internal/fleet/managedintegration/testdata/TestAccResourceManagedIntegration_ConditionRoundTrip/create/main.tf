@@ -14,6 +14,14 @@ variable "stream_condition" {
   type = string
 }
 
+variable "input_enabled" {
+  type = bool
+}
+
+variable "stream_enabled" {
+  type = bool
+}
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -40,11 +48,11 @@ resource "elasticstack_fleet_managed_integration" "test" {
 
   inputs = {
     "cspm-cloudbeat/cis_aws" = {
-      enabled   = true
+      enabled   = var.input_enabled
       condition = var.input_condition
       streams = {
         "cloud_security_posture.findings" = {
-          enabled   = true
+          enabled   = var.stream_enabled
           condition = var.stream_condition
           vars = jsonencode({
             role_arn               = "arn:aws:iam::123456789012:role/tf-acc-test-role"

@@ -60,28 +60,11 @@ func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.CopyFrom) {
 		body.CopyFrom = m.CopyFrom.ValueString()
 	}
-	if m.Override.IsNull() || m.Override.IsUnknown() {
-		m.Override = types.BoolValue(true)
-		body.Override = true
-	} else {
-		body.Override = m.Override.ValueBool()
-	}
-	if m.IgnoreEmptyValue.IsNull() || m.IgnoreEmptyValue.IsUnknown() {
-		m.IgnoreEmptyValue = types.BoolValue(false)
-		body.IgnoreEmptyValue = false
-	} else {
-		body.IgnoreEmptyValue = m.IgnoreEmptyValue.ValueBool()
-	}
-	if m.MediaType.IsNull() || m.MediaType.IsUnknown() {
-		m.MediaType = types.StringValue("application/json")
-		body.MediaType = "application/json"
-	} else {
-		body.MediaType = m.MediaType.ValueString()
-	}
+	body.Override = typeutils.BoolDefault(&m.Override, true)
+	body.IgnoreEmptyValue = typeutils.BoolDefault(&m.IgnoreEmptyValue, false)
+	body.MediaType = typeutils.StringDefault(&m.MediaType, "application/json")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -89,14 +72,6 @@ func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorSetDataSource returns a PF data source for the set processor.
 func NewProcessorSetDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to insert, upsert, or update.",
 			Required:    true,

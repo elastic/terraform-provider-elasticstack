@@ -77,24 +77,6 @@ func PopulateFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, ol *kbap
 	return populateFieldFromAPI(pm, tfPanel, apiConfig)
 }
 
-// preserveKnownBool updates existing from api only when existing is already known (REQ-009
-// null-preservation); an api value of nil, or existing being null/unknown, leaves existing
-// unchanged.
-func preserveKnownBool(existing types.Bool, api *bool) types.Bool {
-	if typeutils.IsKnown(existing) && api != nil {
-		return types.BoolValue(*api)
-	}
-	return existing
-}
-
-// preserveKnownString is the string equivalent of preserveKnownBool.
-func preserveKnownString(existing types.String, api *string) types.String {
-	if typeutils.IsKnown(existing) && api != nil {
-		return types.StringValue(*api)
-	}
-	return existing
-}
-
 // sharedOptionsListAPIFields holds optional field values extracted from either the Field or ES|QL
 // API config variant into a branch-neutral form, so populateSharedOptionsListFieldsFromAPI can
 // apply them without knowing which branch produced them.
@@ -171,13 +153,13 @@ func sharedAPIFieldsFromEsql(apiConfig kbapi.KibanaHTTPAPIsKbnControlsSchemasOpt
 // across the Field and ES|QL populate functions. model points into the branch-specific struct and
 // api carries pre-processed values from the matching sharedAPIFieldsFromX adapter.
 func populateSharedOptionsListFieldsFromAPI(model optionsListNullIntentFields, api sharedOptionsListAPIFields) {
-	*model.Title = preserveKnownString(*model.Title, api.Title)
-	*model.UseGlobalFilters = preserveKnownBool(*model.UseGlobalFilters, api.UseGlobalFilters)
-	*model.IgnoreValidations = preserveKnownBool(*model.IgnoreValidations, api.IgnoreValidations)
-	*model.SingleSelect = preserveKnownBool(*model.SingleSelect, api.SingleSelect)
-	*model.Exclude = preserveKnownBool(*model.Exclude, api.Exclude)
-	*model.ExistsSelected = preserveKnownBool(*model.ExistsSelected, api.ExistsSelected)
-	*model.RunPastTimeout = preserveKnownBool(*model.RunPastTimeout, api.RunPastTimeout)
+	*model.Title = panelkit.PreserveKnownString(*model.Title, api.Title)
+	*model.UseGlobalFilters = panelkit.PreserveKnownBool(*model.UseGlobalFilters, api.UseGlobalFilters)
+	*model.IgnoreValidations = panelkit.PreserveKnownBool(*model.IgnoreValidations, api.IgnoreValidations)
+	*model.SingleSelect = panelkit.PreserveKnownBool(*model.SingleSelect, api.SingleSelect)
+	*model.Exclude = panelkit.PreserveKnownBool(*model.Exclude, api.Exclude)
+	*model.ExistsSelected = panelkit.PreserveKnownBool(*model.ExistsSelected, api.ExistsSelected)
+	*model.RunPastTimeout = panelkit.PreserveKnownBool(*model.RunPastTimeout, api.RunPastTimeout)
 	if typeutils.IsKnown(*model.SearchTechnique) && api.SearchTechnique != nil {
 		*model.SearchTechnique = types.StringValue(*api.SearchTechnique)
 	}
@@ -504,7 +486,7 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
 	}
-	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
+	if typeutils.IsKnown(cfg.SelectedOptions) {
 		c.SelectedOptions = buildSelectedOptionsField(cfg.SelectedOptions)
 	}
 	if cfg.DisplaySettings != nil {
@@ -518,6 +500,9 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 			By:        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortBy(cfg.Sort.By.ValueString()),
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSortDirection(cfg.Sort.Direction.ValueString()),
 		}
+	}
+	if olPanel.Config == nil {
+		olPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{}
 	}
 	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaField(c); err != nil {
 		var diags diag.Diagnostics
@@ -561,7 +546,7 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
 	}
-	if !cfg.SelectedOptions.IsNull() && !cfg.SelectedOptions.IsUnknown() {
+	if typeutils.IsKnown(cfg.SelectedOptions) {
 		c.SelectedOptions = buildSelectedOptionsEsql(cfg.SelectedOptions)
 	}
 	if cfg.DisplaySettings != nil {
@@ -575,6 +560,9 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 			By:        kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortBy(cfg.Sort.By.ValueString()),
 			Direction: kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSortDirection(cfg.Sort.Direction.ValueString()),
 		}
+	}
+	if olPanel.Config == nil {
+		olPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{}
 	}
 	if err := olPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql(c); err != nil {
 		var diags diag.Diagnostics

@@ -20,9 +20,9 @@ package elasticsearch
 import (
 	"context"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/gettrainedmodels"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -31,12 +31,11 @@ import (
 func GetTrainedModel(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, modelID string) (*types.TrainedModelConfig, bool, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, false, nil
-		}
-		return nil, false, diagutil.FrameworkDiagFromError(err)
+	res, diags := CallOrNotFound(func() (*gettrainedmodels.Response, error) {
+		return typedClient.Ml.GetTrainedModels().ModelId(modelID).Do(ctx)
+	}, "Unable to get trained model")
+	if diags.HasError() || res == nil {
+		return nil, false, diags
 	}
 
 	if len(res.TrainedModelConfigs) == 0 {

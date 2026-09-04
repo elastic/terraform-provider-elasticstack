@@ -367,7 +367,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyIDsVersionGate(t *
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
-				ExpectError: regexp.MustCompile(`(?s)(Unsupported Elasticsearch version|8\.15\.0)`),
+				ExpectError: regexp.MustCompile(`(?s)(Unsupported server version|8\.15\.0)`),
 			},
 		},
 	})

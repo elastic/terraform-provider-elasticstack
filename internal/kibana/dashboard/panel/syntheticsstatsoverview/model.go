@@ -99,10 +99,17 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 }
 
 // PopulateFromAPI reads back a synthetics stats overview panel from the API response.
+//
+// pm always arrives with SyntheticsStatsOverviewConfig unset (callers build state from a
+// zero-valued PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect
+// whether this panel was previously this same type. prior.SyntheticsStatsOverviewConfig is the
+// only reliable signal: non-nil means the panel was already this type and its null intent must be
+// honored; nil means there is no prior null intent for this config block (creation, import, or a
+// type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview) diag.Diagnostics {
 	cfg := apiPanel.Config
 
-	if prior == nil {
+	if prior == nil || prior.SyntheticsStatsOverviewConfig == nil {
 		if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
 			(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && !syntheticsFiltersHasAnyEntry(cfg.Filters) {
 			return nil
@@ -111,30 +118,27 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel k
 		return nil
 	}
 
-	if pm.SyntheticsStatsOverviewConfig == nil && prior.SyntheticsStatsOverviewConfig != nil {
-		pm.SyntheticsStatsOverviewConfig = syntheticsStatsOverviewConfigFromAPIImport(apiPanel)
-	}
-
-	existing := pm.SyntheticsStatsOverviewConfig
-	if existing == nil {
-		return nil
-	}
-
+	// Same-type update: rebuild from the prior config, then merge in the API's values using
+	// null-preservation semantics for any optional field the plan/state had not set (REQ-009).
 	if cfg.Title == nil && cfg.Description == nil && cfg.HideTitle == nil && cfg.HideBorder == nil &&
 		(cfg.Drilldowns == nil || len(*cfg.Drilldowns) == 0) && cfg.Filters == nil {
 		pm.SyntheticsStatsOverviewConfig = nil
 		return nil
 	}
 
+	priorCfg := prior.SyntheticsStatsOverviewConfig
+	existing := &models.SyntheticsStatsOverviewConfigModel{
+		Title:       priorCfg.Title,
+		Description: priorCfg.Description,
+		HideTitle:   priorCfg.HideTitle,
+		HideBorder:  priorCfg.HideBorder,
+	}
 	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
 		cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder)
 
-	var priorDrilldowns []models.URLDrilldownModel
-	if prior.SyntheticsStatsOverviewConfig != nil {
-		priorDrilldowns = prior.SyntheticsStatsOverviewConfig.Drilldowns
-	}
-	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, priorDrilldowns)
-	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, existing.Filters)
+	existing.Drilldowns = readSyntheticsStatsOverviewDrilldownsFromAPI(apiPanel, priorCfg.Drilldowns)
+	existing.Filters = readSyntheticsStatsOverviewFiltersFromAPI(apiPanel, priorCfg.Filters)
+	pm.SyntheticsStatsOverviewConfig = existing
 	return nil
 }
 
@@ -182,23 +186,27 @@ func syntheticsFiltersHasAnyEntry(f *struct {
 		(f.MonitorTypes != nil && len(*f.MonitorTypes) > 0)
 }
 
+type syntheticsStatsOverviewAPIDrilldown = struct {
+	EncodeUrl    *bool                                                                                   `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                                                  `json:"label"`
+	OpenInNewTab *bool                                                                                   `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverviewConfigDrilldownsType    `json:"type"`
+	Url          string                                                                                  `json:"url"` //nolint:revive
+}
+
 func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
-	apiDrilldowns := apiPanel.Config.Drilldowns
-	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(apiPanel.Config.Drilldowns, func(d syntheticsStatsOverviewAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
 

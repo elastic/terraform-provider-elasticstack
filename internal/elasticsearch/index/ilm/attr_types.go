@@ -88,6 +88,7 @@ func searchableSnapshotObjectType() types.ObjectType {
 		AttrTypes: map[string]attr.Type{
 			attrSnapshotRepository: types.StringType,
 			attrForceMergeIndex:    types.BoolType,
+			attrForceMergeOnClone:  types.BoolType,
 		},
 	}
 }

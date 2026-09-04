@@ -17,7 +17,7 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_fs_repo" {
     chunk_size                 = "500mb"
     max_snapshot_bytes_per_sec = "40mb"
     max_restore_bytes_per_sec  = "20mb"
-    readonly                   = true
+    readonly                   = false
     max_number_of_snapshots    = 50
   }
 }

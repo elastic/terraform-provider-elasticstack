@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -67,5 +68,5 @@ func dataStreamAllowCustomRoutingWasTrue(ctx context.Context, ds types.Object) b
 	if diags.HasError() {
 		return false
 	}
-	return !m.AllowCustomRouting.IsNull() && !m.AllowCustomRouting.IsUnknown() && m.AllowCustomRouting.ValueBool()
+	return typeutils.IsKnown(m.AllowCustomRouting) && m.AllowCustomRouting.ValueBool()
 }

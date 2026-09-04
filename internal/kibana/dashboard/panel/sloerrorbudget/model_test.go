@@ -293,6 +293,62 @@ func Test_populateSloErrorBudgetFromAPI_import_populatesAll(t *testing.T) {
 	assert.False(t, pm.SloErrorBudgetConfig.HideBorder.ValueBool())
 }
 
+func Test_populateSloErrorBudgetFromAPI_sameTypeUpdate_adoptsPresentationFields(t *testing.T) {
+	// Same-type update: prior has known presentation fields; pm arrives zero-valued
+	// (production calling convention). API values must be adopted into state.
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
+			SloID:       types.StringValue("my-slo-id"),
+			Title:       types.StringValue("Prior Title"),
+			Description: types.StringValue("Prior Desc"),
+			HideTitle:   types.BoolValue(false),
+			HideBorder:  types.BoolValue(true),
+		},
+	}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		sebWithSloTitle("API Title"),
+		sebWithSloDescription("API Desc"),
+		sebWithHideTitle(true),
+		sebWithHideBorder(false),
+	)
+	diag := PopulateFromAPI(pm, prior, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	require.NotNil(t, pm.SloErrorBudgetConfig)
+	assert.Equal(t, "API Title", pm.SloErrorBudgetConfig.Title.ValueString())
+	assert.Equal(t, "API Desc", pm.SloErrorBudgetConfig.Description.ValueString())
+	assert.True(t, pm.SloErrorBudgetConfig.HideTitle.ValueBool())
+	assert.False(t, pm.SloErrorBudgetConfig.HideBorder.ValueBool())
+}
+
+func Test_populateSloErrorBudgetFromAPI_presentationFields_nullPreservation(t *testing.T) {
+	// Prior left presentation fields unset; API returns concrete values. State must
+	// keep them null (REQ-009), keyed on prior — not the freshly allocated existing.
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
+			SloID:       types.StringValue("my-slo-id"),
+			Title:       types.StringNull(),
+			Description: types.StringNull(),
+			HideTitle:   types.BoolNull(),
+			HideBorder:  types.BoolNull(),
+		},
+	}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		sebWithSloTitle("API Title"),
+		sebWithSloDescription("API Desc"),
+		sebWithHideTitle(true),
+		sebWithHideBorder(false),
+	)
+	diag := PopulateFromAPI(pm, prior, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	require.NotNil(t, pm.SloErrorBudgetConfig)
+	assert.True(t, pm.SloErrorBudgetConfig.Title.IsNull(), "title should remain null")
+	assert.True(t, pm.SloErrorBudgetConfig.Description.IsNull(), "description should remain null")
+	assert.True(t, pm.SloErrorBudgetConfig.HideTitle.IsNull(), "hide_title should remain null")
+	assert.True(t, pm.SloErrorBudgetConfig.HideBorder.IsNull(), "hide_border should remain null")
+}
+
 func Test_populateSloErrorBudgetFromAPI_nilPriorBlock_preservesNil(t *testing.T) {
 	// Prior state had no config block (nil). Should not create one.
 	pm := &models.PanelModel{}

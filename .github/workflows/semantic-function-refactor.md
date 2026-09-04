@@ -438,6 +438,6 @@ GitHub issue titles are limited to **256 characters total**, including the
   redundantly in the title. The title field is plain text.
 
 ### Dispatch
-After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once with `dispatch: true` to dispatch the `code-factory` workflow for each created issue.
 
 **Objective**: Improve code organization and reduce duplication by identifying actionable semantic refactoring opportunities through Serena semantic function clustering and duplicate detection. Focus on high-impact, actionable findings that enable automated or manual refactoring.

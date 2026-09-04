@@ -94,9 +94,7 @@ func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID stri
 		return nil
 	}
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	var diags diag.Diagnostics
 

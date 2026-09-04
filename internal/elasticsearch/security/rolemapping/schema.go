@@ -19,6 +19,8 @@ package rolemapping
 
 import (
 	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -36,10 +38,7 @@ func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: schemaMarkdownDescription,
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource",
-				Computed:            true,
-			},
+			"id": entitycore.IDAttribute(),
 			"name": schema.StringAttribute{
 				MarkdownDescription: "The distinct name that identifies the role mapping, used solely as an identifier.",
 				Required:            true,

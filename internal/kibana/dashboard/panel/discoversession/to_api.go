@@ -269,7 +269,7 @@ func discoverSessionDSLTabToAPI(ctx context.Context, m models.DiscoverSessionDSL
 	api.ColumnSettings = discoverSessionColumnSettingsToAPI(ctx, m.ColumnSettings, &diags)
 
 	if len(m.Sort) > 0 {
-		s := discoverSessionSortToAPI0(m.Sort)
+		s := discoverSessionSortToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection](m.Sort)
 		api.Sort = &s
 	}
 
@@ -346,7 +346,7 @@ func discoverSessionESQLTabToAPI(ctx context.Context, m models.DiscoverSessionES
 	api.ColumnSettings = discoverSessionColumnSettingsToAPI(ctx, m.ColumnSettings, &diags)
 
 	if len(m.Sort) > 0 {
-		s := discoverSessionSortToAPI1(m.Sort)
+		s := discoverSessionSortToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection](m.Sort)
 		api.Sort = &s
 	}
 
@@ -419,7 +419,7 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 	api.ColumnSettings = discoverSessionColumnSettingsToAPI(ctx, m.ColumnSettings, &diags)
 
 	if len(m.Sort) > 0 {
-		s := discoverSessionOverridesSortToAPI(m.Sort)
+		s := discoverSessionSortToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection](m.Sort)
 		api.Sort = &s
 	}
 
@@ -452,47 +452,20 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 	return api, diags
 }
 
-func discoverSessionSortToAPI0(sort []models.DiscoverSessionSortModel) []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
+// discoverSessionSortToAPI converts sort models to the API shape shared by every generated
+// Direction enum (kbapi emits a distinct named string type per schema branch for what is
+// structurally the same {direction, name} pair).
+func discoverSessionSortToAPI[D ~string](sort []models.DiscoverSessionSortModel) []struct {
+	Direction D      `json:"direction"`
+	Name      string `json:"name"`
 } {
 	out := make([]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
-		Name      string                                                                            `json:"name"`
+		Direction D      `json:"direction"`
+		Name      string `json:"name"`
 	}, len(sort))
 	for i, s := range sort {
 		out[i].Name = s.Name.ValueString()
-		out[i].Direction = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection(s.Direction.ValueString())
-	}
-	return out
-}
-
-func discoverSessionSortToAPI1(sort []models.DiscoverSessionSortModel) []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
-} {
-	out := make([]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
-		Name      string                                                                            `json:"name"`
-	}, len(sort))
-	for i, s := range sort {
-		out[i].Name = s.Name.ValueString()
-		out[i].Direction = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection(s.Direction.ValueString())
-	}
-	return out
-}
-
-func discoverSessionOverridesSortToAPI(sort []models.DiscoverSessionSortModel) []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-	Name      string                                                                                `json:"name"`
-} {
-	out := make([]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-		Name      string                                                                                `json:"name"`
-	}, len(sort))
-	for i, s := range sort {
-		out[i].Name = s.Name.ValueString()
-		out[i].Direction = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection(s.Direction.ValueString())
+		out[i].Direction = D(s.Direction.ValueString())
 	}
 	return out
 }

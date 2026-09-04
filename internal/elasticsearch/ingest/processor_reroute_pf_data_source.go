@@ -61,14 +61,6 @@ func (m *processorRerouteModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorRerouteDataSource returns a PF data source for the reroute processor.
 func NewProcessorRerouteDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"destination": schema.StringAttribute{
 			Description: "The destination data stream, index, or index alias to route the document to.",
 			Optional:    true,

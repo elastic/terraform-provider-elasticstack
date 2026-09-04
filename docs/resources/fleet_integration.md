@@ -73,7 +73,7 @@ resource "elasticstack_fleet_integration" "test_integration" {
 - `prerelease` (Boolean) Set to true to allow installation of prerelease (beta, non-GA) packages.
 - `skip_data_stream_rollover` (Boolean) Set to true to skip data stream rollover during package installation.
 - `skip_destroy` (Boolean) Set to true if you do not wish the integration package to be uninstalled at destroy time, and instead just remove the integration package from the Terraform state.
-- `space_id` (String) The Kibana space ID where this integration package should be installed.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

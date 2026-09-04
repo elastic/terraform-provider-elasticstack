@@ -56,3 +56,65 @@ func TestFlattenPhaseAllocateOmitsAbsentReplicaShardFields(t *testing.T) {
 	require.True(t, ok)
 	assert.JSONEq(t, `{"zone":"zone-1"}`, requireVal.ValueString())
 }
+
+func TestFlattenPhaseSearchableSnapshotForceMergeOnClone(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	prior := types.ObjectNull(hotPhaseObjectType().AttrTypes)
+
+	t.Run("backfills true when omitted and force_merge_index is true", func(t *testing.T) {
+		t.Parallel()
+
+		obj, diags := flattenPhase(ctx, ilmPhaseHot, "", map[string]map[string]any{
+			"searchable_snapshot": {
+				"snapshot_repository": "repo-a",
+				"force_merge_index":   true,
+			},
+		}, prior)
+		require.False(t, diags.HasError(), "%s", diags)
+
+		ss, ok := obj.Attributes()["searchable_snapshot"].(types.Object)
+		require.True(t, ok)
+		got, ok := ss.Attributes()["force_merge_on_clone"].(types.Bool)
+		require.True(t, ok)
+		assert.Equal(t, types.BoolValue(true), got)
+	})
+
+	t.Run("does not backfill when force_merge_index is false", func(t *testing.T) {
+		t.Parallel()
+
+		obj, diags := flattenPhase(ctx, ilmPhaseHot, "", map[string]map[string]any{
+			"searchable_snapshot": {
+				"snapshot_repository": "repo-a",
+				"force_merge_index":   false,
+			},
+		}, prior)
+		require.False(t, diags.HasError(), "%s", diags)
+
+		ss, ok := obj.Attributes()["searchable_snapshot"].(types.Object)
+		require.True(t, ok)
+		got, ok := ss.Attributes()["force_merge_on_clone"].(types.Bool)
+		require.True(t, ok)
+		assert.True(t, got.IsNull())
+	})
+
+	t.Run("preserves explicit false", func(t *testing.T) {
+		t.Parallel()
+
+		obj, diags := flattenPhase(ctx, ilmPhaseHot, "", map[string]map[string]any{
+			"searchable_snapshot": {
+				"snapshot_repository":  "repo-a",
+				"force_merge_index":    true,
+				"force_merge_on_clone": false,
+			},
+		}, prior)
+		require.False(t, diags.HasError(), "%s", diags)
+
+		ss, ok := obj.Attributes()["searchable_snapshot"].(types.Object)
+		require.True(t, ok)
+		got, ok := ss.Attributes()["force_merge_on_clone"].(types.Bool)
+		require.True(t, ok)
+		assert.Equal(t, types.BoolValue(false), got)
+	})
+}

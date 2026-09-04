@@ -117,49 +117,36 @@ func readSlosFromAPI(
 	for i, apiSlo := range apiSlos {
 		out[i].SloID = types.StringValue(apiSlo.SloId)
 
-		var prior *models.SloAlertsPanelSloModel
-		if i < len(priorSlos) {
-			prior = &priorSlos[i]
+		hasPrior := i < len(priorSlos)
+		var priorInstanceID types.String
+		if hasPrior {
+			priorInstanceID = priorSlos[i].SloInstanceID
 		}
-
-		switch {
-		case prior == nil:
-			if apiSlo.SloInstanceId != nil && *apiSlo.SloInstanceId != "*" {
-				out[i].SloInstanceID = types.StringValue(*apiSlo.SloInstanceId)
-			} else {
-				out[i].SloInstanceID = types.StringNull()
-			}
-		case typeutils.IsKnown(prior.SloInstanceID):
-			out[i].SloInstanceID = types.StringPointerValue(apiSlo.SloInstanceId)
-		default:
-			out[i].SloInstanceID = types.StringNull()
-		}
+		out[i].SloInstanceID = panelkit.PreserveSloInstanceID(apiSlo.SloInstanceId, hasPrior, priorInstanceID)
 	}
 	return out
 }
 
+type sloAlertsAPIDrilldown = struct {
+	EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                   `json:"label"`
+	OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                   `json:"url"` //nolint:revive
+}
+
 func readDrilldownsFromAPI(
-	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                                    `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                   `json:"label"`
-		OpenInNewTab *bool                                                    `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsSloAlertsEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                                   `json:"url"` //nolint:revive
-	},
+	apiDrilldowns *[]sloAlertsAPIDrilldown,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
-	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloAlertsAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }

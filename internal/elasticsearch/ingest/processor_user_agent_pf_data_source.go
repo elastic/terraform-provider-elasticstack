@@ -45,27 +45,12 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.RegexFile) {
 		body.RegexFile = m.RegexFile.ValueString()
 	}
-	if typeutils.IsKnown(m.Properties) {
-		elems := make([]string, 0, len(m.Properties.Elements()))
-		for _, elem := range m.Properties.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid properties element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown properties element", "properties elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Properties = elems
-	}
+	body.Properties = typeutils.StringElements(m.Properties, &diags)
 	if typeutils.IsKnown(m.ExtractDeviceType) {
 		v := m.ExtractDeviceType.ValueBool()
 		body.ExtractDeviceType = &v
@@ -77,14 +62,6 @@ func (m *processorUserAgentModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorUserAgentDataSource returns a PF data source for the user_agent processor.
 func NewProcessorUserAgentDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field containing the user agent string.",
 			Required:    true,

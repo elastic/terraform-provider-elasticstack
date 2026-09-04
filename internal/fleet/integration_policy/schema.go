@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -36,7 +37,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -116,6 +116,14 @@ func getSchemaV3() schema.Schema {
 				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
 				Optional:    true,
 			},
+			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
+				Description: additionalDatastreamsPermissionsDescription,
+				ElementType: types.StringType,
+				Optional:    true,
+				Validators: []validator.List{
+					listvalidator.SizeAtLeast(1),
+				},
+			},
 			attrVarsJSON: schema.StringAttribute{
 				Description: customtypes.DescriptionWithContextWarning("Integration-level variables as JSON. Variables vary depending on the integration package."),
 				CustomType:  policyshape.NewVarsJSONType(lookupCachedPackageInfo),
@@ -126,15 +134,7 @@ func getSchemaV3() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			attrSpaceIDs: schema.SetAttribute{
-				Description: spaceIDsDescription,
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			attrSpaceIDs: kbschema.SpaceIDsAttribute(spaceIDsDescription),
 			"inputs": schema.MapNestedAttribute{
 				Description: "Integration inputs mapped by input ID.",
 				CustomType:  NewInputsType(NewInputType(getInputsAttributeTypes())),

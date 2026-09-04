@@ -22,13 +22,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -46,7 +46,7 @@ func PutTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 
 	_, err = typedClient.Transform.PutTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(formatDuration(timeout)).
+		Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
@@ -78,10 +78,7 @@ func GetTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, fmt.Sprintf("Unable to get requested transform: %s", *name)); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -163,7 +160,7 @@ func UpdateTransform(
 
 	_, err = typedClient.Transform.UpdateTransform(transform.Name).
 		Raw(bytes.NewReader(transformBytes)).
-		Timeout(formatDuration(timeout)).
+		Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).
 		DeferValidation(deferValidation).
 		Do(ctx)
 	if err != nil {
@@ -191,22 +188,13 @@ func DeleteTransform(ctx context.Context, apiClient *clients.ElasticsearchScoped
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Transform.DeleteTransform(*name).Force(true).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return fwdiag.Diagnostics{
-			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to delete transform: %s", *name), err.Error()),
-		}
-	}
-
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, fmt.Sprintf("Unable to delete transform: %s", *name))
 }
 
 func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 
-	_, err := typedClient.Transform.StartTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
+	_, err := typedClient.Transform.StartTransform(transformName).Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).Do(ctx)
 	if err != nil {
 		return fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to start transform: %s", transformName), err.Error()),
@@ -219,7 +207,7 @@ func startTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedC
 func stopTransform(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, transformName string, timeout time.Duration) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 
-	_, err := typedClient.Transform.StopTransform(transformName).Timeout(formatDuration(timeout)).Do(ctx)
+	_, err := typedClient.Transform.StopTransform(transformName).Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout)).Do(ctx)
 	if err != nil {
 		return fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(fmt.Sprintf("Unable to stop transform: %s", transformName), err.Error()),

@@ -50,47 +50,15 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 		return nil, diags
 	}
 
-	if typeutils.IsKnown(m.Fields) {
-		elems := make([]string, 0, len(m.Fields.Elements()))
-		for _, elem := range m.Fields.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid fields element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown fields element", "fields elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Fields = elems
-	}
-	if m.TargetField.IsNull() || m.TargetField.IsUnknown() {
-		m.TargetField = types.StringValue("fingerprint")
-		body.TargetField = "fingerprint"
-	} else {
-		body.TargetField = m.TargetField.ValueString()
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.Fields = typeutils.StringElements(m.Fields, &diags)
+	body.TargetField = typeutils.StringDefault(&m.TargetField, "fingerprint")
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 	if typeutils.IsKnown(m.Salt) {
 		body.Salt = m.Salt.ValueString()
 	}
-	if m.Method.IsNull() || m.Method.IsUnknown() {
-		m.Method = types.StringValue("SHA-1")
-		body.Method = "SHA-1"
-	} else {
-		body.Method = m.Method.ValueString()
-	}
+	body.Method = typeutils.StringDefault(&m.Method, "SHA-1")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -98,14 +66,6 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorFingerprintDataSource returns a PF data source for the fingerprint processor.
 func NewProcessorFingerprintDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"fields": schema.ListAttribute{
 			Description: "Array of fields to include in the fingerprint.",
 			Required:    true,

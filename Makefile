@@ -24,7 +24,7 @@ $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.16.3
+VERSION ?= 0.16.4
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -192,7 +192,7 @@ copy-kibana-ca: .env ## Copy Kibana CA certificate to local machine
 	@ docker compose -f $(COMPOSE_FILE) cp kibana:/certs/rootCA.pem ./kibana-ca.pem
 
 .PHONY: docs-generate
-docs-generate: tools ## Generate documentation for the provider
+docs-generate: ## Generate documentation for the provider
 	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
 	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
 
@@ -220,7 +220,7 @@ install: build ## Install built provider into the local terraform cache
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
 $(GOBIN)/golangci-lint: Makefile | $(GOBIN)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.13.2
 
 .PHONY: tools
 tools: $(GOBIN)/golangci-lint  ## Download golangci-lint locally if necessary.
@@ -349,4 +349,3 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
-

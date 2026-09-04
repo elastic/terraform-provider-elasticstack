@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/enrich/getpolicy"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/enrichpolicyphase"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -34,12 +35,11 @@ import (
 func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) (*models.EnrichPolicy, fwdiag.Diagnostics) {
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
+	res, diags := CallOrNotFound(func() (*getpolicy.Response, error) {
+		return typedClient.Enrich.GetPolicy().Name(policyName).Do(ctx)
+	}, "Unable to get enrich policy")
+	if diags.HasError() || res == nil {
+		return nil, diags
 	}
 
 	if len(res.Policies) == 0 {
@@ -81,7 +81,7 @@ func GetEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScoped
 		}
 		// The typed client can return a non-nil *types.Query that still marshals to JSON null.
 		// Avoid storing the literal string "null" in state, which would trigger replacement.
-		if string(queryBytes) != "null" {
+		if string(queryBytes) != jsonNullLiteral {
 			queryStr = string(queryBytes)
 		}
 	}
@@ -139,14 +139,7 @@ func DeleteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchSco
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Enrich.DeletePolicy(policyName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete enrich policy")
 }
 
 func ExecuteEnrichPolicy(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, policyName string) fwdiag.Diagnostics {

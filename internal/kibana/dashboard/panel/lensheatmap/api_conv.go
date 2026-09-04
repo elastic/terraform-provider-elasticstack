@@ -101,14 +101,14 @@ func heatmapConfigFromAPINoESQL(
 		return diags
 	}
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric_json", lenscommon.PopulateTagcloudMetricDefaults, &diags)
 	if !ok {
 		return diags
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	xAxisBytes, err := api.X.MarshalJSON()
+	xAxisBytes, err := json.Marshal(api.X)
 	xv, ok := lenscommon.WrapNormalizedJSON(xAxisBytes, err, "x_axis", &diags)
 	if !ok {
 		return diags
@@ -116,7 +116,7 @@ func heatmapConfigFromAPINoESQL(
 	m.XAxisJSON = xv
 
 	if api.Y != nil {
-		yAxisBytes, err := api.Y.MarshalJSON()
+		yAxisBytes, err := json.Marshal(api.Y)
 		yv, ok := lenscommon.WrapNormalizedJSON(yAxisBytes, err, "y_axis", &diags)
 		if !ok {
 			return diags
@@ -624,22 +624,14 @@ func heatmapLegendFromAPI(m *models.HeatmapLegendModel, api *kbapi.KibanaHTTPAPI
 	if api == nil {
 		return
 	}
-	if api.Visibility != nil {
-		m.Visibility = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visibility = types.StringNull()
-	}
+	var size, visibility *string
 	if api.Size != nil {
-		m.Size = types.StringValue(string(*api.Size))
-	} else {
-		m.Size = types.StringNull()
+		size = new(string(*api.Size))
 	}
-
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLines = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLines = types.Int64Null()
+	if api.Visibility != nil {
+		visibility = new(string(*api.Visibility))
 	}
+	m.Size, m.TruncateAfterLines, m.Visibility = lenscommon.LegendSizeTruncateVisibilityFromAPI(size, api.TruncateAfterLines, visibility)
 }
 
 func heatmapLegendToAPI(m *models.HeatmapLegendModel) (kbapi.KibanaHTTPAPIsHeatmapLegend, diag.Diagnostics) {
@@ -651,18 +643,19 @@ func heatmapLegendToAPI(m *models.HeatmapLegendModel) (kbapi.KibanaHTTPAPIsHeatm
 		return legend, diags
 	}
 
-	if typeutils.IsKnown(m.Visibility) {
-		visibility := kbapi.KibanaHTTPAPIsHeatmapLegendVisibility(m.Visibility.ValueString())
-		legend.Visibility = &visibility
+	size, truncateAfterLines, visibility := lenscommon.LegendSizeTruncateVisibilityToAPI(
+		m.Size, m.Visibility, m.TruncateAfterLines,
+		"Missing legend size", "heatmap_config.legend.size must be provided",
+		&diags,
+	)
+	if size != nil {
+		s := kbapi.KibanaHTTPAPIsLegendSize(*size)
+		legend.Size = &s
 	}
-	if typeutils.IsKnown(m.Size) {
-		size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-		legend.Size = &size
-	} else {
-		diags.AddError("Missing legend size", "heatmap_config.legend.size must be provided")
-	}
-	if typeutils.IsKnown(m.TruncateAfterLines) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLines.ValueInt64()))
+	legend.TruncateAfterLines = truncateAfterLines
+	if visibility != nil {
+		v := kbapi.KibanaHTTPAPIsHeatmapLegendVisibility(*visibility)
+		legend.Visibility = &v
 	}
 
 	return legend, diags

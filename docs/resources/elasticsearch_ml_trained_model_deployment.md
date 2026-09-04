@@ -40,7 +40,7 @@ On Terraform destroy the resource stops (undeploys) the model deployment.
 ### Read-Only
 
 - `allocation_status` (String) The detailed allocation state of the deployment.
-- `id` (String) Internal identifier of the resource in the format `<cluster_uuid>/<deployment_id>`.
+- `id` (String) Internal identifier of the resource
 - `state` (String) The overall state of the deployment.
 - `stats_json` (String) The raw JSON of the trained model stats for this deployment.
 

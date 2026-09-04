@@ -20,6 +20,7 @@ package ilm
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -44,5 +45,5 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 }
 
 func phaseObjectNonEmpty(o types.Object) bool {
-	return !o.IsNull() && !o.IsUnknown()
+	return typeutils.IsKnown(o)
 }

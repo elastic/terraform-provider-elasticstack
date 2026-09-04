@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -49,7 +50,7 @@ func normalizedQueryFromAPI(q *string) jsontypes.Normalized {
 // must round-trip to null. When `fromAPI` carries data it wins; otherwise
 // the representation is taken from `hint`.
 func alignSetRepresentation(hint, fromAPI types.Set, elemType attr.Type) types.Set {
-	if !fromAPI.IsNull() && !fromAPI.IsUnknown() && len(fromAPI.Elements()) > 0 {
+	if typeutils.IsKnown(fromAPI) && len(fromAPI.Elements()) > 0 {
 		return fromAPI
 	}
 	if hint.IsNull() || hint.IsUnknown() {
@@ -137,7 +138,7 @@ func fieldSecurityHint(obj types.Object) types.Object {
 func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]string, hint types.Object) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if fs == nil {
-		if !hint.IsNull() && !hint.IsUnknown() {
+		if typeutils.IsKnown(hint) {
 			return hint, diags
 		}
 		return types.ObjectNull(fieldSecurityAttrTypes()), diags
@@ -184,7 +185,7 @@ func objectFromFieldSecurityResource(ctx context.Context, fs *map[string][]strin
 // omits allow_restricted_indices (null in the hint entry), state stays null even
 // if Kibana returns false for the unset field.
 func allowRestrictedIndicesFromAPI(apiVal *bool, hint types.Object) types.Bool {
-	if !hint.IsNull() && !hint.IsUnknown() {
+	if typeutils.IsKnown(hint) {
 		if hintBool, ok := hint.Attributes()[attrAllowRestrictedIndices].(types.Bool); ok && hintBool.IsNull() {
 			return types.BoolNull()
 		}

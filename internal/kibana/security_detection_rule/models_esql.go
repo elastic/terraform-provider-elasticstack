@@ -32,13 +32,11 @@ type EsqlRuleProcessor struct {
 
 func newEsqlRuleProcessor() EsqlRuleProcessor {
 	return EsqlRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIEsqlRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIEsqlRule, d *Data) diag.Diagnostics {
-				return d.updateFromEsqlRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIEsqlRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIEsqlRule, d *Data) diag.Diagnostics {
+			return d.updateFromEsqlRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIEsqlRule) string {
+			return v.Id.String()
 		},
 	}
 }

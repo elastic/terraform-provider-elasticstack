@@ -58,46 +58,31 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	return diags
 }
 
-// PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while preserving prior null intent.
+// PopulateFromAPI maps Kibana SLO burn rate embeddable config into Terraform panel state while
+// preserving prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with SloBurnRateConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.SloBurnRateConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable) diag.Diagnostics {
-	// On import (prior == nil) populate from API unconditionally.
-	if prior == nil {
+	if prior == nil || prior.SloBurnRateConfig == nil {
 		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
 		return nil
 	}
 
-	if pm.SloBurnRateConfig == nil && prior.SloBurnRateConfig != nil {
-		pm.SloBurnRateConfig = sloBurnRateConfigFromAPIImport(apiConfig)
-	}
-
-	existing := pm.SloBurnRateConfig
-	if existing == nil {
-		return nil
-	}
-
-	// Block exists in state — update required fields always, optional fields using null-preservation.
-	existing.SloID = types.StringValue(apiConfig.SloId)
-	existing.Duration = types.StringValue(apiConfig.Duration)
-
-	// slo_instance_id null-preservation: if state is null (practitioner omitted it), keep null
-	// regardless of what the API returns — the API echoes "*" for all-instances which has no
-	// meaningful TF representation.
-	existing.SloInstanceID = panelkit.PreserveString(existing.SloInstanceID, apiConfig.SloInstanceId)
-
-	// Optional fields: only update from API when they were already known in state.
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		apiConfig.Title, apiConfig.Description, apiConfig.HideTitle, apiConfig.HideBorder)
-
-	var priorDrilldowns []models.URLDrilldownModel
-	if prior != nil && prior.SloBurnRateConfig != nil {
-		priorDrilldowns = prior.SloBurnRateConfig.Drilldowns
-	}
-	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
-
-	if prior != nil && prior.SloBurnRateConfig != nil {
-		sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
-	}
-
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := sloBurnRateConfigFromAPIImport(apiConfig)
+	existing.Drilldowns = readSloBurnRateDrilldownsFromAPI(apiConfig.Drilldowns, prior.SloBurnRateConfig.Drilldowns)
+	// sloBurnRateConfigFromAPIImport computes slo_instance_id assuming there is no prior value to
+	// consult (creation/import). On an update there is a prior value, so recompute it using that
+	// knowledge instead: this is the only way a practitioner who explicitly set slo_instance_id =
+	// "*" sees it round-trip as "*" rather than be silently nulled.
+	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, true, prior.SloBurnRateConfig.SloInstanceID)
+	sloBurnRatePreserveNullIntentFromPrior(prior.SloBurnRateConfig, existing)
+	pm.SloBurnRateConfig = existing
 	return nil
 }
 
@@ -106,12 +91,7 @@ func sloBurnRateConfigFromAPIImport(apiConfig kbapi.KibanaHTTPAPIsSloBurnRateEmb
 		SloID:    types.StringValue(apiConfig.SloId),
 		Duration: types.StringValue(apiConfig.Duration),
 	}
-	// Normalize "*" (all-instances wildcard) to null, matching create+refresh behaviour.
-	if apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-		cfg.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-	} else {
-		cfg.SloInstanceID = types.StringNull()
-	}
+	cfg.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, false, types.StringNull())
 	cfg.Title = types.StringPointerValue(apiConfig.Title)
 	cfg.Description = types.StringPointerValue(apiConfig.Description)
 	cfg.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
@@ -124,7 +104,7 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	if prior == nil || existing == nil {
 		return
 	}
-	panelkit.NullPreserveStringFromPrior(prior.SloInstanceID, &existing.SloInstanceID)
+	// SloInstanceID's null intent is already applied by panelkit.PreserveSloInstanceID above.
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	if len(prior.Drilldowns) == 0 {
@@ -132,28 +112,26 @@ func sloBurnRatePreserveNullIntentFromPrior(prior, existing *models.SloBurnRateC
 	}
 }
 
+type sloBurnRateAPIDrilldown = struct {
+	EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                     `json:"label"`
+	OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                     `json:"url"` //nolint:revive
+}
+
 func readSloBurnRateDrilldownsFromAPI(
-	apiDrilldowns *[]struct {
-		EncodeUrl    *bool                                                      `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                     `json:"label"`
-		OpenInNewTab *bool                                                      `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsSloBurnRateEmbeddableDrilldownsType    `json:"type"`
-		Url          string                                                     `json:"url"` //nolint:revive
-	},
+	apiDrilldowns *[]sloBurnRateAPIDrilldown,
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
-	if apiDrilldowns == nil || len(*apiDrilldowns) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*apiDrilldowns))
-	for i, d := range *apiDrilldowns {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloBurnRateAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }

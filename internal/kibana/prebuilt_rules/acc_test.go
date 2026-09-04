@@ -37,25 +37,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var minVersionPrebuiltRules = version.Must(version.NewVersion("8.0.0"))
+var (
+	minVersionPrebuiltRules = version.Must(version.NewVersion("8.0.0"))
+	// 9.5.0 install-all in a new custom space 400s on a deprecated rule stub (elastic/kibana#285497).
+	prebuiltRulesInSpaceConstraints = version.MustConstraints(version.NewConstraint("!= 9.5.0"))
+)
 
 func TestAccResourcePrebuiltRules(t *testing.T) {
 	testCases := []struct {
-		name    string
-		spaceID string
+		name        string
+		spaceID     string
+		constraints version.Constraints
 	}{
 		{
 			name:    "default",
 			spaceID: "default",
 		},
 		{
-			name:    "in_space",
-			spaceID: "security_rules" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum),
+			name:        "in_space",
+			spaceID:     "security_rules" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum),
+			constraints: prebuiltRulesInSpaceConstraints,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if len(tc.constraints) > 0 {
+				versionutils.SkipIfUnsupportedConstraints(t, tc.constraints, versionutils.FlavorAny)
+			}
 			testAccResourcePrebuiltRules(t, tc.spaceID)
 		})
 	}

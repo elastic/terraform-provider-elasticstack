@@ -7,4 +7,7 @@ data "elasticstack_elasticsearch_ingest_processor_remove" "test" {
     "host.name",
     "user.name",
   ]
+  description = "Remove sensitive host and user fields"
+  if          = "ctx.host?.name != null"
+  tag         = "remove-sensitive-fields"
 }

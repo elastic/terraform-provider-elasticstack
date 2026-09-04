@@ -235,14 +235,6 @@ func newUpdateKafkaConnectionType(value string) (*kbapi.KibanaHTTPAPIsUpdateOutp
 	return &connectionType, nil
 }
 
-func kafkaStringValue(value types.String) *string {
-	if !typeutils.IsKnown(value) {
-		return nil
-	}
-
-	return value.ValueStringPointer()
-}
-
 // kafkaComputedFields holds the computed field values shared between create and update.
 type kafkaComputedFields struct {
 	brokerTimeout    *float32
@@ -367,7 +359,7 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 
 	var err error
 	var connectionType *kbapi.KibanaHTTPAPIsNewOutputKafkaConnectionType
-	if connectionTypeValue := kafkaStringValue(kafkaModel.ConnectionType); connectionTypeValue != nil {
+	if connectionTypeValue := typeutils.ValueStringPointer(kafkaModel.ConnectionType); connectionTypeValue != nil {
 		connectionType, err = newCreateKafkaConnectionType(*connectionTypeValue)
 		if err != nil {
 			diags.AddError(err.Error(), "")
@@ -414,8 +406,8 @@ func (model outputModel) toAPICreateKafkaModel(ctx context.Context) (kbapi.NewOu
 		RequiredAcks:         requiredAcks,
 		Timeout:              fields.timeout,
 		Version:              kafkaModel.Version.ValueStringPointer(),
-		Username:             kafkaStringValue(kafkaModel.Username),
-		Password:             kafkaStringValue(kafkaModel.Password),
+		Username:             typeutils.ValueStringPointer(kafkaModel.Username),
+		Password:             typeutils.ValueStringPointer(kafkaModel.Password),
 		Key:                  kafkaModel.Key.ValueStringPointer(),
 		Headers:              fields.headers,
 		Hash:                 fields.hash,
@@ -453,7 +445,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 
 	var err error
 	var connectionType *kbapi.KibanaHTTPAPIsUpdateOutputKafkaConnectionType
-	if connectionTypeValue := kafkaStringValue(kafkaModel.ConnectionType); connectionTypeValue != nil {
+	if connectionTypeValue := typeutils.ValueStringPointer(kafkaModel.ConnectionType); connectionTypeValue != nil {
 		connectionType, err = newUpdateKafkaConnectionType(*connectionTypeValue)
 		if err != nil {
 			diags.AddError(err.Error(), "")
@@ -500,8 +492,8 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 		RequiredAcks:         requiredAcks,
 		Timeout:              fields.timeout,
 		Version:              kafkaModel.Version.ValueStringPointer(),
-		Username:             kafkaStringValue(kafkaModel.Username),
-		Password:             kafkaStringValue(kafkaModel.Password),
+		Username:             typeutils.ValueStringPointer(kafkaModel.Username),
+		Password:             typeutils.ValueStringPointer(kafkaModel.Password),
 		Key:                  kafkaModel.Key.ValueStringPointer(),
 		Headers:              fields.headers,
 		Hash:                 fields.hash,
@@ -552,11 +544,11 @@ func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.Kib
 	}
 
 	// Kafka-specific fields - initialize kafka nested object
-	kafkaModel := outputKafkaModel{}
-	kafkaModel.AuthType = types.StringValue(string(data.AuthType))
-	kafkaModel.BrokerTimeout = types.Float32PointerValue(data.BrokerTimeout)
-	kafkaModel.ClientID = types.StringPointerValue(data.ClientId)
-	kafkaModel.Compression = types.StringPointerValue((*string)(data.Compression))
+	kafkaModel := outputKafkaModel{
+		AuthType:      types.StringValue(string(data.AuthType)),
+		BrokerTimeout: types.Float32PointerValue(data.BrokerTimeout),
+		ClientID:      types.StringPointerValue(data.ClientId),
+		Compression:   types.StringPointerValue((*string)(data.Compression))}
 	// Handle CompressionLevel
 	if compressionLevel := readOutputKafkaCompressionLevel(data.CompressionLevel); compressionLevel != nil {
 		kafkaModel.CompressionLevel = types.Int64Value(*compressionLevel)

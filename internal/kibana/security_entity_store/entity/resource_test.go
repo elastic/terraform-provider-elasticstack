@@ -18,10 +18,16 @@
 package entity
 
 import (
+	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCompositeIDForEntity(t *testing.T) {
@@ -61,40 +67,91 @@ func TestCompositeIDForEntity(t *testing.T) {
 	}
 }
 
-func TestNormalizeSpaceID(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  string
-		isNull bool
-		want   string
-	}{
-		{
-			name:  "default space from empty",
-			input: "",
-			want:  "default",
-		},
-		{
-			name:  "custom space preserved",
-			input: "production",
-			want:  "production",
-		},
-		{
-			name:   "null returns default",
-			isNull: true,
-			want:   "default",
-		},
-	}
+func TestResource_importState_seedsCompositeIdentity(t *testing.T) {
+	t.Parallel()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var v = types.StringValue(tt.input)
-			if tt.isNull {
-				v = types.StringNull()
-			}
-			got := NormalizeSpaceID(v)
-			if got != tt.want {
-				t.Errorf("NormalizeSpaceID(%v) = %q, want %q", tt.input, got, tt.want)
-			}
-		})
-	}
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	const importID = "production/host:web-01"
+	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID, entityID, entityType types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_type"), &entityType)...)
+	require.False(t, resp.Diagnostics.HasError())
+
+	assert.Equal(t, importID, id.ValueString())
+	assert.Equal(t, "production", spaceID.ValueString())
+	assert.Equal(t, "host:web-01", entityID.ValueString())
+	assert.Equal(t, "host", entityType.ValueString())
+}
+
+func TestResource_importState_defaultsEmptySpaceSegment(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "/host:web-02"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID, entityID, entityType types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_type"), &entityType)...)
+	require.False(t, resp.Diagnostics.HasError())
+
+	assert.Equal(t, clients.DefaultSpaceID+"/host:web-02", id.ValueString())
+	assert.Equal(t, clients.DefaultSpaceID, spaceID.ValueString())
+	assert.Equal(t, "host:web-02", entityID.ValueString())
+	assert.Equal(t, "host", entityType.ValueString())
+}
+
+func TestResource_importState_rejectsMissingEntityTypePrefix(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "production/web-01"}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	assert.Equal(t, "Invalid import ID", resp.Diagnostics.Errors()[0].Summary())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "type prefix")
+
+	var entityID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("entity_id"), &entityID)...)
+	assert.True(t, entityID.IsNull() || entityID.ValueString() == "")
+}
+
+func TestResource_importState_rejectsMissingSlash(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "host-web-01"}, resp)
+	require.True(t, resp.Diagnostics.HasError())
+	assert.Equal(t, "Invalid import ID", resp.Diagnostics.Errors()[0].Summary())
+	assert.Contains(t, resp.Diagnostics.Errors()[0].Detail(), "<space_id>/<entity_id>")
 }

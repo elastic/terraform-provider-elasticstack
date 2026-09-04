@@ -19,12 +19,10 @@ package ilm
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
-	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,7 +31,7 @@ import (
 func policyFromModel(ctx context.Context, m *tfModel, settingsSupport map[string]bool) (*models.Policy, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	meta := ""
-	if !m.Metadata.IsNull() && !m.Metadata.IsUnknown() {
+	if typeutils.IsKnown(m.Metadata) {
 		meta = m.Metadata.ValueString()
 	}
 	phases := make(map[string]map[string]any)
@@ -51,68 +49,26 @@ func policyFromModel(ctx context.Context, m *tfModel, settingsSupport map[string
 	return expandIlmPolicy(m.Name.ValueString(), meta, phases, settingsSupport)
 }
 
-func readPolicyIntoModel(ctx context.Context, ilmDef *estypes.Lifecycle, prior *tfModel, policyName string) (*tfModel, diag.Diagnostics) {
+func readPolicyIntoModel(ctx context.Context, ilmDef *elasticsearch.IlmPolicy, prior *tfModel, policyName string) (*tfModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	out := &tfModel{
-		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{
-			ElasticsearchConnection: prior.ElasticsearchConnection,
-		},
-		ID:           prior.ID,
-		Name:         types.StringValue(policyName),
-		ForceDestroy: prior.ForceDestroy,
-		ModifiedDate: types.StringValue(fmt.Sprint(ilmDef.ModifiedDate)),
+		ElasticsearchConnection: prior.ElasticsearchConnection,
+		ID:                      prior.ID,
+		Name:                    types.StringValue(policyName),
+		ForceDestroy:            prior.ForceDestroy,
+		ModifiedDate:            types.StringValue(ilmDef.ModifiedDate),
 	}
 
-	if ilmDef.Policy.Meta_ != nil {
-		b, err := json.Marshal(ilmDef.Policy.Meta_)
-		if err != nil {
-			diags.AddError("Failed to marshal metadata", err.Error())
-			return nil, diags
-		}
-		out.Metadata = jsontypes.NewNormalizedValue(string(b))
+	if len(ilmDef.Metadata) > 0 && string(ilmDef.Metadata) != "null" {
+		out.Metadata = jsontypes.NewNormalizedValue(string(ilmDef.Metadata))
 	} else {
 		out.Metadata = prior.Metadata
 	}
 
 	for _, ph := range supportedIlmPhases {
-		var phase *estypes.Phase
-		switch ph {
-		case ilmPhaseHot:
-			phase = ilmDef.Policy.Phases.Hot
-		case ilmPhaseWarm:
-			phase = ilmDef.Policy.Phases.Warm
-		case ilmPhaseCold:
-			phase = ilmDef.Policy.Phases.Cold
-		case ilmPhaseFrozen:
-			phase = ilmDef.Policy.Phases.Frozen
-		case ilmPhaseDelete:
-			phase = ilmDef.Policy.Phases.Delete
-		}
-
-		if phase != nil {
-			var minAgeStr string
-			if phase.MinAge != nil {
-				if s, ok := phase.MinAge.(string); ok {
-					minAgeStr = s
-				} else {
-					minAgeStr = fmt.Sprint(phase.MinAge)
-				}
-			}
-
-			var actions map[string]map[string]any
-			if phase.Actions != nil {
-				b, err := json.Marshal(phase.Actions)
-				if err != nil {
-					diags.AddError("Failed to marshal phase actions", err.Error())
-					return nil, diags
-				}
-				if err := json.Unmarshal(b, &actions); err != nil {
-					diags.AddError("Failed to unmarshal phase actions", err.Error())
-					return nil, diags
-				}
-			}
-
-			obj, d := flattenPhase(ctx, ph, minAgeStr, actions, prior.phaseObject(ph))
+		phase, ok := ilmDef.Phases[ph]
+		if ok {
+			obj, d := flattenPhase(ctx, ph, phase.MinAge, phase.Actions, prior.phaseObject(ph))
 			diags.Append(d...)
 			if diags.HasError() {
 				return nil, diags

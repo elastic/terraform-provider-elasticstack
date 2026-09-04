@@ -18,13 +18,9 @@
 package security_entity_store_entity_link
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -36,6 +32,7 @@ var (
 
 type EntityLinkResource struct {
 	*entitycore.KibanaResource[entityLinkModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 // NewEntityLinkResource returns the resource.Resource for use in provider registration.
@@ -52,19 +49,6 @@ func NewEntityLinkResource() resource.Resource {
 				Update: updateEntityLink,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(path.Root(attrID), path.Root(attrSpaceID), path.Root(attrTargetID)),
 	}
-}
-
-// ImportState handles space-aware composite import IDs in the format
-// `<space_id>/<target_id>`.
-func (r *EntityLinkResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrSpaceID), composite.ClusterID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrTargetID), composite.ResourceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrID), types.StringValue(req.ID))...)
 }

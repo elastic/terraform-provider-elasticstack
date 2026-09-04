@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -227,7 +228,7 @@ func clonePanelStaleScalarLeaf(baseline *models.PanelModel, block string, leaf [
 		return p
 	case schema.BoolAttribute:
 		if b, ok := attrFromReflectLeaf(bl); ok {
-			if bv, ok := b.(types.Bool); ok && typeKnownBoolLike(bv) {
+			if bv, ok := b.(types.Bool); ok && typeutils.IsKnown(bv) {
 				setStructLeaf(p, block, leaf, invertBoolTf(bv))
 				return p
 			}
@@ -246,10 +247,6 @@ func clonePanelStaleScalarLeaf(baseline *models.PanelModel, block string, leaf [
 	default:
 		return nil
 	}
-}
-
-func typeKnownBoolLike(b types.Bool) bool {
-	return !b.IsUnknown() && !b.IsNull()
 }
 
 func invertBoolTf(b types.Bool) types.Bool {

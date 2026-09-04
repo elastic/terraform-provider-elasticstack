@@ -68,6 +68,14 @@ func TestAccDataSourceIngestProcessorJoin(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_join.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "field", "updated_array_field"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "separator", "|"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "target_field", "updated_joined_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "description", "Join updated array values into a single field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "if", "ctx.updated_tags != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "ignore_failure", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "on_failure.0", `{"set":{"field":"error.code","value":"join_failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "on_failure.1", `{"append":{"field":"error.messages","value":"join failed again"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_join.test", "tag", "join-updated-tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_join.test", "json", expectedJSONJoinUpdated),
 				),
 			},
@@ -105,8 +113,26 @@ const expectedJSONJoinAllAttributes = `{
 
 const expectedJSONJoinUpdated = `{
 	"join": {
+		"description": "Join updated array values into a single field",
 		"field": "updated_array_field",
+		"if": "ctx.updated_tags != null",
 		"ignore_failure": false,
-		"separator": "|"
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.code",
+					"value": "join_failed"
+				}
+			},
+			{
+				"append": {
+					"field": "error.messages",
+					"value": "join failed again"
+				}
+			}
+		],
+		"separator": "|",
+		"tag": "join-updated-tag",
+		"target_field": "updated_joined_field"
 	}
 }`

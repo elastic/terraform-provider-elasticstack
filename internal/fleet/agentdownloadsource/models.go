@@ -24,6 +24,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -48,19 +50,7 @@ func (m model) GetResourceID() types.String     { return m.SourceID }
 func (m model) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 func (m model) GetSpaceID() types.String {
-	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue(clients.DefaultSpaceID)
-	}
-	for _, elem := range m.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue(clients.DefaultSpaceID)
+	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, clients.DefaultSpaceID)
 }
 
 func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
@@ -81,7 +71,7 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 	}
 
 	// The API allows setting a custom id only at creation time.
-	if !m.SourceID.IsNull() && !m.SourceID.IsUnknown() && m.SourceID.ValueString() != "" {
+	if typeutils.IsKnown(m.SourceID) && m.SourceID.ValueString() != "" {
 		id := m.SourceID.ValueString()
 		body.Id = &id
 	}

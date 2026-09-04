@@ -252,7 +252,7 @@ func yAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
 }
 
 func yAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -295,16 +295,18 @@ func yAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
 		lenscommon.AxisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
-	domainJSON, err := json.Marshal(apiAxis.Domain)
-	if err == nil {
-		m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+	if apiAxis.Domain != nil {
+		domainJSON, err := json.Marshal(apiAxis.Domain)
+		if err == nil {
+			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+		}
 	}
 
 	return diags
 }
 
 func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -326,7 +328,7 @@ func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 
 	var diags diag.Diagnostics
 	yAxis := &struct {
-		Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain"`
+		Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
 		Grid   *struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
@@ -367,15 +369,19 @@ func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
 		yAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
-		domainDiags := m.DomainJSON.Unmarshal(&yAxis.Domain)
+		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain
+		domainDiags := m.DomainJSON.Unmarshal(&domain)
 		diags.Append(domainDiags...)
+		if !domainDiags.HasError() {
+			yAxis.Domain = &domain
+		}
 	}
 
 	return yAxis, diags
 }
 
 func yAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -418,16 +424,18 @@ func yAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
 		lenscommon.AxisTitleFromAPI(m.Title, apiAxis.Title)
 	}
 
-	domainJSON, err := json.Marshal(apiAxis.Domain)
-	if err == nil {
-		m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+	if apiAxis.Domain != nil {
+		domainJSON, err := json.Marshal(apiAxis.Domain)
+		if err == nil {
+			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+		}
 	}
 
 	return diags
 }
 
 func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
-	Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
+	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
 	Grid   *struct {
 		Visible bool `json:"visible"`
 	} `json:"grid,omitempty"`
@@ -449,7 +457,7 @@ func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 
 	var diags diag.Diagnostics
 	yAxis := &struct {
-		Domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain"`
+		Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
 		Grid   *struct {
 			Visible bool `json:"visible"`
 		} `json:"grid,omitempty"`
@@ -490,8 +498,12 @@ func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
 		yAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
-		domainDiags := m.DomainJSON.Unmarshal(&yAxis.Domain)
+		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain
+		domainDiags := m.DomainJSON.Unmarshal(&domain)
 		diags.Append(domainDiags...)
+		if !domainDiags.HasError() {
+			yAxis.Domain = &domain
+		}
 	}
 
 	return yAxis, diags
@@ -717,8 +729,8 @@ func xyLegendFromAPI(ctx context.Context, m *models.XYLegendModel, apiLegend *kb
 		legendOutsideVertical.Placement != nil &&
 		*legendOutsideVertical.Placement == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPlacementOutside &&
 		(legendOutsideVertical.Position == nil ||
-			*legendOutsideVertical.Position == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPositionLeft ||
-			*legendOutsideVertical.Position == kbapi.KibanaHTTPAPIsXyLegendOutsideVerticalPositionRight) &&
+			*legendOutsideVertical.Position == kbapi.Left ||
+			*legendOutsideVertical.Position == kbapi.Right) &&
 		legendOutsideVertical.Size != nil {
 		m.Inside = types.BoolValue(false)
 		m.Visibility = typeutils.StringishPointerValue(legendOutsideVertical.Visibility)

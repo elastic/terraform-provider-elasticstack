@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { normalizeCompiledLock } from "./compiled-lock.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,7 +23,7 @@ function workflowSource() {
 }
 
 function lockSource() {
-	return readFileSync(lockPath, "utf8");
+	return normalizeCompiledLock(readFileSync(lockPath, "utf8"));
 }
 
 test("semantic-function-refactor workflow references the upstream baseline and deterministic issue-slot gate", () => {
@@ -124,9 +125,12 @@ test("workflow configures Serena MCP server for semantic Go analysis", () => {
 	assert.match(lock, /"serena":\s*\{/);
 	assert.match(
 		lock,
-		/"container":\s*"ghcr\.io\/github\/serena-mcp-server:latest"/,
+		/"container":\s*"ghcr\.io\/oraios\/serena:latest"/,
 	);
-	assert.match(lock, /"entrypoint":\s*"serena"/);
+	assert.match(
+		lock,
+		/"entrypoint":\s*"\/workspaces\/serena\/\.venv\/bin\/serena"/,
+	);
 });
 
 test("compiled lock includes Serena tools in agent allowed-tools", () => {
@@ -167,6 +171,7 @@ test("workflow includes dispatch instruction and compiled lock contains dispatch
 	assert.match(source, /^\s+-\s+shared\/dispatch-code-factory\.md/m);
 	assert.match(source, /dispatch_code_factory/);
 	assert.match(source, /Dispatch/);
+	assert.match(source, /dispatch: true/);
 	assert.doesNotMatch(
 		source,
 		/safe-outputs:[\s\S]*?jobs:[\s\S]*?dispatch-code-factory:/,
@@ -174,9 +179,13 @@ test("workflow includes dispatch instruction and compiled lock contains dispatch
 	assert.match(lock, /dispatch_code_factory/);
 	assert.match(
 		lock,
-		/"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/,
+		/"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue","inputs":\{"dispatch":\{"default":null,"description":"Confirm dispatch of code-factory for issues created in this run","required":true,"type":"boolean"\}\}\}/,
 	);
 	assert.match(lock, /"dispatch_code_factory"/);
+	assert.match(
+		lock,
+		/"required": \[\s*"dispatch"\s*\][\s\S]*"name": "dispatch_code_factory"/,
+	);
 	assert.match(lock, /SOURCE_WORKFLOW=\$\(echo "\$GITHUB_WORKFLOW_NAME"/);
 	assert.doesNotMatch(
 		lock,

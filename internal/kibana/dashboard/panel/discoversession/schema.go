@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -130,7 +131,7 @@ func (discoverSessionConfigModeValidator) ValidateObject(_ context.Context, req 
 	byValue := attrs["by_value"]
 	byRef := attrs["by_reference"]
 	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
+		return av != nil && typeutils.IsKnown(av)
 	}
 	byValueSet := valueSet(byValue)
 	byRefSet := valueSet(byRef)
@@ -167,7 +168,7 @@ func (discoverSessionTabModeValidator) ValidateObject(_ context.Context, req val
 	dsl := attrs["dsl"]
 	esql := attrs["esql"]
 	valueSet := func(av attr.Value) bool {
-		return av != nil && !av.IsNull() && !av.IsUnknown()
+		return av != nil && typeutils.IsKnown(av)
 	}
 	dslSet := valueSet(dsl)
 	esqlSet := valueSet(esql)

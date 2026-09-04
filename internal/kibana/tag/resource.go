@@ -19,6 +19,7 @@ package tag
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
@@ -30,6 +31,7 @@ var (
 
 type Resource struct {
 	*entitycore.KibanaResource[tagModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -45,6 +47,7 @@ func newResource() *Resource {
 				Update: updateTag,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(path.Root("id"), path.Root(attrSpaceID), path.Root(attrTagID)),
 	}
 }
 

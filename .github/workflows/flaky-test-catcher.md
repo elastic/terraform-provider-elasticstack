@@ -165,4 +165,4 @@ Call `noop` with a concise explanation when:
 
 ## Dispatch
 
-After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once with `dispatch: true` to dispatch the `code-factory` workflow for each created issue.

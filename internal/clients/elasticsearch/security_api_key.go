@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/createcrossclusterapikey"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/security/getapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/invalidateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updateapikey"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/security/updatecrossclusterapikey"
@@ -68,41 +69,28 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 // non-existent rather than erroring. When false (the default), the lookup is
 // not scoped by owner at all.
 func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, restrictToOwned bool) (*types.ApiKey, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
-	req := typedClient.Security.GetApiKey().Id(id)
-	if restrictToOwned {
-		req = req.Owner(true)
-	}
-
-	res, err := req.Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, diags
+	res, diags := CallOrNotFound(func() (*getapikey.Response, error) {
+		req := typedClient.Security.GetApiKey().Id(id)
+		if restrictToOwned {
+			req = req.Owner(true)
 		}
-		diags.AddError("Unable to get an apikey", err.Error())
+		return req.Do(ctx)
+	}, "Unable to get an apikey")
+	if diags.HasError() || res == nil {
 		return nil, diags
 	}
 
 	if len(res.ApiKeys) == 0 {
-		// Not found, or (when owner is true) found but not owned by the
-		// current authenticated user. Both cases are treated as "does not
-		// exist" so the resource disappears from state instead of erroring.
+		// Not found, or (when restrictToOwned is true) found but not owned
+		// by the current authenticated user. Both cases are treated as
+		// "does not exist" so the resource disappears from state instead of
+		// erroring.
 		return nil, diags
 	}
 
-	if len(res.ApiKeys) != 1 {
-		diags.AddError(
-			"Unable to find an apikey in the cluster",
-			fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
-		)
-		return nil, diags
-	}
-
-	apiKey := res.ApiKeys[0]
-	return &apiKey, diags
+	return SingleOrNotFoundDiag(res.ApiKeys, id, "apikey")
 }
 
 // DeleteAPIKey invalidates the API key identified by id.
@@ -125,30 +113,26 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 // ever invalidated if it is owned by the calling user, so a key owned by
 // someone else is never touched.
 func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, restrictToOwned bool) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	invalidated, err := invalidateAPIKey(ctx, apiClient, id, true)
 	if err != nil && IsNotFoundElasticsearchError(err) {
-		return diags
+		return nil
 	}
 	if err == nil && invalidated {
-		return diags
+		return nil
 	}
 
 	if restrictToOwned {
 		if err != nil {
-			diags.AddError("Unable to delete an apikey", err.Error())
-			return diags
+			return DeleteWithNotFoundAsSuccess(err, "Unable to delete an apikey")
 		}
-		diags.AddError(
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
 			"Unable to delete an apikey",
 			fmt.Sprintf(
 				`Elasticsearch did not report "%s" as invalidated when scoped to the current authenticated user (owner=true). `+
 					`It may be owned by a different user; set "restrict_to_owned" to false to allow deleting keys owned by other users (requires the "manage_api_key" cluster privilege).`,
 				id,
 			),
-		)
-		return diags
+		)}
 	}
 
 	// Fall back to an unscoped invalidate request. This requires the
@@ -156,24 +140,20 @@ func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	// owns the key.
 	invalidated, err = invalidateAPIKey(ctx, apiClient, id, false)
 	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete an apikey", err.Error())
-		return diags
+		return DeleteWithNotFoundAsSuccess(err, "Unable to delete an apikey")
 	}
 
 	if !invalidated {
-		diags.AddError(
+		return fwdiag.Diagnostics{fwdiag.NewErrorDiagnostic(
 			"Unable to delete an apikey",
 			fmt.Sprintf(
 				`Elasticsearch did not report "%s" as invalidated in the invalidate API key response (invalidated_api_keys/previously_invalidated_api_keys).`,
 				id,
 			),
-		)
+		)}
 	}
 
-	return diags
+	return nil
 }
 
 // invalidateAPIKey issues a single Invalidate API Key request for id with the

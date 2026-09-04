@@ -24,19 +24,7 @@ func populatePieLensAttributes(attrs map[string]any) map[string]any {
 	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
 	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		for i, m := range metrics {
-			if metricMap, ok := m.(map[string]any); ok {
-				metrics[i] = lenscommon.PopulatePieChartMetricDefaults(metricMap)
-			}
-		}
-	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		for i, g := range groupBy {
-			if groupMap, ok := g.(map[string]any); ok {
-				groupBy[i] = lenscommon.PopulateLensGroupByDefaults(groupMap)
-			}
-		}
-	}
+	lenscommon.PopulateMapSliceDefaults(attrs, "metrics", lenscommon.PopulatePieChartMetricDefaults)
+	lenscommon.PopulateMapSliceDefaults(attrs, "group_by", lenscommon.PopulateLensGroupByDefaults)
 	return attrs
 }

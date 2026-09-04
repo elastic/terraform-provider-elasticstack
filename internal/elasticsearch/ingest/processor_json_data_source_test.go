@@ -35,6 +35,14 @@ func TestAccDataSourceIngestProcessorJSON(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_json.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "field", "string_source"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "target_field", "json_target"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root_conflict_strategy"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "allow_duplicate_keys"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "tag"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.#"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSON),
 				),
 			},
@@ -47,7 +55,20 @@ func TestAccDataSourceIngestProcessorJSON(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root_conflict_strategy", "merge"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "allow_duplicate_keys"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSONAddToRoot),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("add_to_root_replace"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_json.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "field", "json_payload"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root_conflict_strategy", "replace"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "target_field"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSONAddToRootReplace),
 				),
 			},
 			{
@@ -63,7 +84,22 @@ func TestAccDataSourceIngestProcessorJSON(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.#", "1"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.0", `{"set":{"field":"error.message","value":"json processor failed"}}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "tag", "json-tag"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "add_to_root_conflict_strategy"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSONAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure_multiple"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_json.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "field", "document.json"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.0", `{"set":{"field":"error.message","value":"json processor failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.1", `{"set":{"field":"error.tag","value":"json-parse-error"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSONOnFailureMultiple),
 				),
 			},
 			{
@@ -73,6 +109,11 @@ func TestAccDataSourceIngestProcessorJSON(t *testing.T) {
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_json.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "field", "updated_string_source"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "target_field", "updated_json_target"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "description", "Parse updated document JSON"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "if", "ctx.updated_document?.json != null"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "tag", "updated-json-tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.#", "1"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "on_failure.0", `{"set":{"field":"error.message","value":"updated json processor failed"}}`),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_json.test", "json", expectedJSONJSONUpdatedValues),
 				),
 			},
@@ -97,6 +138,15 @@ const expectedJSONJSONAddToRoot = `{
 	}
 }`
 
+const expectedJSONJSONAddToRootReplace = `{
+	"json": {
+		"add_to_root": true,
+		"add_to_root_conflict_strategy": "replace",
+		"field": "json_payload",
+		"ignore_failure": false
+	}
+}`
+
 const expectedJSONJSONAllAttributes = `{
 	"json": {
 		"allow_duplicate_keys": true,
@@ -116,10 +166,42 @@ const expectedJSONJSONAllAttributes = `{
 	}
 }`
 
+const expectedJSONJSONOnFailureMultiple = `{
+	"json": {
+		"field": "document.json",
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "json processor failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.tag",
+					"value": "json-parse-error"
+				}
+			}
+		]
+	}
+}`
+
 const expectedJSONJSONUpdatedValues = `{
 	"json": {
+		"description": "Parse updated document JSON",
 		"field": "updated_string_source",
+		"if": "ctx.updated_document?.json != null",
 		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "updated json processor failed"
+				}
+			}
+		],
+		"tag": "updated-json-tag",
 		"target_field": "updated_json_target"
 	}
 }`

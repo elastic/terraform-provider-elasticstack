@@ -54,53 +54,16 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.Field) {
 		body.Field = m.Field.ValueString()
 	}
-	if typeutils.IsKnown(m.TargetFields) {
-		elems := make([]string, 0, len(m.TargetFields.Elements()))
-		for _, elem := range m.TargetFields.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid target_fields element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown target_fields element", "target_fields elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.TargetFields = elems
-	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(false)
-		body.IgnoreMissing = false
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
-	if m.Separator.IsNull() || m.Separator.IsUnknown() {
-		m.Separator = types.StringValue(",")
-		body.Separator = ","
-	} else {
-		body.Separator = m.Separator.ValueString()
-	}
-	if m.Quote.IsNull() || m.Quote.IsUnknown() {
-		m.Quote = types.StringValue("\"")
-		body.Quote = "\""
-	} else {
-		body.Quote = m.Quote.ValueString()
-	}
-	if m.Trim.IsNull() || m.Trim.IsUnknown() {
-		m.Trim = types.BoolValue(false)
-		body.Trim = false
-	} else {
-		body.Trim = m.Trim.ValueBool()
-	}
+	body.TargetFields = typeutils.StringElements(m.TargetFields, &diags)
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
+	body.Separator = typeutils.StringDefault(&m.Separator, ",")
+	body.Quote = typeutils.StringDefault(&m.Quote, "\"")
+	body.Trim = typeutils.BoolDefault(&m.Trim, false)
 	if typeutils.IsKnown(m.EmptyValue) {
 		body.EmptyValue = m.EmptyValue.ValueString()
 	}
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -108,14 +71,6 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorCSVDataSource returns a PF data source for the csv processor.
 func NewProcessorCSVDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to extract data from.",
 			Required:    true,

@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -98,7 +99,7 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 			config.CACerts = cas
 		}
 
-		if !kibConfig.Insecure.IsNull() && !kibConfig.Insecure.IsUnknown() {
+		if typeutils.IsKnown(kibConfig.Insecure) {
 			config.Insecure = kibConfig.Insecure.ValueBool()
 		}
 	}
@@ -144,7 +145,7 @@ func (k kibanaOapiConfig) withFleetBlockFallback(ctx context.Context, cfg Provid
 	}
 
 	kibanaInsecureUnset := len(cfg.Kibana) == 0 || cfg.Kibana[0].Insecure.IsNull() || cfg.Kibana[0].Insecure.IsUnknown()
-	if kibanaInsecureUnset && !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
+	if kibanaInsecureUnset && typeutils.IsKnown(fleetCfg.Insecure) {
 		k.Insecure = fleetCfg.Insecure.ValueBool()
 	}
 

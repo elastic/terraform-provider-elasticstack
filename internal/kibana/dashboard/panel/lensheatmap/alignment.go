@@ -29,9 +29,7 @@ func alignHeatmapStateFromPlan(ctx context.Context, plan, state *models.HeatmapC
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	alignHeatmapAxisStateFromPlan(plan.Axis, state.Axis)
 	alignHeatmapStylingStateFromPlan(plan.Styling, state.Styling)
 	alignHeatmapLegendStateFromPlan(plan.Legend, &state.Legend)
@@ -77,7 +75,7 @@ func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **mo
 		return
 	}
 	if *state == nil || heatmapLegendEffectivelyUnset(*state) {
-		*state = cloneHeatmapLegendModel(plan)
+		*state = lenscommon.CloneModel(plan)
 		return
 	}
 	// Kibana renders the legend by default; preserve the null plan when the
@@ -93,12 +91,4 @@ func heatmapLegendEffectivelyUnset(m *models.HeatmapLegendModel) bool {
 		return true
 	}
 	return !typeutils.IsKnown(m.Visibility) && !typeutils.IsKnown(m.Size) && !typeutils.IsKnown(m.TruncateAfterLines)
-}
-
-func cloneHeatmapLegendModel(model *models.HeatmapLegendModel) *models.HeatmapLegendModel {
-	if model == nil {
-		return nil
-	}
-	cloned := *model
-	return &cloned
 }

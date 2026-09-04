@@ -5,12 +5,17 @@ TBD - created by archiving change dispatch-code-factory-shared-fragment. Update 
 ## Requirements
 ### Requirement: Shared fragment defines the canonical dispatch-code-factory job
 
-The shared fragment SHALL define a `safe-outputs.jobs.dispatch-code-factory` entry that downloads the safe-outputs temporary-ID artifact and dispatches `code-factory-issue.lock.yml` once for each issue created in the current workflow run.
+The shared fragment SHALL define a `safe-outputs.jobs.dispatch-code-factory` entry with a required boolean `dispatch` input. The job SHALL download the safe-outputs temporary-ID artifact and dispatch `code-factory-issue.lock.yml` once for each issue created in the current workflow run.
 
 #### Scenario: Consumer workflow inherits dispatch job via import
 
 - **WHEN** a workflow source file declares `imports: [shared/dispatch-code-factory.md]`
-- **THEN** the compiled lock SHALL contain a `dispatch-code-factory` job that reads the safe-outputs artifact and dispatches `code-factory-issue.lock.yml` for each created issue
+- **THEN** the compiled lock SHALL expose `dispatch_code_factory` with a required boolean `dispatch` input and contain a job that reads the safe-outputs artifact and dispatches `code-factory-issue.lock.yml` for each created issue
+
+#### Scenario: Consumer requests dispatch
+
+- **WHEN** a producer workflow completes issue creation
+- **THEN** its agent instructions SHALL require one `dispatch_code_factory` call with `dispatch: true`
 
 #### Scenario: Shared fragment replaces inline copies
 
