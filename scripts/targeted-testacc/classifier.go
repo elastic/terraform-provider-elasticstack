@@ -20,6 +20,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -176,10 +177,8 @@ func matchesForceAll(file string) bool {
 			return true
 		}
 	}
-	for _, exact := range forceAllFiles {
-		if file == exact {
-			return true
-		}
+	if slices.Contains(forceAllFiles, file) {
+		return true
 	}
 	return isForceAllDockerComposeFile(file)
 }
