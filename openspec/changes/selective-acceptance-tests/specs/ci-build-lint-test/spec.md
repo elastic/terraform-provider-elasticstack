@@ -140,3 +140,18 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 
 - **GIVEN** the matrix version list
 - **THEN** no version below `8.0.0` SHALL appear in the default matrix entries
+
+#### Scenario: Provider change runs stack and tests
+
+- **GIVEN** a matrix version and runner
+- **AND** the change-classification job reports `provider_changes=true`
+- **WHEN** the test job executes
+- **THEN** the stack SHALL be provisioned, readiness waits SHALL pass, and `make testacc` SHALL run with the documented policy for snapshots
+
+#### Scenario: Fleet bootstrap runs uniformly for every matrix entry
+
+- **GIVEN** any configured matrix version, including one that is not part of any explicit per-version allowlist
+- **WHEN** the test job starts the stack via `make docker-fleet`
+- **THEN** a default Fleet Server host, a `fleet-server` agent policy, and a `fleet_server` package policy SHALL exist before `make testacc` runs
+- **AND** `make testacc`'s `acctest.PreCheck` SHALL ensure a default agent download source exists
+- **AND** no separate per-version-gated Fleet setup step SHALL be required for this coverage
