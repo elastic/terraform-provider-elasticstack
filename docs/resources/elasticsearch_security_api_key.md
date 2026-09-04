@@ -120,7 +120,7 @@ resource "elasticstack_elasticsearch_security_api_key" "cross_cluster_key" {
 - `elasticsearch_connection` (Block List) Elasticsearch connection configuration block. (see [below for nested schema](#nestedblock--elasticsearch_connection))
 - `expiration` (String) Expiration time for the API key. By default, API keys never expire.
 - `metadata` (String) Arbitrary metadata that you want to associate with the API key.
-- `owner` (Boolean) Whether the API key being deleted is owned by the current authenticated user. Defaults to `false`, which requires the `manage_api_key` cluster privilege. Set to `true` only if the connection's user is expected to delete API keys it owns, which allows deletion under the `manage_own_api_key` cluster privilege instead.
+- `restrict_to_owned` (Boolean) Whether to restrict this resource to only reading and deleting API keys owned by the connection's authenticated user. Defaults to `false`: on delete, the provider first attempts to invalidate the key as its owner (which only requires the `manage_own_api_key` cluster privilege), and if that does not invalidate the key (for example because it is owned by a different user), it falls back to an unscoped delete that requires the broader `manage_api_key` cluster privilege. Set to `true` to disable that fallback so a key owned by a different user is never modified or deleted; it is instead treated as if it does not exist.
 - `role_descriptors` (String) Role descriptors for this API key.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `type` (String) The type of API key. Valid values are 'rest' (default) and 'cross_cluster'. Cross-cluster API keys are used for cross-cluster search and replication.

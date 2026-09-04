@@ -60,19 +60,20 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	return diags
 }
 
-// GetAPIKey reads the API key identified by id. owner mirrors the resource's
-// `owner` attribute: when true, the request is scoped to keys owned by the
-// currently authenticated user (matching the `owner` semantics used by
-// DeleteAPIKey), so a key that exists but is owned by a different user comes
-// back empty, which this function treats the same as "not found" - i.e. the
-// resource is treated as non-existent rather than erroring.
-func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, owner bool) (*types.ApiKey, fwdiag.Diagnostics) {
+// GetAPIKey reads the API key identified by id. restrictToOwned mirrors the
+// resource's `restrict_to_owned` attribute: when true, the request is scoped
+// to keys owned by the currently authenticated user, so a key that exists
+// but is owned by a different user comes back empty, which this function
+// treats the same as "not found" - i.e. the resource is treated as
+// non-existent rather than erroring. When false (the default), the lookup is
+// not scoped by owner at all.
+func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, restrictToOwned bool) (*types.ApiKey, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
 	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Security.GetApiKey().Id(id)
-	if owner {
+	if restrictToOwned {
 		req = req.Owner(true)
 	}
 
@@ -104,21 +105,56 @@ func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 	return &apiKey, diags
 }
 
-// DeleteAPIKey invalidates the API key identified by id. owner controls the
-// `owner` flag sent on the Invalidate API Key request: Elasticsearch only
-// authorizes an id-scoped invalidate request under the `manage_own_api_key`
-// cluster privilege when `owner` is `true` (in which case it is understood to
-// target only keys owned by the calling user); invalidating by id with
-// `owner: false` (or omitted) requires the broader `manage_api_key` privilege.
-func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, owner bool) fwdiag.Diagnostics {
+// DeleteAPIKey invalidates the API key identified by id.
+//
+// Elasticsearch only authorizes an id-scoped invalidate request under the
+// narrower `manage_own_api_key` cluster privilege when `owner: true` is set
+// on the request (in which case it only takes effect if the key is actually
+// owned by the calling user); invalidating by id with `owner: false` (or
+// omitted) requires the broader `manage_api_key` privilege but works
+// regardless of who owns the key.
+//
+// To make the common "delete my own key" case work with just
+// `manage_own_api_key`, without requiring `manage_api_key` for every caller,
+// DeleteAPIKey first attempts the invalidate with `owner: true`. If that
+// doesn't invalidate the key (for example because it's owned by a different
+// user, or the caller lacks `manage_own_api_key`), and restrictToOwned is
+// false, it retries with `owner: false`. An error is only reported if that
+// second attempt also fails. When restrictToOwned is true (the resource's
+// `restrict_to_owned` attribute), no fallback is attempted: the key is only
+// ever invalidated if it is owned by the calling user, so a key owned by
+// someone else is never touched.
+func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, restrictToOwned bool) fwdiag.Diagnostics {
 	var diags fwdiag.Diagnostics
 
-	typedClient := apiClient.GetESClient()
+	invalidated, err := invalidateAPIKey(ctx, apiClient, id, true)
+	if err != nil && IsNotFoundElasticsearchError(err) {
+		return diags
+	}
+	if err == nil && invalidated {
+		return diags
+	}
 
-	res, err := typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
-		Ids:   []string{id},
-		Owner: &owner,
-	}).Do(ctx)
+	if restrictToOwned {
+		if err != nil {
+			diags.AddError("Unable to delete an apikey", err.Error())
+			return diags
+		}
+		diags.AddError(
+			"Unable to delete an apikey",
+			fmt.Sprintf(
+				`Elasticsearch did not report "%s" as invalidated when scoped to the current authenticated user (owner=true). `+
+					`It may be owned by a different user; set "restrict_to_owned" to false to allow deleting keys owned by other users (requires the "manage_api_key" cluster privilege).`,
+				id,
+			),
+		)
+		return diags
+	}
+
+	// Fall back to an unscoped invalidate request. This requires the
+	// broader `manage_api_key` privilege but succeeds regardless of who
+	// owns the key.
+	invalidated, err = invalidateAPIKey(ctx, apiClient, id, false)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
 			return diags
@@ -127,18 +163,33 @@ func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		return diags
 	}
 
-	if !apiKeyIDInvalidated(res, id) {
+	if !invalidated {
 		diags.AddError(
 			"Unable to delete an apikey",
 			fmt.Sprintf(
-				`Elasticsearch did not report "%s" as invalidated in the invalidate API key response (invalidated_api_keys/previously_invalidated_api_keys). `+
-					`It may be owned by a different user; if so, set "owner" to false and ensure the connection is granted "manage_api_key" to delete keys owned by other users.`,
+				`Elasticsearch did not report "%s" as invalidated in the invalidate API key response (invalidated_api_keys/previously_invalidated_api_keys).`,
 				id,
 			),
 		)
 	}
 
 	return diags
+}
+
+// invalidateAPIKey issues a single Invalidate API Key request for id with the
+// given owner flag, returning whether id was reported as invalidated.
+func invalidateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, owner bool) (bool, error) {
+	typedClient := apiClient.GetESClient()
+
+	res, err := typedClient.Security.InvalidateApiKey().Request(&invalidateapikey.Request{
+		Ids:   []string{id},
+		Owner: &owner,
+	}).Do(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return apiKeyIDInvalidated(res, id), nil
 }
 
 // apiKeyIDInvalidated reports whether id appears in either the

@@ -132,8 +132,8 @@ func getSchema(version int64) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			attrOwner: schema.BoolAttribute{
-				Description: apikey.OwnerDescription,
+			attrRestrictToOwned: schema.BoolAttribute{
+				Description: apikey.RestrictToOwnedDescription,
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
