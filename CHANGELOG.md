@@ -2,6 +2,9 @@
 
 ### Changes
 
+- Plan omitted allow_restricted_indices as false on security role set updates so appending indices no longer fails after apply. Omitting the field after it was previously set to true now plans false and revokes restricted-index access. ([#4768](https://github.com/elastic/terraform-provider-elasticstack/pull/4768))
+- Keep omitted `custom_settings` on `ml_anomaly_detection_job` hands-off so apply no longer copies Elasticsearch/Kibana-authored values into state. ([#4750](https://github.com/elastic/terraform-provider-elasticstack/pull/4750))
+- Stop index mappings from storing template-injected dynamic_templates in state ([#4701](https://github.com/elastic/terraform-provider-elasticstack/pull/4701))
 - Add `additional_datastreams_permissions` to `elasticstack_fleet_integration_policy`, granting an integration's Elasticsearch API key write access to data streams targeted by a `reroute` processor. Requires Elastic Stack 9.1.0 or above. ([#4657](https://github.com/elastic/terraform-provider-elasticstack/pull/4657))
 
 ## [0.16.4] - 2026-08-25
