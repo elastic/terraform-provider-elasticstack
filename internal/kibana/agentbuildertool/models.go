@@ -54,10 +54,10 @@ type toolBaseModel struct {
 }
 
 func (toolBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *agentbuilder.MinCoreAPIVersion,
-		ErrorMessage: fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", agentbuilder.MinCoreAPIVersion),
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentbuilder.MinCoreAPIVersion,
+		fmt.Sprintf("Agent Builder tools require Elastic Stack v%s or later.", agentbuilder.MinCoreAPIVersion),
+	), nil
 }
 
 func (model toolBaseModel) GetID() types.String         { return model.ID }
