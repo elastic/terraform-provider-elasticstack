@@ -306,11 +306,8 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 		}
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK, http.StatusCreated:
-		// intentional fall-through
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusCreated); diags.HasError() {
+		return nil, diags
 	}
 
 	// The response body does not have a typed JSON200 field; unmarshal manually.
