@@ -18,6 +18,8 @@
 package sourcemap_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"regexp"
@@ -30,6 +32,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
+
+// sourceMapFileContent is the fixed source map payload written by
+// writeTempSourceMapFile and used to compute the expected checksum.
+const sourceMapFileContent = `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
 
 const testAccApmSourceMapResourceName = "elasticstack_apm_source_map.test"
 
@@ -54,6 +60,7 @@ func TestAccResourceApmSourceMap_json(t *testing.T) {
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
 					testCheckApmSourceMapIDNonEmpty(testAccApmSourceMapResourceName),
+					resource.TestCheckNoResourceAttr(testAccApmSourceMapResourceName, "sourcemap.binary"),
 				),
 			},
 		},
@@ -313,6 +320,7 @@ func TestAccResourceApmSourceMap_binaryInvalidBase64(t *testing.T) {
 // an in-place update.
 func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+	serviceNameChanged := sdkacctest.RandomWithPrefix("tf-acc-test")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -370,6 +378,127 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/other.min.js"),
 				),
 			},
+			// Step 4: plan with a different service_name — must also show replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step3"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceNameChanged),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							testAccApmSourceMapResourceName,
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_name", serviceNameChanged),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.1.0"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/other.min.js"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_spaceReplace verifies that changing space_id
+// across applies produces a ResourceActionDestroyBeforeCreate plan action,
+// not an in-place update.
+func TestAccResourceApmSourceMap_spaceReplace(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID1 := fmt.Sprintf("apm-sr1-%s", suffix)
+	spaceID2 := fmt.Sprintf("apm-sr2-%s", suffix)
+
+	resourceName := testAccApmSourceMapResourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: create the resource with space_id = spaceID1.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"space_id":        config.StringVariable(spaceID1),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID1),
+				),
+			},
+			// Step 2: plan with space_id = spaceID2 — must show replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"service_name":    config.StringVariable(serviceName),
+					"service_version": config.StringVariable("1.0.0"),
+					"space_id":        config.StringVariable(spaceID2),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID2),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceApmSourceMap_sourcemapReplace verifies that switching the
+// sourcemap content variant (json -> binary) across applies produces a
+// ResourceActionDestroyBeforeCreate plan action for the whole sourcemap
+// object, not an in-place update.
+func TestAccResourceApmSourceMap_sourcemapReplace(t *testing.T) {
+	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: create the resource with sourcemap.json set.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
+					resource.TestCheckNoResourceAttr(testAccApmSourceMapResourceName, "sourcemap.binary"),
+				),
+			},
+			// Step 2: plan with sourcemap.binary set instead — must show replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step2"),
+				ConfigVariables: config.Variables{
+					"service_name": config.StringVariable(serviceName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							testAccApmSourceMapResourceName,
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "id"),
+					resource.TestCheckNoResourceAttr(testAccApmSourceMapResourceName, "sourcemap.json"),
+				),
+			},
 		},
 	})
 }
@@ -380,6 +509,8 @@ func TestAccResourceApmSourceMap_requireReplace(t *testing.T) {
 func TestAccResourceApmSourceMap_file(t *testing.T) {
 	serviceName := sdkacctest.RandomWithPrefix("tf-acc-test")
 	tmpFile := writeTempSourceMapFile(t)
+	sourceMapFileChecksum := sha256.Sum256([]byte(sourceMapFileContent))
+	expectedChecksum := hex.EncodeToString(sourceMapFileChecksum[:])
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -397,7 +528,10 @@ func TestAccResourceApmSourceMap_file(t *testing.T) {
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_name", serviceName),
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "service_version", "1.0.0"),
 					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "bundle_filepath", "/static/js/test.min.js"),
-					resource.TestCheckResourceAttrSet(testAccApmSourceMapResourceName, "sourcemap.file.checksum"),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "sourcemap.file.path", tmpFile),
+					resource.TestCheckResourceAttr(testAccApmSourceMapResourceName, "sourcemap.file.checksum", expectedChecksum),
+					resource.TestCheckNoResourceAttr(testAccApmSourceMapResourceName, "sourcemap.json"),
+					resource.TestCheckNoResourceAttr(testAccApmSourceMapResourceName, "sourcemap.binary"),
 				),
 			},
 		},
@@ -500,8 +634,7 @@ func writeTempSourceMapFile(t *testing.T) string {
 		t.Fatalf("failed to create temp source map file: %s", err)
 	}
 	t.Cleanup(func() { os.Remove(f.Name()) })
-	content := `{"version":3,"file":"test.min.js","sources":["test.js"],"mappings":"AAAA"}`
-	if _, err := f.WriteString(content); err != nil {
+	if _, err := f.WriteString(sourceMapFileContent); err != nil {
 		t.Fatalf("failed to write temp source map file: %s", err)
 	}
 	if err := f.Close(); err != nil {
