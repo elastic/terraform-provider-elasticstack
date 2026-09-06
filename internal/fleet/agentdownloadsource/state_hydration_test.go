@@ -89,7 +89,7 @@ func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
 	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
 	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
 
-	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := map[string]any{
 			"item": map[string]any{
 				"id":         sourceID,

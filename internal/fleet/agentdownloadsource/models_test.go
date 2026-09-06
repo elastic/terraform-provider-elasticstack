@@ -149,7 +149,7 @@ func TestModelToAPIUpdateModelClearsUnsetProxyID(t *testing.T) {
 
 	body := plan.toAPIUpdateModel(ctx, prior)
 	require.NotNil(t, body.ProxyId, "clearing proxy_id must send empty string so omitempty does not drop the field")
-	require.Equal(t, "", *body.ProxyId)
+	require.Empty(t, *body.ProxyId)
 
 	encoded, err := json.Marshal(body)
 	require.NoError(t, err)
