@@ -38,7 +38,7 @@ func updateAgentDownloadSource(ctx context.Context, client *fleet.Client, plan m
 	// Otherwise the API call fails with 404.
 	spaceID := fleetutils.SpaceIDFromSet(prior.SpaceIDs)
 
-	body := plan.toAPIUpdateModel(ctx)
+	body := plan.toAPIUpdateModel(ctx, prior)
 
 	updateResp, updateDiags := fleet.UpdateAgentDownloadSource(ctx, client, sourceID, spaceID, body)
 	diags.Append(updateDiags...)
