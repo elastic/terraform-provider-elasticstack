@@ -32,15 +32,23 @@ import (
 // ancestor directory containing a .go file). The deduplicated set of import
 // paths is returned.
 func FindTestConsumers(root, modulePath, entityName string) ([]string, error) {
-	return FindTestConsumersMulti(root, modulePath, []string{entityName})
+	consumers, err := FindTestConsumersMulti(root, modulePath, []string{entityName})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, 0, len(consumers))
+	for pkg := range consumers {
+		result = append(result, pkg)
+	}
+	return stringsSorted(result), nil
 }
 
-// FindTestConsumersMulti walks root once and reports the deduplicated import
-// paths of packages containing files that mention any of entityNames. The walk
-// cost is independent of the number of entity names: each candidate file is
-// read once and checked against every name.
-func FindTestConsumersMulti(root, modulePath string, entityNames []string) ([]string, error) {
-	seen := make(map[string]struct{})
+// FindTestConsumersMulti walks root once and reports, per owning package, the
+// deduplicated set of entity names found in that package's *.tf and *_test.go
+// files. The walk cost is independent of the number of entity names: each
+// candidate file is read once and checked against every name.
+func FindTestConsumersMulti(root, modulePath string, entityNames []string) (map[string][]string, error) {
+	seen := make(map[string]map[string]struct{})
 
 	walkFn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -60,7 +68,8 @@ func FindTestConsumersMulti(root, modulePath string, entityNames []string) ([]st
 			return fmt.Errorf("scan %s: %w", path, err)
 		}
 
-		if !fileContainsAny(data, entityNames) {
+		matched := matchedNames(data, entityNames)
+		if len(matched) == 0 {
 			return nil
 		}
 
@@ -69,7 +78,12 @@ func FindTestConsumersMulti(root, modulePath string, entityNames []string) ([]st
 			return nil
 		}
 		importPath := modulePath + "/" + pkgDir
-		seen[importPath] = struct{}{}
+		if seen[importPath] == nil {
+			seen[importPath] = make(map[string]struct{})
+		}
+		for _, name := range matched {
+			seen[importPath][name] = struct{}{}
+		}
 		return nil
 	}
 
@@ -77,11 +91,11 @@ func FindTestConsumersMulti(root, modulePath string, entityNames []string) ([]st
 		return nil, err
 	}
 
-	result := make([]string, 0, len(seen))
-	for pkg := range seen {
-		result = append(result, pkg)
+	result := make(map[string][]string, len(seen))
+	for pkg, names := range seen {
+		result[pkg] = stringsSorted(mapKeys(names))
 	}
-	return stringsSorted(result), nil
+	return result, nil
 }
 
 // owningPackageDir returns the nearest ancestor directory of path that
@@ -103,12 +117,22 @@ func owningPackageDir(path string) (string, bool) {
 	}
 }
 
-// fileContainsAny reports whether data contains any of needles.
-func fileContainsAny(data []byte, needles []string) bool {
+// matchedNames returns the subset of needles contained in data.
+func matchedNames(data []byte, needles []string) []string {
+	matched := make([]string, 0)
 	for _, n := range needles {
 		if bytes.Contains(data, []byte(n)) {
-			return true
+			matched = append(matched, n)
 		}
 	}
-	return false
+	return matched
+}
+
+// mapKeys returns the sorted keys of a set map.
+func mapKeys(set map[string]struct{}) []string {
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		keys = append(keys, k)
+	}
+	return keys
 }

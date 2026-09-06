@@ -144,11 +144,25 @@ func run() error {
 			return strings.TrimPrefix(importPath, modulePath+"/")
 		}
 
-		// Collect every entity name from every changed package first, then
+		// Collect every entity name from every candidate package first, then
 		// walk internal/ once for all of them, so the walk cost does not scale
 		// with the number of entities.
-		entityNames := make([]string, 0)
+		//
+		// The candidate set is the union of the changed packages and the
+		// packages selected by phase 1. Phase 1 selects packages that transitively
+		// import changed code, including packages whose sub-packages declare
+		// entities; running entity extraction over the changed set alone would
+		// miss cross-package testdata consumers of those entities.
+		candidatePkgs := make(map[string]struct{})
 		for _, pkg := range classified.Packages {
+			candidatePkgs[pkg] = struct{}{}
+		}
+		for _, pkg := range phase1Packages {
+			candidatePkgs[pkg] = struct{}{}
+		}
+
+		entityNames := make([]string, 0)
+		for pkg := range candidatePkgs {
 			entities, err := ExtractEntities(pkgDir(pkg))
 			if err != nil {
 				return fmt.Errorf("extract entities for %s: %w", pkg, err)
@@ -157,16 +171,17 @@ func run() error {
 				entityNames = append(entityNames, ent.FullName())
 			}
 		}
+		sort.Strings(entityNames)
 
 		consumerPkgs, err := FindTestConsumersMulti("internal", modulePath, entityNames)
 		if err != nil {
 			return fmt.Errorf("find test consumers: %w", err)
 		}
-		for _, consumer := range consumerPkgs {
+		for consumer, matched := range consumerPkgs {
 			if _, ok := accSet[consumer]; !ok {
 				continue
 			}
-			phaseReasons[consumer] = append(phaseReasons[consumer], fmt.Sprintf("phase-2 consumer of %s", strings.Join(entityNames, ", ")))
+			phaseReasons[consumer] = append(phaseReasons[consumer], fmt.Sprintf("phase-2 consumer of %s", strings.Join(matched, ", ")))
 			phase2Packages = append(phase2Packages, consumer)
 		}
 		phase2Packages = stringsSorted(phase2Packages)

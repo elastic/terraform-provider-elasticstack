@@ -44,10 +44,32 @@ func TestFindTestConsumersMulti_SyntheticTree(t *testing.T) {
 		t.Fatalf("FindTestConsumersMulti: %v", err)
 	}
 
-	want := []string{
-		"github.com/example/mod/internal/fleet/policy",
-		"github.com/example/mod/internal/kibana/dashboard",
-		"github.com/example/mod/internal/kibana/space",
+	want := map[string][]string{
+		"github.com/example/mod/internal/fleet/policy":     {"elasticstack_fleet_agent_policy"},
+		"github.com/example/mod/internal/kibana/dashboard": {"elasticstack_kibana_dashboard"},
+		"github.com/example/mod/internal/kibana/space":     {"elasticstack_kibana_space"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("consumers = %v, want %v", got, want)
+	}
+}
+
+func TestFindTestConsumersMulti_ReportsOnlyMatchedNames(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// The package mentions only elasticstack_kibana_space even though both
+	// space and spaces were candidates; the report must list only the name
+	// that actually matched.
+	writeFile(t, root, "internal/fleet/agentpolicy/resource.go", "package agentpolicy")
+	writeFile(t, root, "internal/fleet/agentpolicy/testdata/main.tf", "# elasticstack_kibana_space\n")
+
+	got, err := FindTestConsumersMulti("internal", "github.com/example/mod", []string{"elasticstack_kibana_space", "elasticstack_kibana_spaces"})
+	if err != nil {
+		t.Fatalf("FindTestConsumersMulti: %v", err)
+	}
+	want := map[string][]string{
+		"github.com/example/mod/internal/fleet/agentpolicy": {"elasticstack_kibana_space"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("consumers = %v, want %v", got, want)
