@@ -18,23 +18,20 @@
 package ml
 
 import (
-	"regexp"
-
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 // mlDurationMessage is the canonical error message for ML short-duration fields.
 const mlDurationMessage = "must be a valid duration (e.g., 15m, 1h)"
 
-// mlDurationRegexp matches the ML short-duration format: one or more digits
-// followed by a single unit character: n (nanos), s (seconds), u (micros),
-// m (minutes), d (days), h (hours).
-var mlDurationRegexp = regexp.MustCompile(`^\d+[nsumdh]$`)
+// mlDurationUnits are the unit characters accepted by ML short-duration
+// fields: n (nanos), s (seconds), u (micros), m (minutes), d (days), h (hours).
+const mlDurationUnits = "nsumdh"
 
 // Duration returns a validator that accepts ML short-duration strings such as
 // "15m", "1h", "150s". This covers the same format accepted by the bucket_span,
 // frequency, query_delay, chunking time_span, and check_window attributes.
 func Duration() validator.String {
-	return stringvalidator.RegexMatches(mlDurationRegexp, mlDurationMessage)
+	return validators.DurationWithUnits(mlDurationUnits, mlDurationMessage)
 }

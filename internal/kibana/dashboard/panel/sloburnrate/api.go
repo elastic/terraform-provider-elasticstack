@@ -27,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const panelType = "slo_burn_rate"
@@ -95,20 +94,10 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 	} else {
 		durVal = obj.Attributes()["duration"]
 	}
-	deferDur, missDur := panelkit.StringAttrDeferOrMissing(durVal)
-	switch {
-	case deferDur:
-	case missDur:
+	// Format validation for `duration` is handled by the schema-level validator
+	// (see SchemaAttribute); only presence is checked here.
+	if _, missDur := panelkit.StringAttrDeferOrMissing(durVal); missDur {
 		out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
-	default:
-		durStr := durVal.(types.String)
-		if !sloBurnRateDurationRegexp.MatchString(durStr.ValueString()) {
-			out.AddAttributeError(
-				cfgPath.AtName("duration"),
-				`Invalid SLO burn rate configuration`,
-				"`duration` must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d).",
-			)
-		}
 	}
 
 	return out
