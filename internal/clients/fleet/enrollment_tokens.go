@@ -36,12 +36,10 @@ func GetEnrollmentTokens(ctx context.Context, client *Client, spaceID string) ([
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Items, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return nil, diags
 	}
+	return resp.JSON200.Items, nil
 }
 
 // GetEnrollmentTokensByPolicy Get enrollment tokens by given policy ID.
@@ -55,12 +53,10 @@ func GetEnrollmentTokensByPolicy(ctx context.Context, client *Client, policyID s
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Items, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return nil, diags
 	}
+	return resp.JSON200.Items, nil
 }
 
 // GetEnrollmentTokensByPolicyInSpace Get enrollment tokens by policy ID within a specific Kibana space.

@@ -65,12 +65,10 @@ func CreateConnector(ctx context.Context, client *Client, connector models.Kiban
 		return "", diagutil.ErrDiag("HTTP request failed", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Id, nil
-	default:
-		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return "", diags
 	}
+	return resp.JSON200.Id, nil
 }
 
 func UpdateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
@@ -84,12 +82,10 @@ func UpdateConnector(ctx context.Context, client *Client, connector models.Kiban
 		return "", diagutil.ErrDiag("Unable to update connector", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Id, nil
-	default:
-		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return "", diags
 	}
+	return resp.JSON200.Id, nil
 }
 
 func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
