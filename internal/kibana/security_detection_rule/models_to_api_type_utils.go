@@ -882,7 +882,7 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	if err != nil {
 		diags.AddError(
 			"Invalid duration format",
-			fmt.Sprintf("Duration '%s' is not in valid format. Expected format: number followed by unit (s, m, h)", durationStr),
+			fmt.Sprintf("Duration '%s' is not in valid format. Expected format: number followed by unit (s, m, h, d)", durationStr),
 		)
 		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
 	}
@@ -903,7 +903,7 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	default:
 		diags.AddError(
 			"Unsupported duration unit",
-			fmt.Sprintf("Unit '%s' is not supported. Supported units: s, m, h", unitStr),
+			fmt.Sprintf("Unit '%s' is not supported. Supported units: s, m, h, d", unitStr),
 		)
 		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
 	}
