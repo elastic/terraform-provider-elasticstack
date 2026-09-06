@@ -35161,10 +35161,8 @@ type KibanaHTTPAPIsAlertingUpdateRule struct {
 		Name *string `json:"name,omitempty"`
 
 		// Owner Owner of the rule.
-		Owner *string `json:"owner,omitempty"`
-
-		// Tags Tags for categorization, e.g. ["production", "infra"].
-		Tags *[]string `json:"tags,omitempty"`
+		Owner *string   `json:"owner,omitempty"`
+		Tags  *[]string `json:"tags,omitempty"`
 	} `json:"metadata,omitempty"`
 	NoDataStrategy *KibanaHTTPAPIsAlertingUpdateRuleNoDataStrategy `json:"no_data_strategy,omitempty"`
 
@@ -40939,6 +40937,9 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeCustomContent struct {
 		// HideTitle When true, the panel title is hidden. Defaults to false.
 		HideTitle *bool   `json:"hide_title,omitempty"`
 		Template  *string `json:"template,omitempty"`
+
+		// TimeRange Specifies the time range for a query.
+		TimeRange *KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema `json:"time_range,omitempty"`
 
 		// Title The panel title.
 		Title *string `json:"title,omitempty"`
@@ -75588,6 +75589,18 @@ type PostAgentBuilderToolsJSONBodyType string
 
 // PostAgentBuilderToolsExecuteJSONBody defines parameters for PostAgentBuilderToolsExecute.
 type PostAgentBuilderToolsExecuteJSONBody struct {
+	// Approvals Actions the tool run may take that would otherwise need a live user to approve them. Applies to this run and any sub-agents it spawns.
+	Approvals *struct {
+		// AutoApprovedApis Destructive Elasticsearch or Kibana APIs the tool may call without a user confirmation, keyed by backend. A tool run has no live user to answer the confirmation prompt, so a destructive API is refused unless it is listed here.
+		AutoApprovedApis *struct {
+			// Elasticsearch Elasticsearch APIs pre-approved for this run. Each entry is an exact identifier formed from the namespace and name (for example `indices.create`), a namespace wildcard (for example `indices.*`), or `*` for every Elasticsearch API.
+			Elasticsearch *[]string `json:"elasticsearch,omitempty"`
+
+			// Kibana Kibana APIs pre-approved for this run. Each entry is an exact identifier formed from the namespace and name (for example `alerting.delete-alerting-rule-id`), a namespace wildcard (for example `alerting.*`), or `*` for every Kibana API.
+			Kibana *[]string `json:"kibana,omitempty"`
+		} `json:"auto_approved_apis,omitempty"`
+	} `json:"approvals,omitempty"`
+
 	// ConnectorId Optional connector ID for tools that require external integrations.
 	ConnectorId *string `json:"connector_id,omitempty"`
 
@@ -81853,6 +81866,7 @@ type PutSecurityEntityStoreEntitiesBulkJSONBodyEntitiesDoc0 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -82042,6 +82056,7 @@ type PutSecurityEntityStoreEntitiesBulkJSONBodyEntitiesDoc1 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -82263,6 +82278,7 @@ type PutSecurityEntityStoreEntitiesBulkJSONBodyEntitiesDoc2 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -82481,6 +82497,7 @@ type PutSecurityEntityStoreEntitiesBulkJSONBodyEntitiesDoc3 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -82692,6 +82709,7 @@ type PostSecurityEntityStoreEntitiesEntitytypeJSONBody0 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -82881,6 +82899,7 @@ type PostSecurityEntityStoreEntitiesEntitytypeJSONBody1 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -83102,6 +83121,7 @@ type PostSecurityEntityStoreEntitiesEntitytypeJSONBody2 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -83320,6 +83340,7 @@ type PostSecurityEntityStoreEntitiesEntitytypeJSONBody3 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -83537,6 +83558,7 @@ type PutSecurityEntityStoreEntitiesEntitytypeJSONBody0 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -83726,6 +83748,7 @@ type PutSecurityEntityStoreEntitiesEntitytypeJSONBody1 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -83947,6 +83970,7 @@ type PutSecurityEntityStoreEntitiesEntitytypeJSONBody2 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
@@ -84165,6 +84189,7 @@ type PutSecurityEntityStoreEntitiesEntitytypeJSONBody3 struct {
 			AnomalyJobIds *[]string `json:"anomaly_job_ids,omitempty"`
 			RuleNames     *[]string `json:"rule_names,omitempty"`
 		} `json:"behaviors,omitempty"`
+		CreatedBy *string `json:"created_by,omitempty"`
 		Id        *string `json:"id,omitempty"`
 		Lifecycle *struct {
 			FirstSeen    *time.Time `json:"first_seen,omitempty"`
