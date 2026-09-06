@@ -88,16 +88,8 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 		out.Append(d...)
 	}
 
-	var durVal attr.Value
-	if flat {
-		durVal = attrs["duration"]
-	} else {
-		durVal = obj.Attributes()["duration"]
-	}
-	// Format validation for `duration` is handled by the schema-level validator
-	// (see SchemaAttribute); only presence is checked here.
-	if _, missDur := panelkit.StringAttrDeferOrMissing(durVal); missDur {
-		out.AddAttributeError(cfgPath.AtName("duration"), `Invalid SLO burn rate configuration`, "`duration` is required.")
+	if deferred, d := panelkit.ValidateRequiredStringField(attrs, obj, flat, cfgPath, "duration", `Invalid SLO burn rate configuration`, "`duration` is required."); !deferred {
+		out.Append(d...)
 	}
 
 	return out

@@ -877,7 +877,6 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	// Get the raw duration string (e.g. "5m", "1h", "30s")
 	durationStr := duration.ValueString()
 
-	// Parse the duration string to extract value and unit
 	value, unitStr, err := validators.ParseUnitDuration(durationStr, "smhd")
 	if err != nil {
 		diags.AddError(
