@@ -130,10 +130,10 @@ var (
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (data QueryRulesetData) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinSupportedVersion,
-		ErrorMessage: "Elasticsearch query rulesets require Elasticsearch v8.16.0 or above (Query Rules API with `priority` and `exclude` rule type support).",
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinSupportedVersion,
+		"Elasticsearch query rulesets require Elasticsearch v8.16.0 or above (Query Rules API with `priority` and `exclude` rule type support).",
+	), nil
 }
 
 func (data *QueryRulesetData) populateFromAPI(ctx context.Context, rules []types.QueryRule, diagnostics *diag.Diagnostics) {

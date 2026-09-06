@@ -81,12 +81,10 @@ func (m *osqueryPackBaseModel) setCompositeIdentity(spaceID, packID string) {
 }
 
 func (osqueryPackBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *osqueryPackMinVersion,
-			ErrorMessage: fmt.Sprintf("Osquery packs require Elastic Stack v%s or later.", osqueryPackMinVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*osqueryPackMinVersion,
+		fmt.Sprintf("Osquery packs require Elastic Stack v%s or later.", osqueryPackMinVersion),
+	), nil
 }
 
 func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *kibanaoapi.OsqueryPackDetail) diag.Diagnostics {

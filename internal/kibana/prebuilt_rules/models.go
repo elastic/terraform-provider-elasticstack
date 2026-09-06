@@ -49,12 +49,10 @@ var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
 var minSupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
 func (m prebuiltRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minSupportedVersion,
-			ErrorMessage: "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource",
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minSupportedVersion,
+		"Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource",
+	), nil
 }
 
 func (m *prebuiltRuleModel) populateFromStatus(status *kbapi.ReadPrebuiltRulesAndTimelinesStatusResponse) {

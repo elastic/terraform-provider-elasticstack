@@ -53,12 +53,10 @@ func (model entityLinkModel) GetResourceID() types.String { return model.TargetI
 func (model entityLinkModel) GetSpaceID() types.String    { return model.SpaceID }
 
 func (model entityLinkModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaEntityStoreResolutionVersion,
-			ErrorMessage: fmt.Sprintf("Security Entity Store resolution links require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minKibanaEntityStoreResolutionVersion,
+		fmt.Sprintf("Security Entity Store resolution links require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
+	), nil
 }
 
 // populateFromAPI updates the model from a parsed resolution group response.
