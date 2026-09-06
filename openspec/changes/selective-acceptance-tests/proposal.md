@@ -7,6 +7,7 @@ Running the full acceptance test suite on every PR is expensive and slow — the
 - New Go tool at `scripts/targeted-testacc/` that computes the minimal set of acceptance test packages for the current branch diff.
 - New `make targeted-testacc` and `make targeted-testacc-dry-run` Makefile targets.
 - `provider.yml` CI workflow updated so PRs run `make targeted-testacc` instead of `make testacc`, with step-level shard gating to skip the Elastic Stack startup entirely when a shard has no packages to test.
+- `provider.yml` CI workflow adds a dedicated stackless `unit-test` job (`go test ./... -skip '^TestAcc'`) gated on the change-classification result, so unit-test-only packages run on every provider-change event.
 - `provider.yml` CI workflow adds `merge_group` as a trigger (for future merge-queue enablement) and runs the full suite for those events.
 - `provider.yml` CI workflow unchanged for `push` to `main` and `workflow_dispatch` — those always run the full suite.
 
@@ -24,5 +25,8 @@ Running the full acceptance test suite on every PR is expensive and slow — the
 
 - New Go source under `scripts/targeted-testacc/` (same module, no new module or `go tool` entry required).
 - `Makefile`: two new targets, two new optional variables (`TARGETED_TESTACC_BASE`, `TARGETED_TESTACC_VERBOSE`).
-- `.github/workflows/provider.yml`: `merge_group` trigger added; `compute-packages` step added; expensive steps gain `if:` conditions; test step switches between `targeted-testacc` and `testacc` based on event type and package availability. Static `shard: [0, 1]` matrix is preserved.
-- No changes to existing test code, resource code, or any spec under `openspec/specs/`.
+- `.github/workflows/provider.yml`: `merge_group` trigger added; `compute-packages` step added; expensive steps gain `if:` conditions; test step switches between `targeted-testacc` and `testacc` based on event type and package availability; dedicated `unit-test` job added and wired into the `gate` job. Static `shard: [0, 1]` matrix is preserved.
+- `.github/scripts/workflows/lib/gate-provider.js` and `.github/scripts/workflows/lib/runners/gate.js`: gate logic gains a `unitTestResult` dimension evaluating the new `unit-test` job.
+- `.github/scripts/workflows/lib/gate-provider.test.mjs`: tests covering the `unitTestResult` gate dimension.
+- `unit-test` becomes a new required check surfaced through the `Provider Gate` result (user-visible required-check change).
+- No changes to resource code or any spec under `openspec/specs/`.

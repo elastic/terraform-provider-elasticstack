@@ -44,3 +44,10 @@
 - [x] 5.3 Run `make targeted-testacc-dry-run` on a branch with at least one changed resource file; confirm output lists expected packages with rationale
 - [x] 5.4 Run `make targeted-testacc-dry-run ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=1` on a change with fewer than 30 selected packages; confirm empty output
 - [x] 5.5 Run `npx openspec validate --specs` to confirm specs are structurally valid
+
+## 6. Unit-test job and gate wiring
+
+- [x] 6.1 Add a dedicated `unit-test` job to `provider.yml` running `go test ./... -skip '^TestAcc'` stackless, gated on `provider_changes` (not `has_packages`)
+- [x] 6.2 Add `unit-test` to the `gate` job `needs` and consume the `PROVIDER_GATE_UNIT_TEST_RESULT` workflow output in the gate decision
+- [x] 6.3 Thread `unitTestResult` through `.github/scripts/workflows/lib/gate-provider.js` and `runners/gate.js`
+- [x] 6.4 Extend `gate-provider.test.mjs` with tests covering the new `unitTestResult` dimension (failure gates, unexpected skip gates, success passes)

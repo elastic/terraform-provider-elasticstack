@@ -77,7 +77,7 @@ The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be con
 
 - **WHEN** the workflow runs on a push to `main`
 - **THEN** the acceptance test step invocation is `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
-- **AND** no `TARGETED_PKGS` variable is set
+- **AND** `TARGETED_PKGS` is empty, so the step takes the full-suite branch
 - **AND** `make testacc` continues to execute unit-test-only tests inline, because it has no `-run`/`-skip` filter; the dedicated unit-test job is additive on non-PR events, not a replacement
 - **AND** on PR events, unit-test-only packages are covered by the dedicated unit-test job, since targeted selection covers only `func TestAcc` packages
 
@@ -218,8 +218,6 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 - **AND** no separate per-version-gated Fleet setup step SHALL be required for this coverage
 
 ---
-
-## MODIFIED Requirements
 
 ### Requirement: Provider gate job (REQ-034–REQ-036)
 

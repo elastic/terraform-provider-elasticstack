@@ -24,7 +24,7 @@ The tool SHALL compute the set of relevant acceptance test packages via two inde
 
 **Phase 1 — Go reverse-dependency walk:** For each changed Go package, the tool SHALL walk the reverse import graph (non-test imports only) to find all packages that transitively import the changed package. Only packages that contain at least one `func TestAcc` function in a `*_test.go` file SHALL be included.
 
-**Phase 2 — TF entity name grep:** For each changed Go package, the tool SHALL extract Terraform type name suffixes by scanning the package's non-test `.go` files (files ending in `_test.go` SHALL be excluded, so that entity declarations only in test source are ignored) for calls to the entity-declaring constructors exported by `internal/entitycore`:
+**Phase 2 — TF entity name grep:** For each candidate package — every changed Go package plus every package selected by phase 1 — the tool SHALL extract Terraform type name suffixes by scanning the package's non-test `.go` files (files ending in `_test.go` SHALL be excluded, so that entity declarations only in test source are ignored) for calls to the entity-declaring constructors exported by `internal/entitycore`:
 
 - `NewResourceBase(entitycore.Component<X>, "<name>")`
 - `NewDataSourceBase(entitycore.Component<X>, "<name>")`
@@ -56,6 +56,7 @@ The tool SHALL construct the full entity name as `elasticstack_<component>_<name
 - **WHEN** a file under `internal/kibana/dashboard/panel/lenspie/` is the only changed file
 - **THEN** `internal/kibana/dashboard` is selected (phase 1: dashboard imports lenspie)
 - **AND** `internal/kibana/dashboard/panel/lenspie` is also selected (direct)
+- **AND** cross-package testdata consumers of `elasticstack_kibana_dashboard` (e.g. `internal/kibana/streams`) are selected (phase 2: the entity is extracted from the phase-1-selected `internal/kibana/dashboard` package)
 
 #### Scenario: Shared resource consumed by cross-domain testdata
 
@@ -119,13 +120,19 @@ When the tool cannot compute a resolvable diff (e.g. on `main`, in a shallow clo
 
 ### Requirement: Docs-only diff produces no packages
 
-When every changed file is outside Go source (`*.go`) and testdata (`*/testdata/*`) content (for example, files under `docs/` or `openspec/`), the tool SHALL emit nothing (zero packages selected) and exit 0.
+When no changed file matches the force-all prefix or force-all file table and every changed file is outside Go source (`*.go`) and testdata (`*/testdata/*`) content (for example, files under `docs/` or `openspec/`), the tool SHALL emit nothing (zero packages selected) and exit 0. A diff that matches the force-all table SHALL always emit the full package set, even when it contains no Go source or testdata content.
 
 #### Scenario: Only docs files changed produces no packages
 
 - **WHEN** the only changed files are under `docs/` or `openspec/`
+- **AND** no changed file matches the force-all prefix or force-all file table
 - **THEN** the tool emits nothing (zero packages selected)
 - **AND** the tool exits 0
+
+#### Scenario: Force-all file in a docs-only diff still produces the full suite
+
+- **WHEN** the only changed files are `README.md` and `Makefile`
+- **THEN** the tool emits all acceptance test packages (the force-all file table takes precedence over the docs-only rule)
 
 ---
 
