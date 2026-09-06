@@ -19,16 +19,16 @@ package securityuser
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -119,16 +119,8 @@ func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScop
 		return config, diags
 	}
 
-	if user.Email != nil {
-		config.Email = types.StringValue(*user.Email)
-	} else {
-		config.Email = types.StringValue("")
-	}
-	if user.FullName != nil {
-		config.FullName = types.StringValue(*user.FullName)
-	} else {
-		config.FullName = types.StringValue("")
-	}
+	config.Email = stringOrEmptyValue(user.Email)
+	config.FullName = stringOrEmptyValue(user.FullName)
 
 	rolesSet, d := types.SetValueFrom(ctx, types.StringType, user.Roles)
 	diags.Append(d...)
@@ -137,12 +129,10 @@ func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScop
 	}
 	config.Roles = rolesSet
 
-	metadata, err := json.Marshal(user.Metadata)
-	if err != nil {
-		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
+	config.Metadata = typeutils.MarshalToNormalized(user.Metadata, path.Root("metadata"), &diags)
+	if diags.HasError() {
 		return config, diags
 	}
-	config.Metadata = jsontypes.NewNormalizedValue(string(metadata))
 
 	config.Enabled = types.BoolValue(user.Enabled)
 	config.Username = types.StringValue(username)
