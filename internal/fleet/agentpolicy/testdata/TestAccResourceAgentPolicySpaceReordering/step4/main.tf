@@ -12,12 +12,14 @@ resource "elasticstack_kibana_space" "test_space" {
 resource "elasticstack_fleet_agent_policy" "test_policy" {
   name            = var.policy_name
   namespace       = "default"
-  description     = "Test space reordering - step 4: empty space_ids reverts to default"
+  description     = "Test space reordering - step 4: revert space_ids to default"
   monitor_logs    = true
   monitor_metrics = false
   skip_destroy    = false
-  # CRITICAL TEST: Empty space_ids should fall back to the computed ["default"]
-  space_ids = []
+  # Revert to the default space by setting it explicitly. space_ids = [] is not
+  # "unspecified": Fleet 9.1+ keeps the previous spaces and the provider then
+  # adopts them, which produces an inconsistent apply.
+  space_ids = ["default"]
 
   depends_on = [elasticstack_kibana_space.test_space]
 }

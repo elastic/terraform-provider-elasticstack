@@ -518,6 +518,7 @@ func TestAccResourceAgentPolicyWithSpaceIDs(t *testing.T) {
 // Step 1: Create policy with space_ids = ["default"]
 // Step 2: Add a new space ["space-test-a", "default"] - proves stable operational space
 // Step 3: Same spaces in different order ["default", "space-test-a"] - no drift (Sets are unordered)
+// Step 4: Revert to ["default"] explicitly (empty [] is not a computed default)
 //
 // With Sets: No drift from reordering, policy_id remains constant across all steps
 func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
@@ -598,13 +599,15 @@ func TestAccResourceAgentPolicySpaceReordering(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				// Step 4: Empty space_ids ([]) - should fall back to the computed ["default"]
+				// Step 4: Revert to ["default"] by setting it explicitly.
+				// space_ids = [] is an empty set, not "unspecified"; Fleet 9.1+ keeps
+				// the previous spaces and the provider adopts them after apply.
 				ConfigDirectory: acctest.NamedTestCaseDirectory("step4"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 4: empty space_ids reverts to default"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "description", "Test space reordering - step 4: revert space_ids to default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_policy.test_policy", "space_ids.*", "default"),
 					resource.TestCheckResourceAttrWith("elasticstack_fleet_agent_policy.test_policy", "policy_id", func(value string) error {
