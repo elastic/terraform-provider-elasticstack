@@ -89,7 +89,7 @@ The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be con
 
 ### Requirement: Unit tests run independently of acceptance targeting
 
-The workflow SHALL include a dedicated unit-test job (`go test ./...`) that runs on every event where the change-classification job reports `provider_changes=true`. The unit-test job SHALL NOT be gated on the compute-packages `has_packages` output, because the targeted-testacc selection only covers packages containing acceptance tests (`func TestAcc`), so unit-test-only packages (e.g. `internal/entitycore`, `generated/kbapi`, `internal/clients/*`, `internal/fleet/policyshape`, `internal/asyncutils`, `internal/diagutil`) would otherwise never run on PRs.
+The workflow SHALL include a dedicated unit-test job (`go test ./... -skip '^TestAcc'`) that runs on every event where the change-classification job reports `provider_changes=true`. The `-skip '^TestAcc'` filter SHALL exclude acceptance tests, which run in the acceptance matrix with a live stack; several `*ExplicitConnection` acceptance tests assert endpoint environment variables before the framework's `TF_ACC` gate and therefore cannot run in a stackless unit-test job. The unit-test job SHALL NOT be gated on the compute-packages `has_packages` output, because the targeted-testacc selection only covers packages containing acceptance tests (`func TestAcc`), so unit-test-only packages (e.g. `internal/entitycore`, `generated/kbapi`, `internal/clients/*`, `internal/fleet/policyshape`, `internal/asyncutils`, `internal/diagutil`) would otherwise never run on PRs.
 
 #### Scenario: PR with docs-only acceptance shards still runs unit tests
 

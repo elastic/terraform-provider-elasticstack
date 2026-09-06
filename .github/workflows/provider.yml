@@ -71,8 +71,12 @@ jobs:
       # packages with acceptance tests, so unit-test-only packages (entitycore,
       # generated clients, internal/clients, etc.) would otherwise never run
       # on PRs. This job is not gated on the targeted selection at all.
+      # -skip '^TestAcc' excludes acceptance tests: they are run by the
+      # acceptance matrix (with a live stack), and several *ExplicitConnection
+      # tests hit endpoint/env assertions before the framework's TF_ACC gate,
+      # so they cannot run here without a stack.
       - name: Unit tests
-        run: go test ./... -count=1 -parallel=4 -timeout=10m
+        run: go test ./... -count=1 -parallel=4 -timeout=10m -skip '^TestAcc'
 
   lint:
     name: Lint
