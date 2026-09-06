@@ -151,11 +151,13 @@ func init() {
 // constructor. A new envelope type added to entitycore without a matching
 // extraction pattern fails this test.
 func TestEntitycoreConstructorsCovered(t *testing.T) {
-	const entitycoreDir = "../../internal/entitycore"
+	root := repoRoot(t)
+	entitycoreDir := filepath.Join(root, "internal/entitycore")
 
 	entries, err := os.ReadDir(entitycoreDir)
 	if err != nil {
-		t.Skipf("cannot read %s: %v (not running inside the repository?)", entitycoreDir, err)
+		// A skip here would let the guard silently pass; fail instead.
+		t.Fatalf("cannot read %s: %v", entitycoreDir, err)
 	}
 
 	covered := make(map[string]bool, len(coveredEntityConstructors)+len(nonEntityConstructors))

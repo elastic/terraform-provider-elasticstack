@@ -72,8 +72,11 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 	}
 	moduleInternal := modulePath + "/internal/"
 
+	// The guard walks the same enumerated roots as the selection tool, so a
+	// package under provider/ that is test-only-imported is caught too.
+	goListPattern := "./internal/... ./provider/..."
 	nonTestImported := map[string]bool{}
-	for _, fields := range scanGoList(goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", "./internal/...")) {
+	for _, fields := range scanGoList(goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", goListPattern)) {
 		for _, imp := range fields[1:] {
 			if strings.HasPrefix(imp, moduleInternal) {
 				nonTestImported[imp] = true
@@ -81,7 +84,7 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 		}
 	}
 
-	testImportsOut := goList(t, root, "{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", "./internal/...")
+	testImportsOut := goList(t, root, "{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", goListPattern)
 	testImported := map[string]bool{}
 	for _, fields := range scanGoList(testImportsOut) {
 		for _, imp := range fields[1:] {

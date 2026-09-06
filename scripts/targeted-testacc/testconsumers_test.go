@@ -39,7 +39,7 @@ func TestFindTestConsumersMulti_SyntheticTree(t *testing.T) {
 		"elasticstack_fleet_agent_policy",
 	}
 
-	got, err := FindTestConsumersMulti("internal", "github.com/example/mod", names)
+	got, err := FindTestConsumersMulti([]string{"internal"}, "github.com/example/mod", names)
 	if err != nil {
 		t.Fatalf("FindTestConsumersMulti: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestFindTestConsumersMulti_ReportsOnlyMatchedNames(t *testing.T) {
 	writeFile(t, root, "internal/fleet/agentpolicy/resource.go", "package agentpolicy")
 	writeFile(t, root, "internal/fleet/agentpolicy/testdata/main.tf", "# elasticstack_kibana_space\n")
 
-	got, err := FindTestConsumersMulti("internal", "github.com/example/mod", []string{"elasticstack_kibana_space", "elasticstack_kibana_spaces"})
+	got, err := FindTestConsumersMulti([]string{"internal"}, "github.com/example/mod", []string{"elasticstack_kibana_space", "elasticstack_kibana_spaces"})
 	if err != nil {
 		t.Fatalf("FindTestConsumersMulti: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestFindTestConsumersMulti_NoMatches(t *testing.T) {
 	writeFile(t, root, "internal/a/a.go", "package a")
 	writeFile(t, root, "internal/a/a_test.go", "package a\n\nfunc TestA(t *testing.T) {}\n")
 
-	got, err := FindTestConsumersMulti("internal", "github.com/example/mod", []string{"elasticstack_kibana_nope"})
+	got, err := FindTestConsumersMulti([]string{"internal"}, "github.com/example/mod", []string{"elasticstack_kibana_nope"})
 	if err != nil {
 		t.Fatalf("FindTestConsumersMulti: %v", err)
 	}

@@ -33,9 +33,12 @@ type ImportGraph struct {
 }
 
 // BuildImportGraph runs go list to obtain the non-test import graph for all
-// packages under ./internal/... It returns both forward and reverse forms.
+// packages under the enumerated roots (./internal/... ./provider/...). The
+// pattern must cover every root the selection enumerates, so reverse-dep
+// edges into provider/ exist and phase 1 can select the provider package's
+// live-stack suites. It returns both forward and reverse forms.
 func BuildImportGraph() (*ImportGraph, error) {
-	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}} {{join .Imports \" \"}}", "./internal/...")
+	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}} {{join .Imports \" \"}}", "./internal/...", "./provider/...")
 	out, err := cmd.Output()
 	if err != nil {
 		xerr := &exec.ExitError{}

@@ -26,11 +26,11 @@ import (
 	"strings"
 )
 
-// FindTestConsumersMulti walks root once and reports, per owning package, the
+// FindTestConsumersMulti walks roots and reports, per owning package, the
 // deduplicated set of entity names found in that package's *.tf and *_test.go
 // files. The walk cost is independent of the number of entity names: each
 // candidate file is read once and checked against every name.
-func FindTestConsumersMulti(root, modulePath string, entityNames []string) (map[string][]string, error) {
+func FindTestConsumersMulti(roots []string, modulePath string, entityNames []string) (map[string][]string, error) {
 	seen := make(map[string]map[string]struct{})
 
 	walkFn := func(path string, d fs.DirEntry, err error) error {
@@ -70,8 +70,10 @@ func FindTestConsumersMulti(root, modulePath string, entityNames []string) (map[
 		return nil
 	}
 
-	if err := filepath.WalkDir(root, walkFn); err != nil {
-		return nil, err
+	for _, root := range roots {
+		if err := filepath.WalkDir(root, walkFn); err != nil {
+			return nil, err
+		}
 	}
 
 	result := make(map[string][]string, len(seen))

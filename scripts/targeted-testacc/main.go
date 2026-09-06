@@ -102,11 +102,13 @@ func run() error {
 			if dryRun {
 				fmt.Println("\nNo changed Go or testdata files; zero packages selected.")
 			}
-			return nil
+			// Fall through: phases are skipped via the HasCode guard below, and
+			// dry-run still prints the full block (empty package list plus shard
+			// assignment) via printDryRun.
 		}
 	}
 
-	allAccPackages, err := FindAccTestPackages("internal", modulePath)
+	allAccPackages, err := FindAccTestPackages(accTestEnumerationRoots, modulePath)
 	if err != nil {
 		return fmt.Errorf("enumerate acceptance test packages: %w", err)
 	}
@@ -123,7 +125,7 @@ func run() error {
 		accSet[p] = struct{}{}
 	}
 
-	if !classified.ForceAll {
+	if !classified.ForceAll && classified.HasCode {
 		graph, err := BuildImportGraph()
 		if err != nil {
 			return fmt.Errorf("build import graph: %w", err)
@@ -173,7 +175,7 @@ func run() error {
 		}
 		sort.Strings(entityNames)
 
-		consumerPkgs, err := FindTestConsumersMulti("internal", modulePath, entityNames)
+		consumerPkgs, err := FindTestConsumersMulti(accTestEnumerationRoots, modulePath, entityNames)
 		if err != nil {
 			return fmt.Errorf("find test consumers: %w", err)
 		}

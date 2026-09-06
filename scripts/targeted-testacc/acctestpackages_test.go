@@ -43,7 +43,7 @@ func TestFindAccTestPackages_SyntheticTree(t *testing.T) {
 	// No _test.go file at all.
 	writeFile(t, root, "internal/pkg/resource.go", "package pkg\n")
 
-	got, err := FindAccTestPackages("internal", "github.com/example/mod")
+	got, err := FindAccTestPackages([]string{"internal"}, "github.com/example/mod")
 	if err != nil {
 		t.Fatalf("FindAccTestPackages: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestFindAccTestPackages_NoPackages(t *testing.T) {
 
 	writeFile(t, root, "foo.go", "package foo\n")
 
-	got, err := FindAccTestPackages(".", "github.com/example/mod")
+	got, err := FindAccTestPackages([]string{"."}, "github.com/example/mod")
 	if err != nil {
 		t.Fatalf("FindAccTestPackages: %v", err)
 	}
@@ -147,26 +147,27 @@ func TestIsAccTestFile(t *testing.T) {
 	}
 }
 
-// TestAccPackageEnumerationGuard fails when a package under internal/ that
-// declares a func TestAcc or invokes the acceptance harness (resource.Test /
+// TestAccPackageEnumerationGuard fails when any package in the repository
+// (outside vendor/, .git/, and testdata/ fixtures) that declares a func
+// TestAcc or invokes the acceptance harness (resource.Test /
 // resource.ParallelTest) is missing from FindAccTestPackages output.
 // Acceptance suites that do not follow the TestAcc naming convention (e.g.
-// internal/kibana/synthetics) are only selected when the enumeration
-// recognizes harness invocations; a regression here makes those suites
-// silently unreachable — a PR changing them would select zero packages and
-// go green. The detection below is deliberately text-based so it does not
-// share the AST analysis it guards against.
+// internal/kibana/synthetics, provider/provider_test.go) are only selected
+// when the enumeration recognizes harness invocations; a regression here
+// makes those suites silently unreachable — a PR changing them would select
+// zero packages and go green. The detection below is deliberately text-based
+// so it does not share the AST analysis it guards against.
 func TestAccPackageEnumerationGuard(t *testing.T) {
 	root := repoRoot(t)
 	modulePath, err := currentModulePath()
 	if err != nil {
 		t.Fatalf("cannot resolve module path: %v", err)
 	}
-	// FindAccTestPackages walks a root-relative path; run from the module root
-	// so the "internal" argument resolves.
+	// FindAccTestPackages walks root-relative paths; run from the module root
+	// so the root arguments resolve.
 	t.Chdir(root)
 
-	got, err := FindAccTestPackages("internal", modulePath)
+	got, err := FindAccTestPackages(accTestEnumerationRoots, modulePath)
 	if err != nil {
 		t.Fatalf("FindAccTestPackages: %v", err)
 	}
@@ -176,12 +177,26 @@ func TestAccPackageEnumerationGuard(t *testing.T) {
 	}
 
 	var missing []string
-	internalRoot := filepath.Join(root, "internal")
-	err = filepath.WalkDir(internalRoot, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !strings.HasSuffix(d.Name(), "_test.go") {
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return relErr
+		}
+		if d.IsDir() {
+			// Skip vendored code, git metadata, top-level testdata dirs (analysis/
+			// acctestconfigdirlint/testdata/src/... contains analyzer fixtures
+			// that use resource.Test and are not real suites), and the tool's own
+			// package (its unit tests textually reference resource.Test but are
+			// not acceptance suites).
+			if rel == "vendor" || rel == ".git" || rel == "testdata" || rel == "scripts" {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if strings.Contains(filepath.ToSlash(rel), "/testdata/") || !strings.HasSuffix(d.Name(), "_test.go") {
 			return nil
 		}
 		data, err := os.ReadFile(path)
@@ -191,22 +206,18 @@ func TestAccPackageEnumerationGuard(t *testing.T) {
 		if !textContentHasAcceptanceTest(string(data)) {
 			return nil
 		}
-		rel, err := filepath.Rel(root, filepath.Dir(path))
-		if err != nil {
-			return err
-		}
-		pkg := modulePath + "/" + filepath.ToSlash(rel)
+		pkg := modulePath + "/" + filepath.ToSlash(filepath.Dir(rel))
 		if _, ok := gotSet[pkg]; !ok {
 			missing = append(missing, rel)
 		}
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("walk internal/: %v", err)
+		t.Fatalf("walk repository: %v", err)
 	}
 
 	if len(missing) > 0 {
-		t.Errorf("packages under internal/ declare acceptance tests but are missing from FindAccTestPackages: %v\n"+
+		t.Errorf("packages in the repository declare acceptance tests but are missing from FindAccTestPackages: %v\n"+
 			"The enumeration must recognize both func TestAcc declarations and resource.Test/resource.ParallelTest invocations, "+
 			"or these acceptance suites are unreachable through every selection path.", missing)
 	}

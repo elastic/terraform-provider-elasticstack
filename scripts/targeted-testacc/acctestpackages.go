@@ -29,11 +29,18 @@ import (
 	"strings"
 )
 
-// FindAccTestPackages walks root (typically "internal") and returns the
-// import paths of all Go acceptance test packages: packages with at least
-// one *_test.go file that declares a func TestAcc or invokes the
-// plugin-testing acceptance harness (resource.Test / resource.ParallelTest).
-func FindAccTestPackages(root, modulePath string) ([]string, error) {
+// accTestEnumerationRoots is the set of repository roots whose packages are
+// enumerated as acceptance test packages and grepped by phase 2. It includes
+// provider/ because provider/provider_test.go and provider/factory_test.go
+// drive real live-stack acceptance suites via resource.Test without any
+// TestAcc-prefixed function, with fixtures under provider/testdata/**.
+var accTestEnumerationRoots = []string{"internal", "provider"}
+
+// FindAccTestPackages walks roots and returns the import paths of all Go
+// acceptance test packages: packages with at least one *_test.go file that
+// declares a func TestAcc or invokes the plugin-testing acceptance harness
+// (resource.Test / resource.ParallelTest).
+func FindAccTestPackages(roots []string, modulePath string) ([]string, error) {
 	seen := make(map[string]struct{})
 
 	walkFn := func(path string, d fs.DirEntry, err error) error {
@@ -65,8 +72,10 @@ func FindAccTestPackages(root, modulePath string) ([]string, error) {
 		return nil
 	}
 
-	if err := filepath.WalkDir(root, walkFn); err != nil {
-		return nil, err
+	for _, root := range roots {
+		if err := filepath.WalkDir(root, walkFn); err != nil {
+			return nil, err
+		}
 	}
 
 	result := make([]string, 0, len(seen))
