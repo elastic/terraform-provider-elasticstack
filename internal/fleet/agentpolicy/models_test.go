@@ -339,6 +339,27 @@ func TestPopulateFromAPI_GlobalDataTags_DuplicateNames(t *testing.T) {
 	assert.True(t, found, "expected diagnostic with summary 'Duplicate global_data_tags name', got %v", diags)
 }
 
+// TestPopulateFromAPI_GlobalDataTags_EmptyAPIListPreservesEmptyMap asserts that
+// an API empty list (`[]`) is written as the schema default empty map, not a
+// null map. ToModel returns null for an empty list; writing that into state
+// would persist a null-vs-empty-map diff against Schema(map[string]attr.Value{}).
+func TestPopulateFromAPI_GlobalDataTags_EmptyAPIListPreservesEmptyMap(t *testing.T) {
+	t.Parallel()
+
+	model := &agentPolicyModel{}
+	empty := []kbapi.AgentPolicyGlobalDataTagsItem{}
+	data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
+		Id:             "policy-id",
+		GlobalDataTags: &empty,
+	}
+
+	diags := model.populateFromAPI(context.Background(), data)
+
+	assert.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
+	assert.False(t, model.GlobalDataTags.IsNull(), "expected GlobalDataTags to be an empty map, got null")
+	assert.Empty(t, model.GlobalDataTags.Elements())
+}
+
 // TestPopulateFromAPI_Description_Null_vs_EmptyString asserts the
 // null-preserving behavior for the `description` attribute. Regression test
 // for https://github.com/elastic/terraform-provider-elasticstack/issues/993:
