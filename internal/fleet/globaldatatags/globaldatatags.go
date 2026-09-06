@@ -15,26 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Package globaldatatags provides the shared Terraform model and expand/flatten
-// helpers for the `global_data_tags` map attribute used by both
-// internal/fleet/agentpolicy and internal/fleet/managedintegration. Both
-// resources expose a map keyed by tag name whose value is exactly one of
+// Package globaldatatags provides the shared Terraform model, schema, and
+// map<->API conversion helpers for the `global_data_tags` map attribute used
+// by both internal/fleet/agentpolicy and internal/fleet/managedintegration.
+// Both resources expose a map keyed by tag name whose value is exactly one of
 // string_value/number_value, but each is backed by its own generated kbapi
 // union type (Kibana emits a distinct anonymous union per request/response
-// shape even though the wire shape is identical) -- so the conversion glue
-// between Item and a given kbapi union type still lives in the caller;
-// this package only removes the duplicated model shape and union-decoding
-// control flow.
+// shape even though the wire shape is identical). ToModel/FromModel are
+// generic over that per-endpoint union type so both callers can share the
+// same map-building, duplicate-name-detection, and error-collection loop
+// instead of reimplementing it; only the union-decoding functions passed in
+// (asString/asNumber, fromString/fromNumber) differ per caller.
 package globaldatatags
 
 import (
+	"context"
 	"errors"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
@@ -70,13 +74,13 @@ func ElementType() attr.Type {
 	return types.ObjectType{AttrTypes: AttrTypes()}
 }
 
-// Expand converts a decoded map entry into the caller's API union type T,
+// expand converts a decoded map entry into the caller's API union type T,
 // using fromString/fromNumber to build T from whichever of string_value or
 // number_value is set. If neither (or the conversion itself fails), it
 // records a diagnostic on meta.Diags at meta.Path and returns the zero value
 // of T; callers that check diags.HasError() before using their results (as
 // every current caller does) can treat the returned value as unusable.
-func Expand[T any](item Item, meta typeutils.MapMeta, fromString func(string) (T, error), fromNumber func(float32) (T, error)) T {
+func expand[T any](item Item, meta typeutils.MapMeta, fromString func(string) (T, error), fromNumber func(float32) (T, error)) T {
 	var zero, value T
 	var err error
 
@@ -144,11 +148,11 @@ func Schema(defaultValue map[string]attr.Value) schema.MapNestedAttribute {
 	return attribute
 }
 
-// Flatten decodes a caller's API union value V into Item, preferring the
+// flatten decodes a caller's API union value V into Item, preferring the
 // number-valued variant to match the union's declaration order (matching the
 // AsX...Value1-then-Value0 fallback both packages already use). It returns an
 // error if value is neither a string nor a number.
-func Flatten[V any](value V, asNumber func(V) (float32, error), asString func(V) (string, error)) (Item, error) {
+func flatten[V any](value V, asNumber func(V) (float32, error), asString func(V) (string, error)) (Item, error) {
 	if num, err := asNumber(value); err == nil {
 		return Item{NumberValue: types.Float32Value(num)}, nil
 	}
@@ -156,4 +160,88 @@ func Flatten[V any](value V, asNumber func(V) (float32, error), asString func(V)
 		return Item{StringValue: types.StringValue(str)}, nil
 	}
 	return Item{}, errors.New("value is neither string_value nor number_value")
+}
+
+// Tag is a {name, value} pair matching the wire shape of one API
+// global_data_tags entry, generic over the caller's per-endpoint union type
+// V. Every generated kbapi global_data_tags element (request or response)
+// has exactly this Name/Value field shape; callers copy their concrete
+// `[]SomeGeneratedType` slice into/out of `[]Tag[V]` with a short loop (Go
+// forbids converting between named struct slice types even when the field
+// shapes match) so ToModel/FromModel's map-building loop can stay shared.
+type Tag[V any] struct {
+	Name  string
+	Value V
+}
+
+// ToModel converts a decoded API global_data_tags list into the Terraform
+// `global_data_tags` map attribute. An empty list becomes an empty map (the
+// same contract as typeutils.MapValueFrom). Callers that treat "no tags" as
+// a null attribute (rather than an empty map) should return MapNull before
+// calling ToModel. It records an attribute error on diags (anchored at
+// attrPath.AtMapKey(name)) and skips the offending entry when the API
+// response contains a duplicate tag name or a value that is neither a
+// string nor a number; callers should check diags.HasError() before using
+// the returned map.
+func ToModel[V any](ctx context.Context, tags []Tag[V], attrPath path.Path, diags *diag.Diagnostics, asNumber func(V) (float32, error), asString func(V) (string, error)) types.Map {
+	elemType := ElementType()
+
+	map0 := make(map[string]Item, len(tags))
+	seenNames := make(map[string]struct{}, len(tags))
+	for _, tag := range tags {
+		tagPath := attrPath.AtMapKey(tag.Name)
+		if _, dup := seenNames[tag.Name]; dup {
+			diags.AddAttributeError(
+				tagPath,
+				"Duplicate global_data_tags name",
+				fmt.Sprintf("API returned global_data_tags name %q more than once.", tag.Name),
+			)
+			continue
+		}
+		seenNames[tag.Name] = struct{}{}
+
+		item, err := flatten(tag.Value, asNumber, asString)
+		if err != nil {
+			diags.AddAttributeError(
+				tagPath,
+				"Unsupported global_data_tags value type",
+				fmt.Sprintf("API returned an unsupported value for tag %q; expected string or number.", tag.Name),
+			)
+			continue
+		}
+		map0[tag.Name] = item
+	}
+
+	if diags.HasError() {
+		return types.MapNull(elemType)
+	}
+
+	return typeutils.MapValueFrom(ctx, map0, elemType, attrPath, diags)
+}
+
+// FromModel converts the `global_data_tags` map attribute into a []Tag[V]
+// using fromString/fromNumber to build each entry's API union value.
+// Callers copy Name/Value into their generated request element type (Go
+// forbids converting between named struct slice types even when the field
+// shapes match). Returns nil if tags is null/unknown, or if any entry
+// fails to convert (see expand).
+func FromModel[V any](ctx context.Context, tags types.Map, attrPath path.Path, diags *diag.Diagnostics, fromString func(string) (V, error), fromNumber func(float32) (V, error)) []Tag[V] {
+	if !typeutils.IsKnown(tags) {
+		return nil
+	}
+	items := typeutils.MapTypeAs[Item](ctx, tags, attrPath, diags)
+	if diags.HasError() {
+		return nil
+	}
+
+	raw := make([]Tag[V], 0, len(items))
+	for key, item := range items {
+		meta := typeutils.MapMeta{Key: key, Path: attrPath.AtMapKey(key), Diags: diags}
+		value := expand(item, meta, fromString, fromNumber)
+		raw = append(raw, Tag[V]{Name: key, Value: value})
+	}
+	if diags.HasError() {
+		return nil
+	}
+	return raw
 }
