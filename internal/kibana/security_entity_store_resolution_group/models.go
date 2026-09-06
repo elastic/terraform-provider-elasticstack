@@ -45,12 +45,10 @@ type resolutionGroupModel struct {
 }
 
 func (model resolutionGroupModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaEntityStoreResolutionVersion,
-			ErrorMessage: fmt.Sprintf("Security Entity Store resolution groups require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minKibanaEntityStoreResolutionVersion,
+		fmt.Sprintf("Security Entity Store resolution groups require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
+	), nil
 }
 
 //nolint:unparam // kept for consistency with other populateFromAPI signatures

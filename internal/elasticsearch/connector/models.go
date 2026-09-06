@@ -50,10 +50,10 @@ var MinSupportedVersion = version.Must(version.NewVersion("8.16.0"))
 type VersionGate struct{}
 
 func (VersionGate) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinSupportedVersion,
+		"elasticstack_elasticsearch_connector requires Elasticsearch 8.16.0 or later (the connector request bodies the typed client sends are rejected on 8.12.x–8.15.x).",
+	), nil
 }
 
 // Shared attribute names used by the resource and data source schemas plus
