@@ -265,8 +265,8 @@ func TestEntityRef_FullName(t *testing.T) {
 // named entities, so a regex that stops matching the tree fails loudly here.
 func TestExtractEntities_FromRepoCallSites(t *testing.T) {
 	cases := []struct {
-	dir      string
-	want     []string
+		dir  string
+		want []string
 	}{
 		{"internal/elasticsearch/synonyms", []string{
 			"elasticstack_elasticsearch_synonym_set",
