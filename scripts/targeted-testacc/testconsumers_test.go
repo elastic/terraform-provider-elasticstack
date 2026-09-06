@@ -91,23 +91,3 @@ func TestFindTestConsumersMulti_NoMatches(t *testing.T) {
 		t.Errorf("consumers = %v, want empty", got)
 	}
 }
-
-// FindTestConsumers must behave as a single-entity variant of
-// FindTestConsumersMulti.
-func TestFindTestConsumers_SingleEntityMatchesMulti(t *testing.T) {
-	root := t.TempDir()
-	t.Chdir(root)
-
-	writeFile(t, root, "internal/kibana/space/resource.go", "package space")
-	writeFile(t, root, "internal/kibana/space/resource_test.go", "package space\n\n// elasticstack_kibana_space\n")
-	writeFile(t, root, "internal/kibana/dashboard/dashboard_test.go", "package dashboard\n\n// elasticstack_kibana_dashboard\n")
-
-	single, err := FindTestConsumers("internal", "github.com/example/mod", "elasticstack_kibana_space")
-	if err != nil {
-		t.Fatalf("FindTestConsumers: %v", err)
-	}
-	want := []string{"github.com/example/mod/internal/kibana/space"}
-	if !reflect.DeepEqual(single, want) {
-		t.Errorf("single = %v, want %v", single, want)
-	}
-}

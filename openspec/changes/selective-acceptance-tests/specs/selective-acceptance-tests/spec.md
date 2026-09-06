@@ -22,7 +22,7 @@ A Go `main` package SHALL exist at `scripts/targeted-testacc/` within the provid
 
 The tool SHALL compute the set of relevant acceptance test packages via two independent phases whose results are unioned and deduplicated.
 
-**Phase 1 — Go reverse-dependency walk:** For each changed Go package, the tool SHALL walk the reverse import graph (non-test imports only) to find all packages that transitively import the changed package. Only packages that contain at least one `func TestAcc` function in a `*_test.go` file SHALL be included.
+**Phase 1 — Go reverse-dependency walk:** For each changed Go package, the tool SHALL walk the reverse import graph (non-test imports only) to find all packages that transitively import the changed package. Only acceptance test packages SHALL be included. An acceptance test package is a package containing at least one `*_test.go` file that declares a `func TestAcc*` function OR invokes the plugin-testing acceptance harness (`resource.Test`/`resource.ParallelTest`); the harness invocation is part of the definition because some acceptance suites (e.g. `internal/kibana/synthetics`) predate the `TestAcc` naming convention and drive `resource.TestCase` purely via `resource.Test` without any `TestAcc`-prefixed function.
 
 **Phase 2 — TF entity name grep:** For each candidate package — every changed Go package plus every package selected by phase 1 — the tool SHALL extract Terraform type name suffixes by scanning the package's non-test `.go` files (files ending in `_test.go` SHALL be excluded, so that entity declarations only in test source are ignored) for calls to the entity-declaring constructors exported by `internal/entitycore`:
 
@@ -64,6 +64,12 @@ The tool SHALL construct the full entity name as `elasticstack_<component>_<name
 - **THEN** packages in `internal/fleet/` whose testdata `.tf` files reference `elasticstack_kibana_space` are selected (phase 2)
 - **AND** `internal/kibana/spaces` itself is selected (phase 1)
 
+#### Scenario: Non-TestAcc acceptance suite package is selected
+
+- **WHEN** a file under `internal/kibana/synthetics/monitor/` is the only changed file
+- **AND** the monitor package's `*_test.go` files drive acceptance suites via `resource.Test` without declaring any `func TestAcc`
+- **THEN** `internal/kibana/synthetics/monitor` is selected (phase 1: it invokes the acceptance harness, so it is an acceptance test package)
+
 ---
 
 ### Requirement: Force-all prefix table
@@ -100,7 +106,7 @@ Force-all files: `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`
 
 ### Requirement: Run-all threshold
 
-If the union of phase 1 and phase 2 results exceeds 70% of the total count of acceptance test packages (packages containing at least one `func TestAcc` function), the tool SHALL emit all acceptance test packages instead of the computed subset.
+If the union of phase 1 and phase 2 results exceeds 70% of the total count of acceptance test packages (packages containing at least one `*_test.go` file that declares a `func TestAcc*` function OR invokes `resource.Test`/`resource.ParallelTest`), the tool SHALL emit all acceptance test packages instead of the computed subset.
 
 #### Scenario: Near-total selection collapses to all
 
@@ -266,3 +272,15 @@ The `scripts/targeted-testacc/` package SHALL include unit tests covering: chang
 
 - **WHEN** shard logic is applied to 5 packages with total_shards=2 and shard_index=1
 - **THEN** the result is empty
+
+---
+
+### Requirement: Acceptance package enumeration guard
+
+A guard test SHALL independently enumerate every package under `internal/` that declares a `func TestAcc*` function or invokes `resource.Test`/`resource.ParallelTest` in a `*_test.go` file — using detection that does not share the enumeration's implementation — and SHALL fail when any such package is absent from the tool's acceptance test package enumeration. Because the Run-all threshold, Unresolvable-diff fallback, and Force-all paths all emit exactly the enumerated acceptance test packages, a package missing from the enumeration is unreachable through every selection path; this guard catches acceptance suites that do not follow the `TestAcc` naming convention before they silently stop running. The guard test MAY invoke `go list` and `go env` (it is exempt from the no-git / no-go-list constraint on the pure-logic unit tests).
+
+#### Scenario: Non-TestAcc acceptance package caught by the guard
+
+- **WHEN** a package under `internal/` invokes `resource.Test` in a `*_test.go` file without declaring any `func TestAcc`
+- **AND** that package is not returned by the tool's acceptance test package enumeration
+- **THEN** the guard test fails

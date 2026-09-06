@@ -25,12 +25,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
-// FindAccTestPackages walks root (typically "internal") and returns the import
-// paths of all Go packages that define at least one func TestAcc in a
-// *_test.go file.
+// FindAccTestPackages walks root (typically "internal") and returns the
+// import paths of all Go acceptance test packages: packages with at least
+// one *_test.go file that declares a func TestAcc or invokes the
+// plugin-testing acceptance harness (resource.Test / resource.ParallelTest).
 func FindAccTestPackages(root, modulePath string) ([]string, error) {
 	seen := make(map[string]struct{})
 
@@ -74,7 +76,12 @@ func FindAccTestPackages(root, modulePath string) ([]string, error) {
 	return stringsSorted(result), nil
 }
 
-// isAccTestFile reports whether path declares at least one func TestAcc.
+// isAccTestFile reports whether path contains acceptance tests: at least
+// one func TestAcc, or an invocation of the plugin-testing acceptance
+// harness (resource.Test / resource.ParallelTest). Some acceptance suites
+// predate the TestAcc naming convention (e.g. internal/kibana/synthetics)
+// and drive resource.TestCase purely via resource.Test, so the harness
+// invocation is the authoritative signal alongside the name prefix.
 func isAccTestFile(path string) (bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -94,5 +101,56 @@ func isAccTestFile(path string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, nil
+	return invokesAccHarness(f), nil
+}
+
+// invokesAccHarness reports whether f calls resource.Test or
+// resource.ParallelTest, including through an aliased import of
+// helper/resource.
+func invokesAccHarness(f *ast.File) bool {
+	idents := make(map[string]struct{})
+	for _, imp := range f.Imports {
+		path, err := strconv.Unquote(imp.Path.Value)
+		if err != nil || path != "github.com/hashicorp/terraform-plugin-testing/helper/resource" {
+			continue
+		}
+		name := "resource"
+		if imp.Name != nil {
+			name = imp.Name.Name
+		}
+		if name != "." && name != "_" {
+			idents[name] = struct{}{}
+		}
+	}
+	if len(idents) == 0 {
+		return false
+	}
+
+	found := false
+	ast.Inspect(f, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		if sel.Sel.Name != "Test" && sel.Sel.Name != "ParallelTest" {
+			return true
+		}
+		ident, ok := sel.X.(*ast.Ident)
+		if !ok {
+			return true
+		}
+		if _, ok := idents[ident.Name]; ok {
+			found = true
+			return false
+		}
+		return true
+	})
+	return found
 }

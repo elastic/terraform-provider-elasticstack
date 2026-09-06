@@ -18,9 +18,12 @@
 package main
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +37,9 @@ func TestFindAccTestPackages_SyntheticTree(t *testing.T) {
 	writeFile(t, root, "internal/kibana/dashboard/panel/lens/lens_test.go", "package lens\n\nfunc TestAccLensPanel(t *testing.T) {}\n")
 	writeFile(t, root, "internal/fleet/policy/resource.go", "package policy\n")
 	writeFile(t, root, "internal/fleet/policy/resource_test.go", "package policy\n\nfunc TestAccPolicy(t *testing.T) {}\n")
+	// Acceptance suite without the TestAcc prefix, driven via resource.Test.
+	writeFile(t, root, "internal/kibana/synthetics/monitor/acc_test.go",
+		"package monitor_test\n\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\nfunc TestSyntheticMonitor(t *testing.T) { resource.Test(t, resource.TestCase{}) }\n")
 	// No _test.go file at all.
 	writeFile(t, root, "internal/pkg/resource.go", "package pkg\n")
 
@@ -47,6 +53,7 @@ func TestFindAccTestPackages_SyntheticTree(t *testing.T) {
 		"github.com/example/mod/internal/kibana/dashboard",
 		"github.com/example/mod/internal/kibana/dashboard/panel/lens",
 		"github.com/example/mod/internal/kibana/space",
+		"github.com/example/mod/internal/kibana/synthetics/monitor",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("FindAccTestPackages = %v, want %v", got, want)
@@ -96,6 +103,31 @@ func TestIsAccTestFile(t *testing.T) {
 			content: "package foo\n\n// func TestAccSomething(t *testing.T) {}\n",
 			want:    false,
 		},
+		{
+			name:    "harness-resource-test",
+			content: "package foo\n\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\nfunc TestSomething(t *testing.T) {\n\tresource.Test(t, resource.TestCase{})\n}\n",
+			want:    true,
+		},
+		{
+			name:    "harness-resource-paralleltest",
+			content: "package foo\n\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\nfunc TestSomething(t *testing.T) {\n\tresource.ParallelTest(t, resource.TestCase{})\n}\n",
+			want:    true,
+		},
+		{
+			name:    "harness-aliased-import",
+			content: "package foo\n\nimport r \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\nfunc TestSomething(t *testing.T) {\n\tr.Test(t, r.TestCase{})\n}\n",
+			want:    true,
+		},
+		{
+			name:    "other-package-paralleltest",
+			content: "package foo\n\nimport \"sync\"\n\nvar l sync.Mutex\n\nfunc other() { l.ParallelTest() }\n",
+			want:    false,
+		},
+		{
+			name:    "harness-call-in-comment",
+			content: "package foo\n\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\n// resource.Test(t, resource.TestCase{})\n",
+			want:    false,
+		},
 	}
 
 	for _, tc := range cases {
@@ -113,4 +145,88 @@ func TestIsAccTestFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestAccPackageEnumerationGuard fails when a package under internal/ that
+// declares a func TestAcc or invokes the acceptance harness (resource.Test /
+// resource.ParallelTest) is missing from FindAccTestPackages output.
+// Acceptance suites that do not follow the TestAcc naming convention (e.g.
+// internal/kibana/synthetics) are only selected when the enumeration
+// recognizes harness invocations; a regression here makes those suites
+// silently unreachable — a PR changing them would select zero packages and
+// go green. The detection below is deliberately text-based so it does not
+// share the AST analysis it guards against.
+func TestAccPackageEnumerationGuard(t *testing.T) {
+	root := repoRoot(t)
+	modulePath, err := currentModulePath()
+	if err != nil {
+		t.Fatalf("cannot resolve module path: %v", err)
+	}
+	// FindAccTestPackages walks a root-relative path; run from the module root
+	// so the "internal" argument resolves.
+	t.Chdir(root)
+
+	got, err := FindAccTestPackages("internal", modulePath)
+	if err != nil {
+		t.Fatalf("FindAccTestPackages: %v", err)
+	}
+	gotSet := make(map[string]struct{}, len(got))
+	for _, pkg := range got {
+		gotSet[pkg] = struct{}{}
+	}
+
+	var missing []string
+	internalRoot := filepath.Join(root, "internal")
+	err = filepath.WalkDir(internalRoot, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), "_test.go") {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", path, err)
+		}
+		if !textContentHasAcceptanceTest(string(data)) {
+			return nil
+		}
+		rel, err := filepath.Rel(root, filepath.Dir(path))
+		if err != nil {
+			return err
+		}
+		pkg := modulePath + "/" + filepath.ToSlash(rel)
+		if _, ok := gotSet[pkg]; !ok {
+			missing = append(missing, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk internal/: %v", err)
+	}
+
+	if len(missing) > 0 {
+		t.Errorf("packages under internal/ declare acceptance tests but are missing from FindAccTestPackages: %v\n"+
+			"The enumeration must recognize both func TestAcc declarations and resource.Test/resource.ParallelTest invocations, "+
+			"or these acceptance suites are unreachable through every selection path.", missing)
+	}
+}
+
+// textContentHasAcceptanceTest reports whether source text (a *_test.go
+// file) declares a func TestAcc or invokes resource.Test/resource.ParallelTest.
+// Comment lines are ignored.
+func textContentHasAcceptanceTest(content string) bool {
+	for line := range strings.SplitSeq(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "//") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "func TestAcc") {
+			return true
+		}
+		if strings.Contains(trimmed, "resource.Test(") || strings.Contains(trimmed, "resource.ParallelTest(") {
+			return true
+		}
+	}
+	return false
 }

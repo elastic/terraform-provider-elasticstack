@@ -26,23 +26,6 @@ import (
 	"strings"
 )
 
-// FindTestConsumers searches root (typically "internal") recursively for files
-// whose contents contain entityName. It considers *.tf and *_test.go files.
-// Each matching file is mapped to its owning Go package import path (the nearest
-// ancestor directory containing a .go file). The deduplicated set of import
-// paths is returned.
-func FindTestConsumers(root, modulePath, entityName string) ([]string, error) {
-	consumers, err := FindTestConsumersMulti(root, modulePath, []string{entityName})
-	if err != nil {
-		return nil, err
-	}
-	result := make([]string, 0, len(consumers))
-	for pkg := range consumers {
-		result = append(result, pkg)
-	}
-	return stringsSorted(result), nil
-}
-
 // FindTestConsumersMulti walks root once and reports, per owning package, the
 // deduplicated set of entity names found in that package's *.tf and *_test.go
 // files. The walk cost is independent of the number of entity names: each
