@@ -81,6 +81,38 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 	require.Equal(t, preservedKibanaConnection, state.KibanaConnection)
 }
 
+func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-cleared-proxy"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"proxy_id":   "",
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.True(t, state.ProxyID.IsNull())
+}
+
 func TestCreateAndUpdateFinalizeStateViaReadHydration(t *testing.T) {
 	t.Parallel()
 

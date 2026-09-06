@@ -19,6 +19,7 @@ package agentdownloadsource
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -127,11 +128,43 @@ func TestModelToAPIUpdateModel(t *testing.T) {
 		ProxyID: types.StringValue("proxy-456"),
 	}
 
-	body := state.toAPIUpdateModel(ctx)
+	body := state.toAPIUpdateModel(ctx, model{})
 	require.Equal(t, "updated-name", body.Name)
 	require.Equal(t, "https://artifacts.example.com/elastic-agent-updated", body.Host)
 	require.NotNil(t, body.IsDefault)
 	require.True(t, *body.IsDefault)
 	require.NotNil(t, body.ProxyId)
 	require.Equal(t, "proxy-456", *body.ProxyId)
+}
+
+func TestModelToAPIUpdateModelClearsUnsetProxyID(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("updated-name"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent-updated"),
+		Default: types.BoolValue(false),
+		ProxyID: types.StringNull(),
+	}
+	prior := model{ProxyID: types.StringValue("proxy-456")}
+
+	body := plan.toAPIUpdateModel(ctx, prior)
+	require.NotNil(t, body.ProxyId, "clearing proxy_id must send empty string so omitempty does not drop the field")
+	require.Equal(t, "", *body.ProxyId)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"proxy_id":""`)
+}
+
+func TestModelToAPIUpdateModelOmitsAlreadyUnsetProxyID(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("updated-name"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent-updated"),
+		Default: types.BoolValue(false),
+		ProxyID: types.StringNull(),
+	}
+
+	body := plan.toAPIUpdateModel(ctx, model{ProxyID: types.StringNull()})
+	require.Nil(t, body.ProxyId)
 }
