@@ -50,6 +50,30 @@ jobs:
       - name: Build
         run: make build-ci
 
+  unit-test:
+    name: Unit Test
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: "go.mod"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Get dependencies
+        run: make vendor
+
+      # Dedicated unit-test job: the targeted-testacc selection only covers
+      # packages with acceptance tests, so unit-test-only packages (entitycore,
+      # generated clients, internal/clients, etc.) would otherwise never run
+      # on PRs. This job is not gated on the targeted selection at all.
+      - name: Unit tests
+        run: go test ./... -count=1 -parallel=4 -timeout=10m
+
   lint:
     name: Lint
     needs: classify
@@ -201,7 +225,7 @@ jobs:
         run: make vendor
 
       - id: targeted
-        name: Compute targeted acceptance test packages
+        name: compute-packages — compute targeted acceptance test packages
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" != "pull_request" ]]; then
@@ -225,6 +249,10 @@ jobs:
           if git fetch origin +${{ github.event.pull_request.base.sha }}:"${base_ref}" --depth=1; then
             compute_targeted --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }}
           else
+            # Base-commit fetch failed (e.g. shallow history / pruned ref);
+            # fall back to re-invoking the tool without --base, which resolves
+            # the baseline from merge-base origin/main HEAD, or HEAD~1 when no
+            # origin/main is available.
             compute_targeted --total-shards=2 --shard-index=${{ matrix.shard }}
           fi
           targeted=$(echo "$targeted" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
@@ -293,7 +321,6 @@ jobs:
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-
 
       - id: force-install-synthetics
         name: Force install synthetics

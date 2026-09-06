@@ -11,7 +11,7 @@ Each matrix test job SHALL include a `compute-packages` step that runs before th
 The `compute-packages` step SHALL:
 
 - For non-PR events (`github.event_name != 'pull_request'`, including `push`, `workflow_dispatch`, and `merge_group`): set `has_packages=true` and `targeted_pkgs=` (empty string) unconditionally.
-- For PR events: fetch the PR base commit (`github.event.pull_request.base.sha`) into a local ref, then invoke `go run ./scripts/targeted-testacc/... --base="<local-ref>" --total-shards=2 --shard-index=${{ matrix.shard }}`. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
+- For PR events: fetch the PR base commit (`github.event.pull_request.base.sha`) into a local ref, then invoke `go run ./scripts/targeted-testacc/... --base="<local-ref>" --total-shards=2 --shard-index=${{ matrix.shard }}`. If the base-commit fetch fails, the step SHALL fall back to re-invoking the tool without `--base`, in which case the tool resolves the baseline itself (merge-base of `origin/main` and `HEAD`, or `HEAD~1` when `origin/main` is unavailable), possibly widening the diff rather than skipping tests. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
 
 #### Scenario: PR with targeted packages — stack starts and targeted tests run
 
@@ -30,6 +30,14 @@ The `compute-packages` step SHALL:
 - **AND** the stack start step is skipped
 - **AND** the acceptance test step is skipped
 - **AND** the job exits 0
+
+#### Scenario: Base-commit fetch fails — tool falls back to self-resolved baseline
+
+- **WHEN** a PR event triggers the workflow
+- **AND** the `git fetch` of the PR base commit fails (e.g. pruned ref or shallow-history limitation)
+- **THEN** the tool SHALL be re-invoked without `--base`
+- **AND** the tool resolves the diff baseline as the merge-base of `origin/main` and `HEAD`, or `HEAD~1` when `origin/main` is unavailable
+- **AND** the job SHALL NOT silently skip the acceptance suite
 
 #### Scenario: Tool invocation fails — job fails rather than skipping the suite
 
@@ -68,13 +76,31 @@ The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be con
 #### Scenario: Non-PR test step is identical to pre-change behaviour
 
 - **WHEN** the workflow runs on a push to `main`
-- **THEN** the test step invocation is `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
+- **THEN** the acceptance test step invocation is `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
 - **AND** no `TARGETED_PKGS` variable is set
+- **AND** Go unit tests run in the dedicated unit-test job (see "Unit tests run independently of acceptance targeting"), not inside the acceptance matrix
 
 #### Scenario: PR test step uses targeted packages
 
 - **WHEN** the workflow runs on a PR and `targeted_pkgs` is non-empty
 - **THEN** the test step invocation is `make targeted-testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
+
+---
+
+### Requirement: Unit tests run independently of acceptance targeting
+
+The workflow SHALL include a dedicated unit-test job (`go test ./...`) that runs on every event where the change-classification job reports `provider_changes=true`. The unit-test job SHALL NOT be gated on the compute-packages `has_packages` output, because the targeted-testacc selection only covers packages containing acceptance tests (`func TestAcc`), so unit-test-only packages (e.g. `internal/entitycore`, `generated/kbapi`, `internal/clients/*`, `internal/fleet/policyshape`, `internal/asyncutils`, `internal/diagutil`) would otherwise never run on PRs.
+
+#### Scenario: PR with docs-only acceptance shards still runs unit tests
+
+- **WHEN** a PR event triggers the workflow and the provider changes classification passes
+- **AND** the compute-packages step sets `has_packages=false` for one or more matrix shards
+- **THEN** the unit-test job still runs `go test ./...` and its result gates the PR
+
+#### Scenario: Unit-test job not gated on has_packages
+
+- **WHEN** the unit-test job executes
+- **THEN** the job has no `if` condition referencing `steps.targeted.outputs.has_packages`
 
 ---
 

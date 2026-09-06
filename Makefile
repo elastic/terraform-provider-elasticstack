@@ -1,14 +1,15 @@
 # Preserve environment and command-line variable values across .env inclusion.
 # The .env file (auto-created from .env.template) may contain defaults that
 # would otherwise silently override values set via workflow matrices or local shell.
-# These defines use make function syntax that shellcheck cannot parse; the
-# guard is applied via $(eval $(call ...)) below, not executed as shell.
+# These defines use make function syntax that shellcheck cannot parse; they
+# are make directives expanded via eval/call below, not shell.
 # shellcheck disable=SC1073,SC1065,SC1064,SC1072
 define _env_guard_save
 _$(1)_ORIGIN := $(origin $(1))
 _$(1)_VALUE  := $($(1))
 endef
 
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 define _env_guard_restore
 ifneq ($(filter environment command line,$(_$(1)_ORIGIN)),)
   override $(1) := $(_$(1)_VALUE)
@@ -18,10 +19,14 @@ endef
 # Guard variables present in both .env.template and CI/local usage.
 _ENV_GUARD_VARS := STACK_VERSION FLEET_IMAGE ELASTICSEARCH_PASSWORD KIBANA_PASSWORD
 
+# These eval/foreach invocations expand make function syntax that shellcheck
+# cannot parse; they are make directives, not shell.
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_save,$v)))
 
 -include .env
 
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
 
 .DEFAULT_GOAL = help

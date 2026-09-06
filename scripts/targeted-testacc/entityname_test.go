@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -105,13 +106,16 @@ func init() {
 	_ = entitycore.NewEphemeralBase(entitycore.ComponentFleet, "agent")
 	_ = entitycore.NewActionBase(entitycore.ComponentAPM, "source_map")
 	_ = entitycore.NewElasticsearchResource[Model]("index_template", opts)
-	_ = entitycore.NewElasticsearchDataSource[Model]("role", schema, read)
+	_ = entitycore.NewElasticsearchDataSource[Model](entitycore.ComponentElasticsearch, "role", schema, read)
 	_ = entitycore.NewElasticsearchEphemeralResource[Model, State]("apikey", opts)
 	_ = entitycore.NewElasticsearchAction[Model]("snapshot_create", opts)
 	_ = entitycore.NewKibanaResource[Model](entitycore.ComponentKibana, "slo", opts)
 	_ = entitycore.NewKibanaDataSource[Model](entitycore.ComponentKibana, "spaces", opts)
 	_ = entitycore.NewKibanaEphemeralResource[Model, State]("synthetic", opts)
 	_ = entitycore.NewKibanaAction[Model]("bulk_upload", opts)
+	// Type-inferred call sites (no explicit type argument):
+	_ = entitycore.NewElasticsearchResource("synonym_set", opts)
+	_ = entitycore.NewElasticsearchDataSource(entitycore.ComponentElasticsearch, "connector", schema, read)
 }`
 
 	got := extractFromSource(src, nil)
@@ -129,6 +133,9 @@ func init() {
 		{Component: "elasticsearch", Name: "role"},
 		{Component: "elasticsearch", Name: "apikey"},
 		{Component: "elasticsearch", Name: "snapshot_create"},
+		// type-inferred call sites (same elasticsearch regex pass)
+		{Component: "elasticsearch", Name: "synonym_set"},
+		{Component: "elasticsearch", Name: "connector"},
 		// kibanaNameRE
 		{Component: "kibana", Name: "synthetic"},
 		{Component: "kibana", Name: "bulk_upload"},
@@ -158,7 +165,7 @@ func TestEntitycoreConstructorsCovered(t *testing.T) {
 	for _, name := range nonEntityConstructors {
 		covered[name] = true
 	}
-	coveredRE := regexp.MustCompile(`^func (New\w+)\(`)
+	coveredRE := regexp.MustCompile(`^func (New\w+)[\(\[]`)
 
 	var unclassified []string
 	for _, e := range entries {
@@ -247,6 +254,54 @@ func TestEntityRef_FullName(t *testing.T) {
 		t.Run(tc.want, func(t *testing.T) {
 			if got := tc.ref.FullName(); got != tc.want {
 				t.Errorf("FullName() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestExtractEntities_FromRepoCallSites asserts that the extraction regexes
+// still match the real constructor call sites in the repository, rather than
+// only synthetic fixtures. Each listed directory must yield exactly the
+// named entities, so a regex that stops matching the tree fails loudly here.
+func TestExtractEntities_FromRepoCallSites(t *testing.T) {
+	cases := []struct {
+	dir      string
+	want     []string
+	}{
+		{"internal/elasticsearch/synonyms", []string{
+			"elasticstack_elasticsearch_synonym_set",
+		}},
+		{"internal/elasticsearch/queryrulesets", []string{
+			"elasticstack_elasticsearch_query_ruleset",
+		}},
+		{"internal/elasticsearch/connector/resource", []string{
+			"elasticstack_elasticsearch_connector",
+		}},
+		{"internal/elasticsearch/security/role", []string{
+			"elasticstack_elasticsearch_security_role",
+		}},
+		{"internal/kibana/spaces", []string{
+			"elasticstack_kibana_space",
+		}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.dir, func(t *testing.T) {
+			got, err := ExtractEntities(filepath.Join("..", "..", tc.dir))
+			if err != nil {
+				t.Fatalf("ExtractEntities(%s): %v", tc.dir, err)
+			}
+			names := make([]string, 0, len(got))
+			for _, e := range got {
+				names = append(names, e.FullName())
+			}
+			if len(names) == 0 {
+				t.Fatalf("ExtractEntities(%s) extracted no entities; extraction regexes no longer match real call sites", tc.dir)
+			}
+			for _, want := range tc.want {
+				if !slices.Contains(names, want) {
+					t.Errorf("ExtractEntities(%s) missing %s; got %v", tc.dir, want, names)
+				}
 			}
 		})
 	}

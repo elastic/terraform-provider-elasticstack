@@ -20,9 +20,39 @@ package main
 import (
 	"bufio"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+// repoRoot returns the module root directory for the repository containing
+// this test, via `go env GOMOD`.
+func repoRoot(t *testing.T) string {
+	t.Helper()
+	out, err := exec.Command("go", "env", "GOMOD").Output()
+	if err != nil {
+		t.Fatalf("go env GOMOD failed: %v", err)
+	}
+	root := strings.TrimSpace(string(out))
+	if root == "" {
+		t.Fatalf("go env GOMOD returned empty module file path")
+	}
+	return filepath.Dir(root)
+}
+
+// goList runs `go list` with -f format over pattern from the repository root,
+// failing the test on any infrastructure error (a skip here would let the
+// guard silently pass).
+func goList(t *testing.T, repoRoot, format, pattern string) string {
+	t.Helper()
+	cmd := exec.Command("go", "list", "-f", format, pattern)
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go list %s failed: %v", pattern, err)
+	}
+	return string(out)
+}
 
 // TestTestOnlyImportedPackagesGuard fails when a package under internal/ is
 // imported only from test files (no non-test importer exists in the module)
@@ -33,19 +63,17 @@ import (
 // acceptance tests, so when a new shared test-helper package is introduced
 // it must either be added to forceAllPrefixes or declare entities.
 func TestTestOnlyImportedPackagesGuard(t *testing.T) {
+	// The test's working directory is the package dir (scripts/targeted-testacc),
+	// so every repository path below must be resolved against the module root.
+	root := repoRoot(t)
 	modulePath, err := currentModulePath()
 	if err != nil {
-		t.Skipf("cannot resolve module path: %v", err)
+		t.Fatalf("cannot resolve module path: %v", err)
 	}
 	moduleInternal := modulePath + "/internal/"
 
 	nonTestImported := map[string]bool{}
-	importsOut, err := exec.Command("go", "list", "-f",
-		"{{.ImportPath}} {{join .Imports \" \"}}", "./internal/...").Output()
-	if err != nil {
-		t.Skipf("go list failed: %v", err)
-	}
-	for _, fields := range scanGoList(string(importsOut)) {
+	for _, fields := range scanGoList(goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", "./internal/...")) {
 		for _, imp := range fields[1:] {
 			if strings.HasPrefix(imp, moduleInternal) {
 				nonTestImported[imp] = true
@@ -53,13 +81,9 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 		}
 	}
 
-	testImportsOut, err := exec.Command("go", "list", "-f",
-		"{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", "./internal/...").Output()
-	if err != nil {
-		t.Skipf("go list failed: %v", err)
-	}
+	testImportsOut := goList(t, root, "{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", "./internal/...")
 	testImported := map[string]bool{}
-	for _, fields := range scanGoList(string(testImportsOut)) {
+	for _, fields := range scanGoList(testImportsOut) {
 		for _, imp := range fields[1:] {
 			if imp != fields[0] && strings.HasPrefix(imp, moduleInternal) {
 				testImported[imp] = true
@@ -73,10 +97,13 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 			continue
 		}
 		dir := strings.TrimPrefix(pkg, modulePath+"/")
-		if matchesForceAll(dir) {
+		// forceAllPrefixes entries carry a trailing slash, so the bare dir must
+		// be slash-terminated before matching (a bare-dir comparison would miss
+		// every force-all directory and report false positives).
+		if matchesForceAll(dir + "/") {
 			continue
 		}
-		entities, err := ExtractEntities(dir)
+		entities, err := ExtractEntities(filepath.Join(root, dir))
 		if err != nil {
 			t.Errorf("extract entities for %s: %v", dir, err)
 			continue

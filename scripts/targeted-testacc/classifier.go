@@ -32,6 +32,7 @@ var forceAllPrefixes = []string{
 	"internal/clients/",
 	"internal/entitycore/",
 	"generated/",
+	"xpprovider/",
 	".github/workflows/",
 	// Shared acceptance-test helper packages: imported only from test files,
 	// so the phase-1 reverse-dependency walk (non-test imports) cannot see
@@ -49,6 +50,9 @@ var forceAllFiles = []string{
 	"go.mod",
 	"go.sum",
 	"Makefile",
+	"main.go",
+	".terraform-version",
+	".env.template",
 }
 
 // isForceAllDockerComposeFile reports whether the file name matches the

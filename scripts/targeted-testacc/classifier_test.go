@@ -112,6 +112,7 @@ func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
 		"internal/clients/clients.go",
 		"internal/entitycore/resource.go",
 		"generated/kibana/client.go",
+		"xpprovider/xpprovider.go",
 		".github/workflows/provider.yml",
 	}
 
@@ -131,6 +132,9 @@ func TestClassifier_Classify_ForceAllFiles(t *testing.T) {
 		"go.mod",
 		"go.sum",
 		"Makefile",
+		"main.go",
+		".terraform-version",
+		".env.template",
 		"docker-compose.yml",
 		"docker-compose.tls.yml",
 	}
@@ -153,6 +157,9 @@ func TestClassifier_Classify_NoForceAllForSimilarPaths(t *testing.T) {
 		"internal/entitycorepkg/base.go",
 		"my-go.mod",
 		"docs/Makefile",
+		"internal/a/main.go",
+		"internal/a/.terraform-version",
+		"docs/.env.template",
 		"internal/a/docker-compose.yml.txt",
 	}
 

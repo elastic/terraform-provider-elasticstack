@@ -52,19 +52,27 @@ var (
 	// Generic Kibana constructors taking (component, name, ...):
 	// entitycore.NewKibanaResource[Model](entitycore.ComponentKibana, "slo", opts)
 	// entitycore.NewKibanaDataSource[Model](entitycore.ComponentKibana, "spaces", opts)
-	kibanaComponentRE = regexp.MustCompile(`(?:entitycore\.)?NewKibana(?:Resource|DataSource)\[[^\]]*\]\s*\(\s*(?:entitycore\.)?Component(\w+)\s*,\s*"([^"]+)"`)
+	// The type-argument list is optional: the type can be inferred from the
+	// options value, e.g. NewKibanaResource("..."-independent) call sites.
+	kibanaComponentRE = regexp.MustCompile(`(?:entitycore\.)?NewKibana(?:Resource|DataSource)(?:\[[^\]]*\])?\s*\(\s*(?:entitycore\.)?Component(\w+)\s*,\s*"([^"]+)"`)
 
-	// Elasticsearch generic constructors taking ("name", ...):
-	// entitycore.NewElasticsearchResource[Model]("index_template", opts)
-	// entitycore.NewElasticsearchDataSource[Model]("role", ...)
-	// entitycore.NewElasticsearchEphemeralResource[Model, State]("apikey", opts)
-	// entitycore.NewElasticsearchAction[Model]("snapshot_create", opts)
-	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)\[[^\]]*\]\s*\(\s*"([^"]+)"`)
+	// Generic Elasticsearch constructors. The resource/ephemeral/action
+	// envelopes are name-first — NewElasticsearchResource[Model]("index_template", opts),
+	// NewElasticsearchEphemeralResource[Model, State]("apikey", opts),
+	// NewElasticsearchAction[Model]("snapshot_create", opts) — while the data
+	// source envelope is component-first —
+	// NewElasticsearchDataSource[Model](entitycore.ComponentElasticsearch, "role", ...).
+	// The type-argument list is optional (type-inferred call sites exist, e.g.
+	// NewElasticsearchResource("synonym_set", opts)), and the leading component
+	// argument is optional, mirroring kibanaComponentRE.
+	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component\w+\s*,\s*)?"([^"]+)"`)
 
 	// Kibana generic constructors taking ("name", ...):
 	// entitycore.NewKibanaEphemeralResource[Model, State]("name", opts)
 	// entitycore.NewKibanaAction[Model]("name", opts)
-	kibanaNameRE = regexp.MustCompile(`(?:entitycore\.)?NewKibana(?:EphemeralResource|Action)\[[^\]]*\]\s*\(\s*"([^"]+)"`)
+	// The type-argument list is optional; a leading component argument is
+	// tolerated for symmetry with the other generic constructors.
+	kibanaNameRE = regexp.MustCompile(`(?:entitycore\.)?NewKibana(?:EphemeralResource|Action)(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component\w+\s*,\s*)?"([^"]+)"`)
 )
 
 // coveredEntityConstructors lists every entitycore constructor that declares

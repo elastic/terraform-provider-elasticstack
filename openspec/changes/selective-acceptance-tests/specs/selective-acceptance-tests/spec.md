@@ -31,13 +31,15 @@ The tool SHALL compute the set of relevant acceptance test packages via two inde
 - `NewEphemeralBase(entitycore.Component<X>, "<name>")`
 - `NewActionBase(entitycore.Component<X>, "<name>")`
 - `NewElasticsearchResource[...]("<name>", ...)`
-- `NewElasticsearchDataSource[...]("<name>", ...)`
+- `NewElasticsearchDataSource[...](entitycore.Component<X>, "<name>", ...)` (the data source envelope is component-first; the resource/ephemeral/action envelopes are name-first)
 - `NewElasticsearchEphemeralResource[...]("<name>", ...)`
 - `NewElasticsearchAction[...]("<name>", ...)`
 - `NewKibanaResource[...](entitycore.Component<X>, "<name>", ...)`
 - `NewKibanaDataSource[...](entitycore.Component<X>, "<name>", ...)`
 - `NewKibanaEphemeralResource[...]("<name>", ...)`
 - `NewKibanaAction[...]("<name>", ...)`
+
+For the generic constructors, the explicit type-argument list (`[...]`) SHALL be optional, so type-inferred call sites (e.g. `NewElasticsearchResource("synonym_set", opts)` where the type is inferred from the options value) are also extracted. A leading `Component<X>` argument SHALL be optional for the name-first families, so the same pattern covers both envelope styles.
 
 A unit test SHALL verify that the extractor covers every constructor `internal/entitycore` exports, so future envelope types fail the test instead of silently producing selection gaps. A known accepted extraction gap is the SDKv2 `elasticstack_elasticsearch_ingest_processor_*` data sources: they are not declared via entitycore constructors, but all 40 live in `internal/elasticsearch/ingest`, so phase 1 still selects that package when it changes; only cross-package testdata consumers of those names could be missed.
 
@@ -67,9 +69,9 @@ The tool SHALL construct the full entity name as `elasticstack_<component>_<name
 
 When any changed file path has a prefix matching one of the force-all prefixes, or equals one of the force-all files, the tool SHALL immediately emit all acceptance test packages (equivalent to a "run all" result) without performing phase 1 or phase 2 analysis.
 
-Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `.github/workflows/`, `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`. The three shared acceptance-test helper packages are force-all because they are imported only from test files, so the phase-1 reverse-dependency walk (non-test imports) cannot see them. A guard unit test SHALL fail when a package under `internal/` is imported only from test files and is neither covered by a force-all prefix nor entity-declaring.
+Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `xpprovider/`, `.github/workflows/`, `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`. The three shared acceptance-test helper packages are force-all because they are imported only from test files, so the phase-1 reverse-dependency walk (non-test imports) cannot see them. A guard unit test SHALL fail when a package under `internal/` is imported only from test files and is neither covered by a force-all prefix nor entity-declaring.
 
-Force-all files: `go.mod`, `go.sum`, `Makefile`, and any `docker-compose*.yml` or `docker-compose*.yaml` file (matched on base name, at any repository path; e.g. `docker-compose.yml`, `docker-compose.tls.yml`).
+Force-all files: `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`, `.env.template`, and any `docker-compose*.yml` or `docker-compose*.yaml` file (matched on base name, at any repository path; e.g. `docker-compose.yml`, `docker-compose.tls.yml`). The root `main.go` (the provider server entry point), `.terraform-version` (the pinned Terraform binary used by acceptance tests), and `.env.template` (defaults for every test run) are module-level files that affect every build or test invocation, so a diff touching them cannot be narrowed to a subset of packages.
 
 #### Scenario: Change to shared client triggers full suite
 
@@ -84,7 +86,7 @@ Force-all files: `go.mod`, `go.sum`, `Makefile`, and any `docker-compose*.yml` o
 
 #### Scenario: Module-level file change triggers full suite
 
-- **WHEN** `go.mod`, `go.sum`, `Makefile`, a `docker-compose*.yml` or `docker-compose*.yaml` file, a file under `.github/workflows/`, or a file under a shared acceptance-test helper package (`internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`) is changed
+- **WHEN** `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`, `.env.template`, a `docker-compose*.yml` or `docker-compose*.yaml` file, a file under `.github/workflows/`, or a file under a shared acceptance-test helper package (`internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`) is changed
 - **THEN** the tool emits all acceptance test packages
 
 ---
