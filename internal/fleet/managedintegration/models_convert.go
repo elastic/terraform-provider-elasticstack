@@ -123,7 +123,7 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 // globalDataTagsToModel converts managed_integrations global_data_tags into
 // the Terraform map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
-	if item == nil || item.GlobalDataTags == nil {
+	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
 		return types.MapNull(globaldatatags.ElementType())
 	}
 

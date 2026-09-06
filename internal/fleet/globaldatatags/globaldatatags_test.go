@@ -18,9 +18,13 @@
 package globaldatatags
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	frameworkschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,4 +61,18 @@ func TestSchema_withDefault(t *testing.T) {
 	assert.True(t, attribute.Optional)
 	assert.True(t, attribute.Computed)
 	assert.NotNil(t, attribute.Default)
+}
+
+func TestToModel_emptyListIsEmptyMap(t *testing.T) {
+	t.Parallel()
+
+	var diags diag.Diagnostics
+	m := ToModel(context.Background(), []Tag[string]{}, path.Root("global_data_tags"), &diags,
+		func(string) (float32, error) { return 0, errors.New("not a number") },
+		func(s string) (string, error) { return s, nil },
+	)
+
+	require.False(t, diags.HasError(), "%v", diags)
+	assert.False(t, m.IsNull(), "empty API list should become an empty map, not null")
+	assert.Empty(t, m.Elements())
 }

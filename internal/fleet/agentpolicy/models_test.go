@@ -341,8 +341,8 @@ func TestPopulateFromAPI_GlobalDataTags_DuplicateNames(t *testing.T) {
 
 // TestPopulateFromAPI_GlobalDataTags_EmptyAPIListPreservesEmptyMap asserts that
 // an API empty list (`[]`) is written as the schema default empty map, not a
-// null map. ToModel returns null for an empty list; writing that into state
-// would persist a null-vs-empty-map diff against Schema(map[string]attr.Value{}).
+// null map. Writing a null map into state would persist a null-vs-empty-map
+// diff against Schema(map[string]attr.Value{}).
 func TestPopulateFromAPI_GlobalDataTags_EmptyAPIListPreservesEmptyMap(t *testing.T) {
 	t.Parallel()
 

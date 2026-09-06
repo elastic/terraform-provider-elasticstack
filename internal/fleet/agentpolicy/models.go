@@ -196,12 +196,6 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		if diags.HasError() {
 			return diags
 		}
-		// Schema default is an empty map. ToModel returns null for an empty
-		// API list; writing that into state would persist a null-vs-empty
-		// diff against the default.
-		if model.GlobalDataTags.IsNull() {
-			model.GlobalDataTags = types.MapValueMust(globaldatatags.ElementType(), map[string]attr.Value{})
-		}
 	}
 
 	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
