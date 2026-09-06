@@ -115,3 +115,82 @@ func TestElasticDuration_Description(t *testing.T) {
 	require.Equal(t, v.Description(context.Background()), v.MarkdownDescription(context.Background()))
 	require.Contains(t, v.Description(context.Background()), "Elastic duration")
 }
+
+func TestParseUnitDuration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		input     string
+		units     string
+		wantValue int
+		wantUnit  string
+		wantErr   bool
+	}{
+		{name: "valid minutes", input: "5m", units: "mhd", wantValue: 5, wantUnit: "m"},
+		{name: "valid hours", input: "3h", units: "mhd", wantValue: 3, wantUnit: "h"},
+		{name: "zero is accepted", input: "0m", units: "mhd", wantValue: 0, wantUnit: "m"},
+		{name: "multi-digit", input: "150s", units: "smhd", wantValue: 150, wantUnit: "s"},
+		{name: "empty string", input: "", units: "mhd", wantErr: true},
+		{name: "missing digits", input: "m", units: "mhd", wantErr: true},
+		{name: "missing unit", input: "30", units: "mhd", wantErr: true},
+		{name: "unsupported unit", input: "30w", units: "mhd", wantErr: true},
+		{name: "fractional rejected", input: "1.5m", units: "mhd", wantErr: true},
+		{name: "empty units does not panic", input: "5m", units: "", wantErr: true},
+		{name: "metacharacter units does not panic", input: "5m", units: "m-h^d", wantValue: 5, wantUnit: "m"},
+		{name: "metacharacter units rejects unmatched", input: "5s", units: "m-h^d", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			value, unit, err := validators.ParseUnitDuration(tt.input, tt.units)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantValue, value)
+			require.Equal(t, tt.wantUnit, unit)
+		})
+	}
+}
+
+func TestDurationWithUnits(t *testing.T) {
+	t.Parallel()
+
+	v := validators.DurationWithUnits("mhd", "must be digits plus m, h, or d")
+
+	tests := []struct {
+		name        string
+		value       types.String
+		expectError bool
+	}{
+		{name: "null skipped", value: types.StringNull()},
+		{name: "unknown skipped", value: types.StringUnknown()},
+		{name: "valid", value: types.StringValue("5m")},
+		{name: "zero accepted", value: types.StringValue("0d")},
+		{name: "invalid unit", value: types.StringValue("5s"), expectError: true},
+		{name: "empty", value: types.StringValue(""), expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			req := validator.StringRequest{
+				Path:        path.Root("test"),
+				ConfigValue: tt.value,
+			}
+			resp := &validator.StringResponse{}
+			v.ValidateString(context.Background(), req, resp)
+
+			if tt.expectError {
+				require.True(t, resp.Diagnostics.HasError())
+				return
+			}
+			require.False(t, resp.Diagnostics.HasError(), "unexpected diagnostics: %s", resp.Diagnostics)
+		})
+	}
+}

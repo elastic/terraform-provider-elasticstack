@@ -21,12 +21,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -878,31 +877,18 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	// Get the raw duration string (e.g. "5m", "1h", "30s")
 	durationStr := duration.ValueString()
 
-	// Parse the duration string using regex to extract value and unit
-	durationRegex := regexp.MustCompile(`^(\d+)([smhd])$`)
-	matches := durationRegex.FindStringSubmatch(durationStr)
-
-	if len(matches) != 3 {
-		diags.AddError(
-			"Invalid duration format",
-			fmt.Sprintf("Duration '%s' is not in valid format. Expected format: number followed by unit (s, m, h)", durationStr),
-		)
-		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
-	}
-
-	// Parse the numeric value
-	value, err := strconv.Atoi(matches[1])
+	value, unitStr, err := validators.ParseUnitDuration(durationStr, "smhd")
 	if err != nil {
 		diags.AddError(
-			"Invalid duration value",
-			fmt.Sprintf("Failed to parse duration value '%s': %s", matches[1], err.Error()),
+			"Invalid duration format",
+			fmt.Sprintf("Duration '%s' is not in valid format. Expected format: number followed by unit (s, m, h, d)", durationStr),
 		)
 		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
 	}
 
 	// Map the unit from the string to the API unit type
 	var unit kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnit
-	switch matches[2] {
+	switch unitStr {
 	case "s":
 		unit = kbapi.SecurityDetectionsAPIAlertSuppressionDurationUnitS
 	case "m":
@@ -916,7 +902,7 @@ func parseDurationToAPI(duration customtypes.Duration) (kbapi.SecurityDetections
 	default:
 		diags.AddError(
 			"Unsupported duration unit",
-			fmt.Sprintf("Unit '%s' is not supported. Supported units: s, m, h", matches[2]),
+			fmt.Sprintf("Unit '%s' is not supported. Supported units: s, m, h, d", unitStr),
 		)
 		return kbapi.SecurityDetectionsAPIAlertSuppressionDuration{}, diags
 	}

@@ -19,7 +19,7 @@ package sloburnrate
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -35,8 +35,8 @@ func SchemaAttribute() schema.Attribute {
 		MarkdownDescription: "Duration for the burn rate chart in the format `[value][unit]`, where unit is `m` (minutes), `h` (hours), or `d` (days). For example: `5m`, `3h`, `6d`.",
 		Required:            true,
 		Validators: []validator.String{
-			stringvalidator.RegexMatches(
-				sloBurnRateDurationRegexp,
+			validators.DurationWithUnits(
+				"mhd",
 				"must match the pattern `^\\d+[mhd]$` (a positive integer followed by m, h, or d)",
 			),
 		},
