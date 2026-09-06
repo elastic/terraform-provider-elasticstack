@@ -144,24 +144,30 @@ func run() error {
 			return strings.TrimPrefix(importPath, modulePath+"/")
 		}
 
+		// Collect every entity name from every changed package first, then
+		// walk internal/ once for all of them, so the walk cost does not scale
+		// with the number of entities.
+		entityNames := make([]string, 0)
 		for _, pkg := range classified.Packages {
 			entities, err := ExtractEntities(pkgDir(pkg))
 			if err != nil {
 				return fmt.Errorf("extract entities for %s: %w", pkg, err)
 			}
 			for _, ent := range entities {
-				consumers, err := FindTestConsumers("internal", modulePath, ent.FullName())
-				if err != nil {
-					return fmt.Errorf("find consumers for %s: %w", ent.FullName(), err)
-				}
-				for _, consumer := range consumers {
-					if _, ok := accSet[consumer]; !ok {
-						continue
-					}
-					phaseReasons[consumer] = append(phaseReasons[consumer], fmt.Sprintf("phase-2 consumer of %s", ent.FullName()))
-					phase2Packages = append(phase2Packages, consumer)
-				}
+				entityNames = append(entityNames, ent.FullName())
 			}
+		}
+
+		consumerPkgs, err := FindTestConsumersMulti("internal", modulePath, entityNames)
+		if err != nil {
+			return fmt.Errorf("find test consumers: %w", err)
+		}
+		for _, consumer := range consumerPkgs {
+			if _, ok := accSet[consumer]; !ok {
+				continue
+			}
+			phaseReasons[consumer] = append(phaseReasons[consumer], fmt.Sprintf("phase-2 consumer of %s", strings.Join(entityNames, ", ")))
+			phase2Packages = append(phase2Packages, consumer)
 		}
 		phase2Packages = stringsSorted(phase2Packages)
 	}

@@ -1,4 +1,4 @@
-'use strict';
+
 
 const { gateProvider } = require('../gate-provider.js');
 const { gateWorkflows } = require('../gate-workflows.js');
@@ -6,13 +6,14 @@ const { gateWorkflows } = require('../gate-workflows.js');
 const GATES = {
   provider: {
     envPrefix: 'PROVIDER_GATE_',
-    fields: ['CLASSIFY_RESULT', 'BUILD_RESULT', 'LINT_RESULT', 'GOLANGCI_LINT_RESULT', 'TEST_RESULT'],
+    fields: ['CLASSIFY_RESULT', 'BUILD_RESULT', 'LINT_RESULT', 'GOLANGCI_LINT_RESULT', 'TEST_RESULT', 'UNIT_TEST_RESULT'],
     evaluate: (env) => gateProvider({
       classifyResult: env.CLASSIFY_RESULT,
       buildResult: env.BUILD_RESULT,
       lintResult: env.LINT_RESULT,
       golangciLintResult: env.GOLANGCI_LINT_RESULT,
       testResult: env.TEST_RESULT,
+      unitTestResult: env.UNIT_TEST_RESULT,
     }),
   },
   workflows: {
@@ -33,7 +34,7 @@ function readGateEnv(spec, processEnv) {
   return env;
 }
 
-module.exports = async function ({ github, context, core }) {
+module.exports = async ({ github, context, core }) => {
 
   const gateName = process.env.GATE_NAME;
   if (!gateName) {

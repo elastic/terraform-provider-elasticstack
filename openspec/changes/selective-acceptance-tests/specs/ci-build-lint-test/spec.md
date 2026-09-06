@@ -78,7 +78,8 @@ The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be con
 - **WHEN** the workflow runs on a push to `main`
 - **THEN** the acceptance test step invocation is `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
 - **AND** no `TARGETED_PKGS` variable is set
-- **AND** Go unit tests run in the dedicated unit-test job (see "Unit tests run independently of acceptance targeting"), not inside the acceptance matrix
+- **AND** `make testacc` continues to execute unit-test-only tests inline, because it has no `-run`/`-skip` filter; the dedicated unit-test job is additive on non-PR events, not a replacement
+- **AND** on PR events, unit-test-only packages are covered by the dedicated unit-test job, since targeted selection covers only `func TestAcc` packages
 
 #### Scenario: PR test step uses targeted packages
 
@@ -213,3 +214,53 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 - **THEN** a default Fleet Server host, a `fleet-server` agent policy, and a `fleet_server` package policy SHALL exist before `make testacc` runs
 - **AND** `make testacc`'s `acctest.PreCheck` SHALL ensure a default agent download source exists
 - **AND** no separate per-version-gated Fleet setup step SHALL be required for this coverage
+
+---
+
+## MODIFIED Requirements
+
+### Requirement: Provider gate job (REQ-034–REQ-036)
+
+The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, matrix acceptance `test`, and `unit-test` job results.
+
+The `gate` job SHALL succeed when either of the following is true:
+
+* The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job are all intentionally skipped
+* `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job all complete successfully (regardless of the classify result)
+
+The `gate` job SHALL fail when any of the following is true:
+
+* Any of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports `failure` or `cancelled`
+* The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports an unexpected `skipped` result
+* Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
+
+The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint`/`unit-test` checks.
+
+#### Scenario: OpenSpec-only pull request
+
+- **GIVEN** a pull request whose changed files are all under `openspec/`
+- **WHEN** the workflow reaches the `gate` job
+- **THEN** `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job SHALL be treated as intentionally skipped
+- **AND** the `gate` job SHALL succeed
+
+#### Scenario: Provider change with failing acceptance coverage
+
+- **GIVEN** a workflow run with `provider_changes=true`
+- **AND** the matrix acceptance `test` job does not complete successfully
+- **WHEN** the `gate` job evaluates the workflow state
+- **THEN** the `gate` job SHALL fail
+
+#### Scenario: Provider change with an unexpected skip
+
+- **GIVEN** a workflow run with `provider_changes=true`
+- **AND** at least one of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports `skipped`
+- **WHEN** the `gate` job evaluates the workflow state
+- **THEN** the `gate` job SHALL fail
+
+#### Scenario: Unit-test job failure gates the PR
+
+- **GIVEN** a workflow run with `provider_changes=true`
+- **AND** the `unit-test` job reports `failure` while `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job report `success`
+- **WHEN** the `gate` job evaluates the workflow state
+- **THEN** the `gate` job SHALL fail
+- **AND** auto-approval SHALL NOT fire

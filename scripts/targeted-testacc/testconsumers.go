@@ -32,6 +32,14 @@ import (
 // ancestor directory containing a .go file). The deduplicated set of import
 // paths is returned.
 func FindTestConsumers(root, modulePath, entityName string) ([]string, error) {
+	return FindTestConsumersMulti(root, modulePath, []string{entityName})
+}
+
+// FindTestConsumersMulti walks root once and reports the deduplicated import
+// paths of packages containing files that mention any of entityNames. The walk
+// cost is independent of the number of entity names: each candidate file is
+// read once and checked against every name.
+func FindTestConsumersMulti(root, modulePath string, entityNames []string) ([]string, error) {
 	seen := make(map[string]struct{})
 
 	walkFn := func(path string, d fs.DirEntry, err error) error {
@@ -47,11 +55,12 @@ func FindTestConsumers(root, modulePath, entityName string) ([]string, error) {
 			return nil
 		}
 
-		contains, err := fileContains(path, entityName)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("scan %s: %w", path, err)
 		}
-		if !contains {
+
+		if !fileContainsAny(data, entityNames) {
 			return nil
 		}
 
@@ -94,11 +103,12 @@ func owningPackageDir(path string) (string, bool) {
 	}
 }
 
-// fileContains reports whether needle occurs in the file at path.
-func fileContains(path, needle string) (bool, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return false, err
+// fileContainsAny reports whether data contains any of needles.
+func fileContainsAny(data []byte, needles []string) bool {
+	for _, n := range needles {
+		if bytes.Contains(data, []byte(n)) {
+			return true
+		}
 	}
-	return bytes.Contains(data, []byte(needle)), nil
+	return false
 }

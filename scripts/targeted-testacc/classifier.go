@@ -109,9 +109,12 @@ func (c *Classifier) Classify(changedFiles []string) *ClassifyResult {
 
 		res.HasCode = true
 
-		// Skip packages whose directory no longer exists (e.g. the diff
-		// includes a deleted package); they cannot contribute packages.
+		// A changed .go path whose directory no longer exists means the diff
+		// deletes (part of) a package. The selection cannot reason about
+		// deleted code, so fail safe in the conservative direction: run the
+		// full suite.
 		if _, err := os.Stat(pkgDir); err != nil {
+			res.ForceAll = true
 			continue
 		}
 

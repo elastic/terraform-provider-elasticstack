@@ -151,6 +151,21 @@ func TestClassifier_Classify_ForceAllFiles(t *testing.T) {
 }
 
 func TestClassifier_Classify_NoForceAllForSimilarPaths(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// Materialize the referenced package directories so that the
+	// deleted-package fail-safe (directory missing → ForceAll) does not fire
+	// for these valid paths.
+	for _, dir := range []string{
+		"internal/clientspkg",
+		"providerx",
+		"internal/entitycorepkg",
+		"internal/a",
+	} {
+		writeFile(t, root, dir+"/stub.go", "package stub\n")
+	}
+
 	files := []string{
 		"internal/clientspkg/client.go",
 		"providerx/config.go",
@@ -174,7 +189,7 @@ func TestClassifier_Classify_NoForceAllForSimilarPaths(t *testing.T) {
 	}
 }
 
-func TestClassifier_Classify_DeletedPackageDirIsSkipped(t *testing.T) {
+func TestClassifier_Classify_DeletedPackageDirForcesAll(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
 
@@ -191,6 +206,9 @@ func TestClassifier_Classify_DeletedPackageDirIsSkipped(t *testing.T) {
 	}
 	if !res.HasCode {
 		t.Errorf("HasCode = false, want true")
+	}
+	if !res.ForceAll {
+		t.Errorf("ForceAll = false, want true: deleting a package directory must fail safe to the full suite")
 	}
 }
 

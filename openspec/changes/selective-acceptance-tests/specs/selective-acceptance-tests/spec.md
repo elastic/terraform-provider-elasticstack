@@ -236,7 +236,7 @@ A `targeted-testacc-dry-run` Make target SHALL exist. It SHALL invoke the tool w
 
 ### Requirement: Tool unit tests
 
-The `scripts/targeted-testacc/` package SHALL include unit tests covering: changed-file-to-package mapping, force-all prefix detection, entity name extraction from source snippets, reverse-dep walk on a synthetic graph, shard-count logic (threshold and round-robin), and the run-all threshold. Tests SHALL not require a live git repository or `go list` invocation.
+The `scripts/targeted-testacc/` package SHALL include unit tests covering: changed-file-to-package mapping, force-all prefix detection, entity name extraction from source snippets, reverse-dep walk on a synthetic graph, shard-count logic (threshold and round-robin), and the run-all threshold. The pure-logic tests for changed-file mapping, force-all detection, entity extraction, reverse-dep walking, shard logic, and the run-all threshold SHALL not require a live git repository or `go list` invocation. The repository guard tests (e.g. test-only import classification) are exempt from this constraint and MAY invoke `go list` and `go env`.
 
 #### Scenario: Entity name extraction from source
 
