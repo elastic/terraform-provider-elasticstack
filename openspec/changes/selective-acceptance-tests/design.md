@@ -42,7 +42,9 @@ Phase 2 (entity grep): catches test suites that *use* changed resources in their
 
 **Choice:** Certain path prefixes and module-level files unconditionally emit the full package set, bypassing analysis.
 
-Prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `xpprovider/`, `.github/workflows/`, plus shared acceptance-test helper packages `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, and `internal/providerfwtest/`.
+Prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `xpprovider/`, `.github/workflows/`, `scripts/targeted-testacc/`, plus shared acceptance-test helper packages `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, and `internal/providerfwtest/`.
+
+The tool's own package (`scripts/targeted-testacc/`) is force-all because it sits outside `internal/` and under no other prefix, so a PR touching only the tool would otherwise select zero acceptance packages — the suite the tool gates would never be exercised by its own changes. This matches the shared test-helper reasoning (avoids false confidence in partial analysis); tool changes are low-frequency, so the CI cost of the resulting full-suite runs is bounded.
 
 Files: `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`, `.env.template`, and `docker-compose*.yml` / `docker-compose*.yaml` matched on base name at any repository path (e.g. `docker-compose.yml`, `docker-compose.tls.yml`) — these affect every build or the test harness itself (the root `main.go` is the provider server entry point; `.terraform-version` pins the Terraform binary used by acceptance tests; `.env.template` supplies defaults for every test run), so a diff touching them cannot be narrowed to a subset of packages.
 
@@ -74,7 +76,7 @@ The threshold of 30 was chosen from the consumer count distribution: nearly all 
 
 **Rationale:** Merge-base is the correct semantic for "what this branch changed". The fallback to `HEAD~1` handles shallow clones and detached HEAD states gracefully. In CI, a `git fetch origin main --depth=1` step before the tool ensures merge-base works without a full history fetch.
 
-Empty diff (on main, or when only non-code files changed) → tool emits all acc-test packages (conservative default).
+Empty or unresolvable diff (on main, shallow clone, or `git diff` failure) → tool emits all acc-test packages (conservative default). A diff that resolves but contains only non-code files emits zero packages (see Non-Goals).
 
 ### Decision: CI event routing
 

@@ -71,7 +71,7 @@ The `compute-packages` step SHALL:
 
 ### Requirement: Test step routes between targeted and full suite
 
-The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be conditioned on `has_packages == 'true'`. When `targeted_pkgs` is non-empty (PR event with packages), the step SHALL run `make targeted-testacc` passing `ACCTEST_TOTAL_SHARDS=2`, `ACCTEST_SHARD_INDEX=${{ matrix.shard }}`, and `TARGETED_PKGS=${{ steps.targeted.outputs.targeted_pkgs }}`. When `targeted_pkgs` is empty (non-PR event, including `push`, `workflow_dispatch`, and `merge_group`), the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` (existing full-suite behaviour, unchanged).
+The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be conditioned on `has_packages == 'true'`. The step SHALL pass the `targeted_pkgs` output to the shell via an `env:` block variable (`TARGETED_PKGS`) and expand `"$TARGETED_PKGS"` in the run script, never by interpolating the output directly into shell text. When `targeted_pkgs` is non-empty (PR event with packages), the step SHALL run `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"` with no `ACCTEST_TOTAL_SHARDS`/`ACCTEST_SHARD_INDEX` re-sharding, because the tool already applied `--total-shards`/`--shard-index` during package selection and the per-shard package list is final. When `targeted_pkgs` is empty (non-PR event, including `push`, `workflow_dispatch`, and `merge_group`), the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` (existing full-suite behaviour, unchanged).
 
 #### Scenario: Non-PR test step is identical to pre-change behaviour
 
@@ -84,7 +84,9 @@ The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be con
 #### Scenario: PR test step uses targeted packages
 
 - **WHEN** the workflow runs on a PR and `targeted_pkgs` is non-empty
-- **THEN** the test step invocation is `make targeted-testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
+- **THEN** the test step invocation is `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"`
+- **AND** `TARGETED_PKGS` is provided via the step's `env:` block, not interpolated into shell text
+- **AND** no `ACCTEST_TOTAL_SHARDS`/`ACCTEST_SHARD_INDEX` re-sharding is performed on the targeted invocation
 
 ---
 

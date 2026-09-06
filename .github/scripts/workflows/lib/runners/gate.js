@@ -1,4 +1,4 @@
-
+'use strict';
 
 const { gateProvider } = require('../gate-provider.js');
 const { gateWorkflows } = require('../gate-workflows.js');
@@ -34,7 +34,7 @@ function readGateEnv(spec, processEnv) {
   return env;
 }
 
-module.exports = async ({ github, context, core }) => {
+module.exports = async function ({ github, context, core }) {
 
   const gateName = process.env.GATE_NAME;
   if (!gateName) {

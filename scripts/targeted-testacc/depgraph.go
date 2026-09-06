@@ -47,7 +47,6 @@ func BuildImportGraph() (*ImportGraph, error) {
 
 	g := &ImportGraph{
 		Forward: make(map[string][]string),
-		Reverse: make(map[string][]string),
 	}
 
 	sc := bufio.NewScanner(strings.NewReader(string(out)))
@@ -61,11 +60,7 @@ func BuildImportGraph() (*ImportGraph, error) {
 			continue
 		}
 		pkg := fields[0]
-		imports := fields[1:]
-		g.Forward[pkg] = imports
-		for _, imp := range imports {
-			g.Reverse[imp] = append(g.Reverse[imp], pkg)
-		}
+		g.Forward[pkg] = fields[1:]
 	}
 	if err := sc.Err(); err != nil {
 		return nil, err
@@ -75,10 +70,8 @@ func BuildImportGraph() (*ImportGraph, error) {
 		sort.Strings(g.Forward[pkg])
 		g.Forward[pkg] = uniqStrings(g.Forward[pkg])
 	}
-	for pkg := range g.Reverse {
-		sort.Strings(g.Reverse[pkg])
-		g.Reverse[pkg] = uniqStrings(g.Reverse[pkg])
-	}
+
+	g.Reverse = BuildReverseDepGraph(g.Forward)
 
 	return g, nil
 }

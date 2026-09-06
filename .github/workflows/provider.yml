@@ -338,12 +338,16 @@ jobs:
         timeout-minutes: 45
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
         run: |
-          if [[ -n "${{ steps.targeted.outputs.targeted_pkgs }}" ]]; then
-            make targeted-testacc TARGETED_PKGS="${{ steps.targeted.outputs.targeted_pkgs }}" ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+          # No re-sharding on the targeted path: the tool already applied
+          # --total-shards/--shard-index during package selection, so the
+          # TARGETED_PKGS list is final for this shard.
+          if [[ -n "$TARGETED_PKGS" ]]; then
+            make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"
           else
             make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
           fi
         env:
+          TARGETED_PKGS: ${{ steps.targeted.outputs.targeted_pkgs }}
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"

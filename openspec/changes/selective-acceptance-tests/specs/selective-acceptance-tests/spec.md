@@ -69,7 +69,7 @@ The tool SHALL construct the full entity name as `elasticstack_<component>_<name
 
 When any changed file path has a prefix matching one of the force-all prefixes, or equals one of the force-all files, the tool SHALL immediately emit all acceptance test packages (equivalent to a "run all" result) without performing phase 1 or phase 2 analysis.
 
-Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `xpprovider/`, `.github/workflows/`, `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`. The three shared acceptance-test helper packages are force-all because they are imported only from test files, so the phase-1 reverse-dependency walk (non-test imports) cannot see them. A guard unit test SHALL fail when a package under `internal/` is imported only from test files and is neither covered by a force-all prefix nor entity-declaring.
+Force-all prefixes: `provider/`, `internal/acctest/`, `internal/clients/`, `internal/entitycore/`, `generated/`, `xpprovider/`, `.github/workflows/`, `scripts/targeted-testacc/`, `internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`. The three shared acceptance-test helper packages are force-all because they are imported only from test files, so the phase-1 reverse-dependency walk (non-test imports) cannot see them. The tool's own package (`scripts/targeted-testacc/`) is force-all because it sits outside `internal/` and under no other prefix, so a PR touching only the tool would otherwise select zero acceptance packages — the suite it gates would never be exercised by its own changes, which mirrors the shared test-helper reasoning: it avoids false confidence in partial analysis of the tool's behavior. Tool changes are low-frequency, so the CI cost of the resulting full-suite runs is bounded. A guard unit test SHALL fail when a package under `internal/` is imported only from test files and is neither covered by a force-all prefix nor entity-declaring.
 
 Force-all files: `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`, `.env.template`, and any `docker-compose*.yml` or `docker-compose*.yaml` file (matched on base name, at any repository path; e.g. `docker-compose.yml`, `docker-compose.tls.yml`). The root `main.go` (the provider server entry point), `.terraform-version` (the pinned Terraform binary used by acceptance tests), and `.env.template` (defaults for every test run) are module-level files that affect every build or test invocation, so a diff touching them cannot be narrowed to a subset of packages.
 
@@ -86,8 +86,14 @@ Force-all files: `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`
 
 #### Scenario: Module-level file change triggers full suite
 
-- **WHEN** `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`, `.env.template`, a `docker-compose*.yml` or `docker-compose*.yaml` file, a file under `.github/workflows/`, or a file under a shared acceptance-test helper package (`internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`) is changed
+- **WHEN** `go.mod`, `go.sum`, `Makefile`, `main.go`, `.terraform-version`, `.env.template`, a `docker-compose*.yml` or `docker-compose*.yaml` file, a file under `.github/workflows/`, a file under `scripts/targeted-testacc/`, or a file under a shared acceptance-test helper package (`internal/kibana/dashboard/dashboardacctest/`, `internal/kibana/dashboard/panelkit/contracttest/`, `internal/providerfwtest/`) is changed
 - **THEN** the tool emits all acceptance test packages
+
+#### Scenario: Tool-only change triggers full suite
+
+- **WHEN** the only changed files are under `scripts/targeted-testacc/`
+- **THEN** the tool emits all acceptance test packages
+- **AND** no phase 1 or phase 2 analysis is performed
 
 ---
 

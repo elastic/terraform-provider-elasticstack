@@ -34,6 +34,10 @@ var forceAllPrefixes = []string{
 	"generated/",
 	"xpprovider/",
 	".github/workflows/",
+	// The tool's own package: a PR touching only scripts/targeted-testacc/
+	// would otherwise select zero acceptance packages, so changes to the
+	// selection tool are always exercised by the full acceptance suite.
+	"scripts/targeted-testacc/",
 	// Shared acceptance-test helper packages: imported only from test files,
 	// so the phase-1 reverse-dependency walk (non-test imports) cannot see
 	// them and they do not declare Terraform entities for phase 2.
