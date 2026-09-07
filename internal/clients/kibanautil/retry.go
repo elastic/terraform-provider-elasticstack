@@ -20,10 +20,10 @@ package kibanautil
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
 	"net/http"
 	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -31,29 +31,38 @@ import (
 // ConflictMaxAttempts is the default number of attempts for ConflictRetry.
 const ConflictMaxAttempts = 5
 
+// conflictAttemptResult carries fn's result and diagnostics through
+// asyncutils.PollWithBackoff, which only threads a single T plus a plain
+// error between attempts.
+type conflictAttemptResult[T any] struct {
+	value T
+	diags diag.Diagnostics
+}
+
 // ConflictRetry retries fn (up to maxAttempts) when the Kibana API returns
 // HTTP 409 Conflict. Kibana holds a short exclusive write lock during
 // mutations; a brief exponential backoff with jitter resolves the contention
 // without user-visible errors on concurrent applies/destroys.
 func ConflictRetry[T any](ctx context.Context, maxAttempts int, fn func() (T, int, diag.Diagnostics)) (T, diag.Diagnostics) {
-	backoff := 500 * time.Millisecond
-	for attempt := 1; ; attempt++ {
-		result, statusCode, diags := fn()
-		if statusCode != http.StatusConflict || attempt >= maxAttempts {
-			return result, diags
-		}
-
-		jitter := time.Duration(rand.Int64N(int64(backoff) / 2))
-		wait := backoff + jitter
-
-		tflog.Debug(ctx, fmt.Sprintf("HTTP 409 Conflict, retrying (attempt %d/%d, backoff %s)", attempt, maxAttempts, wait))
-
-		select {
-		case <-ctx.Done():
-			diags.AddError("retry aborted", ctx.Err().Error())
-			return result, diags
-		case <-time.After(wait):
-		}
-		backoff *= 2
+	cfg := asyncutils.BackoffConfig{
+		Initial:     500 * time.Millisecond,
+		Max:         time.Hour,
+		MaxAttempts: maxAttempts,
+		Jitter:      0.5,
 	}
+
+	attempt, err := asyncutils.PollWithBackoff(ctx, cfg, func(ctx context.Context, attemptNum int) (conflictAttemptResult[T], bool, error) {
+		value, statusCode, diags := fn()
+		done := statusCode != http.StatusConflict
+		if !done {
+			tflog.Debug(ctx, fmt.Sprintf("HTTP 409 Conflict (attempt %d/%d)", attemptNum, maxAttempts))
+		}
+		return conflictAttemptResult[T]{value: value, diags: diags}, done, nil
+	})
+
+	diags := attempt.diags
+	if err != nil {
+		diags.AddError("retry aborted", err.Error())
+	}
+	return attempt.value, diags
 }

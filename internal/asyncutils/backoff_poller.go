@@ -19,6 +19,7 @@ package asyncutils
 
 import (
 	"context"
+	"math/rand/v2"
 	"time"
 )
 
@@ -39,6 +40,11 @@ type BackoffConfig struct {
 	// from the first attempt. Zero means unbounded (rely on MaxAttempts
 	// and/or ctx cancellation to stop retrying).
 	MaxElapsed time.Duration
+	// Jitter, when non-zero, adds a random extra delay before each wait,
+	// sized as a fraction of the current backoff delay (e.g. 0.5 adds up
+	// to 50% extra delay on top of the backoff). This avoids retry storms
+	// when multiple callers back off in lockstep. Zero means no jitter.
+	Jitter float64
 }
 
 // PollFunc performs one poll attempt, 1-indexed by attempt. It returns the
@@ -79,7 +85,7 @@ func PollWithBackoff[T any](ctx context.Context, cfg BackoffConfig, fn PollFunc[
 		select {
 		case <-ctx.Done():
 			return result, ctx.Err()
-		case <-time.After(backoff):
+		case <-time.After(withJitter(backoff, cfg.Jitter)):
 		}
 
 		if cfg.Max > 0 {
@@ -89,4 +95,18 @@ func PollWithBackoff[T any](ctx context.Context, cfg BackoffConfig, fn PollFunc[
 			}
 		}
 	}
+}
+
+// withJitter adds a random extra delay to backoff, up to jitter fraction of
+// backoff, to avoid retry storms when multiple callers back off in
+// lockstep. A non-positive jitter returns backoff unchanged.
+func withJitter(backoff time.Duration, jitter float64) time.Duration {
+	if jitter <= 0 {
+		return backoff
+	}
+	span := int64(float64(backoff) * jitter)
+	if span <= 0 {
+		return backoff
+	}
+	return backoff + time.Duration(rand.Int64N(span))
 }
