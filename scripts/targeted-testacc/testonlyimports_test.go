@@ -72,9 +72,12 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 	}
 	moduleInternal := modulePath + "/internal/"
 
-	// The guard walks the same enumerated roots as the selection tool, so a
-	// package under provider/ that is test-only-imported is caught too.
-	goListPattern := "./internal/... ./provider/..."
+	// The guard covers internal/ only, matching the delta requirement's scope.
+	// provider/ is itself force-all, so a test-only-imported package under
+	// provider/ cannot produce a silent skip; narrowing the go list pattern
+	// to ./internal/... keeps the guard's walk and its import filters (both
+	// restricted to modulePath + "/internal/") aligned.
+	goListPattern := "./internal/..."
 	nonTestImported := map[string]bool{}
 	for _, fields := range scanGoList(goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", goListPattern)) {
 		for _, imp := range fields[1:] {

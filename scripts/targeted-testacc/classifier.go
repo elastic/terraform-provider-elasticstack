@@ -34,6 +34,13 @@ var forceAllPrefixes = []string{
 	"generated/",
 	"xpprovider/",
 	".github/workflows/",
+	// The embedded example tree: consumed only from test code
+	// (internal/acctest/examples_plan_test.go embeds examples/ and drives
+	// TestAccExamples_planOnly over every embedded example), so examples/ is
+	// outside the enumeration roots, not attributable to a Go package, and
+	// excluded from the unit-test job by -skip '^TestAcc'. An examples-only
+	// PR would otherwise select zero packages on every shard.
+	"examples/",
 	// The tool's own package: a PR touching only scripts/targeted-testacc/
 	// would otherwise select zero acceptance packages, so changes to the
 	// selection tool are always exercised by the full acceptance suite.
@@ -71,7 +78,9 @@ func isForceAllDockerComposeFile(file string) bool {
 }
 
 // Classifier maps changed file paths to Go package import paths and detects
-// force-all prefixes. It also filters out non-Go/non-testdata files.
+// force-all prefixes. Go files belong to their own directory; every other
+// file is attributed to its nearest ancestor directory that contains a .go
+// file (or ignored when no such directory exists).
 type Classifier struct {
 	ModulePath string
 }
@@ -87,14 +96,19 @@ type ClassifyResult struct {
 	ForceAll bool
 	// Packages is the deduplicated set of changed Go package import paths.
 	Packages []string
-	// HasCode is true when at least one changed file is a Go file or a testdata
-	// file that maps to a Go package.
+	// HasCode is true when at least one changed file maps to a Go package: a
+	// .go file, or any other file whose nearest ancestor directory with a
+	// .go file exists (testdata fixtures, go:embed'ed description files,
+	// fixture directories not named exactly testdata).
 	HasCode bool
 }
 
 // Classify maps changed file paths to their owning Go package import paths.
-// Files outside Go packages are ignored. Files under testdata/ are attributed
-// to the nearest ancestor directory that contains a .go file.
+// Files outside Go packages (no ancestor directory contains a .go file) are
+// ignored. Every other file is attributed to its nearest ancestor directory
+// that contains a .go file: testdata fixtures, go:embed'ed schema
+// description files, and fixture directories that are not named exactly
+// testdata all belong to the package that embeds or reads them.
 func (c *Classifier) Classify(changedFiles []string) *ClassifyResult {
 	res := &ClassifyResult{}
 
@@ -136,43 +150,18 @@ func (c *Classifier) Classify(changedFiles []string) *ClassifyResult {
 // packageDir returns the directory path (relative to the module root) that
 // owns the changed file, and whether such a directory exists.
 func (c *Classifier) packageDir(file string) (string, bool) {
-	if !isRelevantFile(file) {
-		return "", false
-	}
-
-	dir := filepath.Dir(file)
-
 	if strings.HasSuffix(file, ".go") {
-		// A .go file belongs to its own directory.
-		return dir, true
+		// A .go file belongs to its own directory even when the diff has
+		// already deleted that directory: Classify's fail-safe then triggers a
+		// full run instead of attributing the deleted file to an ancestor.
+		return filepath.ToSlash(filepath.Dir(file)), true
 	}
 
-	// testdata file: walk up to the nearest directory containing a .go file.
-	for {
-		if dir == "." || dir == "/" || dir == "" {
-			return "", false
-		}
-		if hasGoFile(dir) {
-			return dir, true
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", false
-		}
-		dir = parent
-	}
-}
-
-// isRelevantFile reports whether a changed file can contribute to package
-// selection. We consider .go files and any file under a testdata/ directory.
-func isRelevantFile(file string) bool {
-	if strings.HasSuffix(file, ".go") {
-		return true
-	}
-	if strings.Contains(file, "/testdata/") {
-		return true
-	}
-	return false
+	// Any other changed file is attributed to its nearest ancestor directory
+	// that contains a .go file. This covers files under testdata/ as well as
+	// go:embed'ed content (e.g. descriptions/*.md schema inputs) and fixture
+	// directories that are not named exactly testdata (e.g. test_data/*.tf).
+	return owningPackageDir(file)
 }
 
 // hasGoFile reports whether dir contains at least one .go file.

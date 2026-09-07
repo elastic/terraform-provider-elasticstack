@@ -147,15 +147,23 @@ func TestIsAccTestFile(t *testing.T) {
 	}
 }
 
-// TestAcceptancePackageEnumerationGuard fails when any package in the repository
+// TestAcceptancePackageEnumerationGuard fails when any package under the
+// tool's enumeration roots that declares a func TestAcc or invokes the
+// acceptance harness (resource.Test / resource.ParallelTest) is missing
+// from FindAccTestPackages output.
+//
+// The guard walk is derived from accTestEnumerationRoots itself, so the
+// guard's scope and the tool's scope stay coupled by construction: content
+// outside the roots (vendor/, .git/, scripts/, docs/) is excluded by the
+// walk itself rather than by a manual skip list. Only testdata fixture
+// trees inside the roots are skipped, for a separate reason: they hold
+// analyzer/test fixtures that textually use resource.Test but are not real
+// acceptance suites.
 //
 // Named TestAcceptance... rather than TestAcc... so the stackless unit-test
 // job (`go test ./... -skip '^TestAcc'`) still runs it — the `^TestAcc`
 // filter would otherwise exclude the one guard whose purpose is to catch
 // acceptance suites that silently stop running before they go green.
-// (outside vendor/, .git/, and testdata/ fixtures) that declares a func
-// TestAcc or invokes the acceptance harness (resource.Test /
-// resource.ParallelTest) is missing from FindAccTestPackages output.
 // Acceptance suites that do not follow the TestAcc naming convention (e.g.
 // internal/kibana/synthetics, provider/provider_test.go) are only selected
 // when the enumeration recognizes harness invocations; a regression here
@@ -182,47 +190,43 @@ func TestAcceptancePackageEnumerationGuard(t *testing.T) {
 	}
 
 	var missing []string
-	err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		rel, relErr := filepath.Rel(root, path)
-		if relErr != nil {
-			return relErr
-		}
-		if d.IsDir() {
-			// Skip vendored code, git metadata, top-level testdata dirs (analysis/
-			// acctestconfigdirlint/testdata/src/... contains analyzer fixtures
-			// that use resource.Test and are not real suites), and the tool's own
-			// package (its unit tests textually reference resource.Test but are
-			// not acceptance suites).
-			if rel == "vendor" || rel == ".git" || rel == "testdata" || rel == "scripts" {
-				return fs.SkipDir
+	for _, root := range accTestEnumerationRoots {
+		err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				// Skip testdata fixture trees inside the enumeration roots:
+				// they contain analyzer/test fixtures that textually use
+				// resource.Test but are not real acceptance suites.
+				if d.Name() == "testdata" {
+					return fs.SkipDir
+				}
+				return nil
+			}
+			if !strings.HasSuffix(d.Name(), "_test.go") {
+				return nil
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("read %s: %w", path, err)
+			}
+			if !textContentHasAcceptanceTest(string(data)) {
+				return nil
+			}
+			pkg := modulePath + "/" + filepath.ToSlash(filepath.Dir(path))
+			if _, ok := gotSet[pkg]; !ok {
+				missing = append(missing, path)
 			}
 			return nil
-		}
-		if strings.Contains(filepath.ToSlash(rel), "/testdata/") || !strings.HasSuffix(d.Name(), "_test.go") {
-			return nil
-		}
-		data, err := os.ReadFile(path)
+		})
 		if err != nil {
-			return fmt.Errorf("read %s: %w", path, err)
+			t.Fatalf("walk %s: %v", root, err)
 		}
-		if !textContentHasAcceptanceTest(string(data)) {
-			return nil
-		}
-		pkg := modulePath + "/" + filepath.ToSlash(filepath.Dir(rel))
-		if _, ok := gotSet[pkg]; !ok {
-			missing = append(missing, rel)
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("walk repository: %v", err)
 	}
 
 	if len(missing) > 0 {
-		t.Errorf("packages in the repository declare acceptance tests but are missing from FindAccTestPackages: %v\n"+
+		t.Errorf("packages under the enumeration roots declare acceptance tests but are missing from FindAccTestPackages: %v\n"+
 			"The enumeration must recognize both func TestAcc declarations and resource.Test/resource.ParallelTest invocations, "+
 			"or these acceptance suites are unreachable through every selection path.", missing)
 	}

@@ -100,7 +100,7 @@ func run() error {
 			}
 		} else if !classified.HasCode {
 			if dryRun {
-				fmt.Println("\nNo changed Go or testdata files; zero packages selected.")
+				fmt.Println("\nNo changed files map to a Go package; zero packages selected.")
 			}
 			// Fall through: phases are skipped via the HasCode guard below, and
 			// dry-run still prints the full block (empty package list plus shard

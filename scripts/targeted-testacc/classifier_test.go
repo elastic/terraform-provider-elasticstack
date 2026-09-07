@@ -71,6 +71,54 @@ func TestClassifier_Classify_MapsTestdataFileToAncestorPackage(t *testing.T) {
 	if !reflect.DeepEqual(res.Packages, want) {
 		t.Errorf("packages = %v, want %v", res.Packages, want)
 	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+}
+
+func TestClassifier_Classify_MapsEmbeddedDescriptionFileToAncestorPackage(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// go:embed'ed schema description: the descriptions/ directory holds no
+	// .go files, so the nearest ancestor Go package is the embedding package.
+	writeFile(t, root, "internal/elasticsearch/index/index/descriptions/resource.md", "# description\n")
+	writeFile(t, root, "internal/elasticsearch/index/index/resource.go", "package index")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/elasticsearch/index/index/descriptions/resource.md"})
+
+	want := []string{"github.com/example/mod/internal/elasticsearch/index/index"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+	if res.ForceAll {
+		t.Errorf("ForceAll = true, want false")
+	}
+}
+
+func TestClassifier_Classify_MapsNonTestdataFixtureDirToAncestorPackage(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// Fixture directory that is not named exactly testdata: the owning
+	// package is still the nearest ancestor directory with a .go file.
+	writeFile(t, root, "internal/kibana/defaultdataview/test_data/basic.tf", "resource {}\n")
+	writeFile(t, root, "internal/kibana/defaultdataview/resource.go", "package defaultdataview")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/kibana/defaultdataview/test_data/basic.tf"})
+
+	want := []string{"github.com/example/mod/internal/kibana/defaultdataview"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
 }
 
 func TestClassifier_Classify_IgnoresNonRelevantFiles(t *testing.T) {
@@ -114,6 +162,7 @@ func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
 		"generated/kibana/client.go",
 		"xpprovider/xpprovider.go",
 		".github/workflows/provider.yml",
+		"examples/resources/elasticstack_index/resource.tf",
 	}
 
 	for _, file := range prefixes {
