@@ -65,7 +65,7 @@ var (
 	// The type-argument list is optional (type-inferred call sites exist, e.g.
 	// NewElasticsearchResource("synonym_set", opts)), and the leading component
 	// argument is optional, mirroring kibanaComponentRE.
-	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component\w+\s*,\s*)?"([^"]+)"`)
+	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component(\w+)\s*,\s*)?"([^"]+)"`)
 
 	// Kibana generic constructors taking ("name", ...):
 	// entitycore.NewKibanaEphemeralResource[Model, State]("name", opts)
@@ -259,7 +259,24 @@ func extractFromSource(src string, intervals [][2]int) []EntityRef {
 
 	extractComponentMatches(baseEntityRE)
 	extractComponentMatches(kibanaComponentRE)
-	extractNameMatches(elasticsearchNameRE, "Elasticsearch")
+	// Elasticsearch constructors default to ComponentElasticsearch when no
+	// component argument is present (name-first envelopes); a leading
+	// Component<X> argument (component-first envelopes such as
+	// NewElasticsearchDataSource) overrides the default.
+	for _, loc := range elasticsearchNameRE.FindAllStringSubmatchIndex(src, -1) {
+		if len(loc) < 6 {
+			continue
+		}
+		if inInterval(loc[0], intervals) {
+			continue
+		}
+		// groups: 1 = optional component suffix, 2 = name
+		componentSuffix := "Elasticsearch"
+		if loc[2] >= 0 {
+			componentSuffix = src[loc[2]:loc[3]]
+		}
+		add(componentSuffix, src[loc[4]:loc[5]])
+	}
 	extractNameMatches(kibanaNameRE, "Kibana")
 
 	return out

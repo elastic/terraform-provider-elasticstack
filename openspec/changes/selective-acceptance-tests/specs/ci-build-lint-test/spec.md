@@ -219,6 +219,30 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 
 ---
 
+### Requirement: Change classification gate (REQ-032–REQ-033)
+
+The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, `unit-test`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push`, `workflow_dispatch`, and `merge_group`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
+
+When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether those jobs are required.
+
+#### Scenario: OpenSpec-only change set
+
+- **GIVEN** a `pull_request` workflow run whose changed files are all under `openspec/`
+- **WHEN** the change-classification job evaluates the diff
+- **THEN** it SHALL report `provider_changes=false`
+
+#### Scenario: Provider-impacting change set
+
+- **GIVEN** a `pull_request` workflow run whose changed files include at least one path outside the non-impacting set
+- **WHEN** the change-classification job evaluates the diff
+- **THEN** it SHALL report `provider_changes=true`
+
+#### Scenario: Non-pull_request event always classifies as provider-impacting
+
+- **GIVEN** a non-`pull_request` event triggering the workflow (including `push`, `workflow_dispatch`, or `merge_group`)
+- **WHEN** the change-classification job runs
+- **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
+
 ### Requirement: Provider gate job (REQ-034–REQ-036)
 
 The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, matrix acceptance `test`, and `unit-test` job results.

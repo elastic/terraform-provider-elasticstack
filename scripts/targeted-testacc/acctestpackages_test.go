@@ -147,7 +147,12 @@ func TestIsAccTestFile(t *testing.T) {
 	}
 }
 
-// TestAccPackageEnumerationGuard fails when any package in the repository
+// TestAcceptancePackageEnumerationGuard fails when any package in the repository
+//
+// Named TestAcceptance... rather than TestAcc... so the stackless unit-test
+// job (`go test ./... -skip '^TestAcc'`) still runs it — the `^TestAcc`
+// filter would otherwise exclude the one guard whose purpose is to catch
+// acceptance suites that silently stop running before they go green.
 // (outside vendor/, .git/, and testdata/ fixtures) that declares a func
 // TestAcc or invokes the acceptance harness (resource.Test /
 // resource.ParallelTest) is missing from FindAccTestPackages output.
@@ -157,7 +162,7 @@ func TestIsAccTestFile(t *testing.T) {
 // makes those suites silently unreachable — a PR changing them would select
 // zero packages and go green. The detection below is deliberately text-based
 // so it does not share the AST analysis it guards against.
-func TestAccPackageEnumerationGuard(t *testing.T) {
+func TestAcceptancePackageEnumerationGuard(t *testing.T) {
 	root := repoRoot(t)
 	modulePath, err := currentModulePath()
 	if err != nil {
