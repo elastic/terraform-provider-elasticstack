@@ -250,7 +250,7 @@ jobs:
             targeted=$(printf '%s' "$out" | tr '\n' ' ')
           }
           base_ref="refs/remotes/origin/pr-base"
-          if git fetch origin +${{ github.event.pull_request.base.sha }}:"${base_ref}" --depth=1; then
+          if git fetch origin +"${PR_BASE_SHA}":"${base_ref}" --depth=1; then
             compute_targeted --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }}
           else
             # Base-commit fetch failed (e.g. shallow history / pruned ref);
@@ -266,6 +266,8 @@ jobs:
           else
             echo "has_packages=false" >> "$GITHUB_OUTPUT"
           fi
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
 
       - name: Pre-pull fleet image
         if: matrix.fleetImage && steps.targeted.outputs.has_packages == 'true'

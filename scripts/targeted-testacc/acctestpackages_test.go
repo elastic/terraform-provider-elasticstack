@@ -40,6 +40,11 @@ func TestFindAccTestPackages_SyntheticTree(t *testing.T) {
 	// Acceptance suite without the TestAcc prefix, driven via resource.Test.
 	writeFile(t, root, "internal/kibana/synthetics/monitor/acc_test.go",
 		"package monitor_test\n\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\nfunc TestSyntheticMonitor(t *testing.T) { resource.Test(t, resource.TestCase{}) }\n")
+	// testdata/ tree with a *_test.go that textually invokes resource.Test:
+	// go excludes testdata from package resolution, so the enumeration must
+	// skip the tree rather than emit an unresolvable package path.
+	writeFile(t, root, "internal/fleet/policy/testdata/fixture_test.go",
+		"package fixture\n\nimport \"github.com/hashicorp/terraform-plugin-testing/helper/resource\"\n\nfunc TestFixture(t *testing.T) { resource.Test(t, resource.TestCase{}) }\n")
 	// No _test.go file at all.
 	writeFile(t, root, "internal/pkg/resource.go", "package pkg\n")
 
@@ -155,8 +160,9 @@ func TestIsAccTestFile(t *testing.T) {
 // The guard walk is derived from accTestEnumerationRoots itself, so the
 // guard's scope and the tool's scope stay coupled by construction: content
 // outside the roots (vendor/, .git/, scripts/, docs/) is excluded by the
-// walk itself rather than by a manual skip list. Only testdata fixture
-// trees inside the roots are skipped, for a separate reason: they hold
+// walk itself rather than by a manual skip list. Both the enumeration and
+// the guard walk skip testdata/ fixture trees inside the roots: the go
+// toolchain excludes testdata from package resolution, and those trees hold
 // analyzer/test fixtures that textually use resource.Test but are not real
 // acceptance suites.
 //

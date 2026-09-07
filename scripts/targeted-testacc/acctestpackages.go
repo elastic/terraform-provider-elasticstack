@@ -39,7 +39,11 @@ var accTestEnumerationRoots = []string{"internal", "provider"}
 // FindAccTestPackages walks roots and returns the import paths of all Go
 // acceptance test packages: packages with at least one *_test.go file that
 // declares a func TestAcc or invokes the plugin-testing acceptance harness
-// (resource.Test / resource.ParallelTest).
+// (resource.Test / resource.ParallelTest). testdata/ trees inside the roots
+// are skipped by the enumeration itself: the go toolchain excludes testdata
+// from package resolution, so a *_test.go under a testdata/ tree is not a
+// resolvable package path for go list / gotestsum (it holds analyzer/test
+// fixtures that textually use resource.Test but are not real suites).
 func FindAccTestPackages(roots []string, modulePath string) ([]string, error) {
 	seen := make(map[string]struct{})
 
@@ -48,6 +52,12 @@ func FindAccTestPackages(roots []string, modulePath string) ([]string, error) {
 			return err
 		}
 		if d.IsDir() {
+			// Skip testdata fixture trees: go excludes testdata from package
+			// resolution, so a *_test.go under such a tree is not a resolvable
+			// package path and must not be enumerated as an acceptance suite.
+			if d.Name() == "testdata" {
+				return fs.SkipDir
+			}
 			return nil
 		}
 

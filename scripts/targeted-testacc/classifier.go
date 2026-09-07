@@ -37,9 +37,10 @@ var forceAllPrefixes = []string{
 	// The embedded example tree: consumed only from test code
 	// (internal/acctest/examples_plan_test.go embeds examples/ and drives
 	// TestAccExamples_planOnly over every embedded example), so examples/ is
-	// outside the enumeration roots, not attributable to a Go package, and
-	// excluded from the unit-test job by -skip '^TestAcc'. An examples-only
-	// PR would otherwise select zero packages on every shard.
+	// outside the enumeration roots and outside the go list pattern that
+	// builds the import graph, so phase 1 has no reverse-dependency edges
+	// into it, and is excluded from the unit-test job by -skip '^TestAcc'.
+	// An examples-only PR would otherwise select zero packages on every shard.
 	"examples/",
 	// The tool's own package: a PR touching only scripts/targeted-testacc/
 	// would otherwise select zero acceptance packages, so changes to the
