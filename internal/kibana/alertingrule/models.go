@@ -549,17 +549,17 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 		var hasFrequency, hasAlertsFilter bool
 		for _, action := range actions {
 			if !hasFrequency && typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *frequencyMinSupportedVersion,
-					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*frequencyMinSupportedVersion,
+					"actions.frequency is only supported for Kibana v8.6 or higher",
+				)...)
 				hasFrequency = true
 			}
 			if !hasAlertsFilter && typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *alertsFilterMinSupportedVersion,
-					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*alertsFilterMinSupportedVersion,
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)...)
 				hasAlertsFilter = true
 			}
 			if hasFrequency && hasAlertsFilter {
@@ -570,18 +570,18 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 
 	// 8.13.0 when AlertDelay is set
 	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *alertDelayMinSupportedVersion,
-			ErrorMessage: "alert_delay is only supported for Kibana v8.13 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*alertDelayMinSupportedVersion,
+			"alert_delay is only supported for Kibana v8.13 or higher",
+		)...)
 	}
 
 	// 8.16.0 when Flapping is set
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *flappingMinSupportedVersion,
-			ErrorMessage: "flapping is only supported for Kibana v8.16 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*flappingMinSupportedVersion,
+			"flapping is only supported for Kibana v8.16 or higher",
+		)...)
 
 		var fm flappingModel
 		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
@@ -590,19 +590,19 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 		}
 		// 9.3.0 when Flapping.Enabled is set
 		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *flappingEnabledMinSupportedVersion,
-				ErrorMessage: "flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-			})
+			reqs = append(reqs, entitycore.SingleVersionRequirement(
+				*flappingEnabledMinSupportedVersion,
+				"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+			)...)
 		}
 	}
 
 	// 9.1.0 when Artifacts (investigation guide) is set
 	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *artifactsMinSupportedVersion,
-			ErrorMessage: "artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*artifactsMinSupportedVersion,
+			"artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
+		)...)
 	}
 
 	return reqs, diags
