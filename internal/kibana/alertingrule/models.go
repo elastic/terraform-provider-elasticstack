@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
@@ -861,9 +862,10 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 
 			if apiAction.AlertsFilter.Timeframe != nil {
 				tf := apiAction.AlertsFilter.Timeframe
-				days := make([]int64, len(tf.Days))
-				for i, d := range tf.Days {
-					days[i] = int64(d)
+				days, err := alertingactions.DaysFromAPI(tf.Days)
+				if err != nil {
+					diags.AddError("Failed to convert alerts_filter timeframe days", err.Error())
+					continue
 				}
 				daysList, d := types.ListValueFrom(ctx, types.Int64Type, days)
 				diags.Append(d...)
@@ -955,13 +957,8 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 				var days []int64
 				diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
 
-				int32Days := make([]int32, len(days))
-				for j, d := range days {
-					int32Days[j] = int32(d)
-				}
-
 				apiAction.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       int32Days,
+					Days:       alertingactions.Int32FromInt64(days),
 					Timezone:   tf.Timezone.ValueString(),
 					HoursStart: tf.HoursStart.ValueString(),
 					HoursEnd:   tf.HoursEnd.ValueString(),
