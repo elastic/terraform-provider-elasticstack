@@ -35,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // alertingRuleModel is the Terraform model for an alerting rule.
@@ -242,15 +241,11 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 // (from plan or state, depending on the caller), or nil when unset/unknown.
 func (m alertingRuleModel) artifactsModelFrom(ctx context.Context) (*artifactsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
-		return nil, diags
-	}
-	var am artifactsModel
-	diags.Append(m.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
+	am := typeutils.ObjectTypeAs[artifactsModel](ctx, m.Artifacts, path.Root("artifacts"), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
-	return &am, diags
+	return am, diags
 }
 
 // investigationGuideFrom returns the investigation guide nested under
@@ -267,15 +262,14 @@ func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investi
 // investigationGuideFromArtifacts decodes the investigation_guide nested object
 // from an already-decoded artifactsModel, or nil when unset.
 func investigationGuideFromArtifacts(ctx context.Context, am *artifactsModel, diags *diag.Diagnostics) *investigationGuideModel {
-	if am == nil || !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+	if am == nil {
 		return nil
 	}
-	var ig investigationGuideModel
-	diags.Append(am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})...)
+	ig := typeutils.ObjectTypeAs[investigationGuideModel](ctx, am.InvestigationGuide, path.Root("artifacts").AtName("investigation_guide"), diags)
 	if diags.HasError() {
 		return nil
 	}
-	return &ig
+	return ig
 }
 
 // buildArtifactsObject builds the artifacts nested object from an artifactsModel,
@@ -584,8 +578,7 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 			"flapping is only supported for Kibana v8.16 or higher",
 		)...)
 
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -688,8 +681,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 
 	// Flapping
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return models.AlertingRule{}, diags
 		}
@@ -926,8 +918,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Frequency - extract from object
 		if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-			var freq frequencyModel
-			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
+			freq := typeutils.ObjectTypeAs[frequencyModel](ctx, action.Frequency, path.Root("actions").AtListIndex(i).AtName("frequency"), &diags)
 			// Only create Frequency if both required fields are present
 			if typeutils.IsKnown(freq.Summary) && typeutils.IsKnown(freq.NotifyWhen) {
 				apiAction.Frequency = &models.ActionFrequency{
@@ -942,8 +933,8 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Alerts filter - extract from object
 		if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-			var filter alertsFilterModel
-			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
+			alertsFilterPath := path.Root("actions").AtListIndex(i).AtName("alerts_filter")
+			filter := typeutils.ObjectTypeAs[alertsFilterModel](ctx, action.AlertsFilter, alertsFilterPath, &diags)
 			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
 
 			if typeutils.IsKnown(filter.Kql) {
@@ -952,8 +943,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 			}
 
 			if typeutils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
-				var tf timeframeModel
-				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
+				tf := typeutils.ObjectTypeAs[timeframeModel](ctx, filter.Timeframe, alertsFilterPath.AtName("timeframe"), &diags)
 				var days []int64
 				diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
 
