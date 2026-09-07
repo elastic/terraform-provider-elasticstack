@@ -3,6 +3,11 @@ variable "policy_name" {
   type        = string
 }
 
+variable "policy_id" {
+  description = "The explicit integration policy id"
+  type        = string
+}
+
 variable "integration_name" {
   description = "The integration name"
   type        = string
@@ -37,21 +42,22 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
-  namespace           = "custom-ns"
-  description         = "Updated Integration Policy"
+  policy_id           = var.policy_id
+  namespace           = "default"
+  description         = "IntegrationPolicyTest Policy with explicit policy_id"
   agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.policy_id
   integration_name    = elasticstack_fleet_integration.test_policy.name
   integration_version = elasticstack_fleet_integration.test_policy.version
 
   inputs = {
     "tcp-tcp" = {
-      enabled = false
+      enabled = true
       streams = {
         "tcp.generic" = {
-          enabled = false
+          enabled = true
           vars = jsonencode({
             "listen_address" : "localhost"
-            "listen_port" : 8085
+            "listen_port" : 8080
             "data_stream.dataset" : "tcp.generic"
             "tags" : []
             "syslog_options" : "field: message"
