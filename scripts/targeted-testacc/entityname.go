@@ -65,7 +65,8 @@ var (
 	// The type-argument list is optional (type-inferred call sites exist, e.g.
 	// NewElasticsearchResource("synonym_set", opts)), and the leading component
 	// argument is optional, mirroring kibanaComponentRE.
-	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component(\w+)\s*,\s*)?"([^"]+)"`)
+	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)` +
+		`(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component(\w+)\s*,\s*)?"([^"]+)"`)
 
 	// Kibana generic constructors taking ("name", ...):
 	// entitycore.NewKibanaEphemeralResource[Model, State]("name", opts)
