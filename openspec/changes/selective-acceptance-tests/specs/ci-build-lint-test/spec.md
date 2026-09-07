@@ -249,14 +249,14 @@ The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a 
 
 The `gate` job SHALL succeed when either of the following is true:
 
-* The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job are all intentionally skipped
-* `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job all complete successfully (regardless of the classify result)
+- The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job are all intentionally skipped
+- `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job all complete successfully (regardless of the classify result)
 
 The `gate` job SHALL fail when any of the following is true:
 
-* Any of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports `failure` or `cancelled`
-* The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports an unexpected `skipped` result
-* Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
+- Any of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports `failure` or `cancelled`
+- The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports an unexpected `skipped` result
+- Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
 
 The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint`/`unit-test` checks.
 
