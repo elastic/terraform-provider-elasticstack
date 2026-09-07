@@ -140,7 +140,9 @@ func setInvestigationGuideChecksumUnknown(ctx context.Context, plan *alertingRul
 	if diags.HasError() {
 		return diags
 	}
-	artObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{InvestigationGuide: igObj})
+	// Preserve dashboards while only invalidating the guide checksum.
+	am.InvestigationGuide = igObj
+	artObj, d := buildArtifactsObject(ctx, am)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags

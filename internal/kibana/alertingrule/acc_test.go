@@ -891,6 +891,70 @@ func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
 	})
 }
 
+func TestAccResourceAlertingRuleArtifactsDashboards(t *testing.T) {
+	minSupportedArtifactsVersion := version.Must(version.NewSemver("9.1.0"))
+	// Kibana only returns artifacts from GET starting 9.5.0 (elastic/kibana#247279).
+	minReadBackVersion := version.Must(version.NewSemver("9.5.0"))
+
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			// Create with two linked dashboards.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(ruleName),
+					"rule_id":       config.StringVariable(ruleID),
+					"dashboard_ids": config.ListVariable(config.StringVariable("dashboard-a"), config.StringVariable("dashboard-b")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", "dashboard-a"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.1.id", "dashboard-b"),
+				),
+			},
+			// Update the linked dashboards list (round-trip add/remove).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedArtifactsVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(ruleName),
+					"rule_id":       config.StringVariable(ruleID),
+					"dashboard_ids": config.ListVariable(config.StringVariable("dashboard-c")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "artifacts.dashboards.0.id", "dashboard-c"),
+				),
+			},
+			// Import (Kibana 9.5.0+): proves the GET round-trip for dashboards, which
+			// starts from an empty model (the write steps above also pass on 9.1-9.4
+			// via state preservation).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minReadBackVersion),
+				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":          config.StringVariable(ruleName),
+					"rule_id":       config.StringVariable(ruleID),
+					"dashboard_ids": config.ListVariable(config.StringVariable("dashboard-c")),
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceAlertingRuleFlappingEnabled(t *testing.T) {
 	minSupportedFlappingEnabledVersion := version.Must(version.NewSemver("9.3.0"))
 
