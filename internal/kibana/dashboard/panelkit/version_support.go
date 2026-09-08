@@ -15,10 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package links
+package panelkit
 
-import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+import "github.com/hashicorp/go-version"
 
-// MinKibanaAPISupport is the lowest Kibana version whose Dashboard API accepts
-// links panels. See panelkit.MinKibanaAPISupport95.
-var MinKibanaAPISupport = panelkit.MinKibanaAPISupport95
+// MinKibanaAPISupport95 is the lowest Kibana version whose Dashboard API accepts the panel types
+// that shipped in the 9.5 line (aiops_change_point_chart, aiops_log_rate_analysis,
+// aiops_pattern_analysis, apm_service_map, field_stats_table, links, ml_anomaly_charts,
+// ml_anomaly_swimlane, ml_single_metric_viewer). Empirical testing showed Kibana 9.4.0 rejects
+// these panel types (HTTP 400); 9.5.0-SNAPSHOT accepts them.
+var MinKibanaAPISupport95 = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))

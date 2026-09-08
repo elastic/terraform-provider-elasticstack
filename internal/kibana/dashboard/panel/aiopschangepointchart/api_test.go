@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -328,6 +329,43 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 	_, diags := aiopschangepointchart.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")
 	require.Contains(t, diagSummary(diags), "config_json")
+}
+
+func TestValidatePanelConfig(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	t.Run("rejects missing config block", func(t *testing.T) {
+		diags := aiopschangepointchart.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, path.Empty())
+		require.True(t, diags.HasError())
+		require.Equal(t, "Missing AIOps change point chart panel configuration", diags[0].Summary())
+	})
+
+	t.Run("rejects missing data_view_id and metric_field", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"aiops_change_point_chart_config": types.ObjectValueMust(
+				map[string]attr.Type{"data_view_id": types.StringType, "metric_field": types.StringType},
+				map[string]attr.Value{"data_view_id": types.StringNull(), "metric_field": types.StringNull()},
+			),
+		}
+		diags := aiopschangepointchart.Handler{}.ValidatePanelConfig(ctx, attrs, path.Empty())
+		require.True(t, diags.HasError())
+		require.Len(t, diags.Errors(), 2)
+		for _, d := range diags.Errors() {
+			require.Equal(t, "Invalid AIOps change point chart configuration", d.Summary())
+		}
+	})
+
+	t.Run("accepts valid config", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"aiops_change_point_chart_config": types.ObjectValueMust(
+				map[string]attr.Type{"data_view_id": types.StringType, "metric_field": types.StringType},
+				map[string]attr.Value{"data_view_id": stringVal("metrics-*"), "metric_field": stringVal("system.cpu.total.pct")},
+			),
+		}
+		diags := aiopschangepointchart.Handler{}.ValidatePanelConfig(ctx, attrs, path.Empty())
+		require.False(t, diags.HasError())
+	})
 }
 
 func TestRoundtrip_viaHandler(t *testing.T) {
