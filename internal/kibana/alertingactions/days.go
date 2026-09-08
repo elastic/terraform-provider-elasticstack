@@ -106,3 +106,23 @@ func IntFromInt64(days []int64) []int {
 	}
 	return out
 }
+
+// Int32FromInt converts a decoded []int (kibanaoapi's JSON response shape)
+// into the []int32 shape expected by models.AlertsFilterTimeframe.
+func Int32FromInt(days []int) []int32 {
+	out := make([]int32, len(days))
+	for i, d := range days {
+		out[i] = int32(d)
+	}
+	return out
+}
+
+// IntFromInt32 converts a models.AlertsFilterTimeframe []int32 into the
+// []int shape expected by kibanaoapi's request body.
+func IntFromInt32(days []int32) []int {
+	out := make([]int, len(days))
+	for i, d := range days {
+		out[i] = int(d)
+	}
+	return out
+}
