@@ -403,8 +403,11 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null (API default normalization)")
 }
 
-func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.T) {
-	// If API returns false for encode_url/open_in_new_tab (non-default), it should be written.
+func Test_populateSloErrorBudgetFromAPI_drilldowns_priorNullStaysNull(t *testing.T) {
+	// Prior state left encode_url/open_in_new_tab null (practitioner never configured them).
+	// Consistent with the shared panelkit.ReadURLDrilldownsFromAPI behavior used by the
+	// sloalerts and sloburnrate sibling panels, a null prior wins and the fields stay null
+	// even when the API returns a non-default value.
 	pm := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
@@ -438,11 +441,9 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
-	// false is non-default, so it should be written even when prior state was null
-	assert.False(t, d.EncodeURL.IsNull(), "encode_url false should be written")
-	assert.False(t, d.EncodeURL.ValueBool())
-	assert.False(t, d.OpenInNewTab.IsNull(), "open_in_new_tab false should be written")
-	assert.False(t, d.OpenInNewTab.ValueBool())
+	// prior was null, so it stays null even though the API value is non-default
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url should remain null when prior was null")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null when prior was null")
 }
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *testing.T) {
