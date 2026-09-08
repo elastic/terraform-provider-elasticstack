@@ -90,7 +90,7 @@
 // # Ephemeral resource patterns
 //
 // Ephemeral resources use **envelope generics** — [NewElasticsearchEphemeralResource]
-// or [NewKibanaEphemeralResource] — which eliminate Open/Close orchestration
+// — which eliminates Open/Close orchestration
 // boilerplate. The constructor owns config decode, scoped client resolution,
 // version-requirement enforcement, connection-block injection, and private-state
 // round-tripping between Open and Close. Concrete packages supply a schema factory
