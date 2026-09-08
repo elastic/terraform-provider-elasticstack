@@ -990,6 +990,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event",
       "attemptedAt": "2026-09-03T04:26:29.196359713Z",
       "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.NewKibanaEphemeralResource",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-09-08T08:29:24.145379939Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
