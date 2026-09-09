@@ -71,116 +71,17 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		return nil
 	}
 
-	settings := advancedSettingsModel{}
-
-	// Logging level
-	if data.AdvancedSettings.AgentLoggingLevel != nil {
-		if str, ok := data.AdvancedSettings.AgentLoggingLevel.(string); ok {
-			settings.LoggingLevel = types.StringValue(str)
-		} else {
-			settings.LoggingLevel = types.StringNull()
-		}
-	} else {
-		settings.LoggingLevel = types.StringNull()
-	}
-
-	// Logging to files
-	if data.AdvancedSettings.AgentLoggingToFiles != nil {
-		if b, ok := data.AdvancedSettings.AgentLoggingToFiles.(bool); ok {
-			settings.LoggingToFiles = types.BoolValue(b)
-		} else {
-			settings.LoggingToFiles = types.BoolNull()
-		}
-	} else {
-		settings.LoggingToFiles = types.BoolNull()
-	}
-
-	// Logging files interval
-	if data.AdvancedSettings.AgentLoggingFilesInterval != nil {
-		if str, ok := data.AdvancedSettings.AgentLoggingFilesInterval.(string); ok {
-			settings.LoggingFilesInterval = customtypes.NewDurationValue(str)
-		} else {
-			settings.LoggingFilesInterval = customtypes.NewDurationNull()
-		}
-	} else {
-		settings.LoggingFilesInterval = customtypes.NewDurationNull()
-	}
-
-	// Logging files keepfiles
-	if data.AdvancedSettings.AgentLoggingFilesKeepfiles != nil {
-		if f, ok := data.AdvancedSettings.AgentLoggingFilesKeepfiles.(float64); ok {
-			settings.LoggingFilesKeepfiles = types.Int32Value(int32(f))
-		} else {
-			settings.LoggingFilesKeepfiles = types.Int32Null()
-		}
-	} else {
-		settings.LoggingFilesKeepfiles = types.Int32Null()
-	}
-
-	// Logging files rotateeverybytes
-	if data.AdvancedSettings.AgentLoggingFilesRotateeverybytes != nil {
-		if f, ok := data.AdvancedSettings.AgentLoggingFilesRotateeverybytes.(float64); ok {
-			settings.LoggingFilesRotateeverybytes = types.Int64Value(int64(f))
-		} else {
-			settings.LoggingFilesRotateeverybytes = types.Int64Null()
-		}
-	} else {
-		settings.LoggingFilesRotateeverybytes = types.Int64Null()
-	}
-
-	// Logging metrics period
-	if data.AdvancedSettings.AgentLoggingMetricsPeriod != nil {
-		if str, ok := data.AdvancedSettings.AgentLoggingMetricsPeriod.(string); ok {
-			settings.LoggingMetricsPeriod = customtypes.NewDurationValue(str)
-		} else {
-			settings.LoggingMetricsPeriod = customtypes.NewDurationNull()
-		}
-	} else {
-		settings.LoggingMetricsPeriod = customtypes.NewDurationNull()
-	}
-
-	// Go max procs
-	if data.AdvancedSettings.AgentLimitsGoMaxProcs != nil {
-		if f, ok := data.AdvancedSettings.AgentLimitsGoMaxProcs.(float64); ok {
-			settings.GoMaxProcs = types.Int32Value(int32(f))
-		} else {
-			settings.GoMaxProcs = types.Int32Null()
-		}
-	} else {
-		settings.GoMaxProcs = types.Int32Null()
-	}
-
-	// Download timeout
-	if data.AdvancedSettings.AgentDownloadTimeout != nil {
-		if str, ok := data.AdvancedSettings.AgentDownloadTimeout.(string); ok {
-			settings.DownloadTimeout = customtypes.NewDurationValue(str)
-		} else {
-			settings.DownloadTimeout = customtypes.NewDurationNull()
-		}
-	} else {
-		settings.DownloadTimeout = customtypes.NewDurationNull()
-	}
-
-	// Download target directory
-	if data.AdvancedSettings.AgentDownloadTargetDirectory != nil {
-		if str, ok := data.AdvancedSettings.AgentDownloadTargetDirectory.(string); ok {
-			settings.DownloadTargetDirectory = types.StringValue(str)
-		} else {
-			settings.DownloadTargetDirectory = types.StringNull()
-		}
-	} else {
-		settings.DownloadTargetDirectory = types.StringNull()
-	}
-
-	// Monitoring runtime experimental
-	if data.AdvancedSettings.AgentMonitoringRuntimeExperimental != nil {
-		if str, ok := data.AdvancedSettings.AgentMonitoringRuntimeExperimental.(string); ok {
-			settings.MonitoringRuntimeExperimental = types.StringValue(str)
-		} else {
-			settings.MonitoringRuntimeExperimental = types.StringNull()
-		}
-	} else {
-		settings.MonitoringRuntimeExperimental = types.StringNull()
+	settings := advancedSettingsModel{
+		LoggingLevel:                  typeutils.StringFromAny(data.AdvancedSettings.AgentLoggingLevel),
+		LoggingToFiles:                typeutils.BoolFromAny(data.AdvancedSettings.AgentLoggingToFiles),
+		LoggingFilesInterval:          customtypes.NewDurationFromAny(data.AdvancedSettings.AgentLoggingFilesInterval),
+		LoggingFilesKeepfiles:         typeutils.Int32FromAnyFloat64(data.AdvancedSettings.AgentLoggingFilesKeepfiles),
+		LoggingFilesRotateeverybytes:  typeutils.Int64FromAnyFloat64(data.AdvancedSettings.AgentLoggingFilesRotateeverybytes),
+		LoggingMetricsPeriod:          customtypes.NewDurationFromAny(data.AdvancedSettings.AgentLoggingMetricsPeriod),
+		GoMaxProcs:                    typeutils.Int32FromAnyFloat64(data.AdvancedSettings.AgentLimitsGoMaxProcs),
+		DownloadTimeout:               customtypes.NewDurationFromAny(data.AdvancedSettings.AgentDownloadTimeout),
+		DownloadTargetDirectory:       typeutils.StringFromAny(data.AdvancedSettings.AgentDownloadTargetDirectory),
+		MonitoringRuntimeExperimental: typeutils.StringFromAny(data.AdvancedSettings.AgentMonitoringRuntimeExperimental),
 	}
 
 	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
