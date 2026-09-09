@@ -1048,6 +1048,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
       "attemptedAt": "2026-09-08T10:22:54.326963652Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon.UnregisterVizConverter",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
+      "attemptedAt": "2026-09-09T03:13:32.695661733Z",
+      "reason": "build_failed"
     }
   ]
 }
