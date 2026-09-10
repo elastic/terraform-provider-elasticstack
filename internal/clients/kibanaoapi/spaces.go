@@ -34,16 +34,12 @@ func ListSpaces(ctx context.Context, client *Client) ([]kbapi.SpaceResponse, fwd
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		spaces, diags := diagutil.UnwrapJSON200(resp.JSON200, "spaces")
-		if diags.HasError() {
-			return nil, diags
-		}
-		return *spaces, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	spaces, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+		func() *[]kbapi.SpaceResponse { return resp.JSON200 })
+	if diags.HasError() {
+		return nil, diags
 	}
+	return *spaces, nil
 }
 
 // GetSpace returns a single Kibana space by ID.
