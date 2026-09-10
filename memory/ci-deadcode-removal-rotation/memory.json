@@ -1054,6 +1054,24 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon",
       "attemptedAt": "2026-09-09T03:13:32.695661733Z",
       "reason": "build_failed"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.ClearConfig",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-09-10T03:08:11.195897626Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.EnsureMutableTypedConfig",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-09-10T03:08:11.195897896Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.PreserveFloat64",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-09-10T03:15:02.607075705Z",
+      "reason": "pr_created"
     }
   ]
 }
