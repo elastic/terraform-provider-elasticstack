@@ -35,10 +35,10 @@
 
 ## 5. Auto-approve `version-matrix` category
 
-- [ ] 5.1 Add a `version-matrix` category to `scripts/auto-approve/evaluator.go`: selector = same-repo PR with head branch exactly `acceptance-test-version-matrix`; gates = every commit authored by `github-actions[bot]`, every changed file path exactly `.github/versions/acceptance-test-matrix.json`
-- [ ] 5.2 Wire the category into global approval gates (including Provider Gate success) with no diff-threshold gate, following the existing `generated-changelog` category as the template
-- [ ] 5.3 Add table-driven unit tests in `scripts/auto-approve/evaluator_test.go` covering: matching branch + bot commits + allowlisted file → approve; foreign commit author → no approve; extra changed file → no approve; wrong branch name → category does not match
-- [ ] 5.4 Confirm no auto-merge call is added anywhere in `scripts/auto-approve/`
+- [x] 5.1 Add a `version-matrix` category to `scripts/auto-approve/evaluator.go`: selector = same-repo PR with head branch exactly `acceptance-test-version-matrix`; gates = every commit authored by `github-actions[bot]`, every changed file path exactly `.github/versions/acceptance-test-matrix.json`
+- [x] 5.2 Wire the category into global approval gates (including Provider Gate success) with no diff-threshold gate, following the existing `generated-changelog` category as the template
+- [x] 5.3 Add table-driven unit tests in `scripts/auto-approve/evaluator_test.go` covering: matching branch + bot commits + allowlisted file → approve; foreign commit author → no approve; extra changed file → no approve; wrong branch name → category does not match
+- [x] 5.4 Confirm no auto-merge call is added anywhere in `scripts/auto-approve/`
 
 ## 6. Spec/doc consistency
 
