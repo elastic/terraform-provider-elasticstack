@@ -61,6 +61,22 @@ func TestFlagsForVersion_forceSyntheticsMatches817(t *testing.T) {
 	assert.True(t, FlagsForVersion("8.17.10").ForceSynthetics)
 }
 
+func TestFlagsForVersion_forceSyntheticsFalseOutside814To817(t *testing.T) {
+	t.Parallel()
+
+	cases := []string{"8.13.4", "8.13.0-SNAPSHOT", "8.18.8", "8.18.0-SNAPSHOT"}
+	for _, version := range cases {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+			got := FlagsForVersion(version)
+			assert.False(t, got.ForceSynthetics, version)
+			assert.Equal(t, "ubuntu-latest", got.Runner, version)
+			assert.Equal(t, "docker.elastic.co/elastic-agent/elastic-agent", got.FleetImage, version)
+			assert.False(t, got.PrePullFleet, version)
+		})
+	}
+}
+
 func TestFlagsForVersion_80UsesUbuntu2204AndDockerHubFleet(t *testing.T) {
 	t.Parallel()
 
