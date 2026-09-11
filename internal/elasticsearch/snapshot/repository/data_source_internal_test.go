@@ -187,9 +187,11 @@ func TestFlattenS3Settings(t *testing.T) {
 		"buffer_size":             "5mb",
 		"canned_acl":              "private",
 		"storage_class":           "standard",
-		"path_style_access":       "false",
-		"max_number_of_snapshots": 100,
-		"compress":                true,
+		"path_style_access":        "false",
+		"disable_chunked_encoding": true,
+		"always_sign_requests":     "true",
+		"max_number_of_snapshots":  100,
+		"compress":                 true,
 	}
 	model, err := flattenS3Settings(settings)
 	require.NoError(t, err)
@@ -202,27 +204,9 @@ func TestFlattenS3Settings(t *testing.T) {
 	assert.Equal(t, types.StringValue("private"), model.CannedACL)
 	assert.Equal(t, types.StringValue("standard"), model.StorageClass)
 	assert.Equal(t, types.BoolValue(false), model.PathStyleAccess)
-	assert.Equal(t, types.BoolValue(true), model.Compress)
-}
-
-func TestFlattenS3Settings_DisableChunkedEncoding(t *testing.T) {
-	settings := map[string]any{
-		"bucket":                   "my-bucket",
-		"disable_chunked_encoding": true,
-	}
-	model, err := flattenS3Settings(settings)
-	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(true), model.DisableChunkedEncoding)
-}
-
-func TestFlattenS3Settings_AlwaysSignRequests(t *testing.T) {
-	settings := map[string]any{
-		"bucket":               "my-bucket",
-		"always_sign_requests": true,
-	}
-	model, err := flattenS3Settings(settings)
-	require.NoError(t, err)
 	assert.Equal(t, types.BoolValue(true), model.AlwaysSignRequests)
+	assert.Equal(t, types.BoolValue(true), model.Compress)
 }
 
 func TestFlattenS3Settings_Nulls(t *testing.T) {
