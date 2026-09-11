@@ -151,6 +151,84 @@ func TestPreserveKnownTfValueIfStateNull_List(t *testing.T) {
 	}
 }
 
+func TestPreserveNullStringIfStateEquals(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		plan      types.String
+		state     types.String
+		expected  string
+		wantState types.String
+	}{
+		{"null plan, state matches default -> copy null", types.StringNull(), types.StringValue("vertical"), "vertical", types.StringNull()},
+		{"null plan, state differs from default -> keep state", types.StringNull(), types.StringValue("horizontal"), "vertical", types.StringValue("horizontal")},
+		{"known plan -> keep state", types.StringValue("vertical"), types.StringValue("vertical"), "vertical", types.StringValue("vertical")},
+		{"unknown plan -> keep state", types.StringUnknown(), types.StringValue("vertical"), "vertical", types.StringValue("vertical")},
+		{"null plan, unknown state -> keep state", types.StringNull(), types.StringUnknown(), "vertical", types.StringUnknown()},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			state := tc.state
+			PreserveNullStringIfStateEquals(tc.plan, &state, tc.expected)
+			assert.Equal(t, tc.wantState, state)
+		})
+	}
+}
+
+func TestPreserveNullBoolIfStateEquals(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		plan      types.Bool
+		state     types.Bool
+		expected  bool
+		wantState types.Bool
+	}{
+		{"null plan, state matches default -> copy null", types.BoolNull(), types.BoolValue(false), false, types.BoolNull()},
+		{"null plan, state differs from default -> keep state", types.BoolNull(), types.BoolValue(true), false, types.BoolValue(true)},
+		{"known plan -> keep state", types.BoolValue(false), types.BoolValue(false), false, types.BoolValue(false)},
+		{"unknown plan -> keep state", types.BoolUnknown(), types.BoolValue(false), false, types.BoolValue(false)},
+		{"null plan, unknown state -> keep state", types.BoolNull(), types.BoolUnknown(), false, types.BoolUnknown()},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			state := tc.state
+			PreserveNullBoolIfStateEquals(tc.plan, &state, tc.expected)
+			assert.Equal(t, tc.wantState, state)
+		})
+	}
+}
+
+func TestPreserveNullInt64IfStateEquals(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		plan      types.Int64
+		state     types.Int64
+		expected  int64
+		wantState types.Int64
+	}{
+		{"null plan, state matches default -> copy null", types.Int64Null(), types.Int64Value(0), 0, types.Int64Null()},
+		{"null plan, state differs from default -> keep state", types.Int64Null(), types.Int64Value(5), 0, types.Int64Value(5)},
+		{"known plan -> keep state", types.Int64Value(0), types.Int64Value(0), 0, types.Int64Value(0)},
+		{"unknown plan -> keep state", types.Int64Unknown(), types.Int64Value(0), 0, types.Int64Value(0)},
+		{"null plan, unknown state -> keep state", types.Int64Null(), types.Int64Unknown(), 0, types.Int64Unknown()},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			state := tc.state
+			PreserveNullInt64IfStateEquals(tc.plan, &state, tc.expected)
+			assert.Equal(t, tc.wantState, state)
+		})
+	}
+}
+
 func TestPreservePlanJSONIfStateAddsOptionalKeys(t *testing.T) {
 	t.Parallel()
 

@@ -215,39 +215,36 @@ func PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsont
 	}
 }
 
-// PreserveNullStringIfStateEquals copies a null plan value back into state when the API
-// read-back returned the supplied default. Use this for optional typed string attributes
-// (e.g. `tagcloud.orientation`, `pie.label_position`) that Kibana auto-populates with a
-// hard-coded default when the practitioner omitted the field. Without this, the
-// inconsistent plan/state values would surface as "Provider produced inconsistent result
-// after apply" diagnostics.
+// preserveNullIfStateEquals copies a null plan value back into state when the API read-back
+// returned the supplied default. valueOf extracts the comparable Go value from a state of type
+// T so the same logic works across the typed wrappers below. Use this for optional typed
+// attributes (e.g. `tagcloud.orientation`, `pie.label_position`) that Kibana auto-populates with
+// a hard-coded default when the practitioner omitted the field. Without this, the inconsistent
+// plan/state values would surface as "Provider produced inconsistent result after apply"
+// diagnostics.
+func preserveNullIfStateEquals[T attr.Value, V comparable](plan T, state *T, expected V, valueOf func(T) V) {
+	if !plan.IsNull() || plan.IsUnknown() {
+		return
+	}
+	if typeutils.IsKnown(*state) && valueOf(*state) == expected {
+		*state = plan
+	}
+}
+
+// PreserveNullStringIfStateEquals mirrors preserveNullIfStateEquals for string attributes.
+// See preserveNullIfStateEquals.
 func PreserveNullStringIfStateEquals(plan types.String, state *types.String, expected string) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueString() == expected {
-		*state = plan
-	}
+	preserveNullIfStateEquals(plan, state, expected, types.String.ValueString)
 }
 
-// PreserveNullBoolIfStateEquals mirrors PreserveNullStringIfStateEquals for bool attributes.
-// See PreserveNullStringIfStateEquals.
+// PreserveNullBoolIfStateEquals mirrors preserveNullIfStateEquals for bool attributes.
+// See preserveNullIfStateEquals.
 func PreserveNullBoolIfStateEquals(plan types.Bool, state *types.Bool, expected bool) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueBool() == expected {
-		*state = plan
-	}
+	preserveNullIfStateEquals(plan, state, expected, types.Bool.ValueBool)
 }
 
-// PreserveNullInt64IfStateEquals mirrors PreserveNullStringIfStateEquals for int64 attributes.
-// See PreserveNullStringIfStateEquals.
+// PreserveNullInt64IfStateEquals mirrors preserveNullIfStateEquals for int64 attributes.
+// See preserveNullIfStateEquals.
 func PreserveNullInt64IfStateEquals(plan types.Int64, state *types.Int64, expected int64) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueInt64() == expected {
-		*state = plan
-	}
+	preserveNullIfStateEquals(plan, state, expected, types.Int64.ValueInt64)
 }
