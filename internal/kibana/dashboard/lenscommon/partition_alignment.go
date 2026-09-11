@@ -34,7 +34,7 @@ func AlignPartitionLegendStateFromPlan(plan, state *models.PartitionLegendModel)
 	if plan == nil || state == nil {
 		return
 	}
-	PreserveNullStringIfStateEquals(plan.Visible, &state.Visible, "auto")
+	PreserveNullIfStateEquals(plan.Visible, &state.Visible, types.StringValue("auto"))
 }
 
 // PartitionValueDisplayMatchesKibanaDefault reports whether state.value_display

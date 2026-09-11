@@ -215,39 +215,16 @@ func PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsont
 	}
 }
 
-// PreserveNullStringIfStateEquals copies a null plan value back into state when the API
-// read-back returned the supplied default. Use this for optional typed string attributes
-// (e.g. `tagcloud.orientation`, `pie.label_position`) that Kibana auto-populates with a
-// hard-coded default when the practitioner omitted the field. Without this, the
-// inconsistent plan/state values would surface as "Provider produced inconsistent result
-// after apply" diagnostics.
-func PreserveNullStringIfStateEquals(plan types.String, state *types.String, expected string) {
+// PreserveNullIfStateEquals copies a null plan value back into state when the API read-back
+// returned the supplied default. Use this for optional typed attributes (e.g.
+// `tagcloud.orientation`, `pie.label_position`) that Kibana auto-populates with a hard-coded
+// default when the practitioner omitted the field. Without this, the inconsistent plan/state
+// values would surface as "Provider produced inconsistent result after apply" diagnostics.
+func PreserveNullIfStateEquals[T attr.Value](plan T, state *T, expected T) {
 	if !plan.IsNull() || plan.IsUnknown() {
 		return
 	}
-	if typeutils.IsKnown(*state) && state.ValueString() == expected {
-		*state = plan
-	}
-}
-
-// PreserveNullBoolIfStateEquals mirrors PreserveNullStringIfStateEquals for bool attributes.
-// See PreserveNullStringIfStateEquals.
-func PreserveNullBoolIfStateEquals(plan types.Bool, state *types.Bool, expected bool) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueBool() == expected {
-		*state = plan
-	}
-}
-
-// PreserveNullInt64IfStateEquals mirrors PreserveNullStringIfStateEquals for int64 attributes.
-// See PreserveNullStringIfStateEquals.
-func PreserveNullInt64IfStateEquals(plan types.Int64, state *types.Int64, expected int64) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueInt64() == expected {
+	if typeutils.IsKnown(*state) && (*state).Equal(expected) {
 		*state = plan
 	}
 }
