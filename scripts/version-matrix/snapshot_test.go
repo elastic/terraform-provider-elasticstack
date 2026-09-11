@@ -40,6 +40,13 @@ func TestParseSnapshotLabelFromMasterJSON(t *testing.T) {
 	assert.Equal(t, "9.6.0-SNAPSHOT", got)
 }
 
+func TestParseSnapshotLabelRejectsNonSnapshotVersion(t *testing.T) {
+	t.Parallel()
+
+	_, err := ParseSnapshotLabel([]byte(`{"version":"9.6.0"}`))
+	require.Error(t, err)
+}
+
 func TestParseSnapshotLabelRejectsUnparsableJSON(t *testing.T) {
 	t.Parallel()
 

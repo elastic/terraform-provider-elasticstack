@@ -18,16 +18,32 @@
 package main
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 )
 
-func ComputeDesired(tags []string, snapshot string, pinned []string, probe func(string) bool) []string {
+func ComputeDesired(tags []string, snapshot string, pinned []string, probe func(string) (bool, error)) ([]string, error) {
 	computed := LatestPatchPerMinor(tags)
+	if len(computed) == 0 {
+		return nil, fmt.Errorf("no 8.x/9.x GA tags found")
+	}
 	out := make([]string, 0, len(computed)+1)
 	promotionBlocked := false
 	for _, version := range computed {
-		if slices.Contains(pinned, version) || probe == nil || probe(version) {
+		if slices.Contains(pinned, version) {
+			out = append(out, version)
+			continue
+		}
+		if probe == nil {
+			out = append(out, version)
+			continue
+		}
+		ok, err := probe(version)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
 			out = append(out, version)
 			continue
 		}
@@ -43,7 +59,7 @@ func ComputeDesired(tags []string, snapshot string, pinned []string, probe func(
 	if snapshot != "" && !promotionBlocked {
 		out = append(out, snapshot)
 	}
-	return SortVersions(out)
+	return SortVersions(out), nil
 }
 
 func pinnedSnapshotForMinor(pinned []string, version string) string {

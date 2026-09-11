@@ -32,6 +32,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v89/github"
 )
@@ -68,7 +69,12 @@ const (
 	defaultSnapshotURL       = "https://snapshots.elastic.co/latest/master.json"
 	defaultElasticRegistry   = "https://docker.elastic.co"
 	defaultDockerHubRegistry = "https://registry-1.docker.io"
+	defaultComputeTimeout    = 2 * time.Minute
 )
+
+func newComputeHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{Timeout: timeout}
+}
 
 func cmdCompute(args []string, stdout, stderr io.Writer) error {
 	fsFlag := flag.NewFlagSet("compute", flag.ContinueOnError)
@@ -78,6 +84,7 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 	snapshotURL := fsFlag.String("snapshot-url", defaultSnapshotURL, "SNAPSHOT label endpoint")
 	elasticRegistry := fsFlag.String("elastic-registry", defaultElasticRegistry, "docker.elastic.co registry base URL")
 	dockerHubRegistry := fsFlag.String("dockerhub-registry", defaultDockerHubRegistry, "Docker Hub registry base URL")
+	timeout := fsFlag.Duration("timeout", defaultComputeTimeout, "maximum time for the compute run")
 	if err := fsFlag.Parse(args); err != nil {
 		return err
 	}
@@ -87,7 +94,11 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 		return errors.New("missing GITHUB_TOKEN")
 	}
 
-	opts := []github.ClientOptionsFunc{github.WithAuthToken(token)}
+	httpClient := newComputeHTTPClient(*timeout)
+	opts := []github.ClientOptionsFunc{
+		github.WithAuthToken(token),
+		github.WithHTTPClient(httpClient),
+	}
 	if strings.TrimSpace(*githubURL) != "" {
 		opts = append(opts, github.WithEnterpriseURLs(*githubURL, *githubURL))
 	}
@@ -96,13 +107,14 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 		return fmt.Errorf("github client: %w", err)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	defer cancel()
 	tags, err := ListElasticsearchTags(ctx, client)
 	if err != nil {
 		return err
 	}
 
-	snapshot, err := FetchSnapshotLabel(ctx, http.DefaultClient, *snapshotURL)
+	snapshot, err := FetchSnapshotLabel(ctx, httpClient, *snapshotURL)
 	if err != nil {
 		return err
 	}
@@ -113,14 +125,16 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 	}
 
 	prober := RegistryProber{
-		Client:            http.DefaultClient,
+		Client:            httpClient,
 		ElasticRegistry:   *elasticRegistry,
 		DockerHubRegistry: *dockerHubRegistry,
 	}
-	desired := ComputeDesired(tags, snapshot, pinned, func(version string) bool {
-		ok, perr := ProbeComposeStack(ctx, prober, version)
-		return perr == nil && ok
+	desired, err := ComputeDesired(tags, snapshot, pinned, func(version string) (bool, error) {
+		return ProbeComposeStack(ctx, prober, version)
 	})
+	if err != nil {
+		return err
+	}
 
 	if VersionsEqual(desired, pinned) {
 		fmt.Fprintln(stdout, "changed=false")

@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -145,4 +146,139 @@ func TestProbeComposeStackRoutes81AgentToDockerHub(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, 1, hubAgentHits)
+}
+
+func TestProbeComposeStackAuthenticatesThenFindsElasticImages(t *testing.T) {
+	t.Parallel()
+
+	server := newRegistryAuthServer(t, map[string]int{
+		"/v2/elasticsearch/elasticsearch/manifests/8.19.21": http.StatusOK,
+		"/v2/kibana/kibana/manifests/8.19.21":               http.StatusOK,
+		"/v2/elastic-agent/elastic-agent/manifests/8.19.21": http.StatusOK,
+	})
+
+	prober := RegistryProber{
+		Client:            server.Client(),
+		ElasticRegistry:   server.URL,
+		DockerHubRegistry: server.URL,
+	}
+	ok, err := ProbeComposeStack(context.Background(), prober, "8.19.21")
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestProbeComposeStackAuthenticatesThenReportsMissingElasticImage(t *testing.T) {
+	t.Parallel()
+
+	server := newRegistryAuthServer(t, map[string]int{
+		"/v2/elasticsearch/elasticsearch/manifests/8.19.21": http.StatusOK,
+		"/v2/kibana/kibana/manifests/8.19.21":               http.StatusNotFound,
+		"/v2/elastic-agent/elastic-agent/manifests/8.19.21": http.StatusOK,
+	})
+
+	prober := RegistryProber{
+		Client:            server.Client(),
+		ElasticRegistry:   server.URL,
+		DockerHubRegistry: server.URL,
+	}
+	ok, err := ProbeComposeStack(context.Background(), prober, "8.19.21")
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestProbeComposeStackAuthenticatesThenFindsDockerHubAgent(t *testing.T) {
+	t.Parallel()
+
+	server := newRegistryAuthServer(t, map[string]int{
+		"/v2/elasticsearch/elasticsearch/manifests/8.1.3": http.StatusOK,
+		"/v2/kibana/kibana/manifests/8.1.3":               http.StatusOK,
+		"/v2/elastic/elastic-agent/manifests/8.1.3":       http.StatusOK,
+	})
+
+	prober := RegistryProber{
+		Client:            server.Client(),
+		ElasticRegistry:   server.URL,
+		DockerHubRegistry: server.URL,
+	}
+	ok, err := ProbeComposeStack(context.Background(), prober, "8.1.3")
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestProbeComposeStackAuthenticatesThenReportsMissingDockerHubAgent(t *testing.T) {
+	t.Parallel()
+
+	server := newRegistryAuthServer(t, map[string]int{
+		"/v2/elasticsearch/elasticsearch/manifests/8.1.3": http.StatusOK,
+		"/v2/kibana/kibana/manifests/8.1.3":               http.StatusOK,
+		"/v2/elastic/elastic-agent/manifests/8.1.3":       http.StatusNotFound,
+	})
+
+	prober := RegistryProber{
+		Client:            server.Client(),
+		ElasticRegistry:   server.URL,
+		DockerHubRegistry: server.URL,
+	}
+	ok, err := ProbeComposeStack(context.Background(), prober, "8.1.3")
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func TestProbeComposeStackErrorsOn5xxAfterAuth(t *testing.T) {
+	t.Parallel()
+
+	server := newRegistryAuthServer(t, map[string]int{
+		"/v2/elasticsearch/elasticsearch/manifests/8.19.21": http.StatusOK,
+		"/v2/kibana/kibana/manifests/8.19.21":               http.StatusServiceUnavailable,
+		"/v2/elastic-agent/elastic-agent/manifests/8.19.21": http.StatusOK,
+	})
+
+	prober := RegistryProber{
+		Client:            server.Client(),
+		ElasticRegistry:   server.URL,
+		DockerHubRegistry: server.URL,
+	}
+	ok, err := ProbeComposeStack(context.Background(), prober, "8.19.21")
+	require.Error(t, err)
+	assert.False(t, ok)
+}
+
+func TestProbeComposeStackErrorsOnTransportFailure(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	prober := RegistryProber{
+		Client:            server.Client(),
+		ElasticRegistry:   server.URL,
+		DockerHubRegistry: server.URL,
+	}
+	server.Close()
+
+	ok, err := ProbeComposeStack(context.Background(), prober, "8.19.21")
+	require.Error(t, err)
+	assert.False(t, ok)
+}
+
+func newRegistryAuthServer(t *testing.T, manifestStatus map[string]int) *httptest.Server {
+	t.Helper()
+
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/token" {
+			_, _ = w.Write([]byte(`{"token":"anonymous-pull-token"}`))
+			return
+		}
+		if r.Header.Get("Authorization") != "Bearer anonymous-pull-token" {
+			w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Bearer realm="%s/token",service="token-service",scope="repository:test:pull"`, server.URL))
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if status, ok := manifestStatus[r.URL.Path]; ok {
+			w.WriteHeader(status)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+	return server
 }

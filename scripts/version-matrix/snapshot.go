@@ -23,12 +23,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
 type snapshotLatest struct {
 	Version string `json:"version"`
 }
+
+var snapshotLabelPattern = regexp.MustCompile(`^\d+\.\d+\.\d+-SNAPSHOT$`)
 
 func FetchSnapshotLabel(ctx context.Context, client *http.Client, endpoint string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -57,6 +60,9 @@ func ParseSnapshotLabel(body []byte) (string, error) {
 	}
 	if strings.TrimSpace(payload.Version) == "" {
 		return "", fmt.Errorf("snapshot response missing version")
+	}
+	if !snapshotLabelPattern.MatchString(payload.Version) {
+		return "", fmt.Errorf("snapshot response version %q is not a SNAPSHOT label", payload.Version)
 	}
 	return payload.Version, nil
 }

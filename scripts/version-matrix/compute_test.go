@@ -21,64 +21,87 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func alwaysResolve(_ string) (bool, error) { return true, nil }
+
+func neverResolve(_ string) (bool, error) { return false, nil }
 
 func TestComputeDesiredIncludesNewPatchWhenImagesResolve(t *testing.T) {
 	t.Parallel()
 
-	got := ComputeDesired(
+	got, err := ComputeDesired(
 		[]string{"v8.19.21"},
 		"9.6.0-SNAPSHOT",
 		[]string{"8.19.17"},
-		func(string) bool { return true },
+		alwaysResolve,
 	)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"8.19.21", "9.6.0-SNAPSHOT"}, got)
 }
 
 func TestComputeDesiredRetainsPreviousGAWhenNewPatchImagesMissing(t *testing.T) {
 	t.Parallel()
 
-	got := ComputeDesired(
+	got, err := ComputeDesired(
 		[]string{"v8.19.21"},
 		"9.6.0-SNAPSHOT",
 		[]string{"8.19.17"},
-		func(string) bool { return false },
+		neverResolve,
 	)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"8.19.17", "9.6.0-SNAPSHOT"}, got)
 }
 
 func TestComputeDesiredRetainsSnapshotWhenPromotionImagesMissing(t *testing.T) {
 	t.Parallel()
 
-	got := ComputeDesired(
+	got, err := ComputeDesired(
 		[]string{"v9.6.0"},
 		"9.7.0-SNAPSHOT",
 		[]string{"9.6.0-SNAPSHOT"},
-		func(string) bool { return false },
+		neverResolve,
 	)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"9.6.0-SNAPSHOT"}, got)
 }
 
 func TestComputeDesiredOmitsBrandNewMinorWhenImagesMissing(t *testing.T) {
 	t.Parallel()
 
-	got := ComputeDesired(
+	got, err := ComputeDesired(
 		[]string{"v8.19.21", "v9.6.0"},
 		"9.7.0-SNAPSHOT",
 		[]string{"8.19.21"},
-		func(v string) bool { return v == "8.19.21" },
+		func(v string) (bool, error) { return v == "8.19.21", nil },
 	)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"8.19.21", "9.7.0-SNAPSHOT"}, got)
+}
+
+func TestComputeDesiredOmitsNewTwoDigitMinorWhenUnrelatedOneDigitPinExists(t *testing.T) {
+	t.Parallel()
+
+	got, err := ComputeDesired(
+		[]string{"v8.1.3", "v8.10.4"},
+		"9.6.0-SNAPSHOT",
+		[]string{"8.1.3"},
+		func(v string) (bool, error) { return v == "8.1.3", nil },
+	)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"8.1.3", "9.6.0-SNAPSHOT"}, got)
 }
 
 func TestComputeDesiredPromotesSnapshotWhenGAImagesResolve(t *testing.T) {
 	t.Parallel()
 
-	got := ComputeDesired(
+	got, err := ComputeDesired(
 		[]string{"v9.6.0"},
 		"9.7.0-SNAPSHOT",
 		[]string{"9.6.0-SNAPSHOT"},
-		func(string) bool { return true },
+		alwaysResolve,
 	)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"9.6.0", "9.7.0-SNAPSHOT"}, got)
 }

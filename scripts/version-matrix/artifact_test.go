@@ -48,6 +48,17 @@ func TestWriteArtifactSortsAscendingWithSnapshotLast(t *testing.T) {
 	assert.Equal(t, []string{"8.10.4", "9.0.8", "8.19.21-SNAPSHOT"}, got)
 }
 
+func TestWriteArtifactSortsTwoDigitMinorsBeforeLaterPatches(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(path, []string{"8.19.21", "8.1.3", "8.10.4", "9.0.8-SNAPSHOT"}))
+
+	got, err := ReadArtifact(path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"8.1.3", "8.10.4", "8.19.21", "9.0.8-SNAPSHOT"}, got)
+}
+
 func TestVersionsEqualDetectsNoOpRegardlessOfOrder(t *testing.T) {
 	t.Parallel()
 

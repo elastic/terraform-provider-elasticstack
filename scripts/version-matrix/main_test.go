@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,6 +77,131 @@ func TestRunComputeNoOpWhenArtifactMatches(t *testing.T) {
 
 func TestRunComputeFailsWhenSnapshotEndpointUnavailable(t *testing.T) {
 	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusServiceUnavailable, "")
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21", "9.6.0-SNAPSHOT"}))
+	before, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	err = run(computeArgs(artifact, fx), io.Discard, io.Discard)
+	require.Error(t, err)
+
+	after, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func TestRunComputeFailsWhenImageProbeIsUncertain(t *testing.T) {
+	githubSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v3/repos/elastic/elasticsearch/tags" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`[{"name":"v8.19.21"}]`))
+	}))
+	t.Cleanup(githubSrv.Close)
+
+	snapshotSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"version":"9.6.0-SNAPSHOT"}`))
+	}))
+	t.Cleanup(snapshotSrv.Close)
+
+	registrySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	t.Cleanup(registrySrv.Close)
+
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.17"}))
+	before, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	err = run([]string{
+		"compute",
+		"-artifact", artifact,
+		"-github-url", githubSrv.URL,
+		"-snapshot-url", snapshotSrv.URL,
+		"-elastic-registry", registrySrv.URL,
+		"-dockerhub-registry", registrySrv.URL,
+	}, io.Discard, io.Discard)
+	require.Error(t, err)
+
+	after, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func TestRunComputeFailsWhenGitHubTagListFails(t *testing.T) {
+	githubSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(githubSrv.Close)
+
+	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21", "9.6.0-SNAPSHOT"}))
+	before, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	err = run([]string{
+		"compute",
+		"-artifact", artifact,
+		"-github-url", githubSrv.URL,
+		"-snapshot-url", fx.snapshotURL,
+		"-elastic-registry", fx.registryURL,
+		"-dockerhub-registry", fx.registryURL,
+	}, io.Discard, io.Discard)
+	require.Error(t, err)
+
+	after, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func TestComputeHTTPClientHasTimeout(t *testing.T) {
+	t.Parallel()
+
+	client := newComputeHTTPClient(30 * time.Second)
+	assert.Equal(t, 30*time.Second, client.Timeout)
+}
+
+func TestRunComputeFailsWhenHTTPTimesOut(t *testing.T) {
+	hang := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	t.Cleanup(hang.Close)
+
+	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21"}))
+	before, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	err = run([]string{
+		"compute",
+		"-artifact", artifact,
+		"-github-url", hang.URL,
+		"-snapshot-url", fx.snapshotURL,
+		"-elastic-registry", fx.registryURL,
+		"-dockerhub-registry", fx.registryURL,
+		"-timeout", "50ms",
+	}, io.Discard, io.Discard)
+	require.Error(t, err)
+
+	after, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func TestRunComputeFailsWhenGATagListEmpty(t *testing.T) {
+	fx := startComputeFixtures(t, `[{"name":"v7.17.28"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
 	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
 	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21", "9.6.0-SNAPSHOT"}))
 	before, err := os.ReadFile(artifact)

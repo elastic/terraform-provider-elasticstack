@@ -37,6 +37,20 @@ func TestLatestPatchPerMinorKeepsHighestPatch(t *testing.T) {
 	assert.Equal(t, []string{"8.19.21", "9.5.3"}, got)
 }
 
+func TestLatestPatchPerMinorDropsNonGALabels(t *testing.T) {
+	t.Parallel()
+
+	got := LatestPatchPerMinor([]string{"v8.19.21-rc1", "v9.6.0-SNAPSHOT", "8.19.21", "v8.19.21"})
+	assert.Equal(t, []string{"8.19.21"}, got)
+}
+
+func TestLatestPatchPerMinorKeepsTwoDigitMinorDistinctFromOneDigit(t *testing.T) {
+	t.Parallel()
+
+	got := LatestPatchPerMinor([]string{"v8.1.3", "v8.10.4"})
+	assert.Equal(t, []string{"8.1.3", "8.10.4"}, got)
+}
+
 func TestLatestPatchPerMinorExcludesMajorsOutside8And9(t *testing.T) {
 	t.Parallel()
 
@@ -65,6 +79,7 @@ func TestListElasticsearchTagsPaginatesGitHubFixture(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	client, err := github.NewClient(github.WithEnterpriseURLs(server.URL, server.URL))
+	require.NoError(t, err)
 
 	got, err := ListElasticsearchTags(context.Background(), client)
 	require.NoError(t, err)
