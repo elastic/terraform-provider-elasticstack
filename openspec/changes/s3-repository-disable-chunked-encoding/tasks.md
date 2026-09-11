@@ -46,15 +46,15 @@
 
 ## 5. Tests
 
-- [ ] 5.1 Extend `internal/elasticsearch/snapshot/repository/snapshot_repository_acc_test.go` and
+- [x] 5.1 Extend `internal/elasticsearch/snapshot/repository/snapshot_repository_acc_test.go` and
   the relevant `testdata/TestAccResourceSnapRepoS3/**/main.tf` fixtures (already minio-backed,
   i.e. S3-compatible) to set `disable_chunked_encoding = true` and `always_sign_requests = true`
   on at least one step, and assert both round-trip through state on a second `terraform plan`
   with no diff.
-- [ ] 5.2 Add/extend unit test coverage in `read_write_test.go` (or the nearest existing
+- [x] 5.2 Add/extend unit test coverage in `read_write_test.go` (or the nearest existing
   unit-test file covering `s3ToSettings`/`settingsToS3`) for both new fields, including the
   read-side fallback behavior decided in section 4.
-- [ ] 5.3 Run `go test ./internal/elasticsearch/snapshot/repository/...` (no `TF_ACC`) and `go vet
+- [x] 5.3 Run `go test ./internal/elasticsearch/snapshot/repository/...` (no `TF_ACC`) and `go vet
   ./internal/elasticsearch/snapshot/repository/...`.
 
 ## 6. Documentation and spec sync
