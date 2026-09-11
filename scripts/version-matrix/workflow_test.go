@@ -19,6 +19,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,8 +33,22 @@ const (
 )
 
 type workflowYAML struct {
-	On          workflowOn          `yaml:"on"`
-	Permissions workflowPermissions `yaml:"permissions"`
+	On          workflowOn             `yaml:"on"`
+	Permissions workflowPermissions    `yaml:"permissions"`
+	Jobs        map[string]workflowJob `yaml:"jobs"`
+}
+
+type workflowJob struct {
+	Steps []workflowStep `yaml:"steps"`
+}
+
+type workflowStep struct {
+	Name string            `yaml:"name"`
+	ID   string            `yaml:"id"`
+	If   string            `yaml:"if"`
+	Run  string            `yaml:"run"`
+	Uses string            `yaml:"uses"`
+	With map[string]string `yaml:"with"`
 }
 
 type workflowOn struct {
@@ -50,6 +65,49 @@ type workflowPermissions struct {
 	PullRequests string `yaml:"pull-requests"`
 }
 
+func TestVersionMatrixWorkflow_pushRefMatchesStandingHeadBranch(t *testing.T) {
+	t.Parallel()
+
+	push := workflowStepByID(t, "push")
+	assert.Contains(t, push.Run, "git push origin HEAD:"+standingPRHeadBranch+" --force")
+}
+
+func TestVersionMatrixWorkflow_gitAddMatchesDefaultArtifactPath(t *testing.T) {
+	t.Parallel()
+
+	push := workflowStepByID(t, "push")
+	assert.Contains(t, push.Run, "git add "+defaultArtifactPath)
+}
+
+func TestVersionMatrixWorkflow_stepGatesAndCheckoutRef(t *testing.T) {
+	t.Parallel()
+
+	wf := loadWorkflow(t, versionMatrixWorkflowPath)
+	job, ok := wf.Jobs["generate-version-matrix"]
+	require.True(t, ok, "missing generate-version-matrix job")
+
+	var checkout workflowStep
+	for _, step := range job.Steps {
+		if strings.Contains(step.Uses, "actions/checkout@") {
+			checkout = step
+			break
+		}
+	}
+	require.NotEmpty(t, checkout.Uses)
+	assert.Equal(t, "${{ github.event.repository.default_branch }}", checkout.With["ref"])
+
+	compute := workflowStepByID(t, "compute")
+	assert.Empty(t, compute.If)
+	assert.Equal(t, "go run ./scripts/version-matrix compute", strings.TrimSpace(compute.Run))
+
+	push := workflowStepByID(t, "push")
+	assert.Equal(t, "steps.compute.outputs.changed == 'true'", push.If)
+
+	lookup := workflowStepByID(t, "lookup_pr")
+	assert.Equal(t, "steps.push.outputs.pushed == 'true'", lookup.If)
+	assert.Contains(t, lookup.Run, "go run ./scripts/version-matrix manage-pr")
+}
+
 func TestVersionMatrixWorkflow_invokesGoComputeEngine(t *testing.T) {
 	t.Parallel()
 
@@ -62,9 +120,9 @@ func TestVersionMatrixWorkflow_invokesGoComputeEngine(t *testing.T) {
 func TestVersionMatrixWorkflow_managePRRunsOnlyWhenPushed(t *testing.T) {
 	t.Parallel()
 
-	raw := readWorkflowFile(t, versionMatrixWorkflowPath)
-	assert.Contains(t, raw, "go run ./scripts/version-matrix manage-pr")
-	assert.Contains(t, raw, "steps.push.outputs.pushed == 'true'")
+	lookup := workflowStepByID(t, "lookup_pr")
+	assert.Contains(t, lookup.Run, "go run ./scripts/version-matrix manage-pr")
+	assert.Equal(t, "steps.push.outputs.pushed == 'true'", lookup.If)
 }
 
 func TestVersionMatrixWorkflow_changedPushesEmptyCITriggerCommit(t *testing.T) {
@@ -81,14 +139,14 @@ func TestVersionMatrixWorkflow_changedCommitsBotAuthoredBranch(t *testing.T) {
 	raw := readWorkflowFile(t, versionMatrixWorkflowPath)
 	assert.Contains(t, raw, `git config user.name "github-actions[bot]"`)
 	assert.Contains(t, raw, `git config user.email "github-actions[bot]@users.noreply.github.com"`)
-	assert.Contains(t, raw, "git push origin HEAD:acceptance-test-version-matrix --force")
+	assert.Contains(t, raw, "git push origin HEAD:"+standingPRHeadBranch+" --force")
 }
 
 func TestVersionMatrixWorkflow_pushRunsOnlyWhenChanged(t *testing.T) {
 	t.Parallel()
 
-	raw := readWorkflowFile(t, versionMatrixWorkflowPath)
-	assert.Contains(t, raw, "steps.compute.outputs.changed == 'true'")
+	push := workflowStepByID(t, "push")
+	assert.Equal(t, "steps.compute.outputs.changed == 'true'", push.If)
 }
 
 func TestVersionMatrixWorkflow_hasDailyScheduleAndDispatch(t *testing.T) {
@@ -104,6 +162,20 @@ func TestVersionMatrixWorkflow_hasDailyScheduleAndDispatch(t *testing.T) {
 	assert.NotEqual(t, changelog.On.Schedule[0].Cron, got.On.Schedule[0].Cron)
 	assert.Equal(t, "write", got.Permissions.Contents)
 	assert.Equal(t, "write", got.Permissions.PullRequests)
+}
+
+func workflowStepByID(t *testing.T, id string) workflowStep {
+	t.Helper()
+	wf := loadWorkflow(t, versionMatrixWorkflowPath)
+	job, ok := wf.Jobs["generate-version-matrix"]
+	require.True(t, ok, "missing generate-version-matrix job")
+	for _, step := range job.Steps {
+		if step.ID == id {
+			return step
+		}
+	}
+	t.Fatalf("missing workflow step id %q", id)
+	return workflowStep{}
 }
 
 func loadWorkflow(t *testing.T, path string) workflowYAML {
