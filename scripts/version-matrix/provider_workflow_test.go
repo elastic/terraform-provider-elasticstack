@@ -78,7 +78,7 @@ func TestProviderWorkflow_testMatrixVersionLoadedFromLoadMatrix(t *testing.T) {
 	test, ok := wf.Jobs["test"]
 	require.True(t, ok, "missing test job")
 	assert.ElementsMatch(t, []string{"classify", "build", "load-matrix"}, providerNeeds(t, test))
-	assert.Equal(t, "${{ fromJson(needs.load-matrix.outputs.versions) }}", test.Strategy.Matrix["version"])
+	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.versions) }}", test.Strategy.Matrix["version"])
 	assert.Equal(t, []any{0, 1}, test.Strategy.Matrix["shard"])
 }
 
@@ -96,6 +96,8 @@ func TestProviderWorkflow_derivedFlagsReplaceMatrixRunnerAndFleetImage(t *testin
 	t.Parallel()
 
 	raw := readWorkflowFile(t, providerWorkflowPath)
+	assert.NotContains(t, raw, "needs.load-matrix")
+	assert.Contains(t, raw, "needs['load-matrix']")
 	assert.NotContains(t, raw, "matrix.runner")
 	assert.NotContains(t, raw, "matrix.fleetImage")
 	assert.NotContains(t, raw, "startsWith(matrix.version, '8.1.')")
@@ -106,7 +108,7 @@ func TestProviderWorkflow_derivedFlagsReplaceMatrixRunnerAndFleetImage(t *testin
 
 	wf := loadProviderWorkflow(t)
 	test := wf.Jobs["test"]
-	assert.Equal(t, "${{ fromJson(needs.load-matrix.outputs.flags)[matrix.version].runner }}", test.RunsOn)
+	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].runner }}", test.RunsOn)
 
 	var prePull, compose, synthetics providerWorkflowStep
 	for _, step := range test.Steps {
@@ -119,10 +121,10 @@ func TestProviderWorkflow_derivedFlagsReplaceMatrixRunnerAndFleetImage(t *testin
 			synthetics = step
 		}
 	}
-	assert.Equal(t, "fromJson(needs.load-matrix.outputs.flags)[matrix.version].prePullFleet", prePull.If)
-	assert.Contains(t, prePull.Run, "fromJson(needs.load-matrix.outputs.flags)[matrix.version].fleetImage")
-	assert.Equal(t, "${{ fromJson(needs.load-matrix.outputs.flags)[matrix.version].fleetImage }}", compose.Env["FLEET_IMAGE"])
-	assert.Equal(t, "fromJson(needs.load-matrix.outputs.flags)[matrix.version].forceSynthetics", synthetics.If)
+	assert.Equal(t, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet", prePull.If)
+	assert.Contains(t, prePull.Run, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage")
+	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}", compose.Env["FLEET_IMAGE"])
+	assert.Equal(t, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics", synthetics.If)
 }
 
 func loadProviderWorkflow(t *testing.T) providerWorkflow {

@@ -128,7 +128,7 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
-    runs-on: ${{ fromJson(needs.load-matrix.outputs.flags)[matrix.version].runner }}
+    runs-on: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].runner }}
     env:
       ELASTIC_PASSWORD: password
       TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: true
@@ -137,7 +137,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs.load-matrix.outputs.versions) }}
+        version: ${{ fromJson(needs['load-matrix'].outputs.versions) }}
         shard: [0, 1]
     steps:
       - name: Free up disk space
@@ -162,12 +162,12 @@ jobs:
         run: make vendor
 
       - name: Pre-pull fleet image
-        if: fromJson(needs.load-matrix.outputs.flags)[matrix.version].prePullFleet
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet"
         timeout-minutes: 5
         run: |
           for i in {1..3}; do
-            echo "Attempt $i: pulling ${{ fromJson(needs.load-matrix.outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}..."
-            if timeout 90 docker pull "${{ fromJson(needs.load-matrix.outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}"; then
+            echo "Attempt $i: pulling ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}..."
+            if timeout 90 docker pull "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}"; then
               echo "Fleet image pulled successfully"
               exit 0
             fi
@@ -184,7 +184,7 @@ jobs:
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          FLEET_IMAGE: ${{ fromJson(needs.load-matrix.outputs.flags)[matrix.version].fleetImage }}
+          FLEET_IMAGE: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}
 
       - name: Wait for stack readiness
         run: |
@@ -219,7 +219,7 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: fromJson(needs.load-matrix.outputs.flags)[matrix.version].forceSynthetics
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
