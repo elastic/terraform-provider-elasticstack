@@ -23,7 +23,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -67,17 +66,6 @@ type KibanaDataSourceModel interface {
 // GetElasticsearchConnection method).
 type ElasticsearchDataSourceModel interface {
 	GetElasticsearchConnection() types.List
-}
-
-// VersionRequirement describes a minimum server version that an entity model
-// requires before the envelope invokes the concrete lifecycle callback.
-type VersionRequirement struct {
-	// MinVersion is the minimum server version required.
-	MinVersion version.Version
-	// ErrorMessage is the human-readable detail added to the
-	// "Unsupported server version" diagnostic when the server does not
-	// satisfy MinVersion.
-	ErrorMessage string
 }
 
 // genericKibanaDataSource implements [datasource.DataSource] and

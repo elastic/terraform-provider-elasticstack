@@ -98,7 +98,7 @@ func (m Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWin
 	body.Schedule.Custom.Duration = m.CustomSchedule.Duration.ValueString()
 	body.Schedule.Custom.Start = m.CustomSchedule.Start.ValueString()
 
-	if !m.CustomSchedule.Timezone.IsNull() && !m.CustomSchedule.Timezone.IsUnknown() {
+	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
@@ -125,16 +125,15 @@ func (m Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWi
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
 		Enabled: m.Enabled.ValueBoolPointer(),
 		Title:   m.Title.ValueStringPointer(),
-	}
 
-	body.Schedule = &struct {
-		Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
-	}{
-		Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
-			Duration: m.CustomSchedule.Duration.ValueString(),
-			Start:    m.CustomSchedule.Start.ValueString(),
-		},
-	}
+		Schedule: &struct {
+			Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
+		}{
+			Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
+				Duration: m.CustomSchedule.Duration.ValueString(),
+				Start:    m.CustomSchedule.Start.ValueString(),
+			},
+		}}
 
 	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()

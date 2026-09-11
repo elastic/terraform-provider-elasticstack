@@ -20,42 +20,35 @@ package securitylist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createSecurityList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	m := req.Plan
+var createSecurityList = entitycore.SimpleKibanaCreate[Model, kbapi.CreateListJSONRequestBody, kbapi.SecurityListsAPIList](
+	func(plan Model, _ context.Context) (kbapi.CreateListJSONRequestBody, diag.Diagnostics) {
+		req, diags := plan.toCreateRequest()
+		if diags.HasError() {
+			return kbapi.CreateListJSONRequestBody{}, diags
+		}
+		return *req, diags
+	},
+	kibanaoapi.CreateList,
+	(*Model).populateCreated,
+)
+
+// populateCreated captures the list ID assigned by the create response;
+// shared shape documented on entitycore.RequireNonNilKibanaWriteResponse.
+func (m *Model) populateCreated(_ context.Context, spaceID string, created *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	createReq, d := m.toCreateRequest()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, created, "create", "security list") {
+		return diags
 	}
 
-	createdList, d := kibanaoapi.CreateList(ctx, oapiClient, req.SpaceID, *createReq)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
+	m.ListID = typeutils.StringishValue(created.Id)
+	m.ID = entitycore.KibanaResourceID(spaceID, created.Id)
 
-	if createdList == nil {
-		diags.AddError("Failed to create security list", "API returned empty response")
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	m.ListID = typeutils.StringishValue(createdList.Id)
-	m.ID = types.StringValue((&clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: createdList.Id,
-	}).String())
-
-	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
+	return diags
 }

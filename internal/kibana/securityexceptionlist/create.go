@@ -20,48 +20,39 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createExceptionList(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionListModel],
-) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
-	m := req.Plan
+var createExceptionList = entitycore.SimpleKibanaCreate[ExceptionListModel, kbapi.CreateExceptionListJSONRequestBody, kbapi.SecurityExceptionsAPIExceptionList](
+	func(plan ExceptionListModel, ctx context.Context) (kbapi.CreateExceptionListJSONRequestBody, diag.Diagnostics) {
+		body, diags := plan.toCreateRequest(ctx)
+		if diags.HasError() {
+			return kbapi.CreateExceptionListJSONRequestBody{}, diags
+		}
+		return *body, diags
+	},
+	kibanaoapi.CreateExceptionList,
+	(*ExceptionListModel).populateCreated,
+)
+
+// populateCreated captures the ID and namespace type reported by the create
+// response; NamespaceType may be defaulted by the API when the request omits
+// it, so the response value is authoritative.
+func (m *ExceptionListModel) populateCreated(_ context.Context, spaceID string, created *kbapi.SecurityExceptionsAPIExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	body, d := m.toCreateRequest(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, created, "create", "exception list") {
+		return diags
 	}
 
-	createResp, d := kibanaoapi.CreateExceptionList(ctx, oapiClient, req.SpaceID, *body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
+	if created.NamespaceType != "" {
+		m.NamespaceType = types.StringValue(string(created.NamespaceType))
 	}
 
-	if createResp == nil {
-		diags.AddError("Failed to create exception list", "API returned empty response")
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
+	m.ID = entitycore.KibanaResourceID(spaceID, created.Id)
 
-	if createResp.NamespaceType != "" {
-		m.NamespaceType = types.StringValue(string(createResp.NamespaceType))
-	}
-
-	m.ID = types.StringValue((&clients.CompositeID{
-		ClusterID:  req.SpaceID,
-		ResourceID: createResp.Id,
-	}).String())
-
-	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
+	return diags
 }

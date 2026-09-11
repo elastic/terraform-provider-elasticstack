@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -65,7 +66,7 @@ func baseTestModel(t *testing.T) managedIntegrationModel {
 		VarGroupSelections:               types.MapNull(types.StringType),
 		Inputs:                           policyshape.NewInputsNull(managedIntegrationInputType()),
 		CloudConnector:                   types.ObjectNull(cloudConnectorAttrTypes()),
-		GlobalDataTags:                   types.MapNull(globalDataTagsElementType()),
+		GlobalDataTags:                   types.MapNull(globaldatatags.ElementType()),
 		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
 		CreateDatasetTemplates:           types.BoolNull(),
 		Force:                            types.BoolNull(),
@@ -183,10 +184,10 @@ func TestToCreateBody_globalDataTags(t *testing.T) {
 	ctx := context.Background()
 
 	m := baseTestModel(t)
-	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"env": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringValue("prod"),
-			globalDataTagNumberValueAttr: types.Float32Null(),
+	tagsMap, diags := types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"env": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringValue("prod"),
+			globaldatatags.NumberValueAttr: types.Float32Null(),
 		}),
 	})
 	require.False(t, diags.HasError())
@@ -210,10 +211,10 @@ func TestToCreateBody_globalDataTags_number(t *testing.T) {
 	ctx := context.Background()
 
 	m := baseTestModel(t)
-	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"priority": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringNull(),
-			globalDataTagNumberValueAttr: types.Float32Value(42),
+	tagsMap, diags := types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"priority": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringNull(),
+			globaldatatags.NumberValueAttr: types.Float32Value(42),
 		}),
 	})
 	require.False(t, diags.HasError())
@@ -240,14 +241,14 @@ func TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip(t *testing.T)
 	t.Parallel()
 	ctx := context.Background()
 
-	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"env": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringValue("prod"),
-			globalDataTagNumberValueAttr: types.Float32Null(),
+	tagsMap, diags := types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"env": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringValue("prod"),
+			globaldatatags.NumberValueAttr: types.Float32Null(),
 		}),
-		"priority": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringNull(),
-			globalDataTagNumberValueAttr: types.Float32Value(7.5),
+		"priority": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringNull(),
+			globaldatatags.NumberValueAttr: types.Float32Value(7.5),
 		}),
 	})
 	require.False(t, diags.HasError())
@@ -292,7 +293,7 @@ func TestGlobalDataTags_mapAttribute_mixedStringAndNumberRoundTrip(t *testing.T)
 	popDiags := out.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, popDiags.HasError(), "%v", popDiags)
 
-	var tags map[string]globalDataTagsItemModel
+	var tags map[string]globaldatatags.Item
 	require.False(t, out.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
 	require.Len(t, tags, 2)
 	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
@@ -360,7 +361,7 @@ func TestGlobalDataTagsToModel_numberWire(t *testing.T) {
 	m := globalDataTagsToModel(ctx, item, &diags)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var tags map[string]globalDataTagsItemModel
+	var tags map[string]globaldatatags.Item
 	require.False(t, m.ElementsAs(ctx, &tags, false).HasError())
 	require.InDelta(t, float32(1.5), tags["priority"].NumberValue.ValueFloat32(), 0.001)
 	assert.True(t, tags["priority"].StringValue.IsNull())
@@ -391,10 +392,10 @@ func TestGlobalDataTagsRawFromModel_number(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"priority": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringNull(),
-			globalDataTagNumberValueAttr: types.Float32Value(7),
+	tagsMap, diags := types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"priority": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringNull(),
+			globaldatatags.NumberValueAttr: types.Float32Value(7),
 		}),
 	})
 	require.False(t, diags.HasError())
@@ -414,10 +415,10 @@ func TestGlobalDataTagsRawFromModel_neitherValueSet(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"my_tag": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringNull(),
-			globalDataTagNumberValueAttr: types.Float32Null(),
+	tagsMap, diags := types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"my_tag": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringNull(),
+			globaldatatags.NumberValueAttr: types.Float32Null(),
 		}),
 	})
 	require.False(t, diags.HasError())
@@ -579,7 +580,7 @@ func TestPopulateFromManagedIntegration_decodesInputsAndFields(t *testing.T) {
 	require.False(t, m.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false).HasError())
 	assert.Equal(t, []string{"logs-foo-*"}, perms)
 
-	var tags map[string]globalDataTagsItemModel
+	var tags map[string]globaldatatags.Item
 	require.False(t, m.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
 	require.Len(t, tags, 1)
 	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
@@ -651,7 +652,7 @@ func TestPopulateFromManagedIntegration_globalDataTagsNumberRoundTrip(t *testing
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var tags map[string]globalDataTagsItemModel
+	var tags map[string]globaldatatags.Item
 	require.False(t, m.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
 	require.InDelta(t, float32(42), tags["priority"].NumberValue.ValueFloat32(), 0.001)
 
@@ -865,7 +866,7 @@ func TestPopulateFromManagedIntegration_stringGlobalDataTagsReadEncodeRoundTrip(
 	diags := m.populateFromManagedIntegration(ctx, "default", item, nil)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	var tags map[string]globalDataTagsItemModel
+	var tags map[string]globaldatatags.Item
 	require.False(t, m.GlobalDataTags.ElementsAs(ctx, &tags, false).HasError())
 	assert.Equal(t, "prod", tags["env"].StringValue.ValueString())
 
@@ -993,10 +994,10 @@ func TestBuildUpdateBody(t *testing.T) {
 	require.False(t, diags.HasError())
 	plan.Inputs = inputsValue
 
-	tagsMap, diags := types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"env": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringValue("staging"),
-			globalDataTagNumberValueAttr: types.Float32Null(),
+	tagsMap, diags := types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"env": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringValue("staging"),
+			globaldatatags.NumberValueAttr: types.Float32Null(),
 		}),
 	})
 	require.False(t, diags.HasError())

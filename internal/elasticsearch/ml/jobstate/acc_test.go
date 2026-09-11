@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -136,6 +137,9 @@ func TestAccResourceMLJobStateImport(t *testing.T) {
 					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
 					resource.TestCheckResourceAttr(mlJobStateResourceName, "force", "false"),
 					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_timeout", "30s"),
+					// id is a "<cluster_uuid>/<job_id>" composite; the cluster UUID isn't
+					// known ahead of time, but the job_id suffix is deterministic.
+					resource.TestMatchResourceAttr(mlJobStateResourceName, "id", regexp.MustCompile("/"+regexp.QuoteMeta(jobID)+"$")),
 				),
 			},
 			{
@@ -515,6 +519,132 @@ func TestAccResourceMLJobState_update_timeout(t *testing.T) {
 					"job_id": config.StringVariable(jobID),
 				},
 				ExpectError: regexp.MustCompile("context deadline exceeded"),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLJobState_validation_invalidState verifies that the `state`
+// attribute's stringvalidator.OneOf validator rejects a value outside
+// "opened"/"closed" at plan time, without touching the API.
+func TestAccResourceMLJobState_validation_invalidState(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?i)(state|invalid|value|opened|closed)`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLJobState_timeoutsHappyPath exercises timeouts.create and
+// timeouts.update on the happy path: a generous, explicit custom value that
+// succeeds, rather than only the deliberately-too-short values used to
+// trigger ExpectError elsewhere.
+func TestAccResourceMLJobState_timeoutsHappyPath(t *testing.T) {
+	jobID := fmt.Sprintf("test-ml-job-timeouts-happy-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("opened"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "timeouts.create", "2m"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "timeouts.update", "2m"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("closed"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "closed"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "timeouts.create", "2m"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "timeouts.update", "2m"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLJobState_timeoutsReadDelete exercises timeouts.read and
+// timeouts.delete, which otherwise have no coverage: neither is ever
+// configured or asserted, and no test exercises a custom delete timeout.
+// A successful apply plus the framework's automatic post-test destroy
+// verifies both attributes are accepted and functional.
+func TestAccResourceMLJobState_timeoutsReadDelete(t *testing.T) {
+	jobID := fmt.Sprintf("test-ml-job-timeouts-rd-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("opened"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(jobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", jobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "timeouts.read", "2m"),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "timeouts.delete", "2m"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLJobState_forceNewJobID verifies that changing `job_id` on an
+// existing resource forces a destroy-and-recreate, locking in the
+// RequiresReplace plan modifier on that attribute.
+func TestAccResourceMLJobState_forceNewJobID(t *testing.T) {
+	initialJobID := fmt.Sprintf("test-ml-job-fn-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	renamedJobID := fmt.Sprintf("test-ml-job-fn-b-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(initialJobID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", initialJobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("renamed"),
+				ConfigVariables: config.Variables{
+					"job_id": config.StringVariable(renamedJobID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(mlJobStateResourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "job_id", renamedJobID),
+					resource.TestCheckResourceAttr(mlJobStateResourceName, "state", "opened"),
+				),
 			},
 		},
 	})

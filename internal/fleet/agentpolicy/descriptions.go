@@ -25,8 +25,5 @@ var hostNameFormatDescription string
 //go:embed descriptions/inactivity_timeout.md
 var inactivityTimeoutDescription string
 
-//go:embed descriptions/global_data_tags.md
-var globalDataTagsDescription string
-
 //go:embed descriptions/policy_id.md
 var policyIDDescription string

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -47,6 +48,8 @@ var (
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 	minVersionSpaceIDs             = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
+
+	minVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
 
 const (
@@ -221,6 +224,118 @@ func TestAccResourceIntegrationPolicyWithOutput(t *testing.T) {
 						"inputs.tcp-tcp.streams.tcp.generic.vars",
 						tcpGenericVarsExpected8080,
 					),
+				),
+			},
+		},
+	})
+}
+
+// checkAdditionalDatastreamsPermissions asserts what Fleet actually stored,
+// so that a server-side behaviour change surfaces as a failure instead of
+// passing quietly on the strength of Terraform state alone.
+func checkAdditionalDatastreamsPermissions(resourceName string, want ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleet.GetPackagePolicy(context.Background(), client.GetFleetClient(), rs.Primary.ID, rs.Primary.Attributes["space_ids.0"])
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("integration policy id=%v not found", rs.Primary.ID)
+		}
+
+		var got []string
+		if policy.AdditionalDatastreamsPermissions != nil {
+			got = *policy.AdditionalDatastreamsPermissions
+		}
+		if !slices.Equal(got, want) {
+			return fmt.Errorf("additional_datastreams_permissions on the server = %v, want %v", got, want)
+		}
+		return nil
+	}
+}
+
+// TestAccResourceIntegrationPolicyAdditionalDatastreamsPermissions covers the
+// grant a `reroute` processor needs to write outside its own package: setting
+// it, widening it, and dropping it from configuration to revoke it.
+func TestAccResourceIntegrationPolicyAdditionalDatastreamsPermissions(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(
+						config.StringVariable("logs-tcp.rerouted-default"),
+					),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-tcp.rerouted-default"),
+					checkAdditionalDatastreamsPermissions(resourceName, "logs-tcp.rerouted-default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(
+						config.StringVariable("logs-tcp.rerouted-default"),
+					),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				// Import resolves package defaults and the containing space,
+				// which config-driven state does not carry. The other policy
+				// import tests skip the same attributes.
+				ImportStateVerifyIgnore: []string{"vars_json", "space_ids", "inputs.tcp-tcp.defaults"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(
+						config.StringVariable("logs-tcp.rerouted-default"),
+						config.StringVariable("logs-tcp.audit-default"),
+					),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-tcp.rerouted-default"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.1", "logs-tcp.audit-default"),
+					checkAdditionalDatastreamsPermissions(resourceName, "logs-tcp.rerouted-default", "logs-tcp.audit-default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "additional_datastreams_permissions.#"),
+					checkAdditionalDatastreamsPermissions(resourceName),
 				),
 			},
 		},

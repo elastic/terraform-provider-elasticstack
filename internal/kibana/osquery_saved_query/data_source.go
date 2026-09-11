@@ -53,7 +53,9 @@ func readOsquerySavedQueryDataSource(ctx context.Context, client *clients.Kibana
 		return config, diags
 	}
 
-	spaceID := resolveDataSourceSpaceID(config.SpaceID)
+	// Datasource schema cannot declare stringdefault.StaticString (no Default on datasource
+	// StringAttribute in terraform-plugin-framework); default the default space at read time.
+	spaceID := clients.EffectiveSpaceIDFromValue(config.SpaceID)
 
 	savedQueryID := config.SavedQueryID.ValueString()
 
@@ -79,15 +81,6 @@ func finishOsquerySavedQueryDataSourceRead(
 	config.SpaceID = types.StringValue(spaceID)
 	diags := config.populateFromGetAPI(ctx, entity)
 	return config, diags
-}
-
-func resolveDataSourceSpaceID(spaceID types.String) string {
-	// Datasource schema cannot declare stringdefault.StaticString (no Default on datasource
-	// StringAttribute in terraform-plugin-framework); default the default space at read time.
-	if typeutils.IsKnown(spaceID) && spaceID.ValueString() != "" {
-		return spaceID.ValueString()
-	}
-	return clients.DefaultSpaceID
 }
 
 func osquerySavedQueryNotFoundDiagnostic(spaceID, savedQueryID string) diag.Diagnostics {

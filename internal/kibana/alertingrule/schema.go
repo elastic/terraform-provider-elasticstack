@@ -44,12 +44,14 @@ import (
 )
 
 var (
-	attrTypesOnce        sync.Once
-	cachedActionsTypes   map[string]attr.Type
-	cachedFrequencyTypes map[string]attr.Type
-	cachedFilterTypes    map[string]attr.Type
-	cachedTimeframeTypes map[string]attr.Type
-	cachedFlappingTypes  map[string]attr.Type
+	attrTypesOnce                 sync.Once
+	cachedActionsTypes            map[string]attr.Type
+	cachedFrequencyTypes          map[string]attr.Type
+	cachedFilterTypes             map[string]attr.Type
+	cachedTimeframeTypes          map[string]attr.Type
+	cachedFlappingTypes           map[string]attr.Type
+	cachedArtifactsTypes          map[string]attr.Type
+	cachedInvestigationGuideTypes map[string]attr.Type
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -200,6 +202,52 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
+			attrArtifacts: schema.SingleNestedAttribute{
+				MarkdownDescription: artifactsDescription,
+				Optional:            true,
+				Computed:            true,
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrInvestigationGuide)),
+				},
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
+				Attributes: map[string]schema.Attribute{
+					attrInvestigationGuide: schema.SingleNestedAttribute{
+						MarkdownDescription: investigationGuideDescription,
+						Optional:            true,
+						Computed:            true,
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
+						Attributes: map[string]schema.Attribute{
+							attrContent: schema.StringAttribute{
+								MarkdownDescription: "Inline investigation guide content (Markdown). Mutually exclusive with `content_path`.",
+								Optional:            true,
+								Validators: []validator.String{
+									stringvalidator.ExactlyOneOf(
+										path.MatchRelative().AtParent().AtName(attrContent),
+										path.MatchRelative().AtParent().AtName(attrContentPath),
+									),
+								},
+							},
+							attrContentPath: schema.StringAttribute{
+								MarkdownDescription: "Path to a local file whose contents are used as the investigation guide. " +
+									"The provider computes a SHA-256 `checksum` of the file at plan time to detect external changes. " +
+									"Mutually exclusive with `content`.",
+								Optional: true,
+							},
+							attrChecksum: schema.StringAttribute{
+								MarkdownDescription: "SHA-256 checksum of the file at `content_path`, used to detect drift. Computed; not user-settable.",
+								Computed:            true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		Blocks: map[string]schema.Block{
 			"actions": schema.ListNestedBlock{
@@ -328,6 +376,12 @@ func initAttrTypes() {
 
 	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
 	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	artifactsAttr := s.Attributes[attrArtifacts].(schema.SingleNestedAttribute)
+	cachedArtifactsTypes = artifactsAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+
+	investigationGuideAttr := artifactsAttr.Attributes[attrInvestigationGuide].(schema.SingleNestedAttribute)
+	cachedInvestigationGuideTypes = investigationGuideAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
@@ -358,4 +412,17 @@ func getTimeframeAttrTypes() map[string]attr.Type {
 func getFlappingAttrTypes() map[string]attr.Type {
 	attrTypesOnce.Do(initAttrTypes)
 	return cachedFlappingTypes
+}
+
+// getArtifactsAttrTypes returns the attribute types for the artifacts object.
+func getArtifactsAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedArtifactsTypes
+}
+
+// getInvestigationGuideAttrTypes returns the attribute types for the
+// investigation_guide object.
+func getInvestigationGuideAttrTypes() map[string]attr.Type {
+	attrTypesOnce.Do(initAttrTypes)
+	return cachedInvestigationGuideTypes
 }

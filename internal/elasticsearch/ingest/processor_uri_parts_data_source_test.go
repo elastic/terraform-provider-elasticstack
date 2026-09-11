@@ -34,10 +34,10 @@ func TestAccDataSourceIngestProcessorURIParts(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "input_field"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "target_field", "url"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "keep_original", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "remove_if_successful", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "target_field"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "description"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "if"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.#"),
@@ -63,6 +63,41 @@ func TestAccDataSourceIngestProcessorURIParts(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIPartsAllAttributes),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated_values"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "updated_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "target_field", "updated_url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "keep_original", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "remove_if_successful", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIPartsUpdated),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "field", "input_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "keep_original", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "remove_if_successful", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "tag"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.0", `{"set":{"field":"error.message","value":"uri parts failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "on_failure.1", `{"set":{"field":"error.type","value":"uri_parts"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_uri_parts.test", "json", expectedJSONURIPartsMultiOnFailure),
+				),
+			},
 		},
 	})
 }
@@ -72,8 +107,7 @@ const expectedJSONURIParts = `{
 		"field": "input_field",
 		"ignore_failure": false,
 		"keep_original": true,
-		"remove_if_successful": false,
-		"target_field": "url"
+		"remove_if_successful": false
 	}
 }`
 
@@ -95,5 +129,38 @@ const expectedJSONURIPartsAllAttributes = `{
 		"remove_if_successful": true,
 		"tag": "uri-parts-tag",
 		"target_field": "parsed_url"
+	}
+}`
+
+const expectedJSONURIPartsUpdated = `{
+	"uri_parts": {
+		"field": "updated_field",
+		"ignore_failure": false,
+		"keep_original": true,
+		"remove_if_successful": false,
+		"target_field": "updated_url"
+	}
+}`
+
+const expectedJSONURIPartsMultiOnFailure = `{
+	"uri_parts": {
+		"field": "input_field",
+		"ignore_failure": false,
+		"keep_original": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "uri parts failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "uri_parts"
+				}
+			}
+		],
+		"remove_if_successful": false
 	}
 }`

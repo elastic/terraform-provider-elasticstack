@@ -18,9 +18,6 @@
 package filter
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,8 +35,13 @@ var (
 // identifier (filter id segment) into read/delete after parsing the composite
 // state id. Create and update callbacks receive that identifier from
 // [TFModel.GetResourceID] (filter_id).
+//
+// ImportState accepts "<cluster_uuid>/<filter_id>" import ids and sets both id
+// and filter_id so Destroy and Read use the same composite id shape as for
+// normally managed resources.
 type filterResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
+	*entitycore.CompositeIDImporter
 }
 
 func newFilterResource() *filterResource {
@@ -51,23 +53,10 @@ func newFilterResource() *filterResource {
 			Create: createFilter,
 			Update: updateFilter,
 		}),
+		CompositeIDImporter: entitycore.NewCompositeIDImporter(path.Root("id"), path.Root("filter_id")),
 	}
 }
 
 func NewFilterResource() resource.Resource {
 	return newFilterResource()
-}
-
-// ImportState accepts "<cluster_uuid>/<filter_id>" import ids and sets both id
-// and filter_id so Destroy and Read use the same composite id shape as for
-// normally managed resources.
-func (r *filterResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("filter_id"), compID.ResourceID)...)
 }

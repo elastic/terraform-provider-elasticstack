@@ -85,8 +85,6 @@ func (t FieldAttrsType) ValueFromTerraform(ctx context.Context, in tftypes.Value
 // NewFieldAttrsType creates a new FieldAttrsType with the given element type.
 func NewFieldAttrsType(elemType attr.Type) FieldAttrsType {
 	return FieldAttrsType{
-		MapType: basetypes.MapType{
-			ElemType: elemType,
-		},
+		ElemType: elemType,
 	}
 }

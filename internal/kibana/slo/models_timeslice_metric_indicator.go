@@ -168,9 +168,8 @@ func (m *tfModel) populateFromTimesliceMetricIndicator(apiIndicator kbapi.SLOsIn
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
 		Filter:         types.StringPointerValue(p.Filter),
-		DataViewID:     types.StringNull(),
-	}
-	ind.DataViewID = typeutils.StringishPointerValue(p.DataViewId)
+
+		DataViewID: typeutils.StringishPointerValue(p.DataViewId)}
 
 	tm := make([]tfTimesliceMetricMetric, 0, len(p.Metric.Metrics))
 	for _, mm := range p.Metric.Metrics {

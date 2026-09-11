@@ -37,22 +37,40 @@ import (
 )
 
 const (
-	watchTriggerCreateExpected   = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
-	watchTriggerUpdateExpected   = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
-	watchInputNoneExpected       = `{"none":{}}`
-	watchConditionAlways         = `{"always":{}}`
-	watchActionsEmpty            = `{}`
-	watchMetadataEmpty           = `{}`
-	watchInputSimpleExpected     = `{"simple":{"name":"example"}}`
-	watchInputSecondExpected     = `{"simple":{"count":2,"environment":"staging"}}`
-	watchConditionNever          = `{"never":{}}`
-	watchConditionScriptExpected = `{"script":{"lang":"painless","source":"return true"}}`
-	watchActionsLogExpected      = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
-	watchMetadataExample         = `{"example_key":"example_value"}`
-	watchMetadataSecondExpected  = `{"env":"staging","priority":2}`
-	watchTransformExpected       = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
+	watchTriggerCreateExpected         = `{"schedule":{"cron":"0 0/1 * * * ?"}}`
+	watchTriggerUpdateExpected         = `{"schedule":{"cron":"0 0/2 * * * ?"}}`
+	watchTriggerIntervalExpected       = `{"schedule":{"interval":"10s"}}`
+	watchTriggerIntervalUpdateExpected = `{"schedule":{"interval":"30s"}}`
+	watchInputNoneExpected             = `{"none":{}}`
+	watchConditionAlways               = `{"always":{}}`
+	watchActionsEmpty                  = `{}`
+	watchMetadataEmpty                 = `{}`
+	watchInputSimpleExpected           = `{"simple":{"name":"example"}}`
+	watchInputSecondExpected           = `{"simple":{"count":2,"environment":"staging"}}`
+	watchConditionNever                = `{"never":{}}`
+	watchConditionScriptExpected       = `{"script":{"lang":"painless","source":"return true"}}`
+	watchActionsLogExpected            = `{"log":{"logging":{"level":"info","text":"example logging text"}}}`
+	watchMetadataExample               = `{"example_key":"example_value"}`
+	watchMetadataSecondExpected        = `{"env":"staging","priority":2}`
+	watchTransformExpected             = `{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[],"rest_total_hits_as_int":true,` +
 		`"search_type":"query_then_fetch"}}}`
 	watchTransformScriptExpected = `{"script":{"lang":"painless","source":"return ctx.payload"}}`
+
+	// Authored JSON for omitted Watcher-injected defaults. State must keep these
+	// shapes (without rest_total_hits_as_int / search_type / indices / lang / level)
+	// when semantic equality holds.
+	watchSearchInputOmittingTypeAndTotalHits = `{"search":{"request":{"body":{"query":{"bool":{"must":[{"match":{"event.dataset":"elasticsearch.cluster.stats"}}]}}},"indices":[".monitoring-es-*"]}}}`
+	watchSearchRequestOmittingDefaults       = `{"search":{"request":{"body":{"query":{"match_all":{}}}}}}`
+	watchChainSearchOmittingDefaults         = `{"chain":{"inputs":[{"first":{"search":{"request":{"body":{"query":{"match_all":{}}},` +
+		`"indices":[".monitoring-es-*"]}}}},{"second":{"search":{"request":{"body":{"query":{"match_all":{}}},` +
+		`"indices":[".monitoring-logs-*"]}}}}]}}`
+	watchActionsSearchTransformOmittingDefaults = `{"log":{"logging":{"text":"watch fired"},` +
+		`"transform":{"search":{"request":{"body":{"query":{"match_all":{}}},"indices":[".monitoring-es-*"]}}}}}`
+	watchConditionScriptOmittingLang    = `{"script":{"source":"return true"}}`
+	watchSearchInputExplicitNonDefaults = `{"search":{"request":{"body":{"query":{"match_all":{}}},` +
+		`"indices":[".monitoring-es-*"],"rest_total_hits_as_int":false,"search_type":"dfs_query_then_fetch"}}}`
+	watchSearchInputExplicitNonDefaultsUpdate = `{"search":{"request":{"body":{"query":{"match_all":{}}},` +
+		`"indices":[".monitoring-es-*",".monitoring-logs-*"],"rest_total_hits_as_int":false,"search_type":"query_then_fetch"}}}`
 
 	watchResourceName = "elasticstack_elasticsearch_watch.test"
 )
@@ -623,6 +641,154 @@ func TestAccResourceWatchFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "watch_id", watchID),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "active", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_watch.test", "trigger", watchTriggerCreateExpected),
+				),
+			},
+		},
+	})
+}
+
+func watchJSONDefaultsApplyStep(t *testing.T, watchID, step, attr, expected string) resource.TestStep {
+	t.Helper()
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(step),
+		ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+		Check: resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+			testCheckWatchAttrSemanticallyEqual(t, attr, expected),
+		),
+	}
+}
+
+func watchJSONDefaultsEmptyPlanStep(watchID, step string) resource.TestStep {
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(step),
+		ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+		ConfigPlanChecks: resource.ConfigPlanChecks{
+			PreApply: []plancheck.PlanCheck{
+				plancheck.ExpectEmptyPlan(),
+			},
+		},
+	}
+}
+
+func watchJSONDefaultsImportStep(watchID, step string, verifyIgnore ...string) resource.TestStep {
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(step),
+		ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+		ResourceName:             watchResourceName,
+		ImportState:              true,
+		ImportStateVerify:        true,
+		ImportStateVerifyIgnore:  append([]string{"elasticsearch_connection"}, verifyIgnore...),
+	}
+}
+
+// TestResourceWatch_searchRequestDefaultsOmitted reproduces issue #4522: a
+// search input against .monitoring-es-* that omits rest_total_hits_as_int and
+// search_type must apply cleanly and produce an empty subsequent plan.
+func TestResourceWatch_searchRequestDefaultsOmitted(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			watchJSONDefaultsApplyStep(t, watchID, "create", "input", watchSearchInputOmittingTypeAndTotalHits),
+			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
+			watchJSONDefaultsImportStep(watchID, "create", "input"),
+			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
+		},
+	})
+}
+
+// TestResourceWatch_watcherJSONDefaultsOmitted covers omitted search-request
+// defaults on input.indices, transform, chain sub-inputs, actions search
+// transforms, omitted logging.level, and omitted script lang.
+func TestResourceWatch_watcherJSONDefaultsOmitted(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			watchJSONDefaultsApplyStep(t, watchID, "omit_indices", "input", watchSearchRequestOmittingDefaults),
+			watchJSONDefaultsEmptyPlanStep(watchID, "omit_indices"),
+			watchJSONDefaultsApplyStep(t, watchID, "transform", "transform", watchSearchRequestOmittingDefaults),
+			watchJSONDefaultsEmptyPlanStep(watchID, "transform"),
+			watchJSONDefaultsApplyStep(t, watchID, "chain", "input", watchChainSearchOmittingDefaults),
+			watchJSONDefaultsEmptyPlanStep(watchID, "chain"),
+			watchJSONDefaultsApplyStep(t, watchID, "actions_search_transform", "actions", watchActionsSearchTransformOmittingDefaults),
+			watchJSONDefaultsEmptyPlanStep(watchID, "actions_search_transform"),
+			watchJSONDefaultsApplyStep(t, watchID, "script_lang", "condition", watchConditionScriptOmittingLang),
+			watchJSONDefaultsEmptyPlanStep(watchID, "script_lang"),
+		},
+	})
+}
+
+// TestResourceWatch_searchRequestExplicitNonDefaults asserts explicit
+// non-default search-request values round-trip unchanged, and a genuine change
+// still produces a non-empty plan.
+func TestResourceWatch_searchRequestExplicitNonDefaults(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"watch_id": config.StringVariable(watchID)}
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			watchJSONDefaultsApplyStep(t, watchID, "create", "input", watchSearchInputExplicitNonDefaults),
+			watchJSONDefaultsEmptyPlanStep(watchID, "create"),
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckWatchAttrSemanticallyEqual(t, "input", watchSearchInputExplicitNonDefaultsUpdate),
+				),
+			},
+		},
+	})
+}
+
+// TestResourceWatch_triggerIntervalSchedule verifies that a non-cron
+// schedule trigger (schedule.interval) is configured, stored, and updated
+// correctly. Every other watch test in this suite exercises only
+// schedule.cron triggers, so this closes that trigger-type diversity gap.
+func TestResourceWatch_triggerIntervalSchedule(t *testing.T) {
+	watchID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceWatchDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerIntervalExpected),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				ResourceName:             watchResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"elasticsearch_connection"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"watch_id": config.StringVariable(watchID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(watchResourceName, "watch_id", watchID),
+					resource.TestCheckResourceAttr(watchResourceName, "trigger", watchTriggerIntervalUpdateExpected),
 				),
 			},
 		},

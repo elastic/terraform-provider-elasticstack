@@ -31,13 +31,11 @@ type ThresholdRuleProcessor struct {
 
 func newThresholdRuleProcessor() ThresholdRuleProcessor {
 	return ThresholdRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThresholdRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThresholdRule, d *Data) diag.Diagnostics {
-				return d.updateFromThresholdRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIThresholdRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThresholdRule, d *Data) diag.Diagnostics {
+			return d.updateFromThresholdRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIThresholdRule) string {
+			return v.Id.String()
 		},
 	}
 }

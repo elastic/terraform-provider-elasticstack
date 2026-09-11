@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -55,13 +56,7 @@ func (v MemorySize) Type(_ context.Context) attr.Type {
 
 // Equal returns true if the given value is equivalent.
 func (v MemorySize) Equal(o attr.Value) bool {
-	other, ok := o.(MemorySize)
-
-	if !ok {
-		return false
-	}
-
-	return v.StringValue.Equal(other.StringValue)
+	return typeutils.StringValuableEqual(v.StringValue, o, func(m MemorySize) basetypes.StringValue { return m.StringValue })
 }
 
 func (v MemorySize) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
@@ -82,18 +77,8 @@ func (v MemorySize) ValidateAttribute(_ context.Context, req xattr.ValidateAttri
 // StringSemanticEquals returns true if the given memory size string value is semantically equal to the current memory size string value.
 // When compared, the memory sizes are parsed into bytes and the byte values compared.
 func (v MemorySize) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(MemorySize)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic equality check error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
-
 		return false, diags
 	}
 

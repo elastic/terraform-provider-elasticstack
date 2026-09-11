@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -56,7 +57,7 @@ func CloseMLJob(ctx context.Context, apiClient *clients.ElasticsearchScopedClien
 		AllowNoMatch(true)
 
 	if timeout > 0 {
-		req.Timeout(durationToMsString(timeout))
+		req.Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout))
 	}
 
 	_, err := req.Do(ctx)

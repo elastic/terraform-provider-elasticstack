@@ -20,7 +20,9 @@ package agentbuildertool
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -42,8 +44,8 @@ func newToolResource() *ToolResource {
 			"agentbuilder_tool",
 			entitycore.KibanaResourceOptions[toolModel]{
 				Schema: getResourceSchema,
-				Read:   readTool,
-				Delete: deleteTool,
+				Read:   entitycore.SimpleKibanaRead[toolModel, models.Tool](kibanaoapi.GetTool, (*toolModel).populateFromAPI),
+				Delete: entitycore.SimpleKibanaDelete[toolModel](kibanaoapi.DeleteTool),
 				Create: createTool,
 				Update: updateTool,
 			},

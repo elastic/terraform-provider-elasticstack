@@ -46,7 +46,7 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 		return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 	}
 
-	added, removed := computeSetDiff(priorEntityIDs, planEntityIDs)
+	added, removed := typeutils.DiffStringSlices(priorEntityIDs, planEntityIDs)
 
 	if len(added) > 0 {
 		body := kbapi.PostSecurityEntityStoreResolutionLinkJSONRequestBody{
@@ -80,26 +80,4 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 	}
 
 	return entitycore.KibanaWriteResult[entityLinkModel]{Model: plan}, diags
-}
-
-func computeSetDiff(old, next []string) (added, removed []string) {
-	oldSet := make(map[string]struct{}, len(old))
-	for _, id := range old {
-		oldSet[id] = struct{}{}
-	}
-	nextSet := make(map[string]struct{}, len(next))
-	for _, id := range next {
-		nextSet[id] = struct{}{}
-	}
-	for _, id := range next {
-		if _, ok := oldSet[id]; !ok {
-			added = append(added, id)
-		}
-	}
-	for _, id := range old {
-		if _, ok := nextSet[id]; !ok {
-			removed = append(removed, id)
-		}
-	}
-	return
 }

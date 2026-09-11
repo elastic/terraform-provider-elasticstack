@@ -132,3 +132,15 @@ func TestProcessorJSONValue_SemanticEquality_MultiElementDiffers(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.False(t, eq, "single string should not equal multi-element array")
 }
+
+func TestProcessorJSONValue_SemanticEquality_InvalidJSONReturnsDiagnostic(t *testing.T) {
+	ctx := context.Background()
+
+	a := NewProcessorJSONValue(`{invalid`)
+	b := NewProcessorJSONValue(`{"remove":{"field":"x"}}`)
+
+	eq, diags := a.StringSemanticEquals(ctx, b)
+	require.True(t, diags.HasError())
+	assert.Contains(t, diags[0].Summary(), "Semantic Equality Check Error")
+	assert.False(t, eq)
+}

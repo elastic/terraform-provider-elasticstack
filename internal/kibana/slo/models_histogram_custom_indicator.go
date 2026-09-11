@@ -124,7 +124,6 @@ func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator kbapi.SLOsIn
 		Index:          types.StringValue(p.Index),
 		TimestampField: types.StringValue(p.TimestampField),
 		Filter:         types.StringPointerValue(p.Filter),
-		DataViewID:     types.StringNull(),
 		Good: []tfHistogramRange{{
 			Field:       types.StringValue(p.Good.Field),
 			Aggregation: types.StringValue(string(p.Good.Aggregation)),
@@ -139,8 +138,8 @@ func (m *tfModel) populateFromHistogramCustomIndicator(apiIndicator kbapi.SLOsIn
 			From:        types.Float64PointerValue(p.Total.From),
 			To:          types.Float64PointerValue(p.Total.To),
 		}},
-	}
-	ind.DataViewID = typeutils.StringishPointerValue(p.DataViewId)
+
+		DataViewID: typeutils.StringishPointerValue(p.DataViewId)}
 
 	m.HistogramCustomIndicator = []tfHistogramCustomIndicator{ind}
 	return diags

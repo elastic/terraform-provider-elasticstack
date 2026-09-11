@@ -71,15 +71,12 @@ func (model workflowModel) GetSpaceID() types.String    { return model.SpaceID }
 var _ entitycore.KibanaResourceModel = workflowModel{}
 var _ entitycore.WithVersionRequirements = workflowModel{}
 
-func (model *workflowModel) populateFromAPI(data *models.Workflow) {
+func (model *workflowModel) populateFromAPI(_ context.Context, spaceID string, data *models.Workflow) diag.Diagnostics {
 	if data == nil {
-		return
+		return nil
 	}
 
-	spaceID := model.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
 	model.WorkflowID = types.StringValue(data.ID)
@@ -91,6 +88,8 @@ func (model *workflowModel) populateFromAPI(data *models.Workflow) {
 
 	model.Enabled = types.BoolValue(data.Enabled)
 	model.Valid = types.BoolValue(data.Valid)
+
+	return nil
 }
 
 func (model workflowModel) toAPICreateModel() kbapi.PostWorkflowsWorkflowJSONRequestBody {

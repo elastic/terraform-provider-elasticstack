@@ -18,9 +18,6 @@
 package fleet
 
 import (
-	"archive/tar"
-	"archive/zip"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -35,14 +32,10 @@ import (
 	semver "github.com/Masterminds/semver/v3"
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-var (
-	packageNameRe    = regexp.MustCompile(`(?m)^name:\s*(\S+)`)
-	packageVersionRe = regexp.MustCompile(`(?m)^version:\s*["']?([^\s"']+)["']?`)
 )
 
 // GetPackage reads a specific package from the API.
@@ -54,14 +47,12 @@ func GetPackage(ctx context.Context, client *Client, name, version, spaceID stri
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return &resp.JSON200.Item, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsGetPackageInfo {
+		if resp.JSON200 == nil {
+			return nil
+		}
+		return &resp.JSON200.Item
+	})
 }
 
 // InstallPackageOptions holds the options for installing a package.
@@ -444,37 +435,97 @@ func UploadPackage(ctx context.Context, client *Client, opts UploadPackageOption
 	}
 }
 
-func waitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
-	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+// isInstalledStatus reports whether the given installation-info/status pair indicates a package
+// is fully installed. It checks the newer InstallationInfo.InstallStatus enum first, falling back
+// to the legacy Status string field when the enum is absent or inconclusive. Both
+// [kbapi.KibanaHTTPAPIsGetPackageInfo] and [kbapi.KibanaHTTPAPIsPackageListItem] expose these same
+// two fields, so this helper serves both the package-info and packages-list response shapes.
+func isInstalledStatus(installationInfo *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, status *string) bool {
+	if installationInfo != nil {
+		switch installationInfo.InstallStatus {
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
+			return true
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
+			return false
+		}
+	}
+	return status != nil && strings.EqualFold(*status, "installed")
+}
+
+// isInstallFailedStatus is the failure-side counterpart to [isInstalledStatus].
+func isInstallFailedStatus(installationInfo *kbapi.KibanaHTTPAPIsPackageInfoInstallationInfo, status *string) bool {
+	if installationInfo != nil {
+		switch installationInfo.InstallStatus {
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
+			return true
+		case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
+			return false
+		}
+	}
+	return status != nil && strings.EqualFold(*status, "install_failed")
+}
+
+// IsPackageInstalled reports whether pkg's installation status indicates it is fully installed.
+func IsPackageInstalled(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
+	if pkg == nil {
+		return false
+	}
+	return isInstalledStatus(pkg.InstallationInfo, pkg.Status)
+}
+
+// IsPackageInstallFailed reports whether pkg's installation status indicates installation failed.
+func IsPackageInstallFailed(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo) bool {
+	if pkg == nil {
+		return false
+	}
+	return isInstallFailedStatus(pkg.InstallationInfo, pkg.Status)
+}
+
+// WaitForPackageInstalled polls Fleet until packageName/packageVersion reports an installed status
+// in spaceID, or timeout elapses. When fallbackToListScan is true and the package-info endpoint has
+// not yet reported a conclusive status, the packages list is also scanned for a matching
+// name/version entry; this is needed by upload flows where the packages list can reflect the
+// resolved status before the package-info endpoint does.
+func WaitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string, timeout time.Duration, fallbackToListScan bool) error {
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	waitErr := asyncutils.WaitForStateTransition(waitCtx, "fleet custom integration", fmt.Sprintf("%s/%s", packageName, packageVersion), func(ctx context.Context) (bool, error) {
+	return asyncutils.WaitForStateTransition(waitCtx, "fleet package", fmt.Sprintf("%s/%s", packageName, packageVersion), func(ctx context.Context) (bool, error) {
 		pkg, diags := GetPackage(ctx, client, packageName, packageVersion, spaceID)
 		if diags.HasError() {
 			return false, fmt.Errorf("failed to read package installation status: %s", diags[0].Summary())
 		}
-		if pkg == nil {
+		if IsPackageInstalled(pkg) {
+			return true, nil
+		}
+		if IsPackageInstallFailed(pkg) {
+			return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
+		}
+		if !fallbackToListScan {
 			return false, nil
 		}
-		if pkg.InstallationInfo != nil {
-			switch pkg.InstallationInfo.InstallStatus {
-			case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled:
-				return true, nil
-			case kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstallFailed:
-				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
-			}
+
+		packages, diags := GetPackages(ctx, client, true, spaceID)
+		if diags.HasError() {
+			return false, fmt.Errorf("failed to list packages during verification: %s", diags[0].Summary())
 		}
-		if pkg.Status != nil {
-			if strings.EqualFold(*pkg.Status, "installed") {
+		for _, candidate := range packages {
+			if candidate.Name != packageName || candidate.Version != packageVersion {
+				continue
+			}
+			if isInstalledStatus(candidate.InstallationInfo, candidate.Status) {
 				return true, nil
 			}
-			if strings.EqualFold(*pkg.Status, "install_failed") {
+			if isInstallFailedStatus(candidate.InstallationInfo, candidate.Status) {
 				return false, fmt.Errorf("package %s/%s installation failed", packageName, packageVersion)
 			}
 		}
 		return false, nil
 	})
-	if waitErr != nil {
+}
+
+func waitForPackageInstalled(ctx context.Context, client *Client, packageName, packageVersion, spaceID string) diag.Diagnostics {
+	if waitErr := WaitForPackageInstalled(ctx, client, packageName, packageVersion, spaceID, 30*time.Second, false); waitErr != nil {
 		return diag.Diagnostics{
 			diag.NewErrorDiagnostic(
 				"Package not ready after upload",
@@ -483,103 +534,4 @@ func waitForPackageInstalled(ctx context.Context, client *Client, packageName, p
 		}
 	}
 	return nil
-}
-
-// parsePackageInfo parses the package name and version from the manifest.yml
-// inside a package archive. It dispatches to the appropriate parser based on
-// the file extension (.zip or .tar.gz / .gz).
-func parsePackageInfo(path string) (name, version string, err error) {
-	if strings.HasSuffix(path, ".tar.gz") || strings.HasSuffix(path, ".tgz") {
-		return parsePackageInfoFromTarGz(path)
-	}
-	return parsePackageInfoFromZip(path)
-}
-
-// isManifestYAML reports whether entryName is a top-level or direct-child manifest.yml.
-func isManifestYAML(entryName string) bool {
-	return strings.HasSuffix(entryName, "/manifest.yml") || entryName == "manifest.yml"
-}
-
-// extractPackageNameVersion parses the name and version fields from manifest YAML content.
-func extractPackageNameVersion(content []byte) (name, version string) {
-	if m := packageNameRe.FindSubmatch(content); len(m) >= 2 {
-		name = string(m[1])
-	}
-	if m := packageVersionRe.FindSubmatch(content); len(m) >= 2 {
-		version = string(m[1])
-	}
-	return name, version
-}
-
-// parsePackageInfoFromZip opens a zip archive at path, finds the top-level
-// manifest.yml, and extracts the package name and version fields. It is used as
-// a fallback when the Fleet upload API response does not include the package
-// name or version (older Kibana versions).
-func parsePackageInfoFromZip(path string) (name, version string, err error) {
-	r, err := zip.OpenReader(path)
-	if err != nil {
-		return "", "", fmt.Errorf("opening zip %q: %w", path, err)
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		if !isManifestYAML(f.Name) {
-			continue
-		}
-		rc, err := f.Open()
-		if err != nil {
-			return "", "", fmt.Errorf("opening manifest.yml in zip: %w", err)
-		}
-		content, readErr := io.ReadAll(rc)
-		rc.Close()
-		if readErr != nil {
-			return "", "", fmt.Errorf("reading manifest.yml: %w", readErr)
-		}
-		name, version = extractPackageNameVersion(content)
-		if name != "" {
-			return name, version, nil
-		}
-	}
-	return "", "", fmt.Errorf("manifest.yml with name field not found in zip")
-}
-
-// parsePackageInfoFromTarGz opens a gzip-compressed tar archive at path, finds
-// the top-level manifest.yml, and extracts the package name and version fields.
-// It is used as a fallback for tar.gz archives when the Fleet upload API
-// response does not include the package name or version (older Kibana versions).
-func parsePackageInfoFromTarGz(path string) (name, version string, err error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", "", fmt.Errorf("opening tar.gz %q: %w", path, err)
-	}
-	defer f.Close()
-
-	gr, err := gzip.NewReader(f)
-	if err != nil {
-		return "", "", fmt.Errorf("creating gzip reader for %q: %w", path, err)
-	}
-	defer gr.Close()
-
-	tr := tar.NewReader(gr)
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", "", fmt.Errorf("reading tar.gz %q: %w", path, err)
-		}
-		if !isManifestYAML(hdr.Name) {
-			continue
-		}
-		content, readErr := io.ReadAll(tr)
-		if readErr != nil {
-			return "", "", fmt.Errorf("reading manifest.yml from tar.gz: %w", readErr)
-		}
-		name, version = extractPackageNameVersion(content)
-		if name != "" {
-			return name, version, nil
-		}
-	}
-	return "", "", fmt.Errorf("manifest.yml with name field not found in tar.gz")
 }

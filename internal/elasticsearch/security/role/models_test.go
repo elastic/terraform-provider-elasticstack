@@ -19,8 +19,10 @@ package role
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
+	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -158,4 +160,58 @@ func TestFromAPIModel_PreservesEmptyStringDescriptionWhenAPIIsNull(t *testing.T)
 
 	require.False(t, d.Description.IsNull())
 	require.Empty(t, d.Description.ValueString())
+}
+
+func TestFromAPIModel_MarshalsMetadataToNormalizedValue(t *testing.T) {
+	ctx := context.Background()
+
+	d := Data{Name: types.StringValue("role-a")}
+
+	diags := d.fromAPIModel(ctx, &elasticsearch.Role{
+		Metadata: estypes.Metadata{"key": json.RawMessage(`"value"`)},
+	})
+	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)
+
+	require.False(t, d.Metadata.IsNull())
+	require.JSONEq(t, `{"key":"value"}`, d.Metadata.ValueString())
+}
+
+func TestFromAPIModel_SetsMetadataNullWhenAPIMetadataIsNil(t *testing.T) {
+	ctx := context.Background()
+
+	d := Data{Name: types.StringValue("role-a")}
+
+	diags := d.fromAPIModel(ctx, &elasticsearch.Role{
+		Metadata: nil,
+	})
+	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)
+
+	require.True(t, d.Metadata.IsNull())
+}
+
+func TestDataSourceFromAPIModel_MarshalsMetadataToNormalizedValue(t *testing.T) {
+	ctx := context.Background()
+
+	config := roleDataSourceModel{Name: types.StringValue("role-a")}
+
+	diags := config.fromAPIModel(ctx, &elasticsearch.Role{
+		Metadata: estypes.Metadata{"key": json.RawMessage(`"value"`)},
+	})
+	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)
+
+	require.False(t, config.Metadata.IsNull())
+	require.JSONEq(t, `{"key":"value"}`, config.Metadata.ValueString())
+}
+
+func TestDataSourceFromAPIModel_SetsMetadataNullWhenAPIMetadataIsNil(t *testing.T) {
+	ctx := context.Background()
+
+	config := roleDataSourceModel{Name: types.StringValue("role-a")}
+
+	diags := config.fromAPIModel(ctx, &elasticsearch.Role{
+		Metadata: nil,
+	})
+	require.False(t, diags.HasError(), "unexpected diags: %#v", diags)
+
+	require.True(t, config.Metadata.IsNull())
 }

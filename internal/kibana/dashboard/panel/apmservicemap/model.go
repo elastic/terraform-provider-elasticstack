@@ -80,67 +80,43 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 	return diags
 }
 
-// PopulateFromAPI reads back an APM service map panel from the API response.
+// PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
+// prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with ApmServiceMapConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.ApmServiceMapConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiPanel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap) diag.Diagnostics {
 	cfg := apiPanel.Config
 
-	if prior == nil {
+	if prior == nil || prior.ApmServiceMapConfig == nil {
 		pm.ApmServiceMapConfig = apmServiceMapConfigFromAPIImport(cfg, true)
 		return nil
 	}
 
-	if pm.ApmServiceMapConfig == nil && prior.ApmServiceMapConfig != nil {
-		pm.ApmServiceMapConfig = apmServiceMapConfigFromAPIImport(cfg, false)
-	}
-
-	existing := pm.ApmServiceMapConfig
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := apmServiceMapConfigFromAPIImport(cfg, false)
 	if existing == nil {
-		return nil
-	}
-
-	if !apmServiceMapConfigHasAnyField(cfg, false) {
 		pm.ApmServiceMapConfig = nil
 		return nil
 	}
-
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		cfg.Title, cfg.Description, cfg.HideTitle, cfg.HideBorder)
-	existing.Environment = panelkit.PreserveString(existing.Environment, cfg.Environment)
-	existing.ServiceName = panelkit.PreserveString(existing.ServiceName, cfg.ServiceName)
-	existing.ServiceGroupID = panelkit.PreserveString(existing.ServiceGroupID, cfg.ServiceGroupId)
-	existing.Kuery = panelkit.PreserveString(existing.Kuery, cfg.Kuery)
-	existing.MapOrientation = preserveMapOrientation(existing.MapOrientation, cfg.MapOrientation)
-	existing.SyncWithDashboardFilters = panelkit.PreserveBool(existing.SyncWithDashboardFilters, cfg.SyncWithDashboardFilters)
 
 	// BuildConfig omits both null and empty filter sets from the API payload (the API cannot
 	// distinguish the two), so an empty-but-known prior set must be threaded through explicitly
 	// here rather than derived from the freshly re-imported `existing` value; otherwise a
 	// practitioner-configured `= []` would drift to null on every subsequent read/plan.
 	priorCfg := prior.ApmServiceMapConfig
-	priorAlertStatusFilter := types.SetNull(types.StringType)
-	priorAnomalySeverityFilter := types.SetNull(types.StringType)
-	priorConnectionFilter := types.SetNull(types.StringType)
-	priorSloStatusFilter := types.SetNull(types.StringType)
-	if priorCfg != nil {
-		priorAlertStatusFilter = priorCfg.AlertStatusFilter
-		priorAnomalySeverityFilter = priorCfg.AnomalySeverityFilter
-		priorConnectionFilter = priorCfg.ConnectionFilter
-		priorSloStatusFilter = priorCfg.SloStatusFilter
-	}
-	existing.AlertStatusFilter = mergeStringSetFromEnum(cfg.AlertStatusFilter, priorAlertStatusFilter)
-	existing.AnomalySeverityFilter = mergeStringSetFromEnum(cfg.AnomalySeverityFilter, priorAnomalySeverityFilter)
-	existing.ConnectionFilter = mergeStringSetFromEnum(cfg.ConnectionFilter, priorConnectionFilter)
-	existing.SloStatusFilter = mergeStringSetFromEnum(cfg.SloStatusFilter, priorSloStatusFilter)
+	existing.AlertStatusFilter = mergeStringSetFromEnum(cfg.AlertStatusFilter, priorCfg.AlertStatusFilter)
+	existing.AnomalySeverityFilter = mergeStringSetFromEnum(cfg.AnomalySeverityFilter, priorCfg.AnomalySeverityFilter)
+	existing.ConnectionFilter = mergeStringSetFromEnum(cfg.ConnectionFilter, priorCfg.ConnectionFilter)
+	existing.SloStatusFilter = mergeStringSetFromEnum(cfg.SloStatusFilter, priorCfg.SloStatusFilter)
 
-	var priorTR *models.TimeRangeModel
-	if priorCfg != nil {
-		priorTR = priorCfg.TimeRange
-	}
-	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, cfg.TimeRange, priorTR)
-	if priorCfg != nil {
-		apmServiceMapPreserveNullIntentFromPrior(priorCfg, existing)
-	}
-
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, cfg.TimeRange, priorCfg.TimeRange)
+	apmServiceMapPreserveNullIntentFromPrior(priorCfg, existing)
+	pm.ApmServiceMapConfig = existing
 	return nil
 }
 
@@ -214,14 +190,10 @@ func mapOrientationFromAPI(v *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrie
 	return types.StringPointerValue(enumStringPointer(v))
 }
 
-func preserveMapOrientation(existing types.String, api *kbapi.KibanaHTTPAPIsApmServiceMapEmbeddableMapOrientation) types.String {
-	return panelkit.PreserveString(existing, enumStringPointer(api))
-}
-
 // stringSetToEnumSlice converts a validated Set of strings into a slice of the API's enum type,
 // returning nil when the set has no elements (so the field is omitted from the API payload).
 func stringSetToEnumSlice[T ~string](set types.Set, diags *diag.Diagnostics) *[]T {
-	vals := typeutils.StringSetElements(set, diags)
+	vals := typeutils.StringElements(set, diags)
 	if len(vals) == 0 {
 		return nil
 	}
@@ -260,15 +232,15 @@ func apmServiceMapPreserveNullIntentFromPrior(prior, existing *models.ApmService
 	}
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-	panelkit.NullPreserveStringFromPrior(prior.Environment, &existing.Environment)
-	panelkit.NullPreserveStringFromPrior(prior.ServiceName, &existing.ServiceName)
-	panelkit.NullPreserveStringFromPrior(prior.ServiceGroupID, &existing.ServiceGroupID)
-	panelkit.NullPreserveStringFromPrior(prior.Kuery, &existing.Kuery)
-	panelkit.NullPreserveStringFromPrior(prior.MapOrientation, &existing.MapOrientation)
-	panelkit.NullPreserveBoolFromPrior(prior.SyncWithDashboardFilters, &existing.SyncWithDashboardFilters)
-	panelkit.NullPreserveSetFromPrior(prior.AlertStatusFilter, &existing.AlertStatusFilter)
-	panelkit.NullPreserveSetFromPrior(prior.AnomalySeverityFilter, &existing.AnomalySeverityFilter)
-	panelkit.NullPreserveSetFromPrior(prior.ConnectionFilter, &existing.ConnectionFilter)
-	panelkit.NullPreserveSetFromPrior(prior.SloStatusFilter, &existing.SloStatusFilter)
+	panelkit.NullPreserveFromPrior(prior.Environment, &existing.Environment)
+	panelkit.NullPreserveFromPrior(prior.ServiceName, &existing.ServiceName)
+	panelkit.NullPreserveFromPrior(prior.ServiceGroupID, &existing.ServiceGroupID)
+	panelkit.NullPreserveFromPrior(prior.Kuery, &existing.Kuery)
+	panelkit.NullPreserveFromPrior(prior.MapOrientation, &existing.MapOrientation)
+	panelkit.NullPreserveFromPrior(prior.SyncWithDashboardFilters, &existing.SyncWithDashboardFilters)
+	panelkit.NullPreserveFromPrior(prior.AlertStatusFilter, &existing.AlertStatusFilter)
+	panelkit.NullPreserveFromPrior(prior.AnomalySeverityFilter, &existing.AnomalySeverityFilter)
+	panelkit.NullPreserveFromPrior(prior.ConnectionFilter, &existing.ConnectionFilter)
+	panelkit.NullPreserveFromPrior(prior.SloStatusFilter, &existing.SloStatusFilter)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)
 }

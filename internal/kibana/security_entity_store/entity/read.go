@@ -37,7 +37,7 @@ func readEntity(
 	spaceID string,
 	model tfModel,
 ) (tfModel, bool, diag.Diagnostics) {
-	spaceID = NormalizeSpaceID(types.StringValue(spaceID))
+	spaceID = clients.EffectiveSpaceIDFromValue(types.StringValue(spaceID))
 	entityID := model.EntityID.ValueString()
 	entityType := model.EntityType.ValueString()
 

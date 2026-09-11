@@ -18,6 +18,11 @@ variable "password" {
   default = ""
 }
 
+variable "insecure" {
+  type    = bool
+  default = false
+}
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -26,7 +31,7 @@ provider "elasticstack" {
 data "elasticstack_kibana_spaces" "all_spaces" {
   kibana_connection {
     endpoints = var.kibana_endpoints
-    insecure  = false
+    insecure  = var.insecure
     api_key   = var.api_key != "" ? var.api_key : null
     username  = var.api_key == "" ? var.username : null
     password  = var.api_key == "" ? var.password : null

@@ -87,6 +87,29 @@ func TestAccDataSourceIngestProcessorInference(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "json", expectedJSONInferenceChangedValues),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_value"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_inference.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "model_id", "my_endpoint"),
+
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.input_field", "foo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "input_output.output_field", "baz"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.%", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.content", "text_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "field_map.title", "title_field"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "target_field", "ml.inference"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "description", "Run inference on foo"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "if", "ctx.lang == 'en'"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.0", `{"set":{"field":"error.message","value":"inference failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "on_failure.1", `{"set":{"field":"error.type","value":"inference_error"}}`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_inference.test", "tag", "inference-tag"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_inference.test", "json", expectedJSONInferenceMultiValue),
+				),
+			},
 		},
 	})
 }
@@ -139,5 +162,38 @@ const expectedJSONInferenceChangedValues = `{
     "if": "ctx.body?.content != null",
     "ignore_failure": false,
     "tag": "updated-inference-tag"
+  }
+}`
+
+const expectedJSONInferenceMultiValue = `{
+  "inference": {
+    "model_id": "my_endpoint",
+    "input_output": {
+      "input_field": "foo",
+      "output_field": "baz"
+    },
+    "field_map": {
+      "content": "text_field",
+      "title": "title_field"
+    },
+    "target_field": "ml.inference",
+    "description": "Run inference on foo",
+    "if": "ctx.lang == 'en'",
+    "ignore_failure": true,
+    "on_failure": [
+      {
+        "set": {
+          "field": "error.message",
+          "value": "inference failed"
+        }
+      },
+      {
+        "set": {
+          "field": "error.type",
+          "value": "inference_error"
+        }
+      }
+    ],
+    "tag": "inference-tag"
   }
 }`

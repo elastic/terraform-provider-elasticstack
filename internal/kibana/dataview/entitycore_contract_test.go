@@ -18,11 +18,17 @@
 package dataview
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,4 +51,49 @@ func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
 	var _ resource.Resource = newResource()
 	var _ resource.ResourceWithConfigure = newResource()
 	var _ resource.ResourceWithImportState = newResource()
+}
+
+func TestResource_importState_seedsCompositeIdentity(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	const importID = "production/dv-123"
+	r.ImportState(ctx, resource.ImportStateRequest{ID: importID}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	require.False(t, resp.Diagnostics.HasError())
+
+	assert.Equal(t, importID, id.ValueString())
+	assert.Equal(t, "production", spaceID.ValueString())
+}
+
+func TestResource_importState_defaultsEmptySpaceSegment(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r, ok := any(newResource()).(resource.ResourceWithImportState)
+	require.True(t, ok)
+
+	st := providerfwtest.EmptyImportState(t, r)
+	resp := &resource.ImportStateResponse{State: st}
+
+	r.ImportState(ctx, resource.ImportStateRequest{ID: "/dv-456"}, resp)
+	require.False(t, resp.Diagnostics.HasError())
+
+	var id, spaceID types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("id"), &id)...)
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("space_id"), &spaceID)...)
+	require.False(t, resp.Diagnostics.HasError())
+
+	assert.Equal(t, clients.DefaultSpaceID, spaceID.ValueString())
+	assert.Equal(t, clients.DefaultSpaceID+"/dv-456", id.ValueString())
 }

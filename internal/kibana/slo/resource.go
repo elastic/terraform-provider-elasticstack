@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -50,7 +51,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[tfModel]{
 				Schema: sloSchema,
 				Read:   readSlo,
-				Delete: deleteSlo,
+				Delete: entitycore.SimpleKibanaDelete[tfModel](kibanaoapi.DeleteSlo),
 				Create: createSlo,
 				Update: updateSlo,
 			},

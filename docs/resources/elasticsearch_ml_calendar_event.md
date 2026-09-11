@@ -32,7 +32,7 @@ Manages scheduled events for a Machine Learning calendar. See the [ML post calen
 ### Read-Only
 
 - `event_id` (String) The server-generated identifier for the event.
-- `id` (String) Internal composite identifier of the resource.
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

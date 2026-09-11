@@ -23,6 +23,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -32,8 +34,7 @@ func readTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchSco
 	var diags fwdiags.Diagnostics
 
 	alias := resourceID
-	if alias == "" {
-		diags.AddError("Invalid resource ID", "model_alias cannot be empty")
+	if diags := ml.RequireNonEmptyID(alias, "model_alias"); diags.HasError() {
 		return state, false, diags
 	}
 
@@ -49,7 +50,7 @@ func readTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchSco
 	// verify the underlying model still exists. The GetTrainedModels API may
 	// not resolve aliases on all Elasticsearch versions/setups, but querying
 	// by the known model_id works.
-	if !found && !state.ModelID.IsNull() && !state.ModelID.IsUnknown() {
+	if !found && typeutils.IsKnown(state.ModelID) {
 		modelIDFromState := state.ModelID.ValueString()
 		_, modelFound, modelDiags := elasticsearch.GetMLTrainedModelAlias(ctx, client, modelIDFromState)
 		diags.Append(modelDiags...)

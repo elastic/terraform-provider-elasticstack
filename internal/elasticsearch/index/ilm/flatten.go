@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -39,7 +40,7 @@ func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string
 	if !ok {
 		return false
 	}
-	return !objV.IsNull() && !objV.IsUnknown()
+	return typeutils.IsKnown(objV)
 }
 
 func flattenPhase(ctx context.Context, phaseName string, minAge string, actions map[string]map[string]any, prior types.Object) (types.Object, diag.Diagnostics) {
@@ -89,6 +90,13 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 				shrinkAction[attrAllowWriteAfterShrink] = false
 			}
 			phase[actionName] = []any{shrinkAction}
+		case ilmActionSearchableSnapshot:
+			ssAction := make(map[string]any, len(action))
+			maps.Copy(ssAction, action)
+			if _, ok := ssAction[attrForceMergeOnClone]; !ok && !searchableSnapshotForceMergeIndexIsFalse(ssAction) {
+				ssAction[attrForceMergeOnClone] = true
+			}
+			phase[actionName] = []any{ssAction}
 		default:
 			phase[actionName] = []any{action}
 		}

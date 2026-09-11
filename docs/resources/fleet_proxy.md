@@ -46,7 +46,7 @@ resource "elasticstack_fleet_proxy" "example" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `proxy_headers` (Map of String) Additional headers to send to the proxy during CONNECT requests.
 - `proxy_id` (String) The proxy ID.
-- `space_id` (String) An identifier for the space. If not provided, the default space is used.
+- `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

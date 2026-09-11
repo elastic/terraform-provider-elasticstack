@@ -21,8 +21,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,6 +84,46 @@ func TestNormalizedYamlValue_StringSemanticEquals(t *testing.T) {
 			equal, diags := a.StringSemanticEquals(ctx, b)
 			require.False(t, diags.HasError())
 			assert.Equal(t, tt.expected, equal)
+		})
+	}
+}
+
+func TestNormalizedYamlValue_Equal(t *testing.T) {
+	tests := []struct {
+		name          string
+		val           NormalizedYamlValue
+		otherVal      attr.Value
+		expectedEqual bool
+	}{
+		{
+			name:          "equal if the string values are identical",
+			val:           NewNormalizedYamlValue("name: foo\n"),
+			otherVal:      NewNormalizedYamlValue("name: foo\n"),
+			expectedEqual: true,
+		},
+		{
+			name:          "not equal if the string values differ",
+			val:           NewNormalizedYamlValue("name: foo\n"),
+			otherVal:      NewNormalizedYamlValue("name: bar\n"),
+			expectedEqual: false,
+		},
+		{
+			name:          "not equal if the other value is not a NormalizedYamlValue",
+			val:           NewNormalizedYamlValue("name: foo\n"),
+			otherVal:      basetypes.NewStringValue("name: foo\n"),
+			expectedEqual: false,
+		},
+		{
+			name:          "two null values are equal",
+			val:           NewNormalizedYamlNull(),
+			otherVal:      NewNormalizedYamlNull(),
+			expectedEqual: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expectedEqual, tt.val.Equal(tt.otherVal))
 		})
 	}
 }

@@ -160,23 +160,23 @@ func (m proxyModel) toAPICreateModel() (kbapi.PostFleetProxiesJSONRequestBody, d
 		Url:  m.URL.ValueString(),
 	}
 
-	if !m.ProxyID.IsNull() && !m.ProxyID.IsUnknown() {
+	if typeutils.IsKnown(m.ProxyID) {
 		body.Id = m.ProxyID.ValueStringPointer()
 	}
 
-	if !m.Certificate.IsNull() && !m.Certificate.IsUnknown() {
+	if typeutils.IsKnown(m.Certificate) {
 		body.Certificate = m.Certificate.ValueStringPointer()
 	}
 
-	if !m.CertificateAuthorities.IsNull() && !m.CertificateAuthorities.IsUnknown() {
+	if typeutils.IsKnown(m.CertificateAuthorities) {
 		body.CertificateAuthorities = m.CertificateAuthorities.ValueStringPointer()
 	}
 
-	if !m.CertificateKey.IsNull() && !m.CertificateKey.IsUnknown() {
+	if typeutils.IsKnown(m.CertificateKey) {
 		body.CertificateKey = m.CertificateKey.ValueStringPointer()
 	}
 
-	if !m.ProxyHeaders.IsNull() && !m.ProxyHeaders.IsUnknown() {
+	if typeutils.IsKnown(m.ProxyHeaders) {
 		headers, headerDiags := proxyHeadersFromModel(m.ProxyHeaders)
 		diags.Append(headerDiags...)
 		if diags.HasError() {
@@ -198,19 +198,19 @@ func (m proxyModel) toAPIUpdateModel() (kbapi.PutFleetProxiesItemidJSONRequestBo
 		ProxyHeaders: &emptyHeaders,
 	}
 
-	if !m.Certificate.IsNull() && !m.Certificate.IsUnknown() {
+	if typeutils.IsKnown(m.Certificate) {
 		body.Certificate = m.Certificate.ValueStringPointer()
 	}
 
-	if !m.CertificateAuthorities.IsNull() && !m.CertificateAuthorities.IsUnknown() {
+	if typeutils.IsKnown(m.CertificateAuthorities) {
 		body.CertificateAuthorities = m.CertificateAuthorities.ValueStringPointer()
 	}
 
-	if !m.CertificateKey.IsNull() && !m.CertificateKey.IsUnknown() {
+	if typeutils.IsKnown(m.CertificateKey) {
 		body.CertificateKey = m.CertificateKey.ValueStringPointer()
 	}
 
-	if !m.ProxyHeaders.IsNull() && !m.ProxyHeaders.IsUnknown() && len(m.ProxyHeaders.Elements()) > 0 {
+	if typeutils.IsKnown(m.ProxyHeaders) && len(m.ProxyHeaders.Elements()) > 0 {
 		headers, headerDiags := proxyHeadersFromModel(m.ProxyHeaders)
 		diags.Append(headerDiags...)
 		if diags.HasError() {

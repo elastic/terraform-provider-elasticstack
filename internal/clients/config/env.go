@@ -33,13 +33,12 @@ func NewFromEnv(version string) Client {
 
 	client := Client{
 		UserAgent: base.UserAgent,
-	}
 
-	client.Elasticsearch = new(base.
-		toElasticsearchConfig().
-		withEnvironmentOverrides().
-		toElasticsearchConfiguration(),
-	)
+		Elasticsearch: new(base.
+			toElasticsearchConfig().
+			withEnvironmentOverrides().
+			toElasticsearchConfiguration(),
+		)}
 
 	kibanaOapiCfg := base.toKibanaOapiConfig().withEnvironmentOverrides()
 	client.KibanaOapi = (*kibanaoapi.Config)(&kibanaOapiCfg)

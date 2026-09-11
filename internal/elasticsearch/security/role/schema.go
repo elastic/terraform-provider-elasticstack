@@ -25,13 +25,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 )
 
@@ -127,9 +128,7 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: allowRestrictedIndicesDescription,
 							Optional:            true,
 							Computed:            true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
-							},
+							Default:             booldefault.StaticBool(false),
 						},
 					},
 				},
@@ -192,22 +191,14 @@ func GetSchema(version int64) schema.Schema {
 							MarkdownDescription: allowRestrictedIndicesDescription,
 							Optional:            true,
 							Computed:            true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
-							},
+							Default:             booldefault.StaticBool(false),
 						},
 					},
 				},
 			},
 		},
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource",
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": entitycore.IDAttribute(),
 			attrName: schema.StringAttribute{
 				MarkdownDescription: "The name of the role.",
 				Required:            true,

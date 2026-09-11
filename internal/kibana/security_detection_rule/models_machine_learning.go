@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,13 +33,11 @@ type MachineLearningRuleProcessor struct {
 
 func newMachineLearningRuleProcessor() MachineLearningRuleProcessor {
 	return MachineLearningRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIMachineLearningRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
-				return d.updateFromMachineLearningRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
+			return d.updateFromMachineLearningRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
+			return v.Id.String()
 		},
 	}
 }
@@ -296,7 +293,7 @@ func (d *Data) updateFromMachineLearningRule(ctx context.Context, rule *kbapi.Se
 		copy(jobIDStrings, multipleJobIDs)
 		d.MachineLearningJobID = typeutils.ListValueFrom(ctx, jobIDStrings, types.StringType, path.Root("machine_learning_job_id"), &diags)
 	} else {
-		d.MachineLearningJobID = types.ListValueMust(types.StringType, []attr.Value{})
+		d.MachineLearningJobID = typeutils.StringsToListMust(nil)
 	}
 
 	return diags

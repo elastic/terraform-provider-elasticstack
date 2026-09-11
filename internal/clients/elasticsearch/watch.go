@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -80,11 +79,7 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to get watch from cluster."); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to get watch from cluster."); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -99,17 +94,8 @@ func GetWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 }
 
 func DeleteWatch(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, watchID string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Watcher.DeleteWatch(watchID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags // already gone, treat as success
-		}
-		diags.AddError("Unable to delete watch", err.Error())
-		return diags
-	}
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete watch")
 }

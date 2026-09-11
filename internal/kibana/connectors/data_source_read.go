@@ -37,10 +37,8 @@ func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedCl
 	if !model.SpaceID.IsNull() {
 		spaceID = model.SpaceID.ValueString()
 	}
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-		model.SpaceID = types.StringValue(clients.DefaultSpaceID)
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
+	model.SpaceID = types.StringValue(spaceID)
 
 	connectorName := model.Name.ValueString()
 

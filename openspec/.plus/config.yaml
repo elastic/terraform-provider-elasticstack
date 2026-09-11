@@ -1,0 +1,28 @@
+# OpenSpec Plus settings (all keys optional; omit or delete for unchanged default behavior).
+# Separate from openspec/config.yaml, which is OpenSpec's own schema/rules file.
+# This file is auto-merged during install/update — see README "⚙️ Configuration" for details.
+
+settings:
+  # questionMode: how discovery phases (proposal/design/spec/tasks) ask questions.
+  # sequential (default): one question at a time. Use for interactive sessions.
+  # batch: groups questions into fewer rounds. Use for per-prompt-priced models, especially
+  #        premium/high-tier ones, where each round trip is expensive.
+  questionMode: sequential
+
+  # autoUpdateCheck: whether proposal skill checks weekly for newer openspec-plus versions.
+  # true (default): auto-checks and prompts to upgrade. Recommended for most users.
+  # false: skips check entirely. Use offline or if you manage updates manually.
+  autoUpdateCheck: true
+
+  apply:
+    # executionMode: how apply skill runs implementation (openspec-plus-apply only).
+    # ask (default): prompt each run. Use if you switch modes frequently.
+    # subagent: always use subagent mode (recommended default for all changes).
+    # inline: always run inline. Use only if subagent dispatch is unavailable.
+    executionMode: ask
+
+    # parallelism: how apply handles independent task slices (openspec-plus-apply only).
+    # ask (default): prompt when independent slices exist.
+    # always: always dispatch independent slices in parallel. Faster but may hit rate limits.
+    # never: always run sequentially. Slower but more predictable.
+    parallelism: ask

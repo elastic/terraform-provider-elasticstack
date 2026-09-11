@@ -87,9 +87,7 @@ func (model *skillBaseModel) populateFromAPI(ctx context.Context, spaceID string
 	var diags diag.Diagnostics
 	var d diag.Diagnostics
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
 	model.SkillID = types.StringValue(data.ID)

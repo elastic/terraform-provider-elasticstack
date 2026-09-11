@@ -79,7 +79,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `description` (String) The description of the agent policy.
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
 - `fleet_server_host_id` (String) The identifier for the Fleet server host.
-- `global_data_tags` (Attributes Map) User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42} (see [below for nested schema](#nestedatt--global_data_tags))
+- `global_data_tags` (Attributes Map) User-defined tags. Keyed by tag name; each entry must set exactly one of `string_value` or `number_value`. (see [below for nested schema](#nestedatt--global_data_tags))
 - `host_name_format` (String) Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.
 - `inactivity_timeout` (String) The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').
 - `is_protected` (Boolean) Enable tamper protection for this agent policy (Fleet API `is_protected`). When true, agents use uninstall tokens. Requires Elastic Stack 8.10.0 or later.
@@ -170,8 +170,8 @@ Optional:
 
 Optional:
 
-- `number_value` (Number) Number value for the field. If this is set, string_value must not be defined.
-- `string_value` (String) String value for the field. If this is set, number_value must not be defined.
+- `number_value` (Number) Number value for the tag. If this is set, `string_value` must not be defined.
+- `string_value` (String) String value for the tag. If this is set, `number_value` must not be defined.
 
 
 <a id="nestedblock--kibana_connection"></a>

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -54,7 +55,7 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 	// block, require replace: index sorting is immutable and cannot be removed
 	// in-place without recreating the index.
 	if req.PlanValue.IsNull() {
-		if !req.StateValue.IsNull() && !req.StateValue.IsUnknown() {
+		if typeutils.IsKnown(req.StateValue) {
 			resp.RequiresReplace = true
 		}
 		return
@@ -195,7 +196,7 @@ func (m sortMigrationPlanModifier) PlanModifyList(ctx context.Context, req planm
 func isSemanticallyEquivalentMissing(planned types.String, existing string) bool {
 	// Determine the effective planned value, treating null/unknown as "_last".
 	plannedVal := sortMissingLast
-	if !planned.IsNull() && !planned.IsUnknown() {
+	if typeutils.IsKnown(planned) {
 		plannedVal = planned.ValueString()
 	}
 
@@ -214,7 +215,7 @@ func isSemanticallyEquivalentMissing(planned types.String, existing string) bool
 func isSemanticallyEquivalentMode(planned types.String, existing string, order types.String) bool {
 	// Determine the effective planned value, treating null/unknown as default based on order.
 	plannedVal := ""
-	if !planned.IsNull() && !planned.IsUnknown() {
+	if typeutils.IsKnown(planned) {
 		plannedVal = planned.ValueString()
 	} else {
 		// Default mode based on order
@@ -262,7 +263,7 @@ func (m legacySortFieldPlanModifier) PlanModifySet(ctx context.Context, req plan
 
 	// If sort is non-null in the plan, suppress replace for sort_field.
 	// The sortMigrationPlanModifier on the new attribute handles the replace decision.
-	if !planSort.IsNull() && !planSort.IsUnknown() {
+	if typeutils.IsKnown(planSort) {
 		resp.RequiresReplace = false
 		return
 	}
@@ -294,7 +295,7 @@ func (m legacySortOrderPlanModifier) PlanModifyList(ctx context.Context, req pla
 	}
 
 	// If sort is non-null in the plan, suppress replace for sort_order.
-	if !planSort.IsNull() && !planSort.IsUnknown() {
+	if typeutils.IsKnown(planSort) {
 		resp.RequiresReplace = false
 		return
 	}

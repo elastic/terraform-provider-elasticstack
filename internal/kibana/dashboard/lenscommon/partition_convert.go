@@ -69,6 +69,27 @@ func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTT
 	return legend
 }
 
+// populatePartitionLegendFromAPI maps the shared partition legend fields (treemap, mosaic) into the
+// Terraform partition legend model. Callers convert their enum-typed pointers to *string first.
+func populatePartitionLegendFromAPI(m *models.PartitionLegendModel, nested *bool, size *string, truncateAfterLines *float32, visibility *string) {
+	m.Nested = types.BoolPointerValue(nested)
+	if size != nil {
+		m.Size = types.StringValue(*size)
+	} else {
+		m.Size = types.StringNull()
+	}
+	if truncateAfterLines != nil {
+		m.TruncateAfterLine = types.Int64Value(int64(*truncateAfterLines))
+	} else {
+		m.TruncateAfterLine = types.Int64Null()
+	}
+	if visibility != nil {
+		m.Visible = types.StringValue(*visibility)
+	} else {
+		m.Visible = types.StringNull()
+	}
+}
+
 // PartitionLegendFromTreemapLegend maps API treemap legend into Terraform partition legend model.
 func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsTreemapLegend) {
 	if api == nil {
@@ -78,22 +99,14 @@ func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi
 		m.Visible = types.StringNull()
 		return
 	}
-	m.Nested = types.BoolPointerValue(api.Nested)
+	var size, visibility *string
 	if api.Size != nil {
-		m.Size = types.StringValue(string(*api.Size))
-	} else {
-		m.Size = types.StringNull()
-	}
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
+		size = new(string(*api.Size))
 	}
 	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
+		visibility = new(string(*api.Visibility))
 	}
+	populatePartitionLegendFromAPI(m, api.Nested, size, api.TruncateAfterLines, visibility)
 }
 
 // PartitionLegendFromMosaicLegend maps API mosaic legend into Terraform partition legend model.
@@ -105,36 +118,50 @@ func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.
 		m.Visible = types.StringNull()
 		return
 	}
-	m.Nested = types.BoolPointerValue(api.Nested)
+	var size, visibility *string
 	if api.Size != nil {
-		m.Size = types.StringValue(string(*api.Size))
-	} else {
-		m.Size = types.StringNull()
-	}
-	if api.TruncateAfterLines != nil {
-		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
-	} else {
-		m.TruncateAfterLine = types.Int64Null()
+		size = new(string(*api.Size))
 	}
 	if api.Visibility != nil {
-		m.Visible = types.StringValue(string(*api.Visibility))
-	} else {
-		m.Visible = types.StringNull()
+		visibility = new(string(*api.Visibility))
 	}
+	populatePartitionLegendFromAPI(m, api.Nested, size, api.TruncateAfterLines, visibility)
+}
+
+// partitionLegendToAPIFields holds the shared partition legend fields (treemap, mosaic) built from
+// the Terraform model. Callers convert Size/Visibility to their enum types and construct the struct.
+type partitionLegendToAPIFields struct {
+	Nested             *bool
+	Size               string
+	TruncateAfterLines *float32
+	Visibility         *string
+}
+
+func populatePartitionLegendToAPI(m *models.PartitionLegendModel) partitionLegendToAPIFields {
+	fields := partitionLegendToAPIFields{Size: m.Size.ValueString()}
+	if typeutils.IsKnown(m.Nested) {
+		fields.Nested = new(m.Nested.ValueBool())
+	}
+	if typeutils.IsKnown(m.TruncateAfterLine) {
+		fields.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
+	}
+	if typeutils.IsKnown(m.Visible) {
+		fields.Visibility = new(m.Visible.ValueString())
+	}
+	return fields
 }
 
 // PartitionLegendToTreemapLegend maps Terraform partition legend model to API treemap legend.
 func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsTreemapLegend {
-	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-	legend := &kbapi.KibanaHTTPAPIsTreemapLegend{Size: &size}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
+	fields := populatePartitionLegendToAPI(m)
+	size := kbapi.KibanaHTTPAPIsLegendSize(fields.Size)
+	legend := &kbapi.KibanaHTTPAPIsTreemapLegend{
+		Size:               &size,
+		Nested:             fields.Nested,
+		TruncateAfterLines: fields.TruncateAfterLines,
 	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsTreemapLegendVisibility(m.Visible.ValueString())
+	if fields.Visibility != nil {
+		v := kbapi.KibanaHTTPAPIsTreemapLegendVisibility(*fields.Visibility)
 		legend.Visibility = &v
 	}
 	return legend
@@ -142,16 +169,15 @@ func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.Kiban
 
 // PartitionLegendToMosaicLegend maps Terraform partition legend model to API mosaic legend.
 func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsMosaicLegend {
-	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-	legend := &kbapi.KibanaHTTPAPIsMosaicLegend{Size: &size}
-	if typeutils.IsKnown(m.Nested) {
-		legend.Nested = new(m.Nested.ValueBool())
+	fields := populatePartitionLegendToAPI(m)
+	size := kbapi.KibanaHTTPAPIsLegendSize(fields.Size)
+	legend := &kbapi.KibanaHTTPAPIsMosaicLegend{
+		Size:               &size,
+		Nested:             fields.Nested,
+		TruncateAfterLines: fields.TruncateAfterLines,
 	}
-	if typeutils.IsKnown(m.TruncateAfterLine) {
-		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
-	}
-	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsMosaicLegendVisibility(m.Visible.ValueString())
+	if fields.Visibility != nil {
+		v := kbapi.KibanaHTTPAPIsMosaicLegendVisibility(*fields.Visibility)
 		legend.Visibility = &v
 	}
 	return legend

@@ -91,9 +91,16 @@ func mlAnomalySwimlaneApplyOptionalFields(
 	}
 }
 
-// PopulateFromAPI maps Kibana ML anomaly swim lane config into Terraform panel state while preserving prior null intent.
+// PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
+// prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with MlAnomalySwimlaneConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.MlAnomalySwimlaneConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig kbapi.KibanaHTTPAPIsMlAnomalySwimlane) diag.Diagnostics {
-	if prior == nil {
+	if prior == nil || prior.MlAnomalySwimlaneConfig == nil {
 		cfg, diags := mlAnomalySwimlaneConfigFromAPIImport(apiConfig)
 		if diags.HasError() {
 			return diags
@@ -102,21 +109,16 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		return nil
 	}
 
-	if pm.MlAnomalySwimlaneConfig == nil && prior.MlAnomalySwimlaneConfig != nil {
-		cfg, diags := mlAnomalySwimlaneConfigFromAPIImport(apiConfig)
-		if diags.HasError() {
-			return diags
-		}
-		pm.MlAnomalySwimlaneConfig = cfg
-	}
-
-	existing := pm.MlAnomalySwimlaneConfig
-	if existing == nil {
-		return nil
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing, diags := mlAnomalySwimlaneConfigFromAPIImport(apiConfig)
+	if diags.HasError() {
+		return diags
 	}
 
 	if cfg1, err := apiConfig.AsKibanaHTTPAPIsMlAnomalySwimlane1(); err == nil && cfg1.SwimlaneType == kbapi.ViewBy {
 		mlAnomalySwimlaneMergeViewByFromAPI(existing, prior.MlAnomalySwimlaneConfig, cfg1)
+		pm.MlAnomalySwimlaneConfig = existing
 		return nil
 	}
 
@@ -127,6 +129,7 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 		return diags
 	}
 	mlAnomalySwimlaneMergeOverallFromAPI(existing, prior.MlAnomalySwimlaneConfig, cfg0)
+	pm.MlAnomalySwimlaneConfig = existing
 	return nil
 }
 
@@ -222,7 +225,7 @@ func mlAnomalySwimlanePreserveNullIntentFromPrior(prior, existing *models.MlAnom
 			existing.ViewBy = types.StringNull()
 		}
 	}
-	panelkit.NullPreserveFloat32FromPrior(prior.PerPage, &existing.PerPage)
+	panelkit.NullPreserveFromPrior(prior.PerPage, &existing.PerPage)
 	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
 		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	existing.TimeRange = panelkit.PreserveTimeRangeNullIntentFromPrior(prior.TimeRange, existing.TimeRange)

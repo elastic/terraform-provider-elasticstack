@@ -18,9 +18,6 @@
 package calendar
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,6 +31,7 @@ var (
 
 type calendarResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
+	*entitycore.CompositeIDImporter
 }
 
 func newCalendarResource() *calendarResource {
@@ -49,24 +47,10 @@ func newCalendarResource() *calendarResource {
 			// associations live on `elasticstack_elasticsearch_ml_calendar_job`.
 			Update: entitycore.UpdateNotSupportedWriteCallback[TFModel](),
 		}),
+		CompositeIDImporter: entitycore.NewCompositeIDImporter(path.Root("id"), path.Root("calendar_id")),
 	}
 }
 
 func NewCalendarResource() resource.Resource {
 	return newCalendarResource()
-}
-
-func (r *calendarResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("calendar_id"), compID.ResourceID)...)
 }

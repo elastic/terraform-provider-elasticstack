@@ -36,6 +36,12 @@ const (
 	attrThrottle      = "throttle"
 	blockFrequency    = "frequency"
 	blockAlertsFilter = "alerts_filter"
+
+	attrArtifacts          = "artifacts"
+	attrInvestigationGuide = "investigation_guide"
+	attrContent            = "content"
+	attrContentPath        = "content_path"
+	attrChecksum           = "checksum"
 )
 
 // JSON params keys used across rule types.

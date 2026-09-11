@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -35,13 +36,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"See the [ML put calendar API](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-calendar.html) for more details. " +
 			"**Import** id format: `<cluster_uuid>/<calendar_id>` (the same value as the computed `id` attribute).",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource.",
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": entitycore.IDAttribute(),
 			"calendar_id": schema.StringAttribute{
 				MarkdownDescription: "A string that uniquely identifies a calendar. Must contain lowercase alphanumeric characters " +
 					"(a-z and 0-9), hyphens, or underscores. Must start and end with an alphanumeric character.",

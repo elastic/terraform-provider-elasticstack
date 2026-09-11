@@ -19,39 +19,21 @@ package filter
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func deleteFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
-	var diags fwdiags.Diagnostics
-
 	filterID := resourceID
-	if filterID == "" {
-		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(filterID, "filter_id"); diags.HasError() {
 		return diags
 	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML filter: %s", filterID))
 
 	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.DeleteFilter(filterID).Do(ctx)
-	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			tflog.Debug(ctx, fmt.Sprintf("ML filter already absent: %s", filterID))
-			return diags
-		}
-		diags.AddError("Failed to delete ML filter", fmt.Sprintf("Unable to delete ML filter: %s — %s", filterID, err.Error()))
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully deleted ML filter: %s", filterID))
-	return diags
+	return elasticsearch.DeleteWithNotFoundAsSuccess(err, "Failed to delete ML filter")
 }

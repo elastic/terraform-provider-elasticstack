@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { normalizeCompiledLock } from './compiled-lock.mjs';
 
 const require = createRequire(import.meta.url);
 const { classifyRuns, computeGate, filterIssues } = require('./flaky-test-catcher.js');
@@ -208,14 +209,16 @@ test('filterIssues keeps only real issues in a mixed list', () => {
 
 test('workflow includes dispatch instruction and compiled lock contains dispatch_code_factory job', () => {
   const source = readFileSync(workflowPath, 'utf8');
-  const lock = readFileSync(lockPath, 'utf8');
+  const lock = normalizeCompiledLock(readFileSync(lockPath, 'utf8'));
   assert.match(source, /imports:\s*\[shared\/dispatch-code-factory\.md\]/);
   assert.match(source, /dispatch_code_factory/);
   assert.match(source, /Dispatch/);
+  assert.match(source, /dispatch: true/);
   assert.doesNotMatch(source, /safe-outputs:[\s\S]*?jobs:[\s\S]*?dispatch-code-factory:/);
   assert.match(lock, /dispatch_code_factory/);
-  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue"\}/);
+  assert.match(lock, /"dispatch-code-factory":\{"description":"Dispatch code-factory for each created issue","inputs":\{"dispatch":\{"default":null,"description":"Confirm dispatch of code-factory for issues created in this run","required":true,"type":"boolean"\}\}\}/);
   assert.match(lock, /"dispatch_code_factory"/);
+  assert.match(lock, /"required": \[\s*"dispatch"\s*\][\s\S]*"name": "dispatch_code_factory"/);
   assert.match(lock, /SOURCE_WORKFLOW=\$\(echo "\$GITHUB_WORKFLOW_NAME"/);
   assert.doesNotMatch(lock, /SOURCE_WORKFLOW: (?:flaky-test-catcher|semantic-function-refactor|schema-coverage-rotation|duplicate-code-detector)\b/);
   assert.match(lock, /"labels":\["flaky-test","triaged"\]/);

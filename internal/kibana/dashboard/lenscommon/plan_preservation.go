@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -67,6 +68,22 @@ func PreservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context,
 	if !diags.HasError() && eq {
 		*state = plan
 	}
+}
+
+// AlignBasicMetricChartStateFromPlan aligns the common "basic metric chart" state
+// fields (title/description, data_source_json, metric_json) from plan into state.
+// Shared by Lens panel types whose config is just a metric over a data source
+// (gauge, heatmap, legacy_metric, region_map, tagcloud). Callers with additional
+// fields should handle those after calling this function.
+func AlignBasicMetricChartStateFromPlan[T any](
+	ctx context.Context,
+	planBase, stateBase *models.LensChartBaseTFModel,
+	planMetricJSON customtypes.JSONWithDefaultsValue[T],
+	stateMetricJSON *customtypes.JSONWithDefaultsValue[T],
+) {
+	AlignTitleAndDescriptionFromPlan(planBase.Title, planBase.Description, &stateBase.Title, &stateBase.Description)
+	PreservePlanJSONIfStateAddsOptionalKeys(planBase.DataSourceJSON, &stateBase.DataSourceJSON, "time_field", "name")
+	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetricJSON, stateMetricJSON)
 }
 
 // PreserveNormalizedJSONSemanticEquality replaces state with plan when normalized structures match semantically.

@@ -19,8 +19,8 @@ package security_entity_store
 
 import (
 	"context"
-	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -64,11 +64,11 @@ func NewResource() resource.Resource {
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.Split(req.ID, "/")
-	if len(parts) == 2 && parts[1] == resourceID {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), parts[0])...)
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	if diags.HasError() || composite.ResourceID != resourceID {
+		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 		return
 	}
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), composite.ClusterID)...)
 }

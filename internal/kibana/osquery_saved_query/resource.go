@@ -18,13 +18,9 @@
 package osquerysavedquery
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -35,6 +31,7 @@ var (
 
 type Resource struct {
 	*entitycore.KibanaResource[osquerySavedQueryModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -50,30 +47,16 @@ func newResource() *Resource {
 				Update: updateOsquerySavedQuery,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(
+			path.Root("id"), path.Root("space_id"), path.Root("saved_query_id"),
+		).RequireSpaceID(
+			"Wrong resource ID.",
+			"Import ID must include a Kibana space in the form `<space_id>/<saved_query_id>`.",
+		),
 	}
 }
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return newResource()
-}
-
-func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() {
-		return
-	}
-
-	if composite.ClusterID == "" {
-		resp.Diagnostics.AddError(
-			"Wrong resource ID.",
-			"Import ID must include a Kibana space in the form `<space_id>/<saved_query_id>`.",
-		)
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("saved_query_id"), composite.ResourceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), composite.ClusterID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(req.ID))...)
 }

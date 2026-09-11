@@ -181,7 +181,7 @@ type indexTfModel struct {
 func (model *indexTfModel) populateFromAPI(ctx context.Context, indexName string, apiModel estypes.IndexState) diag.Diagnostics {
 	model.Name = types.StringValue(indexName)
 	model.SortField = types.SetValueMust(types.StringType, []attr.Value{})
-	model.SortOrder = types.ListValueMust(types.StringType, []attr.Value{})
+	model.SortOrder = typeutils.StringsToListMust(nil)
 	model.QueryDefaultField = types.SetValueMust(types.StringType, []attr.Value{})
 
 	modelMappings, diags := mappingsFromAPI(apiModel)

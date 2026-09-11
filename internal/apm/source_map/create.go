@@ -27,6 +27,7 @@ import (
 	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -57,10 +58,10 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 	var checksum string
 
 	switch {
-	case !sm.JSON.IsNull() && !sm.JSON.IsUnknown():
+	case typeutils.IsKnown(sm.JSON):
 		sourcemapBytes = []byte(sm.JSON.ValueString())
 
-	case !sm.Binary.IsNull() && !sm.Binary.IsUnknown():
+	case typeutils.IsKnown(sm.Binary):
 		decoded, decErr := base64.StdEncoding.DecodeString(sm.Binary.ValueString())
 		if decErr != nil {
 			resp.Diagnostics.AddError("Failed to decode sourcemap binary", fmt.Sprintf("base64 decoding failed: %s", decErr.Error()))
@@ -68,7 +69,7 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 		}
 		sourcemapBytes = decoded
 
-	case sm.File != nil && !sm.File.Path.IsNull() && !sm.File.Path.IsUnknown():
+	case sm.File != nil && typeutils.IsKnown(sm.File.Path):
 		f, openErr := os.Open(sm.File.Path.ValueString())
 		if openErr != nil {
 			resp.Diagnostics.AddError("Failed to open source map file", openErr.Error())

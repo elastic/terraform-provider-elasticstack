@@ -141,7 +141,7 @@ When `skip_data_stream_rollover` is configured with a known value, the resource 
 
 ### Requirement: Create/Update — install options (REQ-011)
 
-On create and update, the resource SHALL pass `force`, `prerelease`, and `ignore_constraints` as install options to the Fleet install package API when configured. When `ignore_mapping_update_errors` and `skip_data_stream_rollover` pass the server version check, they SHALL also be included in the install options. When `space_id` is a known value, the resource SHALL pass it as the space context for installation. After the regular install API succeeds, the resource SHALL wait for the package to reach a globally installed state before evaluating target-space asset state.
+On create and update, the resource SHALL pass `force`, `prerelease`, and `ignore_constraints` as install options to the Fleet install package API when configured. When `ignore_mapping_update_errors` and `skip_data_stream_rollover` pass the server version check, they SHALL also be included in the install options. When `space_id` is a known value, the resource SHALL pass it as the space context for installation. After the regular install API succeeds, the resource SHALL wait for the package to reach a globally installed state by polling the Fleet get-package API using the **same space context** (the configured `space_id`, or the default space when `space_id` is not configured) as the install call, before evaluating target-space asset state. That first post-install poll SHALL use global install detection only and SHALL NOT apply strict target-space install detection during the wait. The poll SHALL NOT query the default-space endpoint when `space_id` is configured to a non-default space.
 
 When `space_id` is configured, the Kibana server version is at least 9.1.0, and the package is installed globally but not in the target space after the regular install completes, the resource SHALL call the Fleet `POST /api/fleet/epm/packages/{pkg}/{version}/kibana_assets` API scoped to the target space and wait until a strict space-aware read reports the package installed in the target space.
 
@@ -152,7 +152,17 @@ When `space_id` is configured, the Kibana server version is below 9.1.0, and the
 - GIVEN `space_id` is set to a known string
 - WHEN create or update runs
 - THEN the install API SHALL be called with that space ID as context
-- AND the resource SHALL wait for global package installation before any space-specific asset follow-up
+- AND the resource SHALL wait for global package installation via a get-package call scoped to that same space ID before any space-specific asset follow-up
+
+#### Scenario: Post-install poll uses the configured space, not the default space
+
+- GIVEN `space_id` is set to a known, non-default string
+- AND the caller's Elastic credentials are scoped only to that space (no default-space access)
+- WHEN create or update runs and the regular install API call succeeds
+- THEN the post-install poll SHALL call the Fleet get-package API scoped to `space_id` (i.e. via the `/s/{space_id}/api/fleet/epm/packages/{name}/{version}` path)
+- AND the poll SHALL treat the package as installed when Fleet reports a global installed state, without requiring strict target-space install metadata during this wait
+- AND the poll SHALL NOT return an error caused by insufficient default-space permissions
+- AND the resource creation SHALL succeed once the package is installed in the target space
 
 #### Scenario: Package already installed in another space
 

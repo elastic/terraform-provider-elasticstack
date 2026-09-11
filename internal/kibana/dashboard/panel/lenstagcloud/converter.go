@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -143,22 +142,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "tagcloud_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.TagcloudConfigModel
-	if blocks.TagcloudConfig != nil {
-		cpy := *blocks.TagcloudConfig
-		prior = &cpy
-	}
-	blocks.TagcloudConfig = &models.TagcloudConfigModel{}
-
-	if noESQL, err := attrs.AsKibanaHTTPAPIsTagcloudNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
-		return tagcloudConfigFromAPI(ctx, blocks.TagcloudConfig, prior, noESQL)
-	}
-
-	esql, err := attrs.AsKibanaHTTPAPIsTagcloudESQLByValuePanel()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return tagcloudConfigFromAPIESQL(ctx, blocks.TagcloudConfig, prior, esql)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.TagcloudConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.TagcloudConfig, prior,
+		attrs.AsKibanaHTTPAPIsTagcloudNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsTagcloudESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		tagcloudConfigFromAPI,
+		tagcloudConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

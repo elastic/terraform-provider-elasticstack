@@ -111,7 +111,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 		panelItem kbapi.DashboardPanelItem
 	)
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 
 	switch {
 	case pm.MarkdownConfig != nil:

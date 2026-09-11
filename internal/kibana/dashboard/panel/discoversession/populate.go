@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -96,7 +97,7 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		if apiByRef {
 			cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1()
 			if err != nil {
-				return discoverSessionDecodeDiagnostics(err, "by-reference")
+				return iface.UnionDecodeDiagnostics("discover_session", err, "by-reference")
 			}
 			imported, imDiags := discoverSessionConfig1FromAPIImport(ctx, cfg1)
 			if imported != nil {
@@ -106,7 +107,7 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 		}
 		cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0()
 		if err != nil {
-			return discoverSessionDecodeDiagnostics(err, "by-value")
+			return iface.UnionDecodeDiagnostics("discover_session", err, "by-value")
 		}
 		var priorTab *models.DiscoverSessionTabModel
 		if tfPanel != nil && tfPanel.DiscoverSessionConfig != nil && tfPanel.DiscoverSessionConfig.ByValue != nil {
@@ -122,27 +123,16 @@ func populateDiscoverSessionPanelFromAPI(ctx context.Context, pm *models.PanelMo
 	if apiByRef {
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1()
 		if err != nil {
-			return discoverSessionDecodeDiagnostics(err, "by-reference")
+			return iface.UnionDecodeDiagnostics("discover_session", err, "by-reference")
 		}
 		return discoverSessionMergeConfig1FromAPI(ctx, existing, tfPanel, cfg1)
 	}
 
 	cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0()
 	if err != nil {
-		return discoverSessionDecodeDiagnostics(err, "by-value")
+		return iface.UnionDecodeDiagnostics("discover_session", err, "by-value")
 	}
 	return discoverSessionMergeConfig0FromAPI(ctx, existing, tfPanel, cfg0)
-}
-
-// discoverSessionDecodeDiagnostics builds a diagnostic for failed kbapi union decoding so
-// callers do not silently lose state during read/refresh.
-func discoverSessionDecodeDiagnostics(err error, branch string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Failed to decode discover_session API config",
-		"Could not decode the API discover_session "+branch+" config: "+err.Error(),
-	)
-	return diags
 }
 
 func discoverSessionPanelConfigFromAPIImport(
@@ -313,7 +303,7 @@ func discoverSessionDSLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIsK
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		m.Sort = discoverSessionSortSliceFromAPI0(*api.Sort)
+		m.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if api.Density != nil {
@@ -374,7 +364,7 @@ func discoverSessionESQLTabFromAPI(ctx context.Context, api kbapi.KibanaHTTPAPIs
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		m.Sort = discoverSessionSortSliceFromAPI1(*api.Sort)
+		m.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if api.Density != nil {
@@ -404,21 +394,12 @@ func discoverSessionQueryFromKbnAsCode(q *kbapi.KibanaHTTPAPIsKbnAsCodeQuery) mo
 	}
 }
 
-func discoverSessionSortSliceFromAPI0(api []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
-}) []models.DiscoverSessionSortModel {
-	out := make([]models.DiscoverSessionSortModel, len(api))
-	for i, s := range api {
-		out[i].Name = types.StringValue(s.Name)
-		out[i].Direction = types.StringValue(string(s.Direction))
-	}
-	return out
-}
-
-func discoverSessionSortSliceFromAPI1(api []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
+// discoverSessionSortSliceFromAPI converts the API sort shape shared by every generated
+// Direction enum (kbapi emits a distinct named string type per schema branch for what is
+// structurally the same {direction, name} pair) back into sort models.
+func discoverSessionSortSliceFromAPI[D ~string](api []struct {
+	Direction D      `json:"direction"`
+	Name      string `json:"name"`
 }) []models.DiscoverSessionSortModel {
 	out := make([]models.DiscoverSessionSortModel, len(api))
 	for i, s := range api {
@@ -453,12 +434,7 @@ func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
 	m.ColumnSettings = discoverSessionColumnSettingsFromAPI(ctx, api.ColumnSettings, &diags)
 
 	if api.Sort != nil {
-		out := make([]models.DiscoverSessionSortModel, len(*api.Sort))
-		for i, s := range *api.Sort {
-			out[i].Name = types.StringValue(s.Name)
-			out[i].Direction = types.StringValue(string(s.Direction))
-		}
-		m.Sort = out
+		m.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if api.Density != nil {
@@ -594,55 +570,51 @@ func discoverSessionOverridesRowHeightFromAPI(h *kbapi.KibanaHTTPAPIsKbnDashboar
 	)
 }
 
+type discoverSessionConfig0APIDrilldown = struct {
+	EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                                           `json:"label"`
+	OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
+	Url          string                                                                           `json:"url"` //nolint:revive
+}
+
 func readDiscoverSessionDrilldownsFromConfig0(
-	api *[]struct {
-		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                           `json:"label"`
-		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType    `json:"type"`
-		Url          string                                                                           `json:"url"` //nolint:revive
-	},
+	api *[]discoverSessionConfig0APIDrilldown,
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
-	if api == nil || len(*api) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig0APIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 
+type discoverSessionConfig1APIDrilldown = struct {
+	EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                                           `json:"label"`
+	OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
+	Url          string                                                                           `json:"url"` //nolint:revive
+}
+
 func readDiscoverSessionDrilldownsFromConfig1(
-	api *[]struct {
-		EncodeUrl    *bool                                                                            `json:"encode_url,omitempty"` //nolint:revive
-		Label        string                                                                           `json:"label"`
-		OpenInNewTab *bool                                                                            `json:"open_in_new_tab,omitempty"`
-		Trigger      kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger `json:"trigger"`
-		Type         kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType    `json:"type"`
-		Url          string                                                                           `json:"url"` //nolint:revive
-	},
+	api *[]discoverSessionConfig1APIDrilldown,
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
-	if api == nil || len(*api) == 0 {
-		return nil
-	}
-	items := make([]panelkit.URLDrilldownAPIItemData, len(*api))
-	for i, d := range *api {
-		items[i] = panelkit.URLDrilldownAPIItemData{
+	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig1APIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
 			URL:          d.Url,
 			Label:        d.Label,
 			EncodeUrl:    d.EncodeUrl,
 			OpenInNewTab: d.OpenInNewTab,
 		}
-	}
+	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
 
@@ -657,19 +629,13 @@ func discoverSessionMergeConfig0FromAPI(
 	if prior == nil || prior.ByValue == nil {
 		return diags
 	}
+	// Snapshot prior's known-ness before any mutation below: existing and prior may be the
+	// same underlying model (e.g. contract-test harnesses alias pm/tfPanel), so reading
+	// prior.Title etc. after existing has been mutated would observe the new value instead.
+	priorTitle, priorDescription, priorHideTitle, priorHideBorder := prior.Title, prior.Description, prior.HideTitle, prior.HideBorder
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(cfg0.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(cfg0.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(cfg0.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(cfg0.HideBorder)
-	}
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		cfg0.Title, cfg0.Description, cfg0.HideTitle, cfg0.HideBorder)
 
 	existing.Drilldowns = readDiscoverSessionDrilldownsFromConfig0(cfg0.Drilldowns, existing.Drilldowns)
 
@@ -684,26 +650,9 @@ func discoverSessionMergeConfig0FromAPI(
 		diags.Append(discoverSessionMergeTabFromAPI(ctx, &existing.ByValue.Tab, prior.ByValue.Tab, cfg0.Tabs[0])...)
 	}
 
-	discoverSessionPreserveEnvelopeNullIntent(existing, prior)
+	panelkit.NullPreservePresentationFromPrior(priorTitle, priorDescription, priorHideTitle, priorHideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	return diags
-}
-
-func discoverSessionPreserveEnvelopeNullIntent(existing, prior *models.DiscoverSessionPanelConfigModel) {
-	if prior == nil || existing == nil {
-		return
-	}
-	if !typeutils.IsKnown(prior.Title) {
-		existing.Title = prior.Title
-	}
-	if !typeutils.IsKnown(prior.Description) {
-		existing.Description = prior.Description
-	}
-	if !typeutils.IsKnown(prior.HideTitle) {
-		existing.HideTitle = prior.HideTitle
-	}
-	if !typeutils.IsKnown(prior.HideBorder) {
-		existing.HideBorder = prior.HideBorder
-	}
 }
 
 func discoverSessionMergeConfig1FromAPI(
@@ -717,19 +666,13 @@ func discoverSessionMergeConfig1FromAPI(
 	if prior == nil || prior.ByReference == nil {
 		return diags
 	}
+	// Snapshot prior's known-ness before any mutation below: existing and prior may be the
+	// same underlying model (e.g. contract-test harnesses alias pm/tfPanel), so reading
+	// prior.Title etc. after existing has been mutated would observe the new value instead.
+	priorTitle, priorDescription, priorHideTitle, priorHideBorder := prior.Title, prior.Description, prior.HideTitle, prior.HideBorder
 
-	if typeutils.IsKnown(existing.Title) {
-		existing.Title = types.StringPointerValue(cfg1.Title)
-	}
-	if typeutils.IsKnown(existing.Description) {
-		existing.Description = types.StringPointerValue(cfg1.Description)
-	}
-	if typeutils.IsKnown(existing.HideTitle) {
-		existing.HideTitle = types.BoolPointerValue(cfg1.HideTitle)
-	}
-	if typeutils.IsKnown(existing.HideBorder) {
-		existing.HideBorder = types.BoolPointerValue(cfg1.HideBorder)
-	}
+	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
+		cfg1.Title, cfg1.Description, cfg1.HideTitle, cfg1.HideBorder)
 
 	existing.Drilldowns = readDiscoverSessionDrilldownsFromConfig1(cfg1.Drilldowns, prior.Drilldowns)
 
@@ -761,7 +704,8 @@ func discoverSessionMergeConfig1FromAPI(
 		discoverSessionPreserveOverridesNullIntent(existing.ByReference.Overrides, prior.ByReference.Overrides)
 	}
 
-	discoverSessionPreserveEnvelopeNullIntent(existing, prior)
+	panelkit.NullPreservePresentationFromPrior(priorTitle, priorDescription, priorHideTitle, priorHideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
 	return diags
 }
 
@@ -816,7 +760,7 @@ func discoverSessionMergeDSLTabFromAPI(
 	}
 
 	if len(prior.Sort) > 0 && api.Sort != nil && len(*api.Sort) > 0 {
-		existing.Sort = discoverSessionSortSliceFromAPI0(*api.Sort)
+		existing.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if typeutils.IsKnown(prior.Density) {
@@ -921,7 +865,7 @@ func discoverSessionMergeESQLTabFromAPI(
 	}
 
 	if len(prior.Sort) > 0 && api.Sort != nil && len(*api.Sort) > 0 {
-		existing.Sort = discoverSessionSortSliceFromAPI1(*api.Sort)
+		existing.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if typeutils.IsKnown(prior.Density) {
@@ -995,12 +939,7 @@ func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.
 	}
 
 	if api.Sort != nil && prior != nil && len(prior.Sort) > 0 {
-		out := make([]models.DiscoverSessionSortModel, len(*api.Sort))
-		for i, s := range *api.Sort {
-			out[i].Name = types.StringValue(s.Name)
-			out[i].Direction = types.StringValue(string(s.Direction))
-		}
-		existing.Sort = out
+		existing.Sort = discoverSessionSortSliceFromAPI(*api.Sort)
 	}
 
 	if prior != nil && typeutils.IsKnown(prior.Density) {

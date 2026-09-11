@@ -191,12 +191,12 @@ func (r *Resource) updateMappings(
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	areEqual, diags := planMappings.StringSemanticEquals(ctx, stateMappings)
+	requiresUpdate, diags := planMappings.RequiresMappingsUpdate(ctx, stateMappings)
 	if diags.HasError() {
 		return diags
 	}
 
-	if areEqual {
+	if !requiresUpdate {
 		return nil
 	}
 

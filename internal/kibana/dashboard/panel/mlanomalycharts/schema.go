@@ -63,8 +63,11 @@ func SchemaAttribute() schema.Attribute {
 		Optional:            true,
 	}
 	attrs["severity_threshold"] = schema.ListNestedAttribute{
-		MarkdownDescription: "Severity bands to display. Each item sets either a named `severity` shortcut or a raw numeric `min`/`max` range, never both.",
-		Optional:            true,
+		MarkdownDescription: "Severity bands to display. Each item sets either a named `severity` shortcut or " +
+			"its equivalent numeric `min`/`max` pair, never both. `min`/`max` is not a general custom range: " +
+			"Kibana only accepts the five canonical pairs (see `severity`'s enum values) and rejects any other " +
+			"pair with an HTTP error at apply time.",
+		Optional: true,
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
 				"severity": schema.StringAttribute{
@@ -75,12 +78,14 @@ func SchemaAttribute() schema.Attribute {
 					},
 				},
 				"min": schema.Int64Attribute{
-					MarkdownDescription: "Lower bound of a raw severity range. Required when `severity` is omitted.",
-					Optional:            true,
+					MarkdownDescription: "Numeric spelling of a canonical severity band's lower bound. Required when " +
+						"`severity` is omitted. Kibana rejects a non-canonical value at apply time; not validated client-side.",
+					Optional: true,
 				},
 				"max": schema.Int64Attribute{
-					MarkdownDescription: "Upper bound of a raw severity range. Valid only with `min` when `severity` is unset.",
-					Optional:            true,
+					MarkdownDescription: "Numeric spelling of a canonical severity band's upper bound. Valid only with " +
+						"`min` when `severity` is unset and the pair matches a canonical band.",
+					Optional: true,
 					Validators: []validator.Int64{
 						validators.ForbiddenIfDependentPathExpressionOneOf(
 							path.MatchRelative().AtParent().AtName("severity"),

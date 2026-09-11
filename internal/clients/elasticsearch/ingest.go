@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
@@ -57,11 +55,7 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-
-	if d := diagutil.CheckHTTPErrorFromFW(res, "Unable to find ingest pipeline on cluster"); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, "Unable to find ingest pipeline on cluster"); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -70,26 +64,16 @@ func GetIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScop
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	if pipeline, ok := pipelines[name]; ok {
-		pipeline.Name = name
-		return &pipeline, nil
+	pipeline, diags := LookupOrNotFoundDiag(pipelines, name, "ingest pipeline")
+	if diags.HasError() {
+		return nil, diags
 	}
-	return nil, fwdiag.Diagnostics{
-		fwdiag.NewErrorDiagnostic(
-			"Unable to find ingest pipeline",
-			fmt.Sprintf(`Unable to find "%s" ingest pipeline in the cluster`, name),
-		),
-	}
+	pipeline.Name = name
+	return pipeline, nil
 }
 
 func DeleteIngestPipeline(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ingest.DeletePipeline(name).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete ingest pipeline")
 }

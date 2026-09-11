@@ -20,37 +20,37 @@ package agentbuilderworkflow
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func createWorkflow(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[workflowModel]) (entitycore.KibanaWriteResult[workflowModel], diag.Diagnostics) {
-	plan := req.Plan
+var createWorkflow = entitycore.SimpleKibanaCreate[workflowModel, kbapi.PostWorkflowsWorkflowJSONRequestBody, models.Workflow](
+	func(plan workflowModel, _ context.Context) (kbapi.PostWorkflowsWorkflowJSONRequestBody, diag.Diagnostics) {
+		return plan.toAPICreateModel(), nil
+	},
+	kibanaoapi.CreateWorkflow,
+	(*workflowModel).populateWrittenCreate,
+)
+
+// populateWrittenCreate sets SpaceID explicitly so the returned model
+// carries the resolved space for the envelope's read-after-write step, and
+// captures workflow_id: it is Computed+Optional, and when the caller omits
+// it, the API generates one and returns it on the POST response.
+func (model *workflowModel) populateWrittenCreate(_ context.Context, spaceID string, created *models.Workflow) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	body := plan.toAPICreateModel()
+	model.SpaceID = types.StringValue(spaceID)
 
-	oapiClient := client.GetKibanaOapiClient()
-
-	created, d := kibanaoapi.CreateWorkflow(ctx, oapiClient, req.SpaceID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[workflowModel]{}, diags
-	}
-
-	plan.SpaceID = types.StringValue(req.SpaceID)
-	// workflow_id is Computed+Optional: when the caller omits it, the API
-	// generates one and returns it on the POST response. Capture it on the
-	// plan so the envelope's read-after-write step can resolve the identity.
 	if created != nil {
-		plan.WorkflowID = types.StringValue(created.ID)
+		model.WorkflowID = types.StringValue(created.ID)
 		if !created.Valid {
 			diags.AddError("Invalid workflow", "The workflow was created but its configuration is invalid. Please check the YAML definition.")
 		}
 	}
 
-	return entitycore.KibanaWriteResult[workflowModel]{Model: plan}, diags
+	return diags
 }

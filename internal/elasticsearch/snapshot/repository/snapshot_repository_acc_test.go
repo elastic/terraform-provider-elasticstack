@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -29,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -49,9 +51,11 @@ func TestAccResourceSnapRepoFs(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "verify", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.location", "/tmp"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.compress", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.max_restore_bytes_per_sec", "10mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.readonly", "false"),
 				),
 			},
 			{
@@ -86,6 +90,7 @@ func TestAccResourceSnapRepoURL(t *testing.T) {
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "verify", "true"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.url", "file:/tmp"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.compress", "true"),
 				),
@@ -128,8 +133,24 @@ func TestAccResourceSnapRepoFsExtended(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.chunk_size", "500mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.max_snapshot_bytes_per_sec", "40mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.max_restore_bytes_per_sec", "20mb"),
-					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.readonly", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.readonly", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.max_number_of_snapshots", "50"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"elasticstack_elasticsearch_snapshot_repository.test_fs_repo",
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.location", "/tmp/replace"),
 				),
 			},
 		},
@@ -154,13 +175,31 @@ func TestAccResourceSnapRepoURLExtended(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.http_max_retries", "3"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.http_socket_timeout", "30s"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.compress", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.max_snapshot_bytes_per_sec", "5mb"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.max_restore_bytes_per_sec", "10mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.readonly", "false"),
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.max_number_of_snapshots", "100"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "name", name),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "verify", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.http_max_retries", "7"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.http_socket_timeout", "45s"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.compress", "true"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.max_snapshot_bytes_per_sec", "40mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.max_restore_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.readonly", "false"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.max_number_of_snapshots", "50"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				ResourceName:             "elasticstack_elasticsearch_snapshot_repository.test_url_repo",
 				ImportState:              true,
@@ -171,6 +210,22 @@ func TestAccResourceSnapRepoURLExtended(t *testing.T) {
 					}
 					return nil
 				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"elasticstack_elasticsearch_snapshot_repository.test_url_repo",
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.url", "file:/tmp/replace"),
+				),
 			},
 		},
 	})
@@ -197,6 +252,14 @@ func TestAccResourceSnapRepoS3(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "s3.client", "default"),
 					resource.TestCheckResourceAttr(resourceName, "s3.canned_acl", "private"),
 					resource.TestCheckResourceAttr(resourceName, "s3.storage_class", "standard"),
+					resource.TestCheckResourceAttr(resourceName, "s3.server_side_encryption", "false"),
+					resource.TestCheckResourceAttr(resourceName, "s3.base_path", "snapshots"),
+					resource.TestCheckResourceAttr(resourceName, "s3.buffer_size", "5mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.chunk_size", "1gb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.compress", "false"),
+					resource.TestCheckResourceAttr(resourceName, "s3.max_snapshot_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.max_restore_bytes_per_sec", "10mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.readonly", "true"),
 				),
 			},
 			{
@@ -213,12 +276,23 @@ func TestAccResourceSnapRepoS3(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "s3.endpoint", "https://minio-alt.example.com:9000"),
-					resource.TestCheckResourceAttr(resourceName, "s3.path_style_access", "true"),
+					resource.TestCheckResourceAttr(resourceName, "s3.path_style_access", "false"),
+					resource.TestCheckResourceAttr(resourceName, "s3.client", "secondary"),
+					resource.TestCheckResourceAttr(resourceName, "s3.canned_acl", "public-read"),
+					resource.TestCheckResourceAttr(resourceName, "s3.storage_class", "reduced_redundancy"),
+					resource.TestCheckResourceAttr(resourceName, "s3.server_side_encryption", "true"),
+					resource.TestCheckResourceAttr(resourceName, "s3.base_path", "snapshots/v2"),
+					resource.TestCheckResourceAttr(resourceName, "s3.buffer_size", "10mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.chunk_size", "500mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.compress", "true"),
+					resource.TestCheckResourceAttr(resourceName, "s3.max_snapshot_bytes_per_sec", "40mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.max_restore_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr(resourceName, "s3.readonly", "false"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
 				ResourceName:             resourceName,
 				ImportState:              true,
@@ -229,6 +303,152 @@ func TestAccResourceSnapRepoS3(t *testing.T) {
 					}
 					return nil
 				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "s3.bucket", "test-bucket-replaced"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSnapRepoGcs(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_gcs_repo"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "verify", "false"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.bucket", "test-gcs-bucket"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.client", "default"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.base_path", "snapshots"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.compress", "false"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.chunk_size", "1gb"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.max_snapshot_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.max_restore_bytes_per_sec", "10mb"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.readonly", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "verify", "false"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.bucket", "test-gcs-bucket"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.client", "secondary"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.base_path", "snapshots/v2"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.compress", "true"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.chunk_size", "500mb"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.max_snapshot_bytes_per_sec", "40mb"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.max_restore_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr(resourceName, "gcs.readonly", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSnapRepoAzure(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_azure_repo"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "verify", "false"),
+					resource.TestCheckResourceAttr(resourceName, "azure.container", "test-azure-container"),
+					resource.TestCheckResourceAttr(resourceName, "azure.client", "default"),
+					resource.TestCheckResourceAttr(resourceName, "azure.base_path", "snapshots"),
+					resource.TestCheckResourceAttr(resourceName, "azure.location_mode", "primary_only"),
+					resource.TestCheckResourceAttr(resourceName, "azure.compress", "false"),
+					resource.TestCheckResourceAttr(resourceName, "azure.chunk_size", "1gb"),
+					resource.TestCheckResourceAttr(resourceName, "azure.max_snapshot_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr(resourceName, "azure.max_restore_bytes_per_sec", "10mb"),
+					resource.TestCheckResourceAttr(resourceName, "azure.readonly", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "verify", "false"),
+					resource.TestCheckResourceAttr(resourceName, "azure.container", "test-azure-container"),
+					resource.TestCheckResourceAttr(resourceName, "azure.client", "secondary"),
+					resource.TestCheckResourceAttr(resourceName, "azure.base_path", "snapshots/v2"),
+					resource.TestCheckResourceAttr(resourceName, "azure.location_mode", "secondary_only"),
+					resource.TestCheckResourceAttr(resourceName, "azure.compress", "true"),
+					resource.TestCheckResourceAttr(resourceName, "azure.chunk_size", "500mb"),
+					resource.TestCheckResourceAttr(resourceName, "azure.max_snapshot_bytes_per_sec", "40mb"),
+					resource.TestCheckResourceAttr(resourceName, "azure.max_restore_bytes_per_sec", "20mb"),
+					resource.TestCheckResourceAttr(resourceName, "azure.readonly", "false"),
+				),
+			},
+		},
+	})
+}
+
+// hdfs is intentionally not covered by an acceptance test: it requires the
+// repository-hdfs plugin, which is not bundled with Elasticsearch and is not
+// installed on the standard acceptance-test cluster.
+
+func TestAccResourceSnapRepoNegativeExactlyOneOf(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ExpectError:              regexp.MustCompile(`attributes specified when one \(and only one\) of`),
+			},
+		},
+	})
+}
+
+func TestAccResourceSnapRepoNegativeAlsoRequires(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ExpectError:              regexp.MustCompile(`must be specified when`),
 			},
 		},
 	})

@@ -136,41 +136,11 @@ func populateRangeSliderSharedFields(ctx context.Context, prior *rangeSliderShar
 		return
 	}
 
-	*m.Title = types.StringNull()
-	if typeutils.IsKnown(*prior.Title) {
-		*m.Title = *prior.Title
-		if api.Title != nil {
-			*m.Title = types.StringValue(*api.Title)
-		}
-	}
-	*m.UseGlobalFilters = types.BoolNull()
-	if typeutils.IsKnown(*prior.UseGlobalFilters) {
-		*m.UseGlobalFilters = *prior.UseGlobalFilters
-		if api.UseGlobalFilters != nil {
-			*m.UseGlobalFilters = types.BoolValue(*api.UseGlobalFilters)
-		}
-	}
-	*m.IgnoreValidations = types.BoolNull()
-	if typeutils.IsKnown(*prior.IgnoreValidations) {
-		*m.IgnoreValidations = *prior.IgnoreValidations
-		if api.IgnoreValidations != nil {
-			*m.IgnoreValidations = types.BoolValue(*api.IgnoreValidations)
-		}
-	}
-	*m.Value = types.ListNull(types.StringType)
-	if typeutils.IsKnown(*prior.Value) {
-		*m.Value = *prior.Value
-		if api.Value != nil {
-			*m.Value = valueListFromAPI(ctx, api.Value)
-		}
-	}
-	*m.Step = types.Float32Null()
-	if typeutils.IsKnown(*prior.Step) {
-		*m.Step = *prior.Step
-		if api.Step != nil {
-			*m.Step = types.Float32Value(*api.Step)
-		}
-	}
+	*m.Title = panelkit.PreserveKnownString(*prior.Title, api.Title)
+	*m.UseGlobalFilters = panelkit.PreserveKnownBool(*prior.UseGlobalFilters, api.UseGlobalFilters)
+	*m.IgnoreValidations = panelkit.PreserveKnownBool(*prior.IgnoreValidations, api.IgnoreValidations)
+	*m.Value = panelkit.PreserveKnownList(*prior.Value, valueListFromAPI(ctx, api.Value), api.Value != nil)
+	*m.Step = panelkit.PreserveKnownFloat32(*prior.Step, api.Step)
 }
 
 func populateByFieldFromAPI(
@@ -287,6 +257,9 @@ func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi
 		c.Step = &v
 	}
 
+	if rsPanel.Config == nil {
+		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
+	}
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build range slider control config", err.Error())
@@ -321,6 +294,9 @@ func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.K
 		c.Step = &v
 	}
 
+	if rsPanel.Config == nil {
+		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
+	}
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(c); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build range slider control config", err.Error())

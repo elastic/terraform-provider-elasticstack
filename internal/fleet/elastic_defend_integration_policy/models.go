@@ -18,6 +18,13 @@
 package elasticdefendintegrationpolicy
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,6 +46,20 @@ type elasticDefendIntegrationPolicyModel struct {
 	Preset             types.String `tfsdk:"preset"`
 	Policy             types.Object `tfsdk:"policy"`
 	AdvancedSettings   types.Map    `tfsdk:"advanced_settings"`
+}
+
+func (model elasticDefendIntegrationPolicyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.AgentPolicyIDs) {
+		return nil, nil
+	}
+
+	return []entitycore.VersionRequirement{
+		entitycore.NewAttributeVersionRequirement(
+			path.Root("agent_policy_ids"),
+			*MinVersionPolicyIDs,
+			fmt.Sprintf("agent_policy_ids requires Elastic Stack %s or later", MinVersionPolicyIDs),
+		),
+	}, nil
 }
 
 // policyModel holds the top-level policy nested attribute.

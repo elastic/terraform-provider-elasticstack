@@ -142,6 +142,7 @@ Optional:
 Optional:
 
 - `force_merge_index` (Boolean) Force merges the managed index to one segment.
+- `force_merge_on_clone` (Boolean) Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later.
 - `snapshot_repository` (String) Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.
 
 
@@ -224,6 +225,7 @@ Optional:
 Optional:
 
 - `force_merge_index` (Boolean) Force merges the managed index to one segment.
+- `force_merge_on_clone` (Boolean) Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later.
 - `snapshot_repository` (String) Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.
 
 
@@ -292,6 +294,7 @@ Optional:
 Optional:
 
 - `force_merge_index` (Boolean) Force merges the managed index to one segment.
+- `force_merge_on_clone` (Boolean) Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later.
 - `snapshot_repository` (String) Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.
 
 

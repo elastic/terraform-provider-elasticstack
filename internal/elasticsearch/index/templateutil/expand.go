@@ -47,7 +47,7 @@ func ExpandTemplateCore(
 	var diags diag.Diagnostics
 	t := &models.Template{}
 
-	if !alias.IsNull() && !alias.IsUnknown() {
+	if typeutils.IsKnown(alias) {
 		aliases, d := aliasutil.ExpandAliasSet(ctx, alias)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -56,7 +56,7 @@ func ExpandTemplateCore(
 		t.Aliases = aliases
 	}
 
-	if !mappings.IsNull() && !mappings.IsUnknown() {
+	if typeutils.IsKnown(mappings) {
 		s := strings.TrimSpace(mappings.ValueString())
 		if s != "" {
 			maps := make(map[string]any)
@@ -68,7 +68,7 @@ func ExpandTemplateCore(
 		}
 	}
 
-	if !settings.IsNull() && !settings.IsUnknown() {
+	if typeutils.IsKnown(settings) {
 		s := strings.TrimSpace(settings.ValueString())
 		if s != "" {
 			sets := make(map[string]any)
@@ -80,7 +80,7 @@ func ExpandTemplateCore(
 		}
 	}
 
-	if !dataStreamOptions.IsNull() && !dataStreamOptions.IsUnknown() {
+	if typeutils.IsKnown(dataStreamOptions) {
 		dso, d := datastreamoptions.Expand(dataStreamOptions)
 		diags.Append(d...)
 		if diags.HasError() {

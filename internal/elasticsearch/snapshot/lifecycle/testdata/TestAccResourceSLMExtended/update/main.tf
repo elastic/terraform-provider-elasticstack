@@ -17,12 +17,22 @@ resource "elasticstack_elasticsearch_snapshot_repository" "repo" {
   }
 }
 
+resource "elasticstack_elasticsearch_snapshot_repository" "repo2" {
+  name = "${var.name}-repo2"
+
+  fs {
+    location                  = "/tmp/snapshots2"
+    compress                  = true
+    max_restore_bytes_per_sec = "20mb"
+  }
+}
+
 resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
   name = var.name
 
   schedule      = "0 30 2 * * ?"
   snapshot_name = "<daily-snap-{now/d}>"
-  repository    = elasticstack_elasticsearch_snapshot_repository.repo.name
+  repository    = elasticstack_elasticsearch_snapshot_repository.repo2.name
 
   expand_wildcards     = "all"
   indices              = ["data-*", "metrics-*"]
@@ -34,4 +44,9 @@ resource "elasticstack_elasticsearch_snapshot_lifecycle" "test_slm" {
   expire_after = "60d"
   min_count    = 3
   max_count    = 30
+
+  metadata = jsonencode({
+    created_by = "terraform"
+    purpose    = "weekly backup"
+  })
 }

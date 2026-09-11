@@ -292,20 +292,6 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 		withTimeRange("now-7d", "now", &mode),
 	)
 
-	pm := &models.PanelModel{
-		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
-			JobIDs:                []types.String{types.StringValue("job-a")},
-			SelectedDetectorIndex: types.Float32Null(),
-			ForecastID:            types.StringNull(),
-			FunctionDescription:   types.StringNull(),
-			SelectedEntities:      types.MapNull(entityObjectType()),
-			Title:                 types.StringNull(),
-			Description:           types.StringNull(),
-			HideTitle:             types.BoolNull(),
-			HideBorder:            types.BoolNull(),
-			TimeRange:             nil,
-		},
-	}
 	prior := &models.PanelModel{
 		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
 			JobIDs:                []types.String{types.StringValue("job-a")},
@@ -320,6 +306,9 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			TimeRange:             nil,
 		},
 	}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm), so this must not hand-construct a pre-populated pm.
+	pm := &models.PanelModel{}
 	diags := mlsinglemetricviewer.PopulateFromAPI(ctx, pm, prior, apiCfg)
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -348,18 +337,15 @@ func TestPopulateFromAPI_selectedEntities_roundTrip(t *testing.T) {
 		"host": makeStringEntityProp("web-01"),
 	}))
 
-	pm := &models.PanelModel{
-		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
-			JobIDs:           []types.String{types.StringValue("job-a")},
-			SelectedEntities: selectedEntities,
-		},
-	}
 	prior := &models.PanelModel{
 		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
 			JobIDs:           []types.String{types.StringValue("job-a")},
 			SelectedEntities: selectedEntities,
 		},
 	}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm), so this must not hand-construct a pre-populated pm.
+	pm := &models.PanelModel{}
 	diags := mlsinglemetricviewer.PopulateFromAPI(ctx, pm, prior, apiCfg)
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -374,16 +360,6 @@ func TestPopulateFromAPI_timeRangeSubfields_nullPreservation(t *testing.T) {
 	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
 	apiCfg := makeAPIConfig(withTimeRange("now-7d", "now", &mode))
 
-	pm := &models.PanelModel{
-		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
-			JobIDs: []types.String{types.StringValue("job-a")},
-			TimeRange: &models.TimeRangeModel{
-				From: types.StringValue("now-7d"),
-				To:   types.StringValue("now"),
-				Mode: types.StringNull(),
-			},
-		},
-	}
 	prior := &models.PanelModel{
 		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
 			JobIDs: []types.String{types.StringValue("job-a")},
@@ -394,6 +370,9 @@ func TestPopulateFromAPI_timeRangeSubfields_nullPreservation(t *testing.T) {
 			},
 		},
 	}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm), so this must not hand-construct a pre-populated pm.
+	pm := &models.PanelModel{}
 	diags := mlsinglemetricviewer.PopulateFromAPI(ctx, pm, prior, apiCfg)
 	require.False(t, diags.HasError(), "%v", diags)
 
@@ -422,18 +401,15 @@ func TestPopulateFromAPI_selectedDetectorIndex_float32RoundTrip(t *testing.T) {
 	const idx float32 = 2.5
 	apiCfg := makeAPIConfig(withSelectedDetectorIndex(idx))
 
-	pm := &models.PanelModel{
-		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
-			JobIDs:                []types.String{types.StringValue("job-a")},
-			SelectedDetectorIndex: types.Float32Value(idx),
-		},
-	}
 	prior := &models.PanelModel{
 		MlSingleMetricViewerConfig: &models.MlSingleMetricViewerConfigModel{
 			JobIDs:                []types.String{types.StringValue("job-a")},
 			SelectedDetectorIndex: types.Float32Value(idx),
 		},
 	}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm), so this must not hand-construct a pre-populated pm.
+	pm := &models.PanelModel{}
 	diags := mlsinglemetricviewer.PopulateFromAPI(ctx, pm, prior, apiCfg)
 	require.False(t, diags.HasError(), "%v", diags)
 

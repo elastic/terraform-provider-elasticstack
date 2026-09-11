@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,13 +33,11 @@ type ThreatMatchRuleProcessor struct {
 
 func newThreatMatchRuleProcessor() ThreatMatchRuleProcessor {
 	return ThreatMatchRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThreatMatchRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
-				return d.updateFromThreatMatchRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
+			return d.updateFromThreatMatchRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
+			return v.Id.String()
 		},
 	}
 }
@@ -353,7 +350,7 @@ func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.Securi
 	if len(rule.ThreatIndex) > 0 {
 		d.ThreatIndex = typeutils.ListValueFrom(ctx, rule.ThreatIndex, types.StringType, path.Root("threat_index"), &diags)
 	} else {
-		d.ThreatIndex = types.ListValueMust(types.StringType, []attr.Value{})
+		d.ThreatIndex = typeutils.StringsToListMust(nil)
 	}
 
 	d.ThreatIndicatorPath = typeutils.StringishPointerValue(rule.ThreatIndicatorPath)

@@ -57,35 +57,13 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.TargetField) {
 		body.TargetField = m.TargetField.ValueString()
 	}
-	if typeutils.IsKnown(m.InternalNetworks) {
-		elems := make([]string, 0, len(m.InternalNetworks.Elements()))
-		for _, elem := range m.InternalNetworks.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid internal_networks element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown internal_networks element", "internal_networks elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.InternalNetworks = elems
-	}
+	body.InternalNetworks = typeutils.StringElements(m.InternalNetworks, &diags)
 	if typeutils.IsKnown(m.InternalNetworksField) {
 		body.InternalNetworksField = m.InternalNetworksField.ValueString()
 	}
-	if m.IgnoreMissing.IsNull() || m.IgnoreMissing.IsUnknown() {
-		m.IgnoreMissing = types.BoolValue(true)
-		body.IgnoreMissing = true
-	} else {
-		body.IgnoreMissing = m.IgnoreMissing.ValueBool()
-	}
+	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, true)
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -93,14 +71,6 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorNetworkDirectionDataSource returns a PF data source for the network_direction processor.
 func NewProcessorNetworkDirectionDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"source_ip": schema.StringAttribute{
 			Description: "Field containing the source IP address.",
 			Optional:    true,

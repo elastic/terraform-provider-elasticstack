@@ -21,41 +21,57 @@ import (
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 )
 
 const spaceIDDescription = "An identifier for the space. If space_id is not provided, the default space is used."
 
-// ResourceSpaceIDAttribute returns the canonical space_id attribute for Kibana
-// resources that support UseStateForUnknown in addition to RequiresReplace.
-func ResourceSpaceIDAttribute() schema.StringAttribute {
+// ResourceSpaceIDAttributeWithModifiers returns the canonical space_id attribute
+// for Kibana resources (Optional+Computed with Default("default")), with the
+// supplied plan modifiers.
+func ResourceSpaceIDAttributeWithModifiers(modifiers ...planmodifier.String) schema.StringAttribute {
 	return schema.StringAttribute{
 		MarkdownDescription: spaceIDDescription,
 		Optional:            true,
 		Computed:            true,
 		Default:             stringdefault.StaticString(clients.DefaultSpaceID),
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.UseStateForUnknown(),
-			stringplanmodifier.RequiresReplace(),
-		},
+		PlanModifiers:       modifiers,
 	}
+}
+
+// ResourceSpaceIDAttribute returns the canonical space_id attribute for Kibana
+// resources that support UseStateForUnknown in addition to RequiresReplace.
+func ResourceSpaceIDAttribute() schema.StringAttribute {
+	return ResourceSpaceIDAttributeWithModifiers(
+		stringplanmodifier.UseStateForUnknown(),
+		stringplanmodifier.RequiresReplace(),
+	)
 }
 
 // ResourceSpaceIDAttributeRequiresReplaceOnly returns the canonical space_id
 // attribute for Kibana resources that only need RequiresReplace (no
 // UseStateForUnknown).
 func ResourceSpaceIDAttributeRequiresReplaceOnly() schema.StringAttribute {
+	return ResourceSpaceIDAttributeWithModifiers(
+		stringplanmodifier.RequiresReplace(),
+	)
+}
+
+// ResourceSpaceIDAttributeNoDefault returns the canonical space_id attribute
+// for Kibana resources that leave space_id defaulted server-side rather than
+// defaulting it to "default" (Optional+Computed, no Default), with the
+// supplied plan modifiers.
+func ResourceSpaceIDAttributeNoDefault(modifiers ...planmodifier.String) schema.StringAttribute {
 	return schema.StringAttribute{
 		MarkdownDescription: spaceIDDescription,
 		Optional:            true,
 		Computed:            true,
-		Default:             stringdefault.StaticString(clients.DefaultSpaceID),
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.RequiresReplace(),
-		},
+		PlanModifiers:       modifiers,
 	}
 }
 
@@ -66,5 +82,19 @@ func DataSourceSpaceIDAttribute() dsschema.StringAttribute {
 		MarkdownDescription: spaceIDDescription,
 		Optional:            true,
 		Computed:            true,
+	}
+}
+
+// SpaceIDsAttribute returns the canonical space_ids Set attribute shared by
+// Fleet resources that support multi-space assignment: Optional+Computed
+// with UseStateForUnknown, plus any additional plan modifiers (e.g.
+// RequiresReplace) appended after it.
+func SpaceIDsAttribute(description string, extraModifiers ...planmodifier.Set) schema.SetAttribute {
+	return schema.SetAttribute{
+		MarkdownDescription: description,
+		ElementType:         types.StringType,
+		Optional:            true,
+		Computed:            true,
+		PlanModifiers:       append([]planmodifier.Set{setplanmodifier.UseStateForUnknown()}, extraModifiers...),
 	}
 }

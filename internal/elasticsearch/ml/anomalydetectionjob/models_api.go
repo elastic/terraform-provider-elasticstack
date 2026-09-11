@@ -29,6 +29,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/filtertype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/ruleaction"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -160,7 +161,7 @@ type UpdateAPIModel struct {
 	ModelPlotConfig                      *ModelPlotConfigAPIModel `json:"model_plot_config,omitempty"`
 	AllowLazyOpen                        *bool                    `json:"allow_lazy_open,omitempty"`
 	BackgroundPersistInterval            *string                  `json:"background_persist_interval,omitempty"`
-	CustomSettings                       map[string]any           `json:"custom_settings,omitempty"`
+	CustomSettings                       json.RawMessage          `json:"custom_settings,omitempty"`
 	DailyModelSnapshotRetentionAfterDays *int64                   `json:"daily_model_snapshot_retention_after_days,omitempty"`
 	ModelSnapshotRetentionDays           *int64                   `json:"model_snapshot_retention_days,omitempty"`
 	RenormalizationWindowDays            *int64                   `json:"renormalization_window_days,omitempty"`
@@ -232,13 +233,22 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 	}
 
 	if !plan.CustomSettings.Equal(state.CustomSettings) && !plan.CustomSettings.IsNull() {
-		var customSettings map[string]any
-		if err := json.Unmarshal([]byte(plan.CustomSettings.ValueString()), &customSettings); err != nil {
-			diags.AddError("Failed to parse custom_settings", err.Error())
+		customSettings := typeutils.NormalizedTypeToMap[any](plan.CustomSettings, path.Root("custom_settings"), &diags)
+		if diags.HasError() {
 			return false, diags
 		}
-		u.CustomSettings = customSettings
-		hasChanges = true
+		// JSON literal "null" unmarshals to a nil map. That is not a wipe ("{}")
+		// and not an owned object — omit the field so we stay hands-off instead
+		// of sending "custom_settings": null, which the Update Job API rejects.
+		if customSettings != nil {
+			raw, err := json.Marshal(customSettings)
+			if err != nil {
+				diags.AddError("Failed to encode custom_settings", err.Error())
+				return false, diags
+			}
+			u.CustomSettings = json.RawMessage(raw)
+			hasChanges = true
+		}
 	}
 
 	if !plan.DailyModelSnapshotRetentionAfterDays.Equal(state.DailyModelSnapshotRetentionAfterDays) && !plan.DailyModelSnapshotRetentionAfterDays.IsNull() {

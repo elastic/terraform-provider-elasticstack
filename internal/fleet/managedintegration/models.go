@@ -22,35 +22,12 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-const (
-	globalDataTagStringValueAttr = "string_value"
-	globalDataTagNumberValueAttr = "number_value"
-)
-
-// globalDataTagsItemModel is the element type of the `global_data_tags` map
-// (keyed by tag name), matching schema.go's MapNestedAttribute item shape.
-type globalDataTagsItemModel struct {
-	StringValue types.String  `tfsdk:"string_value"`
-	NumberValue types.Float32 `tfsdk:"number_value"`
-}
-
-func globalDataTagAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		globalDataTagStringValueAttr: types.StringType,
-		globalDataTagNumberValueAttr: types.Float32Type,
-	}
-}
-
-func globalDataTagsElementType() attr.Type {
-	return types.ObjectType{AttrTypes: globalDataTagAttrTypes()}
-}
 
 // MinVersion is the minimum Kibana version required for the Fleet
 // managed_integrations API. Verified against a 9.5.0-SNAPSHOT build; the
@@ -68,19 +45,18 @@ const minVersionUserFacing = "9.5.0"
 // elasticstack_fleet_managed_integration resource.
 //
 // Task 4 of the fleet-managed-integration OpenSpec change
-// (openspec/changes/fleet-managed-integration/tasks.md, section "4. Resource:
+// (openspec/changes/archive/2026-07-22-fleet-managed-integration/tasks.md, section "4. Resource:
 // schema") adds one field per schema attribute defined in schema.go (see
 // openspec/specs/fleet-managed-integration/spec.md, "Schema attributes" requirement).
 // CRUD population (populateFromAPI/toAPI*Model conversion functions) is
 // Task 5's responsibility; this file only declares the struct shape.
 //
 // packageModel and cloudConnectorModel back the `package` and `cloud_connector`
-// nested attributes; global_data_tags uses globalDataTagsItemModel as the map
-// element type (see globalDataTagsElementType). Plain nested objects are
-// decoded via types.Object/types.Map helpers, matching internal/fleet/agentpolicy.
-// `inputs` and `vars_json` reuse the shared policyshape custom types
-// directly (policyshape.InputsValue / policyshape.VarsJSONValue) -- no
-// local type duplication.
+// nested attributes; global_data_tags uses globaldatatags.Item as the map
+// element type. Plain nested objects are decoded via types.Object/types.Map
+// helpers, matching internal/fleet/agentpolicy. `inputs` and `vars_json` reuse
+// the shared policyshape custom types directly (policyshape.InputsValue /
+// policyshape.VarsJSONValue) -- no local type duplication.
 type managedIntegrationModel struct {
 	entitycore.ResourceTimeoutsField
 	ID                               types.String              `tfsdk:"id"`
@@ -96,7 +72,7 @@ type managedIntegrationModel struct {
 	VarGroupSelections               types.Map                 `tfsdk:"var_group_selections"`               // > string
 	Inputs                           policyshape.InputsValue   `tfsdk:"inputs"`                             // > policyshape.InputModel
 	CloudConnector                   types.Object              `tfsdk:"cloud_connector"`                    // > cloudConnectorModel
-	GlobalDataTags                   types.Map                 `tfsdk:"global_data_tags"`                   // > globalDataTagsItemModel
+	GlobalDataTags                   types.Map                 `tfsdk:"global_data_tags"`                   // > globaldatatags.Item
 	AdditionalDatastreamsPermissions types.List                `tfsdk:"additional_datastreams_permissions"` // > string
 	CreateDatasetTemplates           types.Bool                `tfsdk:"create_dataset_templates"`
 	Force                            types.Bool                `tfsdk:"force"`
@@ -106,9 +82,8 @@ type managedIntegrationModel struct {
 	UpdatedAt                        types.String              `tfsdk:"updated_at"`
 }
 
-// Note: nested attribute element types (packageModel, cloudConnectorModel,
-// globalDataTagsItemModel) live in models.go / models_convert.go for conversion
-// plumbing only.
+// Note: nested attribute element types (packageModel, cloudConnectorModel)
+// live in models.go / models_convert.go for conversion plumbing only.
 
 func (m managedIntegrationModel) GetID() types.String         { return m.ID }
 func (m managedIntegrationModel) GetResourceID() types.String { return m.PolicyID }
@@ -138,32 +113,20 @@ const defaultSpaceID = "default"
 // Create is the first caller that actually exercises this path end-to-end;
 // see the corresponding test update in schema_test.go/entitycore_contract_test.go.
 func (m managedIntegrationModel) GetSpaceID() types.String {
-	if m.SpaceIDs.IsNull() || m.SpaceIDs.IsUnknown() {
-		return types.StringValue(defaultSpaceID)
-	}
-	for _, elem := range m.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue(defaultSpaceID)
+	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, defaultSpaceID)
 }
 
 func (m managedIntegrationModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 // GetVersionRequirements enforces the minimum Kibana version for the Fleet
-// managed_integrations API (experimental, added in Kibana 9.5.0). See
-// openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// managed_integrations API (GA, added in Kibana 9.5.0). See
+// openspec/changes/archive/2026-07-22-fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint".
 func (m managedIntegrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return []entitycore.VersionRequirement{
 		{
 			MinVersion:   *MinVersion,
-			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later (experimental API).", minVersionUserFacing),
+			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later.", minVersionUserFacing),
 		},
 	}, nil
 }

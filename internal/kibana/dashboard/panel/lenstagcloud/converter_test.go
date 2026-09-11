@@ -47,13 +47,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := t.Context()
 	var c converter
 	cfg := &models.TagcloudConfigModel{
-		LensChartBaseTFModel: models.LensChartBaseTFModel{
-			Title:               types.StringValue("TC RT"),
-			Description:         types.StringValue("desc"),
-			IgnoreGlobalFilters: types.BoolValue(true),
-			Sampling:            types.Float64Value(0.9),
-			DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
-		},
+		Title:               types.StringValue("TC RT"),
+		Description:         types.StringValue("desc"),
+		IgnoreGlobalFilters: types.BoolValue(true),
+		Sampling:            types.Float64Value(0.9),
+		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue(`status:200`),

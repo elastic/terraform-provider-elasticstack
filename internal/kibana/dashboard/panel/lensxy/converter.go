@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -51,21 +50,15 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "xy_chart_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.XYChartConfigModel
-	if blocks.XYChartConfig != nil {
-		cpy := *blocks.XYChartConfig
-		prior = &cpy
-	}
-	blocks.XYChartConfig = &models.XYChartConfigModel{}
-
-	if xyChart, err := attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel(); err == nil {
-		return xyChartConfigFromAPINoESQL(ctx, blocks.XYChartConfig, prior, xyChart)
-	}
-	xyChart, err := attrs.AsKibanaHTTPAPIsXyChartESQLByValuePanel()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return xyChartConfigFromAPIESQL(ctx, blocks.XYChartConfig, prior, xyChart)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.XYChartConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.XYChartConfig, prior,
+		attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsXyChartESQLByValuePanel,
+		nil, // xy charts carry their data source per layer, not on a single top-level field.
+		xyChartConfigFromAPINoESQL,
+		xyChartConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

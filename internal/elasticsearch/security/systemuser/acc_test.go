@@ -26,10 +26,12 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const remoteMonitoringUser = "remote_monitoring_user"
+const logstashSystemUser = "logstash_system"
 const systemUserResourceName = "elasticstack_elasticsearch_security_system_user.remote_monitoring_user"
 
 func TestAccResourceSecuritySystemUser(t *testing.T) {
@@ -54,10 +56,21 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
 					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
-					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestMatchResourceAttr(systemUserResourceName, "id", regexp.MustCompile("^[^/]+/"+remoteMonitoringUser+"$")),
 					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
 					resource.TestCheckNoResourceAttr(systemUserResourceName, "password_hash"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
+				ResourceName:            systemUserResourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "password_hash"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -134,6 +147,39 @@ func TestAccResourceSecuritySystemUser(t *testing.T) {
 					checks.CheckUserCanAuthenticate(remoteMonitoringUser, password3),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", remoteMonitoringUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(systemUserResourceName, "id"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password_hash"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(logstashSystemUser),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(systemUserResourceName, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(systemUserResourceName, "username", logstashSystemUser),
+					resource.TestCheckResourceAttr(systemUserResourceName, "enabled", "true"),
+					resource.TestMatchResourceAttr(systemUserResourceName, "id", regexp.MustCompile("^[^/]+/"+logstashSystemUser+"$")),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password"),
+					resource.TestCheckNoResourceAttr(systemUserResourceName, "password_hash"),
+				),
+			},
 		},
 	})
 }
@@ -150,6 +196,43 @@ func TestAccResourceSecuritySystemUserNotFound(t *testing.T) {
 					"password": config.StringVariable("new_password"),
 				},
 				ExpectError: regexp.MustCompile(`System user "not_system_user" not found`),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecuritySystemUserPasswordConflict(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"username":      config.StringVariable(remoteMonitoringUser),
+					"password":      config.StringVariable("new_password_1"),
+					"password_hash": config.StringVariable("conflict_hash_placeholder"),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)cannot be specified when`),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecuritySystemUserPasswordTooShort(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(remoteMonitoringUser),
+					"password": config.StringVariable("short"),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)string length must be between 6 and 128`),
 			},
 		},
 	})

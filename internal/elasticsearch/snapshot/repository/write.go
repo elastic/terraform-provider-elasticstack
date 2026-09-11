@@ -23,6 +23,7 @@ import (
 	esclients "github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -48,7 +49,7 @@ func writeSnapshotRepository(ctx context.Context, client *esclients.Elasticsearc
 	}
 
 	verify := true
-	if !data.Verify.IsNull() && !data.Verify.IsUnknown() {
+	if typeutils.IsKnown(data.Verify) {
 		verify = data.Verify.ValueBool()
 	}
 
@@ -65,7 +66,7 @@ func writeSnapshotRepository(ctx context.Context, client *esclients.Elasticsearc
 func extractSettings(ctx context.Context, data Data) (string, map[string]any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !data.Fs.IsNull() && !data.Fs.IsUnknown() {
+	if typeutils.IsKnown(data.Fs) {
 		var fs FsSettings
 		diags.Append(data.Fs.As(ctx, &fs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -73,7 +74,7 @@ func extractSettings(ctx context.Context, data Data) (string, map[string]any, di
 		}
 		return repoTypeFS, fsToSettings(fs), diags
 	}
-	if !data.URL.IsNull() && !data.URL.IsUnknown() {
+	if typeutils.IsKnown(data.URL) {
 		var u URLSettings
 		diags.Append(data.URL.As(ctx, &u, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -81,7 +82,7 @@ func extractSettings(ctx context.Context, data Data) (string, map[string]any, di
 		}
 		return repoTypeURL, urlToSettings(u), diags
 	}
-	if !data.Gcs.IsNull() && !data.Gcs.IsUnknown() {
+	if typeutils.IsKnown(data.Gcs) {
 		var gcs GcsSettings
 		diags.Append(data.Gcs.As(ctx, &gcs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -89,7 +90,7 @@ func extractSettings(ctx context.Context, data Data) (string, map[string]any, di
 		}
 		return repoTypeGCS, gcsToSettings(gcs), diags
 	}
-	if !data.Azure.IsNull() && !data.Azure.IsUnknown() {
+	if typeutils.IsKnown(data.Azure) {
 		var azure AzureSettings
 		diags.Append(data.Azure.As(ctx, &azure, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -97,7 +98,7 @@ func extractSettings(ctx context.Context, data Data) (string, map[string]any, di
 		}
 		return repoTypeAzure, azureToSettings(azure), diags
 	}
-	if !data.S3.IsNull() && !data.S3.IsUnknown() {
+	if typeutils.IsKnown(data.S3) {
 		var s3 S3Settings
 		diags.Append(data.S3.As(ctx, &s3, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -105,7 +106,7 @@ func extractSettings(ctx context.Context, data Data) (string, map[string]any, di
 		}
 		return repoTypeS3, s3ToSettings(s3), diags
 	}
-	if !data.Hdfs.IsNull() && !data.Hdfs.IsUnknown() {
+	if typeutils.IsKnown(data.Hdfs) {
 		var hdfs HdfsSettings
 		diags.Append(data.Hdfs.As(ctx, &hdfs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -133,7 +134,7 @@ func fsToSettings(fs FsSettings) map[string]any {
 	setIfNotEmpty(m, settingChunkSize, fs.ChunkSize.ValueString())
 	setIfNotEmpty(m, settingMaxSnapshotBytesPerSec, fs.MaxSnapshotBytesPerSec.ValueString())
 	setIfNotEmpty(m, settingMaxRestoreBytesPerSec, fs.MaxRestoreBytesPerSec.ValueString())
-	if !fs.MaxNumberOfSnapshots.IsNull() && !fs.MaxNumberOfSnapshots.IsUnknown() {
+	if typeutils.IsKnown(fs.MaxNumberOfSnapshots) {
 		m[settingMaxNumberOfSnapshots] = fs.MaxNumberOfSnapshots.ValueInt64()
 	}
 	return m
@@ -148,11 +149,11 @@ func urlToSettings(u URLSettings) map[string]any {
 	setIfNotEmpty(m, settingChunkSize, u.ChunkSize.ValueString())
 	setIfNotEmpty(m, settingMaxSnapshotBytesPerSec, u.MaxSnapshotBytesPerSec.ValueString())
 	setIfNotEmpty(m, settingMaxRestoreBytesPerSec, u.MaxRestoreBytesPerSec.ValueString())
-	if !u.HTTPMaxRetries.IsNull() && !u.HTTPMaxRetries.IsUnknown() {
+	if typeutils.IsKnown(u.HTTPMaxRetries) {
 		m[settingHTTPMaxRetries] = u.HTTPMaxRetries.ValueInt64()
 	}
 	setIfNotEmpty(m, settingHTTPSocketTimeout, u.HTTPSocketTimeout.ValueString())
-	if !u.MaxNumberOfSnapshots.IsNull() && !u.MaxNumberOfSnapshots.IsUnknown() {
+	if typeutils.IsKnown(u.MaxNumberOfSnapshots) {
 		m[settingMaxNumberOfSnapshots] = u.MaxNumberOfSnapshots.ValueInt64()
 	}
 	return m

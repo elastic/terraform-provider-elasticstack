@@ -40,7 +40,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 
 	// Set default space_id if not provided
 	spaceID := "default"
-	if !config.SpaceID.IsNull() && !config.SpaceID.IsUnknown() {
+	if typeutils.IsKnown(config.SpaceID) {
 		spaceID = config.SpaceID.ValueString()
 	}
 
@@ -64,12 +64,12 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 
 	// Set default values for boolean options
 	excludeExportDetails := true
-	if !config.ExcludeExportDetails.IsNull() && !config.ExcludeExportDetails.IsUnknown() {
+	if typeutils.IsKnown(config.ExcludeExportDetails) {
 		excludeExportDetails = config.ExcludeExportDetails.ValueBool()
 	}
 
 	includeReferencesDeep := true
-	if !config.IncludeReferencesDeep.IsNull() && !config.IncludeReferencesDeep.IsUnknown() {
+	if typeutils.IsKnown(config.IncludeReferencesDeep) {
 		includeReferencesDeep = config.IncludeReferencesDeep.ValueBool()
 	}
 

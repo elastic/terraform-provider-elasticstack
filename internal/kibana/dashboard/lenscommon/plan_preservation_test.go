@@ -20,6 +20,7 @@ package lenscommon
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -146,6 +147,56 @@ func TestPreserveKnownTfValueIfStateNull_List(t *testing.T) {
 			state := tc.state
 			PreserveKnownTfValueIfStateNull(tc.plan, &state)
 			assert.Equal(t, tc.wantState, state)
+		})
+	}
+}
+
+func TestPreservePlanJSONIfStateAddsOptionalKeys(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name         string
+		plan         string
+		state        string
+		optionalKeys []string
+		wantState    string
+	}{
+		{
+			name:         "state adds time_field, plan omits it -> state reverts to plan",
+			plan:         `{"index_pattern":"metrics-*","type":"data_view_spec"}`,
+			state:        `{"index_pattern":"metrics-*","type":"data_view_spec","time_field":"@timestamp"}`,
+			optionalKeys: []string{"time_field", "name"},
+			wantState:    `{"index_pattern":"metrics-*","type":"data_view_spec"}`,
+		},
+		{
+			name:         "state adds name (Kibana 9.5.0 GA), plan omits it -> state reverts to plan",
+			plan:         `{"index_pattern":"metrics-*","type":"data_view_spec"}`,
+			state:        `{"type":"data_view_spec","index_pattern":"metrics-*","name":"metrics-*"}`,
+			optionalKeys: []string{"time_field", "name"},
+			wantState:    `{"index_pattern":"metrics-*","type":"data_view_spec"}`,
+		},
+		{
+			name:         "state adds both time_field and name, plan omits both -> state reverts to plan",
+			plan:         `{"index_pattern":"metrics-*","type":"data_view_spec"}`,
+			state:        `{"type":"data_view_spec","index_pattern":"metrics-*","time_field":"@timestamp","name":"metrics-*"}`,
+			optionalKeys: []string{"time_field", "name"},
+			wantState:    `{"index_pattern":"metrics-*","type":"data_view_spec"}`,
+		},
+		{
+			name:         "plan explicitly sets name -> state keeps its own name value",
+			plan:         `{"index_pattern":"metrics-*","type":"data_view_spec","name":"custom-name"}`,
+			state:        `{"type":"data_view_spec","index_pattern":"metrics-*","name":"custom-name"}`,
+			optionalKeys: []string{"time_field", "name"},
+			wantState:    `{"type":"data_view_spec","index_pattern":"metrics-*","name":"custom-name"}`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			plan := jsontypes.NewNormalizedValue(tc.plan)
+			state := jsontypes.NewNormalizedValue(tc.state)
+			PreservePlanJSONIfStateAddsOptionalKeys(plan, &state, tc.optionalKeys...)
+			assert.JSONEq(t, tc.wantState, state.ValueString())
 		})
 	}
 }

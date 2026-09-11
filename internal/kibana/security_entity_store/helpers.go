@@ -133,14 +133,15 @@ type entityStoreEngineError struct {
 
 func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEntityStoreInstallJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PostSecurityEntityStoreInstallJSONRequestBody{}
-	entityTypes, diags := expandEntityTypes(ctx, model.EntityTypes)
+	var diags diag.Diagnostics
+	entityTypes := typeutils.SetTypeAs[string](ctx, model.EntityTypes, path.Empty(), &diags)
 	if diags.HasError() {
 		return body, diags
 	}
 	if len(entityTypes) > 0 {
 		body.EntityTypes = stringSliceToAPITypes[kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes](entityTypes)
 	}
-	if !model.HistorySnapshot.IsNull() && !model.HistorySnapshot.IsUnknown() {
+	if typeutils.IsKnown(model.HistorySnapshot) {
 		var hs historySnapshotModel
 		diags.Append(model.HistorySnapshot.As(ctx, &hs, basetypes.ObjectAsOptions{})...)
 		if diags.HasError() {
@@ -152,7 +153,7 @@ func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEnt
 			}{Frequency: p}
 		}
 	}
-	if !model.LogExtraction.IsNull() && !model.LogExtraction.IsUnknown() {
+	if typeutils.IsKnown(model.LogExtraction) {
 		le, d := expandInstallLogExtraction(ctx, model.LogExtraction)
 		diags.Append(d...)
 		if diags.HasError() {
@@ -174,14 +175,6 @@ func buildUpdateBody(ctx context.Context, model tfModel) (kbapi.PutSecurityEntit
 	}
 	body.LogExtraction = *le
 	return body, diags
-}
-
-func expandEntityTypes(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
-	if set.IsNull() || set.IsUnknown() {
-		return nil, nil
-	}
-	var values []string
-	return values, set.ElementsAs(ctx, &values, false)
 }
 
 // stringSliceToAPITypes converts a []string to a pointer to a slice of a ~string
@@ -219,8 +212,8 @@ func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object)
 	if diags.HasError() {
 		return nil, diags
 	}
-	add := typeutils.ListTypeToSliceStringPtr(ctx, model.AdditionalIndexPatterns, path.Empty(), &diags)
-	excl := typeutils.ListTypeToSliceStringPtr(ctx, model.ExcludedIndexPatterns, path.Empty(), &diags)
+	add := typeutils.CollectionToSliceStringPtr(ctx, model.AdditionalIndexPatterns, path.Empty(), &diags)
+	excl := typeutils.CollectionToSliceStringPtr(ctx, model.ExcludedIndexPatterns, path.Empty(), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -236,7 +229,7 @@ func expandLogExtractionCommon[T ~string](ctx context.Context, obj types.Object)
 		MaxLogsPerWindow:        typeutils.OptionalInt(model.MaxLogsPerWindow),
 		MaxTimeWindowSize:       typeutils.OptionalString(model.MaxTimeWindowSize),
 	}
-	if !model.MaxLogsPerWindowCapBehavior.IsNull() && !model.MaxLogsPerWindowCapBehavior.IsUnknown() {
+	if typeutils.IsKnown(model.MaxLogsPerWindowCapBehavior) {
 		behavior := T(model.MaxLogsPerWindowCapBehavior.ValueString())
 		c.MaxLogsPerWindowCapBehavior = &behavior
 	}
@@ -253,38 +246,17 @@ func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*apiLogEx
 
 func diffEntityTypes(ctx context.Context, prior, plan types.Set) (added, removed []string, diags diag.Diagnostics) {
 	var priorVals, planVals []string
-	if !prior.IsNull() && !prior.IsUnknown() {
+	if typeutils.IsKnown(prior) {
 		diags.Append(prior.ElementsAs(ctx, &priorVals, false)...)
 	}
-	if !plan.IsNull() && !plan.IsUnknown() {
+	if typeutils.IsKnown(plan) {
 		diags.Append(plan.ElementsAs(ctx, &planVals, false)...)
 	}
 	if diags.HasError() {
 		return nil, nil, diags
 	}
 
-	priorSet := make(map[string]bool, len(priorVals))
-	for _, v := range priorVals {
-		priorSet[v] = true
-	}
-	planSet := make(map[string]bool, len(planVals))
-	for _, v := range planVals {
-		planSet[v] = true
-	}
-
-	for v := range planSet {
-		if !priorSet[v] {
-			added = append(added, v)
-		}
-	}
-	for v := range priorSet {
-		if !planSet[v] {
-			removed = append(removed, v)
-		}
-	}
-
-	sort.Strings(added)
-	sort.Strings(removed)
+	added, removed = typeutils.DiffStringSlices(priorVals, planVals)
 	return added, removed, diags
 }
 
@@ -311,7 +283,6 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 	leModel := logExtractionModel{
 		AdditionalIndexPatterns:     types.ListNull(types.StringType),
 		ExcludedIndexPatterns:       types.ListNull(types.StringType),
-		Delay:                       types.StringNull(),
 		DocsLimit:                   types.Int64Null(),
 		FieldHistoryLength:          types.Int64Null(),
 		Frequency:                   types.StringNull(),
@@ -320,8 +291,8 @@ func flattenStatus(ctx context.Context, engines []entityStoreEngine) (entityType
 		MaxLogsPerWindow:            types.Int64Null(),
 		MaxLogsPerWindowCapBehavior: types.StringNull(),
 		MaxTimeWindowSize:           types.StringNull(),
-	}
-	leModel.Delay = typeutils.StringishPointerValue(first.Delay)
+
+		Delay: typeutils.StringishPointerValue(first.Delay)}
 	if first.FieldHistoryLength != 0 {
 		leModel.FieldHistoryLength = types.Int64Value(int64(first.FieldHistoryLength))
 	}
@@ -347,13 +318,13 @@ func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.Lis
 			Status:             types.StringValue(string(e.Status)),
 			IndexPattern:       types.StringValue(e.IndexPattern),
 			FieldHistoryLength: types.Int64Value(int64(e.FieldHistoryLength)),
-		}
-		em.Delay = typeutils.StringishPointerValue(e.Delay)
-		em.Frequency = typeutils.StringishPointerValue(e.Frequency)
-		em.LookbackPeriod = typeutils.StringishPointerValue(e.LookbackPeriod)
-		em.Filter = typeutils.StringishPointerValue(e.Filter)
-		em.Timeout = typeutils.StringishPointerValue(e.Timeout)
-		em.TimestampField = typeutils.StringishPointerValue(e.TimestampField)
+
+			Delay:          typeutils.StringishPointerValue(e.Delay),
+			Frequency:      typeutils.StringishPointerValue(e.Frequency),
+			LookbackPeriod: typeutils.StringishPointerValue(e.LookbackPeriod),
+			Filter:         typeutils.StringishPointerValue(e.Filter),
+			Timeout:        typeutils.StringishPointerValue(e.Timeout),
+			TimestampField: typeutils.StringishPointerValue(e.TimestampField)}
 		if e.Error != nil {
 			em.ErrorAction = types.StringValue(e.Error.Action)
 			em.ErrorMessage = types.StringValue(e.Error.Message)

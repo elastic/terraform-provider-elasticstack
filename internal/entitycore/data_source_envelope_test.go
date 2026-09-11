@@ -301,9 +301,7 @@ func TestKibanaConnectionField_stateRoundTrip(t *testing.T) {
 	model := struct {
 		KibanaConnectionField
 	}{
-		KibanaConnectionField: KibanaConnectionField{
-			KibanaConnection: providerschema.KibanaConnectionNullList(),
-		},
+		KibanaConnection: providerschema.KibanaConnectionNullList(),
 	}
 
 	diags := state.Set(ctx, &model)

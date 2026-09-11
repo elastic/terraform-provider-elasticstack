@@ -19,6 +19,7 @@ package elasticdefendintegrationpolicy
 
 import (
 	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -54,17 +55,17 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 		return req, d
 	}
 
-	if !model.Description.IsNull() && !model.Description.IsUnknown() {
+	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
 	}
 
-	if !model.Force.IsNull() && !model.Force.IsUnknown() {
+	if typeutils.IsKnown(model.Force) {
 		req.Force = model.Force.ValueBoolPointer()
 	}
 
 	// Build bootstrap input config: _config.value.endpointConfig.preset
 	config := map[string]policyshape.TypedVarEntry{}
-	if !model.Preset.IsNull() && !model.Preset.IsUnknown() && model.Preset.ValueString() != "" {
+	if typeutils.IsKnown(model.Preset) && model.Preset.ValueString() != "" {
 		config["_config"] = policyshape.TypedVarEntry{Value: map[string]any{
 			"type": endpointPackageName,
 			"endpointConfig": map[string]any{
@@ -115,11 +116,11 @@ func buildFinalizeRequest(
 		return req, d
 	}
 
-	if !model.Description.IsNull() && !model.Description.IsUnknown() {
+	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
 	}
 
-	if !model.Force.IsNull() && !model.Force.IsUnknown() {
+	if typeutils.IsKnown(model.Force) {
 		req.Force = model.Force.ValueBoolPointer()
 	}
 
@@ -164,7 +165,7 @@ func buildFinalizeInputConfig(
 
 	// integration_config with preset — only include when preset is set
 	preset := ""
-	if !model.Preset.IsNull() && !model.Preset.IsUnknown() {
+	if typeutils.IsKnown(model.Preset) {
 		preset = model.Preset.ValueString()
 	}
 	if preset != "" {
@@ -254,7 +255,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 
 	win := map[string]any{}
 
-	if !wm.Events.IsNull() && !wm.Events.IsUnknown() {
+	if typeutils.IsKnown(wm.Events) {
 		var em windowsEventsModel
 		d = wm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -273,7 +274,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win["events"] = events
 	}
 
-	if !wm.Malware.IsNull() && !wm.Malware.IsUnknown() {
+	if typeutils.IsKnown(wm.Malware) {
 		var mm malwareFullModel
 		d = wm.Malware.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -288,7 +289,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win["malware"] = malware
 	}
 
-	if !wm.Ransomware.IsNull() && !wm.Ransomware.IsUnknown() {
+	if typeutils.IsKnown(wm.Ransomware) {
 		var rm protectionModeModel
 		d = wm.Ransomware.As(ctx, &rm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -301,7 +302,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrRansomware] = ransomware
 	}
 
-	if !wm.MemoryProtection.IsNull() && !wm.MemoryProtection.IsUnknown() {
+	if typeutils.IsKnown(wm.MemoryProtection) {
 		var mm protectionModeModel
 		d = wm.MemoryProtection.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -314,7 +315,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win["memory_protection"] = memProt
 	}
 
-	if !wm.BehaviorProtection.IsNull() && !wm.BehaviorProtection.IsUnknown() {
+	if typeutils.IsKnown(wm.BehaviorProtection) {
 		var bm behaviorProtectionModel
 		d = wm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -328,7 +329,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win["behavior_protection"] = behProt
 	}
 
-	if !wm.Popup.IsNull() && !wm.Popup.IsUnknown() {
+	if typeutils.IsKnown(wm.Popup) {
 		var pm windowsPopupModel
 		d = wm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -343,7 +344,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrPopup] = popup
 	}
 
-	if !wm.Logging.IsNull() && !wm.Logging.IsUnknown() {
+	if typeutils.IsKnown(wm.Logging) {
 		var lm loggingModel
 		d = wm.Logging.As(ctx, &lm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -355,7 +356,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win["logging"] = logging
 	}
 
-	if !wm.AntivirusRegistration.IsNull() && !wm.AntivirusRegistration.IsUnknown() {
+	if typeutils.IsKnown(wm.AntivirusRegistration) {
 		var am antivirusRegistrationModel
 		d = wm.AntivirusRegistration.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -368,7 +369,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win["antivirus_registration"] = avr
 	}
 
-	if !wm.AttackSurfaceReduction.IsNull() && !wm.AttackSurfaceReduction.IsUnknown() {
+	if typeutils.IsKnown(wm.AttackSurfaceReduction) {
 		var am attackSurfaceReductionModel
 		d = wm.AttackSurfaceReduction.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -376,7 +377,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		asr := map[string]any{}
-		if !am.CredentialHardening.IsNull() && !am.CredentialHardening.IsUnknown() {
+		if typeutils.IsKnown(am.CredentialHardening) {
 			var cm credentialHardeningModel
 			d = am.CredentialHardening.As(ctx, &cm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 			diags.Append(d...)
@@ -408,7 +409,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 
 	mac := map[string]any{}
 
-	if !mm.Events.IsNull() && !mm.Events.IsUnknown() {
+	if typeutils.IsKnown(mm.Events) {
 		var em macEventsModel
 		d = mm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -422,7 +423,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac["events"] = events
 	}
 
-	if !mm.Malware.IsNull() && !mm.Malware.IsUnknown() {
+	if typeutils.IsKnown(mm.Malware) {
 		var malwareModel malwareFullModel
 		d = mm.Malware.As(ctx, &malwareModel, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -437,7 +438,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac["malware"] = malware
 	}
 
-	if !mm.MemoryProtection.IsNull() && !mm.MemoryProtection.IsUnknown() {
+	if typeutils.IsKnown(mm.MemoryProtection) {
 		var pm protectionModeModel
 		d = mm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -450,7 +451,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac["memory_protection"] = memProt
 	}
 
-	if !mm.BehaviorProtection.IsNull() && !mm.BehaviorProtection.IsUnknown() {
+	if typeutils.IsKnown(mm.BehaviorProtection) {
 		var bm behaviorProtectionModel
 		d = mm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -464,7 +465,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac["behavior_protection"] = behProt
 	}
 
-	if !mm.Popup.IsNull() && !mm.Popup.IsUnknown() {
+	if typeutils.IsKnown(mm.Popup) {
 		var pm macLinuxPopupModel
 		d = mm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -478,7 +479,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrPopup] = popup
 	}
 
-	if !mm.Logging.IsNull() && !mm.Logging.IsUnknown() {
+	if typeutils.IsKnown(mm.Logging) {
 		var lm loggingModel
 		d = mm.Logging.As(ctx, &lm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -508,7 +509,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 
 	linux := map[string]any{}
 
-	if !lm.Events.IsNull() && !lm.Events.IsUnknown() {
+	if typeutils.IsKnown(lm.Events) {
 		var em linuxEventsModel
 		d = lm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -524,7 +525,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux["events"] = events
 	}
 
-	if !lm.Malware.IsNull() && !lm.Malware.IsUnknown() {
+	if typeutils.IsKnown(lm.Malware) {
 		var mm malwareLinuxModel
 		d = lm.Malware.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -537,7 +538,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux["malware"] = malware
 	}
 
-	if !lm.MemoryProtection.IsNull() && !lm.MemoryProtection.IsUnknown() {
+	if typeutils.IsKnown(lm.MemoryProtection) {
 		var pm protectionModeModel
 		d = lm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -550,7 +551,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux["memory_protection"] = memProt
 	}
 
-	if !lm.BehaviorProtection.IsNull() && !lm.BehaviorProtection.IsUnknown() {
+	if typeutils.IsKnown(lm.BehaviorProtection) {
 		var bm behaviorProtectionModel
 		d = lm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -564,7 +565,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux["behavior_protection"] = behProt
 	}
 
-	if !lm.Popup.IsNull() && !lm.Popup.IsUnknown() {
+	if typeutils.IsKnown(lm.Popup) {
 		var pm macLinuxPopupModel
 		d = lm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -578,7 +579,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrPopup] = popup
 	}
 
-	if !lm.Logging.IsNull() && !lm.Logging.IsUnknown() {
+	if typeutils.IsKnown(lm.Logging) {
 		var logm loggingModel
 		d = lm.Logging.As(ctx, &logm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
@@ -596,7 +597,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 // setAgentPoliciesOnRequest populates PolicyIds / PolicyId on a request from the model.
 func setAgentPoliciesOnRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, req *kbapi.PackagePolicyRequestTypedInputs) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if !model.AgentPolicyIDs.IsNull() && !model.AgentPolicyIDs.IsUnknown() {
+	if typeutils.IsKnown(model.AgentPolicyIDs) {
 		var ids []string
 		d := model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
 		if d.HasError() {

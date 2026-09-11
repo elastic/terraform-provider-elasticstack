@@ -189,26 +189,14 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional os_types
-	if apiList.OsTypes != nil && len(*apiList.OsTypes) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, apiList.OsTypes)
-		diags.Append(d...)
-		m.OsTypes = set
-	} else if m.OsTypes.IsUnknown() {
-		m.OsTypes = types.SetNull(types.StringType)
-	}
+	osTypes, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiList.OsTypes, m.OsTypes)
+	diags.Append(d...)
+	m.OsTypes = osTypes
 
 	// Set optional tags
-	if apiList.Tags != nil && len(*apiList.Tags) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, *apiList.Tags)
-		diags.Append(d...)
-		m.Tags = set
-	} else if m.Tags.IsUnknown() {
-		// Same as os_types above (fixed in #1740): only collapse to null when
-		// the plan value was Unknown. Preserving a Known-empty Set avoids
-		// "produced inconsistent result after apply: .tags: was null, but now
-		// ..." when config sets `tags = []`.
-		m.Tags = types.SetNull(types.StringType)
-	}
+	tags, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiList.Tags, m.Tags)
+	diags.Append(d...)
+	m.Tags = tags
 
 	// Set optional meta
 	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)

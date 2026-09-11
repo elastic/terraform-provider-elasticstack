@@ -71,6 +71,46 @@ func TestAccDataSourceIngestProcessorReroute(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteOnFailure),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("dataset_only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "dataset", "metrics"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "namespace"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "description", "Route metrics by dataset"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteDatasetOnly),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("namespace_only"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "dataset"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "namespace", "staging"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "if", "ctx.event?.dataset == 'staging'"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteNamespaceOnly),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "destination", "logs-multi-default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "ignore_failure", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "tag", "reroute-multi-failure"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.0", `{"set":{"field":"error.message","value":"reroute failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "on_failure.1", `{"remove":{"field":"error.stack_trace"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_reroute.test", "json", expectedJSONRerouteMultiOnFailure),
+				),
+			},
 		},
 	})
 }
@@ -106,5 +146,42 @@ const expectedJSONRerouteOnFailure = `{
 			}
 		],
 		"destination": "logs-fallback-default"
+	}
+}`
+
+const expectedJSONRerouteDatasetOnly = `{
+	"reroute": {
+		"description": "Route metrics by dataset",
+		"ignore_failure": false,
+		"dataset": "metrics"
+	}
+}`
+
+const expectedJSONRerouteNamespaceOnly = `{
+	"reroute": {
+		"if": "ctx.event?.dataset == 'staging'",
+		"ignore_failure": false,
+		"namespace": "staging"
+	}
+}`
+
+const expectedJSONRerouteMultiOnFailure = `{
+	"reroute": {
+		"ignore_failure": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "reroute failed"
+				}
+			},
+			{
+				"remove": {
+					"field": "error.stack_trace"
+				}
+			}
+		],
+		"tag": "reroute-multi-failure",
+		"destination": "logs-multi-default"
 	}
 }`

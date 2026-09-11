@@ -13,7 +13,13 @@ variable "workflow_tool_id" {
   type        = string
 }
 
+variable "index_search_tool_id" {
+  description = "The index_search tool ID"
+  type        = string
+}
+
 provider "elasticstack" {
+  elasticsearch {}
   kibana {}
 }
 
@@ -56,12 +62,32 @@ resource "elasticstack_kibana_agentbuilder_tool" "workflow" {
   })
 }
 
+resource "elasticstack_elasticsearch_index" "test_index" {
+  name                = "agentbuilder-test-${var.index_search_tool_id}"
+  deletion_protection = false
+}
+
+resource "elasticstack_kibana_agentbuilder_tool" "index_search" {
+  depends_on = [elasticstack_elasticsearch_index.test_index]
+
+  tool_id     = var.index_search_tool_id
+  type        = "index_search"
+  description = "Test index search tool"
+  configuration = jsonencode({
+    pattern = "agentbuilder-test-*"
+  })
+}
+
 resource "elasticstack_kibana_agentbuilder_agent" "test" {
   agent_id     = var.agent_id
   name         = "Test Agent With Tools"
-  description  = "Agent with esql and workflow tools"
+  description  = "Agent with esql, workflow, and index_search tools"
   instructions = "Use the available tools to help answer questions."
-  tools        = [elasticstack_kibana_agentbuilder_tool.esql.tool_id, elasticstack_kibana_agentbuilder_tool.workflow.tool_id]
+  tools = [
+    elasticstack_kibana_agentbuilder_tool.esql.tool_id,
+    elasticstack_kibana_agentbuilder_tool.workflow.tool_id,
+    elasticstack_kibana_agentbuilder_tool.index_search.tool_id,
+  ]
 }
 
 data "elasticstack_kibana_agentbuilder_agent" "test" {

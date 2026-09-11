@@ -43,7 +43,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	}
 
 	useExisting := false
-	if !planModel.UseExisting.IsNull() && !planModel.UseExisting.IsUnknown() {
+	if typeutils.IsKnown(planModel.UseExisting) {
 		useExisting = planModel.UseExisting.ValueBool()
 	}
 

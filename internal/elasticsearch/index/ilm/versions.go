@@ -36,4 +36,10 @@ var RolloverMinConditionsMinSupportedVersion = version.Must(version.NewVersion("
 // MaxPrimaryShardDocsMinSupportedVersion is the minimum Elasticsearch version for max_primary_shard_docs.
 var MaxPrimaryShardDocsMinSupportedVersion = version.Must(version.NewVersion("8.2.0"))
 
+// SearchableSnapshotForceMergeOnCloneMinSupportedVersion is the minimum
+// Elasticsearch version that accepts searchable_snapshot.force_merge_on_clone.
+// The field landed in elastic/elasticsearch#137375 (v9.2.1 / v9.3.0); 9.2.0
+// servers do not parse it.
+var SearchableSnapshotForceMergeOnCloneMinSupportedVersion = version.Must(version.NewVersion("9.2.1"))
+
 var supportedIlmPhases = [...]string{ilmPhaseHot, ilmPhaseWarm, ilmPhaseCold, ilmPhaseFrozen, ilmPhaseDelete}

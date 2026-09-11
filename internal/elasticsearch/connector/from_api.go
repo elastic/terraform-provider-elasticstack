@@ -51,19 +51,19 @@ func PopulateCoreConnectorFieldsFromAPI(
 	resp *getconnector.Response,
 	diags *diag.Diagnostics,
 ) CoreConnectorFields {
-	f := CoreConnectorFields{IsNative: fwtypes.BoolValue(resp.IsNative)}
+	f := CoreConnectorFields{IsNative: fwtypes.BoolValue(resp.IsNative),
 
-	f.ServiceType = typeutils.StringishPointerValue(resp.ServiceType)
-	f.Name = typeutils.StringishPointerValue(resp.Name)
-	f.Description = typeutils.StringishPointerValue(resp.Description)
-	f.IndexName = typeutils.StringishPointerValue(resp.IndexName)
-	f.Language = typeutils.StringishPointerValue(resp.Language)
-	f.APIKeyID = typeutils.StringishPointerValue(resp.ApiKeyId)
-	f.APIKeySecretID = typeutils.StringishPointerValue(resp.ApiKeySecretId)
+		ServiceType:    typeutils.StringishPointerValue(resp.ServiceType),
+		Name:           typeutils.StringishPointerValue(resp.Name),
+		Description:    typeutils.StringishPointerValue(resp.Description),
+		IndexName:      typeutils.StringishPointerValue(resp.IndexName),
+		Language:       typeutils.StringishPointerValue(resp.Language),
+		APIKeyID:       typeutils.StringishPointerValue(resp.ApiKeyId),
+		APIKeySecretID: typeutils.StringishPointerValue(resp.ApiKeySecretId),
 
-	f.Pipeline = PopulatePipelineFromAPI(ctx, resp.Pipeline, diags)
-	f.Scheduling = PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags)
-	f.Features = PopulateFeaturesFromAPI(ctx, resp.Features, diags)
+		Pipeline:   PopulatePipelineFromAPI(ctx, resp.Pipeline, diags),
+		Scheduling: PopulateSchedulingFromAPI(ctx, resp.Scheduling, diags),
+		Features:   PopulateFeaturesFromAPI(ctx, resp.Features, diags)}
 
 	return f
 }

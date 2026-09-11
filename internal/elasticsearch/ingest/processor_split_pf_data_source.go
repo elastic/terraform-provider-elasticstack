@@ -44,17 +44,12 @@ func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.Separator) {
 		body.Separator = m.Separator.ValueString()
 	}
-	if m.PreserveTrailing.IsNull() || m.PreserveTrailing.IsUnknown() {
-		m.PreserveTrailing = types.BoolValue(false)
-		body.PreserveTrailing = false
-	} else {
-		body.PreserveTrailing = m.PreserveTrailing.ValueBool()
-	}
+	body.PreserveTrailing = typeutils.BoolDefault(&m.PreserveTrailing, false)
 
 	return body, diags
 }
@@ -62,14 +57,6 @@ func (m *processorSplitModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorSplitDataSource returns a PF data source for the split processor.
 func NewProcessorSplitDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to split",
 			Required:    true,

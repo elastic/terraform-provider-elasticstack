@@ -4,6 +4,9 @@ imports:
   - shared/elastic-stack.md
 name: Code Factory Issue Intake
 timeout-minutes: 65
+sandbox:
+  agent:
+    runtime: docker-sudo-iptables
 description: >-
   Reacts to trusted qualifying `code-factory` issue events or internal workflow dispatch requests,
   suppresses duplicate linked pull requests, and delegates implementation to an agent that creates
@@ -324,6 +327,8 @@ tools:
     toolsets: [issues, pull_requests, repos]
 network:
   allowed: [defaults, node, go, openrouter.ai, www.elastic.co]
+env:
+  CHECKPOINT_DISABLE: "1"
 mcp-servers:
   elastic-docs:
     url: "https://www.elastic.co/docs/_mcp/"
@@ -369,6 +374,7 @@ ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
 ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
 KIBANA_ENDPOINT=http://host.docker.internal:5602 \
+CHECKPOINT_DISABLE=1 \
 TF_ACC=1 \
 go test -v -run TestAccResourceName ./path/to/package
 ```

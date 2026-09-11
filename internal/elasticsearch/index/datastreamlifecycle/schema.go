@@ -30,6 +30,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
+const attrName = "name"
+
 // getSchemaFactory returns the schema for the data stream lifecycle resource
 // without the elasticsearch_connection block; the envelope injects that block.
 func getSchemaFactory(_ context.Context) schema.Schema {
@@ -41,9 +43,10 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					idSetUnknownIfNameChanged(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "Name of the data stream. Supports wildcards.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{

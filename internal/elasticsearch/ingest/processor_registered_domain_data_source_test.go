@@ -94,6 +94,30 @@ func TestAccDataSourceIngestProcessorRegisteredDomain(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "json", expectedJSONRegisteredDomainTargetFieldOmitted),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("target_field_empty_string"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "field", "fqdn"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "target_field", ""),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "ignore_failure", "false"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "json", expectedJSONRegisteredDomainTargetFieldEmptyString),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure_multiple"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "field", "fqdn"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "on_failure.0", `{"set":{"field":"error.message","value":"registered domain failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "on_failure.1", `{"remove":{"field":"fqdn"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_registered_domain.test", "json", expectedJSONRegisteredDomainOnFailureMultiple),
+				),
+			},
 		},
 	})
 }
@@ -152,5 +176,34 @@ const expectedJSONRegisteredDomainTargetFieldOmitted = `{
 		"field": "host.name",
 		"ignore_failure": false,
 		"ignore_missing": false
+	}
+}`
+
+const expectedJSONRegisteredDomainTargetFieldEmptyString = `{
+	"registered_domain": {
+		"field": "fqdn",
+		"ignore_failure": false,
+		"ignore_missing": false
+	}
+}`
+
+const expectedJSONRegisteredDomainOnFailureMultiple = `{
+	"registered_domain": {
+		"field": "fqdn",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "registered domain failed"
+				}
+			},
+			{
+				"remove": {
+					"field": "fqdn"
+				}
+			}
+		]
 	}
 }`

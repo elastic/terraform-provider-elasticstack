@@ -39,59 +39,59 @@ func readEntityStoreEntitiesDataSource(
 	client *clients.KibanaScopedClient,
 	model dsModel,
 ) (dsModel, diag.Diagnostics) {
-	spaceID := entity.NormalizeSpaceID(model.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(model.SpaceID)
 
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
 	var diags diag.Diagnostics
 
-	if !model.EntityID.IsNull() && !model.EntityID.IsUnknown() && model.EntityID.ValueString() != "" {
+	if typeutils.IsKnown(model.EntityID) && model.EntityID.ValueString() != "" {
 		filter := fmt.Sprintf(`entity.id:%s`, entity.QuoteKQLString(model.EntityID.ValueString()))
 		params.Filter = &filter
-	} else if !model.Filter.IsNull() && !model.Filter.IsUnknown() {
+	} else if typeutils.IsKnown(model.Filter) {
 		f := model.Filter.ValueString()
 		params.Filter = &f
 	}
 
-	if !model.Size.IsNull() && !model.Size.IsUnknown() {
+	if typeutils.IsKnown(model.Size) {
 		params.Size = typeutils.OptionalInt(model.Size)
 	}
-	if !model.SearchAfter.IsNull() && !model.SearchAfter.IsUnknown() {
+	if typeutils.IsKnown(model.SearchAfter) {
 		sa := model.SearchAfter.ValueString()
 		params.SearchAfter = &sa
 	}
-	if !model.Source.IsNull() && !model.Source.IsUnknown() {
+	if typeutils.IsKnown(model.Source) {
 		src := typeutils.ListTypeToSliceString(ctx, model.Source, path.Root("source"), &diags)
 		if diags.HasError() {
 			return model, diags
 		}
 		params.Source = &src
 	}
-	if !model.Fields.IsNull() && !model.Fields.IsUnknown() {
+	if typeutils.IsKnown(model.Fields) {
 		f := typeutils.ListTypeToSliceString(ctx, model.Fields, path.Root("fields"), &diags)
 		if diags.HasError() {
 			return model, diags
 		}
 		params.Fields = &f
 	}
-	if !model.SortField.IsNull() && !model.SortField.IsUnknown() {
+	if typeutils.IsKnown(model.SortField) {
 		sf := model.SortField.ValueString()
 		params.SortField = &sf
 	}
-	if !model.SortOrder.IsNull() && !model.SortOrder.IsUnknown() {
+	if typeutils.IsKnown(model.SortOrder) {
 		so := kbapi.GetSecurityEntityStoreEntitiesParamsSortOrder(model.SortOrder.ValueString())
 		params.SortOrder = &so
 	}
-	if !model.Page.IsNull() && !model.Page.IsUnknown() {
+	if typeutils.IsKnown(model.Page) {
 		params.Page = typeutils.OptionalInt(model.Page)
 	}
-	if !model.PerPage.IsNull() && !model.PerPage.IsUnknown() {
+	if typeutils.IsKnown(model.PerPage) {
 		params.PerPage = typeutils.OptionalInt(model.PerPage)
 	}
-	if !model.FilterQuery.IsNull() && !model.FilterQuery.IsUnknown() {
+	if typeutils.IsKnown(model.FilterQuery) {
 		fq := model.FilterQuery.ValueString()
 		params.FilterQuery = &fq
 	}
-	if !model.EntityTypes.IsNull() && !model.EntityTypes.IsUnknown() {
+	if typeutils.IsKnown(model.EntityTypes) {
 		entityTypes := expandEntityTypesSet(model.EntityTypes)
 		params.EntityTypes = &entityTypes
 	}
@@ -150,11 +150,11 @@ func expandEntityTypesSet(s types.Set) []kbapi.GetSecurityEntityStoreEntitiesPar
 	if s.IsNull() || s.IsUnknown() {
 		return nil
 	}
-	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(s.Elements()))
-	for _, v := range s.Elements() {
-		if str, ok := v.(types.String); ok {
-			result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str.ValueString()))
-		}
+	var diags diag.Diagnostics
+	strs := typeutils.StringElements(s, &diags)
+	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(strs))
+	for _, str := range strs {
+		result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str))
 	}
 	return result
 }

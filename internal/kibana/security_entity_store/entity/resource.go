@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
@@ -39,6 +38,7 @@ var (
 
 type Resource struct {
 	*entitycore.KibanaResource[tfModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -54,18 +54,14 @@ func newResource() *Resource {
 				Delete: deleteEntity,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(
+			path.Root("id"), path.Root("space_id"), path.Root("entity_id"),
+		).DefaultSpaceID(clients.DefaultSpaceID),
 	}
 }
 
 func NewResource() resource.Resource {
 	return newResource()
-}
-
-func NormalizeSpaceID(v types.String) string {
-	if v.IsNull() || v.IsUnknown() {
-		return clients.DefaultSpaceID
-	}
-	return clients.EffectiveSpaceID(v.ValueString())
 }
 
 // ValidateConfig implements resource.ResourceWithValidateConfig.
@@ -82,13 +78,13 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 		return
 	}
 
-	if !model.Entity.IsNull() && !model.Entity.IsUnknown() {
+	if typeutils.IsKnown(model.Entity) {
 		var entityModel entityBlockModel
 		resp.Diagnostics.Append(model.Entity.As(ctx, &entityModel, basetypes.ObjectAsOptions{})...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		if !entityModel.ID.IsNull() && !entityModel.ID.IsUnknown() && entityModel.ID.ValueString() != entityID {
+		if typeutils.IsKnown(entityModel.ID) && entityModel.ID.ValueString() != entityID {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("entity_id"),
 				"entity_id mismatch",
@@ -113,32 +109,30 @@ func (r *Resource) ValidateConfig(ctx context.Context, req resource.ValidateConf
 }
 
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.SplitN(req.ID, "/", 2)
-	if len(parts) != 2 {
+	composite, diags := clients.CompositeIDFromStr(req.ID)
+	if diags.HasError() {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
 			"Import ID must be in the format <space_id>/<entity_id>",
 		)
 		return
 	}
-	spaceID := parts[0]
-	entityID := parts[1]
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+
 	// Derive entity_type from entity ID prefix (e.g., "host:web-01" -> "host")
-	entityType := ""
-	if idx := strings.Index(entityID, ":"); idx > 0 {
-		entityType = entityID[:idx]
-	} else {
+	// before writing any attributes so failed imports leave state untouched.
+	idx := strings.Index(composite.ResourceID, ":")
+	if idx <= 0 {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
-			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", entityID),
+			fmt.Sprintf("Entity ID %q must contain a type prefix (e.g., \"host:web-01\").", composite.ResourceID),
 		)
 		return
 	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_id"), entityID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), entityType)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+
+	r.SeedState(ctx, resp, req.ID, composite)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("entity_type"), composite.ResourceID[:idx])...)
 }

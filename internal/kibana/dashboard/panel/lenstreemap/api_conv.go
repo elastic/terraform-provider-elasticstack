@@ -301,31 +301,27 @@ func treemapConfigToAPINoESQL(m *models.TreemapConfigModel) (kbapi.KibanaHTTPAPI
 		diags.AddError("Missing group_by_json", "treemap_config.group_by_json must be provided")
 		return api, diags
 	}
-	var groupBy []kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_GroupBy_Item
-	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
+	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &api.GroupBy); err != nil {
 		diags.AddError("Failed to unmarshal group_by", err.Error())
 		return api, diags
 	}
-	if len(groupBy) == 0 {
+	if api.GroupBy == nil || len(*api.GroupBy) == 0 {
 		diags.AddError("Invalid group_by_json", "treemap_config.group_by_json must contain at least one item")
 		return api, diags
 	}
-	api.GroupBy = &groupBy
 
 	if m.Metrics.IsNull() {
 		diags.AddError("Missing metrics_json", "treemap_config.metrics_json must be provided")
 		return api, diags
 	}
-	var metrics []kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel_Metrics_Item
-	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &metrics); err != nil {
+	if err := json.Unmarshal([]byte(m.Metrics.ValueString()), &api.Metrics); err != nil {
 		diags.AddError("Failed to unmarshal metrics", err.Error())
 		return api, diags
 	}
-	if len(metrics) == 0 {
+	if len(api.Metrics) == 0 {
 		diags.AddError("Invalid metrics_json", "treemap_config.metrics_json must contain at least one item")
 		return api, diags
 	}
-	api.Metrics = metrics
 
 	if m.Query == nil {
 		diags.AddError("Missing query", "treemap_config.query is required for non-ES|QL treemap charts")

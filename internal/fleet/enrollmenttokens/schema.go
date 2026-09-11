@@ -21,6 +21,8 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 )
 
 func getDataSourceSchema(_ context.Context) dsschema.Schema {
@@ -35,10 +37,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Description: policyIDDescription,
 				Optional:    true,
 			},
-			"space_id": dsschema.StringAttribute{
-				Description: spaceIDDescription,
-				Optional:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"tokens": dsschema.ListNestedAttribute{
 				Description: "A list of enrollment tokens.",
 				Computed:    true,

@@ -171,17 +171,11 @@ The initial implementation SHALL NOT expose the Fleet download source `auth` and
 
 ### Requirement: Minimum Kibana version guard
 
-The resource SHALL be guarded by a minimum Kibana/Fleet version that supports the Agent Binary Download Sources API. If the connected Kibana is below that version, the provider SHALL emit a clear diagnostic during Create, Read, or Update indicating that the resource is not supported. Version enforcement is not required on Delete.
+The resource SHALL be guarded by a minimum Kibana/Fleet version that supports the Agent Binary Download Sources API. If the connected Kibana is below that version, the provider SHALL emit a clear diagnostic during Create, Read, Update, or Delete indicating that the resource is not supported, consistent with the shared `KibanaResource[T]` envelope's uniform version enforcement across all lifecycle operations.
 
 #### Scenario: Unsupported stack version
 
 - **WHEN** the connected Kibana is below the supported minimum version
-- **AND** the operation is Create, Read, or Update
+- **AND** the operation is Create, Read, Update, or Delete
 - **THEN** the provider SHALL emit a diagnostic that the resource is not supported on this version
-
-#### Scenario: Delete on unsupported version
-
-- **WHEN** the connected Kibana is below the supported minimum version
-- **AND** the operation is Delete
-- **THEN** the provider SHALL proceed with the delete without a version diagnostic
 

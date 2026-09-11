@@ -20,34 +20,17 @@ package agentbuilderskill
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateSkill(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[skillModel]) (entitycore.KibanaWriteResult[skillModel], diag.Diagnostics) {
-	plan := req.Plan
-	var diags diag.Diagnostics
-
-	body, d := plan.toAPIUpdateModel(ctx)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[skillModel]{}, diags
-	}
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	_, d = kibanaoapi.UpdateSkill(ctx, oapiClient, req.SpaceID, req.WriteID, body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[skillModel]{}, diags
-	}
-
-	// SpaceID is set explicitly so the returned model carries the resolved
-	// space for the envelope's read-after-write step.
-	plan.SpaceID = types.StringValue(req.SpaceID)
-
-	return entitycore.KibanaWriteResult[skillModel]{Model: plan}, diags
-}
+var updateSkill = entitycore.SimpleKibanaUpdate[skillModel, kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody, models.Skill](
+	func(plan skillModel, ctx context.Context, _ string) (kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody, diag.Diagnostics) {
+		return plan.toAPIUpdateModel(ctx)
+	},
+	kibanaoapi.UpdateSkill,
+	(*skillModel).setWriteSpaceID,
+)

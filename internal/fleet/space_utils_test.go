@@ -31,10 +31,9 @@ import (
 // TestSpaceIDFromSet tests the helper that extracts the create-time space from a space_ids set.
 func TestSpaceIDFromSet(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    types.Set
-		wantID   string
-		wantDiag bool
+		name   string
+		input  types.Set
+		wantID string
 	}{
 		{
 			name:   "null set returns empty string",
@@ -52,8 +51,21 @@ func TestSpaceIDFromSet(t *testing.T) {
 			wantID: "",
 		},
 		{
+			name:   "set with only empty string returns empty string",
+			input:  types.SetValueMust(types.StringType, []attr.Value{types.StringValue("")}),
+			wantID: "",
+		},
+		{
 			name:   "single space ID is returned",
 			input:  types.SetValueMust(types.StringType, []attr.Value{types.StringValue("my-space")}),
+			wantID: "my-space",
+		},
+		{
+			name: "empty string elements are skipped",
+			input: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue(""),
+				types.StringValue("my-space"),
+			}),
 			wantID: "my-space",
 		},
 		{
@@ -70,13 +82,7 @@ func TestSpaceIDFromSet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, diags := SpaceIDFromSet(t.Context(), tt.input)
-			if tt.wantDiag && !diags.HasError() {
-				t.Errorf("SpaceIDFromSet() expected diagnostics but got none")
-			}
-			if !tt.wantDiag && diags.HasError() {
-				t.Errorf("SpaceIDFromSet() unexpected diagnostics: %v", diags)
-			}
+			got := SpaceIDFromSet(tt.input)
 
 			if tt.name == "multiple space IDs returns the first" {
 				// With sets, order is non-deterministic; just verify returned value is one of the inputs.
@@ -89,6 +95,66 @@ func TestSpaceIDFromSet(t *testing.T) {
 
 			if got != tt.wantID {
 				t.Errorf("SpaceIDFromSet() = %q, want %q", got, tt.wantID)
+			}
+		})
+	}
+}
+
+// TestSpaceIDFromSetOrDefault tests the helper shared by Fleet resource models'
+// GetSpaceID methods, which only differ in their fallback value.
+func TestSpaceIDFromSetOrDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    types.Set
+		fallback string
+		want     string
+	}{
+		{
+			name:     "null set returns fallback",
+			input:    types.SetNull(types.StringType),
+			fallback: "default",
+			want:     "default",
+		},
+		{
+			name:     "unknown set returns fallback",
+			input:    types.SetUnknown(types.StringType),
+			fallback: "default",
+			want:     "default",
+		},
+		{
+			name:     "empty set returns fallback",
+			input:    types.SetValueMust(types.StringType, []attr.Value{}),
+			fallback: "",
+			want:     "",
+		},
+		{
+			name:     "set with only empty string returns fallback",
+			input:    types.SetValueMust(types.StringType, []attr.Value{types.StringValue("")}),
+			fallback: "fallback-value",
+			want:     "fallback-value",
+		},
+		{
+			name:     "single space ID is returned",
+			input:    types.SetValueMust(types.StringType, []attr.Value{types.StringValue("my-space")}),
+			fallback: "default",
+			want:     "my-space",
+		},
+		{
+			name: "empty string elements are skipped",
+			input: types.SetValueMust(types.StringType, []attr.Value{
+				types.StringValue(""),
+				types.StringValue("my-space"),
+			}),
+			fallback: "default",
+			want:     "my-space",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SpaceIDFromSetOrDefault(tt.input, tt.fallback)
+			if got.ValueString() != tt.want {
+				t.Errorf("SpaceIDFromSetOrDefault() = %q, want %q", got.ValueString(), tt.want)
 			}
 		})
 	}

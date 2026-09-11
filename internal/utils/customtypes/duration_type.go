@@ -19,8 +19,8 @@ package customtypes
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -47,13 +47,7 @@ func (t DurationType) ValueType(_ context.Context) attr.Value {
 
 // Equal returns true if the given type is equivalent.
 func (t DurationType) Equal(o attr.Type) bool {
-	other, ok := o.(DurationType)
-
-	if !ok {
-		return false
-	}
-
-	return t.StringType.Equal(other.StringType)
+	return typeutils.StringTypableEqual[DurationType](o)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
@@ -66,20 +60,5 @@ func (t DurationType) ValueFromString(_ context.Context, in basetypes.StringValu
 // ValueFromTerraform returns a Value given a tftypes.Value.  This is meant to convert the tftypes.Value into a more convenient Go type
 // for the provider to consume the data with.
 func (t DurationType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	stringValue, ok := attrValue.(basetypes.StringValue)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	stringValuable, diags := t.ValueFromString(ctx, stringValue)
-	if diags.HasError() {
-		return nil, fmt.Errorf("unexpected error converting StringValue to StringValuable: %v", diags)
-	}
-
-	return stringValuable, nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }

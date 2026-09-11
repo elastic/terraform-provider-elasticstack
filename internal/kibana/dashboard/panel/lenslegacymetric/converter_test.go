@@ -91,13 +91,11 @@ func TestConverter_BuildAttributes_PopulateFromAttributes_roundTrip_NoESQL(t *te
 	ctx := t.Context()
 	var c converter
 	cfg := &models.LegacyMetricConfigModel{
-		LensChartBaseTFModel: models.LensChartBaseTFModel{
-			Title:               types.StringValue("Hello Legacy"),
-			Description:         types.StringValue("desc"),
-			IgnoreGlobalFilters: types.BoolValue(true),
-			Sampling:            types.Float64Value(0.25),
-			DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
-		},
+		Title:               types.StringValue("Hello Legacy"),
+		Description:         types.StringValue("desc"),
+		IgnoreGlobalFilters: types.BoolValue(true),
+		Sampling:            types.Float64Value(0.25),
+		DataSourceJSON:      jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
 		Query: &models.FilterSimpleModel{
 			Language:   types.StringValue("kql"),
 			Expression: types.StringValue("*"),

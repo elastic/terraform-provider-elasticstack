@@ -44,47 +44,24 @@ func BuildConfig(pm models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardPa
 
 // PopulateFromAPI maps the Kibana API panel config into Terraform panel state while preserving
 // prior null intent (REQ-009). prior is the prior TF state/plan panel, or nil on import.
+//
+// pm always arrives with AiopsLogRateAnalysisConfig unset (callers build state from a zero-valued
+// PanelModel to avoid aliasing plan pointers), so that field cannot be used to detect whether this
+// panel was previously this same type. prior.AiopsLogRateAnalysisConfig is the only reliable signal:
+// non-nil means the panel was already this type and its null intent must be honored; nil means
+// there is no prior null intent for this config block (creation, import, or a type change).
 func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, api kbapi.KibanaHTTPAPIsAiopsLogRateAnalysis) diag.Diagnostics {
-	// On import (prior == nil): populate required fields unconditionally; optional fields only when API non-nil.
-	if prior == nil {
+	if prior == nil || prior.AiopsLogRateAnalysisConfig == nil {
 		pm.AiopsLogRateAnalysisConfig = aiopsLogRateAnalysisConfigFromAPIImport(api)
 		return nil
 	}
 
-	// Type-change recovery: the plan dropped this config block but prior still has it.
-	// Rebuild entirely from the API and skip null-preservation, since there is no
-	// current-plan null intent to honor.
-	if pm.AiopsLogRateAnalysisConfig == nil && prior.AiopsLogRateAnalysisConfig != nil {
-		pm.AiopsLogRateAnalysisConfig = aiopsLogRateAnalysisConfigFromAPIImport(api)
-		return nil
-	}
-
-	existing := pm.AiopsLogRateAnalysisConfig
-	if existing == nil {
-		return nil
-	}
-
-	// Required field always updates from the API.
-	existing.DataViewID = types.StringValue(api.DataViewId)
-
-	// Optional fields: only update from API when already known in state (REQ-009 null-preservation).
-	panelkit.ApplyPresentationFromAPI(&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder,
-		api.Title, api.Description, api.HideTitle, api.HideBorder)
-
-	var priorTR *models.TimeRangeModel
-	if prior.AiopsLogRateAnalysisConfig != nil {
-		priorTR = prior.AiopsLogRateAnalysisConfig.TimeRange
-	}
-	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, priorTR)
-
-	if prior.AiopsLogRateAnalysisConfig != nil {
-		p := prior.AiopsLogRateAnalysisConfig
-		panelkit.NullPreservePresentationFromPrior(p.Title, p.Description, p.HideTitle, p.HideBorder,
-			&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
-		if p.TimeRange == nil {
-			existing.TimeRange = nil
-		}
-	}
+	// Same-type update: rebuild from the API, then reapply the prior config's null intent for any
+	// optional field the plan/state had not set (REQ-009 null-preservation).
+	existing := aiopsLogRateAnalysisConfigFromAPIImport(api)
+	existing.TimeRange = panelkit.MergeTimeRange(existing.TimeRange, api.TimeRange, prior.AiopsLogRateAnalysisConfig.TimeRange)
+	aiopsLogRateAnalysisPreserveNullIntentFromPrior(prior.AiopsLogRateAnalysisConfig, existing)
+	pm.AiopsLogRateAnalysisConfig = existing
 	return nil
 }
 
@@ -98,4 +75,15 @@ func aiopsLogRateAnalysisConfigFromAPIImport(api kbapi.KibanaHTTPAPIsAiopsLogRat
 	}
 	cfg.TimeRange = panelkit.TimeRangeFromAPI(api.TimeRange, nil)
 	return cfg
+}
+
+func aiopsLogRateAnalysisPreserveNullIntentFromPrior(prior, existing *models.AiopsLogRateAnalysisConfigModel) {
+	if prior == nil || existing == nil {
+		return
+	}
+	panelkit.NullPreservePresentationFromPrior(prior.Title, prior.Description, prior.HideTitle, prior.HideBorder,
+		&existing.Title, &existing.Description, &existing.HideTitle, &existing.HideBorder)
+	if prior.TimeRange == nil {
+		existing.TimeRange = nil
+	}
 }

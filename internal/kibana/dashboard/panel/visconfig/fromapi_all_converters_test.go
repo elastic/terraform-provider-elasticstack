@@ -83,7 +83,7 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 			Type:    kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable,
 			Query:   &kbapi.KibanaHTTPAPIsFilterSimple{},
 			Styling: &kbapi.KibanaHTTPAPIsDatatableStyling{Density: &kbapi.KibanaHTTPAPIsDatatableDensity{Mode: new(kbapi.KibanaHTTPAPIsDatatableDensityModeDefault)}},
-			Metrics: []kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item{},
+			Metrics: nil,
 			TimeRange: func() *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 				var tr kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
 				require.NoError(t, json.Unmarshal([]byte(`{"from":"now-7d","to":"now"}`), &tr))
@@ -176,8 +176,7 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 			Type:    kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie,
 			Query:   &kbapi.KibanaHTTPAPIsFilterSimple{Expression: "*", Language: new(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql)},
 			Styling: &kbapi.KibanaHTTPAPIsPieStyling{},
-			Metrics: []kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_Metrics_Item{},
-			GroupBy: new([]kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel_GroupBy_Item{}),
+			Metrics: nil,
 		}
 		require.NoError(t, json.Unmarshal([]byte(`{}`), &api.DataSource))
 		var v lenscommon.VisByValueConfig0

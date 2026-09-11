@@ -23,12 +23,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -138,10 +138,7 @@ func GetDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedClie
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusNotFound {
-		return nil, diags
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID)); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, fmt.Sprintf("Unable to get ML datafeed: %s", datafeedID)); notFound || d.HasError() {
 		return nil, d
 	}
 
@@ -236,7 +233,7 @@ func StopDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 		AllowNoMatch(true)
 
 	if timeout > 0 {
-		req.Timeout(durationToMsString(timeout))
+		req.Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout))
 	}
 
 	_, err := req.Do(ctx)
@@ -265,7 +262,7 @@ func StartDatafeed(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	}
 
 	if timeout > 0 {
-		req.Timeout(durationToMsString(timeout))
+		req.Timeout(typeutils.DurationToElasticsearchTimeoutString(timeout))
 	}
 
 	_, err := req.Do(ctx)

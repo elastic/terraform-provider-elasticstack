@@ -258,23 +258,17 @@ func dataLayerToAPIXyLayerNoESQL(m *models.DataLayerModel, layerType string) (kb
 	}
 
 	if typeutils.IsKnown(m.BreakdownByJSON) {
-		var bb kbapi.KibanaHTTPAPIsXyLayerNoESQL_BreakdownBy
-		diags.Append(m.BreakdownByJSON.Unmarshal(&bb)...)
-		if !diags.HasError() {
-			layer.BreakdownBy = &bb
-		}
+		diags.Append(m.BreakdownByJSON.Unmarshal(&layer.BreakdownBy)...)
 	}
 
 	if len(m.Y) > 0 {
-		layer.Y = make([]kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item, 0, len(m.Y))
+		vals := make([]jsontypes.Normalized, 0, len(m.Y))
 		for _, y := range m.Y {
-			if !typeutils.IsKnown(y.ConfigJSON) {
-				continue
+			if typeutils.IsKnown(y.ConfigJSON) {
+				vals = append(vals, y.ConfigJSON)
 			}
-			var item kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item
-			diags.Append(y.ConfigJSON.Unmarshal(&item)...)
-			layer.Y = append(layer.Y, item)
 		}
+		diags.Append(lenscommon.DecodeNormalizedJSONSlice(vals, &layer.Y)...)
 	}
 
 	return layer, diags
@@ -415,7 +409,7 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 	}
 
 	if len(m.Thresholds) > 0 {
-		items := make([]kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item, 0, len(m.Thresholds))
+		raw := make([]json.RawMessage, 0, len(m.Thresholds))
 		for _, t := range m.Thresholds {
 			if typeutils.IsKnown(t.ValueJSON) {
 				var op any
@@ -429,12 +423,7 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 					diags.AddError("Failed to marshal reference line threshold", err.Error())
 					continue
 				}
-				var item kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item
-				if err := item.UnmarshalJSON(opBytes); err != nil {
-					diags.AddError("Failed to decode reference line threshold", err.Error())
-					continue
-				}
-				items = append(items, item)
+				raw = append(raw, opBytes)
 				continue
 			}
 
@@ -448,14 +437,16 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 				diags.AddError("Failed to marshal reference line threshold", err.Error())
 				continue
 			}
-			var item kbapi.KibanaHTTPAPIsXyReferenceLineLayerNoESQL_Thresholds_Item
-			if err := item.UnmarshalJSON(thBytes); err != nil {
-				diags.AddError("Failed to decode reference line threshold", err.Error())
-				continue
-			}
-			items = append(items, item)
+			raw = append(raw, thBytes)
 		}
-		layer.Thresholds = items
+		if len(raw) > 0 {
+			b, err := json.Marshal(raw)
+			if err != nil {
+				diags.AddError("Failed to encode reference line thresholds", err.Error())
+			} else if err := json.Unmarshal(b, &layer.Thresholds); err != nil {
+				diags.AddError("Failed to decode reference line thresholds", err.Error())
+			}
+		}
 	}
 
 	return layer, diags

@@ -58,39 +58,27 @@ func datatableNoESQLConfigFromAPI(
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
 	if len(api.Metrics) > 0 {
-		m.Metrics = make([]models.DatatableMetricModel, len(api.Metrics))
-		for i, metric := range api.Metrics {
-			metricBytes, err := json.Marshal(metric)
-			mv, ok := lenscommon.WrapNormalizedJSON(metricBytes, err, "metric", &diags)
-			if !ok {
-				return diags
-			}
-			m.Metrics[i].ConfigJSON = mv
+		metrics, ok := lenscommon.PopulateNormalizedJSONSlice(api.Metrics, datatableMetricConfigOf, "metric", &diags)
+		if !ok {
+			return diags
 		}
+		m.Metrics = metrics
 	}
 
 	if api.Rows != nil && len(*api.Rows) > 0 {
-		m.Rows = make([]models.DatatableRowModel, len(*api.Rows))
-		for i, row := range *api.Rows {
-			rowBytes, err := json.Marshal(row)
-			rv, ok := lenscommon.WrapNormalizedJSON(rowBytes, err, "row", &diags)
-			if !ok {
-				return diags
-			}
-			m.Rows[i].ConfigJSON = rv
+		rows, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Rows, datatableRowConfigOf, "row", &diags)
+		if !ok {
+			return diags
 		}
+		m.Rows = rows
 	}
 
 	if api.SplitMetricsBy != nil && len(*api.SplitMetricsBy) > 0 {
-		m.SplitMetricsBy = make([]models.DatatableSplitByModel, len(*api.SplitMetricsBy))
-		for i, splitBy := range *api.SplitMetricsBy {
-			splitBytes, err := json.Marshal(splitBy)
-			sv, ok := lenscommon.WrapNormalizedJSON(splitBytes, err, "split_metrics_by", &diags)
-			if !ok {
-				return diags
-			}
-			m.SplitMetricsBy[i].ConfigJSON = sv
+		splits, ok := lenscommon.PopulateNormalizedJSONSlice(*api.SplitMetricsBy, datatableSplitByConfigOf, "split_metrics_by", &diags)
+		if !ok {
+			return diags
 		}
+		m.SplitMetricsBy = splits
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
@@ -98,6 +86,18 @@ func datatableNoESQLConfigFromAPI(
 	}
 
 	return diags
+}
+
+func datatableMetricConfigOf(m *models.DatatableMetricModel) *jsontypes.Normalized {
+	return &m.ConfigJSON
+}
+
+func datatableRowConfigOf(m *models.DatatableRowModel) *jsontypes.Normalized {
+	return &m.ConfigJSON
+}
+
+func datatableSplitByConfigOf(m *models.DatatableSplitByModel) *jsontypes.Normalized {
+	return &m.ConfigJSON
 }
 
 func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
@@ -130,39 +130,24 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
-		for i, metricModel := range m.Metrics {
-			if typeutils.IsKnown(metricModel.ConfigJSON) {
-				if err := json.Unmarshal([]byte(metricModel.ConfigJSON.ValueString()), &metrics[i]); err != nil {
-					diags.AddError("Failed to unmarshal metric", err.Error())
-					return api, diags
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, datatableMetricConfigOf, "metric", &diags) {
+			return api, diags
 		}
 		api.Metrics = metrics
 	}
 
 	if len(m.Rows) > 0 {
 		rows := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Rows_Item, len(m.Rows))
-		for i, rowModel := range m.Rows {
-			if typeutils.IsKnown(rowModel.ConfigJSON) {
-				if err := json.Unmarshal([]byte(rowModel.ConfigJSON.ValueString()), &rows[i]); err != nil {
-					diags.AddError("Failed to unmarshal row", err.Error())
-					return api, diags
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Rows, rows, datatableRowConfigOf, "row", &diags) {
+			return api, diags
 		}
 		api.Rows = &rows
 	}
 
 	if len(m.SplitMetricsBy) > 0 {
 		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_SplitMetricsBy_Item, len(m.SplitMetricsBy))
-		for i, splitModel := range m.SplitMetricsBy {
-			if typeutils.IsKnown(splitModel.ConfigJSON) {
-				if err := json.Unmarshal([]byte(splitModel.ConfigJSON.ValueString()), &splits[i]); err != nil {
-					diags.AddError("Failed to unmarshal split_metrics_by", err.Error())
-					return api, diags
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.SplitMetricsBy, splits, datatableSplitByConfigOf, "split_metrics_by", &diags) {
+			return api, diags
 		}
 		api.SplitMetricsBy = &splits
 	}
@@ -205,39 +190,27 @@ func datatableESQLConfigFromAPI(
 	}
 
 	if api.Metrics != nil && len(*api.Metrics) > 0 {
-		m.Metrics = make([]models.DatatableMetricModel, len(*api.Metrics))
-		for i, metric := range *api.Metrics {
-			metricBytes, err := json.Marshal(metric)
-			mv, ok := lenscommon.WrapNormalizedJSON(metricBytes, err, "metric", &diags)
-			if !ok {
-				return diags
-			}
-			m.Metrics[i].ConfigJSON = mv
+		metrics, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Metrics, datatableMetricConfigOf, "metric", &diags)
+		if !ok {
+			return diags
 		}
+		m.Metrics = metrics
 	}
 
 	if api.Rows != nil && len(*api.Rows) > 0 {
-		m.Rows = make([]models.DatatableRowModel, len(*api.Rows))
-		for i, row := range *api.Rows {
-			rowBytes, err := json.Marshal(row)
-			rv, ok := lenscommon.WrapNormalizedJSON(rowBytes, err, "row", &diags)
-			if !ok {
-				return diags
-			}
-			m.Rows[i].ConfigJSON = rv
+		rows, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Rows, datatableRowConfigOf, "row", &diags)
+		if !ok {
+			return diags
 		}
+		m.Rows = rows
 	}
 
 	if api.SplitMetricsBy != nil && len(*api.SplitMetricsBy) > 0 {
-		m.SplitMetricsBy = make([]models.DatatableSplitByModel, len(*api.SplitMetricsBy))
-		for i, splitBy := range *api.SplitMetricsBy {
-			splitBytes, err := json.Marshal(splitBy)
-			sv, ok := lenscommon.WrapNormalizedJSON(splitBytes, err, "split_metrics_by", &diags)
-			if !ok {
-				return diags
-			}
-			m.SplitMetricsBy[i].ConfigJSON = sv
+		splits, ok := lenscommon.PopulateNormalizedJSONSlice(*api.SplitMetricsBy, datatableSplitByConfigOf, "split_metrics_by", &diags)
+		if !ok {
+			return diags
 		}
+		m.SplitMetricsBy = splits
 	}
 
 	if !lenscommon.PopulateLensChartPresentation(ctx, &m.LensChartPresentationTFModel, prior, api.TimeRange, api.HideTitle, api.HideBorder, api.References, api.Drilldowns, &diags) {
@@ -273,13 +246,8 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 
 	if len(m.Metrics) > 0 {
 		metrics := make([]kbapi.KibanaHTTPAPIsDatatableESQLMetric, len(m.Metrics))
-		for i, metricModel := range m.Metrics {
-			if typeutils.IsKnown(metricModel.ConfigJSON) {
-				if err := json.Unmarshal([]byte(metricModel.ConfigJSON.ValueString()), &metrics[i]); err != nil {
-					diags.AddError("Failed to unmarshal metric", err.Error())
-					return api, diags
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, datatableMetricConfigOf, "metric", &diags) {
+			return api, diags
 		}
 		api.Metrics = &metrics
 	}
@@ -297,13 +265,8 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 			Visible      *bool                                                          `json:"visible,omitempty"`
 			Width        *float32                                                       `json:"width,omitempty"`
 		}, len(m.Rows))
-		for i, rowModel := range m.Rows {
-			if typeutils.IsKnown(rowModel.ConfigJSON) {
-				if err := json.Unmarshal([]byte(rowModel.ConfigJSON.ValueString()), &rows[i]); err != nil {
-					diags.AddError("Failed to unmarshal row", err.Error())
-					return api, diags
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.Rows, rows, datatableRowConfigOf, "row", &diags) {
+			return api, diags
 		}
 		api.Rows = &rows
 	}
@@ -314,13 +277,8 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 			Format *kbapi.KibanaHTTPAPIsFormatType `json:"format,omitempty"`
 			Label  *string                         `json:"label,omitempty"`
 		}, len(m.SplitMetricsBy))
-		for i, splitModel := range m.SplitMetricsBy {
-			if typeutils.IsKnown(splitModel.ConfigJSON) {
-				if err := json.Unmarshal([]byte(splitModel.ConfigJSON.ValueString()), &splits[i]); err != nil {
-					diags.AddError("Failed to unmarshal split_metrics_by", err.Error())
-					return api, diags
-				}
-			}
+		if !lenscommon.UnmarshalJSONSliceInto(m.SplitMetricsBy, splits, datatableSplitByConfigOf, "split_metrics_by", &diags) {
+			return api, diags
 		}
 		api.SplitMetricsBy = &splits
 	}
@@ -361,7 +319,17 @@ func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaH
 	}
 
 	if api.Paging != nil {
-		m.Paging = types.Int64Value(int64(*api.Paging))
+		raw, err := json.Marshal(api.Paging)
+		if err != nil {
+			diags.AddError("Failed to marshal datatable paging", err.Error())
+		} else {
+			var n float64
+			if err := json.Unmarshal(raw, &n); err != nil {
+				diags.AddError("Failed to decode datatable paging", err.Error())
+			} else {
+				m.Paging = types.Int64Value(int64(n))
+			}
+		}
 	} else {
 		m.Paging = types.Int64Null()
 	}
@@ -396,7 +364,16 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAP
 	}
 
 	if typeutils.IsKnown(m.Paging) {
-		paging := kbapi.KibanaHTTPAPIsDatatableStylingPaging(m.Paging.ValueInt64())
+		raw, err := json.Marshal(m.Paging.ValueInt64())
+		if err != nil {
+			diags.AddError("Failed to encode datatable paging", err.Error())
+			return styling, diags
+		}
+		var paging kbapi.KibanaHTTPAPIsDatatableStyling_Paging
+		if err := json.Unmarshal(raw, &paging); err != nil {
+			diags.AddError("Failed to unmarshal datatable paging", err.Error())
+			return styling, diags
+		}
 		styling.Paging = &paging
 	}
 

@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -77,9 +78,7 @@ func (t GroupByType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (
 
 func NewGroupByType() GroupByType {
 	return GroupByType{
-		ListType: basetypes.ListType{
-			ElemType: types.StringType,
-		},
+		ElemType: types.StringType,
 	}
 }
 
@@ -102,17 +101,8 @@ func (v GroupByValue) Equal(o attr.Value) bool {
 }
 
 func (v GroupByValue) ListSemanticEquals(_ context.Context, priorValuable basetypes.ListValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	priorValue, ok := priorValuable.(GroupByValue)
+	priorValue, ok, diags := typeutils.AssertSameType(v, priorValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", priorValuable),
-		)
 		return false, diags
 	}
 

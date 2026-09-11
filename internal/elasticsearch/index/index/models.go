@@ -187,8 +187,8 @@ func (model *tfModel) populateFromAPI(ctx context.Context, indexName string, api
 		// configured (known and non-null) in state. Populating them for resources
 		// that never set these attributes (e.g. index templates with sort settings)
 		// would introduce perpetual diffs.
-		if (!model.SortField.IsNull() && !model.SortField.IsUnknown()) ||
-			(!model.SortOrder.IsNull() && !model.SortOrder.IsUnknown()) {
+		if typeutils.IsKnown(model.SortField) ||
+			typeutils.IsKnown(model.SortOrder) {
 			if legDiags := populateLegacySortFromSettings(ctx, model); legDiags.HasError() {
 				return legDiags
 			}
@@ -235,22 +235,13 @@ func (model tfModel) toAPIModel(ctx context.Context) (models.Index, diag.Diagnos
 	}
 
 	if typeutils.IsKnown(model.Alias) {
-		apiModel.Aliases = map[string]models.IndexAlias{}
-
-		var planAliases []aliasutil.AliasModel
-		diags.Append(model.Alias.ElementsAs(ctx, &planAliases, true)...)
+		aliases, aliasDiags := aliasutil.ExpandAliasSet(ctx, model.Alias)
+		diags.Append(aliasDiags...)
 		if diags.HasError() {
 			return models.Index{}, diags
 		}
 
-		for _, planAlias := range planAliases {
-			apiAlias, diags := aliasToAPIModel(planAlias)
-			if diags.HasError() {
-				return models.Index{}, diags
-			}
-
-			apiModel.Aliases[apiAlias.Name] = apiAlias
-		}
+		apiModel.Aliases = aliases
 	}
 
 	settings, diags := model.toIndexSettings(ctx)
@@ -336,13 +327,13 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 					sortOrders[i] = entry.Order.ValueString()
 				}
 
-				if !entry.Missing.IsNull() && !entry.Missing.IsUnknown() {
+				if typeutils.IsKnown(entry.Missing) {
 					sortMissing[i] = entry.Missing.ValueString()
 					allMissingNull = false
 				}
 				// else: sortMissing[i] stays "" (empty placeholder for positional alignment)
 
-				if !entry.Mode.IsNull() && !entry.Mode.IsUnknown() {
+				if typeutils.IsKnown(entry.Mode) {
 					sortModes[i] = entry.Mode.ValueString()
 					allModeNull = false
 				}
@@ -379,7 +370,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 			}
 		}
 
-		if !value.IsNull() && !value.IsUnknown() {
+		if typeutils.IsKnown(value) {
 			var settingsValue any
 			switch a := value.(type) {
 			case types.String:
@@ -506,25 +497,6 @@ func analysisNormalizedFieldTargets(model *tfModel) map[string]*jsontypes.Normal
 		attrFilter:    &model.AnalysisFilter,
 		"normalizer":  &model.AnalysisNormalizer,
 	}
-}
-
-func aliasToAPIModel(model aliasutil.AliasModel) (models.IndexAlias, diag.Diagnostics) {
-	apiModel := models.IndexAlias{
-		Name:          model.Name.ValueString(),
-		IndexRouting:  model.IndexRouting.ValueString(),
-		IsHidden:      model.IsHidden.ValueBool(),
-		IsWriteIndex:  model.IsWriteIndex.ValueBool(),
-		Routing:       model.Routing.ValueString(),
-		SearchRouting: model.SearchRouting.ValueString(),
-	}
-
-	if typeutils.IsKnown(model.Filter) {
-		if diags := model.Filter.Unmarshal(&apiModel.Filter); diags.HasError() {
-			return models.IndexAlias{}, diags
-		}
-	}
-
-	return apiModel, nil
 }
 
 func indexStateToModel(state estypes.IndexState) (models.Index, diag.Diagnostics) {

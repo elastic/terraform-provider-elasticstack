@@ -20,7 +20,6 @@ package policyshape
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -177,17 +176,8 @@ func (v InputValue) MaybeEnabled(ctx context.Context) (bool, diag.Diagnostics) {
 // ObjectSemanticEquals returns true if the given object value is semantically equal to the current object value.
 // Semantic equality applies defaults from the defaults attribute before comparing values.
 func (v InputValue) ObjectSemanticEquals(ctx context.Context, newValuable basetypes.ObjectValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(InputValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 

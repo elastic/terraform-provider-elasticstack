@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -105,6 +106,7 @@ func TestAccSpacesDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.disabled_features.#", "0"),
 					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.color"),
+					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.initials"),
 					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.image_url"),
 					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.solution"),
 				),
@@ -119,6 +121,21 @@ func TestAccSpacesDataSource(t *testing.T) {
 // "default" in the list returned by the Kibana API.
 func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 	spaceID := "tfacc" + sdkacctest.RandStringFromCharSet(17, sdkacctest.CharSetAlphaNum)
+
+	spaceCountCheck := resource.TestCheckResourceAttrWith(
+		testSpacesResourceName,
+		"spaces.#",
+		func(value string) error {
+			count, err := strconv.Atoi(value)
+			if err != nil {
+				return err
+			}
+			if count < 2 {
+				return fmt.Errorf("expected at least 2 spaces, got %d", count)
+			}
+			return nil
+		},
+	)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -135,26 +152,29 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.name", "Default"),
 					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
 					// Data source must return at least two spaces.
-					resource.TestCheckResourceAttrWith(
-						testSpacesResourceName,
-						"spaces.#",
-						func(value string) error {
-							count, err := strconv.Atoi(value)
-							if err != nil {
-								return err
-							}
-							if count < 2 {
-								return fmt.Errorf("expected at least 2 spaces, got %d", count)
-							}
-							return nil
-						},
-					),
+					spaceCountCheck,
 					// Custom space — looked up by ID to avoid index-ordering fragility.
 					testCheckSpaceAttrByID(spaceID, "name", "Test Coverage Space"),
 					testCheckSpaceAttrByID(spaceID, "description", "Test space for data source coverage"),
-					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "0"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "1"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
 					testCheckSpaceAttrByID(spaceID, "initials", "TC"),
 					testCheckSpaceAttrByID(spaceID, "color", "#E8478B"),
+					testCheckSpaceAttrByID(spaceID, "solution", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_with_solution"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					spaceCountCheck,
+					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "1"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
+					testCheckSpaceAttrByID(spaceID, "solution", "classic"),
 				),
 			},
 		},
@@ -208,7 +228,9 @@ func TestAccSpacesDataSource_withImageURL(t *testing.T) {
 }
 
 // TestAccSpacesDataSource_withKibanaConnection verifies that the data source
-// correctly reads spaces when an explicit kibana_connection block is provided.
+// correctly reads spaces when an explicit kibana_connection block is provided,
+// covering both the secure (insecure = false) and insecure (insecure = true)
+// variants of the connection block.
 func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 	checks := []resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
@@ -219,6 +241,14 @@ func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.insecure", "false"),
 	}
 	checks = append(checks, acctest.KibanaConnectionAuthChecks(testSpacesResourceName)...)
+
+	insecureChecks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.#", "1"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.insecure", "true"),
+	}
+	insecureChecks = append(insecureChecks, acctest.KibanaConnectionAuthChecks(testSpacesResourceName)...)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -231,6 +261,14 @@ func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(config.Variables{}),
 				Check:                    resource.ComposeAggregateTestCheckFunc(checks...),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"insecure": config.BoolVariable(true),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(insecureChecks...),
 			},
 		},
 	})

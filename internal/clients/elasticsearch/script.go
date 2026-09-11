@@ -79,15 +79,7 @@ func PutScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient
 }
 
 func DeleteScript(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Core.DeleteScript(id).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Failed to delete script", err.Error())
-		return diags
-	}
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Failed to delete script")
 }

@@ -79,18 +79,12 @@ func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID
 		return nil, diagutil.ErrDiag("Unable to get alerting rule", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		unwrapped, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rule")
-		if diags.HasError() {
-			return nil, diags
-		}
-		return ConvertResponseToModel(spaceID, unwrapped)
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	rule, diags := HandleGetTypedResponse(resp.StatusCode(), resp.Body,
+		func() *kbapi.KibanaHTTPAPIsRuleResponse { return resp.JSON200 })
+	if diags.HasError() || rule == nil {
+		return nil, diags
 	}
+	return ConvertResponseToModel(spaceID, rule)
 }
 
 func UpdateAlertingRule(ctx context.Context, client *Client, spaceID string, rule models.AlertingRule) (*models.AlertingRule, diag.Diagnostics) {

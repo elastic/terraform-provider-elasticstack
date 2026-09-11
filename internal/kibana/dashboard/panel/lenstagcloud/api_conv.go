@@ -117,14 +117,14 @@ func tagcloudConfigFromAPI(
 
 	tagcloudConfigApplyStylingFromAPI(m, api.Styling)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateTagcloudMetricDefaults, &diags)
 	if !ok {
 		return diags
 	}
 	m.MetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, m.MetricJSON, mv, &diags)
 
-	tagByBytes, err := api.TagBy.MarshalJSON()
+	tagByBytes, err := json.Marshal(api.TagBy)
 	tv, ok := lenscommon.MarshalToJSONWithDefaults(tagByBytes, err, "tag_by", lenscommon.PopulateTagcloudTagByDefaults, &diags)
 	if !ok {
 		return diags

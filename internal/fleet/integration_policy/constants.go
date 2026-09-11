@@ -37,4 +37,6 @@ const (
 	attrDefaults           = "defaults"
 	attrStreams            = "streams"
 	attrCondition          = "condition"
+
+	attrAdditionalDatastreamsPermissions = "additional_datastreams_permissions"
 )

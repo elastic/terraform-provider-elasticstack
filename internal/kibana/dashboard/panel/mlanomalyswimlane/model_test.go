@@ -275,19 +275,9 @@ func TestPopulateFromAPI_overall_nullPreservation(t *testing.T) {
 		withOverallTimeRange("now-30d", "now", &mode),
 	)
 
-	pm := &models.PanelModel{
-		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
-			SwimlaneType: types.StringValue("overall"),
-			JobIDs:       []types.String{types.StringValue("job-a")},
-			ViewBy:       types.StringNull(),
-			PerPage:      types.Float32Null(),
-			Title:        types.StringNull(),
-			Description:  types.StringNull(),
-			HideTitle:    types.BoolNull(),
-			HideBorder:   types.BoolNull(),
-			TimeRange:    nil,
-		},
-	}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies the
+	// plan into pm); only `prior` carries the real prior null intent.
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
 			SwimlaneType: types.StringValue("overall"),
@@ -326,19 +316,7 @@ func TestPopulateFromAPI_viewBy_nullPreservation(t *testing.T) {
 		withViewByTimeRange("now-30d", "now", &mode),
 	)
 
-	pm := &models.PanelModel{
-		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
-			SwimlaneType: types.StringValue("viewBy"),
-			JobIDs:       []types.String{types.StringValue("job-a")},
-			ViewBy:       types.StringValue("host.name"),
-			PerPage:      types.Float32Null(),
-			Title:        types.StringNull(),
-			Description:  types.StringNull(),
-			HideTitle:    types.BoolNull(),
-			HideBorder:   types.BoolNull(),
-			TimeRange:    nil,
-		},
-	}
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
 			SwimlaneType: types.StringValue("viewBy"),
@@ -376,18 +354,7 @@ func TestPopulateFromAPI_timeRangeSubfields_nullPreservation(t *testing.T) {
 		}
 	})
 
-	pm := &models.PanelModel{
-		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
-			SwimlaneType: types.StringValue("viewBy"),
-			JobIDs:       []types.String{types.StringValue("job-a")},
-			ViewBy:       types.StringValue("host.name"),
-			TimeRange: &models.TimeRangeModel{
-				From: types.StringValue("now-7d"),
-				To:   types.StringValue("now"),
-				Mode: types.StringNull(),
-			},
-		},
-	}
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
 			SwimlaneType: types.StringValue("viewBy"),
@@ -414,14 +381,7 @@ func TestPopulateFromAPI_perPage_float32RoundTrip(t *testing.T) {
 	const perPage float32 = 12.5
 	apiCfg := makeViewByAPIUnion(withViewByPerPage(perPage))
 
-	pm := &models.PanelModel{
-		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
-			SwimlaneType: types.StringValue("viewBy"),
-			JobIDs:       []types.String{types.StringValue("job-a")},
-			ViewBy:       types.StringValue("host.name"),
-			PerPage:      types.Float32Value(perPage),
-		},
-	}
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
 			SwimlaneType: types.StringValue("viewBy"),
@@ -439,13 +399,7 @@ func TestPopulateFromAPI_perPage_float32RoundTrip(t *testing.T) {
 func TestPopulateFromAPI_viewBy_nullPreservation_doesNotNullWhenSwimlaneTypeDriftsToViewBy(t *testing.T) {
 	apiCfg := makeViewByAPIUnion()
 
-	pm := &models.PanelModel{
-		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
-			SwimlaneType: types.StringValue("viewBy"),
-			JobIDs:       []types.String{types.StringValue("job-a")},
-			ViewBy:       types.StringNull(),
-		},
-	}
+	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
 		MlAnomalySwimlaneConfig: &models.MlAnomalySwimlaneConfigModel{
 			SwimlaneType: types.StringValue("overall"),
@@ -460,4 +414,37 @@ func TestPopulateFromAPI_viewBy_nullPreservation_doesNotNullWhenSwimlaneTypeDrif
 	require.NotNil(t, cfg)
 	assert.Equal(t, "viewBy", cfg.SwimlaneType.ValueString())
 	assert.Equal(t, "host.name", cfg.ViewBy.ValueString())
+}
+
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was previously
+// a different panel type (prior.MlAnomalySwimlaneConfig is nil, e.g. prior held a different type's
+// config), there is no null intent to honor and the config is rebuilt entirely from the API,
+// including TimeRange and PerPage. This exercises the same code path that used to silently leave
+// MlAnomalySwimlaneConfig nil (pm.MlAnomalySwimlaneConfig is always nil in production, so the old
+// `pm.MlAnomalySwimlaneConfig == nil && prior.MlAnomalySwimlaneConfig != nil` gate was never true on
+// a genuine type change, and the function bailed out via `existing == nil` without populating).
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeRelative
+	apiCfg := makeOverallAPIUnion(
+		withOverallTitle("title"),
+		withOverallPerPage(10),
+		withOverallTimeRange("now-30m", "now", &mode),
+	)
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: types.StringValue("aiops_pattern_analysis"),
+	}
+
+	diags := mlanomalyswimlane.PopulateFromAPI(pm, prior, apiCfg)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	cfg := pm.MlAnomalySwimlaneConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	assert.Equal(t, "overall", cfg.SwimlaneType.ValueString())
+	assert.Equal(t, "title", cfg.Title.ValueString())
+	assert.InEpsilon(t, float32(10), cfg.PerPage.ValueFloat32(), 1e-6)
+	require.NotNil(t, cfg.TimeRange, "type-change path must initialise TimeRange from API")
+	assert.Equal(t, "now-30m", cfg.TimeRange.From.ValueString())
+	assert.Equal(t, "now", cfg.TimeRange.To.ValueString())
 }

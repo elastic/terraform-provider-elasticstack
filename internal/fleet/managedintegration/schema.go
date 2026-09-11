@@ -21,13 +21,13 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
@@ -58,7 +58,7 @@ const (
 )
 
 // getSchema defines the elasticstack_fleet_managed_integration resource schema
-// (openspec/changes/fleet-managed-integration/specs/fleet-managed-integration/
+// (openspec/changes/archive/2026-07-22-fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, "Schema attributes"). CRUD population lives in models_convert.go
 // and create/read/update/delete. Version gating is in models.go; the
 // deployment-topology preflight is in create.go/topology.go.
@@ -78,8 +78,7 @@ func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: "Manages Fleet managed integrations, which provision agent runtime capacity in Elastic's " +
 			"own cloud infrastructure instead of on a host running Elastic Agent. " +
-			"**This resource is experimental**: the underlying Fleet managed integrations API requires Kibana " +
-			"9.5.0 and its behavior may change in future Kibana releases. " +
+			"The underlying Fleet managed integrations API requires Kibana 9.5.0 or later. " +
 			"It is only supported on **Elastic Cloud Hosted** and **Serverless** (Security or Observability) " +
 			"deployments; self-managed (on-premises) Kibana is not supported, and this resource refuses to run " +
 			"against a self-managed deployment it can positively identify as such.",
@@ -129,16 +128,10 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
-			"space_ids": schema.SetAttribute{
-				Computed:            true,
-				Optional:            true,
-				ElementType:         types.StringType,
-				MarkdownDescription: "The list of spaces the managed integration belongs to; defaults to `[\"default\"]`; forces replacement on change.",
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-					setplanmodifier.RequiresReplace(),
-				},
-			},
+			"space_ids": kbschema.SpaceIDsAttribute(
+				"The list of spaces the managed integration belongs to; defaults to `[\"default\"]`; forces replacement on change.",
+				setplanmodifier.RequiresReplace(),
+			),
 			attrPackage: schema.SingleNestedAttribute{
 				Required:            true,
 				MarkdownDescription: "The Fleet integration package this managed integration is based on.",
@@ -231,37 +224,7 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
-			attrGlobalDataTags: schema.MapNestedAttribute{
-				Optional: true,
-				MarkdownDescription: "Global data tags applied to the managed integration's data streams; updatable in-place. " +
-					"Keyed by tag name; set exactly one of `string_value` or `number_value` per entry.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						globalDataTagStringValueAttr: schema.StringAttribute{
-							Optional:            true,
-							MarkdownDescription: "String value for the tag. If this is set, `number_value` must not be defined.",
-							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
-								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
-								),
-							},
-						},
-						globalDataTagNumberValueAttr: schema.Float32Attribute{
-							Optional:            true,
-							MarkdownDescription: "Number value for the tag. If this is set, `string_value` must not be defined.",
-							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
-								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
-								),
-							},
-						},
-					},
-				},
-			},
+			attrGlobalDataTags: globaldatatags.Schema(nil),
 			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,

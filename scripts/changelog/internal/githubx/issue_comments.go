@@ -34,7 +34,7 @@ type IssueComment struct {
 
 // ListIssueComments lists all comments for issueNumber (paginated).
 func ListIssueComments(ctx context.Context, client *github.Client, owner, repo string, issueNumber int) ([]IssueComment, error) {
-	opts := &github.IssueListCommentsOptions{ListOptions: github.ListOptions{PerPage: issueCommentsPageSize}}
+	opts := &github.IssueListCommentsOptions{PerPage: issueCommentsPageSize}
 	var out []IssueComment
 	for {
 		comments, resp, err := client.Issues.ListComments(ctx, owner, repo, issueNumber, opts)

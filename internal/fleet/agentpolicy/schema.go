@@ -21,34 +21,27 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-)
-
-const (
-	globalDataTagStringValueAttr = "string_value"
-	globalDataTagNumberValueAttr = "number_value"
 )
 
 func (r *agentPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -166,52 +159,10 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"global_data_tags": schema.MapNestedAttribute{
-				Description: globalDataTagsDescription,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						globalDataTagStringValueAttr: schema.StringAttribute{
-							Description: "String value for the field. If this is set, number_value must not be defined.",
-							Optional:    true,
-							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
-								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
-								),
-							},
-						},
-						globalDataTagNumberValueAttr: schema.Float32Attribute{
-							Description: "Number value for the field. If this is set, string_value must not be defined.",
-							Optional:    true,
-							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
-								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
-								),
-							},
-						},
-					},
-				},
-				Computed: true,
-				Optional: true,
-				Default: mapdefault.StaticValue(types.MapValueMust(types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						globalDataTagStringValueAttr: types.StringType,
-						globalDataTagNumberValueAttr: types.Float32Type,
-					},
-				}, map[string]attr.Value{})),
-			},
-			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"global_data_tags": globaldatatags.Schema(map[string]attr.Value{}),
+			"space_ids": kbschema.SpaceIDsAttribute(
+				"The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
+			),
 			"required_versions": schema.MapAttribute{
 				Description: "Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.",
 				ElementType: types.Int32Type,
@@ -436,7 +387,4 @@ func getSchema() schema.Schema {
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
-}
-func getGlobalDataTagsAttrTypes() attr.Type {
-	return getSchema().Attributes["global_data_tags"].GetType()
 }

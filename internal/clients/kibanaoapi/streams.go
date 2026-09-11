@@ -159,18 +159,7 @@ func GetStream(ctx context.Context, client *Client, spaceID string, name string)
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		var streamResp StreamResponse
-		if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
-			return nil, diagutil.FrameworkDiagFromError(jsonErr)
-		}
-		return &streamResp, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleGetRawResponse[StreamResponse](resp.StatusCode(), resp.Body)
 }
 
 // UpsertStream creates or updates a stream via PUT /api/streams/{name}.

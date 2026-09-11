@@ -25,31 +25,5 @@ import (
 )
 
 func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
-		return
-	}
-
-	var plan, state, config Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	merged, diags := templateutil.ReconcilePlanModelForSemanticDrift(ctx, plan, state, config, TemplateAttrTypes)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if merged == nil {
-		return
-	}
-	resp.Diagnostics.Append(resp.Plan.Set(ctx, merged)...)
+	templateutil.ModifyPlanForSemanticDrift[Model](ctx, req, resp, TemplateAttrTypes)
 }

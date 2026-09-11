@@ -22,8 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -33,15 +33,12 @@ import (
 const panelType = "image"
 
 // Handler implements iface.Handler for image dashboard panels.
-type Handler struct{}
-
-func (Handler) PanelType() string                  { return panelType }
-func (Handler) SchemaAttribute() schema.Attribute  { return SchemaAttribute() }
-func (Handler) ClassifyJSON(_ map[string]any) bool { return false }
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
+type Handler struct {
+	panelkit.NoopHandlerBase
 }
-func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
+
+func (Handler) PanelType() string                 { return panelType }
+func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelModel) {
 	alignImageStateFromPlan(plan, state)
 }
@@ -69,7 +66,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 		panelItem kbapi.DashboardPanelItem
 	)
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage{
 		Grid: grid,
 		Id:   id,

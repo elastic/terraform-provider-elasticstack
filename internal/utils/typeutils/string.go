@@ -59,6 +59,15 @@ func TrimmedStringishPointerValue[T ~string](ptr *T) types.String {
 	return types.StringValue(string(*ptr))
 }
 
+// TrimmedStringishValue converts a value of any string-like type T to a Terraform types.String,
+// returning types.StringNull() when the trimmed value is empty.
+func TrimmedStringishValue[T ~string](value T) types.String {
+	if strings.TrimSpace(string(value)) == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(string(value))
+}
+
 // StringishToPointer converts a types.String to a typed string-enum pointer,
 // returning nil for null, unknown, or empty-string values.
 func StringishToPointer[T ~string](v types.String) *T {

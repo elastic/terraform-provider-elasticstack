@@ -19,8 +19,6 @@ package role
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -32,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -295,16 +294,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 	}
 
 	// Metadata
-	if role.Metadata != nil {
-		metadataBytes, err := json.Marshal(role.Metadata)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
-			return diags
-		}
-		config.Metadata = jsontypes.NewNormalizedValue(string(metadataBytes))
-	} else {
-		config.Metadata = jsontypes.NewNormalizedNull()
-	}
+	config.Metadata = typeutils.MarshalToNormalized(role.Metadata, path.Root("metadata"), &diags)
 
 	// Applications
 	if len(role.Applications) > 0 {

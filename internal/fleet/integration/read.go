@@ -26,11 +26,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// readIntegration intentionally ignores entitycore's space ID argument because
+// it is derived from model.SpaceID for this resource; the model is the single source.
 func readIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	_ string,
-	spaceID string,
+	_ string,
 	model integrationModel,
 ) (integrationModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -40,17 +42,23 @@ func readIntegration(
 	name := model.Name.ValueString()
 	version := model.Version.ValueString()
 
-	spaceAware := resolveSpaceAware(ctx, client, model.SpaceID, &diags)
+	scope := resolveSpaceScope(model.SpaceID)
+	spaceAware, versionDiags := supportsSpaceAwareIntegration(ctx, client, scope.id)
+	diags.Append(versionDiags...)
 	if diags.HasError() {
 		return model, false, diags
 	}
 
-	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+	pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 	diags.Append(getDiags...)
 	if diags.HasError() {
 		return model, false, diags
 	}
-	if pkg == nil || !fleetPackageInstalled(pkg, spaceID, spaceAware) {
+	installed := fleet.IsPackageInstalled(pkg)
+	if spaceAware {
+		installed = fleetPackageInstalledInSpace(pkg, scope.id)
+	}
+	if !installed {
 		return model, false, diags
 	}
 

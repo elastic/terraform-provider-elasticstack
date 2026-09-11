@@ -19,6 +19,8 @@ package typeutils
 
 import (
 	"encoding/json"
+	"strconv"
+	"time"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -42,4 +44,15 @@ func ElasticsearchDurationToString(d estypes.Duration) types.String {
 		return types.StringValue(string(b))
 	}
 	return types.StringValue(s)
+}
+
+// DurationToElasticsearchTimeoutString converts a time.Duration to an Elasticsearch
+// timeout string for use with typed API builder methods that accept a string timeout.
+// Sub-millisecond values are expressed in nanoseconds (e.g. "500nanos"); all other
+// values are expressed in milliseconds (e.g. "5000ms"), matching legacy esapi behavior.
+func DurationToElasticsearchTimeoutString(d time.Duration) string {
+	if d < time.Millisecond {
+		return strconv.FormatInt(int64(d), 10) + "nanos"
+	}
+	return strconv.FormatInt(int64(d)/int64(time.Millisecond), 10) + "ms"
 }

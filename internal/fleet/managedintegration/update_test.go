@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -579,7 +580,7 @@ func TestBuildUpdateBody_omitsKnownNullOptionalFields(t *testing.T) {
 	plan.Inputs = policyshape.NewInputsNull(managedIntegrationInputType())
 	plan.VarGroupSelections = types.MapNull(types.StringType)
 	plan.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
-	plan.GlobalDataTags = types.MapNull(globalDataTagsElementType())
+	plan.GlobalDataTags = types.MapNull(globaldatatags.ElementType())
 
 	body, diags := buildUpdateBody(ctx, plan, prior)
 	require.False(t, diags.HasError(), "%v", diags)
@@ -620,7 +621,7 @@ func TestBuildUpdateBody_unknownTopLevelFieldsErrors(t *testing.T) {
 		{"additional_datastreams_permissions", func(m *managedIntegrationModel) {
 			m.AdditionalDatastreamsPermissions = types.ListUnknown(types.StringType)
 		}},
-		{"global_data_tags", func(m *managedIntegrationModel) { m.GlobalDataTags = types.MapUnknown(globalDataTagsElementType()) }},
+		{"global_data_tags", func(m *managedIntegrationModel) { m.GlobalDataTags = types.MapUnknown(globaldatatags.ElementType()) }},
 		{"package", func(m *managedIntegrationModel) { m.Package = types.ObjectUnknown(packageAttrTypes()) }},
 		{"inputs", func(m *managedIntegrationModel) {
 			m.Inputs = policyshape.InputsValue{MapValue: types.MapUnknown(policyshape.NewInputsType(managedIntegrationInputType()))}
@@ -668,10 +669,10 @@ func TestBuildUpdateBody_fullReplaceExtraFields(t *testing.T) {
 	plan.AdditionalDatastreamsPermissions, diags = types.ListValueFrom(ctx, types.StringType, []string{"logs-*"})
 	require.False(t, diags.HasError())
 
-	plan.GlobalDataTags, diags = types.MapValueFrom(ctx, globalDataTagsElementType(), map[string]attr.Value{
-		"cost": types.ObjectValueMust(globalDataTagAttrTypes(), map[string]attr.Value{
-			globalDataTagStringValueAttr: types.StringNull(),
-			globalDataTagNumberValueAttr: types.Float32Value(42),
+	plan.GlobalDataTags, diags = types.MapValueFrom(ctx, globaldatatags.ElementType(), map[string]attr.Value{
+		"cost": types.ObjectValueMust(globaldatatags.AttrTypes(), map[string]attr.Value{
+			globaldatatags.StringValueAttr: types.StringNull(),
+			globaldatatags.NumberValueAttr: types.Float32Value(42),
 		}),
 	})
 	require.False(t, diags.HasError())

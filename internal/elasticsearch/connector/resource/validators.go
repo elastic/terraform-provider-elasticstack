@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -50,23 +51,7 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 		return
 	}
 
-	setCount := 0
-	unknownCount := 0
-	var setBranches []string
-
-	for _, name := range connector.ConfigurationValueBranchAttrNames {
-		val, ok := attrs[name]
-		if !ok {
-			continue
-		}
-		switch {
-		case configurationValueBranchIsSet(val):
-			setCount++
-			setBranches = append(setBranches, name)
-		case val.IsUnknown():
-			unknownCount++
-		}
-	}
+	setCount, unknownCount, setBranches := validators.CountNestedAttrs(attrs, connector.ConfigurationValueBranchAttrNames, configurationValueBranchIsSet)
 
 	switch {
 	case setCount == 0 && unknownCount == 1:
@@ -86,20 +71,14 @@ func (v configurationValueBranchValidator) ValidateObject(_ context.Context, req
 	}
 }
 
+// configurationValueBranchIsSet reports whether a configuration-value branch attribute is set.
+// CountNestedAttrs only invokes it for known, non-null values, so the predicate only needs
+// to decide whether a definite value counts as set; unexpected attribute types are treated
+// as unset to avoid hiding schema drift.
 func configurationValueBranchIsSet(val attr.Value) bool {
-	if val == nil || val.IsNull() || val.IsUnknown() {
-		return false
-	}
-
-	switch v := val.(type) {
-	case types.String:
+	switch val.(type) {
+	case types.String, types.Number, types.Bool, jsontypes.Normalized:
 		return true
-	case types.Number:
-		return true
-	case types.Bool:
-		return true
-	case jsontypes.Normalized:
-		return !v.IsNull() && !v.IsUnknown()
 	default:
 		// Unexpected attribute types are treated as unset to avoid hiding schema drift.
 		return false

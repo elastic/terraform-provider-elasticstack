@@ -180,9 +180,8 @@ func queryRuleFromAPI(ctx context.Context, rule types.QueryRule, diagnostics *di
 		Type:     fwtypes.StringValue(rule.Type.String()),
 		Criteria: criteriaList,
 		Actions:  actionsObj,
-	}
 
-	model.Priority = typeutils.IntPointerToInt64Value(rule.Priority)
+		Priority: typeutils.IntPointerToInt64Value(rule.Priority)}
 
 	return model
 }
@@ -190,12 +189,11 @@ func queryRuleFromAPI(ctx context.Context, rule types.QueryRule, diagnostics *di
 func queryRuleCriteriaFromAPI(criterion types.QueryRuleCriteria, diagnostics *diag.Diagnostics) QueryRuleCriteriaModel {
 	model := QueryRuleCriteriaModel{
 		Type: fwtypes.StringValue(criterion.Type.String()),
-	}
 
-	// Elasticsearch returns metadata as an empty string for criteria types that do
-	// not use it (notably `always`, since 8.19). Normalize empty strings to null so
-	// state stays consistent with configurations that omit `metadata`.
-	model.Metadata = typeutils.NonEmptyStringOrNull(criterion.Metadata)
+		// Elasticsearch returns metadata as an empty string for criteria types that do
+		// not use it (notably `always`, since 8.19). Normalize empty strings to null so
+		// state stays consistent with configurations that omit `metadata`.
+		Metadata: typeutils.NonEmptyStringOrNull(criterion.Metadata)}
 
 	if len(criterion.Values) == 0 {
 		model.Values = jsontypes.Normalized{StringValue: fwtypes.StringNull()}
@@ -305,7 +303,7 @@ func (model QueryRuleModel) toAPIRule(ctx context.Context, diagnostics *diag.Dia
 		Actions:  actionsModel.toAPIActions(ctx, diagnostics),
 	}
 
-	if !model.Priority.IsNull() && !model.Priority.IsUnknown() {
+	if typeutils.IsKnown(model.Priority) {
 		rule.Priority = typeutils.OptionalInt(model.Priority)
 	}
 
@@ -323,12 +321,12 @@ func (model QueryRuleCriteriaModel) toAPICriteria(diagnostics *diag.Diagnostics)
 		Type: criteriaType,
 	}
 
-	if !model.Metadata.IsNull() && !model.Metadata.IsUnknown() {
+	if typeutils.IsKnown(model.Metadata) {
 		metadata := model.Metadata.ValueString()
 		criterion.Metadata = &metadata
 	}
 
-	if !model.Values.IsNull() && !model.Values.IsUnknown() {
+	if typeutils.IsKnown(model.Values) {
 		var values []json.RawMessage
 		if err := json.Unmarshal([]byte(model.Values.ValueString()), &values); err != nil {
 			diagnostics.AddError("Invalid criteria values", fmt.Sprintf("Unable to decode criteria values JSON: %s", err))
@@ -343,7 +341,7 @@ func (model QueryRuleCriteriaModel) toAPICriteria(diagnostics *diag.Diagnostics)
 func (model QueryRuleActionsModel) toAPIActions(ctx context.Context, diagnostics *diag.Diagnostics) types.QueryRuleActions {
 	var actions types.QueryRuleActions
 
-	if !model.IDs.IsNull() && !model.IDs.IsUnknown() {
+	if typeutils.IsKnown(model.IDs) {
 		var ids []string
 		diagnostics.Append(model.IDs.ElementsAs(ctx, &ids, false)...)
 		if diagnostics.HasError() {
@@ -352,7 +350,7 @@ func (model QueryRuleActionsModel) toAPIActions(ctx context.Context, diagnostics
 		actions.Ids = ids
 	}
 
-	if !model.Docs.IsNull() && !model.Docs.IsUnknown() {
+	if typeutils.IsKnown(model.Docs) {
 		actions.Docs = pinnedDocsFromList(model.Docs, diagnostics)
 	}
 
@@ -471,7 +469,7 @@ type criteriaIdentityKey struct {
 
 func criteriaIdentityKeyFromModel(criterion QueryRuleCriteriaModel) criteriaIdentityKey {
 	metadata := ""
-	if !criterion.Metadata.IsNull() && !criterion.Metadata.IsUnknown() {
+	if typeutils.IsKnown(criterion.Metadata) {
 		metadata = criterion.Metadata.ValueString()
 	}
 	return criteriaIdentityKey{

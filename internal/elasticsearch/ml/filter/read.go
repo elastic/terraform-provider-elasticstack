@@ -19,11 +19,12 @@ package filter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getfilters"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -32,25 +33,18 @@ func readFilter(ctx context.Context, client *clients.ElasticsearchScopedClient, 
 	var diags fwdiags.Diagnostics
 
 	filterID := resourceID
-	if filterID == "" {
-		diags.AddError("Invalid resource ID", "filter_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(filterID, "filter_id"); diags.HasError() {
 		return state, false, diags
 	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Reading ML filter: %s", filterID))
 
 	typedClient := client.GetESClient()
 
-	res, err := typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
-	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return state, false, nil
-		}
-		diags.AddError("Failed to get ML filter", fmt.Sprintf("Unable to get ML filter: %s — %s", filterID, err.Error()))
+	res, diags := elasticsearch.CallOrNotFound(func() (*getfilters.Response, error) {
+		return typedClient.Ml.GetFilters().FilterId(filterID).Do(ctx)
+	}, "Failed to get ML filter")
+	if diags.HasError() || res == nil {
 		return state, false, diags
 	}
-
 	if len(res.Filters) == 0 {
 		return state, false, nil
 	}

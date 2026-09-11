@@ -68,7 +68,7 @@ func mosaicConfigFromAPINoESQL(ctx context.Context, m *models.MosaicConfigModel,
 		m.GroupBreakdownBy = customtypes.NewJSONWithDefaultsNull(lenscommon.PopulatePartitionGroupByDefaults)
 	}
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	if err != nil {
 		diags.AddError("Failed to marshal metric", err.Error())
 		return diags
@@ -297,31 +297,27 @@ func mosaicConfigToAPINoESQL(m *models.MosaicConfigModel) (kbapi.KibanaHTTPAPIsM
 		diags.AddError("Missing group_by_json", "mosaic_config.group_by_json must be provided")
 		return api, diags
 	}
-	var groupBy []kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_GroupBy_Item
-	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &groupBy); err != nil {
+	if err := json.Unmarshal([]byte(m.GroupBy.ValueString()), &api.GroupBy); err != nil {
 		diags.AddError("Failed to unmarshal group_by", err.Error())
 		return api, diags
 	}
-	if len(groupBy) == 0 {
+	if api.GroupBy == nil || len(*api.GroupBy) == 0 {
 		diags.AddError("Invalid group_by_json", "mosaic_config.group_by_json must contain at least one item")
 		return api, diags
 	}
-	api.GroupBy = &groupBy
 
 	if m.GroupBreakdownBy.IsNull() {
 		diags.AddError("Missing group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must be provided")
 		return api, diags
 	}
-	var groupBreakdownBy []kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel_GroupBreakdownBy_Item
-	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &groupBreakdownBy); err != nil {
+	if err := json.Unmarshal([]byte(m.GroupBreakdownBy.ValueString()), &api.GroupBreakdownBy); err != nil {
 		diags.AddError("Failed to unmarshal group_breakdown_by", err.Error())
 		return api, diags
 	}
-	if len(groupBreakdownBy) == 0 {
+	if api.GroupBreakdownBy == nil || len(*api.GroupBreakdownBy) == 0 {
 		diags.AddError("Invalid group_breakdown_by_json", "mosaic_config.group_breakdown_by_json must contain at least one item")
 		return api, diags
 	}
-	api.GroupBreakdownBy = &groupBreakdownBy
 
 	if m.Metrics.IsNull() {
 		diags.AddError("Missing metrics_json", "mosaic_config.metrics_json must be provided")

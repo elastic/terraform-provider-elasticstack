@@ -74,16 +74,25 @@ func deleteKibanaAssetsWithFallback(
 	return fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
 }
 
+// deleteIntegration intentionally ignores entitycore's space ID argument because
+// it is derived from model.SpaceID for this resource; the model is the single source.
 func deleteIntegration(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	_ string,
-	spaceID string,
+	_ string,
+	model integrationModel,
+) diag.Diagnostics {
+	return deleteIntegrationWithClients(ctx, client, client.GetFleetClient(), model)
+}
+
+func deleteIntegrationWithClients(
+	ctx context.Context,
+	versionClient clients.MinVersionEnforceable,
+	fleetClient *fleet.Client,
 	model integrationModel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	fleetClient := client.GetFleetClient()
 
 	name := model.Name.ValueString()
 	version := model.Version.ValueString()
@@ -93,24 +102,26 @@ func deleteIntegration(
 		return diags
 	}
 
-	spaceAware := resolveSpaceAware(ctx, client, model.SpaceID, &diags)
+	scope := resolveSpaceScope(model.SpaceID)
+	spaceAware, versionDiags := supportsSpaceAwareIntegration(ctx, versionClient, scope.id)
+	diags.Append(versionDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
 	if spaceAware {
-		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, spaceID)
+		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 		diags.Append(getDiags...)
 		if diags.HasError() {
 			return diags
 		}
 
-		if isInstalledInMultipleSpaces(pkg, spaceID) {
-			return deleteKibanaAssetsWithFallback(ctx, fleetClient, name, version, spaceID, force)
+		if isInstalledInMultipleSpaces(pkg, scope.id) {
+			return deleteKibanaAssetsWithFallback(ctx, fleetClient, name, version, scope.id, force)
 		}
 	}
 
-	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, spaceID, force)
+	uninstallDiags := fleet.Uninstall(ctx, fleetClient, name, version, scope.id, force)
 	diags.Append(uninstallDiags...)
 	return diags
 }

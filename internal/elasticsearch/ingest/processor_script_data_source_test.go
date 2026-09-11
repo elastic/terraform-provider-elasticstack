@@ -98,6 +98,28 @@ func TestAccDataSourceIngestProcessorScript(t *testing.T) {
 					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScriptMinimal),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccDataSourceIngestProcessorScriptResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "source", "ctx.result = 'ok';"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.#", "2"),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.0", `{"set":{"field":"error.message","value":"script processor failed"}}`),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "on_failure.1", `{"set":{"field":"error.type","value":"script_error"}}`),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScriptMultiOnFailure),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("nested_params"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(testAccDataSourceIngestProcessorScriptResourceName, "id"),
+					resource.TestCheckResourceAttr(testAccDataSourceIngestProcessorScriptResourceName, "source", "ctx.result = 'ok';"),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "params", `{"tags":["a","b"],"meta":{"k":"v"}}`),
+					CheckResourceJSON(testAccDataSourceIngestProcessorScriptResourceName, "json", expectedJSONScriptNestedParams),
+				),
+			},
 		},
 	})
 }
@@ -160,6 +182,40 @@ const expectedJSONScriptStoredScript = `{
 const expectedJSONScriptMinimal = `{
 	"script": {
 		"ignore_failure": false,
+		"source": "ctx.result = 'ok';"
+	}
+}`
+
+const expectedJSONScriptMultiOnFailure = `{
+	"script": {
+		"ignore_failure": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "script processor failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "script_error"
+				}
+			}
+		],
+		"source": "ctx.result = 'ok';"
+	}
+}`
+
+const expectedJSONScriptNestedParams = `{
+	"script": {
+		"ignore_failure": false,
+		"params": {
+			"tags": ["a", "b"],
+			"meta": {
+				"k": "v"
+			}
+		},
 		"source": "ctx.result = 'ok';"
 	}
 }`

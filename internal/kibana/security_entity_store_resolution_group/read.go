@@ -31,10 +31,7 @@ import (
 func readResolutionGroup(ctx context.Context, client *clients.KibanaScopedClient, config resolutionGroupModel) (resolutionGroupModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	spaceID := config.SpaceID.ValueString()
-	if spaceID == "" {
-		spaceID = "default"
-	}
+	spaceID := clients.EffectiveSpaceID(config.SpaceID.ValueString())
 
 	resp, err := client.GetKibanaOapiClient().API.GetSecurityEntityStoreResolutionGroupWithResponse(
 		ctx,

@@ -60,44 +60,12 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 	if typeutils.IsKnown(m.DateRounding) {
 		body.DateRounding = m.DateRounding.ValueString()
 	}
-	if typeutils.IsKnown(m.DateFormats) {
-		elems := make([]string, 0, len(m.DateFormats.Elements()))
-		for _, elem := range m.DateFormats.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid date_formats element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown date_formats element", "date_formats elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.DateFormats = elems
-	}
-	if m.Timezone.IsNull() || m.Timezone.IsUnknown() {
-		m.Timezone = types.StringValue("UTC")
-		body.Timezone = "UTC"
-	} else {
-		body.Timezone = m.Timezone.ValueString()
-	}
-	if m.Locale.IsNull() || m.Locale.IsUnknown() {
-		m.Locale = types.StringValue("ENGLISH")
-		body.Locale = "ENGLISH"
-	} else {
-		body.Locale = m.Locale.ValueString()
-	}
-	if m.IndexNameFormat.IsNull() || m.IndexNameFormat.IsUnknown() {
-		m.IndexNameFormat = types.StringValue("yyyy-MM-dd")
-		body.IndexNameFormat = "yyyy-MM-dd"
-	} else {
-		body.IndexNameFormat = m.IndexNameFormat.ValueString()
-	}
+	body.DateFormats = typeutils.StringElements(m.DateFormats, &diags)
+	body.Timezone = typeutils.StringDefault(&m.Timezone, "UTC")
+	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
+	body.IndexNameFormat = typeutils.StringDefault(&m.IndexNameFormat, "yyyy-MM-dd")
 
-	if m.IgnoreFailure.IsNull() || m.IgnoreFailure.IsUnknown() {
-		m.IgnoreFailure = types.BoolValue(false)
-	}
+	typeutils.BoolDefault(&m.IgnoreFailure, false)
 
 	return body, diags
 }
@@ -105,14 +73,6 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorDateIndexNameDataSource returns a PF data source for the date_index_name processor.
 func NewProcessorDateIndexNameDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to get the date or timestamp from.",
 			Required:    true,

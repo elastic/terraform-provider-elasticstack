@@ -72,11 +72,29 @@ func TestAccDataSourceIngestProcessorRemove(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "user.name"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_missing", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_failure", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "description", "Remove sensitive host and user fields"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "if", "ctx.host?.name != null"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.#"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "tag", "remove-sensitive-fields"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemoveUpdated),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_remove.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.#", "1"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "field.*", "user_agent"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_missing", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "ignore_failure", "false"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "description"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "if"),
-					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.#"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "tag"),
-					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemoveUpdated),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.0", `{"set":{"field":"error.message","value":"remove failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "on_failure.1", `{"set":{"field":"error.type","value":"remove"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_remove.test", "json", expectedJSONRemoveMultiOnFailure),
 				),
 			},
 		},
@@ -115,11 +133,36 @@ const expectedJSONRemoveAllAttributes = `{
 
 const expectedJSONRemoveUpdated = `{
 	"remove": {
+		"description": "Remove sensitive host and user fields",
 		"field": [
       "host.name",
       "user.name"
     ],
+		"if": "ctx.host?.name != null",
 		"ignore_failure": false,
-		"ignore_missing": false
+		"ignore_missing": false,
+		"tag": "remove-sensitive-fields"
+	}
+}`
+
+const expectedJSONRemoveMultiOnFailure = `{
+	"remove": {
+		"field": ["user_agent"],
+		"ignore_failure": false,
+		"ignore_missing": true,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "remove failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "remove"
+				}
+			}
+		]
 	}
 }`

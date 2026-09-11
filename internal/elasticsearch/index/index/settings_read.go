@@ -129,7 +129,7 @@ func hydrateAnalysisFromFlatSettings(model *tfModel, flat map[string]json.RawMes
 		if byCategory[category][name] == nil {
 			byCategory[category][name] = make(map[string]any)
 		}
-		setNestedMapValue(byCategory[category][name], propParts, value)
+		typeutils.SetAtPath(byCategory[category][name], propParts, value)
 	}
 
 	for category, target := range analysisNormalizedFieldTargets(model) {
@@ -188,30 +188,6 @@ func parseFlatSettingJSONValue(raw json.RawMessage) any {
 		return nil
 	}
 	return value
-}
-
-func setNestedMapValue(obj map[string]any, path []string, value any) {
-	if len(path) == 0 {
-		return
-	}
-	cur := obj
-	for i := range len(path) - 1 {
-		seg := path[i]
-		next, ok := cur[seg]
-		if !ok {
-			child := make(map[string]any)
-			cur[seg] = child
-			cur = child
-			continue
-		}
-		child, ok := next.(map[string]any)
-		if !ok {
-			child = make(map[string]any)
-			cur[seg] = child
-		}
-		cur = child
-	}
-	cur[path[len(path)-1]] = value
 }
 
 func jsonRawToNormalized(raw json.RawMessage) (jsontypes.Normalized, bool) {
@@ -351,7 +327,7 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 				continue
 			}
 			planField := planVal.Field(i)
-			planAttr, ok := planField.Interface().(attr.Value)
+			planAttr, ok := reflect.TypeAssert[attr.Value](planField)
 			if !ok {
 				break
 			}

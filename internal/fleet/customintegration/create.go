@@ -19,15 +19,12 @@ package customintegration
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -66,7 +63,7 @@ func createCustomIntegration(
 		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
 	}
 
-	checksum, err := computeSHA256(filePath)
+	checksum, err := fileutil.SHA256HexDigest(filePath)
 	if err != nil {
 		diags.AddError("Failed to compute checksum", err.Error())
 		return entitycore.KibanaWriteResult[customIntegrationModel]{}, diags
@@ -93,19 +90,4 @@ func detectContentType(filePath string) string {
 	}
 	// Default to zip (covers .zip and unknown extensions).
 	return "application/zip"
-}
-
-// computeSHA256 returns the hex-encoded SHA256 digest of the file at filePath.
-func computeSHA256(filePath string) (string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
 }

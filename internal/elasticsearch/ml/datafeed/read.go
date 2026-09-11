@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -31,8 +32,7 @@ func readDatafeed(ctx context.Context, client *clients.ElasticsearchScopedClient
 	var diags fwdiags.Diagnostics
 
 	datafeedID := resourceID
-	if datafeedID == "" {
-		diags.AddError("Invalid Configuration", "datafeed_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(datafeedID, "datafeed_id"); diags.HasError() {
 		return state, false, diags
 	}
 

@@ -302,6 +302,65 @@ func TestFormPreservation_priorNamedDriftFallback(t *testing.T) {
 	require.Equal(t, int64(80), item.Max.ValueInt64())
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.MlAnomalyChartsConfig is nil, e.g. prior held a different
+// type's config), there is no null intent to honor and the config is rebuilt entirely from the
+// API rather than left nil. This is the real production calling convention: pm always arrives
+// zero-valued (dashboardMapPanelFromAPI never shallow-copies the plan into pm), so
+// prior.MlAnomalyChartsConfig being nil is the only reliable "different prior type" signal.
+func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
+	t.Parallel()
+
+	maxSeries := float32(12)
+	apiConfig := kbapi.KibanaHTTPAPIsMlAnomalyCharts{
+		JobIds:          []string{"job-a"},
+		MaxSeriesToPlot: &maxSeries,
+	}
+
+	pm := &models.PanelModel{}
+	prior := &models.PanelModel{
+		Type: types.StringValue("aiops_pattern_analysis"),
+	}
+
+	diags := mlanomalycharts.PopulateFromAPI(pm, prior, apiConfig)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.MlAnomalyChartsConfig
+	require.NotNil(t, cfg, "type-change path should populate config from API")
+	require.Len(t, cfg.JobIDs, 1)
+	require.Equal(t, "job-a", cfg.JobIDs[0].ValueString())
+	require.False(t, cfg.MaxSeriesToPlot.IsNull(), "type-change path must initialise fields from API")
+	require.Equal(t, int64(12), cfg.MaxSeriesToPlot.ValueInt64())
+}
+
+// TestPopulateFromAPI_nullPreservation covers the real regression fixed alongside this test: on a
+// same-type update (prior.MlAnomalyChartsConfig non-nil), Kibana 9.5.0 GA returning a concrete
+// default for an optional field that was previously left unset must still surface as null,
+// matching the calling convention where pm always arrives zero-valued.
+func TestPopulateFromAPI_nullPreservation(t *testing.T) {
+	t.Parallel()
+
+	maxSeries := float32(12)
+	apiConfig := kbapi.KibanaHTTPAPIsMlAnomalyCharts{
+		JobIds:          []string{"job-a"},
+		MaxSeriesToPlot: &maxSeries,
+	}
+
+	prior := &models.PanelModel{
+		MlAnomalyChartsConfig: &models.MlAnomalyChartsConfigModel{
+			JobIDs:          []types.String{types.StringValue("job-a")},
+			MaxSeriesToPlot: types.Int64Null(),
+		},
+	}
+	pm := &models.PanelModel{}
+	diags := mlanomalycharts.PopulateFromAPI(pm, prior, apiConfig)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.MlAnomalyChartsConfig
+	require.Equal(t, "job-a", cfg.JobIDs[0].ValueString())
+	require.True(t, cfg.MaxSeriesToPlot.IsNull())
+}
+
 func TestToAPI_rejectsConfigJSON(t *testing.T) {
 	t.Parallel()
 
@@ -310,8 +369,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 		MlAnomalyChartsConfig: &models.MlAnomalyChartsConfigModel{
 			JobIDs: []types.String{types.StringValue("job-a")},
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := mlanomalycharts.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

@@ -275,6 +275,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_attributes"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "data_source_test"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "description"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "kibana.0.feature.#"),
 					resource.TestCheckNoResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.0.field_security.%"),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.run_as", []string{"elastic", "kibana"}),
@@ -300,8 +301,10 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.clusters", []string{"test-cluster"}),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.grant", []string{"sample"}),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.except.#", "0"),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.names", []string{"sample"}),
 					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices", "false"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.cluster.*", "create_snapshot"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.names.*", "sample"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.privileges.*", "create"),
@@ -328,6 +331,7 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("index_field_security"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "ds_test_idx_field_sec"),
+					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "kibana.0.base", []string{"read"}),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.cluster.*", "monitor"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.names.*", "sample-index"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_security_role.test", "elasticsearch.indices.*.privileges.*", "read"),
@@ -365,7 +369,8 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "name", "ds_test_desc_metadata"),
 					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "description", "Test role description"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_role.test", "metadata"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_role.test", "metadata", `{"custom_key":"custom_value"}`),
+					checks.TestCheckResourceListAttr("data.elasticstack_kibana_security_role.test", "kibana.0.base", []string{"read"}),
 				),
 			},
 		},

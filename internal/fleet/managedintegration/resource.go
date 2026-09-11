@@ -16,7 +16,7 @@
 // under the License.
 
 // Package managedintegration implements the elasticstack_fleet_managed_integration
-// resource (openspec/changes/fleet-managed-integration). It mirrors the
+// resource (openspec/changes/archive/2026-07-22-fleet-managed-integration). It mirrors the
 // structure of internal/fleet/proxy: resource.go wires the entitycore
 // Kibana resource envelope, models.go defines the Plugin Framework model,
 // schema.go defines the schema, and create.go/read.go/update.go/delete.go
@@ -25,7 +25,6 @@ package managedintegration
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -39,7 +38,7 @@ var (
 // Resource implements the Fleet managed integration resource.
 type Resource struct {
 	*entitycore.KibanaResource[managedIntegrationModel]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newResource() *Resource {
@@ -55,7 +54,7 @@ func newResource() *Resource {
 				Update: updateManagedIntegration,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 

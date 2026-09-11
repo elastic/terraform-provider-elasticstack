@@ -242,11 +242,9 @@ func (m ECSMapping) ToAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Di
 		}
 		item.Value = &value
 	case valuesSet:
-		var values []string
-		for _, element := range m.Values.Elements() {
-			if str, ok := element.(types.String); ok && typeutils.IsKnown(str) {
-				values = append(values, str.ValueString())
-			}
+		values := typeutils.StringElements(m.Values, &diags)
+		if diags.HasError() {
+			return kbapi.SecurityOsqueryAPIECSMappingItem{}, diags
 		}
 		sort.Strings(values)
 

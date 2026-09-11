@@ -24,70 +24,36 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan model
-
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	apiClient, apiClientDiags := r.Client().GetKibanaClient(ctx, plan.KibanaConnection)
-	resp.Diagnostics.Append(apiClientDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client := apiClient.GetFleetClient()
-	resp.Diagnostics.Append(entitycore.EnforceVersionRequirements(ctx, apiClient, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func updateAgentDownloadSource(ctx context.Context, client *fleet.Client, plan model, prior model) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
+	var diags diag.Diagnostics
 
 	sourceID := plan.SourceID.ValueString()
 
-	// Read the existing spaces from state to determine where to update.
-	spaceID, diags := fleetutils.GetOperationalSpaceFromState(ctx, req.State)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Read the existing spaces from prior state to determine where to update. When
+	// space_ids changes (e.g. prepending a new space), we must query the space where
+	// the resource currently exists (prior state), not where it will exist (plan).
+	// Otherwise the API call fails with 404.
+	spaceID := fleetutils.SpaceIDFromSet(prior.SpaceIDs)
 
 	body := plan.toAPIUpdateModel(ctx)
 
-	updateResp, diags := fleet.UpdateAgentDownloadSource(ctx, client, sourceID, spaceID, body)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	updateResp, updateDiags := fleet.UpdateAgentDownloadSource(ctx, client, sourceID, spaceID, body)
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
 
 	unwrapped, unwrapDiags := diagutil.UnwrapJSON200(updateResp.JSON200, "agent download source")
-	resp.Diagnostics.Append(unwrapDiags...)
-	if resp.Diagnostics.HasError() {
-		return
+	diags.Append(unwrapDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
 
 	item := unwrapped.Item
-	readState, found, diags := readAndHydrateState(ctx, client, item.Id, spaceID, plan.SpaceIDs, plan.KibanaConnection)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	if !found {
-		resp.Diagnostics.AddError("Unexpected API response", "Updated agent download source could not be read back by source_id")
-		return
-	}
-
-	// This resource shadows the envelope's Update, so it must carry the
-	// envelope-owned timeouts value from the plan; the hydrated read state
-	// leaves it as a zero timeouts.Value{} (untyped Object[]) which fails
-	// State.Set conversion against the schema's typed timeouts attribute.
-	readState.Timeouts = plan.Timeouts
-
-	diags = resp.State.Set(ctx, readState)
-	resp.Diagnostics.Append(diags...)
+	written, writeDiags := finalizeWrite(ctx, client, item.Id, spaceID, plan, "Updated")
+	diags.Append(writeDiags...)
+	return written, diags
 }

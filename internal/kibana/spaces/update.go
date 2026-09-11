@@ -26,15 +26,20 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[resourceModel]) (entitycore.KibanaWriteResult[resourceModel], diag.Diagnostics) {
 	plan := req.Plan
 	oapiClient := client.GetKibanaOapiClient()
 
-	features, d := disabledFeaturesSlice(ctx, plan.DisabledFeatures)
-	if d.HasError() {
-		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, d
+	var diags diag.Diagnostics
+	features := typeutils.SetTypeAs[string](ctx, plan.DisabledFeatures, path.Empty(), &diags)
+	if features == nil {
+		features = []string{}
+	}
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags
 	}
 
 	body := kbapi.PutSpacesSpaceIdJSONRequestBody{
@@ -51,7 +56,6 @@ func updateSpace(ctx context.Context, client *clients.KibanaScopedClient, req en
 	}
 
 	_, apiDiags := kibanaoapi.UpdateSpace(ctx, oapiClient, req.WriteID, body)
-	var diags diag.Diagnostics
 	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[resourceModel]{Model: plan}, diags

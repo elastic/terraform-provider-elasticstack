@@ -32,13 +32,11 @@ type SavedQueryRuleProcessor struct {
 
 func newSavedQueryRuleProcessor() SavedQueryRuleProcessor {
 	return SavedQueryRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPISavedQueryRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPISavedQueryRule, d *Data) diag.Diagnostics {
-				return d.updateFromSavedQueryRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPISavedQueryRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPISavedQueryRule, d *Data) diag.Diagnostics {
+			return d.updateFromSavedQueryRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPISavedQueryRule) string {
+			return v.Id.String()
 		},
 	}
 }

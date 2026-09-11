@@ -19,11 +19,12 @@ package calendar
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ml/getcalendars"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -32,25 +33,18 @@ func readCalendar(ctx context.Context, client *clients.ElasticsearchScopedClient
 	var diags fwdiags.Diagnostics
 
 	calendarID := resourceID
-	if calendarID == "" {
-		diags.AddError("Invalid resource ID", "calendar_id cannot be empty")
+	if diags := ml.RequireNonEmptyID(calendarID, "calendar_id"); diags.HasError() {
 		return state, false, diags
 	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Reading ML calendar: %s", calendarID))
 
 	typedClient := client.GetESClient()
 
-	res, err := typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
-	if err != nil {
-		var esErr *types.ElasticsearchError
-		if errors.As(err, &esErr) && esErr.Status == 404 {
-			return state, false, nil
-		}
-		diags.AddError("Failed to get ML calendar", fmt.Sprintf("Unable to get ML calendar: %s — %s", calendarID, err.Error()))
+	res, diags := elasticsearch.CallOrNotFound(func() (*getcalendars.Response, error) {
+		return typedClient.Ml.GetCalendars().CalendarId(calendarID).Do(ctx)
+	}, "Failed to get ML calendar")
+	if diags.HasError() || res == nil {
 		return state, false, diags
 	}
-
 	if len(res.Calendars) == 0 {
 		return state, false, nil
 	}

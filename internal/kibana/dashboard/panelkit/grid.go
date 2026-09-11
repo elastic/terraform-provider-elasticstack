@@ -73,12 +73,3 @@ func GridToAPI(g models.PanelGridModel) struct {
 func IDFromAPI(id *string) types.String {
 	return types.StringPointerValue(id)
 }
-
-// IDToAPI maps Terraform state into an optional API panel id pointer.
-func IDToAPI(id types.String) *string {
-	if !typeutils.IsKnown(id) {
-		return nil
-	}
-	s := id.ValueString()
-	return &s
-}

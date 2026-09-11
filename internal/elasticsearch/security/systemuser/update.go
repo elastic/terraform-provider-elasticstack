@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // writeSystemUser handles both Create and Update; the system user PUT-password
@@ -36,7 +35,7 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 	data := req.Plan
 	usernameID := req.WriteID
 
-	id, idDiags := client.ID(ctx, usernameID)
+	id, idDiags := entitycore.CompositeIDForWrite(ctx, client, req)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[Data]{}, diags
@@ -77,6 +76,6 @@ func writeSystemUser(ctx context.Context, client *clients.ElasticsearchScopedCli
 		}
 	}
 
-	data.ID = types.StringValue(id.String())
+	data.ID = id
 	return entitycore.WriteResult[Data]{Model: data}, diags
 }

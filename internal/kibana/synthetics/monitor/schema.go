@@ -767,7 +767,7 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg di
 		checkReceive = types.StringNull()
 	}
 	proxyURL := types.StringValue("")
-	if !v.ProxyURL.IsNull() && !v.ProxyURL.IsUnknown() {
+	if typeutils.IsKnown(v.ProxyURL) {
 		proxyURL = v.ProxyURL
 	}
 	if api.ProxyUrl != nil {
@@ -860,7 +860,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg 
 		password = types.StringNull()
 	}
 	proxyURL := types.StringValue("")
-	if !v.ProxyURL.IsNull() && !v.ProxyURL.IsUnknown() {
+	if typeutils.IsKnown(v.ProxyURL) {
 		proxyURL = v.ProxyURL
 	}
 	if api.ProxyUrl != nil {
@@ -950,7 +950,7 @@ func toAPIAlertConfig(ctx context.Context, v basetypes.ObjectValue) (*kbapi.Synt
 
 func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p string) (*kbapi.SyntheticsSslConfig, diag.Diagnostics) {
 	var ssl *kbapi.SyntheticsSslConfig
-	if !v.SslSupportedProtocols.IsNull() && !v.SslSupportedProtocols.IsUnknown() {
+	if typeutils.IsKnown(v.SslSupportedProtocols) {
 		sslSupportedProtocols := typeutils.ListTypeToSliceString(ctx, v.SslSupportedProtocols, path.Root(p).AtName("ssl_supported_protocols"), &dg)
 		if dg.HasError() {
 			return nil, dg
@@ -960,7 +960,7 @@ func toSSLConfig(ctx context.Context, dg diag.Diagnostics, v tfSSLConfig, p stri
 		}
 	}
 
-	if !v.SslVerificationMode.IsNull() && !v.SslVerificationMode.IsUnknown() {
+	if typeutils.IsKnown(v.SslVerificationMode) {
 		if ssl == nil {
 			ssl = &kbapi.SyntheticsSslConfig{}
 		}
@@ -1160,10 +1160,10 @@ func (v *tfModelV0) newTCPMonitorRequest(
 	}
 
 	additionalProperties := map[string]any{}
-	if !v.TCP.CheckSend.IsNull() && !v.TCP.CheckSend.IsUnknown() {
+	if typeutils.IsKnown(v.TCP.CheckSend) {
 		additionalProperties["check.send"] = v.TCP.CheckSend.ValueString()
 	}
-	if !v.TCP.CheckReceive.IsNull() && !v.TCP.CheckReceive.IsUnknown() {
+	if typeutils.IsKnown(v.TCP.CheckReceive) {
 		additionalProperties["check.receive"] = v.TCP.CheckReceive.ValueString()
 	}
 

@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -41,7 +40,7 @@ var (
 
 type outputResource struct {
 	*entitycore.KibanaResource[outputModel]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newOutputResource() *outputResource {
@@ -57,7 +56,7 @@ func newOutputResource() *outputResource {
 				Update: updateOutput,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("output_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("output_id")),
 	}
 }
 

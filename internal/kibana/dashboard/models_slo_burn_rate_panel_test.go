@@ -298,16 +298,20 @@ func Test_populateSloBurnRateFromAPI_sloInstanceID_explicitWildcard_roundTrips(t
 	assert.Equal(t, "*", pm.SloBurnRateConfig.SloInstanceID.ValueString())
 }
 
-// When prior state has no config block (nil), preserve nil intent.
-func Test_populateSloBurnRateFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
+// When prior has no slo_burn_rate_config (e.g. the panel at this index was previously a different
+// type, or this is the first read after creation/import), there is no prior null intent to honor:
+// the config must be populated unconditionally from the API, exactly like the nil-prior import path.
+func Test_populateSloBurnRateFromAPI_typeChangeRecovery(t *testing.T) {
 	pm := &models.PanelModel{}
-	tfPanel := &models.PanelModel{} // no SloBurnRateConfig
+	tfPanel := &models.PanelModel{Type: types.StringValue("ml_anomaly_charts")} // no SloBurnRateConfig
 
 	apiCfg := makeSloBurnRateAPIConfig("slo-1", "72h")
 	diags := sloburnrate.PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diags.HasError())
 
-	assert.Nil(t, pm.SloBurnRateConfig, "SloBurnRateConfig should remain nil when prior state had no config block")
+	require.NotNil(t, pm.SloBurnRateConfig, "type-change/creation path should populate config from API")
+	assert.Equal(t, "slo-1", pm.SloBurnRateConfig.SloID.ValueString())
+	assert.Equal(t, "72h", pm.SloBurnRateConfig.Duration.ValueString())
 }
 
 // Required fields (slo_id, duration) are always updated from API response.

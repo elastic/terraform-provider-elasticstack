@@ -27,7 +27,7 @@ Manages Machine Learning filters. A filter contains a list of strings that can b
 
 ### Read-Only
 
-- `id` (String) Internal identifier of the resource.
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

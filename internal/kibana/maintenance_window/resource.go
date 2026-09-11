@@ -20,6 +20,7 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,7 +44,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[Model]{
 				Schema: getSchema,
 				Read:   readMaintenanceWindow,
-				Delete: deleteMaintenanceWindow,
+				Delete: entitycore.SimpleKibanaDelete[Model](kibanaoapi.DeleteMaintenanceWindow),
 				Create: createMaintenanceWindow,
 				Update: updateMaintenanceWindow,
 			},

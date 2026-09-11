@@ -32,11 +32,9 @@ type QueryRuleProcessor struct {
 
 func newQueryRuleProcessor() QueryRuleProcessor {
 	return QueryRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIQueryRule]{
-			updateFn: updateFromQueryRule,
-			idFn: func(v kbapi.SecurityDetectionsAPIQueryRule) string {
-				return v.Id.String()
-			},
+		updateFn: updateFromQueryRule,
+		idFn: func(v kbapi.SecurityDetectionsAPIQueryRule) string {
+			return v.Id.String()
 		},
 	}
 }

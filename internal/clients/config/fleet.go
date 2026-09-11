@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -48,7 +49,7 @@ func newFleetConfigFromFramework(ctx context.Context, cfg ProviderConfiguration,
 			config.URL = fleetCfg.Endpoint.ValueString()
 		}
 
-		if !fleetCfg.Insecure.IsNull() && !fleetCfg.Insecure.IsUnknown() {
+		if typeutils.IsKnown(fleetCfg.Insecure) {
 			config.Insecure = fleetCfg.Insecure.ValueBool()
 		}
 

@@ -130,11 +130,15 @@ func (d *Data) updateCommonRuleFieldsFromAPI(ctx context.Context, fields commonA
 	d.Note = typeutils.StringishPointerValue(fields.Note)
 	d.Setup = typeutils.NonEmptyStringishValue(fields.Setup)
 
-	diags.Append(d.updateIndexFromAPI(ctx, fields.Index)...)
-	diags.Append(d.updateAuthorFromAPI(ctx, fields.Author)...)
-	diags.Append(d.updateTagsFromAPI(ctx, fields.Tags)...)
-	diags.Append(d.updateFalsePositivesFromAPI(ctx, fields.FalsePositives)...)
-	diags.Append(d.updateReferencesFromAPI(ctx, fields.References)...)
+	var indexStrs []string
+	if fields.Index != nil {
+		indexStrs = *fields.Index
+	}
+	d.Index = typeutils.StringsToListMust(indexStrs)
+	d.Author = typeutils.StringsToListMust(fields.Author)
+	d.Tags = typeutils.StringsToListMust(fields.Tags)
+	d.FalsePositives = typeutils.StringsToListMust(fields.FalsePositives)
+	d.References = typeutils.StringsToListMust(fields.References)
 
 	diags.Append(d.updateActionsFromAPI(ctx, fields.Actions)...)
 	diags.Append(d.updateExceptionsListFromAPI(ctx, fields.ExceptionsList)...)
@@ -256,10 +260,9 @@ func convertRiskScoreMappingToModel(ctx context.Context, apiRiskScoreMapping kba
 			Field:    types.StringValue(apiMapping.Field),
 			Operator: types.StringValue(string(apiMapping.Operator)),
 			Value:    types.StringValue(apiMapping.Value),
-		}
 
-		// Set optional risk score if provided
-		mapping.RiskScore = typeutils.IntPointerToInt64Value(apiMapping.RiskScore)
+			// Set optional risk score if provided
+			RiskScore: typeutils.IntPointerToInt64Value(apiMapping.RiskScore)}
 
 		mappings = append(mappings, mapping)
 	}
@@ -297,10 +300,9 @@ func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegratio
 		integration := RelatedIntegrationModel{
 			Package: types.StringValue(apiIntegration.Package),
 			Version: types.StringValue(apiIntegration.Version),
-		}
 
-		// Set optional integration field if provided
-		integration.Integration = typeutils.StringishPointerValue(apiIntegration.Integration)
+			// Set optional integration field if provided
+			Integration: typeutils.StringishPointerValue(apiIntegration.Integration)}
 
 		integrations = append(integrations, integration)
 	}
@@ -449,8 +451,8 @@ func convertOsqueryResponseActionToModel(ctx context.Context, osqueryAction kbap
 	responseAction.ActionTypeID = types.StringValue(string(osqueryAction.ActionTypeId))
 
 	// Convert osquery params
-	paramsModel := ResponseActionParamsModel{}
-	paramsModel.Query = types.StringPointerValue(osqueryAction.Params.Query)
+	paramsModel := ResponseActionParamsModel{
+		Query: types.StringPointerValue(osqueryAction.Params.Query)}
 	if osqueryAction.Params.PackId != nil {
 		paramsModel.PackID = types.StringPointerValue(osqueryAction.Params.PackId)
 	} else {
@@ -535,7 +537,7 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 	commandParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams()
 	if err == nil {
 		switch commandParams.Command {
-		case "isolate":
+		case endpointCommandIsolate:
 			defaultParams, err := endpointAction.Params.AsSecurityDetectionsAPIDefaultParams()
 			if err != nil {
 				diags.AddError("Failed to parse endpoint default params", fmt.Sprintf("Error: %s", err.Error()))
@@ -548,34 +550,60 @@ func convertEndpointResponseActionToModel(ctx context.Context, endpointAction kb
 				}
 				paramsModel.Config = types.ObjectNull(getEndpointProcessConfigType())
 			}
-		case "kill-process", "suspend-process":
+		case endpointCommandKillProcess, endpointCommandSuspendProcess:
 			processesParams, err := endpointAction.Params.AsSecurityDetectionsAPIProcessesParams()
 			if err != nil {
 				diags.AddError("Failed to parse endpoint processes params", fmt.Sprintf("Error: %s", err.Error()))
+				break
+			}
+			var (
+				command   string
+				comment   *string
+				field     string
+				overwrite *bool
+			)
+			if commandParams.Command == endpointCommandKillProcess {
+				killParams, killErr := processesParams.AsSecurityDetectionsAPIKillProcessParams()
+				if killErr != nil {
+					diags.AddError("Failed to parse endpoint kill-process params", fmt.Sprintf("Error: %s", killErr.Error()))
+					break
+				}
+				command = string(killParams.Command)
+				comment = killParams.Comment
+				field = killParams.Config.Field
+				overwrite = killParams.Config.Overwrite
 			} else {
-				paramsModel.Command = types.StringValue(string(processesParams.Command))
-				if processesParams.Comment != nil {
-					paramsModel.Comment = types.StringPointerValue(processesParams.Comment)
-				} else {
-					paramsModel.Comment = types.StringNull()
+				suspendParams, suspendErr := processesParams.AsSecurityDetectionsAPISuspendProcessParams()
+				if suspendErr != nil {
+					diags.AddError("Failed to parse endpoint suspend-process params", fmt.Sprintf("Error: %s", suspendErr.Error()))
+					break
 				}
+				command = string(suspendParams.Command)
+				comment = suspendParams.Comment
+				field = suspendParams.Config.Field
+				overwrite = suspendParams.Config.Overwrite
+			}
+			paramsModel.Command = types.StringValue(command)
+			if comment != nil {
+				paramsModel.Comment = types.StringPointerValue(comment)
+			} else {
+				paramsModel.Comment = types.StringNull()
+			}
 
-				// Convert config
-				configModel := EndpointProcessConfigModel{
-					Field: types.StringValue(processesParams.Config.Field),
-				}
-				if processesParams.Config.Overwrite != nil {
-					configModel.Overwrite = types.BoolPointerValue(processesParams.Config.Overwrite)
-				} else {
-					configModel.Overwrite = types.BoolNull()
-				}
+			configModel := EndpointProcessConfigModel{
+				Field: types.StringValue(field),
+			}
+			if overwrite != nil {
+				configModel.Overwrite = types.BoolPointerValue(overwrite)
+			} else {
+				configModel.Overwrite = types.BoolNull()
+			}
 
-				configObjectValue, configDiags := types.ObjectValueFrom(ctx, getEndpointProcessConfigType(), configModel)
-				if configDiags.HasError() {
-					diags.Append(configDiags...)
-				} else {
-					paramsModel.Config = configObjectValue
-				}
+			configObjectValue, configDiags := types.ObjectValueFrom(ctx, getEndpointProcessConfigType(), configModel)
+			if configDiags.HasError() {
+				diags.Append(configDiags...)
+			} else {
+				paramsModel.Config = configObjectValue
 			}
 		}
 	} else {
@@ -615,7 +643,7 @@ func convertThresholdToModel(ctx context.Context, apiThreshold kbapi.SecurityDet
 		copy(fieldStrings, multipleFields)
 		fieldList = typeutils.SliceToListTypeString(ctx, fieldStrings, path.Root("threshold").AtName("field"), &diags)
 	} else {
-		fieldList = types.ListValueMust(types.StringType, []attr.Value{})
+		fieldList = typeutils.StringsToListMust(nil)
 	}
 
 	// Handle cardinality (optional)
@@ -678,7 +706,7 @@ func (d *Data) updateThreatFiltersFromAPI(ctx context.Context, apiThreatFilters 
 	}
 
 	if len(*apiThreatFilters) == 0 {
-		d.ThreatFilters = types.ListValueMust(types.StringType, []attr.Value{})
+		d.ThreatFilters = typeutils.StringsToListMust(nil)
 		return diags
 	}
 
@@ -718,54 +746,6 @@ func updateListFieldFromAPI[T any](
 		return converter(ctx, slice)
 	}
 	return nullList, nil
-}
-
-// stringSliceOrEmptyList converts a []string to a types.List, returning an empty
-// (non-null) list when strs is empty.
-func stringSliceOrEmptyList(ctx context.Context, strs []string, p path.Path, diags *diag.Diagnostics) types.List {
-	if len(strs) > 0 {
-		return typeutils.ListValueFrom(ctx, strs, types.StringType, p, diags)
-	}
-	return types.ListValueMust(types.StringType, []attr.Value{})
-}
-
-// Helper function to update index patterns from API response
-func (d *Data) updateIndexFromAPI(ctx context.Context, index *[]string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	var strs []string
-	if index != nil {
-		strs = *index
-	}
-	d.Index = stringSliceOrEmptyList(ctx, strs, path.Root("index"), &diags)
-	return diags
-}
-
-// Helper function to update author from API response
-func (d *Data) updateAuthorFromAPI(ctx context.Context, author []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.Author = stringSliceOrEmptyList(ctx, author, path.Root("author"), &diags)
-	return diags
-}
-
-// Helper function to update tags from API response
-func (d *Data) updateTagsFromAPI(ctx context.Context, tags []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.Tags = stringSliceOrEmptyList(ctx, tags, path.Root("tags"), &diags)
-	return diags
-}
-
-// Helper function to update false positives from API response
-func (d *Data) updateFalsePositivesFromAPI(ctx context.Context, falsePositives []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.FalsePositives = stringSliceOrEmptyList(ctx, falsePositives, path.Root("false_positives"), &diags)
-	return diags
-}
-
-// Helper function to update references from API response
-func (d *Data) updateReferencesFromAPI(ctx context.Context, references []string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	d.References = stringSliceOrEmptyList(ctx, references, path.Root("references"), &diags)
-	return diags
 }
 
 func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {
@@ -843,14 +823,14 @@ func (d *Data) updateThresholdAlertSuppressionFromAPI(ctx context.Context, apiSu
 		return diags
 	}
 
-	model := AlertSuppressionModel{}
+	model := AlertSuppressionModel{
 
-	// Threshold alert suppression only has duration field, so we set group_by and missing_fields_strategy to null
-	model.GroupBy = types.ListNull(types.StringType)
-	model.MissingFieldsStrategy = types.StringNull()
+		// Threshold alert suppression only has duration field, so we set group_by and missing_fields_strategy to null
+		GroupBy:               types.ListNull(types.StringType),
+		MissingFieldsStrategy: types.StringNull(),
 
-	// Convert duration (always present in threshold alert suppression)
-	model.Duration = parseDurationFromAPI(apiSuppression.Duration)
+		// Convert duration (always present in threshold alert suppression)
+		Duration: parseDurationFromAPI(apiSuppression.Duration)}
 
 	alertSuppressionObj, objDiags := types.ObjectValueFrom(ctx, getAlertSuppressionType(), model)
 	diags.Append(objDiags...)
