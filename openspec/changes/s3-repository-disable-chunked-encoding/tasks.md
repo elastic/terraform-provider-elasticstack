@@ -59,12 +59,12 @@
 
 ## 6. Documentation and spec sync
 
-- [ ] 6.1 Run `make docs-generate` and commit the resulting resource/data-source doc updates for
+- [x] 6.1 Run `make docs-generate` and commit the resulting resource/data-source doc updates for
   the two new `s3` block attributes.
-- [ ] 6.2 Sync this change's delta spec into
+- [x] 6.2 Sync this change's delta spec into
   `openspec/specs/elasticsearch-snapshot-repository/spec.md`: update the `s3` block Schema HCL
   sketch, and add REQ-019/REQ-020 (or renumber to the next free REQ id if other changes have
   landed first).
-- [ ] 6.3 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate
+- [x] 6.3 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate
   s3-repository-disable-chunked-encoding --type change` and resolve any reported issues.
-- [ ] 6.4 Run `make check-openspec` after implementation to confirm specs and code stay in sync.
+- [x] 6.4 Run `make check-openspec` after implementation to confirm specs and code stay in sync.
