@@ -55,9 +55,9 @@ The `build` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, set up No
 
 ### Requirement: Acceptance test job structure (REQ-009–REQ-014)
 
-The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
+The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The job's `strategy.matrix.version` list SHALL be loaded at run time from the pinned versions artifact `.github/versions/acceptance-test-matrix.json` (via `fromJson()` from a preceding job's output that reads the checked-out file) rather than hardcoded as a literal YAML list. The matrix acceptance test job SHALL run with a non-fail-fast matrix covering the loaded stack versions crossed with a static `shard: [0, 1]` axis. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
 
-For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. Forced synthetics installation SHALL run only for configured version subsets. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
+For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. Forced synthetics installation SHALL run only for configured version subsets, matched by numeric major.minor range per the "Per-version environment rules match version ranges, not exact patches" requirement. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
 
 The stack-start step SHALL have a step-level timeout so that a hung container image pull fails fast instead of consuming the full job timeout.
 
@@ -94,13 +94,19 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 - **AND** `make testacc`'s `acctest.PreCheck` SHALL ensure a default agent download source exists
 - **AND** no separate per-version-gated Fleet setup step SHALL be required for this coverage
 
+#### Scenario: Matrix version list is loaded from the pinned artifact
+
+- **GIVEN** the checked-out commit's `.github/versions/acceptance-test-matrix.json`
+- **WHEN** the acceptance test job's matrix is evaluated
+- **THEN** `strategy.matrix.version` SHALL equal exactly the JSON array in that file for that commit, independent of what a version-matrix computation would currently produce
+
 ### Requirement: Pre-pull fallback fleet image with retry
 
-Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries that use a Docker Hub fallback image. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. This step SHALL be skipped for matrix entries that use the default `docker.elastic.co` registry.
+Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries whose version falls within the Docker-Hub-fallback version range. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. This step SHALL be skipped for matrix entries outside that range, which use the default `docker.elastic.co` registry.
 
 #### Scenario: Docker Hub fleet image is pre-pulled successfully
 
-- **GIVEN** a matrix entry with `fleetImage` set to a Docker Hub image
+- **GIVEN** a matrix entry whose version falls within the Docker-Hub-fallback version range
 - **WHEN** the pre-pull step executes
 - **THEN** the image SHALL be pulled with a per-attempt timeout
 - **AND** failed attempts SHALL be retried up to three times
@@ -108,7 +114,7 @@ Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fl
 
 #### Scenario: Pre-pull is skipped for docker.elastic.co images
 
-- **GIVEN** a matrix entry without a `fleetImage` override
+- **GIVEN** a matrix entry whose version falls outside the Docker-Hub-fallback version range
 - **WHEN** the test job step list is evaluated
 - **THEN** the pre-pull step SHALL be skipped
 - **AND** the stack-start step SHALL proceed normally
@@ -171,7 +177,7 @@ The change-classification job SHALL request the minimum permissions required to 
 
 ### Requirement: Change classification gate (REQ-032–REQ-033)
 
-The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push` and `workflow_dispatch`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
+The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` and other than `.github/versions/acceptance-test-matrix.json`. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push` and `workflow_dispatch`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
 
 When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether those jobs are required.
 
@@ -192,6 +198,12 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 - **GIVEN** a non-`pull_request` event triggering the workflow (including `push` or `workflow_dispatch`)
 - **WHEN** the change-classification job runs
 - **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
+
+#### Scenario: Pinned versions artifact is provider-impacting
+
+- **GIVEN** a `pull_request` workflow run whose only changed file is `.github/versions/acceptance-test-matrix.json`
+- **WHEN** the change-classification job evaluates the diff
+- **THEN** it SHALL report `provider_changes=true`
 
 ### Requirement: Provider gate job (REQ-034–REQ-036)
 
@@ -234,32 +246,34 @@ The `gate` job SHALL provide a stable required-check target that can be used by 
 ### Requirement: Snapshot-to-GA version promotion
 
 When the Elastic Stack release tracked by the acceptance matrix's snapshot-labeled entry
-(`<version>-SNAPSHOT`) reaches general availability, the workflow SHALL replace that matrix entry
-with the released version string rather than adding a separate, additional matrix entry for the same
-stack line. The promoted entry SHALL be added to every per-version step condition (such as Fleet
-setup) that had matched the snapshot label only via the `-SNAPSHOT` suffix, so the promoted version
-does not lose step coverage it received while labeled as a snapshot. The promoted entry SHALL no
-longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be treated as blocking
-(`continue-on-error: false`) like every other non-snapshot matrix entry, and SHALL NOT trigger the
-snapshot-failure PR warning comment.
+(`<version>-SNAPSHOT`) reaches general availability, the pinned versions artifact SHALL be rewritten
+to replace that entry with the released version string rather than adding a separate, additional
+entry for the same stack line. This rewrite SHALL be performed by the version-matrix generator
+(`ci-version-matrix-generation` capability) as part of its normal desired-list computation, not by a
+human hand-editing the workflow YAML. Because per-version step conditions match by
+numeric major.minor range rather than by exact version string (see "Per-version environment rules
+match version ranges, not exact patches"), a promoted entry SHALL continue to receive the same step
+coverage it received while labeled as a snapshot without requiring any edit to those conditions. The
+promoted entry SHALL no longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be
+treated as blocking (`continue-on-error: false`) like every other non-snapshot matrix entry, and
+SHALL NOT trigger the snapshot-failure PR warning comment.
 
 #### Scenario: Snapshot entry is promoted to its GA release
 
-- **GIVEN** the acceptance matrix contains a snapshot-labeled entry `X.Y.0-SNAPSHOT` tracking an
+- **GIVEN** the pinned versions artifact contains a snapshot-labeled entry `X.Y.0-SNAPSHOT` tracking an
   in-development stack line
 - **AND** that stack line reaches general availability as `X.Y.0`
-- **WHEN** the matrix is updated for the release
-- **THEN** the `X.Y.0-SNAPSHOT` entry SHALL be rewritten to `X.Y.0`
-- **AND** no additional matrix entry SHALL be added for the same `X.Y` stack line
+- **WHEN** the version-matrix generator next computes the desired list
+- **THEN** the `X.Y.0-SNAPSHOT` entry SHALL be rewritten to `X.Y.0` in the pinned artifact
+- **AND** no additional entry SHALL be added for the same `X.Y` stack line
 
 #### Scenario: Promoted entry keeps per-version step coverage
 
-- **GIVEN** a per-version step condition that previously matched a snapshot entry only via
-  `endsWith(matrix.version, '-SNAPSHOT')` (for example, Fleet setup)
+- **GIVEN** a per-version-range step condition (for example, forced synthetics install) that matches a
+  snapshot entry's minor via numeric major.minor bounds rather than `endsWith(matrix.version, '-SNAPSHOT')`
 - **WHEN** that snapshot entry is promoted to its GA version string
-- **THEN** the promoted version string SHALL be added explicitly to that step's condition
-- **AND** the step SHALL continue to run for the promoted version exactly as it did while the entry
-  was labeled as a snapshot
+- **THEN** the promoted version string SHALL continue to satisfy that step's range condition without
+  any change to the workflow YAML
 
 #### Scenario: Promoted entry becomes blocking
 
@@ -267,4 +281,31 @@ snapshot-failure PR warning comment.
 - **WHEN** the acceptance test step (`make testacc`) fails for that entry
 - **THEN** `continue-on-error` SHALL NOT apply to that failure
 - **AND** the snapshot-failure PR warning comment step SHALL NOT fire for that entry
+
+### Requirement: Per-version environment rules match version ranges, not exact patches
+
+Per-version environment rules in the acceptance test job — Docker-Hub-fallback fleet image selection, `ubuntu-22.04` runner selection, and forced synthetics install — SHALL match the integer major and minor components of each stack version, rather than a `strategy.matrix.include` list, an `if:` condition keyed to exact patch strings, or a GitHub Actions `startsWith(matrix.version, 'X.Y.')` prefix (which treats `8.10.x` as matching `8.1.`). These rules SHALL NOT be part of the pinned versions artifact. The job that loads the pinned list (or an equivalent helper) SHALL attach the derived flags so the `test` job does not re-derive them with string-prefix expressions.
+
+The following numeric ranges SHALL apply:
+
+- Docker Hub fleet image: major `8`, minor `0` through `1`
+- `ubuntu-22.04` runner: major `8`, minor `0` through `4`
+- Forced synthetics install: major `8`, minor `14` through `17`
+
+#### Scenario: Range rule survives an automated patch bump
+
+- **GIVEN** a per-version-range rule matches every patch of a given minor (for example, all `8.14.x` patches trigger forced synthetics install)
+- **WHEN** the pinned versions artifact is updated to a newer patch of that same minor
+- **THEN** the rule SHALL continue to match the new patch without any edit to the workflow YAML
+
+#### Scenario: Two-digit minors do not match a one-digit minor range
+
+- **GIVEN** the runner rule applies to major `8` minor `0` through `4`
+- **WHEN** the matrix includes `8.10.4` (or any `8.1N.x` / `8.2N.x` two-digit minor)
+- **THEN** that entry SHALL NOT receive `ubuntu-22.04` or the Docker Hub fleet image by virtue of string-prefix overlap with `8.1` or `8.2`
+
+#### Scenario: No `include:` list is used for per-version overrides
+
+- **WHEN** the acceptance test job's `strategy` block is inspected
+- **THEN** it SHALL NOT contain a `matrix.include` list keyed to exact version strings for runner or fleet-image selection
 
