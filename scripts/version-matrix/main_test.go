@@ -40,6 +40,14 @@ func TestRunRequiresSubcommand(t *testing.T) {
 	assert.Contains(t, err.Error(), "subcommand")
 }
 
+func TestWriteWorkflowWarning_escapesPercentAndNewline(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	writeWorkflowWarning(&buf, "failed 100%\nretry")
+	assert.Equal(t, "::warning::failed 100%25%0Aretry\n", buf.String())
+}
+
 func TestRunManagePRNoOpWhenUnchanged(t *testing.T) {
 	err := run([]string{"manage-pr", "-changed=false"}, io.Discard, io.Discard)
 	require.NoError(t, err)

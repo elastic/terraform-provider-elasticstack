@@ -67,7 +67,7 @@ func usageError(w io.Writer) error {
 	return errors.New("unknown or missing subcommand")
 }
 
-func cmdManagePR(args []string, _, stderr io.Writer) error {
+func cmdManagePR(args []string, stdout, stderr io.Writer) error {
 	fsFlag := flag.NewFlagSet("manage-pr", flag.ContinueOnError)
 	fsFlag.SetOutput(stderr)
 	changed := fsFlag.Bool("changed", true, "whether the computed version list differs from the pin")
@@ -117,7 +117,7 @@ func cmdManagePR(args []string, _, stderr io.Writer) error {
 		return fmt.Errorf("manage-pr: %w", err)
 	}
 	for _, w := range res.Warnings {
-		fmt.Fprintf(os.Stdout, "::warning::%s\n", w)
+		writeWorkflowWarning(stdout, w)
 	}
 	writes := [][2]string{
 		{"pr_action", res.Action},
@@ -130,6 +130,17 @@ func cmdManagePR(args []string, _, stderr io.Writer) error {
 		}
 	}
 	return nil
+}
+
+func writeWorkflowWarning(w io.Writer, msg string) {
+	fmt.Fprintf(w, "::warning::%s\n", escapeGitHubWorkflowData(msg))
+}
+
+func escapeGitHubWorkflowData(msg string) string {
+	msg = strings.ReplaceAll(msg, "%", "%25")
+	msg = strings.ReplaceAll(msg, "\r", "%0D")
+	msg = strings.ReplaceAll(msg, "\n", "%0A")
+	return msg
 }
 
 func ownerRepoFromEnv() (owner, repo string, err error) {
