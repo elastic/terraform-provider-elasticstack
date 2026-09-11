@@ -219,8 +219,11 @@ install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
+GOLANGCI_LINT_VERSION := v2.13.1
+GORELEASER_VERSION := v2.18.1
+
 $(GOBIN)/golangci-lint: Makefile | $(GOBIN)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.13.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: tools
 tools: $(GOBIN)/golangci-lint  ## Download golangci-lint locally if necessary.
@@ -312,19 +315,21 @@ prep-release: ## Dispatch the release preparation workflow (BUMP=patch|minor|maj
 	  esac; \
 	  gh workflow run prep-release.yml --field bump="$$BUMP"
 
+GORELEASER_RUN := curl -sfL https://goreleaser.com/static/run | VERSION=$(GORELEASER_VERSION) sh -s --
+
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
-	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean
+	@ $(GORELEASER_RUN) release --snapshot --clean
 
 
 .PHONY: release-no-publish
 release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
-	@ go tool github.com/goreleaser/goreleaser/v2 release --skip=publish,announce,validate  --parallelism=2
+	@ $(GORELEASER_RUN) release --skip=publish,announce,validate  --parallelism=2
 
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parallelism=4
+	@ $(GORELEASER_RUN) release --clean  --parallelism=4
 
 
 .PHONY: check-sign-release
