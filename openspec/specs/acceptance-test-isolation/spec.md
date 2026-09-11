@@ -41,14 +41,14 @@ All store, entity, entity-link, and data-source resource blocks in the fixture S
 
 ### Requirement: Exactly one 9.4.x GA entry in the acceptance-test CI matrix (REQ-ACC-002)
 
-The stack-version list pinned at `.github/versions/acceptance-test-matrix.json` (consumed by `.github/workflows/provider.yml`'s acceptance-test matrix) SHALL include exactly one `9.4.x` GA entry — the latest published `9.4` patch — and SHALL NOT include more than one `9.4.x` patch at a time. This requirement is a version-range invariant, not a pin to a specific patch string, so an automated `9.4` patch bump satisfies it without a spec change.
+The stack-version list pinned at `.github/versions/acceptance-test-matrix.json` (consumed by `.github/workflows/provider.yml`'s acceptance-test matrix) SHALL include exactly one `9.4.x` GA entry — the latest pullable `9.4` patch — and SHALL NOT include more than one `9.4.x` patch at a time. The latest pullable patch is the latest published `9.4` patch whose Elasticsearch, Kibana, and applicable Agent image manifests all resolve. When those manifests are unavailable, the generator's image-probe fallback retains the previously pinned `9.4` patch without failing the run; that retained pin still satisfies this requirement. This requirement is a version-range invariant, not a pin to a specific patch string, so an automated `9.4` patch bump satisfies it without a spec change.
 
 #### Scenario: Pinned list has exactly one latest 9.4.x GA entry
 
 - **GIVEN** the pinned versions artifact after a successful version-matrix computation
 - **WHEN** the `9.4.x` entries are inspected
 - **THEN** there SHALL be exactly one `9.4.x` GA version
-- **AND** that version SHALL be the latest published `9.4` patch from the generator's GA catalog
+- **AND** that version SHALL be the latest pullable `9.4` patch from the generator's GA catalog (the latest published patch whose compose-stack manifests resolve, or the previously pinned `9.4` patch when image-probe fallback retains it)
 
 #### Scenario: Automated patch bump keeps exactly one 9.4.x entry
 
