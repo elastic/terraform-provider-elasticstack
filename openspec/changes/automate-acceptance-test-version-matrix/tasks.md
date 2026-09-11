@@ -30,8 +30,8 @@
 
 ## 4. Change classification
 
-- [ ] 4.1 Update `.github/scripts/workflows/lib/classify-changes.js` so `.github/versions/acceptance-test-matrix.json` is provider-impacting (i.e., excluded from the "any path under `.github/`" non-impacting carve-out)
-- [ ] 4.2 Update/add table-driven unit tests for `classify-changes.js` covering: a PR that changes only the pinned versions artifact → `provider_changes=true`; a PR that changes other `.github/` paths (not `provider.yml`, not the versions artifact) → unaffected/`provider_changes=false` as before
+- [x] 4.1 Update `.github/scripts/workflows/lib/classify-changes.js` so `.github/versions/acceptance-test-matrix.json` is provider-impacting (i.e., excluded from the "any path under `.github/`" non-impacting carve-out)
+- [x] 4.2 Update/add table-driven unit tests for `classify-changes.js` covering: a PR that changes only the pinned versions artifact → `provider_changes=true`; a PR that changes other `.github/` paths (not `provider.yml`, not the versions artifact) → unaffected/`provider_changes=false` as before
 
 ## 5. Auto-approve `version-matrix` category
 
