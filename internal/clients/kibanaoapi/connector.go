@@ -120,8 +120,8 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 		return nil, diagutil.ErrDiag("Unable to get connectors", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return nil, diags
 	}
 
 	foundConnectors := []*models.KibanaActionConnector{}
@@ -213,8 +213,8 @@ func DeleteConnector(ctx context.Context, client *Client, connectorID string, sp
 		return diagutil.ErrDiag("Unable to delete connector", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent); diags.HasError() {
+		return diags
 	}
 
 	return nil
