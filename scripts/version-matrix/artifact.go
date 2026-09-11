@@ -36,7 +36,29 @@ func ReadArtifact(path string) ([]string, error) {
 	if err := json.Unmarshal(data, &versions); err != nil {
 		return nil, fmt.Errorf("parse artifact: %w", err)
 	}
+	if err := validatePinnedVersions(versions); err != nil {
+		return nil, err
+	}
 	return versions, nil
+}
+
+func validatePinnedVersions(versions []string) error {
+	if len(versions) == 0 {
+		return fmt.Errorf("parse artifact: empty version list")
+	}
+	seen := make(map[string]struct{}, len(versions))
+	for _, version := range versions {
+		if _, exists := seen[version]; exists {
+			return fmt.Errorf("parse artifact: duplicate version %q", version)
+		}
+		seen[version] = struct{}{}
+		base := strings.TrimSuffix(version, "-SNAPSHOT")
+		major, _, _, ok := parseGATag(base)
+		if !ok || (major != 8 && major != 9) {
+			return fmt.Errorf("parse artifact: invalid version %q (want 8.x/9.x GA X.Y.Z or X.Y.Z-SNAPSHOT)", version)
+		}
+	}
+	return nil
 }
 
 func WriteArtifact(path string, versions []string) error {

@@ -37,6 +37,54 @@ func TestReadArtifactReturnsPinnedContents(t *testing.T) {
 	assert.Equal(t, []string{"8.19.21", "9.6.0-SNAPSHOT"}, got)
 }
 
+func TestReadArtifactRejectsEmptyList(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, os.WriteFile(path, []byte("[]\n"), 0o644))
+
+	got, err := ReadArtifact(path)
+	require.Error(t, err)
+	assert.Nil(t, got)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestReadArtifactRejectsDuplicates(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, os.WriteFile(path, []byte(`["8.19.21","8.19.21"]`+"\n"), 0o644))
+
+	got, err := ReadArtifact(path)
+	require.Error(t, err)
+	assert.Nil(t, got)
+	assert.Contains(t, err.Error(), "duplicate")
+}
+
+func TestReadArtifactRejectsInvalidMajor(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, os.WriteFile(path, []byte(`["7.17.29"]`+"\n"), 0o644))
+
+	got, err := ReadArtifact(path)
+	require.Error(t, err)
+	assert.Nil(t, got)
+	assert.Contains(t, err.Error(), "7.17.29")
+}
+
+func TestReadArtifactRejectsInvalidFormat(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, os.WriteFile(path, []byte(`["8.19"]`+"\n"), 0o644))
+
+	got, err := ReadArtifact(path)
+	require.Error(t, err)
+	assert.Nil(t, got)
+	assert.Contains(t, err.Error(), "8.19")
+}
+
 func TestWriteArtifactSortsAscendingWithSnapshotLast(t *testing.T) {
 	t.Parallel()
 
