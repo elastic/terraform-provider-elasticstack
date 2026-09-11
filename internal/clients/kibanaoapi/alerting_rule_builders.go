@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -133,12 +134,8 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			}
 
 			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int32, len(action.AlertsFilter.Timeframe.Days))
-				for i, d := range action.AlertsFilter.Timeframe.Days {
-					days[i] = int32(d)
-				}
 				a.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       days,
+					Days:       alertingactions.Int32FromInt(action.AlertsFilter.Timeframe.Days),
 					Timezone:   action.AlertsFilter.Timeframe.Timezone,
 					HoursStart: action.AlertsFilter.Timeframe.Hours.Start,
 					HoursEnd:   action.AlertsFilter.Timeframe.Hours.End,
@@ -363,12 +360,8 @@ func buildActionsSlice(modelActions []models.AlertingRuleAction) []alertingRuleA
 				}
 			}
 			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int, len(action.AlertsFilter.Timeframe.Days))
-				for j, d := range action.AlertsFilter.Timeframe.Days {
-					days[j] = int(d)
-				}
 				filter.Timeframe = &alertingRuleActionTimeframe{
-					Days: days,
+					Days: alertingactions.IntFromInt32(action.AlertsFilter.Timeframe.Days),
 					Hours: struct {
 						End   string `json:"end"`
 						Start string `json:"start"`

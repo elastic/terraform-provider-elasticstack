@@ -67,3 +67,13 @@ func TestIntFromInt64(t *testing.T) {
 	require.Equal(t, []int{1, 2, 3}, IntFromInt64([]int64{1, 2, 3}))
 	require.Equal(t, []int{}, IntFromInt64([]int64{}))
 }
+
+func TestInt32FromInt(t *testing.T) {
+	require.Equal(t, []int32{1, 2, 3}, Int32FromInt([]int{1, 2, 3}))
+	require.Equal(t, []int32{}, Int32FromInt([]int{}))
+}
+
+func TestIntFromInt32(t *testing.T) {
+	require.Equal(t, []int{1, 2, 3}, IntFromInt32([]int32{1, 2, 3}))
+	require.Equal(t, []int{}, IntFromInt32([]int32{}))
+}
