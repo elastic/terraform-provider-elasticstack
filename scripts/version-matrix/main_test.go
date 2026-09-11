@@ -1,0 +1,141 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package main
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestRunRequiresSubcommand(t *testing.T) {
+	t.Parallel()
+
+	err := run(nil, io.Discard, &bytes.Buffer{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "subcommand")
+}
+
+func TestRunComputeUpdatesArtifactWhenChanged(t *testing.T) {
+	fx := startComputeFixtures(t, `[{"name":"v8.19.17"},{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.17"}))
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	var stdout bytes.Buffer
+	err := run(computeArgs(artifact, fx), &stdout, io.Discard)
+	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), "changed=true")
+
+	got, err := ReadArtifact(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"8.19.21", "9.6.0-SNAPSHOT"}, got)
+}
+
+func TestRunComputeNoOpWhenArtifactMatches(t *testing.T) {
+	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21", "9.6.0-SNAPSHOT"}))
+	before, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	var stdout bytes.Buffer
+	err = run(computeArgs(artifact, fx), &stdout, io.Discard)
+	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), "changed=false")
+
+	after, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+func TestRunComputeFailsWhenSnapshotEndpointUnavailable(t *testing.T) {
+	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusServiceUnavailable, "")
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21", "9.6.0-SNAPSHOT"}))
+	before, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+
+	t.Setenv("GITHUB_TOKEN", "test-token")
+
+	err = run(computeArgs(artifact, fx), io.Discard, io.Discard)
+	require.Error(t, err)
+
+	after, err := os.ReadFile(artifact)
+	require.NoError(t, err)
+	assert.Equal(t, before, after)
+}
+
+type computeFixtureURLs struct {
+	githubURL   string
+	snapshotURL string
+	registryURL string
+}
+
+func startComputeFixtures(t *testing.T, tagsJSON string, snapshotStatus int, snapshotBody string) computeFixtureURLs {
+	t.Helper()
+
+	githubSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v3/repos/elastic/elasticsearch/tags" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(tagsJSON))
+	}))
+	t.Cleanup(githubSrv.Close)
+
+	snapshotSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(snapshotStatus)
+		if snapshotBody != "" {
+			_, _ = w.Write([]byte(snapshotBody))
+		}
+	}))
+	t.Cleanup(snapshotSrv.Close)
+
+	registrySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(registrySrv.Close)
+
+	return computeFixtureURLs{
+		githubURL:   githubSrv.URL,
+		snapshotURL: snapshotSrv.URL,
+		registryURL: registrySrv.URL,
+	}
+}
+
+func computeArgs(artifact string, fx computeFixtureURLs) []string {
+	return []string{
+		"compute",
+		"-artifact", artifact,
+		"-github-url", fx.githubURL,
+		"-snapshot-url", fx.snapshotURL,
+		"-elastic-registry", fx.registryURL,
+		"-dockerhub-registry", fx.registryURL,
+	}
+}
