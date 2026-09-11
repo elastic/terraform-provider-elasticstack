@@ -1,6 +1,6 @@
 ## Why
 
-Running the full acceptance test suite on every PR is expensive and slow — the suite spans 132 test packages across 20+ Elastic Stack versions and takes up to 35 minutes per shard. Most PR changes affect only a small number of resources, and the relevant tests can be identified automatically from the diff. Adding `make targeted-testacc` lets developers (and CI on PRs) run only the tests that matter for a given branch, while the full suite remains authoritative on pushes to `main` and in the GitHub merge queue (when enabled).
+Running the full acceptance test suite on every PR is expensive and slow — the suite spans 136 test packages across 20+ Elastic Stack versions and takes up to 35 minutes per shard. Most PR changes affect only a small number of resources, and the relevant tests can be identified automatically from the diff. Adding `make targeted-testacc` lets developers (and CI on PRs) run only the tests that matter for a given branch, while the full suite remains authoritative on pushes to `main` and in the GitHub merge queue (when enabled).
 
 ## What Changes
 

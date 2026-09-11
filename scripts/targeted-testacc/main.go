@@ -151,15 +151,23 @@ func run() error {
 		// with the number of entities.
 		//
 		// The candidate set is the union of the changed packages and the
-		// packages selected by phase 1. Phase 1 selects packages that transitively
-		// import changed code, including packages whose sub-packages declare
-		// entities; running entity extraction over the changed set alone would
-		// miss cross-package testdata consumers of those entities.
+		// packages phase 1 selects. Phase 1 walks reverse dependencies
+		// transitively, including packages whose sub-packages declare entities;
+		// running entity extraction over the changed set alone would miss
+		// cross-package testdata consumers of those entities.
+		//
+		// Seed from the pre-filter transitive set rather than phase1Packages:
+		// phase1Packages is already intersected with accSet, so an entity-
+		// declaring package that transitively imports changed code but has no
+		// acceptance tests of its own (e.g. a future internal/<newhelper>) would
+		// otherwise be dropped before extraction and its cross-package .tf
+		// consumers never found. ExtractEntities on such a package is a no-op
+		// cost when it declares nothing.
 		candidatePkgs := make(map[string]struct{})
 		for _, pkg := range classified.Packages {
 			candidatePkgs[pkg] = struct{}{}
 		}
-		for _, pkg := range phase1Packages {
+		for _, pkg := range transitive {
 			candidatePkgs[pkg] = struct{}{}
 		}
 
@@ -196,8 +204,20 @@ func run() error {
 
 	sharded := ApplyShard(selected, totalShards, shardIndex, minShardPackages)
 
+	// When the run-all threshold collapses the phase-1/2 union into the full
+	// set, emit an explicit rationale line so dry-run output distinguishes
+	// "threshold collapsed my N-package selection" from the force-all,
+	// empty-diff, and docs-only paths (each of which already prints its own
+	// rationale).
+	thresholdNote := ""
+	thresholdCount := int(runAllThreshold / 100.0 * float64(len(allAccPackages)))
+	unionCount := len(uniqStrings(append(append([]string{}, phase1Packages...), phase2Packages...)))
+	if !classified.ForceAll && len(selected) == len(allAccPackages) && unionCount > thresholdCount {
+		thresholdNote = fmt.Sprintf("run-all threshold: union of %d packages exceeded %d (%.0f%% of %d); selecting the full suite", unionCount, thresholdCount, runAllThreshold, len(allAccPackages))
+	}
+
 	if dryRun {
-		printDryRun(selected, phaseReasons, sharded, totalShards, shardIndex, minShardPackages)
+		printDryRun(selected, phaseReasons, sharded, totalShards, shardIndex, minShardPackages, thresholdNote)
 		return nil
 	}
 
@@ -231,7 +251,10 @@ func currentModulePath() (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func printDryRun(selected []string, reasons map[string][]string, sharded []string, totalShards, shardIndex, minShardPackages int) {
+func printDryRun(selected []string, reasons map[string][]string, sharded []string, totalShards, shardIndex, minShardPackages int, thresholdNote string) {
+	if thresholdNote != "" {
+		fmt.Printf("\n%s\n", thresholdNote)
+	}
 	fmt.Printf("\nFull selected package set (%d packages):\n", len(selected))
 	for _, pkg := range selected {
 		fmt.Printf("  %s\n", pkg)
