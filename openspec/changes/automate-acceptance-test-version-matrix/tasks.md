@@ -10,12 +10,12 @@
 
 ## 2. `version-matrix-generation` workflow
 
-- [ ] 2.1 Add `.github/workflows/version-matrix-generation.yml`: `schedule` (daily, offset from `changelog-generation.yml`'s cron) + `workflow_dispatch`, `permissions: contents: write, pull-requests: write`
-- [ ] 2.2 Checkout, `actions/setup-go`, run `go run ./scripts/version-matrix compute` (or equivalent subcommand) to produce the desired list and diff it against the pinned artifact
-- [ ] 2.3 When unchanged: exit without further steps (no commit, no branch push, no PR touch)
-- [ ] 2.4 When changed: commit the rewritten artifact as `github-actions[bot]`, push to stable branch `acceptance-test-version-matrix`, then push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger downstream CI — mirroring `changelog-generation.yml`'s unreleased-mode push steps
-- [ ] 2.5 Look up an existing open PR from `acceptance-test-version-matrix` → default branch; create it (with `no-changelog` label and an all-or-nothing PR body) when absent, or update its body when present
-- [ ] 2.6 Add/extend a workflow-script unit test (or Go test, matching whichever layer owns the lookup/create/update logic) covering: no existing PR → create; existing PR → update; unchanged list → no-op leaves an existing PR untouched
+- [x] 2.1 Add `.github/workflows/version-matrix-generation.yml`: `schedule` (daily, offset from `changelog-generation.yml`'s cron) + `workflow_dispatch`, `permissions: contents: write, pull-requests: write`
+- [x] 2.2 Checkout, `actions/setup-go`, run `go run ./scripts/version-matrix compute` (or equivalent subcommand) to produce the desired list and diff it against the pinned artifact
+- [x] 2.3 When unchanged: exit without further steps (no commit, no branch push, no PR touch)
+- [x] 2.4 When changed: commit the rewritten artifact as `github-actions[bot]`, push to stable branch `acceptance-test-version-matrix`, then push an empty commit re-authenticated with `GH_AW_CI_TRIGGER_TOKEN` to trigger downstream CI — mirroring `changelog-generation.yml`'s unreleased-mode push steps
+- [x] 2.5 Look up an existing open PR from `acceptance-test-version-matrix` → default branch; create it (with `no-changelog` label and an all-or-nothing PR body) when absent, or update its body when present
+- [x] 2.6 Add/extend a workflow-script unit test (or Go test, matching whichever layer owns the lookup/create/update logic) covering: no existing PR → create; existing PR → update; unchanged list → no-op leaves an existing PR untouched
 
 ## 3. `provider.yml` matrix sourcing
 
