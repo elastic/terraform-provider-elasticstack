@@ -51,6 +51,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 	switch args[0] {
 	case "compute":
 		return cmdCompute(args[1:], stdout, stderr)
+	case "manage-pr":
+		return cmdManagePR(args[1:], stdout, stderr)
 	default:
 		return usageError(stderr)
 	}
@@ -60,8 +62,83 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "Usage: version-matrix <subcommand> [flags]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Subcommands:")
-	fmt.Fprintln(w, "  compute   Compute the desired version list and update the pinned artifact")
+	fmt.Fprintln(w, "  compute    Compute the desired version list and update the pinned artifact")
+	fmt.Fprintln(w, "  manage-pr  Create or update the standing version-matrix pull request")
 	return errors.New("unknown or missing subcommand")
+}
+
+func cmdManagePR(args []string, _, stderr io.Writer) error {
+	fsFlag := flag.NewFlagSet("manage-pr", flag.ContinueOnError)
+	fsFlag.SetOutput(stderr)
+	changed := fsFlag.Bool("changed", true, "whether the computed version list differs from the pin")
+	githubURL := fsFlag.String("github-url", "", "optional GitHub API base URL")
+	baseBranch := fsFlag.String("base-branch", "", "PR base branch (defaults to $DEFAULT_BRANCH or main)")
+	if err := fsFlag.Parse(args); err != nil {
+		return err
+	}
+
+	if !*changed {
+		_, err := ManageStandingPR(context.Background(), ManageStandingOptions{Changed: false})
+		return err
+	}
+
+	owner, repo, err := ownerRepoFromEnv()
+	if err != nil {
+		return fmt.Errorf("manage-pr: %w", err)
+	}
+	token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
+	if token == "" {
+		return errors.New("manage-pr: missing GITHUB_TOKEN")
+	}
+
+	opts := []github.ClientOptionsFunc{github.WithAuthToken(token)}
+	if strings.TrimSpace(*githubURL) != "" {
+		opts = append(opts, github.WithEnterpriseURLs(*githubURL, *githubURL))
+	}
+	client, err := github.NewClient(opts...)
+	if err != nil {
+		return fmt.Errorf("manage-pr: github client: %w", err)
+	}
+
+	base := strings.TrimSpace(*baseBranch)
+	if base == "" {
+		base = strings.TrimSpace(os.Getenv("DEFAULT_BRANCH"))
+	}
+
+	res, err := ManageStandingPR(context.Background(), ManageStandingOptions{
+		Changed:    true,
+		Owner:      owner,
+		Repo:       repo,
+		BaseBranch: base,
+		GitHub:     &githubStandingREST{client: client},
+		Now:        time.Now,
+	})
+	if err != nil {
+		return fmt.Errorf("manage-pr: %w", err)
+	}
+	for _, w := range res.Warnings {
+		fmt.Fprintf(os.Stdout, "::warning::%s\n", w)
+	}
+	writes := [][2]string{
+		{"pr_action", res.Action},
+		{"pr_number", fmt.Sprintf("%d", res.Number)},
+		{"pr_url", res.URL},
+	}
+	for _, kv := range writes {
+		if werr := writeGitHubOutput(kv[0], kv[1]); werr != nil {
+			return fmt.Errorf("manage-pr: %w", werr)
+		}
+	}
+	return nil
+}
+
+func ownerRepoFromEnv() (owner, repo string, err error) {
+	raw := strings.TrimSpace(os.Getenv("GITHUB_REPOSITORY"))
+	parts := strings.Split(raw, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid GITHUB_REPOSITORY value %q", raw)
+	}
+	return parts[0], parts[1], nil
 }
 
 const (
@@ -138,12 +215,31 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 
 	if VersionsEqual(desired, pinned) {
 		fmt.Fprintln(stdout, "changed=false")
-		return nil
+		return writeGitHubOutput("changed", "false")
 	}
 	if err := WriteArtifact(*artifactPath, desired); err != nil {
 		return err
 	}
 	fmt.Fprintln(stdout, "changed=true")
+	return writeGitHubOutput("changed", "true")
+}
+
+func writeGitHubOutput(name, value string) error {
+	path := strings.TrimSpace(os.Getenv("GITHUB_OUTPUT"))
+	if path == "" {
+		return nil
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return fmt.Errorf("GITHUB_OUTPUT (%s): %w", name, err)
+	}
+	_, writeErr := fmt.Fprintf(f, "%s=%s\n", name, value)
+	if closeErr := f.Close(); closeErr != nil && writeErr == nil {
+		writeErr = closeErr
+	}
+	if writeErr != nil {
+		return fmt.Errorf("GITHUB_OUTPUT (%s): %w", name, writeErr)
+	}
 	return nil
 }
 

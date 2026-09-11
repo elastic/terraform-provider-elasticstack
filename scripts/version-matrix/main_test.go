@@ -24,6 +24,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,6 +38,76 @@ func TestRunRequiresSubcommand(t *testing.T) {
 	err := run(nil, io.Discard, &bytes.Buffer{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "subcommand")
+}
+
+func TestRunManagePRNoOpWhenUnchanged(t *testing.T) {
+	err := run([]string{"manage-pr", "-changed=false"}, io.Discard, io.Discard)
+	require.NoError(t, err)
+}
+
+func TestRunManagePRIsAKnownSubcommand(t *testing.T) {
+	t.Setenv("GITHUB_REPOSITORY", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	err := run([]string{"manage-pr"}, io.Discard, io.Discard)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "unknown or missing subcommand")
+}
+
+func TestRunManagePRCreatesWhenNoExistingPR(t *testing.T) {
+	srv := startStandingPRServer(t, nil)
+	outPath := filepath.Join(t.TempDir(), "github-output")
+	t.Setenv("GITHUB_REPOSITORY", "org/repo")
+	t.Setenv("GITHUB_TOKEN", "test-token")
+	t.Setenv("GITHUB_OUTPUT", outPath)
+
+	err := run([]string{"manage-pr", "-changed=true", "-github-url", srv.URL}, io.Discard, io.Discard)
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(got), "pr_action=created")
+	assert.Contains(t, string(got), "pr_number=7")
+	assert.Contains(t, string(got), "pr_url=https://github.com/org/repo/pull/7")
+}
+
+func TestRunManagePRUpdatesWhenExistingPR(t *testing.T) {
+	srv := startStandingPRServer(t, []byte(`[{"number":42,"html_url":"https://github.com/org/repo/pull/42"}]`))
+	outPath := filepath.Join(t.TempDir(), "github-output")
+	t.Setenv("GITHUB_REPOSITORY", "org/repo")
+	t.Setenv("GITHUB_TOKEN", "test-token")
+	t.Setenv("GITHUB_OUTPUT", outPath)
+
+	err := run([]string{"manage-pr", "-changed=true", "-github-url", srv.URL}, io.Discard, io.Discard)
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(got), "pr_action=updated")
+	assert.Contains(t, string(got), "pr_number=42")
+	assert.Contains(t, string(got), "pr_url=https://github.com/org/repo/pull/42")
+}
+
+func startStandingPRServer(t *testing.T, existing []byte) *httptest.Server {
+	t.Helper()
+	if existing == nil {
+		existing = []byte("[]")
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/repos/org/repo/pulls"):
+			_, _ = w.Write(existing)
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/repos/org/repo/pulls"):
+			_, _ = w.Write([]byte(`{"number":7,"html_url":"https://github.com/org/repo/pull/7"}`))
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/issues/") && strings.HasSuffix(r.URL.Path, "/labels"):
+			_, _ = w.Write([]byte(`[{"name":"no-changelog"}]`))
+		case r.Method == http.MethodPatch && strings.Contains(r.URL.Path, "/repos/org/repo/pulls/"):
+			_, _ = w.Write([]byte(`{"number":42,"html_url":"https://github.com/org/repo/pull/42"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv
 }
 
 func TestRunComputeUpdatesArtifactWhenChanged(t *testing.T) {
@@ -56,6 +127,23 @@ func TestRunComputeUpdatesArtifactWhenChanged(t *testing.T) {
 	assert.Equal(t, []string{"8.19.21", "9.6.0-SNAPSHOT"}, got)
 }
 
+func TestRunComputeWritesGitHubOutputWhenChanged(t *testing.T) {
+	fx := startComputeFixtures(t, `[{"name":"v8.19.17"},{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.17"}))
+
+	outPath := filepath.Join(t.TempDir(), "github-output")
+	t.Setenv("GITHUB_TOKEN", "test-token")
+	t.Setenv("GITHUB_OUTPUT", outPath)
+
+	err := run(computeArgs(artifact, fx), io.Discard, io.Discard)
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(got), "changed=true")
+}
+
 func TestRunComputeNoOpWhenArtifactMatches(t *testing.T) {
 	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
 	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
@@ -73,6 +161,23 @@ func TestRunComputeNoOpWhenArtifactMatches(t *testing.T) {
 	after, err := os.ReadFile(artifact)
 	require.NoError(t, err)
 	assert.Equal(t, before, after)
+}
+
+func TestRunComputeWritesGitHubOutputWhenUnchanged(t *testing.T) {
+	fx := startComputeFixtures(t, `[{"name":"v8.19.21"}]`, http.StatusOK, `{"version":"9.6.0-SNAPSHOT"}`)
+	artifact := filepath.Join(t.TempDir(), "acceptance-test-matrix.json")
+	require.NoError(t, WriteArtifact(artifact, []string{"8.19.21", "9.6.0-SNAPSHOT"}))
+
+	outPath := filepath.Join(t.TempDir(), "github-output")
+	t.Setenv("GITHUB_TOKEN", "test-token")
+	t.Setenv("GITHUB_OUTPUT", outPath)
+
+	err := run(computeArgs(artifact, fx), io.Discard, io.Discard)
+	require.NoError(t, err)
+
+	got, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(got), "changed=false")
 }
 
 func TestRunComputeFailsWhenSnapshotEndpointUnavailable(t *testing.T) {
