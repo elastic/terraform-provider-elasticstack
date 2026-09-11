@@ -1072,6 +1072,12 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
       "attemptedAt": "2026-09-10T03:15:02.607075705Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.PreserveList",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-09-11T03:07:41.734253844Z",
+      "reason": "pr_created"
     }
   ]
 }
