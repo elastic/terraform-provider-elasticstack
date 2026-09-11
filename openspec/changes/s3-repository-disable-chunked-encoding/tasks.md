@@ -28,19 +28,19 @@
 
 ## 4. Read path and drift verification
 
-- [ ] 4.1 Attempt to determine empirically (against a live Elasticsearch cluster, e.g. via
+- [x] 4.1 Attempt to determine empirically (against a live Elasticsearch cluster, e.g. via
   `TestAccResourceSnapRepoS3` or manual `GET _snapshot/{repo}`) whether the API echoes back
   `disable_chunked_encoding` and `always_sign_requests` once set via the repository `settings`
   override mechanism. Record the outcome in the PR description (see design.md Open questions).
-- [ ] 4.2 If the API does **not** echo the fields back: in
+- [x] 4.2 If the API does **not** echo the fields back: in
   `internal/elasticsearch/snapshot/repository/read.go` `settingsToS3`, extend the existing
   prior-state fallback pattern (currently applied to `endpoint`/`path_style_access`) to
   `disable_chunked_encoding` and `always_sign_requests` — capture each fallback from
   `state.S3`/`priorS3` before mapping, and use `boolSetting(s, settingX, xFallback)`.
-- [ ] 4.3 If the API **does** echo the fields back: map them directly with
+- [x] 4.3 If the API **does** echo the fields back: map them directly with
   `types.BoolValue(boolSetting(s, settingX, false))` (no fallback needed), and note in the PR
   description that the fallback was unnecessary and why.
-- [ ] 4.4 Update the code comment above the existing `endpoint`/`path_style_access` fallback logic
+- [x] 4.4 Update the code comment above the existing `endpoint`/`path_style_access` fallback logic
   in `settingsToS3` to reflect whichever of 4.2/4.3 applies to the two new fields, so the comment
   stays accurate about which S3 attributes need fallback and why.
 
