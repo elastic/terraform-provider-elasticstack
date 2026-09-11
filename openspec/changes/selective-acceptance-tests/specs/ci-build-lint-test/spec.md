@@ -1,6 +1,6 @@
 # `ci-build-lint-test` — Workflow Requirements
 
-Delta spec for the `test` job in `.github/workflows/provider.yml`.
+Delta spec for the `test`, `unit-test`, and `gate` jobs in `.github/workflows/provider.yml`.
 
 ## ADDED Requirements
 

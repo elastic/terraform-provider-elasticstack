@@ -137,7 +137,12 @@ func (c *Classifier) Classify(changedFiles []string) *ClassifyResult {
 			continue
 		}
 
-		importPath := c.ModulePath + "/" + pkgDir
+		// A root-level .go file (pkgDir == ".") belongs to the module root
+		// package; concatenating "/." would produce an invalid go list path.
+		importPath := c.ModulePath
+		if pkgDir != "." {
+			importPath = c.ModulePath + "/" + pkgDir
+		}
 		if _, exists := seen[importPath]; exists {
 			continue
 		}

@@ -20,7 +20,7 @@
 
 ## 3. Makefile targets
 
-- [x] 3.1 Add `TARGETED_TESTACC_BASE ?=` variable declaration
+- [x] 3.1 Add `TARGETED_TESTACC_BASE ?=` and `TARGETED_TESTACC_VERBOSE ?= 0` variable declarations
 - [x] 3.2 Add `targeted-testacc` target: invoke tool via `$(shell go run ./scripts/targeted-testacc/... ...)` capturing output; if empty print notice and exit 0; otherwise invoke `go tool gotestsum` with same flags as `testacc` and `--packages="$(TARGETED_PKGS)"`
 - [x] 3.3 Add `targeted-testacc-dry-run` target: invoke tool with `--dry-run`; no `TF_ACC` required; does not invoke `gotestsum`
 - [x] 3.4 Add `.PHONY` declarations for both new targets and add help comments

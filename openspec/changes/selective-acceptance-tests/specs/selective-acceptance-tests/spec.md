@@ -4,7 +4,7 @@
 
 ### Requirement: targeted-testacc Go tool exists and is runnable
 
-A Go `main` package SHALL exist at `scripts/targeted-testacc/` within the provider module. It SHALL be invocable via `go run ./scripts/targeted-testacc/...` from the module root without any build step or `go tool` entry. The tool SHALL complete within 10 seconds on the current codebase.
+A Go `main` package SHALL exist at `scripts/targeted-testacc/` within the provider module. It SHALL be invocable via `go run ./scripts/targeted-testacc/...` from the module root without any build step or `go tool` entry. The tool SHALL complete within 10 seconds on the current codebase. The tool SHALL accept a `--verbose` flag (default false) that prints additional selection diagnostics to stderr.
 
 #### Scenario: Tool runs successfully from module root
 
@@ -235,7 +235,7 @@ When `--dry-run` is passed, the tool SHALL print a human-readable summary to std
 
 ### Requirement: make targeted-testacc target
 
-A `targeted-testacc` Make target SHALL exist. It SHALL invoke the tool, passing `ACCTEST_TOTAL_SHARDS` and `ACCTEST_SHARD_INDEX` as `--total-shards` and `--shard-index`. If the tool emits no packages, the target SHALL print a notice and exit 0 without invoking `gotestsum`. If packages are emitted, it SHALL invoke `go tool gotestsum` with the same flags as `make testacc` (format, rerun-fails, package parallelism, test parallelism, count, timeout) and pass the package list via `--packages`. When `TARGETED_PKGS` is set, the target SHALL use its value verbatim as the package list and SHALL NOT invoke the selection tool (no re-sharding; the package list is used as-is).
+A `targeted-testacc` Make target SHALL exist. It SHALL invoke the tool, passing `ACCTEST_TOTAL_SHARDS` and `ACCTEST_SHARD_INDEX` as `--total-shards` and `--shard-index`, and passing `TARGETED_TESTACC_VERBOSE` (default `0`) as `--verbose`. The `TARGETED_TESTACC_BASE` variable (if set) is passed through as `--base`. If the tool emits no packages, the target SHALL print a notice and exit 0 without invoking `gotestsum`. If packages are emitted, it SHALL invoke `go tool gotestsum` with the same flags as `make testacc` (format, rerun-fails, package parallelism, test parallelism, count, timeout) and pass the package list via `--packages`. When `TARGETED_PKGS` is set, the target SHALL use its value verbatim as the package list and SHALL NOT invoke the selection tool (no re-sharding; the package list is used as-is).
 
 #### Scenario: No packages selected exits cleanly
 
