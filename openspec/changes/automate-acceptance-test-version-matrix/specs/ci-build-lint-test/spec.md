@@ -4,7 +4,7 @@
 
 The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The job's `strategy.matrix.version` list SHALL be loaded at run time from the pinned versions artifact `.github/versions/acceptance-test-matrix.json` (via `fromJson()` from a preceding job's output that reads the checked-out file) rather than hardcoded as a literal YAML list. The matrix acceptance test job SHALL run with a non-fail-fast matrix covering the loaded stack versions crossed with a static `shard: [0, 1]` axis. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
 
-For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. Forced synthetics installation SHALL run only for configured version subsets, matched by version-range expression per the "Per-version environment rules match version ranges, not exact patches" requirement. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
+For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. Forced synthetics installation SHALL run only for configured version subsets, matched by numeric major.minor range per the "Per-version environment rules match version ranges, not exact patches" requirement. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
 
 The stack-start step SHALL have a step-level timeout so that a hung container image pull fails fast instead of consuming the full job timeout.
 
@@ -103,8 +103,8 @@ When the Elastic Stack release tracked by the acceptance matrix's snapshot-label
 to replace that entry with the released version string rather than adding a separate, additional
 entry for the same stack line. This rewrite SHALL be performed by the version-matrix generator
 (`ci-version-matrix-generation` capability) as part of its normal desired-list computation, not by a
-human hand-editing the workflow YAML. Because per-version step conditions in `provider.yml` match by
-version-range expression rather than by exact version string (see "Per-version environment rules
+human hand-editing the workflow YAML. Because per-version step conditions match by
+numeric major.minor range rather than by exact version string (see "Per-version environment rules
 match version ranges, not exact patches"), a promoted entry SHALL continue to receive the same step
 coverage it received while labeled as a snapshot without requiring any edit to those conditions. The
 promoted entry SHALL no longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be
@@ -123,7 +123,7 @@ SHALL NOT trigger the snapshot-failure PR warning comment.
 #### Scenario: Promoted entry keeps per-version step coverage
 
 - **GIVEN** a per-version-range step condition (for example, forced synthetics install) that matches a
-  snapshot entry's minor via a range expression rather than `endsWith(matrix.version, '-SNAPSHOT')`
+  snapshot entry's minor via numeric major.minor bounds rather than `endsWith(matrix.version, '-SNAPSHOT')`
 - **WHEN** that snapshot entry is promoted to its GA version string
 - **THEN** the promoted version string SHALL continue to satisfy that step's range condition without
   any change to the workflow YAML
@@ -139,13 +139,25 @@ SHALL NOT trigger the snapshot-failure PR warning comment.
 
 ### Requirement: Per-version environment rules match version ranges, not exact patches
 
-Per-version environment rules in the acceptance test job — Docker-Hub-fallback fleet image selection, `ubuntu-22.04` runner selection, and forced synthetics install — SHALL be expressed as version-range expressions evaluated against `matrix.version` (for example, `startsWith(matrix.version, '8.0.')`), rather than as a `strategy.matrix.include` list or an `if:` condition keyed to exact patch strings. These rules SHALL NOT be part of the pinned versions artifact.
+Per-version environment rules in the acceptance test job — Docker-Hub-fallback fleet image selection, `ubuntu-22.04` runner selection, and forced synthetics install — SHALL match the integer major and minor components of each stack version, rather than a `strategy.matrix.include` list, an `if:` condition keyed to exact patch strings, or a GitHub Actions `startsWith(matrix.version, 'X.Y.')` prefix (which treats `8.10.x` as matching `8.1.`). These rules SHALL NOT be part of the pinned versions artifact. The job that loads the pinned list (or an equivalent helper) SHALL attach the derived flags so the `test` job does not re-derive them with string-prefix expressions.
+
+The following numeric ranges SHALL apply:
+
+- Docker Hub fleet image: major `8`, minor `0` through `1`
+- `ubuntu-22.04` runner: major `8`, minor `0` through `4`
+- Forced synthetics install: major `8`, minor `14` through `17`
 
 #### Scenario: Range rule survives an automated patch bump
 
 - **GIVEN** a per-version-range rule matches every patch of a given minor (for example, all `8.14.x` patches trigger forced synthetics install)
 - **WHEN** the pinned versions artifact is updated to a newer patch of that same minor
 - **THEN** the rule SHALL continue to match the new patch without any edit to the workflow YAML
+
+#### Scenario: Two-digit minors do not match a one-digit minor range
+
+- **GIVEN** the runner rule applies to major `8` minor `0` through `4`
+- **WHEN** the matrix includes `8.10.4` (or any `8.1N.x` / `8.2N.x` two-digit minor)
+- **THEN** that entry SHALL NOT receive `ubuntu-22.04` or the Docker Hub fleet image by virtue of string-prefix overlap with `8.1` or `8.2`
 
 #### Scenario: No `include:` list is used for per-version overrides
 

@@ -49,30 +49,46 @@ The other repository-specific wrinkle: today's per-version `include:`/`if:` over
 
 A new Go module `scripts/version-matrix/` owns:
 - `compute()`: list `elastic/elasticsearch` tags via the GitHub API (using the workflow token for rate limit), filter to `^v(8|9)\.\d+\.\d+$`, group by minor, keep the max patch per minor, and fetch `https://snapshots.elastic.co/latest/master.json` for the SNAPSHOT label.
-- an optional image-existence probe (Decision 4).
+- the compose-stack image-existence probe (Decision 4).
 - `diff()`/`write()`: compare the computed list against the pinned artifact and rewrite it when different.
 
 The workflow invokes it as `go run ./scripts/version-matrix <subcommand>` after `actions/checkout` + `actions/setup-go`, mirroring the `scripts/changelog` contract (`ci-changelog-generation` capability) instead of an `actions/github-script` module. Unlike the changelog engine, no `.github/scripts/workflows/lib/*.js` predecessor exists here, so there is no migration/parity concern — this is a fresh Go tool from the start.
 
 **Why:** Consistency with the repository's established pattern of "shared logic as a Go module under `scripts/`, invoked via `go run` from a checkout+setup-go step" (`scripts/changelog`, `scripts/auto-approve`), and it keeps GA-tag pagination, semver comparison, and HTTP calls unit-testable outside of GitHub Actions.
 
-### Decision 3: Per-version environment rules become `matrix.version`-prefix expressions, not a generated `include:`
+### Decision 3: Per-version environment rules match numeric major.minor, not string prefixes
 
-The `test` job's `runs-on`, fleet-image selection, and forced-synthetics condition are rewritten as inline expressions keyed on version-range prefixes of `matrix.version`, evaluated by GitHub Actions at run time — no separate matrix-preparation job or generated `include:` list is needed for them:
+The `test` job's `runs-on`, fleet-image selection, and forced-synthetics condition match **integer** major and minor components of `matrix.version`, not `startsWith(matrix.version, '8.1.')` (or any other dotted-prefix check). `'8.10.4'` starts with `'8.1.'`, so prefix matching would send 8.10–8.19 to `ubuntu-22.04` and the Docker Hub Agent image.
 
-- `runs-on: ${{ (startsWith(matrix.version, '8.0.') || startsWith(matrix.version, '8.1.') || startsWith(matrix.version, '8.2.') || startsWith(matrix.version, '8.3.') || startsWith(matrix.version, '8.4.')) && 'ubuntu-22.04' || 'ubuntu-latest' }}`
-- Fleet image (pre-pull step condition and `FLEET_IMAGE` env): Docker Hub `elastic/elastic-agent` when `startsWith(matrix.version, '8.0.') || startsWith(matrix.version, '8.1.')`, else `docker.elastic.co/elastic-agent/elastic-agent`.
-- Forced synthetics install: `if: startsWith(matrix.version, '8.14.') || startsWith(matrix.version, '8.15.') || startsWith(matrix.version, '8.16.') || startsWith(matrix.version, '8.17.')`.
+Range bounds stay as data next to the workflow (or in the `load-matrix` helper), not in the pinned JSON:
 
-Only the base version *list* itself needs to come from the pinned artifact (via `fromJson()` from a preceding job's output); `shard: [0, 1]` stays a static cross-product axis.
+- Runner: major `8` and minor `0`–`4` → `ubuntu-22.04`, else `ubuntu-latest`
+- Fleet image: major `8` and minor `0`–`1` → Docker Hub `elastic/elastic-agent`, else `docker.elastic.co/elastic-agent/elastic-agent`
+- Forced synthetics: major `8` and minor `14`–`17`
 
-**Why:** Range-prefix matching is exactly the "version-range rules, not exact patches" behavior the issue asks for, and it requires no new computation step — it is expressible directly in the existing `if:`/`runs-on:` expressions the workflow already has. It also has a useful side effect: it makes the existing "snapshot-to-GA promotion" requirement (`ci-build-lint-test`) nearly free — a promoted `X.Y.0-SNAPSHOT` → `X.Y.0` entry keeps matching any range rule for its minor automatically, with no per-step edit required (see the `ci-build-lint-test` delta spec).
+GitHub Actions expressions cannot parse semver. The preceding `load-matrix` job (or an equivalent helper it invokes) SHALL parse each pinned version and attach the derived flags (`runner`, `fleetImage` / pre-pull, `forceSynthetics`) so the `test` job reads those fields instead of re-deriving them with `startsWith`. The pinned artifact remains a flat version-string array; the flags are runtime derivatives of the range rules, not committed overrides.
 
-### Decision 4: Docker image existence probe is best-effort and falls back, not fails
+`shard: [0, 1]` stays a static cross-product axis.
 
-Before including a newly-computed GA version in the desired list, the generator checks whether the corresponding `docker.elastic.co/elasticsearch/elasticsearch:<version>` manifest resolves. If it does not yet resolve (tag published before the Docker image), the generator keeps the previously pinned version for that minor and retries on the next scheduled run, rather than failing the run or proposing a version doomed to a red PR.
+**Why:** Numeric major.minor is the only range check that survives both patch bumps and two-digit minors. Evaluating the rules in `load-matrix` keeps them out of the pin (Decision 1) without using unsafe GHA string prefixes. A promoted `X.Y.0-SNAPSHOT` → `X.Y.0` entry keeps matching any rule for that minor automatically.
 
-**Why:** The issue lists this as optional ("Optionally probe...to avoid a red PR"), but once implemented its failure semantics must be deterministic and spec-testable rather than a vague "best effort." Falling back to the previous pin (instead of failing the whole computation, or silently omitting the minor from the list entirely) keeps every other minor's bump unblocked and self-heals on the next run once the image catches up.
+### Decision 4: Compose-stack image probe falls back, not fails, including on SNAPSHOT promotion
+
+Before including a newly computed **GA** version in the desired list, the generator checks that every image `docker-compose.yml` will pull for that version resolves:
+
+- `docker.elastic.co/elasticsearch/elasticsearch:<version>`
+- `docker.elastic.co/kibana/kibana:<version>`
+- the Fleet/Agent image for that version: Docker Hub `elastic/elastic-agent:<version>` when major `8` minor `0`–`1`, otherwise `docker.elastic.co/elastic-agent/elastic-agent:<version>`
+
+If any of those manifests does not resolve, the run does not fail. Fallback depends on what was previously pinned for that minor:
+
+- **Patch bump** (pin already has a GA `X.Y.*`): keep the previously pinned GA for `X.Y`.
+- **SNAPSHOT promotion** (pin has `X.Y.*-SNAPSHOT`, computed list wants GA `X.Y.*`): keep `X.Y.*-SNAPSHOT` as that minor's entry and **do not** append master's newer SNAPSHOT label on this run. The list still has exactly one SNAPSHOT (the line that is not pullable as GA yet). Next successful probe promotes `X.Y` and then adds the new master SNAPSHOT.
+- **Brand-new minor** with no previous pin: omit that minor for this run.
+
+Other minors' successful bumps still land in the same computed list.
+
+**Why:** Compose starts Elasticsearch, Kibana, and Agent; probing only Elasticsearch would propose versions that still fail `docker compose up`. Promotion has no previous *GA* pin to fall back to — keeping the SNAPSHOT label preserves coverage and the "exactly one SNAPSHOT" rule instead of dropping the line or emitting two SNAPSHOT entries.
 
 ### Decision 5: Standing PR reuses the `generated-changelog` branch/no-op/re-trigger shape
 
@@ -91,7 +107,7 @@ Selector: same-repository PR whose head branch is exactly `acceptance-test-versi
 - **GitHub API rate limits on tag listing.** `elastic/elasticsearch` has thousands of tags; the workflow authenticates with a token to get the higher rate limit, and the generator only needs to run once daily.
 - **`snapshots.elastic.co` availability.** If the SNAPSHOT endpoint is briefly unavailable, the generator should fail the run (not silently drop the SNAPSHOT entry from the pinned list), leaving the existing pinned artifact untouched — same "no-op on uncertainty" posture as Decision 4's image-probe fallback.
 - **Full-matrix PRs are expensive.** A version-bump PR runs the entire Provider CI matrix (now provider-impacting via change-classification) even when only one minor's patch changed. This is intentional per the issue ("all-or-nothing: a red new GA holds the whole delta") and matches the cost the current hand-edited process already pays.
-- **Range-prefix expressions are a manual allowlist.** The `8.0.`–`8.4.` / `8.0.`–`8.1.` / `8.14.`–`8.17.` prefix lists in `provider.yml` are still hand-maintained (they encode closed historical lines, not lines that receive new patches), but they no longer need to change when those closed lines' patch strings are refreshed by automation — only when a *new* minor needs a new range rule, which is rare and reviewable.
+- **Range bounds are still a manual allowlist.** The numeric minor ranges (`8.0`–`8.4` runner, `8.0`–`8.1` Fleet image, `8.14`–`8.17` synthetics) stay hand-maintained because they encode closed historical lines. They must not be implemented as `startsWith('8.1.')`-style prefixes. They only need a human edit when a *new* minor needs a new range rule.
 
 ## Open questions
 

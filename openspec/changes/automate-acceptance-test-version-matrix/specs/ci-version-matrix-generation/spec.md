@@ -27,20 +27,52 @@ The system SHALL compute the desired stack-version list from exactly two sources
 
 ### Requirement: Docker image existence probe falls back instead of failing
 
-For each newly computed GA version not already present in the pinned artifact, the system SHALL verify that a corresponding Docker image manifest resolves before including it in the desired list. When the manifest does not yet resolve for a given minor's newly computed patch, the system SHALL retain that minor's previously pinned version in the desired list for this run instead of failing the run or omitting the minor entirely.
+For each newly computed GA version not already present in the pinned artifact, the system SHALL verify that every image `docker-compose.yml` will pull for that version resolves before including it in the desired list:
 
-#### Scenario: New patch image already published
+- `docker.elastic.co/elasticsearch/elasticsearch:<version>`
+- `docker.elastic.co/kibana/kibana:<version>`
+- the Fleet/Agent image for that version: `elastic/elastic-agent:<version>` on Docker Hub when the version's major is `8` and minor is `0` or `1`; otherwise `docker.elastic.co/elastic-agent/elastic-agent:<version>`
 
-- **GIVEN** a newly computed GA patch for a minor and its Docker image manifest resolves
+When any of those manifests does not yet resolve, the system SHALL NOT fail the run. Fallback SHALL be:
+
+- **Patch bump:** if the pinned artifact already has a GA version for that minor, retain that previously pinned GA version
+- **SNAPSHOT promotion:** if the pinned artifact has `X.Y.*-SNAPSHOT` and the computed list wants GA `X.Y.*`, retain the SNAPSHOT-labeled `X.Y` entry and do not append a newer master SNAPSHOT on this run, so the list still contains exactly one SNAPSHOT-labeled entry
+- **Brand-new minor:** if the pinned artifact has no entry for that minor, omit the minor from this run's desired list
+
+#### Scenario: New patch images already published
+
+- **GIVEN** a newly computed GA patch for a minor
+- **AND** the Elasticsearch, Kibana, and applicable Agent image manifests for that patch all resolve
 - **WHEN** the desired list is computed
 - **THEN** the desired list SHALL include the newly computed patch for that minor
 
-#### Scenario: New patch image not yet published
+#### Scenario: New patch images not yet published
 
-- **GIVEN** a newly computed GA patch for a minor whose Docker image manifest does not yet resolve
+- **GIVEN** a newly computed GA patch for a minor whose pin already has a GA version
+- **AND** at least one of the Elasticsearch, Kibana, or applicable Agent manifests does not yet resolve
 - **WHEN** the desired list is computed
-- **THEN** the desired list SHALL include that minor's previously pinned version instead of the newly computed patch
+- **THEN** the desired list SHALL include that minor's previously pinned GA version instead of the newly computed patch
 - **AND** the run SHALL NOT fail because of this fallback
+
+#### Scenario: SNAPSHOT promotion waits until the GA compose stack is pullable
+
+- **GIVEN** the pinned artifact contains `X.Y.0-SNAPSHOT` and no GA `X.Y` entry
+- **AND** `X.Y.0` is now a published GA tag
+- **AND** `https://snapshots.elastic.co/latest/master.json` reports a newer SNAPSHOT label (for example `X.Y+1.0-SNAPSHOT`)
+- **AND** at least one compose-stack image for `X.Y.0` does not yet resolve
+- **WHEN** the desired list is computed
+- **THEN** the desired list SHALL retain `X.Y.0-SNAPSHOT`
+- **AND** SHALL NOT include GA `X.Y.0`
+- **AND** SHALL NOT append the newer master SNAPSHOT label
+- **AND** the run SHALL NOT fail because of this fallback
+
+#### Scenario: Brand-new minor without a previous pin is omitted until pullable
+
+- **GIVEN** a newly computed GA minor that has no entry in the pinned artifact
+- **AND** at least one compose-stack image for that version does not yet resolve
+- **WHEN** the desired list is computed
+- **THEN** the desired list SHALL omit that minor for this run
+- **AND** the run SHALL NOT fail because of this omission
 
 ### Requirement: Desired list is pinned to a checked-in JSON artifact
 

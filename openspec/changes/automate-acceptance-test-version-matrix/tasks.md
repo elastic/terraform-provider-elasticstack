@@ -3,9 +3,9 @@
 - [ ] 1.1 Scaffold Go module `scripts/version-matrix/` (`main.go` + package files), mirroring the `scripts/changelog/` and `scripts/auto-approve/` layout (thin `main.go` entrypoint, testable package logic)
 - [ ] 1.2 Implement GA-tag discovery: list `elastic/elasticsearch` git tags via the GitHub API (authenticated with the workflow token), filter to `^v(8|9)\.\d+\.\d+$`, group by minor, keep the max patch per minor
 - [ ] 1.3 Implement SNAPSHOT-label lookup against `https://snapshots.elastic.co/latest/master.json`; fail the run (do not silently drop the entry) if the endpoint is unavailable or the response is unparsable
-- [ ] 1.4 Implement the Docker image existence probe: for each newly computed GA patch not already in the pinned artifact, check that `docker.elastic.co/elasticsearch/elasticsearch:<version>` resolves; on failure, fall back to the previously pinned version for that minor instead of failing the run
+- [ ] 1.4 Implement the compose-stack image probe: for each newly computed GA patch not already in the pinned artifact, require Elasticsearch, Kibana, and the applicable Agent image manifests to resolve; on failure apply the fallback rules (retain previous GA on patch bump; retain `X.Y.*-SNAPSHOT` and do not append a newer master SNAPSHOT on promotion; omit a brand-new minor with no previous pin) instead of failing the run
 - [ ] 1.5 Implement pinned-artifact read/diff/write against `.github/versions/acceptance-test-matrix.json` (sorted ascending, SNAPSHOT entry last)
-- [ ] 1.6 Add unit tests: tag-filtering/latest-patch-per-minor logic, SNAPSHOT-label parsing, image-probe fallback behavior, diff/no-op detection — using fixture HTTP responses, no live network calls
+- [ ] 1.6 Add unit tests: tag-filtering/latest-patch-per-minor logic, SNAPSHOT-label parsing, image-probe fallback for patch bump / SNAPSHOT promotion / brand-new minor, two-digit-minor range matching (`8.10` is not `8.1`), diff/no-op detection — using fixture HTTP responses, no live network calls
 - [ ] 1.7 Seed `.github/versions/acceptance-test-matrix.json` with the current (research-time-corrected) list so the first scheduled run computes a small, reviewable diff rather than rewriting the whole file
 
 ## 2. `version-matrix-generation` workflow
@@ -19,13 +19,14 @@
 
 ## 3. `provider.yml` matrix sourcing
 
-- [ ] 3.1 Add a preceding job (e.g. `load-matrix`) that checks out the repo, reads `.github/versions/acceptance-test-matrix.json`, and exposes its contents as a JSON-array job output
-- [ ] 3.2 Change the `test` job's `strategy.matrix.version` to `${{ fromJson(needs.load-matrix.outputs.versions) }}`; keep `shard: [0, 1]` static; make `test` depend on the new job in addition to `build`/`classify`
+- [ ] 3.1 Add a preceding job (e.g. `load-matrix`) that checks out the repo, reads `.github/versions/acceptance-test-matrix.json`, parses each version's integer major.minor, and exposes both the version list and derived per-entry flags (`runner`, fleet image / pre-pull, `forceSynthetics`) as job outputs
+- [ ] 3.2 Change the `test` job's `strategy.matrix.version` to consume the loaded list (via `fromJson`); keep `shard: [0, 1]` static; make `test` depend on the new job in addition to `build`/`classify`
 - [ ] 3.3 Remove the `strategy.matrix.include` block entirely
-- [ ] 3.4 Replace the `runs-on` expression with a version-range check against `matrix.version` (`startsWith(matrix.version, '8.0.') || ... || startsWith(matrix.version, '8.4.')` → `ubuntu-22.04`, else `ubuntu-latest`)
-- [ ] 3.5 Replace the fleet-image pre-pull step's `if: matrix.fleetImage` condition and the `FLEET_IMAGE` env value with version-range checks (`8.0.`/`8.1.` → Docker Hub `elastic/elastic-agent`, else `docker.elastic.co/elastic-agent/elastic-agent`)
-- [ ] 3.6 Replace the forced-synthetics `if:` condition's exact-patch list (`8.14.3`, `8.15.5`, `8.16.6`, `8.17.10`) with a minor-range check (`startsWith(matrix.version, '8.14.') || ... || startsWith(matrix.version, '8.17.')`)
-- [ ] 3.7 Confirm no other step references `matrix.runner` or `matrix.fleetImage`
+- [ ] 3.4 Drive `runs-on` from the derived flag for numeric major `8` minor `0`–`4` → `ubuntu-22.04`, else `ubuntu-latest`. Do **not** use `startsWith(matrix.version, '8.1.')` (it matches `8.10.x`–`8.19.x`)
+- [ ] 3.5 Drive fleet-image pre-pull and `FLEET_IMAGE` from the derived flag for numeric major `8` minor `0`–`1` → Docker Hub `elastic/elastic-agent`, else `docker.elastic.co/elastic-agent/elastic-agent`
+- [ ] 3.6 Drive forced-synthetics from the derived flag for numeric major `8` minor `14`–`17`, replacing the exact-patch list (`8.14.3`, `8.15.5`, `8.16.6`, `8.17.10`)
+- [ ] 3.7 Confirm no other step references `matrix.runner` or `matrix.fleetImage` except the derived flags from `load-matrix`
+- [ ] 3.8 Add a unit or workflow-script test that `8.10.x` / `8.11.x` do not match the `8.1` Fleet/runner ranges
 
 ## 4. Change classification
 
