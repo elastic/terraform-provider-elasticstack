@@ -107,19 +107,50 @@ The workflow SHALL include a dedicated unit-test job (`go test ./... -skip '^Tes
 
 ---
 
-### Requirement: Teardown always runs regardless of shard skip
+## MODIFIED Requirements
 
-The stack teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL run even when `has_packages=false`. When the stack was never started, `make docker-clean` SHALL be a no-op and SHALL exit 0.
+### Requirement: Pre-pull fallback fleet image with retry
+
+Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries that use a Docker Hub fallback image. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. This step SHALL be skipped for matrix entries that use the default `docker.elastic.co` registry, and SHALL additionally be skipped when the `compute-packages` step outputs `has_packages=false` for the shard (alongside all other expensive steps).
+
+#### Scenario: Docker Hub fleet image is pre-pulled successfully
+
+- **GIVEN** a matrix entry with `fleetImage` set to a Docker Hub image
+- **AND** `has_packages=true`
+- **WHEN** the pre-pull step executes
+- **THEN** the image SHALL be pulled with a per-attempt timeout
+- **AND** failed attempts SHALL be retried up to three times
+- **AND** on success, the subsequent `docker compose up` SHALL use the already-pulled image
+
+#### Scenario: Pre-pull is skipped for docker.elastic.co images
+
+- **GIVEN** a matrix entry without a `fleetImage` override
+- **WHEN** the test job step list is evaluated
+- **THEN** the pre-pull step SHALL be skipped
+- **AND** the stack-start step SHALL proceed normally
+
+#### Scenario: Pre-pull is skipped when the shard has no packages
+
+- **GIVEN** a matrix entry whose `compute-packages` step outputs `has_packages=false`
+- **WHEN** the test job step list is evaluated
+- **THEN** the pre-pull step SHALL be skipped
+- **AND** the stack-start and acceptance test steps SHALL be skipped
+
+### Requirement: Failure diagnostics and teardown (REQ-016–REQ-017)
+
+The workflow SHALL emit Docker Compose logs when the job fails or acceptance tests fail. The workflow SHALL always tear down the Docker Compose stack via `make docker-clean`, regardless of prior step outcomes. The teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL run even when `has_packages=false`; when the stack was never started, `make docker-clean` SHALL be a no-op and SHALL exit 0.
+
+#### Scenario: Always tear down
+
+- GIVEN any prior step outcome in the test job
+- WHEN the job finishes
+- THEN `make docker-clean` SHALL run in an `always()` step
 
 #### Scenario: Teardown is a no-op when stack was not started
 
 - **WHEN** `has_packages=false` and the stack start step was skipped
 - **THEN** `make docker-clean` runs
 - **AND** exits 0 without error
-
----
-
-## MODIFIED Requirements
 
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
