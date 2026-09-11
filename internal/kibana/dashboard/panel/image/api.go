@@ -83,12 +83,6 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var diags diag.Diagnostics
-	cfgKey := panelType + "_config"
-	cv := attrs[cfgKey]
-	if panelkit.AttrConcreteSet(cv) || panelkit.AttrUnknown(cv) {
-		return diags
-	}
-	diags.AddAttributeError(attrPath, "Missing image panel configuration", "Image panels require `image_config`.")
-	return diags
+	return panelkit.ValidateConfigBlockPresent(attrs, panelType+"_config", attrPath,
+		"Missing image panel configuration", "Image panels require `image_config`.")
 }

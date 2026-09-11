@@ -22,7 +22,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/discoversession"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/fieldstatstable"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/image"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/links"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/markdown"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/mlanomalyswimlane"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/mlsinglemetricviewer"
@@ -565,6 +567,42 @@ func Test_slo_overview_ValidatePanelConfig(t *testing.T) {
 		require.True(t, diags.HasError())
 		require.Len(t, diags, 1)
 		require.Equal(t, "Missing SLO overview panel configuration", diags[0].Summary())
+	})
+}
+
+func Test_fieldStatsTableHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("accepts field_stats_table_config", func(t *testing.T) {
+		diags := fieldstatstable.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"field_stats_table_config": types.BoolValue(true),
+		}, testAttrPathPanel)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("rejects missing field_stats_table_config", func(t *testing.T) {
+		diags := fieldstatstable.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		require.Equal(t, "Missing field_stats_table panel configuration", diags[0].Summary())
+	})
+}
+
+func Test_linksHandler_ValidatePanelConfig(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("accepts links_config", func(t *testing.T) {
+		diags := links.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{
+			"links_config": types.BoolValue(true),
+		}, testAttrPathPanel)
+		require.False(t, diags.HasError())
+	})
+
+	t.Run("rejects missing links_config", func(t *testing.T) {
+		diags := links.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, testAttrPathPanel)
+		require.True(t, diags.HasError())
+		require.Len(t, diags, 1)
+		require.Equal(t, "Missing links panel configuration", diags[0].Summary())
 	})
 }
 

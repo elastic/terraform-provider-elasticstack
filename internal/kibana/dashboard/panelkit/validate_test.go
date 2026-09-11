@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -36,6 +37,108 @@ func makeNestedStringAttrs(cfgKey string, fields map[string]attr.Value) map[stri
 	}
 	obj, _ := types.ObjectValue(attrTypes, fields)
 	return map[string]attr.Value{cfgKey: obj}
+}
+
+// --- ValidateConfigBlockPresent ---
+
+func TestValidateConfigBlockPresent_missing_addsError(t *testing.T) {
+	t.Parallel()
+	attrs := map[string]attr.Value{}
+	diags := panelkit.ValidateConfigBlockPresent(attrs, "my_config", path.Empty(), "Missing config", "Config is required.")
+	require.True(t, diags.HasError())
+	assert.Equal(t, "Missing config", diags[0].Summary())
+	assert.Equal(t, "Config is required.", diags[0].Detail())
+}
+
+func TestValidateConfigBlockPresent_null_addsError(t *testing.T) {
+	t.Parallel()
+	objType := map[string]attr.Type{"slo_id": types.StringType}
+	attrs := map[string]attr.Value{"my_config": types.ObjectNull(objType)}
+	diags := panelkit.ValidateConfigBlockPresent(attrs, "my_config", path.Empty(), "Missing config", "Config is required.")
+	require.True(t, diags.HasError())
+}
+
+func TestValidateConfigBlockPresent_unknown_noError(t *testing.T) {
+	t.Parallel()
+	objType := map[string]attr.Type{"slo_id": types.StringType}
+	attrs := map[string]attr.Value{"my_config": types.ObjectUnknown(objType)}
+	diags := panelkit.ValidateConfigBlockPresent(attrs, "my_config", path.Empty(), "Missing config", "Config is required.")
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateConfigBlockPresent_concreteSet_noError(t *testing.T) {
+	t.Parallel()
+	attrs := makeNestedStringAttrs("my_config", map[string]attr.Value{"slo_id": types.StringValue("id")})
+	diags := panelkit.ValidateConfigBlockPresent(attrs, "my_config", path.Empty(), "Missing config", "Config is required.")
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateConfigBlockPresent_usesGivenErrPath(t *testing.T) {
+	t.Parallel()
+	attrs := map[string]attr.Value{}
+	errPath := path.Root("panel").AtName("my_config")
+	diags := panelkit.ValidateConfigBlockPresent(attrs, "my_config", errPath, "Missing config", "Config is required.")
+	require.True(t, diags.HasError())
+	withPath, ok := diags[0].(diag.DiagnosticWithPath)
+	require.True(t, ok)
+	assert.Equal(t, errPath.String(), withPath.Path().String())
+}
+
+// --- ValidateRequiredStringFields ---
+
+func TestValidateRequiredStringFields_missingBlock_addsMissingConfigError(t *testing.T) {
+	t.Parallel()
+	attrs := map[string]attr.Value{}
+	diags := panelkit.ValidateRequiredStringFields(attrs, path.Empty(), "my_config",
+		"Missing config", "Config is required.", "Invalid config", "data_view_id", "metric_field")
+	require.True(t, diags.HasError())
+	assert.Equal(t, "Missing config", diags[0].Summary())
+}
+
+func TestValidateRequiredStringFields_nestedUnknown_defersNoError(t *testing.T) {
+	t.Parallel()
+	objType := types.ObjectType{AttrTypes: map[string]attr.Type{"data_view_id": types.StringType, "metric_field": types.StringType}}
+	attrs := map[string]attr.Value{"my_config": types.ObjectUnknown(objType.AttrTypes)}
+	diags := panelkit.ValidateRequiredStringFields(attrs, path.Empty(), "my_config",
+		"Missing config", "Config is required.", "Invalid config", "data_view_id", "metric_field")
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateRequiredStringFields_nested_missingFields_addsOneErrorPerField(t *testing.T) {
+	t.Parallel()
+	attrs := makeNestedStringAttrs("my_config", map[string]attr.Value{
+		"data_view_id": types.StringNull(),
+		"metric_field": types.StringNull(),
+	})
+	diags := panelkit.ValidateRequiredStringFields(attrs, path.Empty(), "my_config",
+		"Missing config", "Config is required.", "Invalid config", "data_view_id", "metric_field")
+	require.Len(t, diags.Errors(), 2)
+	assert.Equal(t, "Invalid config", diags[0].Summary())
+	assert.Equal(t, "`data_view_id` is required.", diags[0].Detail())
+	assert.Equal(t, "`metric_field` is required.", diags[1].Detail())
+}
+
+func TestValidateRequiredStringFields_nested_allPresent_noError(t *testing.T) {
+	t.Parallel()
+	attrs := makeNestedStringAttrs("my_config", map[string]attr.Value{
+		"data_view_id": types.StringValue("logs-*"),
+		"metric_field": types.StringValue("bytes"),
+	})
+	diags := panelkit.ValidateRequiredStringFields(attrs, path.Empty(), "my_config",
+		"Missing config", "Config is required.", "Invalid config", "data_view_id", "metric_field")
+	assert.False(t, diags.HasError())
+}
+
+func TestValidateRequiredStringFields_flat_missingOneField(t *testing.T) {
+	t.Parallel()
+	attrs := map[string]attr.Value{
+		"data_view_id": types.StringValue("logs-*"),
+		"metric_field": types.StringNull(),
+	}
+	diags := panelkit.ValidateRequiredStringFields(attrs, path.Empty(), "my_config",
+		"Missing config", "Config is required.", "Invalid config", "data_view_id", "metric_field")
+	require.Len(t, diags.Errors(), 1)
+	assert.Equal(t, "`metric_field` is required.", diags[0].Detail())
 }
 
 // --- ResolveConfigBlock ---
