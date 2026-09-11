@@ -1,12 +1,12 @@
 ## 1. Constants and models
 
-- [ ] 1.1 In `internal/elasticsearch/snapshot/repository/constants.go`, add
+- [x] 1.1 In `internal/elasticsearch/snapshot/repository/constants.go`, add
   `settingDisableChunkedEncoding = "disable_chunked_encoding"` and
   `settingAlwaysSignRequests = "always_sign_requests"`.
-- [ ] 1.2 In `internal/elasticsearch/snapshot/repository/models.go`, add `DisableChunkedEncoding
+- [x] 1.2 In `internal/elasticsearch/snapshot/repository/models.go`, add `DisableChunkedEncoding
   types.Bool` and `AlwaysSignRequests types.Bool` to `S3Settings`, with `tfsdk` tags matching the
   new setting keys.
-- [ ] 1.3 In `internal/elasticsearch/snapshot/repository/attr_types.go`, add both new fields to
+- [x] 1.3 In `internal/elasticsearch/snapshot/repository/attr_types.go`, add both new fields to
   `s3AttrTypes()` as `types.BoolType`.
 
 ## 2. Schema
@@ -21,7 +21,7 @@
 
 ## 3. Write path
 
-- [ ] 3.1 In `internal/elasticsearch/snapshot/repository/write.go` `s3ToSettings`, set
+- [x] 3.1 In `internal/elasticsearch/snapshot/repository/write.go` `s3ToSettings`, set
   `settingDisableChunkedEncoding: s3.DisableChunkedEncoding.ValueBool()` and
   `settingAlwaysSignRequests: s3.AlwaysSignRequests.ValueBool()` unconditionally in the returned
   map, matching `settingServerSideEncryption`/`settingPathStyleAccess`.

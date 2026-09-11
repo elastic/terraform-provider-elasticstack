@@ -144,6 +144,52 @@ func TestS3ToSettingsWithDefaults(t *testing.T) {
 	require.Equal(t, "standard", m["storage_class"])
 	require.NotContains(t, m, "endpoint")
 	require.NotContains(t, m, "base_path")
+	require.Equal(t, false, m["disable_chunked_encoding"])
+	require.Equal(t, false, m["always_sign_requests"])
+}
+
+func TestS3ToSettingsIncludesDisableChunkedEncodingWhenTrue(t *testing.T) {
+	t.Parallel()
+
+	s3 := S3Settings{
+		Compress:               types.BoolValue(true),
+		Readonly:               types.BoolValue(false),
+		Bucket:                 types.StringValue("mybucket"),
+		Endpoint:               types.StringNull(),
+		Client:                 types.StringValue("default"),
+		BasePath:               types.StringNull(),
+		ServerSideEncryption:   types.BoolValue(false),
+		BufferSize:             types.StringNull(),
+		CannedACL:              types.StringValue("private"),
+		StorageClass:           types.StringValue("standard"),
+		PathStyleAccess:        types.BoolValue(false),
+		DisableChunkedEncoding: types.BoolValue(true),
+	}
+
+	m := s3ToSettings(s3)
+	require.Equal(t, true, m["disable_chunked_encoding"])
+}
+
+func TestS3ToSettingsIncludesAlwaysSignRequestsWhenTrue(t *testing.T) {
+	t.Parallel()
+
+	s3 := S3Settings{
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
+		Bucket:               types.StringValue("mybucket"),
+		Endpoint:             types.StringNull(),
+		Client:               types.StringValue("default"),
+		BasePath:             types.StringNull(),
+		ServerSideEncryption: types.BoolValue(false),
+		BufferSize:           types.StringNull(),
+		CannedACL:            types.StringValue("private"),
+		StorageClass:         types.StringValue("standard"),
+		PathStyleAccess:      types.BoolValue(false),
+		AlwaysSignRequests:   types.BoolValue(true),
+	}
+
+	m := s3ToSettings(s3)
+	require.Equal(t, true, m["always_sign_requests"])
 }
 
 func TestS3ToSettingsWithEndpoint(t *testing.T) {
