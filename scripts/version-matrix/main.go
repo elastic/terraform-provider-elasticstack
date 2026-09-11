@@ -24,6 +24,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -53,6 +54,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdCompute(args[1:], stdout, stderr)
 	case "manage-pr":
 		return cmdManagePR(args[1:], stdout, stderr)
+	case "load-matrix":
+		return cmdLoadMatrix(args[1:], stdout, stderr)
 	default:
 		return usageError(stderr)
 	}
@@ -62,8 +65,9 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "Usage: version-matrix <subcommand> [flags]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Subcommands:")
-	fmt.Fprintln(w, "  compute    Compute the desired version list and update the pinned artifact")
-	fmt.Fprintln(w, "  manage-pr  Create or update the standing version-matrix pull request")
+	fmt.Fprintln(w, "  compute     Compute the desired version list and update the pinned artifact")
+	fmt.Fprintln(w, "  manage-pr   Create or update the standing version-matrix pull request")
+	fmt.Fprintln(w, "  load-matrix Read the pinned artifact and emit matrix versions and flags")
 	return errors.New("unknown or missing subcommand")
 }
 
@@ -233,6 +237,36 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 	}
 	fmt.Fprintln(stdout, "changed=true")
 	return writeGitHubOutput("changed", "true")
+}
+
+func cmdLoadMatrix(args []string, _, stderr io.Writer) error {
+	fsFlag := flag.NewFlagSet("load-matrix", flag.ContinueOnError)
+	fsFlag.SetOutput(stderr)
+	artifactPath := fsFlag.String("artifact", defaultArtifactPath, "path to the pinned versions artifact")
+	if err := fsFlag.Parse(args); err != nil {
+		return err
+	}
+
+	versions, err := ReadArtifact(*artifactPath)
+	if err != nil {
+		return fmt.Errorf("load-matrix: %w", err)
+	}
+	versions, flags := LoadMatrix(versions)
+	if err := writeGitHubOutputJSON("versions", versions); err != nil {
+		return fmt.Errorf("load-matrix: %w", err)
+	}
+	if err := writeGitHubOutputJSON("flags", flags); err != nil {
+		return fmt.Errorf("load-matrix: %w", err)
+	}
+	return nil
+}
+
+func writeGitHubOutputJSON(name string, value any) error {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("GITHUB_OUTPUT (%s): %w", name, err)
+	}
+	return writeGitHubOutput(name, string(data))
 }
 
 func writeGitHubOutput(name, value string) error {
