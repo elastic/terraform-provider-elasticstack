@@ -327,7 +327,7 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 	}
 }
 
-func TestSettingsToS3InheritsDisableChunkedEncodingWhenAPIOmits(t *testing.T) {
+func TestSettingsToS3DefaultsDisableChunkedEncodingWhenAPIOmits(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -352,10 +352,10 @@ func TestSettingsToS3InheritsDisableChunkedEncodingWhenAPIOmits(t *testing.T) {
 
 	var got S3Settings
 	require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
-	require.True(t, got.DisableChunkedEncoding.ValueBool())
+	require.False(t, got.DisableChunkedEncoding.ValueBool())
 }
 
-func TestSettingsToS3InheritsAlwaysSignRequestsWhenAPIOmits(t *testing.T) {
+func TestSettingsToS3DefaultsAlwaysSignRequestsWhenAPIOmits(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -380,7 +380,7 @@ func TestSettingsToS3InheritsAlwaysSignRequestsWhenAPIOmits(t *testing.T) {
 
 	var got S3Settings
 	require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
-	require.True(t, got.AlwaysSignRequests.ValueBool())
+	require.False(t, got.AlwaysSignRequests.ValueBool())
 }
 
 func TestSettingsToS3UsesAPIDisableChunkedEncodingWhenPresent(t *testing.T) {
@@ -410,6 +410,46 @@ func TestSettingsToS3UsesAPIDisableChunkedEncodingWhenPresent(t *testing.T) {
 	var got S3Settings
 	require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
 	require.True(t, got.DisableChunkedEncoding.ValueBool())
+}
+
+func TestSettingsToS3UsesStringAPIDisableChunkedEncodingWhenPresent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	repo := &esclients.SnapshotRepositoryInfo{
+		Type: "s3",
+		Settings: map[string]any{
+			"bucket":                   "api-bucket",
+			"disable_chunked_encoding": "true",
+		},
+	}
+
+	result, diags := settingsToS3(ctx, repo, Data{})
+	require.False(t, diags.HasError(), diags.Errors())
+
+	var got S3Settings
+	require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
+	require.True(t, got.DisableChunkedEncoding.ValueBool())
+}
+
+func TestSettingsToS3UsesStringAPIAlwaysSignRequestsWhenPresent(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	repo := &esclients.SnapshotRepositoryInfo{
+		Type: "s3",
+		Settings: map[string]any{
+			"bucket":               "api-bucket",
+			"always_sign_requests": "false",
+		},
+	}
+
+	result, diags := settingsToS3(ctx, repo, Data{})
+	require.False(t, diags.HasError(), diags.Errors())
+
+	var got S3Settings
+	require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
+	require.False(t, got.AlwaysSignRequests.ValueBool())
 }
 
 func TestSettingsToS3UsesAPIAlwaysSignRequestsWhenPresent(t *testing.T) {

@@ -249,8 +249,6 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 
 	endpointFallback := types.StringNull()
 	pathStyleAccessFallback := false
-	disableChunkedEncodingFallback := false
-	alwaysSignRequestsFallback := false
 	if typeutils.IsKnown(state.S3) {
 		var stateS3 S3Settings
 		if asDiags := state.S3.As(ctx, &stateS3, basetypes.ObjectAsOptions{}); !asDiags.HasError() {
@@ -258,23 +256,18 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 			if typeutils.IsKnown(stateS3.PathStyleAccess) {
 				pathStyleAccessFallback = stateS3.PathStyleAccess.ValueBool()
 			}
-			if typeutils.IsKnown(stateS3.DisableChunkedEncoding) {
-				disableChunkedEncodingFallback = stateS3.DisableChunkedEncoding.ValueBool()
-			}
-			if typeutils.IsKnown(stateS3.AlwaysSignRequests) {
-				alwaysSignRequestsFallback = stateS3.AlwaysSignRequests.ValueBool()
-			}
 		}
 	}
 
-	// The Elasticsearch GET response may not echo endpoint, path_style_access,
-	// disable_chunked_encoding, or always_sign_requests (client-setting overrides
-	// rather than native repository settings). Whether Elasticsearch returns them
-	// via the raw settings overlay is version-dependent and was not empirically
-	// confirmed against a live cluster in this change. We therefore inherit all
-	// four values from the prior state when the GET response omits them, mirroring
-	// the compressFallback pattern in settingsToFs and settingsToURL. The API
-	// value wins when present.
+	// The Elasticsearch GET response may not echo endpoint or path_style_access
+	// (client-setting overrides rather than native repository settings). Whether
+	// Elasticsearch returns them via the raw settings overlay is version-dependent
+	// and difficult to determine empirically, so we inherit those two from prior
+	// state when GET omits them. Empirically, GET _snapshot/{repo} on Elasticsearch
+	// 8.19.17 and 9.4.0 echoes disable_chunked_encoding and always_sign_requests
+	// (as the strings "true"/"false") whenever they were set in the PUT body —
+	// including false — so those two map directly with no fallback. The API value
+	// wins when present.
 	var endpoint types.String
 	if endpointStr := strSetting(s, settingEndpoint); endpointStr != "" {
 		endpoint = strSettingNull(s, settingEndpoint)
@@ -299,8 +292,8 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		CannedACL:              strSettingNull(s, settingCannedACL),
 		StorageClass:           strSettingNull(s, settingStorageClass),
 		PathStyleAccess:        types.BoolValue(boolSetting(s, settingPathStyleAccess, pathStyleAccessFallback)),
-		DisableChunkedEncoding: types.BoolValue(boolSetting(s, settingDisableChunkedEncoding, disableChunkedEncodingFallback)),
-		AlwaysSignRequests:     types.BoolValue(boolSetting(s, settingAlwaysSignRequests, alwaysSignRequestsFallback)),
+		DisableChunkedEncoding: types.BoolValue(boolSetting(s, settingDisableChunkedEncoding, false)),
+		AlwaysSignRequests:     types.BoolValue(boolSetting(s, settingAlwaysSignRequests, false)),
 	}
 	obj, objDiags := types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
 	diags.Append(objDiags...)

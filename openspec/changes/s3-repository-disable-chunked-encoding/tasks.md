@@ -37,6 +37,7 @@
   prior-state fallback pattern (currently applied to `endpoint`/`path_style_access`) to
   `disable_chunked_encoding` and `always_sign_requests` — capture each fallback from
   `state.S3`/`priorS3` before mapping, and use `boolSetting(s, settingX, xFallback)`.
+  (N/A — GET on Elasticsearch 8.19.17 and 9.4.0 echoes both keys; 4.3 applied instead.)
 - [x] 4.3 If the API **does** echo the fields back: map them directly with
   `types.BoolValue(boolSetting(s, settingX, false))` (no fallback needed), and note in the PR
   description that the fallback was unnecessary and why.
