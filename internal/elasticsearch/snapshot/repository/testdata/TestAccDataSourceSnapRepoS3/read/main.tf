@@ -12,13 +12,15 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_s3_repo" {
   verify = false
 
   s3 {
-    bucket                 = "test-bucket"
-    endpoint               = "https://minio.example.com:9000"
-    path_style_access      = true
-    client                 = "default"
-    canned_acl             = "private"
-    storage_class          = "standard"
-    server_side_encryption = false
+    bucket                   = "test-bucket"
+    endpoint                 = "https://minio.example.com:9000"
+    path_style_access        = true
+    disable_chunked_encoding = true
+    always_sign_requests     = true
+    client                   = "default"
+    canned_acl               = "private"
+    storage_class            = "standard"
+    server_side_encryption   = false
   }
 }
 
