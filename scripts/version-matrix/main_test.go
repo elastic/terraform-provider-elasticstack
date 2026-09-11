@@ -171,7 +171,7 @@ func TestComputeHTTPClientHasTimeout(t *testing.T) {
 }
 
 func TestRunComputeFailsWhenHTTPTimesOut(t *testing.T) {
-	hang := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	hang := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		<-r.Context().Done()
 	}))
 	t.Cleanup(hang.Close)
