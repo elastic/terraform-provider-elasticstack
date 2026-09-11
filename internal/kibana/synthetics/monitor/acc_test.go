@@ -119,6 +119,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
 					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestHttpMonitorResource - "+bmName),
 					resource.TestCheckResourceAttr(bmMonitorID, "space_id", ""),
+					resource.TestCheckNoResourceAttr(bmMonitorID, "kibana_spaces"),
 					resource.TestCheckResourceAttr(bmMonitorID, "namespace", "default"),
 					resource.TestCheckResourceAttr(bmMonitorID, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorID, "alert.tls.enabled", "true"),

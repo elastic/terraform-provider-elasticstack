@@ -25,6 +25,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -123,6 +124,7 @@ type tfModelV0 struct {
 	Schedule         types.Int64               `tfsdk:"schedule"`
 	Locations        []types.String            `tfsdk:"locations"`
 	PrivateLocations []types.String            `tfsdk:"private_locations"`
+	KibanaSpaces     types.List                `tfsdk:"kibana_spaces"`
 	Enabled          types.Bool                `tfsdk:"enabled"`
 	Tags             []types.String            `tfsdk:"tags"`
 	Labels           types.Map                 `tfsdk:"labels"`
@@ -239,6 +241,15 @@ func monitorSchema(_ context.Context) schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "These Private Locations refer to locations hosted and managed by you, whereas locations are hosted by Elastic. You can specify a Private Location using the location's name.",
+			},
+			"kibana_spaces": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				MarkdownDescription: "Kibana spaces in which the monitor is visible. " +
+					"Use `[\"*\"]` to share the monitor with all spaces. Removing a configured value clears additional visibility. The `space_id` is always included by Kibana.",
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -627,6 +638,54 @@ func syntheticsMonitorMaxRedirectsToInt64(v *kbapi.SyntheticsMonitor_MaxRedirect
 	return unionToInt64(v.AsSyntheticsMonitorMaxRedirects0, v.AsSyntheticsMonitorMaxRedirects1, "max_redirects")
 }
 
+func sameKibanaSpaceSet(first, second []string) bool {
+	first = slices.Compact(slices.Sorted(slices.Values(first)))
+	second = slices.Compact(slices.Sorted(slices.Values(second)))
+	return slices.Equal(first, second)
+}
+
+func kibanaSpacesFromAPI(ctx context.Context, current types.List, incoming *[]string, spaceID string, diags *diag.Diagnostics) types.List {
+	current = typeutils.EnsureTypedList(ctx, current, types.StringType)
+	if incoming == nil {
+		return current
+	}
+	if spaceID == "" {
+		spaceID = "default"
+	}
+
+	if current.IsUnknown() {
+		return typeutils.SliceToListTypeString(ctx, *incoming, path.Root("kibana_spaces"), diags)
+	}
+
+	if current.IsNull() {
+		// Kibana always adds the endpoint space to a monitor's saved object. Keep an
+		// omitted configuration null instead of reporting that implicit owner space
+		// as practitioner-managed state.
+		if slices.Equal(*incoming, []string{spaceID}) {
+			return current
+		}
+		return typeutils.SliceToListTypeString(ctx, *incoming, path.Root("kibana_spaces"), diags)
+	}
+
+	configured := typeutils.ListTypeToSliceString(ctx, current, path.Root("kibana_spaces"), diags)
+	if diags.HasError() {
+		return current
+	}
+
+	// The API appends the endpoint space when it is not present in the request.
+	// Preserve the practitioner-configured list and ordering when that is the
+	// only difference in the API response.
+	expected := slices.Clone(configured)
+	if !slices.Contains(expected, spaceID) {
+		expected = append(expected, spaceID)
+	}
+	if sameKibanaSpaceSet(expected, *incoming) {
+		return current
+	}
+
+	return typeutils.SliceToListTypeString(ctx, *incoming, path.Root("kibana_spaces"), diags)
+}
+
 func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor, space string) (*tfModelV0, diag.Diagnostics) {
 	var (
 		schedule int64
@@ -737,6 +796,7 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		// the API response where IsServiceManaged == false.
 		Locations:        v.Locations,
 		PrivateLocations: typeutils.StringSliceValue(privateLocLabels),
+		KibanaSpaces:     kibanaSpacesFromAPI(ctx, v.KibanaSpaces, api.Spaces, space, &dg),
 		Enabled:          types.BoolPointerValue(api.Enabled),
 		Tags:             typeutils.StringSliceValue(typeutils.Deref(api.Tags)),
 		Labels:           typeutils.MapValueFrom(ctx, typeutils.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
@@ -1007,6 +1067,10 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kbapi.SyntheticsMo
 	if dg.HasError() {
 		return nil, dg
 	}
+	spaces := typeutils.CollectionToSliceStringPtr(ctx, v.KibanaSpaces, path.Root("kibana_spaces"), &dg)
+	if dg.HasError() {
+		return nil, dg
+	}
 
 	labels, locations, alert, dg := v.monitorRequestCommon(ctx, dg)
 	if dg.HasError() {
@@ -1016,7 +1080,7 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kbapi.SyntheticsMo
 	req := &kbapi.SyntheticsMonitorRequest{}
 	switch {
 	case v.HTTP != nil:
-		httpReq, httpDg := v.newHTTPMonitorRequest(ctx, labels, locations, params, alert)
+		httpReq, httpDg := v.newHTTPMonitorRequest(ctx, labels, locations, spaces, params, alert)
 		dg.Append(httpDg...)
 		if dg.HasError() {
 			return nil, dg
@@ -1025,7 +1089,7 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kbapi.SyntheticsMo
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
 	case v.TCP != nil:
-		tcpReq, tcpDg := v.newTCPMonitorRequest(ctx, labels, locations, params, alert)
+		tcpReq, tcpDg := v.newTCPMonitorRequest(ctx, labels, locations, spaces, params, alert)
 		dg.Append(tcpDg...)
 		if dg.HasError() {
 			return nil, dg
@@ -1034,12 +1098,12 @@ func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kbapi.SyntheticsMo
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
 	case v.ICMP != nil:
-		icmpReq := v.newICMPMonitorRequest(labels, locations, params, alert)
+		icmpReq := v.newICMPMonitorRequest(labels, locations, spaces, params, alert)
 		if err := req.FromSyntheticsIcmpMonitorFields(*icmpReq); err != nil {
 			return nil, diagutil.FrameworkDiagFromError(err)
 		}
 	case v.Browser != nil:
-		browserReq, browserDg := v.newBrowserMonitorRequest(labels, locations, params, alert)
+		browserReq, browserDg := v.newBrowserMonitorRequest(labels, locations, spaces, params, alert)
 		dg.Append(browserDg...)
 		if dg.HasError() {
 			return nil, dg
@@ -1085,6 +1149,7 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 	ctx context.Context,
 	labels map[string]string,
 	locations []string,
+	spaces *[]string,
 	params map[string]any,
 	alert *kbapi.SyntheticsMonitorAlert,
 ) (*kbapi.SyntheticsHttpMonitorFields, diag.Diagnostics) {
@@ -1132,6 +1197,7 @@ func (v *tfModelV0) newHTTPMonitorRequest(
 		RetestOnFailure:      v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:             typeutils.Int64ToFloat32Ptr(v.Schedule),
 		ServiceName:          typeutils.OptionalString(v.APMServiceName),
+		Spaces:               spaces,
 		Ssl:                  ssl,
 		Tags:                 typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:              typeutils.Int64ToFloat32Ptr(v.TimeoutSeconds),
@@ -1151,6 +1217,7 @@ func (v *tfModelV0) newTCPMonitorRequest(
 	ctx context.Context,
 	labels map[string]string,
 	locations []string,
+	spaces *[]string,
 	params map[string]any,
 	alert *kbapi.SyntheticsMonitorAlert,
 ) (*kbapi.SyntheticsTcpMonitorFields, diag.Diagnostics) {
@@ -1182,6 +1249,7 @@ func (v *tfModelV0) newTCPMonitorRequest(
 		RetestOnFailure:       v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:              typeutils.Int64ToFloat32Ptr(v.Schedule),
 		ServiceName:           typeutils.OptionalString(v.APMServiceName),
+		Spaces:                spaces,
 		Ssl:                   ssl,
 		Tags:                  typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:               typeutils.Int64ToFloat32Ptr(v.TimeoutSeconds),
@@ -1190,7 +1258,13 @@ func (v *tfModelV0) newTCPMonitorRequest(
 	}, dg
 }
 
-func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []string, params map[string]any, alert *kbapi.SyntheticsMonitorAlert) *kbapi.SyntheticsIcmpMonitorFields {
+func (v *tfModelV0) newICMPMonitorRequest(
+	labels map[string]string,
+	locations []string,
+	spaces *[]string,
+	params map[string]any,
+	alert *kbapi.SyntheticsMonitorAlert,
+) *kbapi.SyntheticsIcmpMonitorFields {
 	return &kbapi.SyntheticsIcmpMonitorFields{
 		Alert:            alert,
 		Enabled:          v.Enabled.ValueBoolPointer(),
@@ -1204,6 +1278,7 @@ func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []
 		RetestOnFailure:  v.RetestOnFailure.ValueBoolPointer(),
 		Schedule:         typeutils.Int64ToFloat32Ptr(v.Schedule),
 		ServiceName:      typeutils.OptionalString(v.APMServiceName),
+		Spaces:           spaces,
 		Tags:             typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:          typeutils.Int64ToFloat32Ptr(v.TimeoutSeconds),
 		Type:             kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
@@ -1214,6 +1289,7 @@ func (v *tfModelV0) newICMPMonitorRequest(labels map[string]string, locations []
 func (v *tfModelV0) newBrowserMonitorRequest(
 	labels map[string]string,
 	locations []string,
+	spaces *[]string,
 	params map[string]any,
 	alert *kbapi.SyntheticsMonitorAlert,
 ) (*kbapi.SyntheticsBrowserMonitorFields, diag.Diagnostics) {
@@ -1238,6 +1314,7 @@ func (v *tfModelV0) newBrowserMonitorRequest(
 		Schedule:          typeutils.Int64ToFloat32Ptr(v.Schedule),
 		Screenshots:       typeutils.StringishToPointer[kbapi.SyntheticsBrowserMonitorFieldsScreenshots](v.Browser.Screenshots),
 		ServiceName:       typeutils.OptionalString(v.APMServiceName),
+		Spaces:            spaces,
 		SyntheticsArgs:    typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Browser.SyntheticsArgs)),
 		Tags:              typeutils.SliceNilIfEmpty(typeutils.ValueStringSlice(v.Tags)),
 		Timeout:           typeutils.Int64ToFloat32Ptr(v.TimeoutSeconds),
