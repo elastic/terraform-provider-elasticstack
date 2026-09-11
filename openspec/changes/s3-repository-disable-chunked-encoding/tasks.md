@@ -11,11 +11,11 @@
 
 ## 2. Schema
 
-- [ ] 2.1 In `internal/elasticsearch/snapshot/repository/schema.go` `s3Block()`, add
+- [x] 2.1 In `internal/elasticsearch/snapshot/repository/schema.go` `s3Block()`, add
   `settingDisableChunkedEncoding` and `settingAlwaysSignRequests` as
   `schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false)}`,
   matching `settingServerSideEncryption`/`settingPathStyleAccess`.
-- [ ] 2.2 In `internal/elasticsearch/snapshot/repository/data_source.go`, add both attributes to
+- [x] 2.2 In `internal/elasticsearch/snapshot/repository/data_source.go`, add both attributes to
   the data source `s3` block as computed-only, matching how `path_style_access`/
   `server_side_encryption` are exposed there.
 
