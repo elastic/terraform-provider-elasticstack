@@ -251,14 +251,3 @@ func PreserveNullInt64IfStateEquals(plan types.Int64, state *types.Int64, expect
 		*state = plan
 	}
 }
-
-// PreserveNullFloat64IfStateEquals mirrors PreserveNullStringIfStateEquals for float64 attributes.
-// See PreserveNullStringIfStateEquals.
-func PreserveNullFloat64IfStateEquals(plan types.Float64, state *types.Float64, expected float64) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueFloat64() == expected {
-		*state = plan
-	}
-}
