@@ -349,7 +349,7 @@ func TestSettingsToS3ChunkedEncodingFlags(t *testing.T) {
 				"disable_chunked_encoding": true,
 				"always_sign_requests":     true,
 			},
-			state: s3SettingsForState(types.StringNull(), types.BoolValue(false)),
+			state:                      s3SettingsForState(types.StringNull(), types.BoolValue(false)),
 			wantDisableChunkedEncoding: true,
 			wantAlwaysSignRequests:     true,
 		},

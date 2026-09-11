@@ -180,13 +180,13 @@ func TestFlattenAzureSettings_Nulls(t *testing.T) {
 
 func TestFlattenS3Settings(t *testing.T) {
 	settings := map[string]any{
-		"bucket":                  "my-bucket",
-		"client":                  "default",
-		"base_path":               "backups",
-		"server_side_encryption":  true,
-		"buffer_size":             "5mb",
-		"canned_acl":              "private",
-		"storage_class":           "standard",
+		"bucket":                   "my-bucket",
+		"client":                   "default",
+		"base_path":                "backups",
+		"server_side_encryption":   true,
+		"buffer_size":              "5mb",
+		"canned_acl":               "private",
+		"storage_class":            "standard",
 		"path_style_access":        "false",
 		"disable_chunked_encoding": true,
 		"always_sign_requests":     "true",
