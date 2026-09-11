@@ -39,9 +39,33 @@ import (
 
 var (
 	minVersionPrebuiltRules = version.Must(version.NewVersion("8.0.0"))
-	// 9.5.0 install-all in a new custom space 400s on a deprecated rule stub (elastic/kibana#285497).
-	prebuiltRulesInSpaceConstraints = version.MustConstraints(version.NewConstraint("!= 9.5.0"))
+	// 9.5.0 / 9.5.3 install-all in a new custom space 400s on a deprecated rule stub (elastic/kibana#285497).
+	prebuiltRulesInSpaceConstraints = version.MustConstraints(version.NewConstraint("!= 9.5.0, != 9.5.3"))
 )
+
+func TestPrebuiltRulesInSpaceConstraints(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		version string
+		allowed bool
+	}{
+		{name: "8.19.21", version: "8.19.21", allowed: true},
+		{name: "9.4.6", version: "9.4.6", allowed: true},
+		{name: "9.5.0", version: "9.5.0", allowed: false},
+		{name: "9.5.3", version: "9.5.3", allowed: false},
+		{name: "9.6.0-SNAPSHOT", version: "9.6.0-SNAPSHOT", allowed: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			v := version.Must(version.NewVersion(tc.version))
+			require.Equal(t, tc.allowed, prebuiltRulesInSpaceConstraints.Check(v))
+		})
+	}
+}
 
 func TestAccResourcePrebuiltRules(t *testing.T) {
 	testCases := []struct {
