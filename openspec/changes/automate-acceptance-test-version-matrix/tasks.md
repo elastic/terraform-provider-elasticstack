@@ -1,12 +1,12 @@
 ## 1. `scripts/version-matrix` engine
 
-- [ ] 1.1 Scaffold Go module `scripts/version-matrix/` (`main.go` + package files), mirroring the `scripts/changelog/` and `scripts/auto-approve/` layout (thin `main.go` entrypoint, testable package logic)
-- [ ] 1.2 Implement GA-tag discovery: list `elastic/elasticsearch` git tags via the GitHub API (authenticated with the workflow token), filter to `^v(8|9)\.\d+\.\d+$`, group by minor, keep the max patch per minor
-- [ ] 1.3 Implement SNAPSHOT-label lookup against `https://snapshots.elastic.co/latest/master.json`; fail the run (do not silently drop the entry) if the endpoint is unavailable or the response is unparsable
-- [ ] 1.4 Implement the compose-stack image probe: for each newly computed GA patch not already in the pinned artifact, require Elasticsearch, Kibana, and the applicable Agent image manifests to resolve; on failure apply the fallback rules (retain previous GA on patch bump; retain `X.Y.*-SNAPSHOT` and do not append a newer master SNAPSHOT on promotion; omit a brand-new minor with no previous pin) instead of failing the run
-- [ ] 1.5 Implement pinned-artifact read/diff/write against `.github/versions/acceptance-test-matrix.json` (sorted ascending, SNAPSHOT entry last)
-- [ ] 1.6 Add unit tests: tag-filtering/latest-patch-per-minor logic, SNAPSHOT-label parsing, image-probe fallback for patch bump / SNAPSHOT promotion / brand-new minor, two-digit-minor range matching (`8.10` is not `8.1`), diff/no-op detection — using fixture HTTP responses, no live network calls
-- [ ] 1.7 Seed `.github/versions/acceptance-test-matrix.json` with the current (research-time-corrected) list so the first scheduled run computes a small, reviewable diff rather than rewriting the whole file
+- [x] 1.1 Scaffold Go module `scripts/version-matrix/` (`main.go` + package files), mirroring the `scripts/changelog/` and `scripts/auto-approve/` layout (thin `main.go` entrypoint, testable package logic)
+- [x] 1.2 Implement GA-tag discovery: list `elastic/elasticsearch` git tags via the GitHub API (authenticated with the workflow token), filter to `^v(8|9)\.\d+\.\d+$`, group by minor, keep the max patch per minor
+- [x] 1.3 Implement SNAPSHOT-label lookup against `https://snapshots.elastic.co/latest/master.json`; fail the run (do not silently drop the entry) if the endpoint is unavailable or the response is unparsable
+- [x] 1.4 Implement the compose-stack image probe: for each newly computed GA patch not already in the pinned artifact, require Elasticsearch, Kibana, and the applicable Agent image manifests to resolve; on failure apply the fallback rules (retain previous GA on patch bump; retain `X.Y.*-SNAPSHOT` and do not append a newer master SNAPSHOT on promotion; omit a brand-new minor with no previous pin) instead of failing the run
+- [x] 1.5 Implement pinned-artifact read/diff/write against `.github/versions/acceptance-test-matrix.json` (sorted ascending, SNAPSHOT entry last)
+- [x] 1.6 Add unit tests: tag-filtering/latest-patch-per-minor logic, SNAPSHOT-label parsing, image-probe fallback for patch bump / SNAPSHOT promotion / brand-new minor, two-digit-minor range matching (`8.10` is not `8.1`), diff/no-op detection — using fixture HTTP responses, no live network calls
+- [x] 1.7 Seed `.github/versions/acceptance-test-matrix.json` with the current (research-time-corrected) list so the first scheduled run computes a small, reviewable diff rather than rewriting the whole file
 
 ## 2. `version-matrix-generation` workflow
 
