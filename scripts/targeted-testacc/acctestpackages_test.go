@@ -152,7 +152,7 @@ func TestIsAccTestFile(t *testing.T) {
 	}
 }
 
-// TestAcceptancePackageEnumerationGuard fails when any package under the
+// TestEnumerationGuard_AcceptancePackages fails when any package under the
 // tool's enumeration roots that declares a func TestAcc or invokes the
 // acceptance harness (resource.Test / resource.ParallelTest) is missing
 // from FindAccTestPackages output.
@@ -166,17 +166,19 @@ func TestIsAccTestFile(t *testing.T) {
 // analyzer/test fixtures that textually use resource.Test but are not real
 // acceptance suites.
 //
-// Named TestAcceptance... rather than TestAcc... so the stackless unit-test
-// job (`go test ./... -skip '^TestAcc'`) still runs it — the `^TestAcc`
-// filter would otherwise exclude the one guard whose purpose is to catch
-// acceptance suites that silently stop running before they go green.
+// Named TestEnumerationGuard_... rather than TestAcc... or TestAcceptance...
+// so the stackless unit-test job (`go test ./... -skip '^TestAcc'`) still
+// runs it. Both `TestAcc` and `TestAcceptance` begin with the `TestAcc`
+// prefix, so either would be excluded by the `^TestAcc` filter — and this is
+// the one guard whose purpose is to catch acceptance suites that silently
+// stop running before they go green.
 // Acceptance suites that do not follow the TestAcc naming convention (e.g.
 // internal/kibana/synthetics, provider/provider_test.go) are only selected
 // when the enumeration recognizes harness invocations; a regression here
 // makes those suites silently unreachable — a PR changing them would select
 // zero packages and go green. The detection below is deliberately text-based
 // so it does not share the AST analysis it guards against.
-func TestAcceptancePackageEnumerationGuard(t *testing.T) {
+func TestEnumerationGuard_AcceptancePackages(t *testing.T) {
 	root := repoRoot(t)
 	modulePath, err := currentModulePath()
 	if err != nil {

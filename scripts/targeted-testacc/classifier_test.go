@@ -163,6 +163,10 @@ func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
 		"xpprovider/xpprovider.go",
 		".github/workflows/provider.yml",
 		"examples/resources/elasticstack_index/resource.tf",
+		"scripts/targeted-testacc/main.go",
+		"internal/kibana/dashboard/dashboardacctest/helpers.go",
+		"internal/kibana/dashboard/panelkit/contracttest/harness.go",
+		"internal/providerfwtest/helpers.go",
 	}
 
 	for _, file := range prefixes {

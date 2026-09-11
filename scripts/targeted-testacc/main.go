@@ -143,6 +143,9 @@ func run() error {
 
 		// Phase 2: entity grep across testdata and _test.go files.
 		pkgDir := func(importPath string) string {
+			if importPath == modulePath {
+				return "."
+			}
 			return strings.TrimPrefix(importPath, modulePath+"/")
 		}
 
