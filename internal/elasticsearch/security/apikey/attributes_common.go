@@ -49,6 +49,10 @@ const (
 	KeyIDDescription               = "Unique id for this API key."
 	APIKeyDescription              = "Generated API Key."
 	EncodedDescription             = "API key credentials which is the Base64-encoding of the UTF-8 representation of the id and api_key joined by a colon (:)."
+	RestrictToOwnedDescription = "Whether to restrict this resource to only reading and deleting API keys owned by the connection's authenticated user. " +
+		"Defaults to `false`: on delete, the provider first attempts to invalidate the key as its owner (which only requires the `manage_own_api_key` cluster privilege), " +
+		"and if that does not invalidate the key (for example because it is owned by a different user), it falls back to an unscoped delete that requires the broader `manage_api_key` cluster privilege. " +
+		"Set to `true` to disable that fallback so a key owned by a different user is never modified or deleted; it is instead treated as if it does not exist."
 
 	AccessSearchDescription                 = "A list of search configurations for which the cross-cluster API key will have search privileges."
 	AccessReplicationDescription            = "A list of replication configurations for which the cross-cluster API key will have replication privileges."
