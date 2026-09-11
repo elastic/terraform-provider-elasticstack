@@ -42,5 +42,5 @@
 
 ## 6. Spec/doc consistency
 
-- [ ] 6.1 Confirm `openspec/specs/ci-build-lint-test/spec.md`'s Schema section (or prose) does not still imply a hand-maintained `strategy.matrix.version` list once this change is archived
-- [ ] 6.2 Confirm no other spec or doc under `openspec/specs/` or `dev-docs/` references the removed `strategy.matrix.include` block or the exact-patch synthetics/runner conditions
+- [x] 6.1 Confirm `openspec/specs/ci-build-lint-test/spec.md`'s Schema section (or prose) does not still imply a hand-maintained `strategy.matrix.version` list once this change is archived
+- [x] 6.2 Confirm no other spec or doc under `openspec/specs/` or `dev-docs/` references the removed `strategy.matrix.include` block or the exact-patch synthetics/runner conditions
