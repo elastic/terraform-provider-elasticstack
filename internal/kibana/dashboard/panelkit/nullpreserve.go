@@ -56,14 +56,6 @@ func PreserveFloat32(existing types.Float32, api *float32) types.Float32 {
 	return types.Float32PointerValue(api)
 }
 
-// PreserveList keeps an existing null/unknown list when it is not known; otherwise replaces with next.
-func PreserveList(existing, next attr.Value) attr.Value {
-	if !typeutils.IsKnown(existing) {
-		return existing
-	}
-	return next
-}
-
 // PreserveKnownString updates existing from api only when existing is already known and api is
 // present; an api value of nil, or existing being null/unknown, leaves existing unchanged. Unlike
 // PreserveString, a known existing value is never nulled out just because api is nil.
