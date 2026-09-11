@@ -86,33 +86,13 @@ func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entityco
 	return reqs, nil
 }
 
-func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
-	if union == nil {
-		return
-	}
-
-	output, err := union.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return
-	}
-
-	switch output := output.(type) {
-	case kbapi.KibanaHTTPAPIsOutputResponseElasticsearch:
-		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
-
-	case kbapi.KibanaHTTPAPIsOutputResponseLogstash:
-		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
-
-	case kbapi.KibanaHTTPAPIsOutputResponseKafka:
-		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch:
-		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
-	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
-	}
-
-	return
+func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) diag.Diagnostics {
+	return fleet.DispatchOutputUnion(ctx, union, fleet.OutputUnionHandlers{
+		Elasticsearch:       model.fromAPIElasticsearchModel,
+		Logstash:            model.fromAPILogstashModel,
+		Kafka:               model.fromAPIKafkaModel,
+		RemoteElasticsearch: model.fromAPIRemoteElasticsearchModel,
+	})
 }
 
 func (model outputModel) toAPICreateModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
