@@ -217,6 +217,143 @@ func TestEvaluate(t *testing.T) {
 
 }
 
+func TestEvaluateVersionMatrix(t *testing.T) {
+	t.Parallel()
+
+	makeCommit := func(login string) *github.RepositoryCommit {
+		return &github.RepositoryCommit{
+			Author: &github.User{Login: new(login)},
+		}
+	}
+
+	makeFile := func(name string) *github.CommitFile {
+		return &github.CommitFile{Filename: new(name)}
+	}
+
+	baseInput := EvaluationInput{
+		PullRequest: &github.PullRequest{
+			State:     new("open"),
+			Draft:     new(false),
+			Additions: new(50),
+			Deletions: new(10),
+			User: &github.User{
+				Login: new("github-actions[bot]"),
+			},
+			Head: &github.PullRequestBranch{
+				Ref:  new("acceptance-test-version-matrix"),
+				Repo: &github.Repository{FullName: new("elastic/terraform-provider-elasticstack")},
+			},
+			Base: &github.PullRequestBranch{
+				Repo: &github.Repository{FullName: new("elastic/terraform-provider-elasticstack")},
+			},
+		},
+		Commits: []*github.RepositoryCommit{
+			makeCommit("github-actions[bot]"),
+		},
+		Files: []*github.CommitFile{
+			makeFile(".github/versions/acceptance-test-matrix.json"),
+		},
+		ApproverLogin: "github-actions[bot]",
+		Reviews:       []*github.PullRequestReview{},
+	}
+
+	tests := []struct {
+		name            string
+		mutate          func(in *EvaluationInput)
+		wantApprove     bool
+		wantAlreadySeen bool
+		wantCategory    string
+		wantReason      string
+	}{
+		{
+			name:         "approves when matching branch, bot commits, and allowlisted file",
+			mutate:       func(_ *EvaluationInput) {},
+			wantApprove:  true,
+			wantCategory: "version-matrix",
+			wantReason:   "all gates passed",
+		},
+		{
+			name: "rejects when a commit author is not github-actions[bot]",
+			mutate: func(in *EvaluationInput) {
+				in.Commits = []*github.RepositoryCommit{
+					makeCommit("github-actions[bot]"),
+					makeCommit("octocat"),
+				}
+			},
+			wantApprove:  false,
+			wantCategory: "version-matrix",
+			wantReason:   "not all commits are authored by github-actions[bot]",
+		},
+		{
+			name: "rejects when an extra file is changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{
+					makeFile(".github/versions/acceptance-test-matrix.json"),
+					makeFile("README.md"),
+				}
+			},
+			wantApprove:  false,
+			wantCategory: "version-matrix",
+			wantReason:   "pull request contains files other than .github/versions/acceptance-test-matrix.json",
+		},
+		{
+			name: "does not match version-matrix when head branch is different",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.Head = &github.PullRequestBranch{Ref: new("some-other-branch")}
+			},
+			wantApprove:  false,
+			wantCategory: "",
+			wantReason:   "did not match any auto-approve category",
+		},
+		{
+			name: "does not match version-matrix for a fork pull request",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.Head = &github.PullRequestBranch{
+					Ref:  new("acceptance-test-version-matrix"),
+					Repo: &github.Repository{FullName: new("octocat/terraform-provider-elasticstack")},
+				}
+			},
+			wantApprove:  false,
+			wantCategory: "",
+			wantReason:   "did not match any auto-approve category",
+		},
+		{
+			name: "approves without applying the copilot diff-threshold gate",
+			mutate: func(in *EvaluationInput) {
+				in.PullRequest.Additions = new(600)
+				in.PullRequest.Deletions = new(500)
+			},
+			wantApprove:  true,
+			wantCategory: "version-matrix",
+			wantReason:   "all gates passed",
+		},
+		{
+			name: "rejects when no files are changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{}
+			},
+			wantApprove:  false,
+			wantCategory: "version-matrix",
+			wantReason:   "pull request contains files other than .github/versions/acceptance-test-matrix.json",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			input := cloneInput(baseInput)
+			tc.mutate(&input)
+
+			got := Evaluate(input)
+			assert.Equal(t, tc.wantApprove, got.ShouldApprove)
+			assert.Equal(t, tc.wantAlreadySeen, got.AlreadyApproved)
+			assert.Equal(t, tc.wantCategory, got.CategoryMatched)
+			require.NotEmpty(t, got.Reasons)
+			assert.True(t, hasReasonContaining(got.Reasons, tc.wantReason))
+		})
+	}
+}
+
 func hasReasonContaining(reasons []string, expected string) bool {
 	for _, reason := range reasons {
 		if strings.Contains(reason, expected) {
@@ -237,9 +374,8 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 		User: &github.User{
 			Login: new(in.PullRequest.GetUser().GetLogin()),
 		},
-		Head: &github.PullRequestBranch{
-			Ref: new(in.PullRequest.GetHead().GetRef()),
-		},
+		Head: clonePullRequestBranch(in.PullRequest.GetHead()),
+		Base: clonePullRequestBranch(in.PullRequest.GetBase()),
 	}
 
 	out.Commits = make([]*github.RepositoryCommit, 0, len(in.Commits))
@@ -269,4 +405,17 @@ func cloneInput(in EvaluationInput) EvaluationInput {
 	}
 
 	return out
+}
+
+func clonePullRequestBranch(branch *github.PullRequestBranch) *github.PullRequestBranch {
+	if branch == nil {
+		return &github.PullRequestBranch{}
+	}
+	cloned := &github.PullRequestBranch{
+		Ref: new(branch.GetRef()),
+	}
+	if repo := branch.GetRepo(); repo != nil {
+		cloned.Repo = &github.Repository{FullName: new(repo.GetFullName())}
+	}
+	return cloned
 }

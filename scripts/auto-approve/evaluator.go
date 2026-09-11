@@ -31,6 +31,11 @@ const (
 	// reasonAllGatesPassed is the human-readable reason recorded on a successful
 	// auto-approve evaluation.
 	reasonAllGatesPassed = "all gates passed"
+
+	categoryVersionMatrix = "version-matrix"
+	versionMatrixBranch   = "acceptance-test-version-matrix"
+	versionMatrixAuthor   = "github-actions[bot]"
+	versionMatrixFile     = ".github/versions/acceptance-test-matrix.json"
 )
 
 var allowedCopilotAuthorLogins = map[string]struct{}{
@@ -106,6 +111,10 @@ func matchedCategory(pr *github.PullRequest) string {
 		return ""
 	}
 
+	if isSameRepositoryPR(pr) && pr.GetHead().GetRef() == versionMatrixBranch {
+		return categoryVersionMatrix
+	}
+
 	author := pr.User.GetLogin()
 	if _, ok := allowedCopilotAuthorLogins[author]; ok {
 		return "copilot"
@@ -125,9 +134,63 @@ func evaluateCategoryGates(category string, input EvaluationInput) []string {
 		return evaluateCopilotCategory(input)
 	case "dependabot", "renovate":
 		return nil
+	case categoryVersionMatrix:
+		return evaluateVersionMatrixCategory(input)
 	default:
 		return []string{fmt.Sprintf("unknown auto-approve category %q", category)}
 	}
+}
+
+func isSameRepositoryPR(pr *github.PullRequest) bool {
+	headRepo := pr.GetHead().GetRepo()
+	baseRepo := pr.GetBase().GetRepo()
+	if headRepo == nil || baseRepo == nil {
+		return false
+	}
+	headName := headRepo.GetFullName()
+	return headName != "" && headName == baseRepo.GetFullName()
+}
+
+func evaluateVersionMatrixCategory(input EvaluationInput) []string {
+	reasons := make([]string, 0)
+	if !allCommitsByLogin(input.Commits, versionMatrixAuthor) {
+		reasons = append(reasons, fmt.Sprintf("not all commits are authored by %s", versionMatrixAuthor))
+	}
+	if !allFilesMatch(input.Files, versionMatrixFile) {
+		reasons = append(reasons, fmt.Sprintf("pull request contains files other than %s", versionMatrixFile))
+	}
+	return reasons
+}
+
+func allFilesMatch(files []*github.CommitFile, allowed string) bool {
+	if len(files) == 0 {
+		return false
+	}
+
+	for _, file := range files {
+		if file == nil || file.GetFilename() != allowed {
+			return false
+		}
+	}
+
+	return true
+}
+
+func allCommitsByLogin(commits []*github.RepositoryCommit, login string) bool {
+	if len(commits) == 0 {
+		return false
+	}
+
+	for _, commit := range commits {
+		if commit == nil || commit.Author == nil || commit.Author.Login == nil {
+			return false
+		}
+		if commit.Author.GetLogin() != login {
+			return false
+		}
+	}
+
+	return true
 }
 
 func evaluateCopilotCategory(input EvaluationInput) []string {
