@@ -70,22 +70,28 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot resolve module path: %v", err)
 	}
-	moduleInternal := modulePath + "/internal/"
+	// The findings filter is the whole module, not just internal/: the blind
+	// spot this guard exists for — a package with no non-test importer,
+	// invisible to the phase-1 non-test import graph — also exists for
+	// in-module packages outside the enumeration roots (live instance:
+	// examples/, which is test-imported by internal/acctest with no non-test
+	// importer anywhere). examples/ passes today only because it matches
+	// matchesForceAll; a future sibling top-level helper or fixtures package
+	// imported only from acceptance test files would otherwise be silently
+	// invisible to phase 1 with this guard green.
+	modulePrefix := modulePath + "/"
 
 	// The guard scans the test imports of both ./internal/... and ./provider/...:
 	// a package under internal/ whose only test importers live under provider/
 	// would never enter the guard's candidate set under an internal/-only
 	// pattern, so the guard could not fire for it (internal/acctest, which has
 	// no non-test importer anywhere in the module, is test-imported by
-	// provider/'s test files). provider/ itself is force-all, so a
-	// test-only-imported package under provider/ cannot produce a silent skip,
-	// and the moduleInternal filter below keeps the guard's findings
-	// restricted to internal/.
+	// provider/'s test files).
 	goListPattern := "./internal/... ./provider/..."
 	nonTestImported := map[string]bool{}
 	for _, fields := range scanGoList(goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", goListPattern)) {
 		for _, imp := range fields[1:] {
-			if strings.HasPrefix(imp, moduleInternal) {
+			if strings.HasPrefix(imp, modulePrefix) {
 				nonTestImported[imp] = true
 			}
 		}
@@ -95,7 +101,7 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 	testImported := map[string]bool{}
 	for _, fields := range scanGoList(testImportsOut) {
 		for _, imp := range fields[1:] {
-			if imp != fields[0] && strings.HasPrefix(imp, moduleInternal) {
+			if imp != fields[0] && strings.HasPrefix(imp, modulePrefix) {
 				testImported[imp] = true
 			}
 		}
@@ -124,7 +130,7 @@ func TestTestOnlyImportedPackagesGuard(t *testing.T) {
 	}
 
 	if len(unguarded) > 0 {
-		t.Errorf("packages under internal/ are imported only from test files but are neither force-all nor entity-declaring: %v\n"+
+		t.Errorf("packages are imported only from test files but are neither force-all nor entity-declaring: %v\n"+
 			"Phase 1 uses non-test imports only, so these packages are invisible to selection. Add them to forceAllPrefixes or ensure they declare Terraform entities.", unguarded)
 	}
 }

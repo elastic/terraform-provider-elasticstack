@@ -214,7 +214,7 @@ func run() error {
 	// rationale).
 	thresholdNote := ""
 	thresholdCount := int(runAllThreshold / 100.0 * float64(len(allAccPackages)))
-	unionCount := len(uniqStrings(append(append([]string{}, phase1Packages...), phase2Packages...)))
+	unionCount := len(stringsSorted(append(append([]string{}, phase1Packages...), phase2Packages...)))
 	if !classified.ForceAll && len(selected) == len(allAccPackages) && unionCount > thresholdCount {
 		thresholdNote = fmt.Sprintf("run-all threshold: union of %d packages exceeded %d (%.0f%% of %d); selecting the full suite", unionCount, thresholdCount, runAllThreshold, len(allAccPackages))
 	}
