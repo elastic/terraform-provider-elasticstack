@@ -20,8 +20,8 @@ resource "elasticstack_fleet_output" "test_output" {
     "logstash:5044"
   ]
   ssl = {
-    certificate_authorities = ["placeholder"]
-    certificate             = "placeholder"
-    key                     = "placeholder"
+    certificate_authorities = ["placeholder-updated"]
+    certificate             = "placeholder-updated"
+    key                     = "placeholder-updated"
   }
 }
