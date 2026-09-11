@@ -180,8 +180,8 @@ func (p RegistryProber) httpClient() *http.Client {
 
 func (p RegistryProber) splitImage(image string) (base, repo, tag string) {
 	name, tag, _ := strings.Cut(image, ":")
-	if strings.HasPrefix(name, elasticRegistryHost) {
-		return p.ElasticRegistry, strings.TrimPrefix(name, elasticRegistryHost), tag
+	if after, ok := strings.CutPrefix(name, elasticRegistryHost); ok {
+		return p.ElasticRegistry, after, tag
 	}
 	return p.DockerHubRegistry, name, tag
 }
