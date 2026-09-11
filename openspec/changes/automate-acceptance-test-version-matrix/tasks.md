@@ -19,14 +19,14 @@
 
 ## 3. `provider.yml` matrix sourcing
 
-- [ ] 3.1 Add a preceding job (e.g. `load-matrix`) that checks out the repo, reads `.github/versions/acceptance-test-matrix.json`, parses each version's integer major.minor, and exposes both the version list and derived per-entry flags (`runner`, fleet image / pre-pull, `forceSynthetics`) as job outputs
-- [ ] 3.2 Change the `test` job's `strategy.matrix.version` to consume the loaded list (via `fromJson`); keep `shard: [0, 1]` static; make `test` depend on the new job in addition to `build`/`classify`
-- [ ] 3.3 Remove the `strategy.matrix.include` block entirely
-- [ ] 3.4 Drive `runs-on` from the derived flag for numeric major `8` minor `0`–`4` → `ubuntu-22.04`, else `ubuntu-latest`. Do **not** use `startsWith(matrix.version, '8.1.')` (it matches `8.10.x`–`8.19.x`)
-- [ ] 3.5 Drive fleet-image pre-pull and `FLEET_IMAGE` from the derived flag for numeric major `8` minor `0`–`1` → Docker Hub `elastic/elastic-agent`, else `docker.elastic.co/elastic-agent/elastic-agent`
-- [ ] 3.6 Drive forced-synthetics from the derived flag for numeric major `8` minor `14`–`17`, replacing the exact-patch list (`8.14.3`, `8.15.5`, `8.16.6`, `8.17.10`)
-- [ ] 3.7 Confirm no other step references `matrix.runner` or `matrix.fleetImage` except the derived flags from `load-matrix`
-- [ ] 3.8 Add a unit or workflow-script test that `8.10.x` / `8.11.x` do not match the `8.1` Fleet/runner ranges
+- [x] 3.1 Add a preceding job (e.g. `load-matrix`) that checks out the repo, reads `.github/versions/acceptance-test-matrix.json`, parses each version's integer major.minor, and exposes both the version list and derived per-entry flags (`runner`, fleet image / pre-pull, `forceSynthetics`) as job outputs
+- [x] 3.2 Change the `test` job's `strategy.matrix.version` to consume the loaded list (via `fromJson`); keep `shard: [0, 1]` static; make `test` depend on the new job in addition to `build`/`classify`
+- [x] 3.3 Remove the `strategy.matrix.include` block entirely
+- [x] 3.4 Drive `runs-on` from the derived flag for numeric major `8` minor `0`–`4` → `ubuntu-22.04`, else `ubuntu-latest`. Do **not** use `startsWith(matrix.version, '8.1.')` (it matches `8.10.x`–`8.19.x`)
+- [x] 3.5 Drive fleet-image pre-pull and `FLEET_IMAGE` from the derived flag for numeric major `8` minor `0`–`1` → Docker Hub `elastic/elastic-agent`, else `docker.elastic.co/elastic-agent/elastic-agent`
+- [x] 3.6 Drive forced-synthetics from the derived flag for numeric major `8` minor `14`–`17`, replacing the exact-patch list (`8.14.3`, `8.15.5`, `8.16.6`, `8.17.10`)
+- [x] 3.7 Confirm no other step references `matrix.runner` or `matrix.fleetImage` except the derived flags from `load-matrix`
+- [x] 3.8 Add a unit or workflow-script test that `8.10.x` / `8.11.x` do not match the `8.1` Fleet/runner ranges
 
 ## 4. Change classification
 
