@@ -6,6 +6,7 @@
  *   - Any path under openspec/
  *   - Any path under .agents/
  *   - Any path under .github/ EXCEPT .github/workflows/provider.yml
+ *     and .github/versions/acceptance-test-matrix.json
  *
  * @param {string[]} changedFiles - Flat list of changed file paths for this run.
  * @returns {{ providerChanges: 'true' | 'false' }} - 'true' if any file is provider-impacting, or if the file list is empty (safe default).
@@ -24,7 +25,8 @@ function classifyChanges(changedFiles) {
     if (f.startsWith('openspec/')) return true;
     if (f.startsWith('.agents/')) return true;
     if (f.startsWith('.github/')) {
-      return f !== '.github/workflows/provider.yml';
+      return f !== '.github/workflows/provider.yml'
+        && f !== '.github/versions/acceptance-test-matrix.json';
     }
     return false;
   });

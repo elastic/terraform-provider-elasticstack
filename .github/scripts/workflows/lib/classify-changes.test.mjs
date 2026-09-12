@@ -66,3 +66,22 @@ test('mixed .github/workflows/provider.yml + CHANGELOG → providerChanges === t
   const result = classifyChanges(['.github/workflows/provider.yml', 'CHANGELOG.md']);
   assert.equal(result.providerChanges, 'true');
 });
+
+const classifyChangesCases = [
+  {
+    name: 'pinned versions artifact only → providerChanges === true',
+    files: ['.github/versions/acceptance-test-matrix.json'],
+    expected: 'true',
+  },
+  {
+    name: 'other .github/ paths (not provider.yml, not versions artifact) → providerChanges === false',
+    files: ['.github/dependabot.yml', '.github/workflows/version-matrix-generation.yml'],
+    expected: 'false',
+  },
+];
+
+for (const { name, files, expected } of classifyChangesCases) {
+  test(name, () => {
+    assert.equal(classifyChanges(files).providerChanges, expected);
+  });
+}
