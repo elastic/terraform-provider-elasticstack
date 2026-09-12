@@ -327,6 +327,18 @@ func s3Block() schema.Block {
 			Computed:            true,
 			Default:             booldefault.StaticBool(false),
 		},
+		settingDisableChunkedEncoding: schema.BoolAttribute{
+			MarkdownDescription: "If true, chunked encoding is disabled and will not be used for S3 uploads. Only set this if the storage service does not support chunked encoding.",
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+		},
+		settingAlwaysSignRequests: schema.BoolAttribute{
+			MarkdownDescription: "If true, request payload signatures are sent even over HTTPS. Useful for some S3-compatible stores that require this additional integrity mechanism.",
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+		},
 	})
 	return schema.SingleNestedBlock{
 		MarkdownDescription: "S3 repository. Stores snapshots in an Amazon S3 bucket.",

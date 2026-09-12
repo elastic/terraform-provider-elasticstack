@@ -46,8 +46,8 @@ func GetKibanaStatus(ctx context.Context, client *kbapi.ClientWithResponses) (ve
 		}
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return "", "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return "", "", diags
 	}
 
 	var dto kibanaStatusDTO

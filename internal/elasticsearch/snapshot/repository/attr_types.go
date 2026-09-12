@@ -80,15 +80,17 @@ func azureAttrTypes() map[string]attr.Type {
 
 func s3AttrTypes() map[string]attr.Type {
 	return mergeAttrTypes(commonAttrTypes(), map[string]attr.Type{
-		settingBucket:               types.StringType,
-		settingEndpoint:             types.StringType,
-		settingClient:               types.StringType,
-		settingBasePath:             types.StringType,
-		settingServerSideEncryption: types.BoolType,
-		settingBufferSize:           types.StringType,
-		settingCannedACL:            types.StringType,
-		settingStorageClass:         types.StringType,
-		settingPathStyleAccess:      types.BoolType,
+		settingBucket:                 types.StringType,
+		settingEndpoint:               types.StringType,
+		settingClient:                 types.StringType,
+		settingBasePath:               types.StringType,
+		settingServerSideEncryption:   types.BoolType,
+		settingBufferSize:             types.StringType,
+		settingCannedACL:              types.StringType,
+		settingStorageClass:           types.StringType,
+		settingPathStyleAccess:        types.BoolType,
+		settingDisableChunkedEncoding: types.BoolType,
+		settingAlwaysSignRequests:     types.BoolType,
 	})
 }
 

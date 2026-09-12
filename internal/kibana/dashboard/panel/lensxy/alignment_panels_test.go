@@ -70,6 +70,41 @@ func TestAlignXYLegendStateFromPlan(t *testing.T) {
 	})
 }
 
+func TestAlignXYAxisStateFromPlan(t *testing.T) {
+	t.Run("Y2 axis is aligned with the same rules as the primary Y axis", func(t *testing.T) {
+		plan := &models.XYAxisModel{
+			Y2: &models.YAxisConfigModel{
+				LabelOrientation: types.StringValue("vertical"),
+				Ticks:            types.BoolValue(false),
+			},
+		}
+		state := &models.XYAxisModel{
+			Y2: &models.YAxisConfigModel{
+				LabelOrientation: types.StringNull(),
+				Ticks:            types.BoolNull(),
+			},
+		}
+
+		alignXYAxisStateFromPlan(plan, state)
+
+		require.NotNil(t, state.Y2)
+		assert.Equal(t, "vertical", state.Y2.LabelOrientation.ValueString())
+		assert.False(t, state.Y2.Ticks.ValueBool())
+	})
+
+	t.Run("Y2 clones plan when state omits the block", func(t *testing.T) {
+		plan := &models.XYAxisModel{
+			Y2: &models.YAxisConfigModel{LabelOrientation: types.StringValue("vertical")},
+		}
+		state := &models.XYAxisModel{Y2: nil}
+
+		alignXYAxisStateFromPlan(plan, state)
+
+		require.NotNil(t, state.Y2)
+		assert.Equal(t, "vertical", state.Y2.LabelOrientation.ValueString())
+	})
+}
+
 func TestAlignXYFittingStateFromPlan(t *testing.T) {
 	t.Run("Type copies plan when state is null", func(t *testing.T) {
 		plan := &models.XYFittingModel{Type: types.StringValue("none")}
