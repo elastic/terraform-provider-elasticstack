@@ -89,3 +89,63 @@ func TestListElasticsearchTagsPaginatesGitHubFixture(t *testing.T) {
 func fixtureServerURL(r *http.Request) string {
 	return "http://" + r.Host
 }
+
+func TestParseGATagValidTag(t *testing.T) {
+	t.Parallel()
+
+	major, minor, patch, ok := parseGATag("v8.19.21")
+	require.True(t, ok)
+	assert.Equal(t, 8, major)
+	assert.Equal(t, 19, minor)
+	assert.Equal(t, 21, patch)
+}
+
+func TestParseGATagRejectsWrongPartCount(t *testing.T) {
+	t.Parallel()
+
+	_, _, _, ok := parseGATag("v8.19")
+	assert.False(t, ok)
+}
+
+func TestParseGATagRejectsNonNumericPart(t *testing.T) {
+	t.Parallel()
+
+	_, _, _, ok := parseGATag("v8.19.21-rc1")
+	assert.False(t, ok)
+}
+
+func TestParseLooseVersionParsesFullVersion(t *testing.T) {
+	t.Parallel()
+
+	major, minor, patch := parseLooseVersion("v8.19.21")
+	assert.Equal(t, 8, major)
+	assert.Equal(t, 19, minor)
+	assert.Equal(t, 21, patch)
+}
+
+func TestParseLooseVersionStripsSnapshotSuffix(t *testing.T) {
+	t.Parallel()
+
+	major, minor, patch := parseLooseVersion("v9.6.0-SNAPSHOT")
+	assert.Equal(t, 9, major)
+	assert.Equal(t, 6, minor)
+	assert.Equal(t, 0, patch)
+}
+
+func TestParseLooseVersionDefaultsMissingPartsToZero(t *testing.T) {
+	t.Parallel()
+
+	major, minor, patch := parseLooseVersion("v8.19")
+	assert.Equal(t, 8, major)
+	assert.Equal(t, 19, minor)
+	assert.Equal(t, 0, patch)
+}
+
+func TestParseLooseVersionDefaultsInvalidPartsToZero(t *testing.T) {
+	t.Parallel()
+
+	major, minor, patch := parseLooseVersion("v8.x.21")
+	assert.Equal(t, 8, major)
+	assert.Equal(t, 0, minor)
+	assert.Equal(t, 21, patch)
+}
