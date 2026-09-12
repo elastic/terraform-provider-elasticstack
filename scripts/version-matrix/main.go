@@ -90,18 +90,9 @@ func cmdManagePR(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("manage-pr: %w", err)
 	}
-	token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
-	if token == "" {
-		return errors.New("manage-pr: missing GITHUB_TOKEN")
-	}
-
-	opts := []github.ClientOptionsFunc{github.WithAuthToken(token)}
-	if strings.TrimSpace(*githubURL) != "" {
-		opts = append(opts, github.WithEnterpriseURLs(*githubURL, *githubURL))
-	}
-	client, err := github.NewClient(opts...)
+	client, err := newGitHubClient(strings.TrimSpace(os.Getenv("GITHUB_TOKEN")), *githubURL)
 	if err != nil {
-		return fmt.Errorf("manage-pr: github client: %w", err)
+		return fmt.Errorf("manage-pr: %w", err)
 	}
 
 	base := strings.TrimSpace(*baseBranch)
@@ -156,6 +147,19 @@ func ownerRepoFromEnv() (owner, repo string, err error) {
 	return parts[0], parts[1], nil
 }
 
+// newGitHubClient builds a github.Client authenticated with token, optionally
+// pointed at an enterprise API base URL, with any extra client options applied.
+func newGitHubClient(token, enterpriseURL string, extra ...github.ClientOptionsFunc) (*github.Client, error) {
+	if token == "" {
+		return nil, errors.New("missing GITHUB_TOKEN")
+	}
+	opts := append([]github.ClientOptionsFunc{github.WithAuthToken(token)}, extra...)
+	if strings.TrimSpace(enterpriseURL) != "" {
+		opts = append(opts, github.WithEnterpriseURLs(enterpriseURL, enterpriseURL))
+	}
+	return github.NewClient(opts...)
+}
+
 const (
 	defaultArtifactPath      = ".github/versions/acceptance-test-matrix.json"
 	defaultSnapshotURL       = "https://snapshots.elastic.co/latest/master.json"
@@ -181,22 +185,10 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
-	if token == "" {
-		return errors.New("missing GITHUB_TOKEN")
-	}
-
 	httpClient := newComputeHTTPClient(*timeout)
-	opts := []github.ClientOptionsFunc{
-		github.WithAuthToken(token),
-		github.WithHTTPClient(httpClient),
-	}
-	if strings.TrimSpace(*githubURL) != "" {
-		opts = append(opts, github.WithEnterpriseURLs(*githubURL, *githubURL))
-	}
-	client, err := github.NewClient(opts...)
+	client, err := newGitHubClient(strings.TrimSpace(os.Getenv("GITHUB_TOKEN")), *githubURL, github.WithHTTPClient(httpClient))
 	if err != nil {
-		return fmt.Errorf("github client: %w", err)
+		return fmt.Errorf("compute: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
