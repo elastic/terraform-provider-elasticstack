@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Kibana's tagcloud renderer materializes a fixed font size range when the
@@ -56,7 +57,7 @@ func alignTagcloudConfigStateFromPlan(ctx context.Context, plan, state *models.T
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
 	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
 	// Kibana materializes server-side defaults when the practitioner omits these fields.
-	lenscommon.PreserveNullStringIfStateEquals(plan.Orientation, &state.Orientation, "horizontal")
+	lenscommon.PreserveNullIfStateEquals(plan.Orientation, &state.Orientation, types.StringValue("horizontal"))
 	if plan.FontSize == nil && state.FontSize != nil && fontSizeMatchesKibanaDefault(state.FontSize) {
 		state.FontSize = nil
 	}

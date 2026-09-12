@@ -39,14 +39,6 @@ func PreserveBool(existing types.Bool, api *bool) types.Bool {
 	return types.BoolPointerValue(api)
 }
 
-// PreserveFloat64 keeps an existing null/unknown float when it is not known; otherwise updates from the API pointer.
-func PreserveFloat64(existing types.Float64, api *float64) types.Float64 {
-	if !typeutils.IsKnown(existing) {
-		return existing
-	}
-	return types.Float64PointerValue(api)
-}
-
 // PreserveInt64 keeps an existing null/unknown int64 when it is not known; otherwise updates from the API pointer.
 func PreserveInt64(existing types.Int64, api *int64) types.Int64 {
 	if !typeutils.IsKnown(existing) {
@@ -62,14 +54,6 @@ func PreserveFloat32(existing types.Float32, api *float32) types.Float32 {
 		return existing
 	}
 	return types.Float32PointerValue(api)
-}
-
-// PreserveList keeps an existing null/unknown list when it is not known; otherwise replaces with next.
-func PreserveList(existing, next attr.Value) attr.Value {
-	if !typeutils.IsKnown(existing) {
-		return existing
-	}
-	return next
 }
 
 // PreserveKnownString updates existing from api only when existing is already known and api is

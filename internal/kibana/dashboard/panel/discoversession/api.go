@@ -43,16 +43,8 @@ func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var diags diag.Diagnostics
-	block := attrs["discover_session_config"]
-	if panelkit.AttrConcreteSet(block) {
-		return diags
-	}
-	if panelkit.AttrUnknown(block) {
-		return diags
-	}
-	diags.AddAttributeError(attrPath, "Missing discover_session panel configuration", "Discover session panels require `discover_session_config`.")
-	return diags
+	return panelkit.ValidateConfigBlockPresent(attrs, "discover_session_config", attrPath,
+		"Missing discover_session panel configuration", "Discover session panels require `discover_session_config`.")
 }
 
 // FromAPI maps a kbapi discover_session panel into Terraform panel models (parity with legacy populateDiscoverSessionPanelFromAPI).

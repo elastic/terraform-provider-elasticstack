@@ -203,9 +203,9 @@ func TestAccResourceOutputLogstashFromSDK(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate_authorities.0", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.key", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate_authorities.0", "placeholder-updated"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate", "placeholder-updated"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.key", "placeholder-updated"),
 				),
 			},
 		},
@@ -254,9 +254,9 @@ func TestAccResourceOutputLogstash(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_integrations", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "default_monitoring", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "hosts.0", "logstash:5044"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate_authorities.0", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate", "placeholder"),
-					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.key", "placeholder"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate_authorities.0", "placeholder-updated"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.certificate", "placeholder-updated"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.key", "placeholder-updated"),
 				),
 			},
 		},
@@ -356,6 +356,8 @@ func TestAccResourceOutputKafkaComplex(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.hash", "event.hash"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.hash.random", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.mechanism", "SCRAM-SHA-256"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.client_id", "custom-client-id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.key", "message-key"),
 				),
 			},
 		},
@@ -607,6 +609,41 @@ func TestAccResourceOutputElasticsearchSSL(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.verification_mode", "none"),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "ssl.verification_mode", "full"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceOutputElasticsearchGeneratedOutputId(t *testing.T) {
+	policyName := sdkacctest.RandString(22)
+	versionutils.SkipIfUnsupported(t, minVersionOutput, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceOutputDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "elasticsearch"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "output_id"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "id"),
+				),
+			},
 		},
 	})
 }
@@ -703,6 +740,7 @@ func TestAccResourceOutputKafkaUserPass(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.auth_type", "user_pass"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.username", "testuser"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "kafka.password"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl.mechanism", "PLAIN"),
 				),
 			},
@@ -763,6 +801,7 @@ func TestAccResourceOutputKafkaUserPassNoSasl(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "type", "kafka"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.auth_type", "user_pass"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_output.test_output", "kafka.username", "testuser"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_output.test_output", "kafka.password"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_output.test_output", "kafka.sasl"),
 				),
 			},

@@ -1,0 +1,66 @@
+name: Version Matrix Generation
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-version-matrix:
+    name: Generate version matrix
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Compute version matrix
+        id: compute
+        run: go run ./scripts/version-matrix compute
+
+      - name: Push to acceptance-test-version-matrix branch
+        id: push
+        if: steps.compute.outputs.changed == 'true'
+        env:
+          GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/versions/acceptance-test-matrix.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "pushed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          git commit -m "chore(version-matrix): update acceptance-test version matrix"
+          git push origin HEAD:acceptance-test-version-matrix --force
+          if [ -n "${GH_AW_CI_TRIGGER_TOKEN}" ]; then
+            SERVER_URL="${GITHUB_SERVER_URL#https://}"
+            SERVER_URL="${SERVER_URL#http://}"
+            git remote set-url origin "https://x-access-token:${GH_AW_CI_TRIGGER_TOKEN}@${SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            git commit --allow-empty -m "chore: trigger CI"
+            git push origin HEAD:acceptance-test-version-matrix --force
+          else
+            echo "::warning::GH_AW_CI_TRIGGER_TOKEN is not set; CI will not be triggered automatically"
+          fi
+          echo "pushed=true" >> $GITHUB_OUTPUT
+
+      - name: Look up existing version-matrix PR
+        id: lookup_pr
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: go run ./scripts/version-matrix manage-pr -changed=true
