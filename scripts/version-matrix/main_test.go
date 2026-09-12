@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v89/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,6 +39,34 @@ func TestRunRequiresSubcommand(t *testing.T) {
 	err := run(nil, io.Discard, &bytes.Buffer{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "subcommand")
+}
+
+func TestNewGitHubClientRequiresToken(t *testing.T) {
+	t.Parallel()
+
+	client, err := newGitHubClient("", "")
+	require.Error(t, err)
+	assert.Nil(t, client)
+	assert.Contains(t, err.Error(), "missing GITHUB_TOKEN")
+}
+
+func TestNewGitHubClientUsesEnterpriseURL(t *testing.T) {
+	t.Parallel()
+
+	client, err := newGitHubClient("test-token", "https://ghe.example.com/api/v3/")
+	require.NoError(t, err)
+	require.NotNil(t, client)
+	assert.Equal(t, "https://ghe.example.com/api/v3/", client.BaseURL())
+}
+
+func TestNewGitHubClientAppliesExtraOptions(t *testing.T) {
+	t.Parallel()
+
+	httpClient := &http.Client{Timeout: 5 * time.Second}
+	client, err := newGitHubClient("test-token", "", github.WithHTTPClient(httpClient))
+	require.NoError(t, err)
+	require.NotNil(t, client)
+	assert.Equal(t, httpClient.Timeout, client.Client().Timeout)
 }
 
 func TestWriteWorkflowWarning_escapesPercentAndNewline(t *testing.T) {
