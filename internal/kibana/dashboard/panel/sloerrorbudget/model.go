@@ -117,5 +117,11 @@ func readSloErrorBudgetDrilldownsFromAPI(
 			OpenInNewTab: d.OpenInNewTab,
 		}
 	})
-	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
+	// This embeddable defaults open_in_new_tab to true (see schema). The shared
+	// helper's built-in default is false, so import must override it or a Kibana
+	// 9.4+/9.5 response of true is written into state and ImportStateVerify drifts.
+	openInNewTabDefault := true
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns, panelkit.URLDrilldownImportDefaults{
+		OpenInNewTab: &openInNewTabDefault,
+	})
 }

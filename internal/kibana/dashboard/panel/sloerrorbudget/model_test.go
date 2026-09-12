@@ -485,3 +485,35 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 	assert.False(t, d.OpenInNewTab.IsNull())
 	assert.True(t, d.OpenInNewTab.ValueBool())
 }
+
+func Test_populateSloErrorBudgetFromAPI_drilldowns_import_defaultsNulled(t *testing.T) {
+	// Import has no prior. Kibana 9.4+/9.5 returns this embeddable's defaults
+	// (encode_url=true, open_in_new_tab=true); both must stay null so omitted
+	// config fields round-trip through ImportStateVerify.
+	pm := &models.PanelModel{}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+	)
+	diag := PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	require.NotNil(t, pm.SloErrorBudgetConfig)
+	require.Len(t, pm.SloErrorBudgetConfig.Drilldowns, 1)
+	d := pm.SloErrorBudgetConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url true is the API default → null on import")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab true is this panel's API default → null on import")
+}
+
+func Test_populateSloErrorBudgetFromAPI_drilldowns_import_falseOpenInNewTabWritten(t *testing.T) {
+	// Import has no prior. open_in_new_tab=false is non-default for this panel
+	// and must be written so an explicit false survives import.
+	pm := &models.PanelModel{}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		withSloDrilldown("https://example.com", "Go", new(true), new(false)),
+	)
+	diag := PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	d := pm.SloErrorBudgetConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url true is the API default → null on import")
+	require.False(t, d.OpenInNewTab.IsNull(), "open_in_new_tab false is non-default → written on import")
+	assert.False(t, d.OpenInNewTab.ValueBool())
+}
