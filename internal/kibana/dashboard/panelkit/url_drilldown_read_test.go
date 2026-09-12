@@ -64,6 +64,24 @@ func TestReadURLDrilldownsFromAPI_import_nonDefaultSet(t *testing.T) {
 	assert.True(t, out[0].OpenInNewTab.ValueBool())
 }
 
+func TestReadURLDrilldownsFromAPI_import_customOpenInNewTabDefault(t *testing.T) {
+	t.Parallel()
+	// Panels whose Kibana embeddable defaults open_in_new_tab to true (e.g.
+	// sloerrorbudget) must be able to override the helper's built-in false default
+	// so import nulls a true API value instead of writing it into state.
+	encTrue, openTrue := true, true
+	items := []panelkit.URLDrilldownAPIItemData{
+		{URL: "https://x", Label: "L", EncodeUrl: &encTrue, OpenInNewTab: &openTrue},
+	}
+	openDefault := true
+	out := panelkit.ReadURLDrilldownsFromAPI(items, nil, panelkit.URLDrilldownImportDefaults{
+		OpenInNewTab: &openDefault,
+	})
+	require.Len(t, out, 1)
+	assert.True(t, out[0].EncodeURL.IsNull())
+	assert.True(t, out[0].OpenInNewTab.IsNull(), "custom default true → API true is nulled on import")
+}
+
 func TestReadURLDrilldownsFromAPI_import_omittedFields(t *testing.T) {
 	t.Parallel()
 	// API omits encode_url and open_in_new_tab entirely — both should be null.
