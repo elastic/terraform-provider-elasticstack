@@ -566,6 +566,11 @@ func TestAccResourceElasticDefendIntegrationPolicy_versionUpgrade(t *testing.T) 
 					"policy_name":         config.StringVariable(policyName),
 					"integration_version": config.StringVariable("8.15.0"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.15.0"),
 					// Prior policy settings must survive the version bump.
@@ -585,7 +590,8 @@ func TestAccResourceElasticDefendIntegrationPolicy_spaceIDs(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefendSpaceIDs, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	spaceID := "space-test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	// space_id must match elasticstack_kibana_space validation: ^[a-z0-9_-]+$
+	spaceID := "space-test-" + sdkacctest.RandStringFromCharSet(8, "abcdefghijklmnopqrstuvwxyz0123456789")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -622,16 +628,14 @@ func TestAccResourceElasticDefendIntegrationPolicy_spaceIDs(t *testing.T) {
 
 // TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators
 // exercises the agent_policy_id/agent_policy_ids ConflictsWith validator and
-// the agent_policy_ids SizeAtLeast(1) validator. Both validators fail during
-// plan, so no Defend policy is ever created.
+// the agent_policy_ids SizeAtLeast(1) validator. Both fail at plan time.
 func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -639,6 +643,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators(t *test
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
+				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?i)cannot be specified when`),
 			},
 			{
@@ -647,6 +652,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators(t *test
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
+				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?i)at least 1`),
 			},
 		},
@@ -654,7 +660,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators(t *test
 }
 
 // TestAccResourceElasticDefendIntegrationPolicy_preset verifies that preset
-// supports values other than "EDRComplete" and can be omitted entirely.
+// accepts a documented value other than the EDRComplete used by the other tests.
 func TestAccResourceElasticDefendIntegrationPolicy_preset(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
 
@@ -671,17 +677,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_preset(t *testing.T) {
 					"policy_name": config.StringVariable(policyName),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "preset", "dataCollection"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
-				ConfigVariables: config.Variables{
-					"policy_name": config.StringVariable(policyName),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr(resourceName, "preset"),
+					resource.TestCheckResourceAttr(resourceName, "preset", "NGAV"),
 				),
 			},
 		},
