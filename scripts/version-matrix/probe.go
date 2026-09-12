@@ -195,9 +195,5 @@ func ComposeStackImages(version string) []string {
 }
 
 func AgentImage(version string) string {
-	major, minor, _ := parseLooseVersion(version)
-	if major == 8 && minor <= 1 {
-		return "elastic/elastic-agent:" + version
-	}
-	return "docker.elastic.co/elastic-agent/elastic-agent:" + version
+	return FlagsForVersion(version).FleetImage + ":" + version
 }

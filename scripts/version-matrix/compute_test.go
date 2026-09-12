@@ -105,3 +105,16 @@ func TestComputeDesiredPromotesSnapshotWhenGAImagesResolve(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"9.6.0", "9.7.0-SNAPSHOT"}, got)
 }
+
+func TestComputeDesiredRetainsPinnedSnapshotWhenMasterAdvancesBeforeGA(t *testing.T) {
+	t.Parallel()
+
+	got, err := ComputeDesired(
+		[]string{"v9.5.3"},
+		"9.7.0-SNAPSHOT",
+		[]string{"9.5.3", "9.6.0-SNAPSHOT"},
+		alwaysResolve,
+	)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"9.5.3", "9.6.0-SNAPSHOT"}, got)
+}

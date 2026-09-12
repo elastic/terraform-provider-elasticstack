@@ -102,6 +102,8 @@ jobs:
 
   load-matrix:
     name: Load acceptance-test matrix
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
     runs-on: ubuntu-latest
     outputs:
       versions: ${{ steps.load.outputs.versions }}
@@ -294,7 +296,7 @@ jobs:
 
   gate:
     name: Provider Gate
-    needs: [classify, build, golangci-lint, lint, test]
+    needs: [classify, build, golangci-lint, lint, load-matrix, test]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -309,6 +311,7 @@ jobs:
           PROVIDER_GATE_BUILD_RESULT: ${{ needs.build.result }}
           PROVIDER_GATE_LINT_RESULT: ${{ needs.lint.result }}
           PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}
+          PROVIDER_GATE_LOAD_MATRIX_RESULT: ${{ needs['load-matrix'].result }}
           PROVIDER_GATE_TEST_RESULT: ${{ needs.test.result }}
         with:
           script: |

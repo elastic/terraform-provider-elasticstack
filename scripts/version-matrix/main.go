@@ -251,7 +251,7 @@ func cmdLoadMatrix(args []string, _, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("load-matrix: %w", err)
 	}
-	versions, flags := LoadMatrix(versions)
+	flags := FlagsByVersion(versions)
 	if err := writeGitHubOutputJSON("versions", versions); err != nil {
 		return fmt.Errorf("load-matrix: %w", err)
 	}

@@ -41,10 +41,10 @@ func FlagsForVersion(version string) MatrixEntryFlags {
 	return flags
 }
 
-func LoadMatrix(versions []string) ([]string, map[string]MatrixEntryFlags) {
+func FlagsByVersion(versions []string) map[string]MatrixEntryFlags {
 	flags := make(map[string]MatrixEntryFlags, len(versions))
 	for _, version := range versions {
 		flags[version] = FlagsForVersion(version)
 	}
-	return versions, flags
+	return flags
 }

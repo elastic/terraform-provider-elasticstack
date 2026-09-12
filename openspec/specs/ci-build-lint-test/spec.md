@@ -207,17 +207,17 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 
 ### Requirement: Provider gate job (REQ-034–REQ-036)
 
-The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` job results.
+The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, `load-matrix`, and matrix acceptance `test` job results.
 
 The `gate` job SHALL succeed when either of the following is true:
 
-* The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job are all intentionally skipped
-* `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job all complete successfully (regardless of the classify result)
+* The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, `load-matrix`, and the matrix acceptance `test` job are all intentionally skipped
+* `build`, `lint`, `golangci-lint`, `load-matrix`, and the matrix acceptance `test` job all complete successfully (regardless of the classify result)
 
 The `gate` job SHALL fail when any of the following is true:
 
-* Any of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `failure` or `cancelled`
-* The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports an unexpected `skipped` result
+* Any of `build`, `lint`, `golangci-lint`, `load-matrix`, or the matrix acceptance `test` job reports `failure` or `cancelled`
+* The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, `load-matrix`, or the matrix acceptance `test` job reports an unexpected `skipped` result
 * Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
 
 The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint` checks.
@@ -226,7 +226,7 @@ The `gate` job SHALL provide a stable required-check target that can be used by 
 
 - **GIVEN** a pull request whose changed files are all under `openspec/`
 - **WHEN** the workflow reaches the `gate` job
-- **THEN** `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job SHALL be treated as intentionally skipped
+- **THEN** `build`, `lint`, `golangci-lint`, `load-matrix`, and the matrix acceptance `test` job SHALL be treated as intentionally skipped
 - **AND** the `gate` job SHALL succeed
 
 #### Scenario: Provider change with failing acceptance coverage
@@ -239,7 +239,7 @@ The `gate` job SHALL provide a stable required-check target that can be used by 
 #### Scenario: Provider change with an unexpected skip
 
 - **GIVEN** a workflow run with `provider_changes=true`
-- **AND** at least one of `build`, `lint`, `golangci-lint`, or the matrix acceptance `test` job reports `skipped`
+- **AND** at least one of `build`, `lint`, `golangci-lint`, `load-matrix`, or the matrix acceptance `test` job reports `skipped`
 - **WHEN** the `gate` job evaluates the workflow state
 - **THEN** the `gate` job SHALL fail
 

@@ -177,20 +177,7 @@ func allFilesMatch(files []*github.CommitFile, allowed string) bool {
 }
 
 func allCommitsByLogin(commits []*github.RepositoryCommit, login string) bool {
-	if len(commits) == 0 {
-		return false
-	}
-
-	for _, commit := range commits {
-		if commit == nil || commit.Author == nil || commit.Author.Login == nil {
-			return false
-		}
-		if commit.Author.GetLogin() != login {
-			return false
-		}
-	}
-
-	return true
+	return allCommitsMatch(commits, func(got string) bool { return got == login })
 }
 
 func evaluateCopilotCategory(input EvaluationInput) []string {
@@ -208,19 +195,24 @@ func evaluateCopilotCategory(input EvaluationInput) []string {
 }
 
 func allCommitsByCopilot(commits []*github.RepositoryCommit) bool {
+	return allCommitsMatch(commits, func(login string) bool {
+		_, ok := allowedCopilotAuthorLogins[login]
+		return ok
+	})
+}
+
+func allCommitsMatch(commits []*github.RepositoryCommit, allowed func(string) bool) bool {
 	if len(commits) == 0 {
 		return false
 	}
-
 	for _, commit := range commits {
 		if commit == nil || commit.Author == nil || commit.Author.Login == nil {
 			return false
 		}
-		if _, ok := allowedCopilotAuthorLogins[commit.Author.GetLogin()]; !ok {
+		if !allowed(commit.Author.GetLogin()) {
 			return false
 		}
 	}
-
 	return true
 }
 

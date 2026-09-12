@@ -56,15 +56,14 @@ func TestRunLoadMatrixFailsWhenArtifactMissing(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestLoadMatrix_matchesCheckedInPinnedArtifact(t *testing.T) {
+func TestFlagsByVersion_matchesCheckedInPinnedArtifact(t *testing.T) {
 	t.Parallel()
 
 	versions, err := ReadArtifact("../../.github/versions/acceptance-test-matrix.json")
 	require.NoError(t, err)
 	require.NotEmpty(t, versions)
 
-	got, flags := LoadMatrix(versions)
-	assert.Equal(t, versions, got)
+	flags := FlagsByVersion(versions)
 	for _, version := range versions {
 		assert.Equal(t, FlagsForVersion(version), flags[version], version)
 	}

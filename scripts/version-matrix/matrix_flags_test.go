@@ -121,12 +121,11 @@ func TestFlagsForVersion_snapshotAndGAShareMinorRangeFlags(t *testing.T) {
 	assert.Equal(t, FlagsForVersion("8.14.0"), FlagsForVersion("8.14.0-SNAPSHOT"))
 }
 
-func TestLoadMatrix_returnsPinnedVersionsAndDerivedFlags(t *testing.T) {
+func TestFlagsByVersion_derivesFlagsForEachPinnedVersion(t *testing.T) {
 	t.Parallel()
 
 	versions := []string{"8.1.3", "8.10.4", "8.14.3"}
-	gotVersions, flags := LoadMatrix(versions)
-	assert.Equal(t, versions, gotVersions)
+	flags := FlagsByVersion(versions)
 	assert.Equal(t, FlagsForVersion("8.1.3"), flags["8.1.3"])
 	assert.Equal(t, FlagsForVersion("8.10.4"), flags["8.10.4"])
 	assert.Equal(t, FlagsForVersion("8.14.3"), flags["8.14.3"])

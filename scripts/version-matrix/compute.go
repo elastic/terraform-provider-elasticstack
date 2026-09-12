@@ -29,13 +29,8 @@ func ComputeDesired(tags []string, snapshot string, pinned []string, probe func(
 		return nil, fmt.Errorf("no 8.x/9.x GA tags found")
 	}
 	out := make([]string, 0, len(computed)+1)
-	promotionBlocked := false
 	for _, version := range computed {
 		if slices.Contains(pinned, version) {
-			out = append(out, version)
-			continue
-		}
-		if probe == nil {
 			out = append(out, version)
 			continue
 		}
@@ -49,27 +44,19 @@ func ComputeDesired(tags []string, snapshot string, pinned []string, probe func(
 		}
 		if prev := pinnedGAForMinor(pinned, version); prev != "" {
 			out = append(out, prev)
-			continue
-		}
-		if snap := pinnedSnapshotForMinor(pinned, version); snap != "" {
-			out = append(out, snap)
-			promotionBlocked = true
 		}
 	}
-	if snapshot != "" && !promotionBlocked {
+	if snap := pinnedSnapshotUncoveredBy(out, pinned); snap != "" {
+		out = append(out, snap)
+	} else if snapshot != "" {
 		out = append(out, snapshot)
 	}
 	return SortVersions(out), nil
 }
 
-func pinnedSnapshotForMinor(pinned []string, version string) string {
-	wantMajor, wantMinor, _ := parseLooseVersion(version)
+func pinnedSnapshotUncoveredBy(ga, pinned []string) string {
 	for _, p := range pinned {
-		if !strings.HasSuffix(p, "-SNAPSHOT") {
-			continue
-		}
-		major, minor, _ := parseLooseVersion(p)
-		if major == wantMajor && minor == wantMinor {
+		if strings.HasSuffix(p, "-SNAPSHOT") && pinnedGAForMinor(ga, p) == "" {
 			return p
 		}
 	}

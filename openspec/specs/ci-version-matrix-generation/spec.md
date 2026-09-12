@@ -23,6 +23,7 @@ The system SHALL compute the desired stack-version list from exactly two sources
 
 #### Scenario: SNAPSHOT label comes from the master snapshot endpoint
 
+- **GIVEN** no pinned SNAPSHOT entry whose minor is absent from the computed GA list
 - **WHEN** the desired list is computed
 - **THEN** it SHALL append exactly one SNAPSHOT-labeled entry, using the version label reported by `https://snapshots.elastic.co/latest/master.json` at computation time
 
@@ -38,6 +39,7 @@ When any of those manifests does not yet resolve, the system SHALL NOT fail the 
 
 - **Patch bump:** if the pinned artifact already has a GA version for that minor, retain that previously pinned GA version
 - **SNAPSHOT promotion:** if the pinned artifact has `X.Y.*-SNAPSHOT` and the computed list wants GA `X.Y.*`, retain the SNAPSHOT-labeled `X.Y` entry and do not append a newer master SNAPSHOT on this run, so the list still contains exactly one SNAPSHOT-labeled entry
+- **Release-branch cut:** if the pinned artifact has `X.Y.*-SNAPSHOT` and the computed GA list has no `X.Y` tag (master has already advanced to a newer SNAPSHOT label), retain the pinned SNAPSHOT and do not append the newer master SNAPSHOT
 - **Brand-new minor:** if the pinned artifact has no entry for that minor, omit the minor from this run's desired list
 
 #### Scenario: New patch images already published
@@ -66,6 +68,16 @@ When any of those manifests does not yet resolve, the system SHALL NOT fail the 
 - **AND** SHALL NOT include GA `X.Y.0`
 - **AND** SHALL NOT append the newer master SNAPSHOT label
 - **AND** the run SHALL NOT fail because of this fallback
+
+#### Scenario: Pinned SNAPSHOT is retained when master advances before the first GA tag
+
+- **GIVEN** the pinned artifact contains `X.Y.0-SNAPSHOT` and no GA `X.Y` entry
+- **AND** `elastic/elasticsearch` has no `vX.Y.*` GA tag
+- **AND** `https://snapshots.elastic.co/latest/master.json` reports a newer SNAPSHOT label (for example `X.Y+1.0-SNAPSHOT`)
+- **WHEN** the desired list is computed
+- **THEN** the desired list SHALL retain `X.Y.0-SNAPSHOT`
+- **AND** SHALL NOT append the newer master SNAPSHOT label
+- **AND** the run SHALL NOT fail because of this retention
 
 #### Scenario: Brand-new minor without a previous pin is omitted until pullable
 

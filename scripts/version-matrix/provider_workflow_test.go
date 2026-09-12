@@ -34,6 +34,7 @@ type providerWorkflow struct {
 
 type providerJob struct {
 	Needs    yaml.Node              `yaml:"needs"`
+	If       string                 `yaml:"if"`
 	Outputs  map[string]string      `yaml:"outputs"`
 	RunsOn   string                 `yaml:"runs-on"`
 	Strategy providerStrategy       `yaml:"strategy"`
@@ -74,6 +75,8 @@ func TestProviderWorkflow_testMatrixVersionLoadedFromLoadMatrix(t *testing.T) {
 	}
 	assert.True(t, hasCheckout, "load-matrix job must check out the repository")
 	assert.True(t, ranLoadMatrix, "load-matrix job must invoke go run ./scripts/version-matrix load-matrix")
+	assert.ElementsMatch(t, []string{"classify"}, providerNeeds(t, load))
+	assert.Equal(t, "needs.classify.outputs.provider_changes == 'true'", load.If)
 
 	test, ok := wf.Jobs["test"]
 	require.True(t, ok, "missing test job")
@@ -125,6 +128,25 @@ func TestProviderWorkflow_derivedFlagsReplaceMatrixRunnerAndFleetImage(t *testin
 	assert.Contains(t, prePull.Run, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage")
 	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}", compose.Env["FLEET_IMAGE"])
 	assert.Equal(t, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics", synthetics.If)
+}
+
+func TestProviderWorkflow_gateInspectsLoadMatrix(t *testing.T) {
+	t.Parallel()
+
+	wf := loadProviderWorkflow(t)
+	gate, ok := wf.Jobs["gate"]
+	require.True(t, ok, "missing gate job")
+	assert.ElementsMatch(t, []string{"classify", "build", "golangci-lint", "lint", "test", "load-matrix"}, providerNeeds(t, gate))
+
+	var gateStep providerWorkflowStep
+	for _, step := range gate.Steps {
+		if step.ID == "gate" {
+			gateStep = step
+			break
+		}
+	}
+	require.NotEmpty(t, gateStep.ID)
+	assert.Equal(t, "${{ needs['load-matrix'].result }}", gateStep.Env["PROVIDER_GATE_LOAD_MATRIX_RESULT"])
 }
 
 func loadProviderWorkflow(t *testing.T) providerWorkflow {
