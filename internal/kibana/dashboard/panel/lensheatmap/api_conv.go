@@ -463,14 +463,8 @@ func heatmapXAxisToAPI(m *models.HeatmapXAxisModel) kbapi.KibanaHTTPAPIsHeatmapX
 	return axis
 }
 
-// visibleFromAPI converts a lone "visible" *bool API field to its Terraform
-// representation. Shared by every heatmap sub-model whose labels consist of
-// nothing but a Visible flag (X/Y axis labels, cell labels).
-func visibleFromAPI(visible *bool) types.Bool {
-	return types.BoolPointerValue(visible)
-}
-
-// visibleToAPI is the inverse of visibleFromAPI.
+// visibleToAPI converts a Terraform Bool to a *bool API field. Shared by every
+// heatmap sub-model whose labels consist of nothing but a Visible flag.
 func visibleToAPI(v types.Bool) *bool {
 	if !typeutils.IsKnown(v) {
 		return nil
@@ -490,7 +484,7 @@ func heatmapXAxisLabelsFromAPI(m *models.HeatmapXAxisLabelsModel, api *struct {
 	} else {
 		m.Orientation = types.StringNull()
 	}
-	m.Visible = visibleFromAPI(api.Visible)
+	m.Visible = types.BoolPointerValue(api.Visible)
 }
 
 func heatmapXAxisLabelsToAPI(m *models.HeatmapXAxisLabelsModel) *struct {
@@ -517,7 +511,7 @@ func heatmapYAxisFromAPI(m *models.HeatmapYAxisModel, api *kbapi.KibanaHTTPAPIsH
 		return
 	}
 	if api.Labels != nil {
-		m.Labels = &models.HeatmapYAxisLabelsModel{Visible: visibleFromAPI(api.Labels.Visible)}
+		m.Labels = &models.HeatmapYAxisLabelsModel{Visible: types.BoolPointerValue(api.Labels.Visible)}
 	} else if prior != nil && prior.Labels != nil {
 		// Kibana may omit Y-axis labels when there is no Y breakdown dimension.
 		// Preserve the prior state to avoid a false drift.
@@ -554,7 +548,7 @@ func heatmapCellsFromAPI(m *models.HeatmapCellsModel, api *kbapi.KibanaHTTPAPIsH
 		return
 	}
 	if api.Labels != nil {
-		m.Labels = &models.HeatmapCellsLabelsModel{Visible: visibleFromAPI(api.Labels.Visible)}
+		m.Labels = &models.HeatmapCellsLabelsModel{Visible: types.BoolPointerValue(api.Labels.Visible)}
 	}
 }
 
