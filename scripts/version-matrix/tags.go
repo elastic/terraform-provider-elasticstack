@@ -86,25 +86,33 @@ func LatestPatchPerMinor(tags []string) []string {
 	return out
 }
 
+// splitVersionComponents strips a leading "v" and splits the remainder on ".",
+// the trim/split shape shared by parseGATag and parseLooseVersion.
+func splitVersionComponents(v string) []string {
+	trimmed := strings.TrimPrefix(v, "v")
+	return strings.Split(trimmed, ".")
+}
+
+// atoiOrZero converts s to an int, defaulting to 0 for invalid input.
+func atoiOrZero(s string) int {
+	n, _ := strconv.Atoi(s)
+	return n
+}
+
 func parseGATag(tag string) (major, minor, patch int, ok bool) {
-	trimmed := strings.TrimPrefix(tag, "v")
-	parts := strings.Split(trimmed, ".")
+	parts := splitVersionComponents(tag)
 	if len(parts) != 3 {
 		return 0, 0, 0, false
 	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, 0, false
+	ints := make([]int, len(parts))
+	for i, p := range parts {
+		n, err := strconv.Atoi(p)
+		if err != nil {
+			return 0, 0, 0, false
+		}
+		ints[i] = n
 	}
-	minor, err = strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, 0, false
-	}
-	patch, err = strconv.Atoi(parts[2])
-	if err != nil {
-		return 0, 0, 0, false
-	}
-	return major, minor, patch, true
+	return ints[0], ints[1], ints[2], true
 }
 
 func sortVersionStrings(versions []string) {
@@ -126,17 +134,16 @@ func versionLess(a, b string) bool {
 }
 
 func parseLooseVersion(v string) (major, minor, patch int) {
-	v = strings.TrimPrefix(v, "v")
 	v = strings.TrimSuffix(v, "-SNAPSHOT")
-	parts := strings.Split(v, ".")
+	parts := splitVersionComponents(v)
 	if len(parts) > 0 {
-		major, _ = strconv.Atoi(parts[0])
+		major = atoiOrZero(parts[0])
 	}
 	if len(parts) > 1 {
-		minor, _ = strconv.Atoi(parts[1])
+		minor = atoiOrZero(parts[1])
 	}
 	if len(parts) > 2 {
-		patch, _ = strconv.Atoi(parts[2])
+		patch = atoiOrZero(parts[2])
 	}
 	return major, minor, patch
 }
