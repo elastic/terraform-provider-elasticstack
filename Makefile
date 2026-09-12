@@ -204,6 +204,7 @@ workflow-generate: ## Generate workflow markdown sources
 workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spec-impact, node workflow lib)
 	@ go test ./scripts/kibana-spec-impact/... -count=1
 	@ go test ./scripts/changelog/... -count=1
+	@ go test ./scripts/version-matrix/... -count=1
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen

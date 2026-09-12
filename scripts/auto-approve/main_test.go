@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v89/github"
@@ -387,4 +388,35 @@ func TestLogJSONEncodeError(t *testing.T) {
 func forceSetEnv(t *testing.T, key string, value string) {
 	t.Helper()
 	t.Setenv(key, value)
+}
+
+func TestAutoApproveDoesNotMergeOrEnableAutoMerge(t *testing.T) {
+	t.Parallel()
+
+	entries, err := os.ReadDir(".")
+	require.NoError(t, err)
+
+	forbidden := []string{
+		"PullRequests.Merge",
+		"EnablePullRequestAutoMerge",
+		"MergePullRequest",
+		"EnableAutoMerge",
+		"auto_merge",
+		"auto-merge",
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+
+		content, readErr := os.ReadFile(name)
+		require.NoError(t, readErr)
+
+		src := string(content)
+		for _, needle := range forbidden {
+			assert.NotContainsf(t, src, needle, "%s must not contain %q", name, needle)
+		}
+	}
 }
