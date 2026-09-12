@@ -463,6 +463,21 @@ func heatmapXAxisToAPI(m *models.HeatmapXAxisModel) kbapi.KibanaHTTPAPIsHeatmapX
 	return axis
 }
 
+// visibleFromAPI converts a lone "visible" *bool API field to its Terraform
+// representation. Shared by every heatmap sub-model whose labels consist of
+// nothing but a Visible flag (X/Y axis labels, cell labels).
+func visibleFromAPI(visible *bool) types.Bool {
+	return types.BoolPointerValue(visible)
+}
+
+// visibleToAPI is the inverse of visibleFromAPI.
+func visibleToAPI(v types.Bool) *bool {
+	if !typeutils.IsKnown(v) {
+		return nil
+	}
+	return new(v.ValueBool())
+}
+
 func heatmapXAxisLabelsFromAPI(m *models.HeatmapXAxisLabelsModel, api *struct {
 	Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 	Visible     *bool                                  `json:"visible,omitempty"`
@@ -475,7 +490,7 @@ func heatmapXAxisLabelsFromAPI(m *models.HeatmapXAxisLabelsModel, api *struct {
 	} else {
 		m.Orientation = types.StringNull()
 	}
-	m.Visible = types.BoolPointerValue(api.Visible)
+	m.Visible = visibleFromAPI(api.Visible)
 }
 
 func heatmapXAxisLabelsToAPI(m *models.HeatmapXAxisLabelsModel) *struct {
@@ -493,9 +508,7 @@ func heatmapXAxisLabelsToAPI(m *models.HeatmapXAxisLabelsModel) *struct {
 		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
 		labels.Orientation = &orientation
 	}
-	if typeutils.IsKnown(m.Visible) {
-		labels.Visible = new(m.Visible.ValueBool())
-	}
+	labels.Visible = visibleToAPI(m.Visible)
 	return labels
 }
 
@@ -504,8 +517,7 @@ func heatmapYAxisFromAPI(m *models.HeatmapYAxisModel, api *kbapi.KibanaHTTPAPIsH
 		return
 	}
 	if api.Labels != nil {
-		m.Labels = &models.HeatmapYAxisLabelsModel{}
-		heatmapYAxisLabelsFromAPI(m.Labels, api.Labels)
+		m.Labels = &models.HeatmapYAxisLabelsModel{Visible: visibleFromAPI(api.Labels.Visible)}
 	} else if prior != nil && prior.Labels != nil {
 		// Kibana may omit Y-axis labels when there is no Y breakdown dimension.
 		// Preserve the prior state to avoid a false drift.
@@ -527,7 +539,9 @@ func heatmapYAxisToAPI(m *models.HeatmapYAxisModel) kbapi.KibanaHTTPAPIsHeatmapY
 		return axis
 	}
 	if m.Labels != nil {
-		axis.Labels = heatmapYAxisLabelsToAPI(m.Labels)
+		axis.Labels = &struct {
+			Visible *bool `json:"visible,omitempty"`
+		}{Visible: visibleToAPI(m.Labels.Visible)}
 	}
 	if m.Title != nil {
 		axis.Title = lenscommon.AxisTitleToAPI(m.Title)
@@ -535,37 +549,12 @@ func heatmapYAxisToAPI(m *models.HeatmapYAxisModel) kbapi.KibanaHTTPAPIsHeatmapY
 	return axis
 }
 
-func heatmapYAxisLabelsFromAPI(m *models.HeatmapYAxisLabelsModel, api *struct {
-	Visible *bool `json:"visible,omitempty"`
-}) {
-	if api == nil {
-		return
-	}
-	m.Visible = types.BoolPointerValue(api.Visible)
-}
-
-func heatmapYAxisLabelsToAPI(m *models.HeatmapYAxisLabelsModel) *struct {
-	Visible *bool `json:"visible,omitempty"`
-} {
-	if m == nil {
-		return nil
-	}
-	labels := &struct {
-		Visible *bool `json:"visible,omitempty"`
-	}{}
-	if typeutils.IsKnown(m.Visible) {
-		labels.Visible = new(m.Visible.ValueBool())
-	}
-	return labels
-}
-
 func heatmapCellsFromAPI(m *models.HeatmapCellsModel, api *kbapi.KibanaHTTPAPIsHeatmapCells) {
 	if api == nil {
 		return
 	}
 	if api.Labels != nil {
-		m.Labels = &models.HeatmapCellsLabelsModel{}
-		heatmapCellsLabelsFromAPI(m.Labels, api.Labels)
+		m.Labels = &models.HeatmapCellsLabelsModel{Visible: visibleFromAPI(api.Labels.Visible)}
 	}
 }
 
@@ -575,7 +564,9 @@ func heatmapCellsToAPI(m *models.HeatmapCellsModel) kbapi.KibanaHTTPAPIsHeatmapC
 		return cells
 	}
 	if m.Labels != nil {
-		cells.Labels = heatmapCellsLabelsToAPI(m.Labels)
+		cells.Labels = &struct {
+			Visible *bool `json:"visible,omitempty"`
+		}{Visible: visibleToAPI(m.Labels.Visible)}
 	}
 	return cells
 }
@@ -594,30 +585,6 @@ func heatmapStylingToAPI(m *models.HeatmapStylingModel) *kbapi.KibanaHTTPAPIsHea
 	}
 	cells := heatmapCellsToAPI(m.Cells)
 	return &kbapi.KibanaHTTPAPIsHeatmapStyling{Cells: &cells}
-}
-
-func heatmapCellsLabelsFromAPI(m *models.HeatmapCellsLabelsModel, api *struct {
-	Visible *bool `json:"visible,omitempty"`
-}) {
-	if api == nil {
-		return
-	}
-	m.Visible = types.BoolPointerValue(api.Visible)
-}
-
-func heatmapCellsLabelsToAPI(m *models.HeatmapCellsLabelsModel) *struct {
-	Visible *bool `json:"visible,omitempty"`
-} {
-	if m == nil {
-		return nil
-	}
-	labels := &struct {
-		Visible *bool `json:"visible,omitempty"`
-	}{}
-	if typeutils.IsKnown(m.Visible) {
-		labels.Visible = new(m.Visible.ValueBool())
-	}
-	return labels
 }
 
 func heatmapLegendFromAPI(m *models.HeatmapLegendModel, api *kbapi.KibanaHTTPAPIsHeatmapLegend) {
