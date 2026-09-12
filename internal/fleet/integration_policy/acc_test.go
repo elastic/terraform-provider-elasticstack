@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/require"
 )
@@ -50,6 +51,8 @@ var (
 	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
 
 	minVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
+	// Must stay aligned with MinVersionCondition / policyshape.MinVersionCondition.
+	minVersionCondition = version.Must(version.NewVersion("9.5.0"))
 )
 
 const (
@@ -358,6 +361,7 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					"policy_name": config.StringVariable(policyName),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "namespace", "default"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "IntegrationPolicyTest Policy"),
@@ -389,7 +393,10 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "namespace", "default"),
+					// namespace changes from "default" to a custom value to
+					// exercise more than the single literal every other test
+					// in this file uses.
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "namespace", "custom-ns"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),
@@ -405,6 +412,121 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 						tcpGenericVarsExpected8085,
 					),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceIntegrationPolicyCondition covers a configured `condition` on
+// both an input and one of its streams. The field is rejected below 9.5.0.
+func TestAccResourceIntegrationPolicyCondition(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionCondition, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "name", policyName),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.condition",
+						"${host.arch} == 'amd64'",
+					),
+					resource.TestCheckResourceAttr(
+						"elasticstack_fleet_integration_policy.test_policy",
+						"inputs.tcp-tcp.streams.tcp.generic.condition",
+						"${host.arch} == 'amd64'",
+					),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceIntegrationPolicyPolicyIDReplace verifies that changing the
+// explicit `policy_id` triggers a destroy/recreate (RequiresReplace), rather
+// than merely checking the value round-trips.
+func TestAccResourceIntegrationPolicyPolicyIDReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(fmt.Sprintf("%s-policy-id", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", fmt.Sprintf("%s-policy-id", policyName)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(fmt.Sprintf("%s-policy-id-changed", policyName)),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", fmt.Sprintf("%s-policy-id-changed", policyName)),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceIntegrationPolicyKibanaConnection exercises the
+// kibana_connection block (per-resource, scoped Kibana client via
+// r.Client().GetKibanaClient), which was previously never configured or
+// asserted for this resource.
+func TestAccResourceIntegrationPolicyKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionIntegrationPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				}),
+				Check: resource.ComposeTestCheckFunc(append([]resource.TestCheckFunc{
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.endpoints.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttr(resourceName, "inputs.tcp-tcp.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "inputs.tcp-tcp.streams.tcp.generic.enabled", "true"),
+				}, acctest.KibanaConnectionAuthChecks(resourceName)...)...),
 			},
 		},
 	})

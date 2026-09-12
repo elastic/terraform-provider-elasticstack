@@ -37,21 +37,23 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
-  namespace           = "custom-ns"
-  description         = "Updated Integration Policy"
+  namespace           = "default"
+  description         = "IntegrationPolicyTest Policy with Condition"
   agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.policy_id
   integration_name    = elasticstack_fleet_integration.test_policy.name
   integration_version = elasticstack_fleet_integration.test_policy.version
 
   inputs = {
     "tcp-tcp" = {
-      enabled = false
+      enabled   = true
+      condition = "$${host.arch} == 'amd64'"
       streams = {
         "tcp.generic" = {
-          enabled = false
+          enabled   = true
+          condition = "$${host.arch} == 'amd64'"
           vars = jsonencode({
             "listen_address" : "localhost"
-            "listen_port" : 8085
+            "listen_port" : 8080
             "data_stream.dataset" : "tcp.generic"
             "tags" : []
             "syslog_options" : "field: message"
