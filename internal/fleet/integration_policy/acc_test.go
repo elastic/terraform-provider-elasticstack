@@ -51,6 +51,8 @@ var (
 	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
 
 	minVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
+	// Must stay aligned with MinVersionCondition / policyshape.MinVersionCondition.
+	minVersionCondition = version.Must(version.NewVersion("9.5.0"))
 )
 
 const (
@@ -381,10 +383,8 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 						"inputs.tcp-tcp.streams.tcp.generic.vars",
 						tcpGenericVarsExpected8080,
 					),
-					// The package-supplied defaults for the input and its stream
-					// are surfaced as computed state, not just excluded from
-					// import verification.
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.defaults.vars"),
+					// tcp is an input-type package: package defaults live on
+					// the stream, not as input-level vars.
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.defaults.streams.tcp.generic.enabled"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.defaults.streams.tcp.generic.vars"),
 				),
@@ -417,11 +417,24 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					),
 				),
 			},
+		},
+	})
+}
+
+// TestAccResourceIntegrationPolicyCondition covers a configured `condition` on
+// both an input and one of its streams. The field is rejected below 9.5.0.
+func TestAccResourceIntegrationPolicyCondition(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionCondition, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
 			{
-				// Positive-value coverage for `condition` on both an input and
-				// one of its streams: previously only its absence was checked.
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_condition"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
 				},
