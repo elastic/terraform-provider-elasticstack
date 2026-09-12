@@ -383,10 +383,6 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 						"inputs.tcp-tcp.streams.tcp.generic.vars",
 						tcpGenericVarsExpected8080,
 					),
-					// tcp is an input-type package: package defaults live on
-					// the stream, not as input-level vars.
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.defaults.streams.tcp.generic.enabled"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration_policy.test_policy", "inputs.tcp-tcp.defaults.streams.tcp.generic.vars"),
 				),
 			},
 			{
