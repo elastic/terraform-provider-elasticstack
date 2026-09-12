@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
@@ -34,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // alertingRuleModel is the Terraform model for an alerting rule.
@@ -241,15 +241,11 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 // (from plan or state, depending on the caller), or nil when unset/unknown.
 func (m alertingRuleModel) artifactsModelFrom(ctx context.Context) (*artifactsModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
-		return nil, diags
-	}
-	var am artifactsModel
-	diags.Append(m.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
+	am := typeutils.ObjectTypeAs[artifactsModel](ctx, m.Artifacts, path.Root("artifacts"), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
-	return &am, diags
+	return am, diags
 }
 
 // investigationGuideFrom returns the investigation guide nested under
@@ -266,15 +262,14 @@ func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investi
 // investigationGuideFromArtifacts decodes the investigation_guide nested object
 // from an already-decoded artifactsModel, or nil when unset.
 func investigationGuideFromArtifacts(ctx context.Context, am *artifactsModel, diags *diag.Diagnostics) *investigationGuideModel {
-	if am == nil || !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
+	if am == nil {
 		return nil
 	}
-	var ig investigationGuideModel
-	diags.Append(am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})...)
+	ig := typeutils.ObjectTypeAs[investigationGuideModel](ctx, am.InvestigationGuide, path.Root("artifacts").AtName("investigation_guide"), diags)
 	if diags.HasError() {
 		return nil
 	}
-	return &ig
+	return ig
 }
 
 // buildArtifactsObject builds the artifacts nested object from an artifactsModel,
@@ -549,17 +544,17 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 		var hasFrequency, hasAlertsFilter bool
 		for _, action := range actions {
 			if !hasFrequency && typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *frequencyMinSupportedVersion,
-					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*frequencyMinSupportedVersion,
+					"actions.frequency is only supported for Kibana v8.6 or higher",
+				)...)
 				hasFrequency = true
 			}
 			if !hasAlertsFilter && typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *alertsFilterMinSupportedVersion,
-					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*alertsFilterMinSupportedVersion,
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)...)
 				hasAlertsFilter = true
 			}
 			if hasFrequency && hasAlertsFilter {
@@ -570,39 +565,38 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 
 	// 8.13.0 when AlertDelay is set
 	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *alertDelayMinSupportedVersion,
-			ErrorMessage: "alert_delay is only supported for Kibana v8.13 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*alertDelayMinSupportedVersion,
+			"alert_delay is only supported for Kibana v8.13 or higher",
+		)...)
 	}
 
 	// 8.16.0 when Flapping is set
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *flappingMinSupportedVersion,
-			ErrorMessage: "flapping is only supported for Kibana v8.16 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*flappingMinSupportedVersion,
+			"flapping is only supported for Kibana v8.16 or higher",
+		)...)
 
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
 		// 9.3.0 when Flapping.Enabled is set
 		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *flappingEnabledMinSupportedVersion,
-				ErrorMessage: "flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-			})
+			reqs = append(reqs, entitycore.SingleVersionRequirement(
+				*flappingEnabledMinSupportedVersion,
+				"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+			)...)
 		}
 	}
 
 	// 9.1.0 when Artifacts (investigation guide) is set
 	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *artifactsMinSupportedVersion,
-			ErrorMessage: "artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*artifactsMinSupportedVersion,
+			"artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
+		)...)
 	}
 
 	return reqs, diags
@@ -687,8 +681,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 
 	// Flapping
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return models.AlertingRule{}, diags
 		}
@@ -861,9 +854,10 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 
 			if apiAction.AlertsFilter.Timeframe != nil {
 				tf := apiAction.AlertsFilter.Timeframe
-				days := make([]int64, len(tf.Days))
-				for i, d := range tf.Days {
-					days[i] = int64(d)
+				days, err := alertingactions.DaysFromAPI(tf.Days)
+				if err != nil {
+					diags.AddError("Failed to convert alerts_filter timeframe days", err.Error())
+					continue
 				}
 				daysList, d := types.ListValueFrom(ctx, types.Int64Type, days)
 				diags.Append(d...)
@@ -924,8 +918,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Frequency - extract from object
 		if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-			var freq frequencyModel
-			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
+			freq := typeutils.ObjectTypeAs[frequencyModel](ctx, action.Frequency, path.Root("actions").AtListIndex(i).AtName("frequency"), &diags)
 			// Only create Frequency if both required fields are present
 			if typeutils.IsKnown(freq.Summary) && typeutils.IsKnown(freq.NotifyWhen) {
 				apiAction.Frequency = &models.ActionFrequency{
@@ -940,8 +933,8 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Alerts filter - extract from object
 		if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-			var filter alertsFilterModel
-			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
+			alertsFilterPath := path.Root("actions").AtListIndex(i).AtName("alerts_filter")
+			filter := typeutils.ObjectTypeAs[alertsFilterModel](ctx, action.AlertsFilter, alertsFilterPath, &diags)
 			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
 
 			if typeutils.IsKnown(filter.Kql) {
@@ -950,18 +943,12 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 			}
 
 			if typeutils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
-				var tf timeframeModel
-				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
+				tf := typeutils.ObjectTypeAs[timeframeModel](ctx, filter.Timeframe, alertsFilterPath.AtName("timeframe"), &diags)
 				var days []int64
 				diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
 
-				int32Days := make([]int32, len(days))
-				for j, d := range days {
-					int32Days[j] = int32(d)
-				}
-
 				apiAction.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       int32Days,
+					Days:       alertingactions.Int32FromInt64(days),
 					Timezone:   tf.Timezone.ValueString(),
 					HoursStart: tf.HoursStart.ValueString(),
 					HoursEnd:   tf.HoursEnd.ValueString(),

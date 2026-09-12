@@ -100,17 +100,37 @@ jobs:
           version: v2.12.2
           args: --max-same-issues=0 --allow-parallel-runners ./...
 
+  load-matrix:
+    name: Load acceptance-test matrix
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.load.outputs.versions }}
+      flags: ${{ steps.load.outputs.flags }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - id: load
+        run: go run ./scripts/version-matrix load-matrix
+
   test:
     name: Matrix Acceptance Test
     needs:
       - classify
       - build
+      - load-matrix
     if: needs.classify.outputs.provider_changes == 'true'
     permissions:
       contents: read
       issues: write
       pull-requests: write
-    runs-on: ${{ matrix.runner == 'ubuntu-22.04' && 'ubuntu-22.04' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].runner }}
     env:
       ELASTIC_PASSWORD: password
       TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: true
@@ -119,64 +139,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "8.5.3"
-          - "8.6.2"
-          - "8.7.1"
-          - "8.8.2"
-          - "8.9.2"
-          - "8.10.4"
-          - "8.11.4"
-          - "8.12.2"
-          - "8.13.4"
-          - "8.14.3"
-          - "8.15.5"
-          - "8.16.6"
-          - "8.17.10"
-          - "8.18.8"
-          - "8.19.17"
-          - "9.0.8"
-          - "9.1.10"
-          - "9.2.8"
-          - "9.3.6"
-          - "9.4.2"
-          - "9.5.0"
+        version: ${{ fromJson(needs['load-matrix'].outputs.versions) }}
         shard: [0, 1]
-        include:
-          - version: "8.0.1"
-            shard: 0
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.0.1"
-            shard: 1
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.1.3"
-            shard: 0
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.1.3"
-            shard: 1
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.2.3"
-            shard: 0
-            runner: "ubuntu-22.04"
-          - version: "8.2.3"
-            shard: 1
-            runner: "ubuntu-22.04"
-          - version: "8.3.3"
-            shard: 0
-            runner: "ubuntu-22.04"
-          - version: "8.3.3"
-            shard: 1
-            runner: "ubuntu-22.04"
-          - version: "8.4.3"
-            shard: 0
-            runner: "ubuntu-22.04"
-          - version: "8.4.3"
-            shard: 1
-            runner: "ubuntu-22.04"
     steps:
       - name: Free up disk space
         run: |
@@ -200,12 +164,12 @@ jobs:
         run: make vendor
 
       - name: Pre-pull fleet image
-        if: matrix.fleetImage
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet"
         timeout-minutes: 5
         run: |
           for i in {1..3}; do
-            echo "Attempt $i: pulling ${{ matrix.fleetImage }}:${{ matrix.version }}..."
-            if timeout 90 docker pull "${{ matrix.fleetImage }}:${{ matrix.version }}"; then
+            echo "Attempt $i: pulling ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}..."
+            if timeout 90 docker pull "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}"; then
               echo "Fleet image pulled successfully"
               exit 0
             fi
@@ -222,7 +186,7 @@ jobs:
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          FLEET_IMAGE: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}
+          FLEET_IMAGE: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}
 
       - name: Wait for stack readiness
         run: |
@@ -257,7 +221,7 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10'
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
@@ -332,7 +296,7 @@ jobs:
 
   gate:
     name: Provider Gate
-    needs: [classify, build, golangci-lint, lint, test]
+    needs: [classify, build, golangci-lint, lint, load-matrix, test]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -347,6 +311,7 @@ jobs:
           PROVIDER_GATE_BUILD_RESULT: ${{ needs.build.result }}
           PROVIDER_GATE_LINT_RESULT: ${{ needs.lint.result }}
           PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}
+          PROVIDER_GATE_LOAD_MATRIX_RESULT: ${{ needs['load-matrix'].result }}
           PROVIDER_GATE_TEST_RESULT: ${{ needs.test.result }}
         with:
           script: |

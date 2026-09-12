@@ -69,16 +69,16 @@ The system SHALL remove all references to `compile-workflow-sources` from `Makef
 
 ### Requirement: Provider gate evaluates golangci-lint as a distinct job result
 
-The `gateProvider` function in `lib/gate-provider.js` SHALL accept a `golangciLintResult` parameter alongside the existing `lintResult` parameter. Both results SHALL be included in the set of job results that the gate validates and evaluates. The gate SHALL fail if either `lintResult` or `golangciLintResult` is `failure` or `cancelled`. The gate SHALL pass when both are `success`. The gate SHALL treat both as legitimately skipped (returning `passed: true`) when `classifyResult` is `false` and all job results — including both lint results — are `skipped`.
+The `gateProvider` function in `lib/gate-provider.js` SHALL accept a `golangciLintResult` parameter alongside the existing `lintResult` parameter, and a `loadMatrixResult` parameter for the `load-matrix` job. Those results SHALL be included in the set of job results that the gate validates and evaluates. The gate SHALL fail if `lintResult`, `golangciLintResult`, or `loadMatrixResult` is `failure` or `cancelled`. The gate SHALL pass when all three are `success` (with the other inspected jobs also `success`). The gate SHALL treat them as legitimately skipped (returning `passed: true`) when `classifyResult` is `false` and all job results — including both lint results and `loadMatrixResult` — are `skipped`.
 
-The `fields` array for the `provider` gate in `lib/runners/gate.js` SHALL include `GOLANGCI_LINT_RESULT` alongside `LINT_RESULT`.
+The `fields` array for the `provider` gate in `lib/runners/gate.js` SHALL include `GOLANGCI_LINT_RESULT` alongside `LINT_RESULT`, and `LOAD_MATRIX_RESULT`.
 
-The `gate` job in `provider.yml` SHALL pass `PROVIDER_GATE_GOLANGCI_LINT_RESULT` as an environment variable sourced from the `golangci-lint` job result.
+The `gate` job in `provider.yml` SHALL pass `PROVIDER_GATE_GOLANGCI_LINT_RESULT` as an environment variable sourced from the `golangci-lint` job result, and `PROVIDER_GATE_LOAD_MATRIX_RESULT` sourced from the `load-matrix` job result.
 
 #### Scenario: Both lint jobs succeed
 
 - **GIVEN** `golangciLintResult=success` and `lintResult=success`
-- **AND** `classifyResult=true`, `buildResult=success`, `testResult=success`
+- **AND** `classifyResult=true`, `buildResult=success`, `loadMatrixResult=success`, `testResult=success`
 - **WHEN** `gateProvider` is called
 - **THEN** it SHALL return `passed: true`
 
@@ -99,7 +99,7 @@ The `gate` job in `provider.yml` SHALL pass `PROVIDER_GATE_GOLANGCI_LINT_RESULT`
 #### Scenario: Non-provider change — all jobs skipped
 
 - **GIVEN** `classifyResult=false`
-- **AND** `buildResult=skipped`, `golangciLintResult=skipped`, `lintResult=skipped`, `testResult=skipped`
+- **AND** `buildResult=skipped`, `golangciLintResult=skipped`, `lintResult=skipped`, `loadMatrixResult=skipped`, `testResult=skipped`
 - **WHEN** `gateProvider` is called
 - **THEN** it SHALL return `passed: true`
 
@@ -107,7 +107,7 @@ The `gate` job in `provider.yml` SHALL pass `PROVIDER_GATE_GOLANGCI_LINT_RESULT`
 
 - **GIVEN** `classifyResult=true`
 - **AND** `golangciLintResult=skipped`
-- **AND** `lintResult=success`, `buildResult=success`, `testResult=success`
+- **AND** `lintResult=success`, `buildResult=success`, `loadMatrixResult=success`, `testResult=success`
 - **WHEN** `gateProvider` is called
 - **THEN** it SHALL return `passed: false`
 

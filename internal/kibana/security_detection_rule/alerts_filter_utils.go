@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -127,32 +128,10 @@ func flattenActionAlertsFilter(ctx context.Context, apiFilter *kbapi.SecurityDet
 func alertsFilterDaysFromAPI(ctx context.Context, daysRaw any) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	daysSlice, ok := daysRaw.([]any)
-	if !ok {
-		diags.AddError("Error reading alerts_filter timeframe days", fmt.Sprintf("days must be an array, got %T", daysRaw))
+	days, err := alertingactions.DaysFromAPI(daysRaw)
+	if err != nil {
+		diags.AddError("Error reading alerts_filter timeframe days", err.Error())
 		return types.ListNull(types.Int64Type), diags
-	}
-
-	days := make([]int64, 0, len(daysSlice))
-	for _, d := range daysSlice {
-		switch v := d.(type) {
-		case float64:
-			days = append(days, int64(v))
-		case int:
-			days = append(days, int64(v))
-		case int64:
-			days = append(days, v)
-		case json.Number:
-			day, err := v.Int64()
-			if err != nil {
-				diags.AddError("Error reading alerts_filter timeframe days", err.Error())
-				return types.ListNull(types.Int64Type), diags
-			}
-			days = append(days, day)
-		default:
-			diags.AddError("Error reading alerts_filter timeframe days", fmt.Sprintf("unexpected day value type %T", d))
-			return types.ListNull(types.Int64Type), diags
-		}
 	}
 
 	daysList, d := types.ListValueFrom(ctx, types.Int64Type, days)
@@ -215,11 +194,7 @@ func expandActionAlertsFilter(ctx context.Context, alertsFilter types.Object, di
 			if diags.HasError() {
 				return nil
 			}
-			daysInt := make([]int, len(days))
-			for i, d := range days {
-				daysInt[i] = int(d)
-			}
-			timeframeMap["days"] = daysInt
+			timeframeMap["days"] = alertingactions.IntFromInt64(days)
 		}
 
 		if typeutils.IsKnown(tfModel.Timezone) {

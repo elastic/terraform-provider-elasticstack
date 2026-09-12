@@ -17,10 +17,9 @@
 
 package mlanomalyswimlane
 
-import "github.com/hashicorp/go-version"
+import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 
 // MinKibanaAPISupport is the lowest Kibana version whose Dashboard API accepts
-// ml_anomaly_swimlane panels. Empirical testing showed Kibana 9.4.0 rejects this
-// panel type (HTTP 400); 9.5.0-SNAPSHOT accepts it. See REQ-047 compatibility
-// note in openspec/changes/kibana-dashboard-ml-swimlane-smv/specs/kibana-dashboard/spec.md.
-var MinKibanaAPISupport = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
+// ml_anomaly_swimlane panels. See panelkit.MinKibanaAPISupport95. See also the REQ-047
+// compatibility note in openspec/changes/kibana-dashboard-ml-swimlane-smv/specs/kibana-dashboard/spec.md.
+var MinKibanaAPISupport = panelkit.MinKibanaAPISupport95
