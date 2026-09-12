@@ -149,9 +149,16 @@ type githubStandingREST struct {
 	client *github.Client
 }
 
-func (g *githubStandingREST) ListOpenPullRequestsByHead(ctx context.Context, owner, repo, headRef, baseBranch string) ([]PullRequestRef, error) {
+func (g *githubStandingREST) requireClient() error {
 	if g == nil || g.client == nil {
-		return nil, fmt.Errorf("github client required")
+		return fmt.Errorf("github client required")
+	}
+	return nil
+}
+
+func (g *githubStandingREST) ListOpenPullRequestsByHead(ctx context.Context, owner, repo, headRef, baseBranch string) ([]PullRequestRef, error) {
+	if err := g.requireClient(); err != nil {
+		return nil, err
 	}
 	pulls, _, err := g.client.PullRequests.List(ctx, owner, repo, &github.PullRequestListOptions{
 		State: "open",
@@ -169,8 +176,8 @@ func (g *githubStandingREST) ListOpenPullRequestsByHead(ctx context.Context, own
 }
 
 func (g *githubStandingREST) CreatePullRequest(ctx context.Context, owner, repo, title, body, head, base string) (*PullRequestRef, error) {
-	if g == nil || g.client == nil {
-		return nil, fmt.Errorf("github client required")
+	if err := g.requireClient(); err != nil {
+		return nil, err
 	}
 	titleCopy, headCopy, baseCopy, bodyCopy := title, head, base, body
 	pr, _, err := g.client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
@@ -186,8 +193,8 @@ func (g *githubStandingREST) CreatePullRequest(ctx context.Context, owner, repo,
 }
 
 func (g *githubStandingREST) UpdatePullRequestBody(ctx context.Context, owner, repo string, number int, body string) error {
-	if g == nil || g.client == nil {
-		return fmt.Errorf("github client required")
+	if err := g.requireClient(); err != nil {
+		return err
 	}
 	bodyCopy := body
 	if _, _, err := g.client.PullRequests.Edit(ctx, owner, repo, number, &github.PullRequest{Body: &bodyCopy}); err != nil {
@@ -197,8 +204,8 @@ func (g *githubStandingREST) UpdatePullRequestBody(ctx context.Context, owner, r
 }
 
 func (g *githubStandingREST) AddIssueLabels(ctx context.Context, owner, repo string, issueNumber int, labels []string) error {
-	if g == nil || g.client == nil {
-		return fmt.Errorf("github client required")
+	if err := g.requireClient(); err != nil {
+		return err
 	}
 	if _, _, err := g.client.Issues.AddLabelsToIssue(ctx, owner, repo, issueNumber, labels); err != nil {
 		return fmt.Errorf("add labels to pull request #%d: %w", issueNumber, err)

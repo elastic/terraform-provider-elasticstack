@@ -193,3 +193,51 @@ func TestManageStandingPR_existingOpen_updatesBody(t *testing.T) {
 func fixedClock(ts time.Time) func() time.Time {
 	return func() time.Time { return ts }
 }
+
+func TestGithubStandingREST_requireClient(t *testing.T) {
+	t.Parallel()
+
+	const wantErr = "github client required"
+
+	t.Run("nil receiver", func(t *testing.T) {
+		t.Parallel()
+		var g *githubStandingREST
+		require.EqualError(t, g.requireClient(), wantErr)
+	})
+
+	t.Run("nil client", func(t *testing.T) {
+		t.Parallel()
+		g := &githubStandingREST{}
+		require.EqualError(t, g.requireClient(), wantErr)
+	})
+}
+
+func TestGithubStandingREST_methodsGuardMissingClient(t *testing.T) {
+	t.Parallel()
+
+	const wantErr = "github client required"
+	g := &githubStandingREST{}
+	ctx := context.Background()
+
+	t.Run("ListOpenPullRequestsByHead", func(t *testing.T) {
+		t.Parallel()
+		_, err := g.ListOpenPullRequestsByHead(ctx, "org", "repo", "org:head", "main")
+		require.EqualError(t, err, wantErr)
+	})
+
+	t.Run("CreatePullRequest", func(t *testing.T) {
+		t.Parallel()
+		_, err := g.CreatePullRequest(ctx, "org", "repo", "title", "body", "head", "main")
+		require.EqualError(t, err, wantErr)
+	})
+
+	t.Run("UpdatePullRequestBody", func(t *testing.T) {
+		t.Parallel()
+		require.EqualError(t, g.UpdatePullRequestBody(ctx, "org", "repo", 1, "body"), wantErr)
+	})
+
+	t.Run("AddIssueLabels", func(t *testing.T) {
+		t.Parallel()
+		require.EqualError(t, g.AddIssueLabels(ctx, "org", "repo", 1, []string{"label"}), wantErr)
+	})
+}
