@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -178,24 +179,7 @@ func panelUsesConfigJSONOnly(pm *models.PanelModel) bool {
 	if pm == nil || !typeutils.IsKnown(pm.ConfigJSON) {
 		return false
 	}
-	return !panelHasTypedConfig(pm)
-}
-
-func panelHasTypedConfig(pm *models.PanelModel) bool {
-	return pm.MarkdownConfig != nil ||
-		pm.TimeSliderControlConfig != nil ||
-		pm.SloBurnRateConfig != nil ||
-		pm.SloOverviewConfig != nil ||
-		pm.SloErrorBudgetConfig != nil ||
-		pm.EsqlControlConfig != nil ||
-		pm.OptionsListControlConfig != nil ||
-		pm.RangeSliderControlConfig != nil ||
-		pm.SyntheticsStatsOverviewConfig != nil ||
-		pm.SyntheticsMonitorsConfig != nil ||
-		pm.VisConfig != nil ||
-		pm.ImageConfig != nil ||
-		pm.SloAlertsConfig != nil ||
-		pm.DiscoverSessionConfig != nil
+	return !panelkit.PanelHasTypedConfig(pm)
 }
 
 func populateFromAPIByValue(pm *models.PanelModel, tfPanel *models.PanelModel, config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMarkdownConfig0) {
