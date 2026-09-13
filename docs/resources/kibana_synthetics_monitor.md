@@ -86,6 +86,7 @@ resource "elasticstack_kibana_synthetics_monitor" "my_monitor" {
 - `http` (Attributes) HTTP Monitor specific fields (see [below for nested schema](#nestedatt--http))
 - `icmp` (Attributes) ICMP Monitor specific fields (see [below for nested schema](#nestedatt--icmp))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
+- `kibana_spaces` (List of String) Kibana spaces in which the monitor is visible. Use `["*"]` to share the monitor with all spaces. Removing a configured value clears additional visibility. The `space_id` is always included by Kibana.
 - `labels` (Map of String) Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
 - `locations` (List of String) Where to deploy the monitor. Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
 - `namespace` (String) The data stream namespace. Note: if you change its value, kibana creates new datastream. A user needs permissions for new/old datastream in update case to be able to see full monitor history. The `namespace` field should be lowercase and not contain spaces. The namespace must not include any of the following characters: *, \\, /, ?, ", <, >, |, whitespace, ,, #, :, or -. Default: `default`

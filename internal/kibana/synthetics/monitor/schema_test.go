@@ -23,8 +23,11 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -144,6 +147,105 @@ func TestLabelsFieldConversion(t *testing.T) {
 	}
 }
 
+func TestMonitorSchemaKibanaSpaces(t *testing.T) {
+	attribute, ok := monitorSchema(context.Background()).Attributes["kibana_spaces"].(schema.ListAttribute)
+	require.True(t, ok)
+	assert.True(t, attribute.Optional)
+	assert.False(t, attribute.Computed)
+	assert.Equal(t, types.StringType, attribute.ElementType)
+}
+
+func TestKibanaSpacesFromAPI(t *testing.T) {
+	ctx := context.Background()
+	spacesList := func(values ...string) types.List {
+		attributes := make([]attr.Value, len(values))
+		for i, value := range values {
+			attributes[i] = types.StringValue(value)
+		}
+		return types.ListValueMust(types.StringType, attributes)
+	}
+
+	testcases := []struct {
+		name     string
+		current  types.List
+		incoming []string
+		spaceID  *string
+		want     types.List
+	}{
+		{
+			name:     "implicit owner remains omitted",
+			current:  types.ListNull(types.StringType),
+			incoming: []string{"owner"},
+			want:     types.ListNull(types.StringType),
+		},
+		{
+			name:     "implicit default owner remains omitted",
+			current:  types.ListNull(types.StringType),
+			incoming: []string{"default"},
+			spaceID:  new(""),
+			want:     types.ListNull(types.StringType),
+		},
+		{
+			name:     "configured ordering is retained",
+			current:  spacesList("owner", "infrastructure"),
+			incoming: []string{"infrastructure", "owner"},
+			want:     spacesList("owner", "infrastructure"),
+		},
+		{
+			name:     "duplicate configured space IDs do not cause drift",
+			current:  spacesList("security", "security"),
+			incoming: []string{"security", "owner"},
+			want:     spacesList("security", "security"),
+		},
+		{
+			name:     "wildcard retains implicit owner handling",
+			current:  spacesList("*"),
+			incoming: []string{"*", "owner"},
+			want:     spacesList("*"),
+		},
+		{
+			name:     "empty list clears additional sharing",
+			current:  spacesList(),
+			incoming: []string{"owner"},
+			want:     spacesList(),
+		},
+		{
+			name:     "out of band sharing changes are refreshed",
+			current:  spacesList("owner", "infrastructure"),
+			incoming: []string{"owner", "security"},
+			want:     spacesList("owner", "security"),
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			spaceID := "owner"
+			if tt.spaceID != nil {
+				spaceID = *tt.spaceID
+			}
+			actual := kibanaSpacesFromAPI(ctx, tt.current, &tt.incoming, spaceID, &diags)
+			assert.False(t, diags.HasError(), diags)
+			assert.Equal(t, tt.want, actual)
+		})
+	}
+
+	t.Run("missing response preserves configured spaces", func(t *testing.T) {
+		current := spacesList("owner", "infrastructure")
+		var diags diag.Diagnostics
+		actual := kibanaSpacesFromAPI(ctx, current, nil, "owner", &diags)
+		assert.False(t, diags.HasError(), diags)
+		assert.Equal(t, current, actual)
+	})
+}
+
+func TestKibanaSpacesForUpdateClearsRemovedVisibility(t *testing.T) {
+	plan := types.ListNull(types.StringType)
+	prior := &tfModelV0{KibanaSpaces: typeutils.StringsToListMust([]string{"security"})}
+
+	assert.Equal(t, typeutils.StringsToListMust([]string{}), kibanaSpacesForUpdate(plan, prior))
+}
+
 func TestToModelV0HTTP(t *testing.T) {
 	api := kbapi.SyntheticsMonitor{
 		Id:        new("test-id-http"),
@@ -234,6 +336,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				Schedule:         types.Int64Value(5),
 				Locations:        []types.String{types.StringValue("us_east")},
 				PrivateLocations: []types.String{types.StringValue("test private location")},
+				KibanaSpaces:     typeutils.StringsToListMust([]string{"default", "infrastructure"}),
 				Enabled:          types.BoolPointerValue(tBool),
 				Tags:             []types.String{types.StringValue("tag1"), types.StringValue("tag2")},
 				Alert:            toAlertObject(t, tfAlertConfigV0{Status: &tfStatusConfigV0{Enabled: types.BoolPointerValue(tBool)}, TLS: &tfStatusConfigV0{Enabled: types.BoolPointerValue(fBool)}}),
@@ -279,6 +382,7 @@ func TestToKibanaAPIRequest(t *testing.T) {
 				"response":{"response1":"value1"},
 				"schedule":5,
 				"service.name":"test-service-http",
+				"spaces":["default","infrastructure"],
 				"ssl":{
 					"certificate":"cert",
 					"certificate_authorities":["cert1","cert2"],
@@ -369,6 +473,105 @@ func TestToKibanaAPIRequestICMPWait(t *testing.T) {
 	result, diags := input.toKibanaAPIRequest(context.Background())
 	assert.False(t, diags.HasError(), diags)
 	assert.JSONEq(t, `{"host":"example.com","labels":{},"name":"test-icmp-monitor","type":"icmp","wait":"10"}`, mustJSON(t, result))
+}
+
+func TestToKibanaAPIRequestEmptyKibanaSpaces(t *testing.T) {
+	input := tfModelV0{
+		Name:         types.StringValue("test-monitor"),
+		KibanaSpaces: typeutils.StringsToListMust([]string{}),
+		HTTP:         &tfHTTPMonitorFieldsV0{},
+	}
+
+	result, diags := input.toKibanaAPIRequest(context.Background())
+	assert.False(t, diags.HasError(), diags)
+	assert.JSONEq(t, `{"labels":{},"name":"test-monitor","spaces":[],"type":"http","url":""}`, mustJSON(t, result))
+}
+
+func TestToKibanaAPIRequestKibanaSpacesForAllMonitorTypes(t *testing.T) {
+	testcases := []struct {
+		name         string
+		input        tfModelV0
+		expectedJSON string
+	}{
+		{
+			name: "HTTP monitor",
+			input: tfModelV0{
+				Name:         types.StringValue("test-http-monitor"),
+				KibanaSpaces: typeutils.StringsToListMust([]string{"*"}),
+				HTTP:         &tfHTTPMonitorFieldsV0{URL: types.StringValue("https://example.com")},
+			},
+			expectedJSON: `{"labels":{},"name":"test-http-monitor","spaces":["*"],"type":"http","url":"https://example.com"}`,
+		},
+		{
+			name: "TCP monitor",
+			input: tfModelV0{
+				Name:         types.StringValue("test-tcp-monitor"),
+				KibanaSpaces: typeutils.StringsToListMust([]string{"security"}),
+				TCP:          &tfTCPMonitorFieldsV0{Host: types.StringValue("example.com:443")},
+			},
+			expectedJSON: `{"host":"example.com:443","labels":{},"name":"test-tcp-monitor","spaces":["security"],"type":"tcp"}`,
+		},
+		{
+			name: "ICMP monitor",
+			input: tfModelV0{
+				Name:         types.StringValue("test-icmp-monitor"),
+				KibanaSpaces: typeutils.StringsToListMust([]string{"observability"}),
+				ICMP:         &tfICMPMonitorFieldsV0{Host: types.StringValue("example.com")},
+			},
+			expectedJSON: `{"host":"example.com","labels":{},"name":"test-icmp-monitor","spaces":["observability"],"type":"icmp"}`,
+		},
+		{
+			name: "browser monitor",
+			input: tfModelV0{
+				Name:         types.StringValue("test-browser-monitor"),
+				KibanaSpaces: typeutils.StringsToListMust([]string{"security"}),
+				Browser:      &tfBrowserMonitorFieldsV0{InlineScript: types.StringValue("step('check', () => {})")},
+			},
+			expectedJSON: `{"inline_script":"step('check', () => {})","labels":{},"name":"test-browser-monitor","spaces":["security"],"type":"browser"}`,
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			result, diags := tt.input.toKibanaAPIRequest(context.Background())
+			assert.False(t, diags.HasError(), diags)
+			assert.JSONEq(t, tt.expectedJSON, mustJSON(t, result))
+		})
+	}
+}
+
+func TestToModelV0KibanaSpaces(t *testing.T) {
+	testcases := []struct {
+		name     string
+		current  types.List
+		incoming []string
+		want     types.List
+	}{
+		{
+			name:     "retains configured spaces when Kibana adds default owner",
+			current:  typeutils.StringsToListMust([]string{"security"}),
+			incoming: []string{"security", "default"},
+			want:     typeutils.StringsToListMust([]string{"security"}),
+		},
+		{
+			name:     "maps externally changed spaces",
+			current:  typeutils.StringsToListMust([]string{"security"}),
+			incoming: []string{"operations", "default"},
+			want:     typeutils.StringsToListMust([]string{"operations", "default"}),
+		},
+	}
+
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			current := &tfModelV0{KibanaSpaces: tt.current}
+			result, diags := current.toModelV0(context.Background(), &kbapi.SyntheticsMonitor{
+				Spaces: &tt.incoming,
+				Type:   new(kbapi.SyntheticsMonitorTypeHttp),
+			}, "")
+			require.False(t, diags.HasError(), diags)
+			assert.Equal(t, tt.want, result.KibanaSpaces)
+		})
+	}
 }
 
 func TestToModelV0MergeAttributes(t *testing.T) {

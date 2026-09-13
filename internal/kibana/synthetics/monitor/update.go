@@ -24,8 +24,17 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+func kibanaSpacesForUpdate(plan types.List, prior *tfModelV0) types.List {
+	if plan.IsNull() && prior != nil && !prior.KibanaSpaces.IsNull() {
+		return typeutils.StringsToListMust([]string{})
+	}
+	return plan
+}
 
 func updateMonitor(
 	ctx context.Context,
@@ -40,7 +49,9 @@ func updateMonitor(
 		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 
-	input, apiDiags := planModel.toKibanaAPIRequest(ctx)
+	requestModel := planModel
+	requestModel.KibanaSpaces = kibanaSpacesForUpdate(planModel.KibanaSpaces, req.Prior)
+	input, apiDiags := requestModel.toKibanaAPIRequest(ctx)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModelV0]{}, diags

@@ -1934,7 +1934,11 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 			"schedule":                 Map{"$ref": "#/components/schemas/synthetics_monitor_schedule"},
 			"screenshots":              Map{"type": "string"},
 			"service.name":             Map{"type": "string"},
-			"ssl.certificate":          Map{"type": "string"},
+			"spaces": Map{
+				"items": Map{"type": "string"},
+				"type":  "array",
+			},
+			"ssl.certificate": Map{"type": "string"},
 			"ssl.certificate_authorities": Map{
 				"items": Map{"type": "string"},
 				"type":  "array",
@@ -1968,6 +1972,10 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 
 	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.alert", Map{"$ref": "#/components/schemas/synthetics_monitor_alert"})
 	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.params", Map{"type": "object"})
+	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.spaces", Map{
+		"items": Map{"type": "string"},
+		"type":  "array",
+	})
 	schema.Components.Set("schemas.Synthetics_icmpMonitorFields.allOf.1.properties.wait", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
 	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.max_redirects", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
 	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
