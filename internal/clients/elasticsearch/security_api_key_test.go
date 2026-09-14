@@ -32,8 +32,8 @@ import (
 
 // newAPIKeyServer returns an httptest.Server that responds to the get/delete
 // API key endpoints with the given bodies, recording the query string seen on
-// each request so tests can assert on the `owner` parameter that was sent.
-func newAPIKeyServer(t *testing.T, getBody, deleteBody string, lastGetQuery, lastDeleteQuery *string) *httptest.Server {
+// the get request so tests can assert on the `owner` parameter that was sent.
+func newAPIKeyServer(t *testing.T, getBody, deleteBody string, lastGetQuery *string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Elastic-Product", "Elasticsearch")
@@ -46,9 +46,6 @@ func newAPIKeyServer(t *testing.T, getBody, deleteBody string, lastGetQuery, las
 			fmt.Fprint(w, getBody)
 			return
 		case r.Method == http.MethodDelete && r.URL.Path == "/_security/api_key":
-			if lastDeleteQuery != nil {
-				*lastDeleteQuery = r.URL.RawQuery
-			}
 			fmt.Fprint(w, deleteBody)
 			return
 		default:
@@ -104,7 +101,7 @@ func newSequencedDeleteServer(t *testing.T, deleteResponses []string, deleteRequ
 func TestGetAPIKey_RestrictToOwnedTrue_NotFoundTreatedAsNonExistent(t *testing.T) {
 	t.Parallel()
 	var lastQuery string
-	srv := newAPIKeyServer(t, `{"api_keys":[]}`, "", &lastQuery, nil)
+	srv := newAPIKeyServer(t, `{"api_keys":[]}`, "", &lastQuery)
 	defer srv.Close()
 
 	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
@@ -117,7 +114,7 @@ func TestGetAPIKey_RestrictToOwnedTrue_NotFoundTreatedAsNonExistent(t *testing.T
 func TestGetAPIKey_RestrictToOwnedFalse_DoesNotFilterByOwner(t *testing.T) {
 	t.Parallel()
 	var lastQuery string
-	srv := newAPIKeyServer(t, `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"other","realm":"default"}]}`, "", &lastQuery, nil)
+	srv := newAPIKeyServer(t, `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"other","realm":"default"}]}`, "", &lastQuery)
 	defer srv.Close()
 
 	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
@@ -130,7 +127,7 @@ func TestGetAPIKey_RestrictToOwnedFalse_DoesNotFilterByOwner(t *testing.T) {
 
 func TestGetAPIKey_Found(t *testing.T) {
 	t.Parallel()
-	srv := newAPIKeyServer(t, `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"me","realm":"default"}]}`, "", nil, nil)
+	srv := newAPIKeyServer(t, `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"me","realm":"default"}]}`, "", nil)
 	defer srv.Close()
 
 	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
@@ -142,7 +139,7 @@ func TestGetAPIKey_Found(t *testing.T) {
 
 func TestDeleteAPIKey_RestrictToOwnedTrue_InvalidatedApiKeys_NoError(t *testing.T) {
 	t.Parallel()
-	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":["some-id"],"previously_invalidated_api_keys":[],"error_count":0}`, nil, nil)
+	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":["some-id"],"previously_invalidated_api_keys":[],"error_count":0}`, nil)
 	defer srv.Close()
 
 	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
@@ -152,7 +149,7 @@ func TestDeleteAPIKey_RestrictToOwnedTrue_InvalidatedApiKeys_NoError(t *testing.
 
 func TestDeleteAPIKey_RestrictToOwnedTrue_PreviouslyInvalidatedApiKeys_NoError(t *testing.T) {
 	t.Parallel()
-	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":[],"previously_invalidated_api_keys":["some-id"],"error_count":0}`, nil, nil)
+	srv := newAPIKeyServer(t, "", `{"invalidated_api_keys":[],"previously_invalidated_api_keys":["some-id"],"error_count":0}`, nil)
 	defer srv.Close()
 
 	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
