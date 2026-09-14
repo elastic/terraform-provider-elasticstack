@@ -89,7 +89,7 @@ on:
         echo "summary<<EOF" >> "$GITHUB_OUTPUT"
         echo "$summary" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
-model: "deepseek/deepseek-v4-flash"
+model: "deepseek/deepseek-v4-flash-0731"
 engine:
   id: claude
   args:
@@ -99,7 +99,7 @@ engine:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 # Disable the per-run AI Credits budget guard. The OpenRouter model slug
-# "deepseek/deepseek-v4-flash" may be absent from the AWF api-proxy's built-in
+# "deepseek/deepseek-v4-flash-0731" may be absent from the AWF api-proxy's built-in
 # pricing table and the models.dev catalog. gh-aw (v0.81.6) does not expose
 # apiProxy.defaultAiCreditsPricing in frontmatter, so with the guard active the
 # proxy could reject every request with HTTP 400 (unknown_model_ai_credits).

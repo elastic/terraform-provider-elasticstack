@@ -53,6 +53,8 @@ const (
 	settingCannedACL              = "canned_acl"
 	settingStorageClass           = "storage_class"
 	settingPathStyleAccess        = "path_style_access"
+	settingDisableChunkedEncoding = "disable_chunked_encoding"
+	settingAlwaysSignRequests     = "always_sign_requests"
 	settingURI                    = "uri"
 	settingPath                   = "path"
 	settingLoadDefaults           = "load_defaults"

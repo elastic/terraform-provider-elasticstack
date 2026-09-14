@@ -162,7 +162,7 @@ func GetSchema() schema.Schema {
 				Computed:            true,
 				Default:             stringdefault.StaticString("5m"),
 				Validators: []validator.String{
-					stringvalidator.RegexMatches(regexp.MustCompile(`^\d+[smhd]$`), "must be a valid interval like '5m'"),
+					validators.DurationWithUnits("smhd", "must be a valid interval like '5m'"),
 				},
 			},
 			"description": schema.StringAttribute{

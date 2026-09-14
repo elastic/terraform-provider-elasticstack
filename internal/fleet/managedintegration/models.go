@@ -123,10 +123,8 @@ func (m managedIntegrationModel) GetKibanaConnection() types.List { return m.Kib
 // openspec/changes/archive/2026-07-22-fleet-managed-integration/specs/fleet-managed-integration/
 // spec.md, requirement "Version gate for managed_integrations endpoint".
 func (m managedIntegrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *MinVersion,
-			ErrorMessage: fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later.", minVersionUserFacing),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinVersion,
+		fmt.Sprintf("Fleet managed integrations require Elastic Stack v%s or later.", minVersionUserFacing),
+	), nil
 }

@@ -177,27 +177,25 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 	} else {
 		model.UnenrollmentTimeout = customtypes.NewDurationNull()
 	}
-	if typeutils.Deref(data.GlobalDataTags) != nil {
+	if tags := typeutils.Deref(data.GlobalDataTags); tags != nil {
 		diags := diag.Diagnostics{}
-		tags := typeutils.Deref(data.GlobalDataTags)
-		map0 := make(map[string]globaldatatags.Item, len(tags))
-		for _, v := range tags {
-			item, err := globaldatatags.Flatten(v.Value,
-				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue1,
-				kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue0,
-			)
-			if err != nil {
-				diags.AddError("Failed to unmarshal global data tags", err.Error())
-				continue
-			}
-			map0[v.Name] = item
+
+		items := make([]globaldatatags.Tag[kbapi.AgentPolicyGlobalDataTagsItem_Value], len(tags))
+		for i, t := range tags {
+			items[i] = globaldatatags.Tag[kbapi.AgentPolicyGlobalDataTagsItem_Value]{Name: t.Name, Value: t.Value}
 		}
 
-		model.GlobalDataTags = typeutils.MapValueFrom(ctx, map0, globaldatatags.ElementType(), path.Root("global_data_tags"), &diags)
+		model.GlobalDataTags = globaldatatags.ToModel(
+			ctx,
+			items,
+			path.Root("global_data_tags"),
+			&diags,
+			kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue1,
+			kbapi.AgentPolicyGlobalDataTagsItem_Value.AsAgentPolicyGlobalDataTagsItemValue0,
+		)
 		if diags.HasError() {
 			return diags
 		}
-
 	}
 
 	spaceIDs, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, data.SpaceIds, model.SpaceIDs)
@@ -255,33 +253,24 @@ func (model *agentPolicyModel) convertGlobalDataTags(ctx context.Context, feat a
 		return nil, diags
 	}
 
-	items := typeutils.MapTypeToMap(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
-		func(item globaldatatags.Item, meta typeutils.MapMeta) kbapi.AgentPolicyGlobalDataTagsItem {
-			value := globaldatatags.Expand(item, meta,
-				func(s string) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
-					var v kbapi.AgentPolicyGlobalDataTagsItem_Value
-					return v, v.FromAgentPolicyGlobalDataTagsItemValue0(s)
-				},
-				func(n float32) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
-					var v kbapi.AgentPolicyGlobalDataTagsItem_Value
-					return v, v.FromAgentPolicyGlobalDataTagsItemValue1(n)
-				},
-			)
-			return kbapi.AgentPolicyGlobalDataTagsItem{
-				Name:  meta.Key,
-				Value: value,
-			}
-		})
-
+	tags := globaldatatags.FromModel(ctx, model.GlobalDataTags, path.Root("global_data_tags"), &diags,
+		func(s string) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
+			var v kbapi.AgentPolicyGlobalDataTagsItem_Value
+			return v, v.FromAgentPolicyGlobalDataTagsItemValue0(s)
+		},
+		func(n float32) (kbapi.AgentPolicyGlobalDataTagsItem_Value, error) {
+			var v kbapi.AgentPolicyGlobalDataTagsItem_Value
+			return v, v.FromAgentPolicyGlobalDataTagsItemValue1(n)
+		},
+	)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, 0, len(items))
-	for _, v := range items {
-		itemsList = append(itemsList, v)
+	itemsList := make([]kbapi.AgentPolicyGlobalDataTagsItem, len(tags))
+	for i, t := range tags {
+		itemsList[i] = kbapi.AgentPolicyGlobalDataTagsItem{Name: t.Name, Value: t.Value}
 	}
-
 	return &itemsList, diags
 }
 

@@ -73,10 +73,10 @@ func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConne
 func (model tfModel) GetResourceID() types.String     { return model.EntityID }
 
 func (*tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinVersion,
-		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", MinVersion.String()),
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinVersion,
+		fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", MinVersion.String()),
+	), nil
 }
 
 // entityBlockModel represents the typed "entity" block.

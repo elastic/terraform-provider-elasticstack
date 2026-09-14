@@ -21,10 +21,109 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nil advanced_settings sets object null", func(t *testing.T) {
+		model := &agentPolicyModel{}
+		diags := model.populateAdvancedSettingsFromAPI(ctx, &kbapi.KibanaHTTPAPIsAgentPolicyResponse{})
+		require.False(t, diags.HasError())
+		assert.True(t, model.AdvancedSettings.IsNull())
+	})
+
+	t.Run("all fields populated from API values", func(t *testing.T) {
+		model := &agentPolicyModel{}
+		data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
+			AdvancedSettings: &struct {
+				AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
+				AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
+				AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+				AgentFeaturesIncludeTagsInEventsEnabled     any `json:"agent_features_include_tags_in_events_enabled,omitempty"`
+				AgentInternal                               any `json:"agent_internal,omitempty"`
+				AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
+				AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
+				AgentLoggingFilesKeepfiles                  any `json:"agent_logging_files_keepfiles,omitempty"`
+				AgentLoggingFilesRotateeverybytes           any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+				AgentLoggingLevel                           any `json:"agent_logging_level,omitempty"`
+				AgentLoggingMetricsPeriod                   any `json:"agent_logging_metrics_period,omitempty"`
+				AgentLoggingToFiles                         any `json:"agent_logging_to_files,omitempty"`
+				AgentMonitoringRuntimeExperimental          any `json:"agent_monitoring_runtime_experimental,omitempty"`
+			}{
+				AgentLoggingLevel:                  "debug",
+				AgentLoggingToFiles:                true,
+				AgentLoggingFilesInterval:          "30s",
+				AgentLoggingFilesKeepfiles:         float64(7),
+				AgentLoggingFilesRotateeverybytes:  float64(10485760),
+				AgentLoggingMetricsPeriod:          "1m",
+				AgentLimitsGoMaxProcs:              float64(2),
+				AgentDownloadTimeout:               "2h",
+				AgentDownloadTargetDirectory:       "/tmp/elastic",
+				AgentMonitoringRuntimeExperimental: "enabled",
+			},
+		}
+
+		diags := model.populateAdvancedSettingsFromAPI(ctx, data)
+		require.False(t, diags.HasError())
+		require.False(t, model.AdvancedSettings.IsNull())
+
+		var settings advancedSettingsModel
+		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		assert.Equal(t, "debug", settings.LoggingLevel.ValueString())
+		assert.True(t, settings.LoggingToFiles.ValueBool())
+		assert.Equal(t, "30s", settings.LoggingFilesInterval.ValueString())
+		assert.Equal(t, int32(7), settings.LoggingFilesKeepfiles.ValueInt32())
+		assert.Equal(t, int64(10485760), settings.LoggingFilesRotateeverybytes.ValueInt64())
+		assert.Equal(t, "1m", settings.LoggingMetricsPeriod.ValueString())
+		assert.Equal(t, int32(2), settings.GoMaxProcs.ValueInt32())
+		assert.Equal(t, "2h", settings.DownloadTimeout.ValueString())
+		assert.Equal(t, "/tmp/elastic", settings.DownloadTargetDirectory.ValueString())
+		assert.Equal(t, "enabled", settings.MonitoringRuntimeExperimental.ValueString())
+	})
+
+	t.Run("fields with wrong types fall back to null", func(t *testing.T) {
+		model := &agentPolicyModel{}
+		data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
+			AdvancedSettings: &struct {
+				AgentDownloadTargetDirectory                any `json:"agent_download_target_directory,omitempty"`
+				AgentDownloadTimeout                        any `json:"agent_download_timeout,omitempty"`
+				AgentFeaturesDisablePolicyChangeAcksEnabled any `json:"agent_features_disable_policy_change_acks_enabled,omitempty"`
+				AgentFeaturesIncludeTagsInEventsEnabled     any `json:"agent_features_include_tags_in_events_enabled,omitempty"`
+				AgentInternal                               any `json:"agent_internal,omitempty"`
+				AgentLimitsGoMaxProcs                       any `json:"agent_limits_go_max_procs,omitempty"`
+				AgentLoggingFilesInterval                   any `json:"agent_logging_files_interval,omitempty"`
+				AgentLoggingFilesKeepfiles                  any `json:"agent_logging_files_keepfiles,omitempty"`
+				AgentLoggingFilesRotateeverybytes           any `json:"agent_logging_files_rotateeverybytes,omitempty"`
+				AgentLoggingLevel                           any `json:"agent_logging_level,omitempty"`
+				AgentLoggingMetricsPeriod                   any `json:"agent_logging_metrics_period,omitempty"`
+				AgentLoggingToFiles                         any `json:"agent_logging_to_files,omitempty"`
+				AgentMonitoringRuntimeExperimental          any `json:"agent_monitoring_runtime_experimental,omitempty"`
+			}{
+				AgentLoggingLevel:   42,
+				AgentLoggingToFiles: "not-a-bool",
+			},
+		}
+
+		diags := model.populateAdvancedSettingsFromAPI(ctx, data)
+		require.False(t, diags.HasError())
+
+		var settings advancedSettingsModel
+		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		assert.True(t, settings.LoggingLevel.IsNull())
+		assert.True(t, settings.LoggingToFiles.IsNull())
+	})
+}
 
 func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 	ctx := context.Background()

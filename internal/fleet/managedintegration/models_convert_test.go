@@ -938,6 +938,27 @@ func TestPopulateFromManagedIntegration_explicitSpaceIDs(t *testing.T) {
 	assert.ElementsMatch(t, []string{"space-a", "space-b"}, ids)
 }
 
+func TestGlobalDataTagsToModel_emptyListIsNull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	item := mustManagedIntegrationFromJSON(t, `{
+		"id": "x",
+		"name": "n",
+		"created_at": "2024-01-01T00:00:00.000Z",
+		"created_by": "elastic",
+		"updated_at": "2024-01-01T00:00:00.000Z",
+		"updated_by": "elastic",
+		"package": {"name": "p", "version": "1.0.0", "title": "t"},
+		"global_data_tags": []
+	}`)
+
+	var diags diag.Diagnostics
+	m := globalDataTagsToModel(ctx, item, &diags)
+	require.False(t, diags.HasError(), "%v", diags)
+	assert.True(t, m.IsNull(), "managed integration treats an empty API list as a null map")
+}
+
 func TestGlobalDataTagsToModel_duplicateNames(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

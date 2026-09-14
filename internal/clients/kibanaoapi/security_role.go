@@ -111,12 +111,7 @@ func PutSecurityRole(ctx context.Context, client *Client, name string, params kb
 		return diagutil.ErrDiag("Failed to write Kibana security role", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK, http.StatusNoContent:
-		return nil
-	default:
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // DeleteSecurityRole deletes a Kibana security role by name.

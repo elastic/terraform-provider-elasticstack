@@ -46,10 +46,8 @@ var _ entitycore.KibanaResourceModel = enableRuleModel{}
 var minSupportedVersion = version.Must(version.NewVersion("8.11.0"))
 
 func (m enableRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minSupportedVersion,
-			ErrorMessage: "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource",
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minSupportedVersion,
+		"Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource",
+	), nil
 }

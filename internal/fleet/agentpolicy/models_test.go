@@ -296,6 +296,70 @@ func TestConvertGlobalDataTags_MissingValueEntry(t *testing.T) {
 	}
 }
 
+// TestPopulateFromAPI_GlobalDataTags_DuplicateNames asserts that
+// populateFromAPI reports an error (rather than silently overwriting the
+// earlier entry) when the Fleet API returns a global_data_tags list
+// containing the same tag name more than once. Aligns agentpolicy's
+// behavior with managedintegration's globalDataTagsToModel, which already
+// detects this case; see issue #4816.
+func TestPopulateFromAPI_GlobalDataTags_DuplicateNames(t *testing.T) {
+	t.Parallel()
+
+	var prod, staging kbapi.AgentPolicyGlobalDataTagsItem_Value
+	require.NoError(t, prod.FromAgentPolicyGlobalDataTagsItemValue0("prod"))
+	require.NoError(t, staging.FromAgentPolicyGlobalDataTagsItemValue0("staging"))
+
+	model := &agentPolicyModel{}
+	data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
+		Id: "policy-id",
+		GlobalDataTags: &[]kbapi.AgentPolicyGlobalDataTagsItem{
+			{Name: "env", Value: prod},
+			{Name: "env", Value: staging},
+		},
+	}
+
+	diags := model.populateFromAPI(context.Background(), data)
+
+	assert.True(t, diags.HasError(), "expected error diagnostics, got none")
+	assert.True(t, model.GlobalDataTags.IsNull(), "expected GlobalDataTags to be null on error")
+
+	var found bool
+	for _, d := range diags.Errors() {
+		if d.Summary() != "Duplicate global_data_tags name" {
+			continue
+		}
+		found = true
+		dwp, ok := d.(diag.DiagnosticWithPath)
+		if assert.True(t, ok, "expected attribute diagnostic with Path()") {
+			assert.Equal(t, path.Root("global_data_tags").AtMapKey("env"), dwp.Path(),
+				"diagnostic should be anchored at global_data_tags[\"env\"]")
+		}
+		break
+	}
+	assert.True(t, found, "expected diagnostic with summary 'Duplicate global_data_tags name', got %v", diags)
+}
+
+// TestPopulateFromAPI_GlobalDataTags_EmptyAPIListPreservesEmptyMap asserts that
+// an API empty list (`[]`) is written as the schema default empty map, not a
+// null map. Writing a null map into state would persist a null-vs-empty-map
+// diff against Schema(map[string]attr.Value{}).
+func TestPopulateFromAPI_GlobalDataTags_EmptyAPIListPreservesEmptyMap(t *testing.T) {
+	t.Parallel()
+
+	model := &agentPolicyModel{}
+	empty := []kbapi.AgentPolicyGlobalDataTagsItem{}
+	data := &kbapi.KibanaHTTPAPIsAgentPolicyResponse{
+		Id:             "policy-id",
+		GlobalDataTags: &empty,
+	}
+
+	diags := model.populateFromAPI(context.Background(), data)
+
+	assert.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
+	assert.False(t, model.GlobalDataTags.IsNull(), "expected GlobalDataTags to be an empty map, got null")
+	assert.Empty(t, model.GlobalDataTags.Elements())
+}
+
 // TestPopulateFromAPI_Description_Null_vs_EmptyString asserts the
 // null-preserving behavior for the `description` attribute. Regression test
 // for https://github.com/elastic/terraform-provider-elasticstack/issues/993:

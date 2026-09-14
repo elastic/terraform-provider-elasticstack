@@ -72,11 +72,6 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var diags diag.Diagnostics
-	cv := attrs[panelConfigBlock]
-	if panelkit.AttrConcreteSet(cv) || panelkit.AttrUnknown(cv) {
-		return diags
-	}
-	diags.AddAttributeError(attrPath, "Missing SLO alerts panel configuration", "SLO alerts panels require `slo_alerts_config`.")
-	return diags
+	return panelkit.ValidateConfigBlockPresent(attrs, panelConfigBlock, attrPath,
+		"Missing SLO alerts panel configuration", "SLO alerts panels require `slo_alerts_config`.")
 }

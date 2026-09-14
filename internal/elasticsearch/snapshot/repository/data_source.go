@@ -84,14 +84,16 @@ type azureDataSourceModel struct {
 
 type s3DataSourceModel struct {
 	commonDataSourceModel
-	Bucket               types.String `tfsdk:"bucket"`
-	Client               types.String `tfsdk:"client"`
-	BasePath             types.String `tfsdk:"base_path"`
-	ServerSideEncryption types.Bool   `tfsdk:"server_side_encryption"`
-	BufferSize           types.String `tfsdk:"buffer_size"`
-	CannedACL            types.String `tfsdk:"canned_acl"`
-	StorageClass         types.String `tfsdk:"storage_class"`
-	PathStyleAccess      types.Bool   `tfsdk:"path_style_access"`
+	Bucket                 types.String `tfsdk:"bucket"`
+	Client                 types.String `tfsdk:"client"`
+	BasePath               types.String `tfsdk:"base_path"`
+	ServerSideEncryption   types.Bool   `tfsdk:"server_side_encryption"`
+	BufferSize             types.String `tfsdk:"buffer_size"`
+	CannedACL              types.String `tfsdk:"canned_acl"`
+	StorageClass           types.String `tfsdk:"storage_class"`
+	PathStyleAccess        types.Bool   `tfsdk:"path_style_access"`
+	DisableChunkedEncoding types.Bool   `tfsdk:"disable_chunked_encoding"`
+	AlwaysSignRequests     types.Bool   `tfsdk:"always_sign_requests"`
 }
 
 type hdfsDataSourceModel struct {
@@ -219,6 +221,14 @@ func buildDataSourceSchema() schema.Schema {
 		},
 		settingPathStyleAccess: schema.BoolAttribute{
 			MarkdownDescription: "If true, path style access pattern will be used.",
+			Computed:            true,
+		},
+		settingDisableChunkedEncoding: schema.BoolAttribute{
+			MarkdownDescription: "If true, chunked encoding is disabled and will not be used for S3 uploads. Only set this if the storage service does not support chunked encoding.",
+			Computed:            true,
+		},
+		settingAlwaysSignRequests: schema.BoolAttribute{
+			MarkdownDescription: "If true, request payload signatures are sent even over HTTPS. Useful for some S3-compatible stores that require this additional integrity mechanism.",
 			Computed:            true,
 		},
 	}
@@ -579,6 +589,14 @@ func flattenS3Settings(settings map[string]any) (s3DataSourceModel, error) {
 	m.CannedACL = strSettingNull(settings, "canned_acl")
 	m.StorageClass = strSettingNull(settings, "storage_class")
 	m.PathStyleAccess, err = boolSettingNull(settings, "path_style_access")
+	if err != nil {
+		return m, err
+	}
+	m.DisableChunkedEncoding, err = boolSettingNull(settings, settingDisableChunkedEncoding)
+	if err != nil {
+		return m, err
+	}
+	m.AlwaysSignRequests, err = boolSettingNull(settings, settingAlwaysSignRequests)
 	if err != nil {
 		return m, err
 	}

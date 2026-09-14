@@ -55,12 +55,10 @@ func (model skillBaseModel) GetResourceID() types.String { return model.SkillID 
 func (model skillBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 func (skillBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *agentbuilder.MinExtendedAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentbuilder.MinExtendedAPIVersion,
+		fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
+	), nil
 }
 
 // skillModel is the model for the Agent Builder skill resource. It embeds the

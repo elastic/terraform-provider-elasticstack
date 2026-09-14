@@ -47,12 +47,10 @@ var _ entitycore.WithVersionRequirements = agentDataSourceModel{}
 type agentVersionGate struct{}
 
 func (agentVersionGate) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *agentbuilder.MinCoreAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", agentbuilder.MinCoreAPIVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentbuilder.MinCoreAPIVersion,
+		fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", agentbuilder.MinCoreAPIVersion),
+	), nil
 }
 
 // agentBaseModel holds every field shared by the resource model (agentModel)

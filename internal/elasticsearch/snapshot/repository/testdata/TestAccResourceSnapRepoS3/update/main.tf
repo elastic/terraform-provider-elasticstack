@@ -15,6 +15,8 @@ resource "elasticstack_elasticsearch_snapshot_repository" "test_s3_repo" {
     bucket                     = "test-bucket"
     endpoint                   = "https://minio-alt.example.com:9000"
     path_style_access          = false
+    disable_chunked_encoding   = true
+    always_sign_requests       = true
     client                     = "secondary"
     canned_acl                 = "public-read"
     storage_class              = "reduced_redundancy"

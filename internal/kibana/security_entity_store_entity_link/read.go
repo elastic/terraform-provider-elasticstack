@@ -58,8 +58,8 @@ func readEntityLink(ctx context.Context, client *clients.KibanaScopedClient, res
 	if statusCode == http.StatusNotFound {
 		return prior, false, diags
 	}
-	if statusCode != http.StatusOK {
-		diags.Append(diagutil.ReportUnknownHTTPError(statusCode, body)...)
+	if d := diagutil.HandleStatusResponse(statusCode, body, http.StatusOK); d.HasError() {
+		diags.Append(d...)
 		return prior, false, diags
 	}
 

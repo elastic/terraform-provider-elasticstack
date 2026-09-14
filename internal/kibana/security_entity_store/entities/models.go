@@ -55,8 +55,8 @@ type dsModel struct {
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 
 func (*dsModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *minVersion,
-		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_entities is supported only for Kibana v%s and above", minVersion.String()),
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*minVersion,
+		fmt.Sprintf("elasticstack_kibana_security_entity_store_entities is supported only for Kibana v%s and above", minVersion.String()),
+	), nil
 }

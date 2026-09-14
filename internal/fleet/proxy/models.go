@@ -55,12 +55,10 @@ func (m proxyModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m proxyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 func (m proxyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *proxyMinVersion,
-			ErrorMessage: fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", proxyMinVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*proxyMinVersion,
+		fmt.Sprintf("Fleet proxies require Elastic Stack v%s or later.", proxyMinVersion),
+	), nil
 }
 
 func (m *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) diag.Diagnostics {

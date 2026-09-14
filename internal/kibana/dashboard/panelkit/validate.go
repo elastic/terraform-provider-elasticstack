@@ -46,6 +46,48 @@ func RejectConfigJSON(pm models.PanelModel, panelType string) diag.Diagnostics {
 	return diags
 }
 
+// ValidateConfigBlockPresent validates that a single required config block attribute (cfgKey) is
+// present in attrs as concretely-set (known and non-null) Terraform state. Unknown values defer
+// validation until the value is refined at plan time. errPath is the exact path the missing-config
+// error is attached to, letting callers choose between the panel-level path or a nested attribute path.
+// It encapsulates the AttrConcreteSet/AttrUnknown-check-plus-AddAttributeError pattern shared by
+// panel handlers whose config is a single opaque block with no further shape validation.
+func ValidateConfigBlockPresent(attrs map[string]attr.Value, cfgKey string, errPath path.Path, missingSummary, missingDetail string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	cv := attrs[cfgKey]
+	if AttrConcreteSet(cv) || AttrUnknown(cv) {
+		return diags
+	}
+	diags.AddAttributeError(errPath, missingSummary, missingDetail)
+	return diags
+}
+
+// ValidateRequiredStringFields resolves cfgKey's config block via ResolveConfigBlock (emitting
+// missingSummary/missingDetail when the block itself is absent) and then validates that each of
+// fieldNames is present as a required string, using cfgLabel as the per-field error summary and
+// "`<field>` is required." as the per-field error detail. It generalizes the repeated
+// "ResolveConfigBlock + one ValidateRequiredStringField call per field" shape used by panel handlers
+// that require N string fields inside a single config block.
+func ValidateRequiredStringFields(
+	attrs map[string]attr.Value, attrPath path.Path,
+	cfgKey, missingSummary, missingDetail, cfgLabel string,
+	fieldNames ...string,
+) diag.Diagnostics {
+	var out diag.Diagnostics
+	flat, obj, cfgPath, skip, diags := ResolveConfigBlock(attrs, attrPath, cfgKey, missingSummary, missingDetail, fieldNames...)
+	out.Append(diags...)
+	if skip {
+		return out
+	}
+	for _, field := range fieldNames {
+		deferred, d := ValidateRequiredStringField(attrs, obj, flat, cfgPath, field, cfgLabel, fmt.Sprintf("`%s` is required.", field))
+		if !deferred {
+			out.Append(d...)
+		}
+	}
+	return out
+}
+
 // ValidateDataViewFieldName validates that data_view_id and field_name are present in attrs,
 // using the flat or nested shape detected by ResolvePanelAttrsShape. cfgLabel is used as the
 // error summary (e.g. "Invalid options list control configuration").

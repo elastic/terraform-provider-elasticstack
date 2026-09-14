@@ -32,6 +32,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -224,6 +225,15 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 	zipPathV100 := buildMinimalIntegrationZip(t, pkgNameV100, "1.0.0")
 	zipPathV101 := buildMinimalIntegrationZip(t, pkgNameV101, "1.0.1")
 
+	checksumV100, err := fileutil.SHA256HexDigest(zipPathV100)
+	if err != nil {
+		t.Fatalf("failed to compute checksum of test fixture %s: %v", zipPathV100, err)
+	}
+	checksumV101, err := fileutil.SHA256HexDigest(zipPathV101)
+	if err != nil {
+		t.Fatalf("failed to compute checksum of test fixture %s: %v", zipPathV101, err)
+	}
+
 	// step1Checksum captures the checksum from step 1 so we can assert that it
 	// changes after the package is updated in step 3.
 	var step1Checksum string
@@ -239,10 +249,11 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					"package_path": config.StringVariable(zipPathV100),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_path", zipPathV100),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV100),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.0"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "checksum", checksumV100),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "id", fmt.Sprintf("%s/1.0.0", pkgNameV100)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "ignore_mapping_update_errors", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_data_stream_rollover", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_destroy", "false"),
@@ -282,9 +293,11 @@ func TestAccFleetCustomIntegration(t *testing.T) {
 					time.Sleep(15 * time.Second)
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_path", zipPathV101),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgNameV101),
 					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_version", "1.0.1"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "checksum", checksumV101),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "id", fmt.Sprintf("%s/1.0.1", pkgNameV101)),
 					func(_ *terraform.State) error {
 						return checkPackageNotInstalledInFleet(pkgNameV100, "1.0.0", "")
 					},
@@ -462,7 +475,35 @@ func TestAccFleetCustomIntegration_SkipDestroy(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
 				),
 			},
-			// Step 2: Explicit destroy while skip_destroy=true is active. The resource
+			// Step 2: Toggle skip_destroy back to false and assert "false", matching
+			// the flip-and-reset pattern used for ignore_mapping_update_errors and
+			// skip_data_stream_rollover in TestAccFleetCustomIntegration.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_destroy_off"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_destroy", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+			// Step 3: Toggle skip_destroy back to true ahead of the destroy assertion below.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("skip_destroy_on"),
+				ConfigVariables: config.Variables{
+					"package_path": config.StringVariable(zipPath),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "package_name", pkgName),
+					resource.TestCheckResourceAttr("elasticstack_fleet_custom_integration.test", "skip_destroy", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_custom_integration.test", "checksum"),
+				),
+			},
+			// Step 4: Explicit destroy while skip_destroy=true is active. The resource
 			// is removed from Terraform state but the Fleet package must remain installed.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

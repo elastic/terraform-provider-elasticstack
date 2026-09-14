@@ -144,6 +144,8 @@ func TestAccDataSourceSnapRepoS3(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.canned_acl", "private"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.storage_class", "standard"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.path_style_access", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.disable_chunked_encoding", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.always_sign_requests", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.server_side_encryption", "false"),
 				),
 			},
