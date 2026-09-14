@@ -246,7 +246,8 @@ func monitorSchema(_ context.Context) schema.Schema {
 				ElementType: types.StringType,
 				Optional:    true,
 				MarkdownDescription: "Kibana spaces in which the monitor is visible. " +
-					"Requires Elastic Stack 9.6.0 or later when configured. Use `[\"*\"]` to share the monitor with all spaces. Removing a configured value clears additional visibility. The provider includes the owning `space_id` in the API request automatically.",
+					"Requires Elastic Stack 9.6.0 or later when configured. Use `[\"*\"]` to share the monitor with all spaces. " +
+					"Removing a configured value clears additional visibility. The provider includes the owning `space_id` in the API request automatically.",
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.UseStateForUnknown(),
 				},
@@ -1381,7 +1382,10 @@ func enforceKibanaSpacesVersion(ctx context.Context, client entitycore.MinVersio
 		diags.AddAttributeError(
 			path.Root("kibana_spaces"),
 			"Unsupported version for `kibana_spaces` attribute",
-			fmt.Sprintf("The `kibana_spaces` attribute requires server version %s or higher. Either remove the `kibana_spaces` attribute or upgrade your Elastic Stack installation.", MinKibanaSpacesVersion.String()),
+			fmt.Sprintf(
+				"The `kibana_spaces` attribute requires server version %s or higher. Either remove the attribute or upgrade your Elastic Stack installation.",
+				MinKibanaSpacesVersion.String(),
+			),
 		)
 	}
 
