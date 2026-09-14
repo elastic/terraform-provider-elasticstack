@@ -246,6 +246,16 @@ func TestKibanaSpacesForUpdateClearsRemovedVisibility(t *testing.T) {
 	assert.Equal(t, typeutils.StringsToListMust([]string{}), kibanaSpacesForUpdate(plan, prior))
 }
 
+func TestKibanaSpacesForEndpointIncludesOwner(t *testing.T) {
+	spaces := typeutils.StringsToListMust([]string{"infrastructure"})
+
+	assert.Equal(
+		t,
+		typeutils.StringsToListMust([]string{"infrastructure", "default"}),
+		kibanaSpacesForEndpoint(spaces, ""),
+	)
+}
+
 func TestToModelV0HTTP(t *testing.T) {
 	api := kbapi.SyntheticsMonitor{
 		Id:        new("test-id-http"),

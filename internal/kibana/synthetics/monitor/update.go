@@ -20,6 +20,7 @@ package monitor
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -34,6 +35,29 @@ func kibanaSpacesForUpdate(plan types.List, prior *tfModelV0) types.List {
 		return typeutils.StringsToListMust([]string{})
 	}
 	return plan
+}
+
+func kibanaSpacesForEndpoint(spaces types.List, spaceID string) types.List {
+	if !typeutils.IsKnown(spaces) {
+		return spaces
+	}
+
+	configured := make([]string, 0, len(spaces.Elements()))
+	for _, space := range spaces.Elements() {
+		configured = append(configured, space.(types.String).ValueString())
+	}
+	if len(configured) == 0 || slices.Contains(configured, "*") {
+		return spaces
+	}
+
+	if spaceID == "" {
+		spaceID = "default"
+	}
+	if slices.Contains(configured, spaceID) {
+		return spaces
+	}
+
+	return typeutils.StringsToListMust(append(configured, spaceID))
 }
 
 func updateMonitor(
@@ -51,6 +75,7 @@ func updateMonitor(
 
 	requestModel := planModel
 	requestModel.KibanaSpaces = kibanaSpacesForUpdate(planModel.KibanaSpaces, req.Prior)
+	requestModel.KibanaSpaces = kibanaSpacesForEndpoint(requestModel.KibanaSpaces, req.SpaceID)
 	input, apiDiags := requestModel.toKibanaAPIRequest(ctx)
 	diags.Append(apiDiags...)
 	if diags.HasError() {

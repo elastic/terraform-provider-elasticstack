@@ -2,7 +2,7 @@
 
 ### Requirement: Kibana space visibility (REQ-025)
 
-The resource SHALL support an optional `kibana_spaces` list of Kibana space IDs that controls the spaces in which a Synthetics monitor is visible. Configuring the list requires Elastic Stack version 9.6.0 or later. On create and update, a configured list SHALL be sent as the monitor API's `spaces` field; a configured empty list SHALL be sent as an empty array, while an omitted list on a new monitor SHALL leave the field absent. Removing a previously configured list SHALL clear additional visibility by sending an empty array. The list SHALL support the `"*"` wildcard. `space_id` SHALL remain the monitor's owning space.
+The resource SHALL support an optional `kibana_spaces` list of Kibana space IDs that controls the spaces in which a Synthetics monitor is visible. Configuring the list requires Elastic Stack version 9.6.0 or later. On create and update, a configured non-empty list that does not contain `"*"` SHALL be sent as the monitor API's `spaces` field with the owning `space_id` included. A configured empty list SHALL be sent as an empty array, while an omitted list on a new monitor SHALL leave the field absent. Removing a previously configured list SHALL clear additional visibility by sending an empty array. The list SHALL support the `"*"` wildcard. `space_id` SHALL remain the monitor's owning space.
 
 When Kibana adds the owning `space_id` to an API response, the provider SHALL preserve the configured `kibana_spaces` value if that is the only difference. An omitted `kibana_spaces` value SHALL remain omitted when the API response contains only the owning space. Any other API-reported visibility difference SHALL be reflected in state.
 
@@ -10,7 +10,7 @@ When Kibana adds the owning `space_id` to an API response, the provider SHALL pr
 
 - **GIVEN** Elastic Stack version 9.6.0 or later and a monitor with `space_id` set to `default` and `kibana_spaces` set to `["observability", "security"]`
 - **WHEN** the provider creates or updates the monitor
-- **THEN** the monitor API request includes `spaces` set to `["observability", "security"]` and the request path uses `default` as the owning space
+- **THEN** the monitor API request includes `spaces` set to `["observability", "security", "default"]` and the request path uses `default` as the owning space
 
 #### Scenario: Wildcard visibility is sent
 
