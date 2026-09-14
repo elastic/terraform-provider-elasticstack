@@ -198,7 +198,10 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 // varsUnionToMap decodes a managed-integration vars map (typed union values,
 // keyed by var name) into a plain map for Normalized JSON encoding. It is
 // generic over the anonymous per-property union type kbapi emits, so the same
-// logic serves both input-level and stream-level vars.
+// logic serves both input-level and stream-level vars. Delegates the
+// marshal/unmarshal round trip to policyshape.VarsAnyToMap, the shared home
+// for vars-shaped conversions (see integration_policy/policyshape_aliases.go
+// for another caller).
 //
 // Malformed union payloads are rejected when kbapi unmarshals the HTTP
 // response; json.Marshal here only fails on unsupported Go types, which the
@@ -208,18 +211,9 @@ func varsUnionToMap[T any](vars *map[string]*T, attrPath path.Path, diags *diag.
 	if vars == nil || len(*vars) == 0 {
 		return nil
 	}
-	b, err := json.Marshal(vars)
-	if err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
-	}
-	if len(b) == 0 || string(b) == "null" {
-		return nil
-	}
-	var out map[string]any
-	if err := json.Unmarshal(b, &out); err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
+	out := policyshape.VarsAnyToMap(vars)
+	if out == nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", "vars did not decode to a JSON object")
 	}
 	return out
 }
