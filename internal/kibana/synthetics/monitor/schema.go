@@ -246,7 +246,7 @@ func monitorSchema(_ context.Context) schema.Schema {
 				ElementType: types.StringType,
 				Optional:    true,
 				MarkdownDescription: "Kibana spaces in which the monitor is visible. " +
-					"Use `[\"*\"]` to share the monitor with all spaces. Removing a configured value clears additional visibility. The `space_id` is always included by Kibana.",
+					"Requires Elastic Stack 9.6.0 or later when configured. Use `[\"*\"]` to share the monitor with all spaces. Removing a configured value clears additional visibility. The `space_id` is always included by Kibana.",
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.UseStateForUnknown(),
 				},
@@ -1360,7 +1360,32 @@ func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *client
 		}
 	}
 
+	if diags := enforceKibanaSpacesVersion(ctx, client, v.KibanaSpaces); diags.HasError() {
+		return diags
+	}
+
 	return nil
+}
+
+func enforceKibanaSpacesVersion(ctx context.Context, client entitycore.MinVersionClient, kibanaSpaces types.List) diag.Diagnostics {
+	if !typeutils.IsKnown(kibanaSpaces) {
+		return nil
+	}
+
+	isSupported, diags := client.EnforceMinVersion(ctx, MinKibanaSpacesVersion)
+	if diags.HasError() {
+		return diags
+	}
+
+	if !isSupported {
+		diags.AddAttributeError(
+			path.Root("kibana_spaces"),
+			"Unsupported version for `kibana_spaces` attribute",
+			fmt.Sprintf("The `kibana_spaces` attribute requires server version %s or higher. Either remove the `kibana_spaces` attribute or upgrade your Elastic Stack installation.", MinKibanaSpacesVersion.String()),
+		)
+	}
+
+	return diags
 }
 
 func (v tfModelV0) GetID() types.String { return v.ID }

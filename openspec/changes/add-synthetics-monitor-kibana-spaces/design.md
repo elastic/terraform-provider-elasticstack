@@ -30,6 +30,10 @@ The Kibana OpenAPI transform defines `spaces` for the monitor response and share
 
 The alternative of defining local request-only wire structs was rejected because it would bypass the provider's generated Kibana client contract.
 
+### Gate configured visibility on Kibana 9.6.0
+
+Kibana only accepts the monitor `spaces` field from version 9.6.0. The provider uses its existing write-time version enforcement to reject a configured `kibana_spaces` value before issuing an unsupported API request. An omitted value remains compatible with earlier supported server versions.
+
 ### Reconcile only Kibana's implicit owning-space addition
 
 During response-to-state mapping, compare the configured visibility with the returned visibility after adding the owning `space_id` to the configured set if it is absent. If the two sets match, retain the configured list and its ordering. If no visibility was configured and Kibana returns only the owner, retain null. All other response differences update state from the API.

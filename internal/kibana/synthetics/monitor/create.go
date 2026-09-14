@@ -28,7 +28,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
+var (
+	MinLabelsVersion       = version.Must(version.NewVersion("8.16.0"))
+	MinKibanaSpacesVersion = version.Must(version.NewVersion("9.6.0"))
+)
 
 func createMonitor(
 	ctx context.Context,

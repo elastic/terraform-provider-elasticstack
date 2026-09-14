@@ -283,6 +283,8 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 }
 
 func TestSyntheticMonitorHTTPResourceKibanaSpaces(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, monitor.MinKibanaSpacesVersion, versionutils.FlavorAny)
+
 	monitorID := "elasticstack_kibana_synthetics_monitor.http-monitor"
 	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	visibilitySpaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -292,7 +294,6 @@ func TestSyntheticMonitorHTTPResourceKibanaSpaces(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_kibana_spaces"),
 				ConfigVariables: config.Variables{
 					"name":                config.StringVariable(name),
@@ -307,7 +308,6 @@ func TestSyntheticMonitorHTTPResourceKibanaSpaces(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minKibanaVersion),
 				ResourceName:             monitorID,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_kibana_spaces"),
 				ConfigVariables: config.Variables{
