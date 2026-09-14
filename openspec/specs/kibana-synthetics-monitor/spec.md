@@ -22,7 +22,7 @@ resource "elasticstack_kibana_synthetics_monitor" "example" {
   # At least one of locations or private_locations must be set (AtLeastOneOf validator)
   locations         = <optional, list(string)>     # managed location names (validated against allowed set when location validation is enabled)
   private_locations = <optional, list(string)>     # private location names (by label)
-  kibana_spaces     = <optional, list(string)>     # Kibana spaces in which the monitor is visible; `[*]` shares to every space; UseStateForUnknown
+  kibana_spaces     = <optional, list(string)>     # Kibana spaces in which the monitor is visible; `["*"]` shares to every space; UseStateForUnknown
 
   enabled          = <optional, computed, bool>    # UseStateForUnknown; default true
   tags             = <optional, list(string)>
