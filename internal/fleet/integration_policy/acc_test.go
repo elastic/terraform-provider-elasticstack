@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	integrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -51,8 +52,6 @@ var (
 	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
 
 	minVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
-	// Must stay aligned with MinVersionCondition / policyshape.MinVersionCondition.
-	minVersionCondition = version.Must(version.NewVersion("9.5.0"))
 )
 
 const (
@@ -420,7 +419,7 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 // TestAccResourceIntegrationPolicyCondition covers a configured `condition` on
 // both an input and one of its streams. The field is rejected below 9.5.0.
 func TestAccResourceIntegrationPolicyCondition(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionCondition, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, integrationpolicy.MinVersionCondition, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
