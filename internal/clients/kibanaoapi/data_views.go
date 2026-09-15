@@ -29,9 +29,11 @@ import (
 
 // GetDataView reads a specific data view from the API.
 func GetDataView(ctx context.Context, client *Client, spaceID string, viewID string) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
-	resp, err := client.API.GetDataViewDefaultWithResponse(ctx, spaceID, viewID)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetDataViewDefaultResponse, error) {
+		return client.API.GetDataViewDefaultWithResponse(ctx, spaceID, viewID)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -40,9 +42,11 @@ func GetDataView(ctx context.Context, client *Client, spaceID string, viewID str
 
 // CreateDataView creates a new data view.
 func CreateDataView(ctx context.Context, client *Client, spaceID string, req kbapi.DataViewsCreateDataViewRequestObject) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
-	resp, err := client.API.CreateDataViewDefaultwWithResponse(ctx, spaceID, req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateDataViewDefaultwResponse, error) {
+		return client.API.CreateDataViewDefaultwWithResponse(ctx, spaceID, req)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -51,9 +55,11 @@ func CreateDataView(ctx context.Context, client *Client, spaceID string, req kba
 
 // UpdateDataView updates an existing data view.
 func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID string, req kbapi.DataViewsUpdateDataViewRequestObject) (*kbapi.DataViewsDataViewResponseObject, diag.Diagnostics) {
-	resp, err := client.API.UpdateDataViewDefaultWithResponse(ctx, spaceID, viewID, req)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateDataViewDefaultResponse, error) {
+		return client.API.UpdateDataViewDefaultWithResponse(ctx, spaceID, viewID, req)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -63,14 +69,16 @@ func UpdateDataView(ctx context.Context, client *Client, spaceID string, viewID 
 // UpdateFieldMetadata writes field metadata (e.g. custom_label) for a data view via
 // POST /api/data_views/data_view/{viewId}/fields. It applies space-aware path routing.
 func UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, viewID string, fields map[string]any) diag.Diagnostics {
-	resp, err := client.API.UpdateFieldsMetadataDefaultWithResponse(
-		ctx,
-		viewID,
-		kbapi.UpdateFieldsMetadataDefaultJSONRequestBody{Fields: fields},
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateFieldsMetadataDefaultResponse, error) {
+		return client.API.UpdateFieldsMetadataDefaultWithResponse(
+			ctx,
+			viewID,
+			kbapi.UpdateFieldsMetadataDefaultJSONRequestBody{Fields: fields},
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
@@ -78,9 +86,11 @@ func UpdateFieldMetadata(ctx context.Context, client *Client, spaceID string, vi
 
 // DeleteDataView deletes an existing data view.
 func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID string) diag.Diagnostics {
-	resp, err := client.API.DeleteDataViewDefaultWithResponse(ctx, spaceID, viewID)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteDataViewDefaultResponse, error) {
+		return client.API.DeleteDataViewDefaultWithResponse(ctx, spaceID, viewID)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
@@ -88,9 +98,11 @@ func DeleteDataView(ctx context.Context, client *Client, spaceID string, viewID 
 
 // GetDefaultDataView reads the default data view from the API.
 func GetDefaultDataView(ctx context.Context, client *Client, spaceID string) (*string, diag.Diagnostics) {
-	resp, err := client.API.GetDefaultDataViewDefaultWithResponse(ctx, spaceID)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetDefaultDataViewDefaultResponse, error) {
+		return client.API.GetDefaultDataViewDefaultWithResponse(ctx, spaceID)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	// We don't check for a 404 here. The API doesn't document a 404 response for this endpoint.
@@ -111,9 +123,11 @@ func GetDefaultDataView(ctx context.Context, client *Client, spaceID string) (*s
 
 // SetDefaultDataView sets the default data view.
 func SetDefaultDataView(ctx context.Context, client *Client, spaceID string, req kbapi.SetDefaultDatailViewDefaultJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.SetDefaultDatailViewDefaultWithResponse(ctx, spaceID, req)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.SetDefaultDatailViewDefaultResponse, error) {
+		return client.API.SetDefaultDatailViewDefaultWithResponse(ctx, spaceID, req)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)

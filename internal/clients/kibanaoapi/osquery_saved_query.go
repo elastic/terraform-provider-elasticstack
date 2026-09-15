@@ -184,9 +184,11 @@ func CreateOsquerySavedQuery(
 	spaceID string,
 	body kbapi.OsqueryCreateSavedQueryJSONRequestBody,
 ) (*OsquerySavedQueryCreateEntity, diag.Diagnostics) {
-	resp, err := client.API.OsqueryCreateSavedQueryWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.OsqueryCreateSavedQueryResponse, error) {
+		return client.API.OsqueryCreateSavedQueryWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -209,12 +211,14 @@ func FindOsquerySavedObjectID(
 
 	for {
 		pageParam := page
-		resp, err := client.API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
-			Page:     &pageParam,
-			PageSize: &pageSize,
-		}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-		if err != nil {
-			return "", false, diagutil.FrameworkDiagFromError(err)
+		resp, diags := Invoke(func() (*kbapi.OsqueryFindSavedQueriesResponse, error) {
+			return client.API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
+				Page:     &pageParam,
+				PageSize: &pageSize,
+			}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		})
+		if diags.HasError() {
+			return "", false, diags
 		}
 
 		if resp.StatusCode() != http.StatusOK {
@@ -259,9 +263,11 @@ func GetOsquerySavedQueryBySavedObjectID(
 	spaceID string,
 	savedObjectID kbapi.SecurityOsqueryAPISavedQueryId,
 ) (*OsquerySavedQueryGetEntity, diag.Diagnostics) {
-	resp, err := client.API.OsqueryGetSavedQueryDetailsWithResponse(ctx, savedObjectID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.OsqueryGetSavedQueryDetailsResponse, error) {
+		return client.API.OsqueryGetSavedQueryDetailsWithResponse(ctx, savedObjectID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -298,9 +304,11 @@ func UpdateOsquerySavedQueryBySavedObjectID(
 	savedObjectID kbapi.SecurityOsqueryAPISavedQueryId,
 	body kbapi.OsqueryUpdateSavedQueryJSONRequestBody,
 ) (*OsquerySavedQueryUpdateEntity, diag.Diagnostics) {
-	resp, err := client.API.OsqueryUpdateSavedQueryWithResponse(ctx, savedObjectID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.OsqueryUpdateSavedQueryResponse, error) {
+		return client.API.OsqueryUpdateSavedQueryWithResponse(ctx, savedObjectID, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -341,9 +349,11 @@ func DeleteOsquerySavedQueryBySavedObjectID(
 	spaceID string,
 	savedObjectID kbapi.SecurityOsqueryAPISavedQueryId,
 ) diag.Diagnostics {
-	resp, err := client.API.OsqueryDeleteSavedQueryWithResponse(ctx, savedObjectID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.OsqueryDeleteSavedQueryResponse, error) {
+		return client.API.OsqueryDeleteSavedQueryWithResponse(ctx, savedObjectID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)

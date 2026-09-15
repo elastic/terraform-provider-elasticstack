@@ -151,12 +151,14 @@ type StreamUpsertRequest struct {
 
 // GetStream reads a specific stream from the API.
 func GetStream(ctx context.Context, client *Client, spaceID string, name string) (*StreamResponse, diag.Diagnostics) {
-	resp, err := client.API.GetStreamsNameWithResponse(
-		ctx, name, kbapi.GetStreamsNameJSONRequestBody{},
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetStreamsNameResponse, error) {
+		return client.API.GetStreamsNameWithResponse(
+			ctx, name, kbapi.GetStreamsNameJSONRequestBody{},
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetRawResponse[StreamResponse](resp.StatusCode(), resp.Body)

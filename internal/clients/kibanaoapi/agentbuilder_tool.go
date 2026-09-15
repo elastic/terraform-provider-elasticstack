@@ -30,36 +30,44 @@ import (
 
 // GetTool reads a specific tool from the API.
 func GetTool(ctx context.Context, client *Client, spaceID string, toolID string) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderToolsToolidWithResponse(ctx, toolID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetAgentBuilderToolsToolidResponse, error) {
+		return client.API.GetAgentBuilderToolsToolidWithResponse(ctx, toolID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleGetRawResponse[models.Tool](resp.StatusCode(), resp.Body)
 }
 
 // CreateTool creates a new tool.
 func CreateTool(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderToolsJSONRequestBody) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderToolsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostAgentBuilderToolsResponse, error) {
+		return client.API.PostAgentBuilderToolsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleMutateRawResponse[models.Tool](resp.StatusCode(), resp.Body)
 }
 
 // UpdateTool updates an existing tool.
 func UpdateTool(ctx context.Context, client *Client, spaceID string, toolID string, req kbapi.PutAgentBuilderToolsToolidJSONRequestBody) (*models.Tool, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderToolsToolidWithResponse(ctx, toolID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutAgentBuilderToolsToolidResponse, error) {
+		return client.API.PutAgentBuilderToolsToolidWithResponse(ctx, toolID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleMutateRawResponse[models.Tool](resp.StatusCode(), resp.Body)
 }
 
 // DeleteTool deletes an existing tool.
 func DeleteTool(ctx context.Context, client *Client, spaceID string, toolID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderToolsToolidWithResponse(ctx, toolID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteAgentBuilderToolsToolidResponse, error) {
+		return client.API.DeleteAgentBuilderToolsToolidWithResponse(ctx, toolID, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }

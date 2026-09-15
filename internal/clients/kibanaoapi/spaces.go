@@ -29,9 +29,11 @@ import (
 
 // ListSpaces returns all Kibana spaces.
 func ListSpaces(ctx context.Context, client *Client) ([]kbapi.SpaceResponse, fwdiag.Diagnostics) {
-	resp, err := client.API.GetSpacesSpaceWithResponse(ctx, &kbapi.GetSpacesSpaceParams{})
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetSpacesSpaceResponse, error) {
+		return client.API.GetSpacesSpaceWithResponse(ctx, &kbapi.GetSpacesSpaceParams{})
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	spaces, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -45,9 +47,11 @@ func ListSpaces(ctx context.Context, client *Client) ([]kbapi.SpaceResponse, fwd
 // GetSpace returns a single Kibana space by ID.
 // Returns (nil, nil) when the space is not found (HTTP 404).
 func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceResponse, fwdiag.Diagnostics) {
-	resp, err := client.API.GetSpacesSpaceIdWithResponse(ctx, id)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetSpacesSpaceIdResponse, error) {
+		return client.API.GetSpacesSpaceIdWithResponse(ctx, id)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -56,9 +60,11 @@ func GetSpace(ctx context.Context, client *Client, id string) (*kbapi.SpaceRespo
 
 // CreateSpace creates a new Kibana space.
 func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpaceJSONRequestBody) (*kbapi.SpaceResponse, fwdiag.Diagnostics) {
-	resp, err := client.API.PostSpacesSpaceWithResponse(ctx, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostSpacesSpaceResponse, error) {
+		return client.API.PostSpacesSpaceWithResponse(ctx, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	switch resp.StatusCode() {
@@ -75,9 +81,11 @@ func CreateSpace(ctx context.Context, client *Client, body kbapi.PostSpacesSpace
 
 // UpdateSpace updates an existing Kibana space.
 func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutSpacesSpaceIdJSONRequestBody) (*kbapi.SpaceResponse, fwdiag.Diagnostics) {
-	resp, err := client.API.PutSpacesSpaceIdWithResponse(ctx, id, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutSpacesSpaceIdResponse, error) {
+		return client.API.PutSpacesSpaceIdWithResponse(ctx, id, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -86,9 +94,11 @@ func UpdateSpace(ctx context.Context, client *Client, id string, body kbapi.PutS
 
 // DeleteSpace deletes a Kibana space by ID.
 func DeleteSpace(ctx context.Context, client *Client, id string) fwdiag.Diagnostics {
-	resp, err := client.API.DeleteSpacesSpaceIdWithResponse(ctx, id)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteSpacesSpaceIdResponse, error) {
+		return client.API.DeleteSpacesSpaceIdWithResponse(ctx, id)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusNotFound)

@@ -41,36 +41,44 @@ func InstallSecurityEntityStoreStatus(ctx context.Context, client *Client, space
 
 // UpdateSecurityEntityStore updates the entity store log extraction configuration.
 func UpdateSecurityEntityStore(ctx context.Context, client *Client, spaceID string, body kbapi.PutSecurityEntityStoreJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PutSecurityEntityStoreWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutSecurityEntityStoreResponse, error) {
+		return client.API.PutSecurityEntityStoreWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // UninstallSecurityEntityStore uninstalls the given entity types from the store.
 func UninstallSecurityEntityStore(ctx context.Context, client *Client, spaceID string, body kbapi.PostSecurityEntityStoreUninstallJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PostSecurityEntityStoreUninstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostSecurityEntityStoreUninstallResponse, error) {
+		return client.API.PostSecurityEntityStoreUninstallWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // StartSecurityEntityStore starts the entity store engines.
 func StartSecurityEntityStore(ctx context.Context, client *Client, spaceID string, body kbapi.PutSecurityEntityStoreStartJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PutSecurityEntityStoreStartWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutSecurityEntityStoreStartResponse, error) {
+		return client.API.PutSecurityEntityStoreStartWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // StopSecurityEntityStore stops the entity store engines.
 func StopSecurityEntityStore(ctx context.Context, client *Client, spaceID string, body kbapi.PutSecurityEntityStoreStopJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PutSecurityEntityStoreStopWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutSecurityEntityStoreStopResponse, error) {
+		return client.API.PutSecurityEntityStoreStopWithResponse(ctx, body, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
@@ -106,30 +114,34 @@ func UpdateSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceI
 		})
 	}
 
-	resp, err := client.API.PutSecurityEntityStoreEntitiesEntitytypeWithBodyWithResponse(
-		ctx,
-		kbapi.PutSecurityEntityStoreEntitiesEntitytypeParamsEntityType(entityType),
-		nil, // params – force is handled via request editor
-		"application/json",
-		body,
-		editors...,
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutSecurityEntityStoreEntitiesEntitytypeResponse, error) {
+		return client.API.PutSecurityEntityStoreEntitiesEntitytypeWithBodyWithResponse(
+			ctx,
+			kbapi.PutSecurityEntityStoreEntitiesEntitytypeParamsEntityType(entityType),
+			nil, // params – force is handled via request editor
+			"application/json",
+			body,
+			editors...,
+		)
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
 
 // DeleteSecurityEntityStoreEntity deletes a single entity record.
 func DeleteSecurityEntityStoreEntity(ctx context.Context, client *Client, spaceID string, body io.Reader) diag.Diagnostics {
-	resp, err := client.API.DeleteSecurityEntityStoreEntitiesWithBodyWithResponse(
-		ctx,
-		"application/json",
-		body,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteSecurityEntityStoreEntitiesResponse, error) {
+		return client.API.DeleteSecurityEntityStoreEntitiesWithBodyWithResponse(
+			ctx,
+			"application/json",
+			body,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
 }
@@ -141,13 +153,15 @@ func ListSecurityEntityStoreEntities(
 	spaceID string,
 	params *kbapi.GetSecurityEntityStoreEntitiesParams,
 ) (*kbapi.GetSecurityEntityStoreEntitiesResponse, diag.Diagnostics) {
-	resp, err := client.API.GetSecurityEntityStoreEntitiesWithResponse(
-		ctx,
-		params,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetSecurityEntityStoreEntitiesResponse, error) {
+		return client.API.GetSecurityEntityStoreEntitiesWithResponse(
+			ctx,
+			params,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
 		return nil, d
@@ -168,9 +182,11 @@ func GetSecurityEntityStoreStatus(ctx context.Context, client *Client, spaceID s
 	}
 
 	allEditors := append([]kbapi.RequestEditorFn{kibanautil.SpaceAwarePathRequestEditor(spaceID)}, editors...)
-	resp, err := client.API.GetSecurityEntityStoreStatusWithResponse(ctx, &kbapi.GetSecurityEntityStoreStatusParams{}, allEditors...)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetSecurityEntityStoreStatusResponse, error) {
+		return client.API.GetSecurityEntityStoreStatusWithResponse(ctx, &kbapi.GetSecurityEntityStoreStatusParams{}, allEditors...)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
 		return nil, d

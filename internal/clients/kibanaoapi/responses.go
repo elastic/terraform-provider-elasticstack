@@ -35,6 +35,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+// Invoke calls a generated API client method and translates a transport-level
+// error into framework diagnostics, so callers only need to handle dispatching
+// the successful response (e.g. via HandleGetRawResponse/HandleMutateTypedResponse/
+// diagutil.HandleStatusResponse). This centralizes the
+// "err != nil { return ..., diagutil.FrameworkDiagFromError(err) }" guard that
+// otherwise gets copy-pasted at every call site.
+func Invoke[R any](call func() (R, error)) (R, diag.Diagnostics) {
+	resp, err := call()
+	if err != nil {
+		var zero R
+		return zero, diagutil.FrameworkDiagFromError(err)
+	}
+	return resp, nil
+}
+
 // HandleGetRawResponse handles a read response by unmarshaling the body into T.
 // Use this when the kbapi generated struct cannot unmarshal the API response correctly.
 // Returns (nil, nil) on HTTP 404.
