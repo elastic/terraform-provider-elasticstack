@@ -15,6 +15,26 @@ variable "integration_version" {
   default     = "1.16.0"
 }
 
+variable "kibana_endpoints" {
+  description = "Kibana base URLs for the entity-local connection block"
+  type        = list(string)
+}
+
+variable "api_key" {
+  type    = string
+  default = ""
+}
+
+variable "username" {
+  type    = string
+  default = ""
+}
+
+variable "password" {
+  type    = string
+  default = ""
+}
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -37,21 +57,28 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
-  namespace           = "custom-ns"
-  description         = "Updated Integration Policy"
+  namespace           = "default"
+  description         = "IntegrationPolicyTest Policy with Kibana Connection"
   agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.policy_id
   integration_name    = elasticstack_fleet_integration.test_policy.name
   integration_version = elasticstack_fleet_integration.test_policy.version
 
+  kibana_connection {
+    endpoints = var.kibana_endpoints
+    api_key   = var.api_key != "" ? var.api_key : null
+    username  = var.api_key == "" ? var.username : null
+    password  = var.api_key == "" ? var.password : null
+  }
+
   inputs = {
     "tcp-tcp" = {
-      enabled = false
+      enabled = true
       streams = {
         "tcp.generic" = {
-          enabled = false
+          enabled = true
           vars = jsonencode({
             "listen_address" : "localhost"
-            "listen_port" : 8085
+            "listen_port" : 8080
             "data_stream.dataset" : "tcp.generic"
             "tags" : []
             "syslog_options" : "field: message"
