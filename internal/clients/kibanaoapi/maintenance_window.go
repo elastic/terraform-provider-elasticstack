@@ -28,10 +28,11 @@ import (
 
 // GetMaintenanceWindow reads a maintenance window from the API by ID
 func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string) (*kbapi.GetMaintenanceWindowIdResponse, diag.Diagnostics) {
-	resp, err := client.API.GetMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID)
-
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetMaintenanceWindowIdResponse, error) {
+		return client.API.GetMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -40,9 +41,11 @@ func GetMaintenanceWindow(ctx context.Context, client *Client, spaceID string, m
 
 // CreateMaintenanceWindow creates a new maintenance window.
 func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string, body kbapi.PostMaintenanceWindowJSONRequestBody) (*kbapi.PostMaintenanceWindowResponse, diag.Diagnostics) {
-	resp, err := client.API.PostMaintenanceWindowWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostMaintenanceWindowResponse, error) {
+		return client.API.PostMaintenanceWindowWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -51,9 +54,11 @@ func CreateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 
 // UpdateMaintenanceWindow updates an existing maintenance window.
 func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string, req kbapi.PatchMaintenanceWindowIdJSONRequestBody) diag.Diagnostics {
-	resp, err := client.API.PatchMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID, req)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PatchMaintenanceWindowIdResponse, error) {
+		return client.API.PatchMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID, req)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
@@ -61,9 +66,11 @@ func UpdateMaintenanceWindow(ctx context.Context, client *Client, spaceID string
 
 // DeleteMaintenanceWindow deletes an existing maintenance window.
 func DeleteMaintenanceWindow(ctx context.Context, client *Client, spaceID string, maintenanceWindowID string) diag.Diagnostics {
-	resp, err := client.API.DeleteMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteMaintenanceWindowIdResponse, error) {
+		return client.API.DeleteMaintenanceWindowIdWithResponse(ctx, spaceID, maintenanceWindowID)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusNoContent, http.StatusNotFound)

@@ -30,36 +30,44 @@ import (
 
 // GetAgent reads a specific agent from the API.
 func GetAgent(ctx context.Context, client *Client, spaceID, agentID string) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetAgentBuilderAgentsIdResponse, error) {
+		return client.API.GetAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleGetRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
 // CreateAgent creates a new agent.
 func CreateAgent(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderAgentsJSONRequestBody) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderAgentsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostAgentBuilderAgentsResponse, error) {
+		return client.API.PostAgentBuilderAgentsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleMutateRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
 // UpdateAgent updates an existing agent.
 func UpdateAgent(ctx context.Context, client *Client, spaceID string, agentID string, req kbapi.PutAgentBuilderAgentsIdJSONRequestBody) (*models.Agent, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderAgentsIdWithResponse(ctx, agentID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutAgentBuilderAgentsIdResponse, error) {
+		return client.API.PutAgentBuilderAgentsIdWithResponse(ctx, agentID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleMutateRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
 // DeleteAgent deletes an existing agent.
 func DeleteAgent(ctx context.Context, client *Client, spaceID, agentID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteAgentBuilderAgentsIdResponse, error) {
+		return client.API.DeleteAgentBuilderAgentsIdWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }

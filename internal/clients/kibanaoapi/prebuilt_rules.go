@@ -29,10 +29,11 @@ import (
 
 // GetPrebuiltRulesStatus retrieves the status of prebuilt rules and timelines for a given space.
 func GetPrebuiltRulesStatus(ctx context.Context, client *Client, spaceID string) (*kbapi.ReadPrebuiltRulesAndTimelinesStatusResponse, diag.Diagnostics) {
-	resp, err := client.API.ReadPrebuiltRulesAndTimelinesStatusWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.ReadPrebuiltRulesAndTimelinesStatusResponse, error) {
+		return client.API.ReadPrebuiltRulesAndTimelinesStatusWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	if resp.StatusCode() != 200 {
@@ -44,18 +45,19 @@ func GetPrebuiltRulesStatus(ctx context.Context, client *Client, spaceID string)
 
 // InstallPrebuiltRules installs or updates prebuilt rules and timelines for a given space.
 func InstallPrebuiltRules(ctx context.Context, client *Client, spaceID string) diag.Diagnostics {
-	resp, err := client.API.InstallPrebuiltRulesAndTimelinesWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.InstallPrebuiltRulesAndTimelinesResponse, error) {
+		return client.API.InstallPrebuiltRulesAndTimelinesWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	if resp.StatusCode() != 200 {
 		// InstallPrebuiltRulesAndTimelinesWithResponse already reads and closes HTTPResponse.Body
 		// when parsing the response; use the captured bytes for diagnostics.
-		var diags diag.Diagnostics
-		diags.AddError("failed to install prebuilt rules", fmt.Sprintf("%s: %s", resp.Status(), string(resp.Body)))
-		return diags
+		var errDiags diag.Diagnostics
+		errDiags.AddError("failed to install prebuilt rules", fmt.Sprintf("%s: %s", resp.Status(), string(resp.Body)))
+		return errDiags
 	}
 
 	return nil

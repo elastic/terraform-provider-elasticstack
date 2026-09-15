@@ -32,14 +32,16 @@ import (
 // the SLO is not found (HTTP 404), consistent with the resource layer's
 // "not found" contract.
 func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (*kbapi.SLOsSloWithSummaryResponse, diag.Diagnostics) {
-	resp, err := client.API.GetSloOpWithResponse(
-		ctx,
-		spaceID,
-		sloID,
-		&kbapi.GetSloOpParams{},
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetSloOpResponse, error) {
+		return client.API.GetSloOpWithResponse(
+			ctx,
+			spaceID,
+			sloID,
+			&kbapi.GetSloOpParams{},
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -48,31 +50,37 @@ func GetSlo(ctx context.Context, client *Client, spaceID string, sloID string) (
 
 // EnableSlo calls the Kibana API to enable an existing SLO.
 func EnableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
-	resp, err := client.API.EnableSloOpWithResponse(ctx, spaceID, sloID)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.EnableSloOpResponse, error) {
+		return client.API.EnableSloOpWithResponse(ctx, spaceID, sloID)
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // DisableSlo calls the Kibana API to disable an existing SLO.
 func DisableSlo(ctx context.Context, client *Client, spaceID, sloID string) diag.Diagnostics {
-	resp, err := client.API.DisableSloOpWithResponse(ctx, spaceID, sloID)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DisableSloOpResponse, error) {
+		return client.API.DisableSloOpWithResponse(ctx, spaceID, sloID)
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent)
 }
 
 // CreateSlo creates a new SLO in the given space and returns the created SLO's ID.
 func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SLOsCreateSloRequest) (*kbapi.SLOsCreateSloResponse, diag.Diagnostics) {
-	resp, err := client.API.CreateSloOpWithResponse(
-		ctx,
-		spaceID,
-		req,
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateSloOpResponse, error) {
+		return client.API.CreateSloOpWithResponse(
+			ctx,
+			spaceID,
+			req,
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -81,14 +89,16 @@ func CreateSlo(ctx context.Context, client *Client, spaceID string, req kbapi.SL
 
 // UpdateSlo updates an existing SLO by space and ID.
 func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string, req kbapi.SLOsUpdateSloRequest) diag.Diagnostics {
-	resp, err := client.API.UpdateSloOpWithResponse(
-		ctx,
-		spaceID,
-		sloID,
-		req,
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateSloOpResponse, error) {
+		return client.API.UpdateSloOpWithResponse(
+			ctx,
+			spaceID,
+			sloID,
+			req,
+		)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK)
@@ -97,13 +107,15 @@ func UpdateSlo(ctx context.Context, client *Client, spaceID string, sloID string
 // DeleteSlo deletes an SLO by space and ID. A 404 response is treated as
 // success (idempotent delete).
 func DeleteSlo(ctx context.Context, client *Client, spaceID string, sloID string) diag.Diagnostics {
-	resp, err := client.API.DeleteSloOpWithResponse(
-		ctx,
-		spaceID,
-		sloID,
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteSloOpResponse, error) {
+		return client.API.DeleteSloOpWithResponse(
+			ctx,
+			spaceID,
+			sloID,
+		)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body,

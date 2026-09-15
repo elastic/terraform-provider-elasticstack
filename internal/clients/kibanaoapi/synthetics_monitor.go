@@ -34,12 +34,14 @@ import (
 
 // CreateMonitor creates a new synthetics monitor via POST /api/synthetics/monitors.
 func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
-	resp, err := client.API.PostSyntheticMonitorsWithResponse(
-		ctx, req,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostSyntheticMonitorsResponse, error) {
+		return client.API.PostSyntheticMonitorsWithResponse(
+			ctx, req,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -49,12 +51,14 @@ func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbap
 // GetMonitor reads a synthetics monitor by ID via GET /api/synthetics/monitors/{id}.
 // Returns nil, nil when the monitor is not found (404).
 func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID string) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
-	resp, err := client.API.GetSyntheticMonitorWithResponse(
-		ctx, monitorID,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetSyntheticMonitorResponse, error) {
+		return client.API.GetSyntheticMonitorWithResponse(
+			ctx, monitorID,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -63,12 +67,14 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 
 // UpdateMonitor updates a synthetics monitor via PUT /api/synthetics/monitors/{id}.
 func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
-	resp, err := client.API.PutSyntheticMonitorWithResponse(
-		ctx, monitorID, req,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutSyntheticMonitorResponse, error) {
+		return client.API.PutSyntheticMonitorWithResponse(
+			ctx, monitorID, req,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	switch resp.StatusCode() {

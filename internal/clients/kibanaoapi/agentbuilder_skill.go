@@ -30,27 +30,33 @@ import (
 
 // GetSkill reads a specific skill from the API.
 func GetSkill(ctx context.Context, client *Client, spaceID, skillID string) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderSkillsSkillidWithResponse(ctx, skillID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetAgentBuilderSkillsSkillidResponse, error) {
+		return client.API.GetAgentBuilderSkillsSkillidWithResponse(ctx, skillID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleGetRawResponse[models.Skill](resp.StatusCode(), resp.Body)
 }
 
 // CreateSkill creates a new skill.
 func CreateSkill(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderSkillsJSONRequestBody) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderSkillsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostAgentBuilderSkillsResponse, error) {
+		return client.API.PostAgentBuilderSkillsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleMutateRawResponse[models.Skill](resp.StatusCode(), resp.Body)
 }
 
 // UpdateSkill updates an existing skill.
 func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, req kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderSkillsSkillidWithResponse(ctx, skillID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutAgentBuilderSkillsSkillidResponse, error) {
+		return client.API.PutAgentBuilderSkillsSkillidWithResponse(ctx, skillID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 	return HandleMutateRawResponse[models.Skill](resp.StatusCode(), resp.Body)
 }
@@ -60,9 +66,11 @@ func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, r
 // resource does not expose this in v1 so we always send an empty params
 // struct and let 409 Conflict flow through as a normal error diagnostic.
 func DeleteSkill(ctx context.Context, client *Client, spaceID, skillID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderSkillsSkillidWithResponse(ctx, skillID, &kbapi.DeleteAgentBuilderSkillsSkillidParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteAgentBuilderSkillsSkillidResponse, error) {
+		return client.API.DeleteAgentBuilderSkillsSkillidWithResponse(ctx, skillID, &kbapi.DeleteAgentBuilderSkillsSkillidParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return diags
 	}
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
 }

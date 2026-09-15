@@ -39,13 +39,15 @@ func addDashboardRequestShapeEditor() func(ctx context.Context, req *http.Reques
 
 // GetDashboard reads a specific dashboard from the API.
 func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string) (*kbapi.GetDashboardsIdResponse, diag.Diagnostics) {
-	resp, err := client.API.GetDashboardsIdWithResponse(
-		ctx, dashboardID,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-		addDashboardRequestShapeEditor(),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.GetDashboardsIdResponse, error) {
+		return client.API.GetDashboardsIdWithResponse(
+			ctx, dashboardID,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+			addDashboardRequestShapeEditor(),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -54,13 +56,15 @@ func GetDashboard(ctx context.Context, client *Client, spaceID string, dashboard
 
 // CreateDashboard creates a new dashboard.
 func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kbapi.PostDashboardsJSONRequestBody) (*kbapi.PostDashboardsResponse, diag.Diagnostics) {
-	resp, err := client.API.PostDashboardsWithResponse(
-		ctx, req,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-		addDashboardRequestShapeEditor(),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostDashboardsResponse, error) {
+		return client.API.PostDashboardsWithResponse(
+			ctx, req,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+			addDashboardRequestShapeEditor(),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -69,13 +73,15 @@ func CreateDashboard(ctx context.Context, client *Client, spaceID string, req kb
 
 // UpdateDashboard updates an existing dashboard.
 func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string, req kbapi.PutDashboardsIdJSONRequestBody) (*kbapi.PutDashboardsIdResponse, diag.Diagnostics) {
-	resp, err := client.API.PutDashboardsIdWithResponse(
-		ctx, dashboardID, req,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-		addDashboardRequestShapeEditor(),
-	)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PutDashboardsIdResponse, error) {
+		return client.API.PutDashboardsIdWithResponse(
+			ctx, dashboardID, req,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+			addDashboardRequestShapeEditor(),
+		)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -85,13 +91,15 @@ func UpdateDashboard(ctx context.Context, client *Client, spaceID string, dashbo
 
 // DeleteDashboard deletes an existing dashboard.
 func DeleteDashboard(ctx context.Context, client *Client, spaceID string, dashboardID string) diag.Diagnostics {
-	resp, err := client.API.DeleteDashboardsIdWithResponse(
-		ctx, dashboardID,
-		kibanautil.SpaceAwarePathRequestEditor(spaceID),
-		addDashboardRequestShapeEditor(),
-	)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteDashboardsIdResponse, error) {
+		return client.API.DeleteDashboardsIdWithResponse(
+			ctx, dashboardID,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+			addDashboardRequestShapeEditor(),
+		)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound)

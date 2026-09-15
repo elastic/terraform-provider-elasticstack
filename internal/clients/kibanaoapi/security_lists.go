@@ -30,9 +30,11 @@ import (
 // This is required before any list operations can be performed.
 // Returns true if acknowledged, and diagnostics if there was an error.
 func CreateListIndex(ctx context.Context, client *Client, spaceID string) (bool, diag.Diagnostics) {
-	resp, err := client.API.CreateListIndexWithResponse(ctx, spaceID)
-	if err != nil {
-		return false, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateListIndexResponse, error) {
+		return client.API.CreateListIndexWithResponse(ctx, spaceID)
+	})
+	if diags.HasError() {
+		return false, diags
 	}
 
 	switch resp.StatusCode() {
@@ -58,9 +60,11 @@ type listIndexStatus struct {
 // ReadListIndex reads the status of .lists and .items data streams for a space.
 // Returns the status of list_index and list_item_index separately, and diagnostics on error.
 func ReadListIndex(ctx context.Context, client *Client, spaceID string) (listIndex bool, listItemIndex bool, diags diag.Diagnostics) {
-	resp, err := client.API.ReadListIndexWithResponse(ctx, spaceID)
-	if err != nil {
-		return false, false, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.ReadListIndexResponse, error) {
+		return client.API.ReadListIndexWithResponse(ctx, spaceID)
+	})
+	if diags.HasError() {
+		return false, false, diags
 	}
 
 	// Data streams don't exist on HTTP 404; HandleGetTypedResponse returns (nil, nil) in that case.
@@ -79,9 +83,11 @@ func ReadListIndex(ctx context.Context, client *Client, spaceID string) (listInd
 // DeleteListIndex deletes the .lists and .items data streams for a space.
 // Returns diagnostics if there was an error.
 func DeleteListIndex(ctx context.Context, client *Client, spaceID string) diag.Diagnostics {
-	resp, err := client.API.DeleteListIndexWithResponse(ctx, spaceID)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteListIndexResponse, error) {
+		return client.API.DeleteListIndexWithResponse(ctx, spaceID)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
@@ -89,9 +95,11 @@ func DeleteListIndex(ctx context.Context, client *Client, spaceID string) diag.D
 
 // GetList reads a security list from the API by ID
 func GetList(ctx context.Context, client *Client, spaceID string, params *kbapi.ReadListParams) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
-	resp, err := client.API.ReadListWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.ReadListResponse, error) {
+		return client.API.ReadListWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -100,9 +108,11 @@ func GetList(ctx context.Context, client *Client, spaceID string, params *kbapi.
 
 // CreateList creates a new security list.
 func CreateList(ctx context.Context, client *Client, spaceID string, body kbapi.CreateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
-	resp, err := client.API.CreateListWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateListResponse, error) {
+		return client.API.CreateListWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -111,9 +121,11 @@ func CreateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 
 // UpdateList updates an existing security list.
 func UpdateList(ctx context.Context, client *Client, spaceID string, body kbapi.UpdateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
-	resp, err := client.API.UpdateListWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateListResponse, error) {
+		return client.API.UpdateListWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -122,9 +134,11 @@ func UpdateList(ctx context.Context, client *Client, spaceID string, body kbapi.
 
 // DeleteList deletes an existing security list.
 func DeleteList(ctx context.Context, client *Client, spaceID string, params *kbapi.DeleteListParams) diag.Diagnostics {
-	resp, err := client.API.DeleteListWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteListResponse, error) {
+		return client.API.DeleteListWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
@@ -134,9 +148,11 @@ func DeleteList(ctx context.Context, client *Client, spaceID string, params *kba
 // The response can be a single item or an array, so we unmarshal from the body.
 // When querying by ID, we expect a single item.
 func GetListItem(ctx context.Context, client *Client, spaceID string, params *kbapi.ReadListItemParams) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-	resp, err := client.API.ReadListItemWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.ReadListItemResponse, error) {
+		return client.API.ReadListItemWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetRawResponse[kbapi.SecurityListsAPIListItem](resp.StatusCode(), resp.Body)
@@ -144,9 +160,11 @@ func GetListItem(ctx context.Context, client *Client, spaceID string, params *kb
 
 // CreateListItem creates a new security list item.
 func CreateListItem(ctx context.Context, client *Client, spaceID string, body kbapi.CreateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-	resp, err := client.API.CreateListItemWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateListItemResponse, error) {
+		return client.API.CreateListItemWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -155,9 +173,11 @@ func CreateListItem(ctx context.Context, client *Client, spaceID string, body kb
 
 // UpdateListItem updates an existing security list item.
 func UpdateListItem(ctx context.Context, client *Client, spaceID string, body kbapi.UpdateListItemJSONRequestBody) (*kbapi.SecurityListsAPIListItem, diag.Diagnostics) {
-	resp, err := client.API.UpdateListItemWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateListItemResponse, error) {
+		return client.API.UpdateListItemWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -166,9 +186,11 @@ func UpdateListItem(ctx context.Context, client *Client, spaceID string, body kb
 
 // DeleteListItem deletes an existing security list item.
 func DeleteListItem(ctx context.Context, client *Client, spaceID string, params *kbapi.DeleteListItemParams) diag.Diagnostics {
-	resp, err := client.API.DeleteListItemWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteListItemResponse, error) {
+		return client.API.DeleteListItemWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)

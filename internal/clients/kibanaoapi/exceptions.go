@@ -28,9 +28,11 @@ import (
 
 // GetExceptionList reads an exception list from the API by ID or list_id
 func GetExceptionList(ctx context.Context, client *Client, spaceID string, params *kbapi.ReadExceptionListParams) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-	resp, err := client.API.ReadExceptionListWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.ReadExceptionListResponse, error) {
+		return client.API.ReadExceptionListWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -39,9 +41,11 @@ func GetExceptionList(ctx context.Context, client *Client, spaceID string, param
 
 // CreateExceptionList creates a new exception list.
 func CreateExceptionList(ctx context.Context, client *Client, spaceID string, body kbapi.CreateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-	resp, err := client.API.CreateExceptionListWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateExceptionListResponse, error) {
+		return client.API.CreateExceptionListWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -50,9 +54,11 @@ func CreateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 
 // UpdateExceptionList updates an existing exception list.
 func UpdateExceptionList(ctx context.Context, client *Client, spaceID string, body kbapi.UpdateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
-	resp, err := client.API.UpdateExceptionListWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateExceptionListResponse, error) {
+		return client.API.UpdateExceptionListWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -61,9 +67,11 @@ func UpdateExceptionList(ctx context.Context, client *Client, spaceID string, bo
 
 // DeleteExceptionList deletes an existing exception list.
 func DeleteExceptionList(ctx context.Context, client *Client, spaceID string, params *kbapi.DeleteExceptionListParams) diag.Diagnostics {
-	resp, err := client.API.DeleteExceptionListWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteExceptionListResponse, error) {
+		return client.API.DeleteExceptionListWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
@@ -71,9 +79,11 @@ func DeleteExceptionList(ctx context.Context, client *Client, spaceID string, pa
 
 // GetExceptionListItem reads an exception list item from the API by ID or item_id
 func GetExceptionListItem(ctx context.Context, client *Client, spaceID string, params *kbapi.ReadExceptionListItemParams) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
-	resp, err := client.API.ReadExceptionListItemWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.ReadExceptionListItemResponse, error) {
+		return client.API.ReadExceptionListItemWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleGetTypedResponse(resp.StatusCode(), resp.Body,
@@ -82,9 +92,11 @@ func GetExceptionListItem(ctx context.Context, client *Client, spaceID string, p
 
 // CreateExceptionListItem creates a new exception list item.
 func CreateExceptionListItem(ctx context.Context, client *Client, spaceID string, body kbapi.CreateExceptionListItemJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
-	resp, err := client.API.CreateExceptionListItemWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.CreateExceptionListItemResponse, error) {
+		return client.API.CreateExceptionListItemWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -93,9 +105,11 @@ func CreateExceptionListItem(ctx context.Context, client *Client, spaceID string
 
 // UpdateExceptionListItem updates an existing exception list item.
 func UpdateExceptionListItem(ctx context.Context, client *Client, spaceID string, body kbapi.UpdateExceptionListItemJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
-	resp, err := client.API.UpdateExceptionListItemWithResponse(ctx, spaceID, body)
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.UpdateExceptionListItemResponse, error) {
+		return client.API.UpdateExceptionListItemWithResponse(ctx, spaceID, body)
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
@@ -104,9 +118,11 @@ func UpdateExceptionListItem(ctx context.Context, client *Client, spaceID string
 
 // DeleteExceptionListItem deletes an existing exception list item.
 func DeleteExceptionListItem(ctx context.Context, client *Client, spaceID string, params *kbapi.DeleteExceptionListItemParams) diag.Diagnostics {
-	resp, err := client.API.DeleteExceptionListItemWithResponse(ctx, spaceID, params)
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.DeleteExceptionListItemResponse, error) {
+		return client.API.DeleteExceptionListItemWithResponse(ctx, spaceID, params)
+	})
+	if diags.HasError() {
+		return diags
 	}
 
 	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)

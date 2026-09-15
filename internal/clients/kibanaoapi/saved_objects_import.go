@@ -60,9 +60,11 @@ func ImportSavedObjects(ctx context.Context, client *Client, spaceID string, fil
 
 	contentType := writer.FormDataContentType()
 
-	resp, err := client.API.PostSavedObjectsImportWithBodyWithResponse(ctx, &params, contentType, &buf, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+	resp, diags := Invoke(func() (*kbapi.PostSavedObjectsImportResponse, error) {
+		return client.API.PostSavedObjectsImportWithBodyWithResponse(ctx, &params, contentType, &buf, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	switch resp.StatusCode() {
