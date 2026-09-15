@@ -200,8 +200,20 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 // generic over the anonymous per-property union type kbapi emits, so the same
 // logic serves both input-level and stream-level vars. Delegates the
 // marshal/unmarshal round trip to policyshape.VarsAnyToMap, the shared home
-// for vars-shaped conversions (see integration_policy/policyshape_aliases.go
-// for another caller).
+// for vars-shaped conversions (see integration_policy/models.go for another
+// caller).
+//
+// The nil/empty pre-check below is intentionally kept rather than delegated
+// to policyshape.VarsAnyToMap: a nil *map[string]*T passed as vars still
+// marshals to the JSON literal "null" (a typed nil pointer boxed in the
+// `any` parameter is not itself `== nil`), and an empty-but-non-nil map
+// marshals to "{}", which unmarshals back to a non-nil empty map. Either
+// path would fall through to VarsAnyToMap's own nil handling differently
+// than intended here: without this pre-check, a nil vars pointer would make
+// VarsAnyToMap return nil and this function would then (incorrectly) raise
+// an attribute error, and an empty vars map would return an empty map
+// instead of nil. Returning nil directly for the nil/empty case, with no
+// diagnostic, preserves the existing "no vars" behavior exactly.
 //
 // Malformed union payloads are rejected when kbapi unmarshals the HTTP
 // response; json.Marshal here only fails on unsupported Go types, which the
