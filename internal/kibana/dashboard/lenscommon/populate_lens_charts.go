@@ -356,6 +356,12 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 			model["show_array_values"] = false
 		}
 		injectEmptyAsNullDefault(model)
+		if _, exists := model["color"]; !exists {
+			model["color"] = map[string]any{attrType: colorTypeAuto}
+		}
+		if _, exists := model["size"]; !exists {
+			model["size"] = "m"
+		}
 	}
 
 	format, ok := model["format"].(map[string]any)
