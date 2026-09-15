@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Changes
+
+- Add disable_chunked_encoding and always_sign_requests to the S3 snapshot repository ([#4885](https://github.com/elastic/terraform-provider-elasticstack/pull/4885))
+
 ## [0.16.5] - 2026-09-07
 
 ### Changes
