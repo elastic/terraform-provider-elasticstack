@@ -6,8 +6,8 @@
 
 ## 2. Metric `config_json` axis normalization
 
-- [ ] 2.1 Add a shared metric-axis normalization primitive in `internal/kibana/dashboard/lenscommon/` and wire it into each confirmed metric default-population path (for example `PopulateLensMetricDefaults`, `PopulatePieChartMetricDefaults`, `PopulateGaugeMetricDefaults`, and legacy metric/default-populator paths), while keeping datatable/partition grouping JSON paths on existing group-by logic.
-- [ ] 2.2 Add/update unit tests in the relevant `lenscommon` and panel alignment test files for: unset-axis metrics preserving plan intent, explicitly set axis values not being overridden, and composition with `empty_as_null` gating.
+- [x] 2.1 Add a shared metric-axis normalization primitive in `internal/kibana/dashboard/lenscommon/` and wire it into each confirmed metric default-population path (for example `PopulateLensMetricDefaults`, `PopulatePieChartMetricDefaults`, `PopulateGaugeMetricDefaults`, and legacy metric/default-populator paths), while keeping datatable/partition grouping JSON paths on existing group-by logic.
+- [x] 2.2 Add/update unit tests in the relevant `lenscommon` and panel alignment test files for: unset-axis metrics preserving plan intent, explicitly set axis values not being overridden, and composition with `empty_as_null` gating.
 - [ ] 2.3 Run the metric-focused acceptance suites as part of this slice: `TestAccResourceDashboardXYChart_basic` plus the other XY suites named in issue #4902 (`_axis`, `_decorations`, `_filters`, `_fitting`, `_layers`, `_layers_reference`, `_legend_inside`, `_legend_outside`, `_chartTimeRangeLifecycle`, `_lensPresentationFields`, `TestAccResourceDashboardXYChartMinimalConfig`, `TestAccDashboardXYMetricEmptyAsNullGating`, `TestAccReproduceIssue3402`, `TestAccReproduceIssue3707`), `TestAccResourceDashboardDatatableChart`, `TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting`, and minimal probes covering `Metric`, `Gauge`, `Tagcloud`, `RegionMap`, and `LegacyMetric`.
 
 ## 3. Pie / waffle legend defaults
