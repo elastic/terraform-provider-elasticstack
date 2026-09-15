@@ -30,10 +30,11 @@ import (
 const panelType = "options_list_control"
 
 // Options list control discriminator branches. These are reused between the schema validators and
-// the API converter, which maps them back to the Field / ES|QL union reported by Kibana.
+// the API converter, which maps them back to the Field / ES|QL union reported by Kibana. Sourced
+// from panelkit's shared constants so optionslist and rangeslider don't each declare their own copy.
 const (
-	BranchByField = "by_field"
-	BranchByEsql  = "by_esql"
+	BranchByField = panelkit.BranchByField
+	BranchByEsql  = panelkit.BranchByEsql
 )
 
 // SchemaAttribute returns the dashboard panel options_list_control_config block.

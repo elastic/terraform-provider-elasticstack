@@ -32,10 +32,11 @@ const panelType = "range_slider_control"
 
 // Branch keys for the by_field/by_esql union, exported so callers outside this package (e.g. the
 // dashboard resource's v0->v1 state upgrader) can reference them instead of duplicating the
-// literal strings.
+// literal strings. Sourced from panelkit's shared constants so optionslist and rangeslider don't
+// each declare their own copy.
 const (
-	BranchByField = "by_field"
-	BranchByEsql  = "by_esql"
+	BranchByField = panelkit.BranchByField
+	BranchByEsql  = panelkit.BranchByEsql
 )
 
 // SchemaAttribute returns the dashboard panel range_slider_control_config block. Exactly one of the

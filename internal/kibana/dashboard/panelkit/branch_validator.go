@@ -24,6 +24,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
+// Branch keys for the by_field/by_esql discriminated union shared by panels built from a
+// by_field/by_esql attribute map (e.g. optionslist, rangeslider). Exported so panel packages and
+// callers outside them (e.g. the dashboard resource's v0->v1 state upgrader) can reference a single
+// source of truth instead of each declaring their own copy.
+const (
+	BranchByField = "by_field"
+	BranchByEsql  = "by_esql"
+)
+
 // ExactlyOneOfBranchValidator enforces that exactly one of the by_field / by_esql branch
 // attributes is configured inside a block built from a by_field/by_esql attribute map (e.g.
 // optionslist.NestedAttributes, rangeslider.NestedAttributes). configName is the panel's config
