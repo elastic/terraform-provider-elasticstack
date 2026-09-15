@@ -1,0 +1,42 @@
+## Context
+
+`elasticstack_kibana_dashboard` models each Lens `vis` panel as typed Terraform blocks whose JSON sub-fields (`config_json`, `data_source_json`, etc.) round-trip through Kibana's Lens APIs. Kibana frequently materializes hard-coded server defaults for optional fields the practitioner omits, and the provider must recognize those defaults on read so the plan and the read-back agree. This is not new: REQ-011 in `openspec/specs/kibana-dashboard/spec.md` already documents a family of such defaults discovered against Kibana 9.4/9.5 (originally for issue #2355), implemented in `internal/kibana/dashboard/lenscommon`:
+
+- `PreserveNullIfStateEquals[T attr.Value](plan, state *T, expected T)` — generic helper (added in the recent `lenscommon` collapse refactor, PR #4891) that copies a null plan value back into state when the read-back matches a known hard-coded default. Used today for `tagcloud_config.orientation`, `pie_chart_config.label_position`, `treemap_config.legend.visible`, etc.
+- `PopulateLensMetricDefaults(model map[string]any) map[string]any` — metric `config_json` default-injector used by the XY/datatable metric paths (and their metric-chart wrapper). Other chart families use separate metric default populators (for example pie, gauge, and legacy metric paths). The current shared metric-population paths already inject `empty_as_null` (gated by operation), `fit`, and `color = {type: "auto"}`.
+- `PartitionValueDisplayMatchesKibanaDefault(state *models.PartitionValueDisplay) bool` — recognizes the Kibana-injected `value_display = {mode="percentage", percent_decimals=null}` block for treemap/mosaic and drops it from state when the plan omitted it.
+- `LegendSizeTruncateVisibilityFromAPI` / `...ToAPI` — shared legend field mapping (size, `truncate_after_lines`, visibility) used by every chart with a legend, but with **no** default-preservation for `truncate_after_lines` today; pie/waffle simply carry through whatever Kibana returns.
+
+Elastic Stack `9.6.0-SNAPSHOT` changes what several of these read-backs contain, opening new gaps in the same mechanism (see the table in `proposal.md`). Per issue #4902, this reproduced deterministically in CI (not flaky) across the whole Lens acceptance suite shard, blocking `9.6.0-SNAPSHOT` compatibility.
+
+## Goals / Non-Goals
+
+**Goals:**
+- Close the specific 9.6 drift gaps enumerated in the issue so the listed acceptance tests apply cleanly against `9.6.0-SNAPSHOT`.
+- Reuse the existing `lenscommon` normalization mechanisms (`PreserveNullIfStateEquals`, `PopulateLensMetricDefaults`, `PartitionValueDisplayMatchesKibanaDefault`) rather than inventing a new preservation pattern.
+- Fix the metric `config_json` `axis` gap with a shared axis-normalization primitive that can be reused by every confirmed metric default-population path, instead of assuming one existing function already covers all chart families.
+- Make no schema or state-version changes.
+
+**Non-Goals:**
+- A general audit of every Lens field for 9.6 drift beyond the families named in the issue. Chart types/fields not mentioned in the issue's reproduction table are out of scope for this change; a broader audit would be a separate follow-up if more drift surfaces.
+- Changing how the provider handles Kibana versions before 9.6 — the existing REQ-011 behaviors for 9.4/9.5 (`empty_as_null` gating, `time_field`/`name` stripping, tagcloud/gauge/heatmap defaults already documented) are unaffected.
+- Introducing a general "treat all Kibana defaults as unknown-after-apply" mechanism. The issue's "likely fix" section floats this as an alternative, but it would require making Lens `config_json`/typed fields `Computed` with `UseStateForUnknown`-style semantics, a materially larger schema change than the targeted default-normalization this change proposes. See "Open questions" below.
+
+## Decisions
+
+- **Metric-axis normalization is shared, but wiring remains per actual metric populator boundary.** Chart families do not all funnel through `PopulateLensMetricDefaults`; several use chart-specific metric default populators. The design therefore uses one shared axis-normalization primitive and applies it in each confirmed metric-population path, while keeping grouping/dimension JSON (`rows`, `split_metrics_by`, partition `group_by*`) on their existing group-by normalization paths.
+- **Legend `truncate_after_lines` (and pie `nested`) use `PreserveNullIfStateEquals`, the same primitive already used for `label_position`, `orientation`, and partition `legend.visible`.** This keeps the fix consistent with the rest of REQ-011 rather than introducing bespoke legend-alignment code. Pie needs both `truncate_after_lines` (default `1`) and `nested` (default `false`); waffle's schema only has `truncate_after_lines` (no `nested` field), so only that one applies there.
+- **`percent_decimals` handling stays evidence-driven.** The requirement will only codify the 9.6 `percent_decimals` default shape after confirmation against live acceptance coverage (including format variants). Until then, avoid hard-coding a fixed value in the normative spec.
+- **Heatmap axis-label `orientation` default is `"horizontal"`, mirrored per axis (`x`, `y`).** This is a distinct field from the already-documented `labels.visible` / `title.visible` heatmap defaults (REQ-011) — same mechanism (`PreserveNullIfStateEquals`), new field.
+
+## Open questions
+
+- Does Kibana 9.6 always inject `axis: "y"` for a primary Y metric, or does the injected value ever depend on the metric's actual axis assignment (e.g. `"y2"` for a secondary axis, or an X-axis metric getting `axis: "x"`)? The issue's reproduction only exercises a single primary-Y metric. Implementation should confirm against a live `9.6.0-SNAPSHOT` cluster (per the multi-axis and reference-line acceptance tests already listed in the issue, e.g. `_axis`, `_layers`) before hard-coding `"y"` as the only default, and should mirror whatever axis assignment the metric's own layer config already carries if one is available.
+- Is `percent_decimals = 2` a fixed Kibana default, or does it depend on the chart's number `format` (e.g. could a differently-formatted percentage default to a different decimal count)? Confirm against the `TestAccResourceDashboardMosaic` / `TestAccResourceDashboardTreemap` runs; if it varies, the widened check in `PartitionValueDisplayMatchesKibanaDefault` may need to become format-aware rather than a fixed constant.
+- Is `legacy_metric_config.metric_json`'s "Kibana-filled blob" (issue's table entry) fully explained by the same `axis`/`color` gap in `PopulateLensMetricDefaults`, or does the legacy metric API inject additional legacy-only keys not exercised by the XY/datatable reproduction? `TestAccResourceDashboardLegacyMetricChart` and `TestAccLensMinimalProbe_LegacyMetric` should be run first against `9.6.0-SNAPSHOT` before assuming the shared fix is sufficient; if it is not, a legacy-metric-specific default may still be needed.
+
+## Risks / Trade-offs
+
+- [Risk] Hard-coding `axis: "y"` as *the* default in `PopulateLensMetricDefaults` could be wrong for secondary-axis or X-axis metrics, silently normalizing away a real drift instead of a spurious one. Mitigation: implementation should verify against the axis-specific acceptance tests already in the suite (`TestAccResourceDashboardXYChart_axis`) before finalizing the default value/logic.
+- [Risk] Widening `PartitionValueDisplayMatchesKibanaDefault` to accept `percent_decimals = 2` means a practitioner who explicitly wants `percent_decimals = 2` and a practitioner who omitted it entirely become indistinguishable in state once Kibana always fills `2`. This mirrors the pre-existing ambiguity the function already accepted for `null`, and is consistent with REQ-011's existing preserve-plan-intent behavior elsewhere (e.g. `fitting.type` empty-string handling), so it is treated as acceptable rather than a regression.
+- [Risk] Because Kibana 9.6 is still a snapshot build, the exact injected defaults (key names, values) could still change before GA. Mitigation: the acceptance tests this change adds/extends run against the live configured stack (per `dev-docs/high-level/testing.md`), so any mismatch between this design's assumptions and actual 9.6 GA behavior will surface as a test failure rather than silently shipping wrong defaults.
