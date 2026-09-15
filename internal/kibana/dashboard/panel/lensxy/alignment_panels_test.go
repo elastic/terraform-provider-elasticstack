@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -163,4 +164,132 @@ func TestAlignXYFittingStateFromPlan(t *testing.T) {
 
 		assert.Equal(t, "nearest", state.EndValue.ValueString())
 	})
+}
+
+func TestAlignXYLayerStateFromPlan_omittedAxisPreservesPlanConfigJSON(t *testing.T) {
+	t.Parallel()
+
+	planJSON := `{"empty_as_null":true,"operation":"count"}`
+	stateJSON := `{"empty_as_null":true,"operation":"count","axis":"y","color":{"type":"auto"}}`
+
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			DataLayer: &models.DataLayerModel{
+				Y: []models.YMetricModel{{
+					ConfigJSON: jsontypes.NewNormalizedValue(planJSON),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			DataLayer: &models.DataLayerModel{
+				Y: []models.YMetricModel{{
+					ConfigJSON: jsontypes.NewNormalizedValue(stateJSON),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.JSONEq(t, planJSON, state.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+}
+
+func TestAlignXYLayerStateFromPlan_explicitY2AxisIsNotOverridden(t *testing.T) {
+	t.Parallel()
+
+	planJSON := `{"axis":"y2","empty_as_null":true,"operation":"count"}`
+	stateJSON := `{"empty_as_null":true,"operation":"count","axis":"y2","color":{"type":"auto"}}`
+
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			DataLayer: &models.DataLayerModel{
+				Y: []models.YMetricModel{{
+					ConfigJSON: jsontypes.NewNormalizedValue(planJSON),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			DataLayer: &models.DataLayerModel{
+				Y: []models.YMetricModel{{
+					ConfigJSON: jsontypes.NewNormalizedValue(stateJSON),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.JSONEq(t, planJSON, state.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+}
+
+func TestAlignXYLayerStateFromPlan_countEmptyAsNullGatingComposesWithAxis(t *testing.T) {
+	t.Parallel()
+
+	planJSON := `{"operation":"count"}`
+	stateJSON := `{"operation":"count","empty_as_null":false,"axis":"y","color":{"type":"auto"}}`
+
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			DataLayer: &models.DataLayerModel{
+				Y: []models.YMetricModel{{
+					ConfigJSON: jsontypes.NewNormalizedValue(planJSON),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			DataLayer: &models.DataLayerModel{
+				Y: []models.YMetricModel{{
+					ConfigJSON: jsontypes.NewNormalizedValue(stateJSON),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.JSONEq(t, planJSON, state.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+}
+
+func TestAlignXYLayerStateFromPlan_omittedReferenceLineThresholdDefaults(t *testing.T) {
+	t.Parallel()
+
+	planValue := `{"format":{"compact":false,"decimals":2,"type":"number"},"label":"","operation":"static_value","value":42}`
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis:      types.StringNull(),
+					Operation: types.StringNull(),
+					ColorJSON: jsontypes.NewNormalizedNull(),
+					ValueJSON: jsontypes.NewNormalizedValue(planValue),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis:      types.StringValue("y"),
+					Operation: types.StringValue("static_value"),
+					ColorJSON: jsontypes.NewNormalizedValue(`{"type":"auto"}`),
+					ValueJSON: jsontypes.NewNormalizedValue(`42`),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	got := state.Layers[0].ReferenceLineLayer.Thresholds[0]
+	assert.True(t, got.Axis.IsNull())
+	assert.True(t, got.Operation.IsNull())
+	assert.True(t, got.ColorJSON.IsNull())
+	assert.JSONEq(t, planValue, got.ValueJSON.ValueString())
 }

@@ -17,22 +17,33 @@
 
 package lensxy
 
-import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+import (
+	"testing"
 
-func populateXYChartLensAttributes(attrs map[string]any) map[string]any {
-	if !lenscommon.InitLensAttrs(attrs) {
-		return attrs
-	}
-	if layers, ok := attrs["layers"].([]any); ok {
-		for _, layer := range layers {
-			layerMap, ok := layer.(map[string]any)
-			if !ok {
-				continue
-			}
-			if yArr, ok := layerMap["y"].([]any); ok {
-				lenscommon.PopulateAnySliceDefaults(yArr, lenscommon.PopulateXYMetricDefaults)
-			}
-		}
-	}
-	return attrs
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPopulateXYChartLensAttributes_omittedYAxisDefaultsToY(t *testing.T) {
+	t.Parallel()
+
+	attrs := populateXYChartLensAttributes(map[string]any{
+		"layers": []any{
+			map[string]any{
+				"type": "line",
+				"y": []any{
+					map[string]any{
+						"operation":     "count",
+						"empty_as_null": true,
+					},
+				},
+			},
+		},
+	})
+
+	layers := attrs["layers"].([]any)
+	require.Len(t, layers, 1)
+	y := layers[0].(map[string]any)["y"].([]any)
+	require.Len(t, y, 1)
+	assert.Equal(t, "y", y[0].(map[string]any)["axis"])
 }
