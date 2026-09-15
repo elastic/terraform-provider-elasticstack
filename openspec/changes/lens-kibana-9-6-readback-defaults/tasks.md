@@ -1,8 +1,8 @@
 ## 1. Confirm 9.6 read-back shapes
 
-- [ ] 1.1 Against a live `9.6.0-SNAPSHOT` (or later) Kibana, confirm injected metric `axis` behavior for XY `y[]` (primary Y, secondary Y, and X-axis metrics where applicable), datatable `metrics[]`, metric chart, pie, gauge, tagcloud, treemap/mosaic, region-map, and legacy metric paths.
-- [ ] 1.2 Confirm whether `mosaic_config`/`treemap_config.value_display.percent_decimals` has a single default or varies by number `format`.
-- [ ] 1.3 Confirm whether `legacy_metric_config.metric_json` has only shared metric-default drift (`axis`/`color`) or any legacy-only injected keys.
+- [x] 1.1 Against a live `9.6.0-SNAPSHOT` (or later) Kibana, confirm injected metric `axis` behavior for XY `y[]` (primary Y, secondary Y, and X-axis metrics where applicable), datatable `metrics[]`, metric chart, pie, gauge, tagcloud, treemap/mosaic, region-map, and legacy metric paths.
+- [x] 1.2 Confirm whether `mosaic_config`/`treemap_config.value_display.percent_decimals` has a single default or varies by number `format`.
+- [x] 1.3 Confirm whether `legacy_metric_config.metric_json` has only shared metric-default drift (`axis`/`color`) or any legacy-only injected keys.
 
 ## 2. Metric `config_json` axis normalization
 
