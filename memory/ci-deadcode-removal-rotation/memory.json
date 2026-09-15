@@ -1120,6 +1120,28 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
       "attemptedAt": "2026-09-15T11:26:03.853529293Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.unknownPanelBlockPanic",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-09-15T11:43:23.508427833Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview.NewFieldAttrsNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview",
+      "attemptedAt": "2026-09-15T11:43:23.508427993Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview.NewFieldAttrsUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview",
+      "attemptedAt": "2026-09-15T11:49:39.110123684Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
