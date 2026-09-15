@@ -8,21 +8,21 @@ The provider already has an established pattern for exactly this class of drift 
 
 | Attribute family | Example path | Planned | 9.6 read-back |
 |---|---|---|---|
-| Shared Lens metric `config_json` | `xy_chart_config.layers[0].data_layer.y[0].config_json` | `{"empty_as_null":true,"operation":"count"}` | adds `"axis":"y"`, `"color":{"type":"auto"}` |
-| Shared Lens metric `config_json` | `datatable_config.no_esql.metrics[0].config_json` | `{"operation":"count"}` | same shared defaults gap |
-| Shared Lens metric `config_json` | `legacy_metric_config.metric_json` | practitioner blob | same shared defaults gap |
+| Lens metric `config_json` | `xy_chart_config.layers[0].data_layer.y[0].config_json` | `{"empty_as_null":true,"operation":"count"}` | adds `"axis":"y"`, `"color":{"type":"auto"}` |
+| Lens metric `config_json` | `datatable_config.no_esql.metrics[0].config_json` | `{"operation":"count"}` | same metric-defaults gap |
+| Lens metric `config_json` | `legacy_metric_config.metric_json` | practitioner blob | same metric-defaults gap (to confirm via legacy path) |
 | Pie/waffle legend | `pie_chart_config.legend.truncate_after_lines` / `.nested` | null | `1` / `false` |
 | Waffle legend | `waffle_config.legend.truncate_after_lines` | null | `1` |
 | Partition value display | `mosaic_config` / `treemap_config.value_display.percent_decimals` | null | `2` |
 | Heatmap axis labels | `heatmap_config.axis.x.labels.orientation` | null | `"horizontal"` |
 
-`color: {type: "auto"}` is already covered by `lenscommon.PopulateLensMetricDefaults`; the new, uncovered piece is the `axis` key. Because `PopulateLensMetricDefaults` is shared by every Lens chart family that carries a metric `config_json` (XY, datatable, metric chart, legacy metric, pie, gauge, tagcloud, treemap, mosaic, region map), fixing it once should resolve the `axis`-key drift for all of them, including `legacy_metric_config.metric_json`, without a chart-specific code path.
+`color: {type: "auto"}` is already covered on the paths that currently use `lenscommon.PopulateLensMetricDefaults`; the new, uncovered piece is the `axis` key. Chart families do not all share one metric-population function today, so this change should add a shared metric-axis normalization primitive and apply it in each confirmed metric-default path (rather than assuming `PopulateLensMetricDefaults` alone covers every family).
 
 ## What Changes
 
-- Extend `lenscommon.PopulateLensMetricDefaults` to also inject a default `axis` value into a Lens metric `config_json` when the practitioner's plan omits it, so 9.6 read-backs of every chart family that shares this helper (XY `y[]`, datatable `metrics`/`rows`/`split_metrics_by`, metric chart, legacy metric, pie, gauge, tagcloud, treemap, mosaic, region map) round-trip without drift.
+- Introduce a shared metric-axis normalization primitive and apply it to each confirmed metric `config_json`/`metric_json` default path (e.g. `PopulateLensMetricDefaults`, `PopulatePieChartMetricDefaults`, `PopulateGaugeMetricDefaults`, `PopulateLegacyMetricMetricDefaults`) so 9.6 read-backs round-trip without drift in the metric fields that actually use those paths.
 - Add legend `truncate_after_lines` (and, for pie, `nested`) null-preservation to `lenspie` and `lenswaffle` alignment, mirroring the existing `AlignPartitionLegendStateFromPlan` pattern already used for `legend.visible`.
-- Widen `lenscommon.PartitionValueDisplayMatchesKibanaDefault` so a Kibana-filled `percent_decimals = 2` (in addition to the already-handled `null`) is still recognized as the Kibana-injected default block for treemap/mosaic `value_display`.
+- Confirm the Kibana 9.6 `value_display.percent_decimals` behavior by format first, then widen `lenscommon.PartitionValueDisplayMatchesKibanaDefault` only for the verified default shape(s) rather than hard-coding an unverified constant.
 - Add a heatmap axis-label `orientation` default (`"horizontal"`) to the heatmap alignment path, parallel to the existing `labels.visible` / `title.visible` handling.
 - No schema changes and no state/schema version bump — this is read-path normalization only, following the same pattern as REQ-011's prior fixes.
 - Add or extend acceptance test coverage for each affected chart family so the documented defaults are exercised against a live `9.6.0-SNAPSHOT` (or later) Kibana.
@@ -39,7 +39,7 @@ None.
 
 ## Impact
 
-- `internal/kibana/dashboard/lenscommon/populate_lens_charts.go` — add the `axis` default to `PopulateLensMetricDefaults`.
+- `internal/kibana/dashboard/lenscommon/` — add a shared metric-axis normalization helper and wire it into each confirmed metric-default population path.
 - `internal/kibana/dashboard/lenscommon/partition_alignment.go` — widen `PartitionValueDisplayMatchesKibanaDefault` for `percent_decimals`.
 - `internal/kibana/dashboard/panel/lenspie/alignment.go`, `internal/kibana/dashboard/panel/lenswaffle/alignment.go` — align legend `truncate_after_lines` (and pie `nested`) from plan.
 - `internal/kibana/dashboard/panel/lensheatmap/` alignment path — align axis label `orientation` from plan.

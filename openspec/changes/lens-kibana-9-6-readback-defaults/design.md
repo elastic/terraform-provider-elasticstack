@@ -3,7 +3,7 @@
 `elasticstack_kibana_dashboard` models each Lens `vis` panel as typed Terraform blocks whose JSON sub-fields (`config_json`, `data_source_json`, etc.) round-trip through Kibana's Lens APIs. Kibana frequently materializes hard-coded server defaults for optional fields the practitioner omits, and the provider must recognize those defaults on read so the plan and the read-back agree. This is not new: REQ-011 in `openspec/specs/kibana-dashboard/spec.md` already documents a family of such defaults discovered against Kibana 9.4/9.5 (originally for issue #2355), implemented in `internal/kibana/dashboard/lenscommon`:
 
 - `PreserveNullIfStateEquals[T attr.Value](plan, state *T, expected T)` — generic helper (added in the recent `lenscommon` collapse refactor, PR #4891) that copies a null plan value back into state when the read-back matches a known hard-coded default. Used today for `tagcloud_config.orientation`, `pie_chart_config.label_position`, `treemap_config.legend.visible`, etc.
-- `PopulateLensMetricDefaults(model map[string]any) map[string]any` — shared metric `config_json` default-injector used (via `PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual` / `PreservePlanJSONWithDefaultsIfSemanticallyEqual`) by every Lens chart family with a metric config: XY `y[]`, datatable `metrics`/`rows`/`split_metrics_by`, metric chart, legacy metric, pie, gauge, tagcloud, treemap, mosaic, region map. It already injects `empty_as_null` (gated by operation), `fit`, and `color = {type: "auto"}`.
+- `PopulateLensMetricDefaults(model map[string]any) map[string]any` — metric `config_json` default-injector used by the XY/datatable metric paths (and their metric-chart wrapper). Other chart families use separate metric default populators (for example pie, gauge, and legacy metric paths). The current shared metric-population paths already inject `empty_as_null` (gated by operation), `fit`, and `color = {type: "auto"}`.
 - `PartitionValueDisplayMatchesKibanaDefault(state *models.PartitionValueDisplay) bool` — recognizes the Kibana-injected `value_display = {mode="percentage", percent_decimals=null}` block for treemap/mosaic and drops it from state when the plan omitted it.
 - `LegendSizeTruncateVisibilityFromAPI` / `...ToAPI` — shared legend field mapping (size, `truncate_after_lines`, visibility) used by every chart with a legend, but with **no** default-preservation for `truncate_after_lines` today; pie/waffle simply carry through whatever Kibana returns.
 
@@ -14,7 +14,7 @@ Elastic Stack `9.6.0-SNAPSHOT` changes what several of these read-backs contain,
 **Goals:**
 - Close the specific 9.6 drift gaps enumerated in the issue so the listed acceptance tests apply cleanly against `9.6.0-SNAPSHOT`.
 - Reuse the existing `lenscommon` normalization mechanisms (`PreserveNullIfStateEquals`, `PopulateLensMetricDefaults`, `PartitionValueDisplayMatchesKibanaDefault`) rather than inventing a new preservation pattern.
-- Fix the metric `config_json` `axis` gap once, in the shared `PopulateLensMetricDefaults`, so every chart family that shares it (including `legacy_metric_config.metric_json`) benefits without a per-chart code path.
+- Fix the metric `config_json` `axis` gap with a shared axis-normalization primitive that can be reused by every confirmed metric default-population path, instead of assuming one existing function already covers all chart families.
 - Make no schema or state-version changes.
 
 **Non-Goals:**
@@ -24,9 +24,9 @@ Elastic Stack `9.6.0-SNAPSHOT` changes what several of these read-backs contain,
 
 ## Decisions
 
-- **`axis` default lives in `PopulateLensMetricDefaults`, not a chart-specific alignment function.** Every affected chart family already funnels its metric `config_json` through this one function for default-aware comparison, so adding the `axis` key here is the minimal change and automatically covers `legacy_metric_config.metric_json` without touching `lenslegacymetric`.
+- **Metric-axis normalization is shared, but wiring remains per actual metric populator boundary.** Chart families do not all funnel through `PopulateLensMetricDefaults`; several use chart-specific metric default populators. The design therefore uses one shared axis-normalization primitive and applies it in each confirmed metric-population path, while keeping grouping/dimension JSON (`rows`, `split_metrics_by`, partition `group_by*`) on their existing group-by normalization paths.
 - **Legend `truncate_after_lines` (and pie `nested`) use `PreserveNullIfStateEquals`, the same primitive already used for `label_position`, `orientation`, and partition `legend.visible`.** This keeps the fix consistent with the rest of REQ-011 rather than introducing bespoke legend-alignment code. Pie needs both `truncate_after_lines` (default `1`) and `nested` (default `false`); waffle's schema only has `truncate_after_lines` (no `nested` field), so only that one applies there.
-- **`percent_decimals = 2` is treated as an additional recognized shape of the existing default block, not a new default.** `PartitionValueDisplayMatchesKibanaDefault` already special-cases `percent_decimals` being unknown/null; this change widens that check to also accept a known value of `2` (in addition to null) when `mode == "percentage"`, so the same function keeps working across both pre-9.6 and 9.6 Kibana responses without a version switch in provider code.
+- **`percent_decimals` handling stays evidence-driven.** The requirement will only codify the 9.6 `percent_decimals` default shape after confirmation against live acceptance coverage (including format variants). Until then, avoid hard-coding a fixed value in the normative spec.
 - **Heatmap axis-label `orientation` default is `"horizontal"`, mirrored per axis (`x`, `y`).** This is a distinct field from the already-documented `labels.visible` / `title.visible` heatmap defaults (REQ-011) — same mechanism (`PreserveNullIfStateEquals`), new field.
 
 ## Open questions

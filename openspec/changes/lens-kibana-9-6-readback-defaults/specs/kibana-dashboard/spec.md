@@ -25,13 +25,13 @@ For each Lens chart panel listed below, Kibana materializes hard-coded server de
 - `pie_chart_config.legend.nested` defaults to `false` (Kibana 9.6.0-SNAPSHOT and later).
 - `waffle_config.legend.truncate_after_lines` defaults to `1` (Kibana 9.6.0-SNAPSHOT and later).
 - `treemap_config.legend.visible` and `mosaic_config.legend.visible` default to `"auto"`.
-- `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=null}` (whole block) on Kibana versions before 9.6. As of Kibana 9.6.0-SNAPSHOT, Kibana instead returns `{mode="percentage", percent_decimals=2}` for the same omitted-configuration case; the resource SHALL recognize either shape (`percent_decimals` null, or `percent_decimals = 2`) as the Kibana-injected default and drop the block from state when the plan omitted `value_display`.
+- `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=null}` (whole block). Additional 9.6+ default shapes (if any) MUST be confirmed against live acceptance coverage before they are treated as equivalent defaults by this requirement.
 
 For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`, mosaic `group_by_json`/`group_breakdown_by_json`) and Lens datatable (`metrics[].config_json`, `rows[].config_json`, `split_metrics_by[].config_json`), Kibana re-emits each `terms` dimension with the following injected default keys: `rank_by = {type="metric", metric_index=0, direction="desc"}` and `color = {mode="categorical", palette="default", mapping=[]}`. The resource SHALL populate these defaults during semantic-equality comparison so the practitioner's authored JSON round-trips without drift.
 
 When the metric-default normalization injects the `empty_as_null` default into a Lens metric `config_json`, it SHALL inject `empty_as_null = false` ONLY for metric operations whose Kibana API schema accepts the property: `count`, `sum`, and `unique_count`. For all other operations — including `percentile`, `percentile_rank`, `average`, `min`, `max`, `median`, `standard_deviation`, `last_value`, and pipeline operations such as `formula`, `moving_average`, `cumulative_sum`, `differences`, and `counter_rate` — the resource SHALL NOT inject `empty_as_null`, because the corresponding Kibana API metric schema does not define that property and rejects the request with HTTP 400 (`Additional properties are not allowed ('empty_as_null' was unexpected)`). This rule SHALL apply uniformly to every Lens chart family whose metric normalization injects `empty_as_null` — XY (`y[].config_json`), datatable (`metrics[].config_json`), metric chart, pie, gauge, legacy metric, tagcloud, treemap, mosaic, and region map — because all of those families share the same Kibana metric schema in which only `count`, `sum`, and `unique_count` define `empty_as_null`. This gating applies to both the request payload sent to Kibana and the normalization used for semantic-equality comparison, so that operations without `empty_as_null` support neither fail on apply nor produce spurious drift.
 
-As of Kibana 9.6.0-SNAPSHOT, the same shared metric `config_json` normalization used across every Lens chart family listed above (XY `y[]`, datatable `metrics`/`rows`/`split_metrics_by`, metric chart, legacy metric `metric_json`, pie, gauge, tagcloud, treemap, mosaic, region map) additionally has an `axis` key injected into the read-back payload when the practitioner's metric configuration omits it — for example, an XY `y[].config_json` value `{"operation":"count","empty_as_null":true}` is returned by Kibana 9.6 as `{"operation":"count","empty_as_null":true,"axis":"y","color":{"type":"auto"}}`. The `color` half of that injected pair is already covered by this requirement's existing metric-default normalization; the resource SHALL extend that same normalization to also populate a default `axis` value consistent with the metric's own axis assignment (e.g. `"y"` for a primary Y-axis metric) so the practitioner's `config_json` continues to round-trip without drift on Kibana 9.6.0-SNAPSHOT and later.
+As of Kibana 9.6.0-SNAPSHOT, XY `y[].config_json` read-back injects an `axis` key when the practitioner's metric configuration omits it — for example `{"operation":"count","empty_as_null":true}` is returned as `{"operation":"count","empty_as_null":true,"axis":"y","color":{"type":"auto"}}`. The `color` half is already covered by existing metric-default normalization. The resource SHALL extend metric-default normalization to also preserve practitioner intent for injected `axis` on confirmed metric fields, and SHALL keep this axis behavior scoped to metric-population paths (not grouping/dimension JSON paths such as datatable `rows[]` / `split_metrics_by[]`).
 
 #### Scenario: Unset XY X-axis scale
 
@@ -109,8 +109,8 @@ As of Kibana 9.6.0-SNAPSHOT, the same shared metric `config_json` normalization 
 #### Scenario: Minimal treemap / mosaic panel preserves partition legend and value_display defaults
 
 - GIVEN a treemap or mosaic panel whose `legend.visible` is unset and whose `value_display` block is omitted
-- WHEN create runs and Kibana's read-back returns `legend.visible = "auto"` and a default `value_display` block whose `mode = "percentage"` and `percent_decimals` is either `null` or `2`
-- THEN the provider SHALL keep `legend.visible` null and SHALL drop the injected `value_display` block from state regardless of which `percent_decimals` shape Kibana returned
+- WHEN create runs and Kibana's read-back returns `legend.visible = "auto"` and the default `value_display` block `{mode="percentage", percent_decimals=null}`
+- THEN the provider SHALL keep `legend.visible` null and SHALL drop the injected `value_display` block from state
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: Datatable terms metrics preserve injected JSON defaults
@@ -138,11 +138,4 @@ As of Kibana 9.6.0-SNAPSHOT, the same shared metric `config_json` normalization 
 - GIVEN an XY panel whose `y[].config_json` uses `operation = "count"`, sets `empty_as_null = true`, and omits both `axis` and `color`
 - WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `{"operation":"count","empty_as_null":true,"axis":"y","color":{"type":"auto"}}`
 - THEN the provider SHALL preserve the practitioner's original `config_json` payload in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
-- AND a subsequent plan SHALL show no changes
-
-#### Scenario: Legacy metric config_json round-trips on Kibana 9.6
-
-- GIVEN a legacy metric panel whose `legacy_metric_config.metric_json` omits `axis` and `color`
-- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back injects the same shared metric defaults (`axis`, `color`) into `metric_json`
-- THEN the provider SHALL preserve the practitioner's original `metric_json` payload in state
 - AND a subsequent plan SHALL show no changes
