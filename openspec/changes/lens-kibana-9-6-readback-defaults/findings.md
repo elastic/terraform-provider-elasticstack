@@ -15,23 +15,27 @@ The worktree initially had a leftover 9.4.0 stack. It was replaced with `STACK_V
 
 ### Answers
 
+The only **injected omit-default** observed for metric `config_json.axis` is `"y"`. `"y2"` is never inferred from chart-level `axis.y2`.
+
 | Question | Confirmed answer |
 |---|---|
-| Primary Y metric omitted `axis` | Kibana injects `"axis":"y"` |
-| Secondary Y metric with `"axis":"y2"` | Kibana **preserves** `"y2"` (does not overwrite to `"y"`) |
-| Chart-level `axis.y2` without assigning a metric to y2 | The single Y metric still gets `"axis":"y"` |
+| Metric JSON omits `axis` | Kibana **injects** `"axis":"y"` |
+| Metric JSON already has `axis` (e.g. `"y2"`) | Kibana **preserves** that value; it does not overwrite to `"y"` |
+| Chart-level `axis.y2` without `axis` on the metric JSON | Still **injects `"y"`**. Do **not** derive `"y2"` from chart-level `axis.y2` |
 | X-axis metrics | **No applicable path.** XY `x` / `x_json` is a dimension (date histogram, terms, or ES\|QL column), not a metric `config_json`. The suite has no X-axis metric. Not probed as a metric. |
-| Does injected `axis` always equal `"y"`? | **No.** Omitted metrics default to `"y"`; an explicit assignment is echoed. Implementation must not hard-code `"y"` as the only value. |
 
-`color: {"type":"auto"}` is injected together with `axis` on every XY Y metric that omitted `color`.
+Task 2 rule: treat omitted metric `axis` as default `"y"`; if the practitioner already set `axis` on the metric JSON, leave it alone. Do not emit `"y2"` from chart-level `axis.y2`.
+
+`color: {"type":"auto"}` is injected together with `axis` on every XY Y metric that **omitted** `color`. See `_layers` below: when the practitioner set a static color, 9.6 read-back also replaced it with `{type:auto}` — that is extra drift, not an axis-only default.
 
 ### Per-family results
 
 | Family | Path | Injects `axis`? | Value(s) | Also injects `color:{type:auto}`? | Probe |
 |---|---|---|---|---|---|
-| XY primary Y | `xy_chart_config.layers[].data_layer.y[].config_json` | **Yes** | `"y"` | **Yes** | `TestAccResourceDashboardXYChart_basic`, `_axis` |
-| XY secondary Y | same `y[]`, practitioner set `"axis":"y2"` | **Preserves** | `"y2"` | **Yes** | one-off `TestAccLensTask1Probe_XYSecondaryY` + `TF_LOG` create/read payload |
-| XY ES\|QL Y | `y[].config_json` with `column` | **Yes** | `"y"` | **Yes** (overwrites planned static color in the after-apply string) | `TestAccResourceDashboardXYChart_layers` |
+| XY primary Y | `xy_chart_config.layers[].data_layer.y[].config_json` | **Yes (omit-default)** | `"y"` | **Yes** when color omitted | `TestAccResourceDashboardXYChart_basic`, `_axis` |
+| XY secondary Y | same `y[]`, practitioner already set `"axis":"y2"` | **No inject** — preserves plan | `"y2"` (preserved, not inferred) | **Yes** when color omitted | one-off `TestAccLensTask1Probe_XYSecondaryY` + `TF_LOG` create/read payload |
+| XY ES\|QL Y | `y[].config_json` with `column` | **Yes (omit-default)** | `"y"` | **Yes, and replaces practitioner static color** (see quote) | `TestAccResourceDashboardXYChart_layers` |
+| XY reference-line | `thresholds[].value_json` / `thresholds[].axis` | metric `axis` does **not** apply to `value_json`; sibling `thresholds[].axis` (schema: left/right/bottom) read back as `"y"` | see `_layers_reference` | `color_json` → `{"type":"auto"}` | `TestAccResourceDashboardXYChart_layers_reference` |
 | XY X dimension | `data_layer.x_json` | N/A | not a metric | N/A | suite only has dimension `x` |
 | Datatable | `datatable_config.no_esql.metrics[].config_json` | **No** | — | **Yes** (plus `visible:true`, `alignment:"right"`) | `TestAccResourceDashboardDatatableChart`, `TestAccLensMinimalProbe_Datatable` |
 | Metric chart | `metric_chart_config.metrics[].config_json` | **No** | — | already covered by existing defaults; apply **passed** | `TestAccResourceDashboardMetricChartMinimalConfig`, `TestAccLensMinimalProbe_Metric` |
@@ -51,7 +55,7 @@ was  {"empty_as_null":true,"operation":"count"}
 now  {"empty_as_null":true,"operation":"count","axis":"y","color":{"type":"auto"}}
 ```
 
-**XY secondary Y** (one-off create request vs Kibana read-back from `TF_LOG`):
+**XY secondary Y** (one-off create request vs Kibana read-back from `TF_LOG`). `"y2"` is **preserved**, not injected from chart-level `axis.y2`:
 
 ```
 request y[0]  {"empty_as_null":true,"operation":"count"}
@@ -61,14 +65,35 @@ read-back y[0]  {"empty_as_null":true,"operation":"count","axis":"y","color":{"t
 read-back y[1]  {"empty_as_null":true,"operation":"count","axis":"y2","color":{"type":"auto"}}
 ```
 
-The after-apply diagnostic only reported `y[0]`. That matches `JSONWithDefaultsValue` semantic equality: `PopulateLensMetricDefaults` already treats `color` as a default, so `y[1]` (`axis` already `"y2"`) compared equal, while `y[0]` drifted on the uncovered `axis` key.
+The after-apply diagnostic only reported `y[0]`. `PopulateLensMetricDefaults` already treats omitted `color` as a default, so `y[1]` (plan already had `axis:"y2"`) compared equal.
 
-**XY ES\|QL layer** (`TestAccResourceDashboardXYChart_layers`):
+**XY ES\|QL `_layers` — axis PLUS static→auto color** (`TestAccResourceDashboardXYChart_layers`):
 
 ```
 was  {"color":{"color":"#54B399","type":"static"},"column":"system.cpu.user.pct","format":{"type":"number"}}
 now  {"column":"system.cpu.user.pct","format":{"type":"number","decimals":2,"compact":false},"axis":"y","color":{"type":"auto"}}
 ```
+
+This is **not axis-only**. Kibana added `"axis":"y"` **and** replaced the practitioner's `color: {type:"static", color:"#54B399"}` with `{type:"auto"}` (plus format `decimals`/`compact`). Task 2 must not treat `_layers` as an axis-only green bar and must **not** overwrite practitioner color when filling an omitted `axis`. Explaining/fixing the static→auto color replacement is out of scope for task 1.
+
+**XY `_layers_reference`** (`TestAccResourceDashboardXYChart_layers_reference`, step 1/2). Data-layer `y[0]` matches the primary-Y quote above. Reference-line threshold (practitioner omitted `thresholds[0].axis`; `value_json` is a `static_value` blob, not a Y metric):
+
+```
+data-layer y[0].config_json:
+  was  {"empty_as_null":true,"operation":"count"}
+  now  {"empty_as_null":true,"operation":"count","axis":"y","color":{"type":"auto"}}
+
+thresholds[0].value_json:
+  was  {"format":{"compact":false,"decimals":2,"type":"number"},"label":"","operation":"static_value","value":42}
+  now  42
+  (no axis / axis_id keys on value_json)
+
+thresholds[0].axis:        was null, now "y"
+thresholds[0].operation:   was null, now "static_value"
+thresholds[0].color_json:  was null, now {"type":"auto"}
+```
+
+Metric `config_json` `axis:"y"` does **not** apply to reference-line `value_json` (that blob collapsed to the scalar `42`; no `axis` / `axis_id` inside it). The typed sibling `thresholds[].axis` (schema documents `left`/`right`/`bottom`) was omitted in plan and read back as `"y"` — a different field from Y-metric `config_json.axis`. Task 2's metric-axis primitive should stay on metric `config_json` / `y[]`, not this threshold attribute.
 
 **Datatable** (`TestAccLensMinimalProbe_Datatable`):
 
@@ -100,7 +125,7 @@ pie_chart_config.legend.nested: was null, now false
 | `PopulatePartitionMetricsDefaults` → `PopulateTagcloudMetricDefaults` | treemap / mosaic `metrics` (`PopulatePartitionLensAttributes` in `lenscommon/populate_lens_charts.go`) | same field-metric defaults |
 | `PopulateLegacyMetricMetricDefaults` | legacy metric `metric` (`lenslegacymetric/defaults.go`) | `show_array_values`, `empty_as_null` (gated), format `decimals`/`compact` — **not** `color` or `axis` |
 
-Implication for task 2: a shared axis primitive is only required on paths that actually receive `axis` from Kibana 9.6 — confirmed **XY `y[]` only**. Other families should not assume an `axis` default. Legacy still needs `color` (shared) plus `size` (legacy-only); that is task 1.3 / later slices, not an `axis` gap.
+Implication for task 2: a shared axis primitive is only required on paths that actually receive metric `config_json.axis` from Kibana 9.6 — confirmed **XY `y[]` only**, omit-default `"y"`. If metric JSON already has `axis`, preserve it. Do **not** derive `"y2"` from chart-level `axis.y2`. Do **not** overwrite a practitioner `color` when filling omitted `axis` (`_layers` static→auto is separate, unexplained drift). Other families should not assume an `axis` default. Legacy still needs `color` (shared) plus `size` (legacy-only); that is task 1.3 / later slices, not an `axis` gap.
 
 ## 1.2 `value_display.percent_decimals`
 
@@ -169,7 +194,7 @@ Injected keys relative to a fully specified count metric: **`size`**, **`color`*
 
 ## Implications for later tasks (not implemented here)
 
-- Task 2 should add axis normalization for **XY `y[]`**, using the metric's own `axis` when present and `"y"` only when omitted. Do not hard-code `"y"` onto datatable / pie / gauge / tagcloud / partition / region-map / legacy metrics.
+- Task 2 should add axis normalization for **XY `y[]` only**: omitted metric `axis` → `"y"`; if the metric JSON already has `axis`, preserve it. Do **not** derive `"y2"` from chart-level `axis.y2`. Do **not** overwrite practitioner `color` (`_layers` static→auto is separate). Do not put `"y"` onto datatable / pie / gauge / tagcloud / partition / region-map / legacy / reference-line `value_json`.
 - Task 4 can treat `percent_decimals = 2` as a fixed Kibana default (not format-aware).
 - Legacy needs `color` plus `size:"m"` on `PopulateLegacyMetricMetricDefaults` (or a sibling). That is extra scope vs a pure axis primitive; surface it in task 2/legacy wiring rather than assuming axis-only.
 
@@ -179,7 +204,8 @@ Injected keys relative to a fully specified count metric: **`size`**, **`color`*
 |---|---|---|
 | `TestAccResourceDashboardXYChart_basic` | FAIL (axis+color on `y[0]`) | 1.1 |
 | `TestAccResourceDashboardXYChart_axis` | FAIL (same; still `"axis":"y"`) | 1.1 |
-| `TestAccResourceDashboardXYChart_layers` | FAIL (ES\|QL `axis":"y"`) | 1.1 |
+| `TestAccResourceDashboardXYChart_layers` | FAIL (ES\|QL `axis:"y"` **and** static color → `{type:auto}`) | 1.1 |
+| `TestAccResourceDashboardXYChart_layers_reference` | FAIL (data-layer `y[0]` axis+color; reference-line `value_json`→`42`, `thresholds[].axis`→`"y"`, `color_json`/`operation` siblings) | 1.1 |
 | `TestAccResourceDashboardDatatableChart` | FAIL (visible/color/alignment; no axis) | 1.1 |
 | `TestAccResourceDashboardMetricChartMinimalConfig` | PASS | 1.1 |
 | `TestAccResourceDashboardPieChart` | FAIL (legend only) | 1.1 |
