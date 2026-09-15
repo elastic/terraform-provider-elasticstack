@@ -52,19 +52,19 @@ func TestFieldAttrsValue_MapSemanticEquals(t *testing.T) {
 		},
 		{
 			name:     "unknown vs unknown is equal",
-			newVal:   NewFieldAttrsUnknown(elemType),
-			priorVal: NewFieldAttrsUnknown(elemType),
+			newVal:   FieldAttrsValue{MapValue: types.MapUnknown(elemType)},
+			priorVal: FieldAttrsValue{MapValue: types.MapUnknown(elemType)},
 			expected: true,
 		},
 		{
 			name:     "null vs unknown is not equal (no implicit equivalence)",
 			newVal:   NewFieldAttrsNull(elemType),
-			priorVal: NewFieldAttrsUnknown(elemType),
+			priorVal: FieldAttrsValue{MapValue: types.MapUnknown(elemType)},
 			expected: false,
 		},
 		{
 			name:     "unknown vs null is not equal",
-			newVal:   NewFieldAttrsUnknown(elemType),
+			newVal:   FieldAttrsValue{MapValue: types.MapUnknown(elemType)},
 			priorVal: NewFieldAttrsNull(elemType),
 			expected: false,
 		},
