@@ -28,7 +28,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var MinLabelsVersion = version.Must(version.NewVersion("8.16.0"))
+var (
+	MinLabelsVersion       = version.Must(version.NewVersion("8.16.0"))
+	MinKibanaSpacesVersion = version.Must(version.NewVersion("9.6.0"))
+)
 
 func createMonitor(
 	ctx context.Context,
@@ -43,7 +46,9 @@ func createMonitor(
 		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 
-	input, apiDiags := planModel.toKibanaAPIRequest(ctx)
+	requestModel := planModel
+	requestModel.KibanaSpaces = kibanaSpacesForEndpoint(planModel.KibanaSpaces, req.SpaceID)
+	input, apiDiags := requestModel.toKibanaAPIRequest(ctx)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
