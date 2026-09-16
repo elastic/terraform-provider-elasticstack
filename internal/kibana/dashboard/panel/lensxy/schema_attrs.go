@@ -388,7 +388,7 @@ func xyReferenceLineLayerAttributes() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"axis": schema.StringAttribute{
-						MarkdownDescription: "Which axis the reference line applies to. Valid values: 'left', 'right'.",
+						MarkdownDescription: "Which axis the reference line applies to. Schema currently allows 'bottom', 'left', 'right'; Kibana 9.6 accepts 'y' and 'y2' and rejects those schema values.",
 						Optional:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("bottom", "left", "right"),
