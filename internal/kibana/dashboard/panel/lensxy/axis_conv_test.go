@@ -26,18 +26,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func axisCfg[D any, S ~string](domain *D, scale S, grid, ticks bool, orient kbapi.KibanaHTTPAPIsVisApiOrientation, title string, titleVis bool) *axisConfigAPIModel[D, S] {
+	return &axisConfigAPIModel[D, S]{
+		Domain: domain,
+		Grid: &struct {
+			Visible bool `json:"visible"`
+		}{Visible: grid},
+		Labels: &struct {
+			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+		}{Orientation: &orient},
+		Scale: &scale,
+		Ticks: &struct {
+			Visible bool `json:"visible"`
+		}{Visible: ticks},
+		Title: &struct {
+			Text    *string `json:"text,omitempty"`
+			Visible *bool   `json:"visible,omitempty"`
+		}{Text: &title, Visible: &titleVis},
+	}
+}
+
 func TestXyAxisFromAPIToAPI_XYY2RoundTrip(t *testing.T) {
-	trueVal := true
-	falseVal := false
 	orientationAngled := kbapi.KibanaHTTPAPIsVisApiOrientationAngled
 	orientationHorizontal := kbapi.KibanaHTTPAPIsVisApiOrientationHorizontal
 	orientationVertical := kbapi.KibanaHTTPAPIsVisApiOrientationVertical
 	xScale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleTemporal
 	yScale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScaleSqrt
 	y2Scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2ScaleLog
-	xTitle := "X title"
-	yTitle := "Y title"
-	y2Title := "Y2 title"
 
 	var xDomain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_X_Domain
 	require.NoError(t, xDomain.FromKibanaHTTPAPIsVisApiDomainCustom(kbapi.KibanaHTTPAPIsVisApiDomainCustom{
@@ -53,105 +68,9 @@ func TestXyAxisFromAPIToAPI_XYY2RoundTrip(t *testing.T) {
 	}))
 
 	apiAxis := &kbapi.KibanaHTTPAPIsVisApiXyAxisConfig{
-		X: &struct {
-			Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_X_Domain `json:"domain,omitempty"`
-			Grid   *struct {
-				Visible bool `json:"visible"`
-			} `json:"grid,omitempty"`
-			Labels *struct {
-				Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-			} `json:"labels,omitempty"`
-			Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale `json:"scale,omitempty"`
-			Ticks *struct {
-				Visible bool `json:"visible"`
-			} `json:"ticks,omitempty"`
-			Title *struct {
-				Text    *string `json:"text,omitempty"`
-				Visible *bool   `json:"visible,omitempty"`
-			} `json:"title,omitempty"`
-		}{
-			Domain: &xDomain,
-			Grid: &struct {
-				Visible bool `json:"visible"`
-			}{Visible: true},
-			Labels: &struct {
-				Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-			}{Orientation: &orientationAngled},
-			Scale: &xScale,
-			Ticks: &struct {
-				Visible bool `json:"visible"`
-			}{Visible: true},
-			Title: &struct {
-				Text    *string `json:"text,omitempty"`
-				Visible *bool   `json:"visible,omitempty"`
-			}{Text: &xTitle, Visible: &trueVal},
-		},
-		Y: &struct {
-			Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
-			Grid   *struct {
-				Visible bool `json:"visible"`
-			} `json:"grid,omitempty"`
-			Labels *struct {
-				Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-			} `json:"labels,omitempty"`
-			Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
-			Ticks *struct {
-				Visible bool `json:"visible"`
-			} `json:"ticks,omitempty"`
-			Title *struct {
-				Text    *string `json:"text,omitempty"`
-				Visible *bool   `json:"visible,omitempty"`
-			} `json:"title,omitempty"`
-		}{
-			Domain: &yDomain,
-			Grid: &struct {
-				Visible bool `json:"visible"`
-			}{Visible: false},
-			Labels: &struct {
-				Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-			}{Orientation: &orientationHorizontal},
-			Scale: &yScale,
-			Ticks: &struct {
-				Visible bool `json:"visible"`
-			}{Visible: false},
-			Title: &struct {
-				Text    *string `json:"text,omitempty"`
-				Visible *bool   `json:"visible,omitempty"`
-			}{Text: &yTitle, Visible: &trueVal},
-		},
-		Y2: &struct {
-			Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
-			Grid   *struct {
-				Visible bool `json:"visible"`
-			} `json:"grid,omitempty"`
-			Labels *struct {
-				Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-			} `json:"labels,omitempty"`
-			Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
-			Ticks *struct {
-				Visible bool `json:"visible"`
-			} `json:"ticks,omitempty"`
-			Title *struct {
-				Text    *string `json:"text,omitempty"`
-				Visible *bool   `json:"visible,omitempty"`
-			} `json:"title,omitempty"`
-		}{
-			Domain: &y2Domain,
-			Grid: &struct {
-				Visible bool `json:"visible"`
-			}{Visible: true},
-			Labels: &struct {
-				Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-			}{Orientation: &orientationVertical},
-			Scale: &y2Scale,
-			Ticks: &struct {
-				Visible bool `json:"visible"`
-			}{Visible: false},
-			Title: &struct {
-				Text    *string `json:"text,omitempty"`
-				Visible *bool   `json:"visible,omitempty"`
-			}{Text: &y2Title, Visible: &falseVal},
-		},
+		X:  axisCfg(&xDomain, xScale, true, true, orientationAngled, "X title", true),
+		Y:  axisCfg(&yDomain, yScale, false, false, orientationHorizontal, "Y title", true),
+		Y2: axisCfg(&y2Domain, y2Scale, true, false, orientationVertical, "Y2 title", false),
 	}
 
 	m := &models.XYAxisModel{}
@@ -205,12 +124,24 @@ func TestXyAxisFromAPIToAPI_XYY2RoundTrip(t *testing.T) {
 	require.Equal(t, y2Scale, *out.Y2.Scale)
 }
 
-func TestXyAxisConfigIsEmpty(t *testing.T) {
-	require.True(t, xyAxisConfigIsEmpty(nil))
-	require.True(t, xyAxisConfigIsEmpty(&models.XYAxisConfigModel{}))
-	require.False(t, xyAxisConfigIsEmpty(&models.XYAxisConfigModel{Grid: types.BoolValue(true)}))
+func TestXyAxisFromAPI_EmptyConfigsAreNil(t *testing.T) {
+	apiAxis := &kbapi.KibanaHTTPAPIsVisApiXyAxisConfig{
+		X:  &axisConfigAPIModel[kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_X_Domain, kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale]{},
+		Y:  &axisConfigAPIModel[kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain, kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale]{},
+		Y2: &axisConfigAPIModel[kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain, kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale]{},
+	}
 
-	require.True(t, yAxisConfigIsEmpty(nil))
-	require.True(t, yAxisConfigIsEmpty(&models.YAxisConfigModel{}))
-	require.False(t, yAxisConfigIsEmpty(&models.YAxisConfigModel{Scale: types.StringValue("log")}))
+	m := &models.XYAxisModel{}
+	diags := xyAxisFromAPI(m, apiAxis)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.Nil(t, m.X)
+	require.Nil(t, m.Y)
+	require.Nil(t, m.Y2)
+}
+
+func TestAxisConfigIsEmpty(t *testing.T) {
+	require.True(t, axisConfigIsEmpty(nil))
+	require.True(t, axisConfigIsEmpty(&models.YAxisConfigModel{}))
+	require.False(t, axisConfigIsEmpty(&models.YAxisConfigModel{Grid: types.BoolValue(true)}))
+	require.False(t, axisConfigIsEmpty(&models.YAxisConfigModel{Scale: types.StringValue("log")}))
 }
