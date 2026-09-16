@@ -293,3 +293,70 @@ func TestAlignXYLayerStateFromPlan_omittedReferenceLineThresholdDefaults(t *test
 	assert.True(t, got.ColorJSON.IsNull())
 	assert.JSONEq(t, planValue, got.ValueJSON.ValueString())
 }
+
+func TestAlignXYLayerStateFromPlan_explicitReferenceLineThresholdAxisIsNotOverridden(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis: types.StringValue("y2"),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis: types.StringValue("y2"),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.Equal(t, "y2", state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis.ValueString())
+}
+
+func TestAlignXYLayerStateFromPlan_explicitLeftThresholdAxisIsNotTreatedAsOmitDefaultY(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis: types.StringValue("left"),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis: types.StringValue("y"),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.Equal(t, "y", state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis.ValueString())
+	assert.False(t, state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis.IsNull())
+}
+
+func TestPreserveThresholdValueJSONIfStateIsPlanValue_planWithoutValueDoesNotRestoreOnNullState(t *testing.T) {
+	t.Parallel()
+
+	planJSON := `{"operation":"static_value","label":""}`
+	plan := jsontypes.NewNormalizedValue(planJSON)
+	state := jsontypes.NewNormalizedValue(`null`)
+
+	preserveThresholdValueJSONIfStateIsPlanValue(plan, &state)
+
+	assert.JSONEq(t, `null`, state.ValueString())
+}
