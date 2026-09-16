@@ -401,38 +401,31 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	return winObj, diags
 }
 
+// mapPopupItemFromAPI extracts a popup item sub-object (message/enabled) from the API response map.
+func mapPopupItemFromAPI(ctx context.Context, data map[string]any, key string) (types.Object, diag.Diagnostics) {
+	itemData := getMap(data, key)
+	return types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
+		Message: typeutils.StringFromMap(itemData, "message"),
+		Enabled: typeutils.BoolFromMap(itemData, "enabled"),
+	})
+}
+
 func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(data) == 0 {
 		return types.ObjectNull(windowsPopupAttrTypes()), diags
 	}
-	malwareData := getMap(data, "malware")
-	ransomwareData := getMap(data, attrRansomware)
-	memProtData := getMap(data, "memory_protection")
-	behProtData := getMap(data, "behavior_protection")
 
-	malwareObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(malwareData, "message"),
-		Enabled: typeutils.BoolFromMap(malwareData, "enabled"),
-	})
+	malwareObj, d := mapPopupItemFromAPI(ctx, data, "malware")
 	diags.Append(d...)
 
-	ransomwareObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(ransomwareData, "message"),
-		Enabled: typeutils.BoolFromMap(ransomwareData, "enabled"),
-	})
+	ransomwareObj, d := mapPopupItemFromAPI(ctx, data, attrRansomware)
 	diags.Append(d...)
 
-	memProtObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(memProtData, "message"),
-		Enabled: typeutils.BoolFromMap(memProtData, "enabled"),
-	})
+	memProtObj, d := mapPopupItemFromAPI(ctx, data, "memory_protection")
 	diags.Append(d...)
 
-	behProtObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(behProtData, "message"),
-		Enabled: typeutils.BoolFromMap(behProtData, "enabled"),
-	})
+	behProtObj, d := mapPopupItemFromAPI(ctx, data, "behavior_protection")
 	diags.Append(d...)
 
 	obj, d := types.ObjectValueFrom(ctx, windowsPopupAttrTypes(), windowsPopupModel{
@@ -538,26 +531,14 @@ func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	if len(data) == 0 {
 		return types.ObjectNull(macLinuxPopupAttrTypes()), diags
 	}
-	malwareData := getMap(data, "malware")
-	memProtData := getMap(data, "memory_protection")
-	behProtData := getMap(data, "behavior_protection")
 
-	malwareObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(malwareData, "message"),
-		Enabled: typeutils.BoolFromMap(malwareData, "enabled"),
-	})
+	malwareObj, d := mapPopupItemFromAPI(ctx, data, "malware")
 	diags.Append(d...)
 
-	memProtObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(memProtData, "message"),
-		Enabled: typeutils.BoolFromMap(memProtData, "enabled"),
-	})
+	memProtObj, d := mapPopupItemFromAPI(ctx, data, "memory_protection")
 	diags.Append(d...)
 
-	behProtObj, d := types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(behProtData, "message"),
-		Enabled: typeutils.BoolFromMap(behProtData, "enabled"),
-	})
+	behProtObj, d := mapPopupItemFromAPI(ctx, data, "behavior_protection")
 	diags.Append(d...)
 
 	obj, d := types.ObjectValueFrom(ctx, macLinuxPopupAttrTypes(), macLinuxPopupModel{
