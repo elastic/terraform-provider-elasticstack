@@ -16,6 +16,7 @@
 - [x] 3.1 In `internal/kibana/dashboard/panel/lenspie/alignment.go`, align `legend.truncate_after_lines` (default `1`) and `legend.nested` (default `false`) from plan using `lenscommon.PreserveNullIfStateEquals`.
 - [x] 3.2 In `internal/kibana/dashboard/panel/lenswaffle/alignment.go`, align `legend.truncate_after_lines` (default `1`) from plan using the same mechanism.
 - [x] 3.3 Add/update unit tests for both paths and run `TestAccResourceDashboardPieChart`, `TestAccResourceDashboardPieChart_lensPresentationCrossCutting`, `TestAccResourceDashboardWaffle`, and `TestAccLensMinimalProbe_{Pie,Waffle}` in this slice.
+- [x] 3.4 Align `treemap_config`/`mosaic_config` `legend.truncate_after_lines` (default `1`) and `legend.nested` (default `false`) via the shared `lenscommon.AlignPartitionLegendStateFromPlan` helper.
 
 ## 4. Partition `value_display.percent_decimals`
 
@@ -27,6 +28,7 @@
 
 - [x] 5.1 Add `axis.{x,y}.labels.orientation` default (`"horizontal"`) preservation to the heatmap alignment path using `lenscommon.PreserveNullIfStateEquals`, parallel to existing `labels.visible` / `title.visible` handling.
 - [x] 5.2 Add/update heatmap alignment unit tests and run heatmap acceptance coverage (including `TestAccLensMinimalProbe_Heatmap`) in this slice.
+- [x] 5.3 Align `heatmap_config.legend.truncate_after_lines` (default `1`) from plan using `lenscommon.PreserveNullIfStateEquals`.
 
 ## 6. Spec sync and validation
 
