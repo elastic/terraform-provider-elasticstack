@@ -42,6 +42,9 @@ func alignPieConfigStateFromPlan(ctx context.Context, plan, state *models.PieCha
 	// Kibana materializes label_position="outside" when the practitioner omits it.
 	lenscommon.PreserveNullIfStateEquals(plan.LabelPosition, &state.LabelPosition, types.StringValue("outside"))
 	if plan.Legend != nil && state.Legend != nil {
+		// Pie shares models.PartitionLegendModel with AlignPartitionLegendStateFromPlan
+		// (treemap/mosaic) but keeps this path: that helper also preserves
+		// legend.visible == "auto", which is unconfirmed for pie.
 		lenscommon.PreserveNullIfStateEquals(plan.Legend.TruncateAfterLine, &state.Legend.TruncateAfterLine, types.Int64Value(1))
 		lenscommon.PreserveNullIfStateEquals(plan.Legend.Nested, &state.Legend.Nested, types.BoolValue(false))
 	}

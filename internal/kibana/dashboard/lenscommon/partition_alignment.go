@@ -30,6 +30,8 @@ import (
 // AlignPartitionLegendStateFromPlan handles legend defaults Kibana injects for
 // partition-style Lens charts (treemap, mosaic) when the practitioner omits
 // them: visible="auto", truncate_after_lines=1, nested=false.
+// Pie shares PartitionLegendModel but does not call this helper: pie
+// visible="auto" is unconfirmed, so pie keeps a hand-rolled truncate/nested-only path.
 func AlignPartitionLegendStateFromPlan(plan, state *models.PartitionLegendModel) {
 	if plan == nil || state == nil {
 		return
