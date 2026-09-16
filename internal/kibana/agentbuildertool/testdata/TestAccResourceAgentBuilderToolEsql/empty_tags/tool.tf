@@ -11,7 +11,7 @@ resource "elasticstack_kibana_agentbuilder_tool" "test_esql" {
   tool_id     = var.tool_id
   type        = "esql"
   description = "Updated ES|QL tool"
-  tags        = ["test", "esql", "updated"]
+  tags        = []
   configuration = jsonencode({
     query = "FROM logs-* | WHERE @timestamp >= ?startTime | SORT @timestamp DESC | LIMIT ?limit"
     params = {
