@@ -256,6 +256,32 @@ func TestAlignXYLayerStateFromPlan_countEmptyAsNullGatingComposesWithAxis(t *tes
 	assert.JSONEq(t, planJSON, state.Layers[0].DataLayer.Y[0].ConfigJSON.ValueString())
 }
 
+func TestAlignXYLayerStateFromPlan_staticYColorIsNotNormalizedToAuto(t *testing.T) {
+	t.Parallel()
+
+	planJSON := `{"column":"system.cpu.user.pct","color":{"type":"static","color":"#54B399"},"format":{"type":"number"}}`
+	stateJSON := `{"column":"system.cpu.user.pct","axis":"y","color":{"type":"auto"},"format":{"compact":false,"decimals":2,"type":"number"}}`
+
+	planLayers := []models.XYLayerModel{{
+		DataLayer: &models.DataLayerModel{
+			Y: []models.YMetricModel{{
+				ConfigJSON: jsontypes.NewNormalizedValue(planJSON),
+			}},
+		},
+	}}
+	stateLayers := []models.XYLayerModel{{
+		DataLayer: &models.DataLayerModel{
+			Y: []models.YMetricModel{{
+				ConfigJSON: jsontypes.NewNormalizedValue(stateJSON),
+			}},
+		},
+	}}
+
+	alignXYLayerStateFromPlan(planLayers, stateLayers)
+
+	assert.JSONEq(t, stateJSON, stateLayers[0].DataLayer.Y[0].ConfigJSON.ValueString())
+}
+
 func TestAlignXYLayerStateFromPlan_omittedReferenceLineThresholdDefaults(t *testing.T) {
 	t.Parallel()
 
