@@ -219,3 +219,54 @@ Injected keys relative to a fully specified count metric: **`size`**, **`color`*
 | `TestAccLensMinimalProbe_{Datatable,Pie,Mosaic,Treemap,LegacyMetric}` | FAIL as quoted above | 1.1–1.3 |
 | One-off XY `y` + `y2` (deleted after capture) | FAIL on `y[0]` only; TF_LOG showed `y`/`y2` | 1.1 |
 | One-off mosaic/treemap `format.type=percent` (deleted after capture) | `percent_decimals` still `2` | 1.2 |
+
+## Task 2.3 follow-up: ES|QL `_layers` static color → `{type:auto}`
+
+Captured `2026-09-16` against the same live stack (ES `9.6.0-SNAPSHOT` `:12288`, Kibana `9.6.0` snapshot `:19870`, `status.overall.level = available`) with `TF_LOG=DEBUG` on `TestAccResourceDashboardXYChart_layers`.
+
+**Root cause: B — Kibana overwrites practitioner static color on ES|QL XY Y metrics.** The provider does not drop or rewrite the color on write or read alignment.
+
+Create `POST /api/dashboards` request `layers[0].y[0]` (provider sent static color):
+
+```
+"y": [
+  {
+    "color": {
+      "color": "#54B399",
+      "type": "static"
+    },
+    "column": "system.cpu.user.pct",
+    "format": {
+      "type": "number"
+    }
+  }
+]
+```
+
+Same create's `201 Created` response `layers[0].y[0]` (Kibana already replaced color, and injected `axis` + format decimals/compact):
+
+```
+"y": [
+  {
+    "column": "system.cpu.user.pct",
+    "format": {
+      "type": "number",
+      "decimals": 2,
+      "compact": false
+    },
+    "axis": "y",
+    "color": {
+      "type": "auto"
+    }
+  }
+]
+```
+
+Notes:
+
+- `dataLayerToAPIXyLayerESQL` unmarshals practitioner `config_json` into `KibanaHTTPAPIsXyLayerESQL`, whose `Y.Color` union accepts `KibanaHTTPAPIsStaticColor`. The HTTP dump matches the testdata (`type=static`, `color=#54B399`).
+- The subsequent GET read-back repeats `{type:auto}`; alignment does not invent `auto` (plan still has static, so semantic-equality does not treat them as the same).
+- The same layer's `breakdown_by.color` categorical mapping (`#54B399` / `#D3DAE6`) **is** persisted. Only the Y-metric `color:{type:static}` is replaced.
+- Axis + format omit-defaults from this payload are already handled. The remaining apply diagnostic is solely static → auto.
+
+Do **not** treat practitioner `{type:static,color:#54B399}` as equivalent to Kibana `{type:auto}`. Task 2.3 stays open until the user decides how to handle this Kibana overwrite.
