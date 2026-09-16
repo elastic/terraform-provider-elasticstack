@@ -154,12 +154,6 @@ func TestEntitycoreConstructorsCovered(t *testing.T) {
 	root := repoRoot(t)
 	entitycoreDir := filepath.Join(root, "internal/entitycore")
 
-	entries, err := os.ReadDir(entitycoreDir)
-	if err != nil {
-		// A skip here would let the guard silently pass; fail instead.
-		t.Fatalf("cannot read %s: %v", entitycoreDir, err)
-	}
-
 	covered := make(map[string]bool, len(coveredEntityConstructors)+len(nonEntityConstructors))
 	for _, name := range coveredEntityConstructors {
 		covered[name] = true
@@ -169,15 +163,30 @@ func TestEntitycoreConstructorsCovered(t *testing.T) {
 	}
 	coveredRE := regexp.MustCompile(`^func (New\w+)[\(\[]`)
 
-	var unclassified []string
-	for _, e := range entries {
-		name := e.Name()
-		if e.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(entitycoreDir, name))
+	// Walk recursively: a constructor added under a future entitycore
+	// subpackage must trip this guard too, not evade it.
+	var goFiles []string
+	err := filepath.WalkDir(entitycoreDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			t.Fatalf("read %s: %v", name, err)
+			return err
+		}
+		name := d.Name()
+		if d.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			return nil
+		}
+		goFiles = append(goFiles, path)
+		return nil
+	})
+	if err != nil {
+		// A skip here would let the guard silently pass; fail instead.
+		t.Fatalf("cannot walk %s: %v", entitycoreDir, err)
+	}
+
+	var unclassified []string
+	for _, path := range goFiles {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s: %v", path, err)
 		}
 		for line := range strings.SplitSeq(string(data), "\n") {
 			m := coveredRE.FindStringSubmatch(line)

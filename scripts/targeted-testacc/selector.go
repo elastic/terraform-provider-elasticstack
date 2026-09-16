@@ -52,11 +52,20 @@ func SelectPackages(forceAll bool, phase1, phase2, accTestPackages []string, run
 	}
 	sort.Strings(union)
 
-	thresholdCount := int(math.Floor(runAllThresholdPct / 100.0 * float64(len(all))))
+	thresholdCount := RunAllThresholdCount(runAllThresholdPct, len(all))
 	if len(union) > thresholdCount {
 		return all
 	}
 	return union
+}
+
+// RunAllThresholdCount returns the run-all threshold package count for a
+// total of total acceptance packages: the largest count that still selects
+// the narrow union. Exported so the dry-run threshold note in main.go uses
+// the identical rule instead of re-deriving it (two copies of the same rule
+// can drift).
+func RunAllThresholdCount(runAllThresholdPct float64, total int) int {
+	return int(math.Floor(runAllThresholdPct / 100.0 * float64(total)))
 }
 
 // ApplyShard returns the slice of packages assigned to the given shard.
