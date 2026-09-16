@@ -320,6 +320,36 @@ func TestAlignXYLayerStateFromPlan_omittedReferenceLineThresholdDefaults(t *test
 	assert.JSONEq(t, planValue, got.ValueJSON.ValueString())
 }
 
+func TestAlignXYLayerStateFromPlan_siblingStaticOperationRestoresCollapsedValueJSON(t *testing.T) {
+	t.Parallel()
+
+	planValue := `{"value":42}`
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Operation: types.StringValue("static_value"),
+					ValueJSON: jsontypes.NewNormalizedValue(planValue),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Operation: types.StringValue("static_value"),
+					ValueJSON: jsontypes.NewNormalizedValue(`42`),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.JSONEq(t, planValue, state.Layers[0].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
+}
+
 func TestAlignXYLayerStateFromPlan_explicitReferenceLineThresholdAxisIsNotOverridden(t *testing.T) {
 	t.Parallel()
 
@@ -382,7 +412,7 @@ func TestPreserveThresholdValueJSONIfStateIsPlanValue_planWithoutValueDoesNotRes
 	plan := jsontypes.NewNormalizedValue(planJSON)
 	state := jsontypes.NewNormalizedValue(`null`)
 
-	preserveThresholdValueJSONIfStateIsPlanValue(plan, &state)
+	preserveThresholdValueJSONIfStateIsPlanValue(plan, &state, types.StringNull())
 
 	assert.JSONEq(t, `null`, state.ValueString())
 }
@@ -394,7 +424,7 @@ func TestPreserveThresholdValueJSONIfStateIsPlanValue_nonStaticValueWithValueKey
 	plan := jsontypes.NewNormalizedValue(planJSON)
 	state := jsontypes.NewNormalizedValue(`42`)
 
-	preserveThresholdValueJSONIfStateIsPlanValue(plan, &state)
+	preserveThresholdValueJSONIfStateIsPlanValue(plan, &state, types.StringNull())
 
 	assert.JSONEq(t, `42`, state.ValueString())
 }

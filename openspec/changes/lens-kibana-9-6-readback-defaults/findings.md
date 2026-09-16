@@ -174,7 +174,7 @@ treemap_config.value_display.percent_decimals: was null, now 2
 
 `empty_as_null` also appears on read-back when omitted; that key is already populated by `PopulateLegacyMetricMetricDefaults` and is not new 9.6 drift.
 
-The 1.3 probe used `operation: "count"` only. `color`/`size` injection therefore stays behind `IsFieldMetricOperation`; pipeline operations such as `formula` were not probed.
+The 1.3 probe used `operation: "count"` only. Injection of `color`/`size` was observed for that field-metric operation and is assumed uniform across the field-metric family. `color`/`size` injection therefore stays behind `IsFieldMetricOperation`; pipeline operations such as `formula` were not probed.
 
 ### Planned vs actual quotes
 
@@ -378,4 +378,12 @@ These failed in the same shard-0 job and are **out of scope** for this change (n
 | `TestAccResourceMLDatafeedState_withTimes` | FAIL (4.04s) |
 | `TestAccResourceKibanaSecurityEntityStore_import` | FAIL (23.63s) + re-run 1 FAIL (11.26s) |
 
-The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code. Reconfirmed on head `fe7ba57e2` (Provider CI [`35116764333`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333), shard-0 job [`104864919731`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333/job/104864919731)): `_layers` is still the only in-scope Lens failure; the same out-of-scope ML / entity-store import failures remain. Provider follow-up: https://github.com/elastic/terraform-provider-elasticstack/issues/4959.
+The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code. Reconfirmed on head `d87f1034` (Provider CI [`35147288738`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35147288738); shard-0 job [`104970527144`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35147288738/job/104970527144), shard-1 job [`104970527195`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35147288738/job/104970527195)): `_layers` is still the only in-scope Lens failure. The same out-of-scope ML / entity-store import failures remain on shard-0. Shard-1 also failed `TestAccResourcePrebuiltRules/in_space` (out of scope; snapshot warning). Provider follow-up: https://github.com/elastic/terraform-provider-elasticstack/issues/4959.
+
+### Other shard-1 failures (not on the 2.3 line)
+
+Out of scope for this change:
+
+| Test | Result |
+|---|---|
+| `TestAccResourcePrebuiltRules/in_space` | FAIL (snapshot warning on `9.6.0-SNAPSHOT` shard-1) |

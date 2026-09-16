@@ -208,7 +208,7 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue("static_value"))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
-			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON)
+			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
 			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color")
 		}
 	}
@@ -236,7 +236,7 @@ func cloneYAxisConfigModel(model *models.YAxisConfigModel) *models.YAxisConfigMo
 	return &cloned
 }
 
-func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, state *jsontypes.Normalized) {
+func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, state *jsontypes.Normalized, siblingOperation types.String) {
 	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
 		return
 	}
@@ -252,7 +252,7 @@ func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, sta
 	if _, isMap := stateVal.(map[string]any); isMap {
 		return
 	}
-	if planObj["operation"] != "static_value" {
+	if !thresholdValueJSONIsStaticValue(planObj, siblingOperation) {
 		return
 	}
 	planValue, hasValue := planObj["value"]
@@ -262,6 +262,13 @@ func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, sta
 	if reflect.DeepEqual(planValue, stateVal) {
 		*state = plan
 	}
+}
+
+func thresholdValueJSONIsStaticValue(planObj map[string]any, siblingOperation types.String) bool {
+	if operation, hasOp := planObj["operation"]; hasOp {
+		return operation == "static_value"
+	}
+	return typeutils.IsKnown(siblingOperation) && siblingOperation.ValueString() == "static_value"
 }
 
 func xyLegendEffectivelyUnset(m *models.XYLegendModel) bool {

@@ -388,7 +388,7 @@ func xyReferenceLineLayerAttributes() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"axis": schema.StringAttribute{
-						MarkdownDescription: "Which axis the reference line applies to. Schema currently allows 'bottom', 'left', 'right'; Kibana 9.6 accepts 'y' and 'y2' and rejects those schema values.",
+						MarkdownDescription: "Which axis the reference line applies to. Not settable against Kibana 9.6: the schema accepts `bottom`/`left`/`right`, all of which Kibana 9.6 rejects, while the values it accepts (`y`, `y2`) are not in the schema. Omit this attribute; it defaults to the Y axis. Tracked in https://github.com/elastic/terraform-provider-elasticstack/issues/4958.",
 						Optional:            true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("bottom", "left", "right"),
