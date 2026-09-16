@@ -91,15 +91,17 @@ type AzureSettings struct {
 // S3Settings is used for the `s3` block.
 type S3Settings struct {
 	CommonSettings
-	Bucket               types.String `tfsdk:"bucket"`
-	Endpoint             types.String `tfsdk:"endpoint"`
-	Client               types.String `tfsdk:"client"`
-	BasePath             types.String `tfsdk:"base_path"`
-	ServerSideEncryption types.Bool   `tfsdk:"server_side_encryption"`
-	BufferSize           types.String `tfsdk:"buffer_size"`
-	CannedACL            types.String `tfsdk:"canned_acl"`
-	StorageClass         types.String `tfsdk:"storage_class"`
-	PathStyleAccess      types.Bool   `tfsdk:"path_style_access"`
+	Bucket                 types.String `tfsdk:"bucket"`
+	Endpoint               types.String `tfsdk:"endpoint"`
+	Client                 types.String `tfsdk:"client"`
+	BasePath               types.String `tfsdk:"base_path"`
+	ServerSideEncryption   types.Bool   `tfsdk:"server_side_encryption"`
+	BufferSize             types.String `tfsdk:"buffer_size"`
+	CannedACL              types.String `tfsdk:"canned_acl"`
+	StorageClass           types.String `tfsdk:"storage_class"`
+	PathStyleAccess        types.Bool   `tfsdk:"path_style_access"`
+	DisableChunkedEncoding types.Bool   `tfsdk:"disable_chunked_encoding"`
+	AlwaysSignRequests     types.Bool   `tfsdk:"always_sign_requests"`
 }
 
 // HdfsSettings is used for the `hdfs` block.

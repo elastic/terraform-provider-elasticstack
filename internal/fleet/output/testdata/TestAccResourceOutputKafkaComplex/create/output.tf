@@ -29,6 +29,8 @@ resource "elasticstack_fleet_output" "test_output" {
     broker_timeout  = 10
     timeout         = 30
     version         = "2.6.0"
+    client_id       = "custom-client-id"
+    key             = "message-key"
 
     headers = [
       {

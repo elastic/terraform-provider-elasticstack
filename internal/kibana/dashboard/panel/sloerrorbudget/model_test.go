@@ -57,7 +57,7 @@ func sebWithHideBorder(v bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddabl
 	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) { c.HideBorder = new(v) }
 }
 
-func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
+func withSloDrilldown(encodeURL, openInNewTab *bool) func(*kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
 	return func(c *kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddable) {
 		d := struct {
 			EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
@@ -67,8 +67,8 @@ func withSloDrilldown(url, label string, encodeURL, openInNewTab *bool) func(*kb
 			Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
 			Url          string                                                        `json:"url"` //nolint:revive
 		}{
-			Url:          url,
-			Label:        label,
+			Url:          "https://example.com",
+			Label:        "Go",
 			Trigger:      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTriggerOnOpenPanelMenu,
 			Type:         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTypeUrlDrilldown,
 			EncodeUrl:    encodeURL,
@@ -388,7 +388,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	}
 	// Kibana returns default true for encode_url and open_in_new_tab
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+		withSloDrilldown(new(true), new(true)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
@@ -403,8 +403,11 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_roundTrip(t *testing.T) {
 	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null (API default normalization)")
 }
 
-func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.T) {
-	// If API returns false for encode_url/open_in_new_tab (non-default), it should be written.
+func Test_populateSloErrorBudgetFromAPI_drilldowns_priorNullStaysNull(t *testing.T) {
+	// Prior state left encode_url/open_in_new_tab null (practitioner never configured them).
+	// Consistent with the shared panelkit.ReadURLDrilldownsFromAPI behavior used by the
+	// sloalerts and sloburnrate sibling panels, a null prior wins and the fields stay null
+	// even when the API returns a non-default value.
 	pm := &models.PanelModel{
 		SloErrorBudgetConfig: &models.SloErrorBudgetConfigModel{
 			SloID: types.StringValue(""),
@@ -433,16 +436,14 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_falseValueWritten(t *testing.
 	}
 	// API returns false for both (non-default)
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(false), new(false)),
+		withSloDrilldown(new(false), new(false)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
 	d := pm.SloErrorBudgetConfig.Drilldowns[0]
-	// false is non-default, so it should be written even when prior state was null
-	assert.False(t, d.EncodeURL.IsNull(), "encode_url false should be written")
-	assert.False(t, d.EncodeURL.ValueBool())
-	assert.False(t, d.OpenInNewTab.IsNull(), "open_in_new_tab false should be written")
-	assert.False(t, d.OpenInNewTab.ValueBool())
+	// prior was null, so it stays null even though the API value is non-default
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url should remain null when prior was null")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab should remain null when prior was null")
 }
 
 func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *testing.T) {
@@ -474,7 +475,7 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 		},
 	}
 	apiCfg := makeSloErrorBudgetAPIConfig(
-		withSloDrilldown("https://example.com", "Go", new(true), new(true)),
+		withSloDrilldown(new(true), new(true)),
 	)
 	diag := PopulateFromAPI(pm, tfPanel, apiCfg)
 	require.False(t, diag.HasError(), "%v", diag)
@@ -483,4 +484,36 @@ func Test_populateSloErrorBudgetFromAPI_drilldowns_knownEncodeURLUpdated(t *test
 	assert.True(t, d.EncodeURL.ValueBool())
 	assert.False(t, d.OpenInNewTab.IsNull())
 	assert.True(t, d.OpenInNewTab.ValueBool())
+}
+
+func Test_populateSloErrorBudgetFromAPI_drilldowns_import_defaultsNulled(t *testing.T) {
+	// Import has no prior. Kibana 9.4+/9.5 returns this embeddable's defaults
+	// (encode_url=true, open_in_new_tab=true); both must stay null so omitted
+	// config fields round-trip through ImportStateVerify.
+	pm := &models.PanelModel{}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		withSloDrilldown(new(true), new(true)),
+	)
+	diag := PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	require.NotNil(t, pm.SloErrorBudgetConfig)
+	require.Len(t, pm.SloErrorBudgetConfig.Drilldowns, 1)
+	d := pm.SloErrorBudgetConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url true is the API default → null on import")
+	assert.True(t, d.OpenInNewTab.IsNull(), "open_in_new_tab true is this panel's API default → null on import")
+}
+
+func Test_populateSloErrorBudgetFromAPI_drilldowns_import_falseOpenInNewTabWritten(t *testing.T) {
+	// Import has no prior. open_in_new_tab=false is non-default for this panel
+	// and must be written so an explicit false survives import.
+	pm := &models.PanelModel{}
+	apiCfg := makeSloErrorBudgetAPIConfig(
+		withSloDrilldown(new(true), new(false)),
+	)
+	diag := PopulateFromAPI(pm, nil, apiCfg)
+	require.False(t, diag.HasError(), "%v", diag)
+	d := pm.SloErrorBudgetConfig.Drilldowns[0]
+	assert.True(t, d.EncodeURL.IsNull(), "encode_url true is the API default → null on import")
+	require.False(t, d.OpenInNewTab.IsNull(), "open_in_new_tab false is non-default → written on import")
+	assert.False(t, d.OpenInNewTab.ValueBool())
 }

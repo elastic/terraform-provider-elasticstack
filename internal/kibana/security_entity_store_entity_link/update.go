@@ -58,8 +58,8 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 			diags.AddError("Failed to link entities", err.Error())
 			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 		}
-		if resp.StatusCode() != http.StatusOK {
-			diags.Append(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)...)
+		if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+			diags.Append(d...)
 			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 		}
 	}
@@ -73,8 +73,8 @@ func updateEntityLink(ctx context.Context, client *clients.KibanaScopedClient, r
 			diags.AddError("Failed to unlink entities", err.Error())
 			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 		}
-		if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNotFound {
-			diags.Append(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)...)
+		if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound); d.HasError() {
+			diags.Append(d...)
 			return entitycore.KibanaWriteResult[entityLinkModel]{}, diags
 		}
 	}

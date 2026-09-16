@@ -242,7 +242,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		config.RunAs = types.SetNull(types.StringType)
 		config.Global = jsontypes.NewNormalizedNull()
 		config.Metadata = jsontypes.NewNormalizedNull()
-		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationAttrTypes()})
 		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
 		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
 		return config, diags
@@ -267,11 +267,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 	config.Description = typeutils.StringishPointerValue(role.Description)
 
 	// Cluster
-	clusterStrings := make([]string, len(role.Cluster))
-	for i, cp := range role.Cluster {
-		clusterStrings[i] = cp.String()
-	}
-	clusterSet, d := types.SetValueFrom(ctx, types.StringType, clusterStrings)
+	clusterSet, d := types.SetValueFrom(ctx, types.StringType, clusterPrivilegesToStrings(role.Cluster))
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
@@ -297,43 +293,12 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 	config.Metadata = typeutils.MarshalToNormalized(role.Metadata, path.Root("metadata"), &diags)
 
 	// Applications
-	if len(role.Applications) > 0 {
-		appElements := make([]attr.Value, len(role.Applications))
-		for i, app := range role.Applications {
-			privSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(app.Privileges))
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			resSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(app.Resources))
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			appObj, d := types.ObjectValue(getApplicationDSAttrTypes(), map[string]attr.Value{
-				attrApplication: types.StringValue(app.Application),
-				attrPrivileges:  privSet,
-				attrResources:   resSet,
-			})
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			appElements[i] = appObj
-		}
-
-		appSet, d := types.SetValue(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()}, appElements)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
-		config.Applications = appSet
-	} else {
-		config.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationDSAttrTypes()})
+	appSet, appDiags := applicationsToSet(ctx, role.Applications)
+	diags.Append(appDiags...)
+	if diags.HasError() {
+		return diags
 	}
+	config.Applications = appSet
 
 	// Indices
 	if len(role.Indices) > 0 {
@@ -345,11 +310,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 				return diags
 			}
 
-			privileges := make([]string, len(index.Privileges))
-			for j, p := range index.Privileges {
-				privileges[j] = p.String()
-			}
-			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			privSet, d := types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(index.Privileges))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -410,11 +371,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 				return diags
 			}
 
-			privileges := make([]string, len(remoteIndex.Privileges))
-			for j, p := range remoteIndex.Privileges {
-				privileges[j] = p.String()
-			}
-			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			privSet, d := types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(remoteIndex.Privileges))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -469,21 +426,16 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 }
 
 func buildFieldSecurityDSList(ctx context.Context, fs *esTypes.FieldSecurity) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	attrTypes := getFieldSecurityDSAttrTypes()
 	if fs == nil {
-		return types.ListValueMust(types.ObjectType{AttrTypes: attrTypes}, []attr.Value{}), diags
+		return types.ListValueMust(types.ObjectType{AttrTypes: attrTypes}, []attr.Value{}), nil
 	}
-	grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(fs.Grant))
-	diags.Append(d...)
+
+	grantSet, exceptSet, diags := fieldSecurityGrantExceptSets(ctx, fs)
 	if diags.HasError() {
 		return types.ListNull(types.ObjectType{AttrTypes: attrTypes}), diags
 	}
-	exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(fs.Except))
-	diags.Append(d...)
-	if diags.HasError() {
-		return types.ListNull(types.ObjectType{AttrTypes: attrTypes}), diags
-	}
+
 	obj, d := types.ObjectValue(attrTypes, map[string]attr.Value{
 		attrGrant:  grantSet,
 		attrExcept: exceptSet,
@@ -498,14 +450,6 @@ func buildFieldSecurityDSList(ctx context.Context, fs *esTypes.FieldSecurity) (t
 }
 
 // Data source attribute type helpers (mirror data source schema structure)
-func getApplicationDSAttrTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		attrApplication: types.StringType,
-		attrPrivileges:  types.SetType{ElemType: types.StringType},
-		attrResources:   types.SetType{ElemType: types.StringType},
-	}
-}
-
 func getFieldSecurityDSAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrGrant:  types.SetType{ElemType: types.StringType},

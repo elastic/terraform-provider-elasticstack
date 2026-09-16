@@ -182,7 +182,7 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 		model.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
 	}
 
-	varsMap := varsAnyToMap(data.Vars)
+	varsMap := policyshape.VarsAnyToMap(data.Vars)
 	if len(varsMap) == 0 {
 		model.VarsJSON = NewVarsJSONNull()
 	} else {

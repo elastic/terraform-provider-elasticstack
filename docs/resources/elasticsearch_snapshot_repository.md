@@ -145,6 +145,7 @@ Optional:
 
 Optional:
 
+- `always_sign_requests` (Boolean) If true, request payload signatures are sent even over HTTPS. Useful for some S3-compatible stores that require this additional integrity mechanism.
 - `base_path` (String) Specifies the path to the repository data within its bucket.
 - `bucket` (String) Name of the S3 bucket to use for snapshots.
 - `buffer_size` (String) Minimum threshold below which the chunk is uploaded using a single request.
@@ -152,6 +153,7 @@ Optional:
 - `chunk_size` (String) Maximum size of files in snapshots.
 - `client` (String) The name of the S3 client to use to connect to S3.
 - `compress` (Boolean) If true, metadata files, such as index mappings and settings, are compressed in snapshots.
+- `disable_chunked_encoding` (Boolean) If true, chunked encoding is disabled and will not be used for S3 uploads. Only set this if the storage service does not support chunked encoding.
 - `endpoint` (String) Custom S3 service endpoint, useful when using VPC endpoints or non-default S3 URLs.
 - `max_restore_bytes_per_sec` (String) Maximum snapshot restore rate per node.
 - `max_snapshot_bytes_per_sec` (String) Maximum snapshot creation rate per node.

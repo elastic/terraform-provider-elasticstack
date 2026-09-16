@@ -91,36 +91,37 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 			priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
 		}
 
-		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
-		for i, d := range *apiConfig.Drilldowns {
-			dm := models.URLDrilldownModel{
-				URL:   types.StringValue(d.Url),
-				Label: types.StringValue(d.Label),
-			}
-
-			if d.EncodeUrl != nil {
-				priorEncodeURL := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorEncodeURL = priorDrilldowns[i].EncodeURL
-				}
-				if typeutils.IsKnown(priorEncodeURL) || !*d.EncodeUrl {
-					dm.EncodeURL = types.BoolValue(*d.EncodeUrl)
-				}
-			}
-
-			if d.OpenInNewTab != nil {
-				priorOpenInNewTab := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorOpenInNewTab = priorDrilldowns[i].OpenInNewTab
-				}
-				if typeutils.IsKnown(priorOpenInNewTab) || !*d.OpenInNewTab {
-					dm.OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-				}
-			}
-
-			newDrilldowns = append(newDrilldowns, dm)
-		}
-		existing.Drilldowns = newDrilldowns
+		existing.Drilldowns = readSloErrorBudgetDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
 	}
 	return nil
+}
+
+type sloErrorBudgetAPIDrilldown = struct {
+	EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                        `json:"label"`
+	OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                        `json:"url"` //nolint:revive
+}
+
+func readSloErrorBudgetDrilldownsFromAPI(
+	apiDrilldowns *[]sloErrorBudgetAPIDrilldown,
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloErrorBudgetAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
+		}
+	})
+	// This embeddable defaults open_in_new_tab to true (see schema). The shared
+	// helper's built-in default is false, so import must override it or a Kibana
+	// 9.4+/9.5 response of true is written into state and ImportStateVerify drifts.
+	openInNewTabDefault := true
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns, panelkit.URLDrilldownImportDefaults{
+		OpenInNewTab: &openInNewTabDefault,
+	})
 }

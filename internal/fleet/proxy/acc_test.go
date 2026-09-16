@@ -117,8 +117,10 @@ func TestAccResourceFleetProxy(t *testing.T) {
 }
 
 // TestAccResourceFleetProxy_TLS exercises the TLS attribute lifecycle:
-// create with all three cert fields populated, then clear them all in a
-// follow-up apply. Asserting the cleared state catches any regression in
+// create with all three cert fields populated, update them to different
+// non-null values, then clear them all in a follow-up apply. Asserting the
+// value-to-value update covers the non-null->non-null path through
+// `toAPIUpdateModel`, and asserting the cleared state catches any regression in
 // `toAPIUpdateModel` that would silently leave certs untouched on the server
 // when removed from config — Fleet's PUT semantics treat omitted fields as
 // "set to null", so the update path must not unconditionally include cert
@@ -142,6 +144,18 @@ func TestAccResourceFleetProxy_TLS(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "certificate", "PEM-CERT"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "certificate_authorities", "PEM-CA"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "certificate_key", "PEM-KEY"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_certs_updated"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(fmt.Sprintf("TLS Proxy %s", proxyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "certificate", "PEM-CERT-2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "certificate_authorities", "PEM-CA-2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_proxy.test_proxy", "certificate_key", "PEM-KEY-2"),
 				),
 			},
 			{

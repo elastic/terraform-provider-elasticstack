@@ -123,75 +123,39 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 // globalDataTagsToModel converts managed_integrations global_data_tags into
 // the Terraform map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
-	elemType := globaldatatags.ElementType()
 	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
-		return types.MapNull(elemType)
+		return types.MapNull(globaldatatags.ElementType())
 	}
 
-	map0 := make(map[string]globaldatatags.Item, len(*item.GlobalDataTags))
-	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
-	for _, tag := range *item.GlobalDataTags {
-		tagPath := path.Root(attrGlobalDataTags).AtMapKey(tag.Name)
-		if _, dup := seenNames[tag.Name]; dup {
-			diags.AddAttributeError(
-				tagPath,
-				"Duplicate global_data_tags name",
-				fmt.Sprintf("API returned global_data_tags name %q more than once.", tag.Name),
-			)
-			continue
-		}
-		seenNames[tag.Name] = struct{}{}
-		tagItem, err := globaldatatags.Flatten(tag.Value,
-			kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1,
-			kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0,
-		)
-		if err != nil {
-			diags.AddAttributeError(
-				tagPath,
-				"Unsupported global_data_tags value type",
-				fmt.Sprintf("API returned an unsupported value for tag %q; expected string or number.", tag.Name),
-			)
-			continue
-		}
-		map0[tag.Name] = tagItem
+	tags := make([]globaldatatags.Tag[kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value], len(*item.GlobalDataTags))
+	for i, t := range *item.GlobalDataTags {
+		tags[i] = globaldatatags.Tag[kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value]{Name: t.Name, Value: t.Value}
 	}
-
-	if diags.HasError() {
-		return types.MapNull(elemType)
-	}
-
-	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root(attrGlobalDataTags), diags)
+	return globaldatatags.ToModel(ctx, tags, path.Root(attrGlobalDataTags), diags,
+		kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1,
+		kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0,
+	)
 }
 
 // globalDataTagsRawFromModel converts the `global_data_tags` map attribute
 // into request-body global_data_tags using typed union values.
 func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) *[]globalDataTagRaw {
-	if !typeutils.IsKnown(tags) {
+	items := globaldatatags.FromModel(ctx, tags, path.Root(attrGlobalDataTags), diags,
+		func(s string) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+			var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+			return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(s)
+		},
+		func(n float32) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+			var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+			return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(n)
+		},
+	)
+	if items == nil {
 		return nil
 	}
-	items := typeutils.MapTypeAs[globaldatatags.Item](ctx, tags, path.Root(attrGlobalDataTags), diags)
-	if diags.HasError() {
-		return nil
-	}
-
-	raw := make([]globalDataTagRaw, 0, len(items))
-	for key, item := range items {
-		tagPath := path.Root(attrGlobalDataTags).AtMapKey(key)
-		meta := typeutils.MapMeta{Key: key, Path: tagPath, Diags: diags}
-		value := globaldatatags.Expand(item, meta,
-			func(s string) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
-				var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
-				return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(s)
-			},
-			func(n float32) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
-				var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
-				return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(n)
-			},
-		)
-		raw = append(raw, globalDataTagRaw{Name: key, Value: value})
-	}
-	if diags.HasError() {
-		return nil
+	raw := make([]globalDataTagRaw, len(items))
+	for i, t := range items {
+		raw[i] = globalDataTagRaw{Name: t.Name, Value: t.Value}
 	}
 	return &raw
 }
@@ -234,7 +198,22 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 // varsUnionToMap decodes a managed-integration vars map (typed union values,
 // keyed by var name) into a plain map for Normalized JSON encoding. It is
 // generic over the anonymous per-property union type kbapi emits, so the same
-// logic serves both input-level and stream-level vars.
+// logic serves both input-level and stream-level vars. Delegates the
+// marshal/unmarshal round trip to policyshape.VarsAnyToMap, the shared home
+// for vars-shaped conversions (see integration_policy/models.go for another
+// caller).
+//
+// The nil/empty pre-check below is intentionally kept rather than delegated
+// to policyshape.VarsAnyToMap: a nil *map[string]*T passed as vars still
+// marshals to the JSON literal "null" (a typed nil pointer boxed in the
+// `any` parameter is not itself `== nil`), and an empty-but-non-nil map
+// marshals to "{}", which unmarshals back to a non-nil empty map. Either
+// path would fall through to VarsAnyToMap's own nil handling differently
+// than intended here: without this pre-check, a nil vars pointer would make
+// VarsAnyToMap return nil and this function would then (incorrectly) raise
+// an attribute error, and an empty vars map would return an empty map
+// instead of nil. Returning nil directly for the nil/empty case, with no
+// diagnostic, preserves the existing "no vars" behavior exactly.
 //
 // Malformed union payloads are rejected when kbapi unmarshals the HTTP
 // response; json.Marshal here only fails on unsupported Go types, which the
@@ -244,18 +223,9 @@ func varsUnionToMap[T any](vars *map[string]*T, attrPath path.Path, diags *diag.
 	if vars == nil || len(*vars) == 0 {
 		return nil
 	}
-	b, err := json.Marshal(vars)
-	if err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
-	}
-	if len(b) == 0 || string(b) == "null" {
-		return nil
-	}
-	var out map[string]any
-	if err := json.Unmarshal(b, &out); err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
+	out := policyshape.VarsAnyToMap(vars)
+	if out == nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", "vars did not decode to a JSON object")
 	}
 	return out
 }

@@ -2,6 +2,17 @@
 
 ### Changes
 
+- Add disable_chunked_encoding and always_sign_requests to the S3 snapshot repository ([#4885](https://github.com/elastic/terraform-provider-elasticstack/pull/4885))
+
+## [0.16.5] - 2026-09-07
+
+### Changes
+
+- Add `artifacts.dashboards` support to `elasticstack_kibana_alerting_rule`, letting practitioners link Kibana dashboards to a rule (alongside or instead of an investigation guide). Requires Elastic Stack 9.1.0+. ([#4520](https://github.com/elastic/terraform-provider-elasticstack/pull/4520))
+- `fleet_agent_policy` now reports an error for a Fleet API response containing duplicate `global_data_tags` names instead of silently discarding one of the entries, matching the managed integration resource's existing behavior. ([#4818](https://github.com/elastic/terraform-provider-elasticstack/pull/4818))
+- Plan omitted allow_restricted_indices as false on security role set updates so appending indices no longer fails after apply. Omitting the field after it was previously set to true now plans false and revokes restricted-index access. ([#4768](https://github.com/elastic/terraform-provider-elasticstack/pull/4768))
+- Keep omitted `custom_settings` on `ml_anomaly_detection_job` hands-off so apply no longer copies Elasticsearch/Kibana-authored values into state. ([#4750](https://github.com/elastic/terraform-provider-elasticstack/pull/4750))
+- Stop index mappings from storing template-injected dynamic_templates in state ([#4701](https://github.com/elastic/terraform-provider-elasticstack/pull/4701))
 - Add `additional_datastreams_permissions` to `elasticstack_fleet_integration_policy`, granting an integration's Elasticsearch API key write access to data streams targeted by a `reroute` processor. Requires Elastic Stack 9.1.0 or above. ([#4657](https://github.com/elastic/terraform-provider-elasticstack/pull/4657))
 
 ## [0.16.4] - 2026-08-25
@@ -1083,7 +1094,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.4...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.5...HEAD
+[0.16.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...v0.16.2

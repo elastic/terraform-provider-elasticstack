@@ -72,14 +72,14 @@ func (m tfModel) GetElasticsearchConnection() types.List { return m.Elasticsearc
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and enforces
 // the ES >= 8.2.0 minimum required by the Put Component Template API used by this resource.
 func (m tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion: *MinVersion,
-		ErrorMessage: fmt.Sprintf(
+	return entitycore.SingleVersionRequirement(
+		*MinVersion,
+		fmt.Sprintf(
 			"This resource requires Elasticsearch %s or later. "+
 				"This resource is not supported on this Elasticsearch version.",
 			MinVersion,
 		),
-	}}, nil
+	), nil
 }
 
 // mergeILMSetting adds the ILM lifecycle.name setting to existing settings.

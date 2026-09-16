@@ -255,12 +255,11 @@ func sloSingleFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 		)
 	}
 
-	if api.Drilldowns != nil {
-		dds, err := json.Marshal(*api.Drilldowns)
-		if err == nil {
-			m.Drilldowns = drilldownsFromWireJSON(dds)
-		}
+	var priorSingleDrilldowns []models.URLDrilldownModel
+	if priorSingle != nil {
+		priorSingleDrilldowns = priorSingle.Drilldowns
 	}
+	m.Drilldowns = readSingleDrilldownsFromAPI(api.Drilldowns, priorSingleDrilldowns)
 
 	pm.SloOverviewConfig = &models.SloOverviewConfigModel{Single: m}
 	return diags
@@ -287,12 +286,11 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 		)
 	}
 
-	if api.Drilldowns != nil {
-		dds, err := json.Marshal(*api.Drilldowns)
-		if err == nil {
-			m.Drilldowns = drilldownsFromWireJSON(dds)
-		}
+	var priorGroupsDrilldowns []models.URLDrilldownModel
+	if priorGroups != nil {
+		priorGroupsDrilldowns = priorGroups.Drilldowns
 	}
+	m.Drilldowns = readGroupDrilldownsFromAPI(api.Drilldowns, priorGroupsDrilldowns)
 
 	if api.GroupFilters != nil && (priorGroups == nil || priorGroups.GroupFilters != nil) {
 		gf := &models.SloGroupFiltersModel{}
@@ -339,21 +337,54 @@ func sloGroupsFromAPI(pm *models.PanelModel, tfPanel *models.PanelModel, api kba
 	return diags
 }
 
-func drilldownsFromWireJSON(b []byte) []models.URLDrilldownModel {
-	var wire []panelkit.URLDrilldownWire
-	if err := json.Unmarshal(b, &wire); err != nil {
-		return nil
-	}
-	result := make([]models.URLDrilldownModel, len(wire))
-	for i, dd := range wire {
-		result[i] = models.URLDrilldownModel{
-			URL:   types.StringValue(dd.URL),
-			Label: types.StringValue(dd.Label),
+type sloSingleOverviewAPIDrilldown = struct {
+	// EncodeUrl When true, URL is escaped using percent encoding
+	EncodeUrl    *bool                                                            `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                           `json:"label"`
+	OpenInNewTab *bool                                                            `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                           `json:"url"` //nolint:revive
+}
+
+func readSingleDrilldownsFromAPI(
+	apiDrilldowns *[]sloSingleOverviewAPIDrilldown,
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloSingleOverviewAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
 		}
-		result[i].EncodeURL = types.BoolPointerValue(dd.EncodeURL)
-		result[i].OpenInNewTab = types.BoolPointerValue(dd.OpenInNewTab)
-	}
-	return result
+	})
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
+}
+
+type sloGroupOverviewAPIDrilldown = struct {
+	// EncodeUrl When true, URL is escaped using percent encoding
+	EncodeUrl    *bool                                                           `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                          `json:"label"`
+	OpenInNewTab *bool                                                           `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                          `json:"url"` //nolint:revive
+}
+
+func readGroupDrilldownsFromAPI(
+	apiDrilldowns *[]sloGroupOverviewAPIDrilldown,
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloGroupOverviewAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItemData{
+			URL:          d.Url,
+			Label:        d.Label,
+			EncodeUrl:    d.EncodeUrl,
+			OpenInNewTab: d.OpenInNewTab,
+		}
+	})
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
 
 func populateFiltersJSONFromAPI(filters []kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item, out *jsontypes.Normalized) diag.Diagnostics {

@@ -39,6 +39,7 @@ const (
 
 	attrArtifacts          = "artifacts"
 	attrInvestigationGuide = "investigation_guide"
+	attrDashboards         = "dashboards"
 	attrContent            = "content"
 	attrContentPath        = "content_path"
 	attrChecksum           = "checksum"

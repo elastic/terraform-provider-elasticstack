@@ -19,10 +19,10 @@ package outputds
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -61,31 +61,13 @@ type outputItemModel struct {
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
 }
 
-func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
-	if union == nil {
-		return
-	}
-
-	output, err := union.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return
-	}
-
-	switch output := output.(type) {
-	case kbapi.KibanaHTTPAPIsOutputResponseElasticsearch:
-		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseLogstash:
-		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseKafka:
-		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch:
-		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
-	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
-	}
-
-	return
+func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) diag.Diagnostics {
+	return fleet.DispatchOutputUnion(ctx, union, fleet.OutputUnionHandlers{
+		Elasticsearch:       model.fromAPIElasticsearchModel,
+		Logstash:            model.fromAPILogstashModel,
+		Kafka:               model.fromAPIKafkaModel,
+		RemoteElasticsearch: model.fromAPIRemoteElasticsearchModel,
+	})
 }
 
 // outputAPICommonData holds the fields shared across all output API types so

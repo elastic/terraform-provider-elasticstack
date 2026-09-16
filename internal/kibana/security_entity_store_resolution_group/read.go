@@ -50,8 +50,8 @@ func readResolutionGroup(ctx context.Context, client *clients.KibanaScopedClient
 		)
 		return config, diags
 	}
-	if resp.StatusCode() != http.StatusOK {
-		diags.Append(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)...)
+	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
+		diags.Append(d...)
 		return config, diags
 	}
 

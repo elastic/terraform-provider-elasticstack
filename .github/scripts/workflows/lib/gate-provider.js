@@ -1,10 +1,10 @@
 /**
  * Evaluate whether the provider workflow gate passed or failed.
  *
- * @param {{ classifyResult: string, buildResult: string, lintResult: string, golangciLintResult: string, testResult: string, unitTestResult: string }} params
+ * @param {{ classifyResult: string, buildResult: string, lintResult: string, golangciLintResult: string, loadMatrixResult: string, testResult: string, unitTestResult: string }} params
  * @returns {{ passed: boolean, reason: string }}
  */
-function gateProvider({ classifyResult, buildResult, lintResult, golangciLintResult, testResult, unitTestResult }) {
+function gateProvider({ classifyResult, buildResult, lintResult, golangciLintResult, loadMatrixResult, testResult, unitTestResult }) {
   if (classifyResult !== 'true' && classifyResult !== 'false') {
     return {
       passed: false,
@@ -16,6 +16,7 @@ function gateProvider({ classifyResult, buildResult, lintResult, golangciLintRes
     { name: 'build', result: buildResult },
     { name: 'lint', result: lintResult },
     { name: 'golangci-lint', result: golangciLintResult },
+    { name: 'load-matrix', result: loadMatrixResult },
     { name: 'test', result: testResult },
     { name: 'unit-test', result: unitTestResult },
   ];

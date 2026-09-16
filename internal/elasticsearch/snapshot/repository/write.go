@@ -190,11 +190,13 @@ func azureToSettings(azure AzureSettings) map[string]any {
 
 func s3ToSettings(s3 S3Settings) map[string]any {
 	m := map[string]any{
-		settingBucket:               s3.Bucket.ValueString(),
-		settingCompress:             s3.Compress.ValueBool(),
-		settingReadonly:             s3.Readonly.ValueBool(),
-		settingServerSideEncryption: s3.ServerSideEncryption.ValueBool(),
-		settingPathStyleAccess:      s3.PathStyleAccess.ValueBool(),
+		settingBucket:                 s3.Bucket.ValueString(),
+		settingCompress:               s3.Compress.ValueBool(),
+		settingReadonly:               s3.Readonly.ValueBool(),
+		settingServerSideEncryption:   s3.ServerSideEncryption.ValueBool(),
+		settingPathStyleAccess:        s3.PathStyleAccess.ValueBool(),
+		settingDisableChunkedEncoding: s3.DisableChunkedEncoding.ValueBool(),
+		settingAlwaysSignRequests:     s3.AlwaysSignRequests.ValueBool(),
 	}
 	setIfNotEmpty(m, settingEndpoint, s3.Endpoint.ValueString())
 	setIfNotEmpty(m, settingClient, s3.Client.ValueString())

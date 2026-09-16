@@ -56,16 +56,37 @@ func BuildURLDrilldownItems[T any](apiDrilldowns *[]T, extract func(T) URLDrilld
 	return items
 }
 
+// URLDrilldownImportDefaults optionally overrides the Kibana server defaults
+// applied when prior is nil (import). A nil pointer keeps the helper's built-in
+// default (encode_url=true, open_in_new_tab=false).
+type URLDrilldownImportDefaults struct {
+	EncodeURL    *bool
+	OpenInNewTab *bool
+}
+
 // ReadURLDrilldownsFromAPI builds a []models.URLDrilldownModel from a slice of
 // URLDrilldownAPIItemData, applying null-preservation against the prior Terraform
 // state. When prior is nil (import), DrilldownBoolImportPreserving is used so that
-// fields matching Kibana server defaults are returned as null.
+// fields matching Kibana server defaults are returned as null. Pass defaults to
+// override the built-in encode_url/open_in_new_tab defaults for a specific panel.
 func ReadURLDrilldownsFromAPI(
 	apiItems []URLDrilldownAPIItemData,
 	prior []models.URLDrilldownModel,
+	defaults ...URLDrilldownImportDefaults,
 ) []models.URLDrilldownModel {
 	if len(apiItems) == 0 {
 		return nil
+	}
+
+	encodeDefault := drilldownURLEncodeURLDefault
+	openDefault := drilldownURLOpenInNewTabDefault
+	if len(defaults) > 0 {
+		if defaults[0].EncodeURL != nil {
+			encodeDefault = *defaults[0].EncodeURL
+		}
+		if defaults[0].OpenInNewTab != nil {
+			openDefault = *defaults[0].OpenInNewTab
+		}
 	}
 
 	out := make([]models.URLDrilldownModel, len(apiItems))
@@ -79,8 +100,8 @@ func ReadURLDrilldownsFromAPI(
 		}
 
 		if p == nil {
-			out[i].EncodeURL = DrilldownBoolImportPreserving(d.EncodeUrl, drilldownURLEncodeURLDefault)
-			out[i].OpenInNewTab = DrilldownBoolImportPreserving(d.OpenInNewTab, drilldownURLOpenInNewTabDefault)
+			out[i].EncodeURL = DrilldownBoolImportPreserving(d.EncodeUrl, encodeDefault)
+			out[i].OpenInNewTab = DrilldownBoolImportPreserving(d.OpenInNewTab, openDefault)
 			continue
 		}
 

@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
@@ -34,7 +35,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // alertingRuleModel is the Terraform model for an alerting rule.
@@ -64,6 +64,7 @@ type alertingRuleModel struct {
 
 // artifactsModel is the Terraform model for the rule's linked artifacts.
 type artifactsModel struct {
+	Dashboards         types.List   `tfsdk:"dashboards"`
 	InvestigationGuide types.Object `tfsdk:"investigation_guide"`
 }
 
@@ -72,6 +73,11 @@ type investigationGuideModel struct {
 	Content     types.String `tfsdk:"content"`
 	ContentPath types.String `tfsdk:"content_path"`
 	Checksum    types.String `tfsdk:"checksum"`
+}
+
+// dashboardModel is the Terraform model for a single linked dashboard.
+type dashboardModel struct {
+	ID types.String `tfsdk:"id"`
 }
 
 // actionModel is the Terraform model for a rule action.
@@ -231,77 +237,162 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	return diags
 }
 
+// artifactsModelFrom decodes the full artifacts nested object from m.Artifacts
+// (from plan or state, depending on the caller), or nil when unset/unknown.
+func (m alertingRuleModel) artifactsModelFrom(ctx context.Context) (*artifactsModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	am := typeutils.ObjectTypeAs[artifactsModel](ctx, m.Artifacts, path.Root("artifacts"), &diags)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return am, diags
+}
+
 // investigationGuideFrom returns the investigation guide nested under
 // m.Artifacts (from plan or state, depending on the caller), or nil when unset.
 func (m alertingRuleModel) investigationGuideFrom(ctx context.Context) (*investigationGuideModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	if !typeutils.IsKnown(m.Artifacts) || m.Artifacts.IsNull() {
+	am, diags := m.artifactsModelFrom(ctx)
+	if diags.HasError() || am == nil {
 		return nil, diags
 	}
-	var am artifactsModel
-	diags.Append(m.Artifacts.As(ctx, &am, basetypes.ObjectAsOptions{})...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if !typeutils.IsKnown(am.InvestigationGuide) || am.InvestigationGuide.IsNull() {
-		return nil, diags
-	}
-	var ig investigationGuideModel
-	diags.Append(am.InvestigationGuide.As(ctx, &ig, basetypes.ObjectAsOptions{})...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	return &ig, diags
+	ig := investigationGuideFromArtifacts(ctx, am, &diags)
+	return ig, diags
 }
 
-// populateArtifactsFromAPI maps the API investigation guide back into the model
-// while preserving the practitioner's chosen source. The API returns only the
-// blob, never a checksum, so for the file-based (`content_path`) case the prior
-// path and checksum are preserved and the blob is not surfaced as `content`.
+// investigationGuideFromArtifacts decodes the investigation_guide nested object
+// from an already-decoded artifactsModel, or nil when unset.
+func investigationGuideFromArtifacts(ctx context.Context, am *artifactsModel, diags *diag.Diagnostics) *investigationGuideModel {
+	if am == nil {
+		return nil
+	}
+	ig := typeutils.ObjectTypeAs[investigationGuideModel](ctx, am.InvestigationGuide, path.Root("artifacts").AtName("investigation_guide"), diags)
+	if diags.HasError() {
+		return nil
+	}
+	return ig
+}
+
+// buildArtifactsObject builds the artifacts nested object from an artifactsModel,
+// ensuring every field (dashboards + investigation_guide) is preserved. Callers
+// that only touch one field must read the current artifactsModel first so the
+// other field is carried through unchanged.
+func buildArtifactsObject(ctx context.Context, am artifactsModel) (types.Object, diag.Diagnostics) {
+	return types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), am)
+}
+
+// resolveArtifactsUnknowns replaces any unknown nested artifacts attribute with
+// its null value. Because `investigation_guide` and `dashboards` are both
+// Optional+Computed, the one the practitioner did not configure is unknown in
+// the plan; on stacks that do not return artifacts on read the value would
+// otherwise remain unknown in state after apply.
+func resolveArtifactsUnknowns(am artifactsModel) artifactsModel {
+	if am.InvestigationGuide.IsUnknown() {
+		am.InvestigationGuide = types.ObjectNull(getInvestigationGuideAttrTypes())
+	}
+	if am.Dashboards.IsUnknown() {
+		am.Dashboards = types.ListNull(getDashboardsElementType())
+	}
+	return am
+}
+
+// populateArtifactsFromAPI maps the API artifacts (investigation guide and
+// dashboards) back into the model while preserving the practitioner's chosen
+// investigation-guide source. The API returns only the blob, never a checksum,
+// so for the file-based (`content_path`) case the prior path and checksum are
+// preserved and the blob is not surfaced as `content`.
+//
+// On stacks older than 9.5.0 the Kibana GET API does not return artifacts
+// (elastic/kibana#247279); when the entire artifacts key is omitted the
+// prior (plan/state) value is preserved so write-only management does not
+// thrash state. When the API does return artifacts, omitted siblings are
+// cleared so out-of-band deletion of just the guide or just dashboards is
+// visible on refresh.
 func (m *alertingRuleModel) populateArtifactsFromAPI(ctx context.Context, rule *models.AlertingRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	artifactsAttrTypes := getArtifactsAttrTypes()
 
-	priorIG, d := m.investigationGuideFrom(ctx)
+	prior, d := m.artifactsModelFrom(ctx)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
 	}
+	priorIG := investigationGuideFromArtifacts(ctx, prior, &diags)
+	if diags.HasError() {
+		return diags
+	}
 
-	apiHasIG := rule.Artifacts != nil && rule.Artifacts.InvestigationGuide != nil
-
-	if !apiHasIG {
-		// Nothing returned by the API. When nothing was configured either, ensure
-		// the object resolves to null rather than lingering unknown.
-		if priorIG == nil && m.Artifacts.IsUnknown() {
-			m.Artifacts = types.ObjectNull(artifactsAttrTypes)
+	if rule.Artifacts == nil {
+		// Nothing returned by the API (nothing configured, or a pre-9.5.0 stack
+		// that does not return artifacts). Preserve configured values only when
+		// the entire artifacts key is omitted — not per-field — so that on
+		// 9.5.0+ an out-of-band deletion of just the guide or just dashboards
+		// is visible on refresh.
+		if prior == nil {
+			// Nothing configured: resolve a lingering unknown object to null.
+			if m.Artifacts.IsUnknown() {
+				m.Artifacts = types.ObjectNull(artifactsAttrTypes)
+			}
+			return diags
 		}
+		// Artifacts were configured but the API returned none (write-only on
+		// pre-9.5.0 stacks). Preserve the configured values, but resolve any
+		// nested attribute the practitioner did not set (which is Computed and
+		// therefore unknown in the plan) to null so state has no unknown after
+		// apply.
+		resolved := resolveArtifactsUnknowns(*prior)
+		artObj, d := buildArtifactsObject(ctx, resolved)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		m.Artifacts = artObj
 		return diags
 	}
 
-	blob := rule.Artifacts.InvestigationGuide.Blob
-
-	ig := investigationGuideModel{}
-	if priorIG != nil && typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
-		// File-based source: preserve path + checksum, do not surface blob.
-		ig.Content = types.StringNull()
-		ig.ContentPath = priorIG.ContentPath
-		ig.Checksum = priorIG.Checksum
-	} else {
-		// Inline content (or first read / import): store the blob as content.
-		ig.Content = types.StringValue(blob)
-		ig.ContentPath = types.StringNull()
-		ig.Checksum = types.StringNull()
+	am := artifactsModel{
+		InvestigationGuide: types.ObjectNull(getInvestigationGuideAttrTypes()),
+		Dashboards:         types.ListNull(getDashboardsElementType()),
 	}
 
-	igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), ig)
-	diags.Append(d...)
-	if diags.HasError() {
-		return diags
+	// Investigation guide. Omitted sibling stays null (do not preserve prior).
+	if rule.Artifacts.InvestigationGuide != nil {
+		blob := rule.Artifacts.InvestigationGuide.Blob
+		ig := investigationGuideModel{}
+		if priorIG != nil && typeutils.IsKnown(priorIG.ContentPath) && !priorIG.ContentPath.IsNull() {
+			// File-based source: preserve path + checksum, do not surface blob.
+			ig.Content = types.StringNull()
+			ig.ContentPath = priorIG.ContentPath
+			ig.Checksum = priorIG.Checksum
+		} else {
+			// Inline content (or first read / import): store the blob as content.
+			ig.Content = types.StringValue(blob)
+			ig.ContentPath = types.StringNull()
+			ig.Checksum = types.StringNull()
+		}
+		igObj, d := types.ObjectValueFrom(ctx, getInvestigationGuideAttrTypes(), ig)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		am.InvestigationGuide = igObj
 	}
 
-	artObj, d := types.ObjectValueFrom(ctx, artifactsAttrTypes, artifactsModel{InvestigationGuide: igObj})
+	// Dashboards. Omitted sibling stays null (do not preserve prior).
+	if len(rule.Artifacts.Dashboards) > 0 {
+		dashboards := make([]dashboardModel, len(rule.Artifacts.Dashboards))
+		for i, dash := range rule.Artifacts.Dashboards {
+			dashboards[i] = dashboardModel{ID: types.StringValue(dash.ID)}
+		}
+		dashList, d := types.ListValueFrom(ctx, getDashboardsElementType(), dashboards)
+		diags.Append(d...)
+		if diags.HasError() {
+			return diags
+		}
+		am.Dashboards = dashList
+	}
+
+	artObj, d := buildArtifactsObject(ctx, am)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
@@ -453,17 +544,17 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 		var hasFrequency, hasAlertsFilter bool
 		for _, action := range actions {
 			if !hasFrequency && typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *frequencyMinSupportedVersion,
-					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*frequencyMinSupportedVersion,
+					"actions.frequency is only supported for Kibana v8.6 or higher",
+				)...)
 				hasFrequency = true
 			}
 			if !hasAlertsFilter && typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *alertsFilterMinSupportedVersion,
-					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*alertsFilterMinSupportedVersion,
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)...)
 				hasAlertsFilter = true
 			}
 			if hasFrequency && hasAlertsFilter {
@@ -474,39 +565,38 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 
 	// 8.13.0 when AlertDelay is set
 	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *alertDelayMinSupportedVersion,
-			ErrorMessage: "alert_delay is only supported for Kibana v8.13 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*alertDelayMinSupportedVersion,
+			"alert_delay is only supported for Kibana v8.13 or higher",
+		)...)
 	}
 
 	// 8.16.0 when Flapping is set
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *flappingMinSupportedVersion,
-			ErrorMessage: "flapping is only supported for Kibana v8.16 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*flappingMinSupportedVersion,
+			"flapping is only supported for Kibana v8.16 or higher",
+		)...)
 
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
 		// 9.3.0 when Flapping.Enabled is set
 		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *flappingEnabledMinSupportedVersion,
-				ErrorMessage: "flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-			})
+			reqs = append(reqs, entitycore.SingleVersionRequirement(
+				*flappingEnabledMinSupportedVersion,
+				"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+			)...)
 		}
 	}
 
 	// 9.1.0 when Artifacts (investigation guide) is set
 	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *artifactsMinSupportedVersion,
-			ErrorMessage: "artifacts (investigation guide) is only supported for Elastic Stack 9.1 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*artifactsMinSupportedVersion,
+			"artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
+		)...)
 	}
 
 	return reqs, diags
@@ -591,8 +681,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 
 	// Flapping
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return models.AlertingRule{}, diags
 		}
@@ -627,34 +716,57 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 
 // artifactsToAPI converts the model's artifacts object into the API model. For
 // the file-based investigation guide the file at `content_path` is read at
-// apply time and its contents are sent as the blob.
+// apply time and its contents are sent as the blob. Returns nil when neither an
+// investigation guide nor any dashboards are configured.
 func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.AlertingRuleArtifacts, diag.Diagnostics) {
-	ig, diags := m.investigationGuideFrom(ctx)
-	if diags.HasError() || ig == nil {
+	am, diags := m.artifactsModelFrom(ctx)
+	if diags.HasError() || am == nil {
 		return nil, diags
 	}
 
-	var blob string
-	switch {
-	case typeutils.IsKnown(ig.Content) && !ig.Content.IsNull():
-		blob = ig.Content.ValueString()
-	case typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull():
-		data, err := os.ReadFile(ig.ContentPath.ValueString())
-		if err != nil {
-			diags.AddError(
-				"Cannot read investigation guide file",
-				fmt.Sprintf("Failed to read content_path %q: %s", ig.ContentPath.ValueString(), err),
-			)
+	out := &models.AlertingRuleArtifacts{}
+
+	if ig := investigationGuideFromArtifacts(ctx, am, &diags); ig != nil {
+		if diags.HasError() {
 			return nil, diags
 		}
-		blob = string(data)
-	default:
-		return nil, diags
+		var blob string
+		switch {
+		case typeutils.IsKnown(ig.Content) && !ig.Content.IsNull():
+			blob = ig.Content.ValueString()
+		case typeutils.IsKnown(ig.ContentPath) && !ig.ContentPath.IsNull():
+			data, err := os.ReadFile(ig.ContentPath.ValueString())
+			if err != nil {
+				diags.AddError(
+					"Cannot read investigation guide file",
+					fmt.Sprintf("Failed to read content_path %q: %s", ig.ContentPath.ValueString(), err),
+				)
+				return nil, diags
+			}
+			blob = string(data)
+		}
+		// Send the guide whenever it is configured, including an explicit
+		// empty `content = ""`. Dropping empty blobs omitted the artifacts
+		// key entirely and produced a silent no-op (or inconsistent-result
+		// after apply) instead of writing the empty guide.
+		out.InvestigationGuide = &models.AlertingRuleInvestigationGuide{Blob: blob}
 	}
 
-	return &models.AlertingRuleArtifacts{
-		InvestigationGuide: &models.AlertingRuleInvestigationGuide{Blob: blob},
-	}, diags
+	if typeutils.IsKnown(am.Dashboards) && !am.Dashboards.IsNull() {
+		var dashboards []dashboardModel
+		diags.Append(am.Dashboards.ElementsAs(ctx, &dashboards, false)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, d := range dashboards {
+			out.Dashboards = append(out.Dashboards, models.AlertingRuleArtifactDashboard{ID: d.ID.ValueString()})
+		}
+	}
+
+	if out.InvestigationGuide == nil && len(out.Dashboards) == 0 {
+		return nil, diags
+	}
+	return out, diags
 }
 
 // applyInvestigationGuideChecksum recomputes and stores the SHA-256 checksum of
@@ -663,7 +775,11 @@ func (m alertingRuleModel) artifactsToAPI(ctx context.Context) (*models.Alerting
 // write so the computed `checksum` in state reflects the applied file, and
 // mirrors the drift detection performed by ModifyPlan.
 func (m *alertingRuleModel) applyInvestigationGuideChecksum(ctx context.Context) diag.Diagnostics {
-	ig, diags := m.investigationGuideFrom(ctx)
+	am, diags := m.artifactsModelFrom(ctx)
+	if diags.HasError() || am == nil {
+		return diags
+	}
+	ig := investigationGuideFromArtifacts(ctx, am, &diags)
 	if diags.HasError() || ig == nil {
 		return diags
 	}
@@ -687,7 +803,8 @@ func (m *alertingRuleModel) applyInvestigationGuideChecksum(ctx context.Context)
 	if diags.HasError() {
 		return diags
 	}
-	artObj, d := types.ObjectValueFrom(ctx, getArtifactsAttrTypes(), artifactsModel{InvestigationGuide: igObj})
+	am.InvestigationGuide = igObj
+	artObj, d := buildArtifactsObject(ctx, *am)
 	diags.Append(d...)
 	if diags.HasError() {
 		return diags
@@ -737,9 +854,10 @@ func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRule
 
 			if apiAction.AlertsFilter.Timeframe != nil {
 				tf := apiAction.AlertsFilter.Timeframe
-				days := make([]int64, len(tf.Days))
-				for i, d := range tf.Days {
-					days[i] = int64(d)
+				days, err := alertingactions.DaysFromAPI(tf.Days)
+				if err != nil {
+					diags.AddError("Failed to convert alerts_filter timeframe days", err.Error())
+					continue
 				}
 				daysList, d := types.ListValueFrom(ctx, types.Int64Type, days)
 				diags.Append(d...)
@@ -800,8 +918,7 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Frequency - extract from object
 		if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-			var freq frequencyModel
-			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
+			freq := typeutils.ObjectTypeAs[frequencyModel](ctx, action.Frequency, path.Root("actions").AtListIndex(i).AtName("frequency"), &diags)
 			// Only create Frequency if both required fields are present
 			if typeutils.IsKnown(freq.Summary) && typeutils.IsKnown(freq.NotifyWhen) {
 				apiAction.Frequency = &models.ActionFrequency{
@@ -816,8 +933,8 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 
 		// Alerts filter - extract from object
 		if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-			var filter alertsFilterModel
-			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
+			alertsFilterPath := path.Root("actions").AtListIndex(i).AtName("alerts_filter")
+			filter := typeutils.ObjectTypeAs[alertsFilterModel](ctx, action.AlertsFilter, alertsFilterPath, &diags)
 			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
 
 			if typeutils.IsKnown(filter.Kql) {
@@ -826,18 +943,12 @@ func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.
 			}
 
 			if typeutils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
-				var tf timeframeModel
-				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
+				tf := typeutils.ObjectTypeAs[timeframeModel](ctx, filter.Timeframe, alertsFilterPath.AtName("timeframe"), &diags)
 				var days []int64
 				diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
 
-				int32Days := make([]int32, len(days))
-				for j, d := range days {
-					int32Days[j] = int32(d)
-				}
-
 				apiAction.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       int32Days,
+					Days:       alertingactions.Int32FromInt64(days),
 					Timezone:   tf.Timezone.ValueString(),
 					HoursStart: tf.HoursStart.ValueString(),
 					HoursEnd:   tf.HoursEnd.ValueString(),

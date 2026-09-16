@@ -80,12 +80,10 @@ func (m osquerySavedQueryBaseModel) GetResourceID() types.String { return m.Save
 func (m osquerySavedQueryBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m osquerySavedQueryBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *MinSupportedVersion,
-			ErrorMessage: fmt.Sprintf("Osquery saved queries require Elastic Stack v%s or later.", MinSupportedVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinSupportedVersion,
+		fmt.Sprintf("Osquery saved queries require Elastic Stack v%s or later.", MinSupportedVersion),
+	), nil
 }
 
 func (m *osquerySavedQueryBaseModel) populateFromCreateAPI(_ context.Context, entity *kibanaoapi.OsquerySavedQueryCreateEntity) diag.Diagnostics {

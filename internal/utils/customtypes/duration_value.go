@@ -136,6 +136,15 @@ func NewDurationValue(value string) Duration {
 	}
 }
 
+// NewDurationFromAny converts an any value to a Duration, returning NewDurationNull()
+// when v is nil or not a string.
+func NewDurationFromAny(v any) Duration {
+	if str, ok := v.(string); ok {
+		return NewDurationValue(str)
+	}
+	return NewDurationNull()
+}
+
 // NewDurationPointerValue creates a Duration with a null value if nil or a known value. Access the value via ValueStringPointer method.
 func NewDurationPointerValue(value *string) Duration {
 	return Duration{

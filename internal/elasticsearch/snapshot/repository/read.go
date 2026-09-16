@@ -259,13 +259,15 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		}
 	}
 
-	// The Elasticsearch GET response may not echo endpoint and path_style_access
-	// (the typed S3RepositorySettings struct also omits both fields). Whether
+	// The Elasticsearch GET response may not echo endpoint or path_style_access
+	// (client-setting overrides rather than native repository settings). Whether
 	// Elasticsearch returns them via the raw settings overlay is version-dependent
-	// and difficult to determine empirically once read-side inheritance is in place.
-	// We therefore inherit both values from the prior state when the GET response
-	// omits them, mirroring the compressFallback pattern in settingsToFs and
-	// settingsToURL. The API value wins when present.
+	// and difficult to determine empirically, so we inherit those two from prior
+	// state when GET omits them. Empirically, GET _snapshot/{repo} on Elasticsearch
+	// 8.19.17 and 9.4.0 echoes disable_chunked_encoding and always_sign_requests
+	// (as the strings "true"/"false") whenever they were set in the PUT body —
+	// including false — so those two map directly with no fallback. The API value
+	// wins when present.
 	var endpoint types.String
 	if endpointStr := strSetting(s, settingEndpoint); endpointStr != "" {
 		endpoint = strSettingNull(s, settingEndpoint)
@@ -290,6 +292,8 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 		CannedACL:              strSettingNull(s, settingCannedACL),
 		StorageClass:           strSettingNull(s, settingStorageClass),
 		PathStyleAccess:        types.BoolValue(boolSetting(s, settingPathStyleAccess, pathStyleAccessFallback)),
+		DisableChunkedEncoding: types.BoolValue(boolSetting(s, settingDisableChunkedEncoding, false)),
+		AlwaysSignRequests:     types.BoolValue(boolSetting(s, settingAlwaysSignRequests, false)),
 	}
 	obj, objDiags := types.ObjectValueFrom(ctx, s3AttrTypes(), s3)
 	diags.Append(objDiags...)

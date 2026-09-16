@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -527,6 +528,199 @@ func TestAccResourceElasticDefendIntegrationPolicy_advancedSettings(t *testing.T
 					resource.TestCheckResourceAttr(resourceName, "advanced_settings.windows.advanced.artifacts.global.base_url", "http://10.0.0.44"),
 					resource.TestCheckResourceAttr(resourceName, "advanced_settings.mac.advanced.artifacts.global.base_url", "http://10.0.0.44"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_versionUpgrade verifies that
+// integration_version can be bumped in-place on an existing policy and that
+// previously configured policy.* settings are preserved across the update.
+func TestAccResourceElasticDefendIntegrationPolicy_versionUpgrade(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendPolicyIDs, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":         config.StringVariable(policyName),
+					"integration_version": config.StringVariable("8.14.0"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.14.0"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.mode", "detect"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name":         config.StringVariable(policyName),
+					"integration_version": config.StringVariable("8.15.0"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "integration_version", "8.15.0"),
+					// Prior policy settings must survive the version bump.
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.mode", "detect"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_spaceIDs verifies that
+// space_ids can be explicitly configured on create and updated in-place to
+// add an additional Kibana space, matching the agent policy's space_ids.
+func TestAccResourceElasticDefendIntegrationPolicy_spaceIDs(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendSpaceIDs, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	// space_id must match elasticstack_kibana_space validation: ^[a-z0-9_-]+$
+	spaceID := "space-test-" + sdkacctest.RandStringFromCharSet(8, "abcdefghijklmnopqrstuvwxyz0123456789")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"space_id":    config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", "default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"space_id":    config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", "default"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", spaceID),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators
+// exercises the agent_policy_id/agent_policy_ids ConflictsWith validator and
+// the agent_policy_ids SizeAtLeast(1) validator. Both fail at plan time.
+func TestAccResourceElasticDefendIntegrationPolicy_agentPolicyValidators(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("conflict"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)cannot be specified when`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_list"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)at least 1`),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_preset verifies that preset
+// accepts a documented value other than the EDRComplete used by the other tests.
+func TestAccResourceElasticDefendIntegrationPolicy_preset(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "preset", "NGAV"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace verifies that
+// policy_id accepts an explicit user-supplied value and that changing it
+// triggers RequiresReplace (destroy-before-create). The replacement plan is
+// never applied, since the resource always derives its own policy_id from
+// the bootstrap create response regardless of what is configured.
+func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

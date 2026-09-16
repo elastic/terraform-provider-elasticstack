@@ -25,9 +25,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/datafeed"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/statetransition"
 	"github.com/hashicorp/terraform-plugin-framework-timetypes/timetypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func updateAfterMissedTransition(
@@ -80,38 +80,24 @@ func performStateTransition(ctx context.Context, client *clients.ElasticsearchSc
 		return false, parseErrs
 	}
 
-	if currentState == desiredState {
-		tflog.Debug(ctx, fmt.Sprintf("ML datafeed %s is already in desired state %s", datafeedID, desiredState))
-		return true, nil
-	}
-
-	switch desiredState {
-	case datafeed.StateStarted:
-		start := data.Start.ValueString()
-		end := data.End.ValueString()
-
-		diags := elasticsearch.StartDatafeed(ctx, client, datafeedID, start, end, timeout)
-		if diags.HasError() {
-			return false, diags
-		}
-	case datafeed.StateStopped:
-		if diags := elasticsearch.StopDatafeed(ctx, client, datafeedID, force, timeout); diags.HasError() {
-			return false, diags
-		}
-	default:
-		return false, diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Invalid state",
-				fmt.Sprintf("Invalid state %s. Valid states are 'started' and 'stopped'", desiredState),
-			),
-		}
-	}
-
-	inDesiredState, diags := datafeed.WaitForDatafeedState(ctx, client, datafeedID, desiredState)
-	if diags.HasError() {
-		return false, diags
-	}
-
-	tflog.Info(ctx, fmt.Sprintf("ML datafeed %s successfully transitioned to state %s", datafeedID, desiredState))
-	return inDesiredState, nil
+	return statetransition.Perform(ctx, statetransition.Params[datafeed.State]{
+		ResourceType:           "ML datafeed",
+		ResourceID:             datafeedID,
+		CurrentState:           currentState,
+		DesiredState:           desiredState,
+		StartState:             datafeed.StateStarted,
+		StopState:              datafeed.StateStopped,
+		ValidStatesDescription: "'started' and 'stopped'",
+		Start: func(ctx context.Context) diag.Diagnostics {
+			start := data.Start.ValueString()
+			end := data.End.ValueString()
+			return elasticsearch.StartDatafeed(ctx, client, datafeedID, start, end, timeout)
+		},
+		Stop: func(ctx context.Context) diag.Diagnostics {
+			return elasticsearch.StopDatafeed(ctx, client, datafeedID, force, timeout)
+		},
+		Wait: func(ctx context.Context) (bool, diag.Diagnostics) {
+			return datafeed.WaitForDatafeedState(ctx, client, datafeedID, desiredState)
+		},
+	})
 }

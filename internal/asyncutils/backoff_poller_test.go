@@ -123,6 +123,30 @@ func TestPollWithBackoff_ContextCancelledWhileWaiting(t *testing.T) {
 	require.Equal(t, 1, calls)
 }
 
+func TestPollWithBackoff_JitterAddsExtraDelayWithinBound(t *testing.T) {
+	t.Parallel()
+
+	var gaps []time.Duration
+	last := time.Now()
+	fn := func(_ context.Context, attempt int) (int, bool, error) {
+		now := time.Now()
+		if attempt > 1 {
+			gaps = append(gaps, now.Sub(last))
+		}
+		last = now
+		return attempt, attempt >= 3, nil
+	}
+
+	cfg := BackoffConfig{Initial: 20 * time.Millisecond, Max: 20 * time.Millisecond, Jitter: 0.5}
+	_, err := PollWithBackoff(context.Background(), cfg, fn)
+	require.NoError(t, err)
+	require.Len(t, gaps, 2)
+	for _, gap := range gaps {
+		assert.GreaterOrEqual(t, gap, 20*time.Millisecond)
+		assert.Less(t, gap, 60*time.Millisecond, "jitter should stay bounded by the configured fraction")
+	}
+}
+
 func TestPollWithBackoff_FlatDelayWhenMaxUnset(t *testing.T) {
 	t.Parallel()
 

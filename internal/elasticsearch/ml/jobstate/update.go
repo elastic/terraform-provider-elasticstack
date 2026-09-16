@@ -19,12 +19,11 @@ package jobstate
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/statetransition"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func performStateTransition(ctx context.Context, client *clients.ElasticsearchScopedClient, data MLJobStateData, currentState string) diag.Diagnostics {
@@ -37,34 +36,24 @@ func performStateTransition(ctx context.Context, client *clients.ElasticsearchSc
 		return parseErrs
 	}
 
-	if currentState == desiredState {
-		tflog.Debug(ctx, fmt.Sprintf("ML job %s is already in desired state %s", jobID, desiredState))
-		return nil
-	}
-
-	switch desiredState {
-	case "opened":
-		if diags := elasticsearch.OpenMLJob(ctx, client, jobID); diags.HasError() {
-			return diags
-		}
-	case "closed":
-		if diags := elasticsearch.CloseMLJob(ctx, client, jobID, force, timeout); diags.HasError() {
-			return diags
-		}
-	default:
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic(
-				"Invalid state",
-				fmt.Sprintf("Invalid state %s. Valid states are 'opened' and 'closed'", desiredState),
-			),
-		}
-	}
-
-	diags := waitForJobState(ctx, client, data, jobID, desiredState)
-	if diags.HasError() {
-		return diags
-	}
-
-	tflog.Info(ctx, fmt.Sprintf("ML job %s successfully transitioned to state %s", jobID, desiredState))
-	return nil
+	_, diags := statetransition.Perform(ctx, statetransition.Params[string]{
+		ResourceType:           "ML job",
+		ResourceID:             jobID,
+		CurrentState:           currentState,
+		DesiredState:           desiredState,
+		StartState:             "opened",
+		StopState:              "closed",
+		ValidStatesDescription: "'opened' and 'closed'",
+		Start: func(ctx context.Context) diag.Diagnostics {
+			return elasticsearch.OpenMLJob(ctx, client, jobID)
+		},
+		Stop: func(ctx context.Context) diag.Diagnostics {
+			return elasticsearch.CloseMLJob(ctx, client, jobID, force, timeout)
+		},
+		Wait: func(ctx context.Context) (bool, diag.Diagnostics) {
+			diags := waitForJobState(ctx, client, data, jobID, desiredState)
+			return !diags.HasError(), diags
+		},
+	})
+	return diags
 }

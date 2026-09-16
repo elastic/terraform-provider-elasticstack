@@ -26,44 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestMLDurationRegexp(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		input string
-		ok    bool
-		note  string
-	}{
-		{"15m", true, "minutes"},
-		{"1h", true, "hours"},
-		{"150s", true, "seconds"},
-		{"60s", true, "seconds short"},
-		{"2m", true, "minutes short"},
-		{"1d", true, "days"},
-		{"2h", true, "hours"},
-		{"100n", true, "nanos"},
-		{"5u", true, "micros"},
-		{"", false, "empty"},
-		{"m", false, "no leading digits"},
-		{"1.5m", false, "decimal not allowed"},
-		{"1ms", false, "multi-char unit not allowed"},
-		{"1H", false, "uppercase unit"},
-		{"1 m", false, "space not allowed"},
-		{"-1m", false, "negative"},
-		{"0m", true, "zero value"},
-	}
-
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("%q", tc.input), func(t *testing.T) {
-			t.Parallel()
-			got := mlDurationRegexp.MatchString(tc.input)
-			if got != tc.ok {
-				t.Fatalf("MatchString(%q) = %v, want %v (%s)", tc.input, got, tc.ok, tc.note)
-			}
-		})
-	}
-}
-
 func TestMLDuration(t *testing.T) {
 	t.Parallel()
 
@@ -74,13 +36,20 @@ func TestMLDuration(t *testing.T) {
 		{"15m", false},
 		{"1h", false},
 		{"150s", false},
+		{"60s", false},
+		{"2m", false},
+		{"2h", false},
 		{"1d", false},
 		{"100n", false},
 		{"5u", false},
+		{"0m", false},
 		{"", true},
 		{"m", true},
 		{"1.5m", true},
 		{"1ms", true},
+		{"1H", true},
+		{"1 m", true},
+		{"-1m", true},
 	}
 
 	v := Duration()
