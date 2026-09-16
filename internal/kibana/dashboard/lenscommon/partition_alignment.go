@@ -44,9 +44,9 @@ func AlignPartitionLegendStateFromPlan(plan, state *models.PartitionLegendModel)
 // PartitionValueDisplayMatchesKibanaDefault reports whether state.value_display
 // looks like a Kibana-injected default block. Confirmed shapes:
 // {mode="percentage", percent_decimals=null} (pre-9.6) and
-// {mode="percentage", percent_decimals=2} (Kibana 9.6+). The treemap, mosaic,
-// pie, and waffle converters all emit a default block when the practitioner
-// omits value_display.
+// {mode="percentage", percent_decimals=2} (Kibana 9.6+). Reached from the
+// treemap and mosaic alignment paths when the practitioner omits
+// value_display.
 func PartitionValueDisplayMatchesKibanaDefault(state *models.PartitionValueDisplay) bool {
 	if state == nil {
 		return false
