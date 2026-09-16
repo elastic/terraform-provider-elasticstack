@@ -1,7 +1,7 @@
 ## 1. Fix order-dependent assertions in `internal/kibana/spaces/data_source_test.go`
 
 - [ ] 1.1 In `TestAccSpacesDataSource`, replace the `spaces.0.*` checks for the default space (`id`, `name`, `description`, `disabled_features.#`, `color`, `initials`/`image_url`/`solution` absence checks) with `testCheckSpaceAttrByID("default", ...)` / `testCheckDataSourceAttrEmptyOrAbsent`-style lookups keyed by id instead of index.
-- [ ] 1.2 In `TestAccSpacesDataSource_multipleSpaces`, replace the `spaces.0.id`/`spaces.0.name`/`spaces.0.description` checks for the default space with `testCheckSpaceAttrByID("default", ...)`, and remove the stale `// Default space is always the first element.` comment.
+- [ ] 1.2 In `TestAccSpacesDataSource_multipleSpaces`, replace the `spaces.0.id`/`spaces.0.name`/`spaces.0.description` checks for the default space with `testCheckSpaceAttrByID("default", ...)`, and remove both stale ordering comments: `// Default space is always the first element.` and the function comment claiming the `tfacc` prefix reliably sorts after `default`.
 - [ ] 1.3 In `TestAccSpacesDataSource_noDescription`, `TestAccSpacesDataSource_withImageURL`, and `TestAccSpacesDataSource_withKibanaConnection` (both the secure and insecure connection checks), replace each `spaces.0.id == "default"` check with `testCheckSpaceAttrByID("default", "id", "default")` (or fold the default-space existence check into the surrounding composed check without relying on index 0).
 - [ ] 1.4 Confirm no other index-based (`spaces.<N>.*`) assumption about a specific space remains in the file.
 
