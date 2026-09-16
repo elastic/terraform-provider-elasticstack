@@ -1012,34 +1012,21 @@ func xyChartConfigFromAPIESQL(
 }
 
 func xyChartConfigToAPI(m *models.XYChartConfigModel) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var attrs lenscommon.VisByValueConfig0
 	if m == nil {
-		return attrs, diags
+		return lenscommon.VisByValueConfig0{}, nil
 	}
 	configModel := *m
-
-	if xyChartConfigXyUsesESQL(&configModel) {
-		chart, xyDiags := xyChartConfigToAPIESQL(&configModel)
-		diags.Append(xyDiags...)
-		if diags.HasError() {
-			return attrs, diags
-		}
-		if err := attrs.FromKibanaHTTPAPIsXyChartESQLByValuePanel(chart); err != nil {
-			diags.AddError("Failed to convert XY chart ES|QL config", err.Error())
-			return attrs, diags
-		}
-		return attrs, diags
-	}
-
-	chart, xyDiags := xyChartConfigToAPINoESQL(&configModel)
-	diags.Append(xyDiags...)
-	if diags.HasError() {
-		return attrs, diags
-	}
-	if err := attrs.FromKibanaHTTPAPIsXyChartNoESQLByValuePanel(chart); err != nil {
-		diags.AddError("Failed to convert XY chart non-ES|QL config", err.Error())
-		return attrs, diags
-	}
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		xyChartConfigXyUsesESQL(&configModel),
+		func() (kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel, diag.Diagnostics) {
+			return xyChartConfigToAPIESQL(&configModel)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsXyChartESQLByValuePanel,
+		"Failed to convert XY chart ES|QL config",
+		func() (kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel, diag.Diagnostics) {
+			return xyChartConfigToAPINoESQL(&configModel)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsXyChartNoESQLByValuePanel,
+		"Failed to convert XY chart non-ES|QL config",
+	)
 }

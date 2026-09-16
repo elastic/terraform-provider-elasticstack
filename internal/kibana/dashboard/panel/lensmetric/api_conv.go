@@ -87,6 +87,46 @@ func stripMetricBreakdownByAPIFields(jsonStr string) string {
 	return string(out)
 }
 
+// populateMetricItemsFromAPI converts API metric items (of either the NoESQL or ESQL generated
+// type) into TF metric models, preserving a prior config's JSON verbatim when the newly-decoded
+// value is semantically equivalent so state doesn't churn on Kibana-echoed defaults.
+func populateMetricItemsFromAPI[APIMetric any](apiMetrics []APIMetric, prior []models.MetricItemModel) ([]models.MetricItemModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(apiMetrics) == 0 {
+		return nil, diags
+	}
+
+	metrics := make([]models.MetricItemModel, len(apiMetrics))
+	for i, metric := range apiMetrics {
+		metricJSON, err := json.Marshal(metric)
+		if err != nil {
+			diags.AddError("Failed to marshal metric", err.Error())
+			continue
+		}
+		cfg := customtypes.NewJSONWithDefaultsValue(
+			string(metricJSON),
+			lenscommon.PopulateMetricChartMetricDefaults,
+		)
+		if i < len(prior) && lenscommon.MetricChartMetricConfigsEquivalent(prior[i].ConfigJSON, cfg) {
+			cfg = prior[i].ConfigJSON
+		}
+		metrics[i].ConfigJSON = cfg
+	}
+	return metrics, diags
+}
+
+// metricBreakdownByFromAPI marshals a non-nil breakdown_by value (of either the NoESQL or ESQL
+// generated type) into its normalized JSON TF representation, stripping server-added fields.
+func metricBreakdownByFromAPI(breakdownBy any) (jsontypes.Normalized, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	breakdownJSON, err := json.Marshal(breakdownBy)
+	if err != nil {
+		diags.AddError("Failed to marshal breakdown_by", err.Error())
+		return jsontypes.NewNormalizedNull(), diags
+	}
+	return jsontypes.NewNormalizedValue(stripMetricBreakdownByAPIFields(string(breakdownJSON))), diags
+}
+
 func metricChartConfigFromAPIVariant0(
 	ctx context.Context,
 	m *models.MetricChartConfigModel,
@@ -109,33 +149,16 @@ func metricChartConfigFromAPIVariant0(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, apiChart.Query)
 
-	if len(apiChart.Metrics) > 0 {
-		priorMetrics := m.Metrics
-		m.Metrics = make([]models.MetricItemModel, len(apiChart.Metrics))
-		for i, metric := range apiChart.Metrics {
-			metricJSON, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			cfg := customtypes.NewJSONWithDefaultsValue(
-				string(metricJSON),
-				lenscommon.PopulateMetricChartMetricDefaults,
-			)
-			if i < len(priorMetrics) && lenscommon.MetricChartMetricConfigsEquivalent(priorMetrics[i].ConfigJSON, cfg) {
-				cfg = priorMetrics[i].ConfigJSON
-			}
-			m.Metrics[i].ConfigJSON = cfg
-		}
+	metrics, metricsDiags := populateMetricItemsFromAPI(apiChart.Metrics, m.Metrics)
+	diags.Append(metricsDiags...)
+	if metrics != nil {
+		m.Metrics = metrics
 	}
 
 	if apiChart.BreakdownBy != nil {
-		breakdownJSON, err := json.Marshal(apiChart.BreakdownBy)
-		if err != nil {
-			diags.AddError("Failed to marshal breakdown_by", err.Error())
-		} else {
-			m.BreakdownByJSON = jsontypes.NewNormalizedValue(stripMetricBreakdownByAPIFields(string(breakdownJSON)))
-		}
+		breakdownByJSON, breakdownDiags := metricBreakdownByFromAPI(apiChart.BreakdownBy)
+		diags.Append(breakdownDiags...)
+		m.BreakdownByJSON = breakdownByJSON
 	} else {
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}
@@ -171,33 +194,16 @@ func metricChartConfigFromAPIVariant1(
 
 	m.Query = nil
 
-	if len(apiChart.Metrics) > 0 {
-		priorMetrics := m.Metrics
-		m.Metrics = make([]models.MetricItemModel, len(apiChart.Metrics))
-		for i, metric := range apiChart.Metrics {
-			metricJSON, err := json.Marshal(metric)
-			if err != nil {
-				diags.AddError("Failed to marshal metric", err.Error())
-				continue
-			}
-			cfg := customtypes.NewJSONWithDefaultsValue(
-				string(metricJSON),
-				lenscommon.PopulateMetricChartMetricDefaults,
-			)
-			if i < len(priorMetrics) && lenscommon.MetricChartMetricConfigsEquivalent(priorMetrics[i].ConfigJSON, cfg) {
-				cfg = priorMetrics[i].ConfigJSON
-			}
-			m.Metrics[i].ConfigJSON = cfg
-		}
+	metrics, metricsDiags := populateMetricItemsFromAPI(apiChart.Metrics, m.Metrics)
+	diags.Append(metricsDiags...)
+	if metrics != nil {
+		m.Metrics = metrics
 	}
 
 	if apiChart.BreakdownBy != nil {
-		breakdownJSON, err := json.Marshal(apiChart.BreakdownBy)
-		if err != nil {
-			diags.AddError("Failed to marshal breakdown_by", err.Error())
-		} else {
-			m.BreakdownByJSON = jsontypes.NewNormalizedValue(stripMetricBreakdownByAPIFields(string(breakdownJSON)))
-		}
+		breakdownByJSON, breakdownDiags := metricBreakdownByFromAPI(apiChart.BreakdownBy)
+		diags.Append(breakdownDiags...)
+		m.BreakdownByJSON = breakdownByJSON
 	} else {
 		m.BreakdownByJSON = jsontypes.NewNormalizedNull()
 	}

@@ -30,6 +30,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// populateDatatableMetricsFromAPI, populateDatatableRowsFromAPI and populateDatatableSplitMetricsByFromAPI
+// share the "decode each API item to normalized JSON, skip when empty, bail on first failure"
+// sequence duplicated across the NoESQL/ESQL FromAPI variants; only the generated item type
+// (and, for metrics, whether the API field is a plain slice or a pointer to one) differs.
+func populateDatatableMetricsFromAPI[APIMetric any](metrics *[]APIMetric, diags *diag.Diagnostics) ([]models.DatatableMetricModel, bool) {
+	if metrics == nil || len(*metrics) == 0 {
+		return nil, true
+	}
+	return lenscommon.PopulateNormalizedJSONSlice(*metrics, datatableMetricConfigOf, "metric", diags)
+}
+
+func populateDatatableRowsFromAPI[APIRow any](rows *[]APIRow, diags *diag.Diagnostics) ([]models.DatatableRowModel, bool) {
+	if rows == nil || len(*rows) == 0 {
+		return nil, true
+	}
+	return lenscommon.PopulateNormalizedJSONSlice(*rows, datatableRowConfigOf, "row", diags)
+}
+
+func populateDatatableSplitMetricsByFromAPI[APISplit any](splits *[]APISplit, diags *diag.Diagnostics) ([]models.DatatableSplitByModel, bool) {
+	if splits == nil || len(*splits) == 0 {
+		return nil, true
+	}
+	return lenscommon.PopulateNormalizedJSONSlice(*splits, datatableSplitByConfigOf, "split_metrics_by", diags)
+}
+
 func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,
@@ -57,27 +82,21 @@ func datatableNoESQLConfigFromAPI(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	if len(api.Metrics) > 0 {
-		metrics, ok := lenscommon.PopulateNormalizedJSONSlice(api.Metrics, datatableMetricConfigOf, "metric", &diags)
-		if !ok {
-			return diags
-		}
+	if metrics, ok := populateDatatableMetricsFromAPI(&api.Metrics, &diags); !ok {
+		return diags
+	} else if metrics != nil {
 		m.Metrics = metrics
 	}
 
-	if api.Rows != nil && len(*api.Rows) > 0 {
-		rows, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Rows, datatableRowConfigOf, "row", &diags)
-		if !ok {
-			return diags
-		}
+	if rows, ok := populateDatatableRowsFromAPI(api.Rows, &diags); !ok {
+		return diags
+	} else if rows != nil {
 		m.Rows = rows
 	}
 
-	if api.SplitMetricsBy != nil && len(*api.SplitMetricsBy) > 0 {
-		splits, ok := lenscommon.PopulateNormalizedJSONSlice(*api.SplitMetricsBy, datatableSplitByConfigOf, "split_metrics_by", &diags)
-		if !ok {
-			return diags
-		}
+	if splits, ok := populateDatatableSplitMetricsByFromAPI(api.SplitMetricsBy, &diags); !ok {
+		return diags
+	} else if splits != nil {
 		m.SplitMetricsBy = splits
 	}
 
@@ -98,6 +117,43 @@ func datatableRowConfigOf(m *models.DatatableRowModel) *jsontypes.Normalized {
 
 func datatableSplitByConfigOf(m *models.DatatableSplitByModel) *jsontypes.Normalized {
 	return &m.ConfigJSON
+}
+
+// buildDatatableMetricsForAPI, buildDatatableRowsForAPI and buildDatatableSplitMetricsByForAPI share
+// the "allocate a dest slice of the generated item type, unmarshal each known config into it, bail
+// on first failure" sequence duplicated across the NoESQL/ESQL ToAPI variants; only the generated
+// item type differs.
+func buildDatatableMetricsForAPI[APIMetric any](metrics []models.DatatableMetricModel, diags *diag.Diagnostics) ([]APIMetric, bool) {
+	if len(metrics) == 0 {
+		return nil, true
+	}
+	dest := make([]APIMetric, len(metrics))
+	if !lenscommon.UnmarshalJSONSliceInto(metrics, dest, datatableMetricConfigOf, "metric", diags) {
+		return nil, false
+	}
+	return dest, true
+}
+
+func buildDatatableRowsForAPI[APIRow any](rows []models.DatatableRowModel, diags *diag.Diagnostics) ([]APIRow, bool) {
+	if len(rows) == 0 {
+		return nil, true
+	}
+	dest := make([]APIRow, len(rows))
+	if !lenscommon.UnmarshalJSONSliceInto(rows, dest, datatableRowConfigOf, "row", diags) {
+		return nil, false
+	}
+	return dest, true
+}
+
+func buildDatatableSplitMetricsByForAPI[APISplit any](splits []models.DatatableSplitByModel, diags *diag.Diagnostics) ([]APISplit, bool) {
+	if len(splits) == 0 {
+		return nil, true
+	}
+	dest := make([]APISplit, len(splits))
+	if !lenscommon.UnmarshalJSONSliceInto(splits, dest, datatableSplitByConfigOf, "split_metrics_by", diags) {
+		return nil, false
+	}
+	return dest, true
 }
 
 func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
@@ -128,27 +184,21 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
-		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, datatableMetricConfigOf, "metric", &diags) {
-			return api, diags
-		}
+	if metrics, ok := buildDatatableMetricsForAPI[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item](m.Metrics, &diags); !ok {
+		return api, diags
+	} else if metrics != nil {
 		api.Metrics = metrics
 	}
 
-	if len(m.Rows) > 0 {
-		rows := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Rows_Item, len(m.Rows))
-		if !lenscommon.UnmarshalJSONSliceInto(m.Rows, rows, datatableRowConfigOf, "row", &diags) {
-			return api, diags
-		}
+	if rows, ok := buildDatatableRowsForAPI[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Rows_Item](m.Rows, &diags); !ok {
+		return api, diags
+	} else if rows != nil {
 		api.Rows = &rows
 	}
 
-	if len(m.SplitMetricsBy) > 0 {
-		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_SplitMetricsBy_Item, len(m.SplitMetricsBy))
-		if !lenscommon.UnmarshalJSONSliceInto(m.SplitMetricsBy, splits, datatableSplitByConfigOf, "split_metrics_by", &diags) {
-			return api, diags
-		}
+	if splits, ok := buildDatatableSplitMetricsByForAPI[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_SplitMetricsBy_Item](m.SplitMetricsBy, &diags); !ok {
+		return api, diags
+	} else if splits != nil {
 		api.SplitMetricsBy = &splits
 	}
 
@@ -189,27 +239,21 @@ func datatableESQLConfigFromAPI(
 		return stylingDiags
 	}
 
-	if api.Metrics != nil && len(*api.Metrics) > 0 {
-		metrics, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Metrics, datatableMetricConfigOf, "metric", &diags)
-		if !ok {
-			return diags
-		}
+	if metrics, ok := populateDatatableMetricsFromAPI(api.Metrics, &diags); !ok {
+		return diags
+	} else if metrics != nil {
 		m.Metrics = metrics
 	}
 
-	if api.Rows != nil && len(*api.Rows) > 0 {
-		rows, ok := lenscommon.PopulateNormalizedJSONSlice(*api.Rows, datatableRowConfigOf, "row", &diags)
-		if !ok {
-			return diags
-		}
+	if rows, ok := populateDatatableRowsFromAPI(api.Rows, &diags); !ok {
+		return diags
+	} else if rows != nil {
 		m.Rows = rows
 	}
 
-	if api.SplitMetricsBy != nil && len(*api.SplitMetricsBy) > 0 {
-		splits, ok := lenscommon.PopulateNormalizedJSONSlice(*api.SplitMetricsBy, datatableSplitByConfigOf, "split_metrics_by", &diags)
-		if !ok {
-			return diags
-		}
+	if splits, ok := populateDatatableSplitMetricsByFromAPI(api.SplitMetricsBy, &diags); !ok {
+		return diags
+	} else if splits != nil {
 		m.SplitMetricsBy = splits
 	}
 
@@ -244,42 +288,36 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
-	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsDatatableESQLMetric, len(m.Metrics))
-		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, datatableMetricConfigOf, "metric", &diags) {
-			return api, diags
-		}
+	if metrics, ok := buildDatatableMetricsForAPI[kbapi.KibanaHTTPAPIsDatatableESQLMetric](m.Metrics, &diags); !ok {
+		return api, diags
+	} else if metrics != nil {
 		api.Metrics = &metrics
 	}
 
-	if len(m.Rows) > 0 {
-		rows := make([]struct {
-			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsAlignment    `json:"alignment,omitempty"`
-			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsApplyColorTo `json:"apply_color_to,omitempty"`
-			ClickFilter  *bool                                                          `json:"click_filter,omitempty"`
-			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                                `json:"collapse_by,omitempty"`
-			Color        *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Rows_Color      `json:"color,omitempty"`
-			Column       string                                                         `json:"column"`
-			Format       *kbapi.KibanaHTTPAPIsFormatType                                `json:"format,omitempty"`
-			Label        *string                                                        `json:"label,omitempty"`
-			Visible      *bool                                                          `json:"visible,omitempty"`
-			Width        *float32                                                       `json:"width,omitempty"`
-		}, len(m.Rows))
-		if !lenscommon.UnmarshalJSONSliceInto(m.Rows, rows, datatableRowConfigOf, "row", &diags) {
-			return api, diags
-		}
+	if rows, ok := buildDatatableRowsForAPI[struct {
+		Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsAlignment    `json:"alignment,omitempty"`
+		ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsApplyColorTo `json:"apply_color_to,omitempty"`
+		ClickFilter  *bool                                                          `json:"click_filter,omitempty"`
+		CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                                `json:"collapse_by,omitempty"`
+		Color        *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Rows_Color      `json:"color,omitempty"`
+		Column       string                                                         `json:"column"`
+		Format       *kbapi.KibanaHTTPAPIsFormatType                                `json:"format,omitempty"`
+		Label        *string                                                        `json:"label,omitempty"`
+		Visible      *bool                                                          `json:"visible,omitempty"`
+		Width        *float32                                                       `json:"width,omitempty"`
+	}](m.Rows, &diags); !ok {
+		return api, diags
+	} else if rows != nil {
 		api.Rows = &rows
 	}
 
-	if len(m.SplitMetricsBy) > 0 {
-		splits := make([]struct {
-			Column string                          `json:"column"`
-			Format *kbapi.KibanaHTTPAPIsFormatType `json:"format,omitempty"`
-			Label  *string                         `json:"label,omitempty"`
-		}, len(m.SplitMetricsBy))
-		if !lenscommon.UnmarshalJSONSliceInto(m.SplitMetricsBy, splits, datatableSplitByConfigOf, "split_metrics_by", &diags) {
-			return api, diags
-		}
+	if splits, ok := buildDatatableSplitMetricsByForAPI[struct {
+		Column string                          `json:"column"`
+		Format *kbapi.KibanaHTTPAPIsFormatType `json:"format,omitempty"`
+		Label  *string                         `json:"label,omitempty"`
+	}](m.SplitMetricsBy, &diags); !ok {
+		return api, diags
+	} else if splits != nil {
 		api.SplitMetricsBy = &splits
 	}
 

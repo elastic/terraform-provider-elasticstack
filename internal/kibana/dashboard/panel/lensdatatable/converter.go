@@ -78,41 +78,26 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	if blocks == nil || blocks.DatatableConfig == nil {
-		return lenscommon.VisByValueConfig0{}, diags
+		return lenscommon.VisByValueConfig0{}, nil
+	}
+	if blocks.DatatableConfig.NoESQL == nil && blocks.DatatableConfig.ESQL == nil {
+		return lenscommon.VisByValueConfig0{}, nil
 	}
 
-	var attrs lenscommon.VisByValueConfig0
-
-	switch {
-	case blocks.DatatableConfig.NoESQL != nil:
-		noESQL, noDiags := datatableNoESQLConfigToAPI(blocks.DatatableConfig.NoESQL)
-		diags.Append(noDiags...)
-		if diags.HasError() {
-			return lenscommon.VisByValueConfig0{}, diags
-		}
-
-		if err := attrs.FromKibanaHTTPAPIsDatatableNoESQLByValuePanel(noESQL); err != nil {
-			diags.AddError("Failed to convert datatable no-esql config", err.Error())
-			return lenscommon.VisByValueConfig0{}, diags
-		}
-	case blocks.DatatableConfig.ESQL != nil:
-		esql, esqlDiags := datatableESQLConfigToAPI(blocks.DatatableConfig.ESQL)
-		diags.Append(esqlDiags...)
-		if diags.HasError() {
-			return lenscommon.VisByValueConfig0{}, diags
-		}
-
-		if err := attrs.FromKibanaHTTPAPIsDatatableESQLByValuePanel(esql); err != nil {
-			diags.AddError("Failed to convert datatable esql config", err.Error())
-			return lenscommon.VisByValueConfig0{}, diags
-		}
-	default:
-		return lenscommon.VisByValueConfig0{}, diags
-	}
-
-	return attrs, diags
+	return lenscommon.DispatchByQueryMode(
+		blocks.DatatableConfig.NoESQL == nil,
+		func() (kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel, diag.Diagnostics) {
+			return datatableESQLConfigToAPI(blocks.DatatableConfig.ESQL)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsDatatableESQLByValuePanel,
+		"Failed to convert datatable esql config",
+		func() (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
+			return datatableNoESQLConfigToAPI(blocks.DatatableConfig.NoESQL)
+		},
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsDatatableNoESQLByValuePanel,
+		"Failed to convert datatable no-esql config",
+	)
 }
 
 func (converter) AlignStateFromPlan(_ context.Context, plan, state *models.LensByValueChartBlocks) {
