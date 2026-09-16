@@ -3898,7 +3898,7 @@ Optional:
 
 Optional:
 
-- `axis` (String) Which axis the reference line applies to. Valid values: 'left', 'right'.
+- `axis` (String) Which axis the reference line applies to. Schema currently allows 'bottom', 'left', 'right'; Kibana 9.6 accepts 'y' and 'y2' and rejects those schema values.
 - `color_json` (String) Color for the reference line. Can be a static color string or dynamic color configuration as JSON.
 - `column` (String) Column to use (for ES|QL layers).
 - `fill` (String) Fill direction for reference line. Valid values: 'none', 'above', 'below'.
@@ -7873,7 +7873,7 @@ Optional:
 
 Optional:
 
-- `axis` (String) Which axis the reference line applies to. Valid values: 'left', 'right'.
+- `axis` (String) Which axis the reference line applies to. Schema currently allows 'bottom', 'left', 'right'; Kibana 9.6 accepts 'y' and 'y2' and rejects those schema values.
 - `color_json` (String) Color for the reference line. Can be a static color string or dynamic color configuration as JSON.
 - `column` (String) Column to use (for ES|QL layers).
 - `fill` (String) Fill direction for reference line. Valid values: 'none', 'above', 'below'.
