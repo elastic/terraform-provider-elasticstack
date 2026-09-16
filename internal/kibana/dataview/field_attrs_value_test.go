@@ -23,6 +23,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -217,7 +218,7 @@ func TestFieldAttrsValue_MapSemanticEquals_TypeMismatch(t *testing.T) {
 
 func mustNewFieldAttrsValue(ctx context.Context, t *testing.T, elemType attr.Type, entries map[string]fieldAttrModel) FieldAttrsValue {
 	t.Helper()
-	v, diags := NewFieldAttrsValueFrom(ctx, elemType, entries)
+	mapValue, diags := basetypes.NewMapValueFrom(ctx, elemType, entries)
 	require.False(t, diags.HasError(), "build FieldAttrsValue: %v", diags)
-	return v
+	return FieldAttrsValue{MapValue: mapValue}
 }
