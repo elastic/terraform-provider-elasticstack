@@ -18,9 +18,9 @@
 
 ## 4. Partition `value_display.percent_decimals`
 
-- [ ] 4.1 Keep the requirement evidence-driven: after task 1.2 confirms actual behavior, update `PartitionValueDisplayMatchesKibanaDefault` in `internal/kibana/dashboard/lenscommon/partition_alignment.go` only for verified default shape(s).
-- [ ] 4.2 Add/update `partition_alignment` unit tests for every accepted default shape and for at least one non-default practitioner value that must not be normalized away.
-- [ ] 4.3 Run `TestAccResourceDashboardMosaic`, `TestAccResourceDashboardTreemap`, and `TestAccLensMinimalProbe_{Mosaic,Treemap}` in this slice.
+- [x] 4.1 Keep the requirement evidence-driven: after task 1.2 confirms actual behavior, update `PartitionValueDisplayMatchesKibanaDefault` in `internal/kibana/dashboard/lenscommon/partition_alignment.go` only for verified default shape(s).
+- [x] 4.2 Add/update `partition_alignment` unit tests for every accepted default shape and for at least one non-default practitioner value that must not be normalized away.
+- [x] 4.3 Run `TestAccResourceDashboardMosaic`, `TestAccResourceDashboardTreemap`, and `TestAccLensMinimalProbe_{Mosaic,Treemap}` in this slice.
 
 ## 5. Heatmap axis-label orientation
 

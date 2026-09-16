@@ -121,6 +121,9 @@ func TestAccResourceDashboardTreemap(t *testing.T) {
 					"panels.0.vis_config.by_value.treemap_config.data_source_json",
 					"panels.0.vis_config.by_value.treemap_config.ignore_global_filters",
 					"panels.0.vis_config.by_value.treemap_config.sampling",
+					// Import has no plan, so Kibana 9.6's injected percent_decimals=2
+					// cannot be restored to the omitted (null) apply value.
+					"panels.0.vis_config.by_value.treemap_config.value_display.percent_decimals",
 				},
 			},
 		},
