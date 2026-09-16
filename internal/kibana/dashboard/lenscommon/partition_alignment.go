@@ -86,10 +86,10 @@ func AlignStandardPartitionChartStateFromPlan(
 	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planGroupBy, stateGroupBy)
 	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetrics, stateMetrics)
 	AlignPartitionLegendStateFromPlan(planLegend, stateLegend)
-	if planValueDisplay != nil && *stateValueDisplay != nil {
+	if planValueDisplay != nil && stateValueDisplay != nil && *stateValueDisplay != nil {
 		PreserveNullIfStateEquals(planValueDisplay.PercentDecimals, &(*stateValueDisplay).PercentDecimals, types.Float64Value(2))
 	}
-	if planValueDisplay == nil && *stateValueDisplay != nil && PartitionValueDisplayMatchesKibanaDefault(*stateValueDisplay) {
+	if planValueDisplay == nil && stateValueDisplay != nil && *stateValueDisplay != nil && PartitionValueDisplayMatchesKibanaDefault(*stateValueDisplay) {
 		*stateValueDisplay = nil
 	}
 }

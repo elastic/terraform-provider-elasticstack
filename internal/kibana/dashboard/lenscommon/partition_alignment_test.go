@@ -151,6 +151,36 @@ func TestAlignStandardPartitionChartStateFromPlan_doesNotDropNonDefaultPercentDe
 	assert.InDelta(t, float64(5), got.PercentDecimals.ValueFloat64(), 1e-9)
 }
 
+func TestAlignStandardPartitionChartStateFromPlan_nilStateValueDisplayDoesNotPanic(t *testing.T) {
+	t.Parallel()
+
+	title := types.StringNull()
+	desc := types.StringNull()
+	ds := jsontypes.NewNormalizedNull()
+	ignore := types.BoolNull()
+	sampling := types.Float64Null()
+	var groupBy customtypes.JSONWithDefaultsValue[[]map[string]any]
+	var metrics customtypes.JSONWithDefaultsValue[[]map[string]any]
+	plan := &models.PartitionValueDisplay{
+		Mode:            types.StringValue("percentage"),
+		PercentDecimals: types.Float64Null(),
+	}
+
+	require.NotPanics(t, func() {
+		AlignStandardPartitionChartStateFromPlan(
+			t.Context(),
+			types.StringNull(), types.StringNull(),
+			jsontypes.NewNormalizedNull(),
+			types.BoolNull(), types.Float64Null(),
+			groupBy, metrics,
+			nil, plan,
+			&title, &desc, &ds, &ignore, &sampling,
+			&groupBy, &metrics,
+			nil, nil,
+		)
+	})
+}
+
 func TestAlignStandardPartitionChartStateFromPlan_dropsInjectedNullPercentDecimalsDefaultBlock(t *testing.T) {
 	t.Parallel()
 
