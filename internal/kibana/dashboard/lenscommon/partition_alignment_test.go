@@ -134,7 +134,7 @@ func TestAlignStandardPartitionChartStateFromPlan_keepsExplicitPercentDecimalsTw
 	got := alignPartitionValueDisplayForTest(t, plan, state)
 
 	require.NotNil(t, got)
-	assert.Equal(t, float64(2), got.PercentDecimals.ValueFloat64())
+	assert.InDelta(t, float64(2), got.PercentDecimals.ValueFloat64(), 1e-9)
 }
 
 func TestAlignStandardPartitionChartStateFromPlan_doesNotDropNonDefaultPercentDecimals(t *testing.T) {
@@ -148,7 +148,7 @@ func TestAlignStandardPartitionChartStateFromPlan_doesNotDropNonDefaultPercentDe
 	got := alignPartitionValueDisplayForTest(t, nil, state)
 
 	require.NotNil(t, got)
-	assert.Equal(t, float64(5), got.PercentDecimals.ValueFloat64())
+	assert.InDelta(t, float64(5), got.PercentDecimals.ValueFloat64(), 1e-9)
 }
 
 func TestAlignStandardPartitionChartStateFromPlan_dropsInjectedNullPercentDecimalsDefaultBlock(t *testing.T) {
