@@ -360,3 +360,15 @@ func TestPreserveThresholdValueJSONIfStateIsPlanValue_planWithoutValueDoesNotRes
 
 	assert.JSONEq(t, `null`, state.ValueString())
 }
+
+func TestPreserveThresholdValueJSONIfStateIsPlanValue_nonStaticValueWithValueKeyDoesNotRestore(t *testing.T) {
+	t.Parallel()
+
+	planJSON := `{"operation":"formula","value":42,"label":""}`
+	plan := jsontypes.NewNormalizedValue(planJSON)
+	state := jsontypes.NewNormalizedValue(`42`)
+
+	preserveThresholdValueJSONIfStateIsPlanValue(plan, &state)
+
+	assert.JSONEq(t, `42`, state.ValueString())
+}

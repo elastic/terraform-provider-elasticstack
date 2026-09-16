@@ -252,6 +252,9 @@ func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, sta
 	if _, isMap := stateVal.(map[string]any); isMap {
 		return
 	}
+	if planObj["operation"] != "static_value" {
+		return
+	}
 	planValue, hasValue := planObj["value"]
 	if !hasValue {
 		return
