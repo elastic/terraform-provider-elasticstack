@@ -269,7 +269,7 @@ Notes:
 - The same layer's `breakdown_by.color` categorical mapping (`#54B399` / `#D3DAE6`) **is** persisted. Only the Y-metric `color:{type:static}` is replaced.
 - Axis + format omit-defaults from this payload are already handled. The remaining apply diagnostic is solely static → auto.
 
-Do **not** treat practitioner `{type:static,color:#54B399}` as equivalent to Kibana `{type:auto}`. Task 2.3 stays open until the user decides how to handle this Kibana overwrite.
+Do **not** treat practitioner `{type:static,color:#54B399}` as equivalent to Kibana `{type:auto}`. Task 2.3 is an explicit deferral of `TestAccResourceDashboardXYChart_layers` (this overwrite); see CI shard results below and `kibana-esql-xy-static-color-issue.md`.
 
 ## Explicit `thresholds[].axis` of `left` / `right` (live 9.6 re-check)
 
@@ -330,3 +330,50 @@ request legend:  {"size":"m"}
 ```
 
 Treemap/mosaic inject both `truncate_after_lines: 1` and `nested: false` when omitted.
+
+## CI 9.6.0-SNAPSHOT shard-0 per-test results (head `4c93afd0`)
+
+Source: Provider CI run [`35054271441`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35054271441) (head `4c93afd050aca5a94a1f89a3d3f4f7f600d3da76`). Snapshot warning comment `<!-- tf-acceptance-snapshot-warning:9.6.0-SNAPSHOT-shard-0 -->` points at this run. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 0)` id `104661401406`: step `TF acceptance tests` has `continue-on-error` (job conclusion `success`) but the warn step ran; annotation `Process completed with exit code 2`. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 1)` id `104661401335`: acceptance step succeeded and the warn step was skipped.
+
+### Task 2.3 listed suites
+
+| Test | Shard | Result |
+|---|---|---|
+| `TestAccResourceDashboardXYChart_basic` | 0 | PASS (421.52s) |
+| `TestAccResourceDashboardXYChart_axis` | 0 | PASS (418.20s) |
+| `TestAccResourceDashboardXYChart_decorations` | 0 | PASS (416.06s) |
+| `TestAccResourceDashboardXYChart_filters` | 0 | PASS (419.08s) |
+| `TestAccResourceDashboardXYChart_fitting` | 0 | PASS (422.49s) |
+| `TestAccResourceDashboardXYChart_layers` | 0 | **FAIL** (189.68s) + re-runs 1–5 all FAIL. Apply diagnostic: ES\|QL `y[0].config_json` `color:{type:static,color:#54B399}` read back as `{type:auto}` (plus `axis:"y"` and format `decimals`/`compact`) |
+| `TestAccResourceDashboardXYChart_layers_reference` | 0 | PASS (206.93s) |
+| `TestAccResourceDashboardXYChart_legend_inside` | 0 | PASS (420.12s) |
+| `TestAccResourceDashboardXYChart_legend_outside` | 0 | PASS (429.20s) |
+| `TestAccResourceDashboardXYChart_chartTimeRangeLifecycle` | 0 | PASS (353.00s) |
+| `TestAccResourceDashboardXYChart_lensPresentationFields` | 0 | PASS (351.54s) |
+| `TestAccResourceDashboardXYChartMinimalConfig` | 0 | PASS (419.29s) |
+| `TestAccDashboardXYMetricEmptyAsNullGating` | 0 | PASS (189.56s) |
+| `TestAccReproduceIssue3402` | 0 | PASS (519.47s) |
+| `TestAccReproduceIssue3707` | 0 | PASS (534.65s) |
+| `TestAccResourceDashboardDatatableChart` | 1 | PASS (87.23s) |
+| `TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting` | 1 | PASS (135.34s) |
+| `TestAccLensMinimalProbe_Metric` | 0 | PASS (430.70s) |
+| `TestAccLensMinimalProbe_Gauge` | 0 | PASS (549.27s) |
+| `TestAccLensMinimalProbe_Tagcloud` | 0 | PASS (561.70s) |
+| `TestAccLensMinimalProbe_RegionMap` | 0 | PASS (537.32s) |
+| `TestAccLensMinimalProbe_LegacyMetric` | 0 | PASS (228.66s) |
+
+Related probes named on later tasks / same shard-0 packages (all PASS): `TestAccResourceDashboardGauge`, `TestAccResourceDashboardRegionMap`, `TestAccResourceDashboardLegacyMetricChart`, `TestAccResourceDashboardMosaic`, `TestAccResourceDashboardTreemap`, `TestAccLensMinimalProbe_{Pie,Waffle,Mosaic,Treemap,Heatmap,Datatable}`. Shard 1 also PASSed `TestAccResourceDashboardTagcloud`, `TestAccResourceDashboardPieChart`, `TestAccResourceDashboardWaffle`, `TestAccResourceDashboardHeatmap`, `TestAccResourceDashboardMetricChart`.
+
+### Other shard-0 failures (not on the 2.3 line)
+
+These failed in the same shard-0 job and are **out of scope** for this change (not Lens 9.6 read-back defaults):
+
+| Test | Result |
+|---|---|
+| `TestAccResourceMLTrainedModelDeployment_basic` | FAIL (5.14s) |
+| `TestAccResourceMLTrainedModelDeployment_priority` | FAIL (3.09s) |
+| `TestAccResourceMLTrainedModelDeployment_deploymentID` | FAIL (2.52s) |
+| `TestAccResourceMLDatafeedState_withTimes` | FAIL (4.04s) |
+| `TestAccResourceKibanaSecurityEntityStore_import` | FAIL (23.63s) + re-run 1 FAIL (11.26s) |
+
+The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code.
