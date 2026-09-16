@@ -29,6 +29,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -91,6 +92,7 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
 					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "A test agent for acceptance testing"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "2"),
@@ -123,10 +125,13 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
 					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Updated Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "An updated test agent"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "3"),
+					resource.TestCheckTypeSetElemAttr(resourceID, "labels.*", "updated"),
 					resource.TestCheckResourceAttr(resourceID, "tools.#", "2"),
+					resource.TestCheckTypeSetElemAttr(resourceID, "tools.*", "platform.core.list_indices"),
 					resource.TestCheckResourceAttr(resourceID, "instructions", "You are an updated helpful assistant. Use the available tools wisely."),
 				),
 			},
@@ -171,6 +176,26 @@ func TestAccResourceAgentBuilderAgentSpace(t *testing.T) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 				ImportStateVerify: true,
+			},
+			{
+				// Changing space_id must force a destroy-then-create, matching
+				// the attribute's documented RequiresReplace plan modifier.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_space"),
+				ConfigVariables: config.Variables{
+					"agent_id":     config.StringVariable(agentID),
+					"space_id":     config.StringVariable(spaceID),
+					"new_space_id": config.StringVariable(fmt.Sprintf("test-space-2-%s", uuid.New().String()[:8])),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceID, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
+					resource.TestCheckResourceAttrPair(resourceID, "space_id", "elasticstack_kibana_space.changed", "space_id"),
+				),
 			},
 		},
 	})
@@ -389,6 +414,17 @@ func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", "#FFDDC1"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", "TB"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_avatar"),
 				ConfigVariables: config.Variables{
 					"agent_id": config.StringVariable(agentID),
@@ -449,6 +485,8 @@ func TestAccResourceAgentBuilderAgentSkillIds(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceID, "name", "Test Agent With Skills"),
 					resource.TestCheckResourceAttr(testResourceID, "skill_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr(testResourceID, "skill_ids.*", skillID),
+					resource.TestCheckResourceAttr(testResourceID, "tools.#", "0"),
+					resource.TestCheckResourceAttr(testResourceID, "labels.#", "0"),
 				),
 			},
 			{
