@@ -335,15 +335,83 @@ func (model *agentPolicyModel) convertRequiredVersions(feat agentPolicyFeatures)
 	return &result, diags
 }
 
-func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentPolicyFeatures) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
-	monitoring := make([]kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabled, 0, 2)
-
+// monitoringEnabledSlice builds the monitoring-enabled slice shared by the
+// Create and Update request bodies. The two generated body types each define
+// their own string-based enum for this field, so the enum values are passed
+// in rather than referenced directly.
+func monitoringEnabledSlice[T ~string](model *agentPolicyModel, logs, metrics T) []T {
+	monitoring := make([]T, 0, 2)
 	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledLogs)
+		monitoring = append(monitoring, logs)
 	}
 	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledMetrics)
+		monitoring = append(monitoring, metrics)
 	}
+	return monitoring
+}
+
+// commonAgentPolicyBodyFields holds request-body fields whose computation is
+// identical between the Create and Update bodies. The generated field types
+// are structurally identical across both bodies, so the same values can be
+// assigned directly to either.
+type commonAgentPolicyBodyFields struct {
+	isProtected       *bool
+	supportsAgentless *bool
+	inactivityTimeout *float32
+	unenrollTimeout   *float32
+	spaceIDs          *[]string
+	requiredVersions  *[]struct {
+		Percentage float32 `json:"percentage"`
+		Version    string  `json:"version"`
+	}
+	advancedSettings       *advancedSettingsAPIValues
+	monitoringHTTP         *httpMonitoringEndpointAPIResult
+	monitoringPprofEnabled *bool
+	monitoringDiagnostics  *diagnosticsAPIResult
+}
+
+// computeCommonBodyFields computes the request-body fields shared verbatim
+// between toAPICreateModel and toAPIUpdateModel: feature-gated fields,
+// required_versions, advanced_settings, and advanced monitoring options.
+func (model *agentPolicyModel) computeCommonBodyFields(ctx context.Context, feat agentPolicyFeatures) (commonAgentPolicyBodyFields, diag.Diagnostics) {
+	var common commonAgentPolicyBodyFields
+
+	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	if diags.HasError() {
+		return common, diags
+	}
+	common.isProtected = gated.isProtected
+	common.supportsAgentless = gated.supportsAgentless
+	common.inactivityTimeout = gated.inactivityTimeout
+	common.unenrollTimeout = gated.unenrollTimeout
+	common.spaceIDs = gated.spaceIDs
+
+	requiredVersions, diags := model.convertRequiredVersions(feat)
+	if diags.HasError() {
+		return common, diags
+	}
+	common.requiredVersions = requiredVersions
+
+	if typeutils.IsKnown(model.AdvancedSettings) && feat.SupportsAdvancedSettings {
+		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
+		if diags.HasError() {
+			return common, diags
+		}
+		common.advancedSettings = advancedSettings
+	}
+
+	if typeutils.IsKnown(model.AdvancedMonitoringOptions) && feat.SupportsAdvancedMonitoring {
+		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
+		common.monitoringHTTP = monitoringHTTP
+		common.monitoringPprofEnabled = pprofEnabled
+		common.monitoringDiagnostics = model.convertDiagnosticsToAPI(ctx)
+	}
+
+	return common, nil
+}
+
+func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentPolicyFeatures) (kbapi.PostFleetAgentPoliciesJSONRequestBody, diag.Diagnostics) {
+	monitoring := monitoringEnabledSlice(model, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledLogs, kbapi.KibanaHTTPAPIsNewAgentPolicyMonitoringEnabledMetrics)
 
 	body := kbapi.PostFleetAgentPoliciesJSONRequestBody{
 		DataOutputId:       model.DataOutputID.ValueStringPointer(),
@@ -357,15 +425,20 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	common, diags := model.computeCommonBodyFields(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
 	}
-	body.IsProtected = gated.isProtected
-	body.SupportsAgentless = gated.supportsAgentless
-	body.InactivityTimeout = gated.inactivityTimeout
-	body.UnenrollTimeout = gated.unenrollTimeout
-	body.SpaceIds = gated.spaceIDs
+	body.IsProtected = common.isProtected
+	body.SupportsAgentless = common.supportsAgentless
+	body.InactivityTimeout = common.inactivityTimeout
+	body.UnenrollTimeout = common.unenrollTimeout
+	body.SpaceIds = common.spaceIDs
+	body.RequiredVersions = common.requiredVersions
+	body.AdvancedSettings = common.advancedSettings
+	body.MonitoringHttp = common.monitoringHTTP
+	body.MonitoringPprofEnabled = common.monitoringPprofEnabled
+	body.MonitoringDiagnostics = common.monitoringDiagnostics
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
@@ -373,35 +446,11 @@ func (model *agentPolicyModel) toAPICreateModel(ctx context.Context, feat agentP
 	}
 	body.GlobalDataTags = tags
 
-	// Handle required_versions
-	requiredVersions, d := model.convertRequiredVersions(feat)
-	if d.HasError() {
-		return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, d
-	}
-	body.RequiredVersions = requiredVersions
-
 	// Handle host_name_format via AgentFeatures
 	if agentFeature := model.convertHostNameFormatToAgentFeature(); agentFeature != nil {
 		if feat.SupportsAgentFeatures {
 			body.AgentFeatures = &[]apiAgentFeature{*agentFeature}
 		}
-	}
-
-	// Handle advanced_settings
-	if typeutils.IsKnown(model.AdvancedSettings) && feat.SupportsAdvancedSettings {
-		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
-		if diags.HasError() {
-			return kbapi.PostFleetAgentPoliciesJSONRequestBody{}, diags
-		}
-		body.AdvancedSettings = advancedSettings
-	}
-
-	// Handle advanced monitoring options
-	if typeutils.IsKnown(model.AdvancedMonitoringOptions) && feat.SupportsAdvancedMonitoring {
-		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
-		body.MonitoringHttp = monitoringHTTP
-		body.MonitoringPprofEnabled = pprofEnabled
-		body.MonitoringDiagnostics = model.convertDiagnosticsToAPI(ctx)
 	}
 
 	return body, nil
@@ -412,13 +461,7 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	feat agentPolicyFeatures,
 	existingFeatures []apiAgentFeature,
 ) (kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody, diag.Diagnostics) {
-	monitoring := make([]kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabled, 0, 2)
-	if model.MonitorLogs.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledLogs)
-	}
-	if model.MonitorMetrics.ValueBool() {
-		monitoring = append(monitoring, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledMetrics)
-	}
+	monitoring := monitoringEnabledSlice(model, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledLogs, kbapi.KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabledMetrics)
 
 	body := kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{
 		DataOutputId:       model.DataOutputID.ValueStringPointer(),
@@ -431,15 +474,20 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 		Namespace:          model.Namespace.ValueString(),
 	}
 
-	gated, diags := model.computeFeatureGatedFields(ctx, feat)
+	common, diags := model.computeCommonBodyFields(ctx, feat)
 	if diags.HasError() {
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
-	body.IsProtected = gated.isProtected
-	body.SupportsAgentless = gated.supportsAgentless
-	body.InactivityTimeout = gated.inactivityTimeout
-	body.UnenrollTimeout = gated.unenrollTimeout
-	body.SpaceIds = gated.spaceIDs
+	body.IsProtected = common.isProtected
+	body.SupportsAgentless = common.supportsAgentless
+	body.InactivityTimeout = common.inactivityTimeout
+	body.UnenrollTimeout = common.unenrollTimeout
+	body.SpaceIds = common.spaceIDs
+	body.RequiredVersions = common.requiredVersions
+	body.AdvancedSettings = common.advancedSettings
+	body.MonitoringHttp = common.monitoringHTTP
+	body.MonitoringPprofEnabled = common.monitoringPprofEnabled
+	body.MonitoringDiagnostics = common.monitoringDiagnostics
 
 	tags, diags := model.convertGlobalDataTags(ctx, feat)
 	if diags.HasError() {
@@ -470,13 +518,6 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
 	}
 
-	// Handle required_versions
-	requiredVersions, d := model.convertRequiredVersions(feat)
-	if d.HasError() {
-		return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, d
-	}
-	body.RequiredVersions = requiredVersions
-
 	// Handle host_name_format via AgentFeatures, preserving other existing features
 	if agentFeature := model.convertHostNameFormatToAgentFeature(); agentFeature != nil {
 		if feat.SupportsAgentFeatures {
@@ -485,23 +526,6 @@ func (model *agentPolicyModel) toAPIUpdateModel(
 	} else if feat.SupportsAgentFeatures && len(existingFeatures) > 0 {
 		// Preserve existing features even when host_name_format is not set
 		body.AgentFeatures = &existingFeatures
-	}
-
-	// Handle advanced_settings
-	if typeutils.IsKnown(model.AdvancedSettings) && feat.SupportsAdvancedSettings {
-		advancedSettings, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
-		if diags.HasError() {
-			return kbapi.PutFleetAgentPoliciesAgentpolicyidJSONRequestBody{}, diags
-		}
-		body.AdvancedSettings = advancedSettings
-	}
-
-	// Handle advanced monitoring options
-	if typeutils.IsKnown(model.AdvancedMonitoringOptions) && feat.SupportsAdvancedMonitoring {
-		monitoringHTTP, pprofEnabled := model.convertHTTPMonitoringEndpointToAPI(ctx)
-		body.MonitoringHttp = monitoringHTTP
-		body.MonitoringPprofEnabled = pprofEnabled
-		body.MonitoringDiagnostics = model.convertDiagnosticsToAPI(ctx)
 	}
 
 	return body, nil
