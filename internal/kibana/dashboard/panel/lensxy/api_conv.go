@@ -38,38 +38,31 @@ func xyAxisFromAPI(m *models.XYAxisModel, apiAxis *kbapi.KibanaHTTPAPIsVisApiXyA
 	}
 
 	if apiAxis.X != nil {
-		xBytes, err := json.Marshal(apiAxis.X)
-		if err != nil {
-			diags.AddError("Failed to marshal XY chart X axis", err.Error())
-			return diags
-		}
-		var xView xyAxisConfigAPIModel
-		if err := json.Unmarshal(xBytes, &xView); err != nil {
-			diags.AddError("Failed to decode XY chart X axis", err.Error())
-			return diags
-		}
-		m.X = &models.XYAxisConfigModel{}
-		xDiags := xyAxisConfigFromAPI(m.X, &xView)
+		x := &models.YAxisConfigModel{}
+		xDiags := axisConfigFromAPI(x, apiAxis.X)
 		diags.Append(xDiags...)
-		if xyAxisConfigIsEmpty(m.X) {
+		if axisConfigIsEmpty(x) {
 			m.X = nil
+		} else {
+			converted := models.XYAxisConfigModel(*x)
+			m.X = &converted
 		}
 	}
 
 	if apiAxis.Y != nil {
 		m.Y = &models.YAxisConfigModel{}
-		yDiags := yAxisConfigFromAPIY(m.Y, apiAxis.Y)
+		yDiags := axisConfigFromAPI(m.Y, apiAxis.Y)
 		diags.Append(yDiags...)
-		if yAxisConfigIsEmpty(m.Y) {
+		if axisConfigIsEmpty(m.Y) {
 			m.Y = nil
 		}
 	}
 
 	if apiAxis.Y2 != nil {
 		m.Y2 = &models.YAxisConfigModel{}
-		y2Diags := yAxisConfigFromAPIY2(m.Y2, apiAxis.Y2)
+		y2Diags := axisConfigFromAPI(m.Y2, apiAxis.Y2)
 		diags.Append(y2Diags...)
-		if yAxisConfigIsEmpty(m.Y2) {
+		if axisConfigIsEmpty(m.Y2) {
 			m.Y2 = nil
 		}
 	}
@@ -86,53 +79,57 @@ func xyAxisToAPI(m *models.XYAxisModel) (*kbapi.KibanaHTTPAPIsVisApiXyAxisConfig
 	axis := &kbapi.KibanaHTTPAPIsVisApiXyAxisConfig{}
 
 	if m.X != nil {
-		xAxis, xDiags := xyAxisConfigToAPI(m.X)
+		x := models.YAxisConfigModel(*m.X)
+		xAxis, xDiags := axisConfigToAPI[kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_X_Domain, kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale](&x)
 		diags.Append(xDiags...)
-		if !xDiags.HasError() && xAxis != nil {
-			xb, err := json.Marshal(xAxis)
-			if err != nil {
-				diags.AddError("Failed to marshal XY X axis model", err.Error())
-				return axis, diags
-			}
-			partial, err := json.Marshal(axis)
-			if err != nil {
-				diags.AddError("Failed to marshal XY axis envelope", err.Error())
-				return axis, diags
-			}
-			var env map[string]json.RawMessage
-			if err := json.Unmarshal(partial, &env); err != nil {
-				diags.AddError("Failed to prepare XY axis merge", err.Error())
-				return axis, diags
-			}
-			env["x"] = json.RawMessage(xb)
-			merged, err := json.Marshal(env)
-			if err != nil {
-				diags.AddError("Failed to marshal merged XY axis", err.Error())
-				return axis, diags
-			}
-			if err := json.Unmarshal(merged, &axis); err != nil {
-				diags.AddError("Failed to merge XY X axis into API model", err.Error())
-				return axis, diags
-			}
+		if !xDiags.HasError() {
+			axis.X = xAxis
 		}
 	}
 
 	if m.Y != nil {
-		yAxis, yDiags := yAxisConfigToAPIY(m.Y)
+		yAxis, yDiags := axisConfigToAPI[kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain, kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale](m.Y)
 		diags.Append(yDiags...)
-		axis.Y = yAxis
+		if !yDiags.HasError() {
+			axis.Y = yAxis
+		}
 	}
 
 	if m.Y2 != nil {
-		y2Axis, y2Diags := yAxisConfigToAPIY2(m.Y2)
+		y2Axis, y2Diags := axisConfigToAPI[kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain, kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale](m.Y2)
 		diags.Append(y2Diags...)
-		axis.Y2 = y2Axis
+		if !y2Diags.HasError() {
+			axis.Y2 = y2Axis
+		}
 	}
 
 	return axis, diags
 }
 
-func xyAxisConfigIsEmpty(m *models.XYAxisConfigModel) bool {
+// axisConfigAPIModel is the shape shared by the X, Y and Y2 axis config
+// objects in the generated Kibana API client. Domain (D) and Scale (S) are
+// generated as distinct named types per axis even though their own
+// underlying shapes are identical, so they're kept as type parameters here
+// rather than collapsed to a single concrete type.
+type axisConfigAPIModel[D any, S ~string] = struct {
+	Domain *D `json:"domain,omitempty"`
+	Grid   *struct {
+		Visible bool `json:"visible"`
+	} `json:"grid,omitempty"`
+	Labels *struct {
+		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
+	} `json:"labels,omitempty"`
+	Scale *S `json:"scale,omitempty"`
+	Ticks *struct {
+		Visible bool `json:"visible"`
+	} `json:"ticks,omitempty"`
+	Title *struct {
+		Text    *string `json:"text,omitempty"`
+		Visible *bool   `json:"visible,omitempty"`
+	} `json:"title,omitempty"`
+}
+
+func axisConfigIsEmpty(m *models.YAxisConfigModel) bool {
 	if m == nil {
 		return true
 	}
@@ -142,27 +139,9 @@ func xyAxisConfigIsEmpty(m *models.XYAxisConfigModel) bool {
 	return axisTitleIsDefault(m.Title)
 }
 
-type xyAxisConfigAPIModel = struct {
-	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_X_Domain `json:"domain,omitempty"`
-	Grid   *struct {
-		Visible bool `json:"visible"`
-	} `json:"grid,omitempty"`
-	Labels *struct {
-		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-	} `json:"labels,omitempty"`
-	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale `json:"scale,omitempty"`
-	Ticks *struct {
-		Visible bool `json:"visible"`
-	} `json:"ticks,omitempty"`
-	Title *struct {
-		Text    *string `json:"text,omitempty"`
-		Visible *bool   `json:"visible,omitempty"`
-	} `json:"title,omitempty"`
-}
-
-func xyAxisConfigFromAPI(m *models.XYAxisConfigModel, apiAxis *xyAxisConfigAPIModel) diag.Diagnostics {
+func axisConfigFromAPI[D any, S ~string](m *models.YAxisConfigModel, apiAxis *axisConfigAPIModel[D, S]) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	if apiAxis == nil {
+	if m == nil || apiAxis == nil {
 		return diags
 	}
 
@@ -189,324 +168,52 @@ func xyAxisConfigFromAPI(m *models.XYAxisConfigModel, apiAxis *xyAxisConfigAPIMo
 	}
 
 	if apiAxis.Domain != nil {
-		domainJSON, err := json.Marshal(apiAxis.Domain)
-		if err == nil {
-			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
+		domainBytes, err := json.Marshal(apiAxis.Domain)
+		if norm, ok := lenscommon.WrapNormalizedJSON(domainBytes, err, "domain", &diags); ok {
+			m.DomainJSON = norm
 		}
 	}
 
 	return diags
 }
 
-func xyAxisConfigToAPI(m *models.XYAxisConfigModel) (*xyAxisConfigAPIModel, diag.Diagnostics) {
+func axisConfigToAPI[D any, S ~string](m *models.YAxisConfigModel) (*axisConfigAPIModel[D, S], diag.Diagnostics) {
 	if m == nil {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	xAxis := &xyAxisConfigAPIModel{}
+	axis := &axisConfigAPIModel[D, S]{}
 
 	if typeutils.IsKnown(m.Grid) {
-		xAxis.Grid = &struct {
+		axis.Grid = &struct {
 			Visible bool `json:"visible"`
 		}{Visible: m.Grid.ValueBool()}
 	}
 	if typeutils.IsKnown(m.Ticks) {
-		xAxis.Ticks = &struct {
+		axis.Ticks = &struct {
 			Visible bool `json:"visible"`
 		}{Visible: m.Ticks.ValueBool()}
 	}
-	if typeutils.IsKnown(m.LabelOrientation) {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())
-		xAxis.Labels = &struct {
+	if orientation := typeutils.StringishToPointer[kbapi.KibanaHTTPAPIsVisApiOrientation](m.LabelOrientation); orientation != nil {
+		axis.Labels = &struct {
 			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-		}{Orientation: &orientation}
+		}{Orientation: orientation}
 	}
-	if typeutils.IsKnown(m.Scale) {
-		scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScale(m.Scale.ValueString())
-		xAxis.Scale = &scale
-	}
+	axis.Scale = typeutils.StringishToPointer[S](m.Scale)
 	if m.Title != nil {
-		xAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
+		axis.Title = lenscommon.AxisTitleToAPI(m.Title)
 	}
 	if typeutils.IsKnown(m.DomainJSON) {
-		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_X_Domain
+		var domain D
 		domainDiags := m.DomainJSON.Unmarshal(&domain)
 		diags.Append(domainDiags...)
 		if !domainDiags.HasError() {
-			xAxis.Domain = &domain
+			axis.Domain = &domain
 		}
 	}
 
-	return xAxis, diags
-}
-
-func yAxisConfigIsEmpty(m *models.YAxisConfigModel) bool {
-	if m == nil {
-		return true
-	}
-	if typeutils.IsKnown(m.Ticks) || typeutils.IsKnown(m.Grid) || typeutils.IsKnown(m.LabelOrientation) || typeutils.IsKnown(m.Scale) || typeutils.IsKnown(m.DomainJSON) {
-		return false
-	}
-	return axisTitleIsDefault(m.Title)
-}
-
-func yAxisConfigFromAPIY(m *models.YAxisConfigModel, apiAxis *struct {
-	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
-	Grid   *struct {
-		Visible bool `json:"visible"`
-	} `json:"grid,omitempty"`
-	Labels *struct {
-		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-	} `json:"labels,omitempty"`
-	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
-	Ticks *struct {
-		Visible bool `json:"visible"`
-	} `json:"ticks,omitempty"`
-	Title *struct {
-		Text    *string `json:"text,omitempty"`
-		Visible *bool   `json:"visible,omitempty"`
-	} `json:"title,omitempty"`
-}) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	if apiAxis == nil {
-		return diags
-	}
-
-	if apiAxis.Grid != nil {
-		m.Grid = types.BoolValue(apiAxis.Grid.Visible)
-	} else {
-		m.Grid = types.BoolNull()
-	}
-	if apiAxis.Ticks != nil {
-		m.Ticks = types.BoolValue(apiAxis.Ticks.Visible)
-	} else {
-		m.Ticks = types.BoolNull()
-	}
-	if apiAxis.Labels != nil && apiAxis.Labels.Orientation != nil {
-		m.LabelOrientation = types.StringValue(string(*apiAxis.Labels.Orientation))
-	} else {
-		m.LabelOrientation = types.StringNull()
-	}
-	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
-
-	if apiAxis.Title != nil {
-		m.Title = &models.AxisTitleModel{}
-		lenscommon.AxisTitleFromAPI(m.Title, apiAxis.Title)
-	}
-
-	if apiAxis.Domain != nil {
-		domainJSON, err := json.Marshal(apiAxis.Domain)
-		if err == nil {
-			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
-		}
-	}
-
-	return diags
-}
-
-func yAxisConfigToAPIY(m *models.YAxisConfigModel) (*struct {
-	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
-	Grid   *struct {
-		Visible bool `json:"visible"`
-	} `json:"grid,omitempty"`
-	Labels *struct {
-		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-	} `json:"labels,omitempty"`
-	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
-	Ticks *struct {
-		Visible bool `json:"visible"`
-	} `json:"ticks,omitempty"`
-	Title *struct {
-		Text    *string `json:"text,omitempty"`
-		Visible *bool   `json:"visible,omitempty"`
-	} `json:"title,omitempty"`
-}, diag.Diagnostics) {
-	if m == nil {
-		return nil, nil
-	}
-
-	var diags diag.Diagnostics
-	yAxis := &struct {
-		Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain `json:"domain,omitempty"`
-		Grid   *struct {
-			Visible bool `json:"visible"`
-		} `json:"grid,omitempty"`
-		Labels *struct {
-			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-		} `json:"labels,omitempty"`
-		Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale `json:"scale,omitempty"`
-		Ticks *struct {
-			Visible bool `json:"visible"`
-		} `json:"ticks,omitempty"`
-		Title *struct {
-			Text    *string `json:"text,omitempty"`
-			Visible *bool   `json:"visible,omitempty"`
-		} `json:"title,omitempty"`
-	}{}
-
-	if typeutils.IsKnown(m.Grid) {
-		yAxis.Grid = &struct {
-			Visible bool `json:"visible"`
-		}{Visible: m.Grid.ValueBool()}
-	}
-	if typeutils.IsKnown(m.Ticks) {
-		yAxis.Ticks = &struct {
-			Visible bool `json:"visible"`
-		}{Visible: m.Ticks.ValueBool()}
-	}
-	if typeutils.IsKnown(m.LabelOrientation) {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())
-		yAxis.Labels = &struct {
-			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-		}{Orientation: &orientation}
-	}
-	if typeutils.IsKnown(m.Scale) {
-		scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigYScale(m.Scale.ValueString())
-		yAxis.Scale = &scale
-	}
-	if m.Title != nil {
-		yAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
-	}
-	if typeutils.IsKnown(m.DomainJSON) {
-		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y_Domain
-		domainDiags := m.DomainJSON.Unmarshal(&domain)
-		diags.Append(domainDiags...)
-		if !domainDiags.HasError() {
-			yAxis.Domain = &domain
-		}
-	}
-
-	return yAxis, diags
-}
-
-func yAxisConfigFromAPIY2(m *models.YAxisConfigModel, apiAxis *struct {
-	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
-	Grid   *struct {
-		Visible bool `json:"visible"`
-	} `json:"grid,omitempty"`
-	Labels *struct {
-		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-	} `json:"labels,omitempty"`
-	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
-	Ticks *struct {
-		Visible bool `json:"visible"`
-	} `json:"ticks,omitempty"`
-	Title *struct {
-		Text    *string `json:"text,omitempty"`
-		Visible *bool   `json:"visible,omitempty"`
-	} `json:"title,omitempty"`
-}) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	if apiAxis == nil {
-		return diags
-	}
-
-	if apiAxis.Grid != nil {
-		m.Grid = types.BoolValue(apiAxis.Grid.Visible)
-	} else {
-		m.Grid = types.BoolNull()
-	}
-	if apiAxis.Ticks != nil {
-		m.Ticks = types.BoolValue(apiAxis.Ticks.Visible)
-	} else {
-		m.Ticks = types.BoolNull()
-	}
-	if apiAxis.Labels != nil && apiAxis.Labels.Orientation != nil {
-		m.LabelOrientation = types.StringValue(string(*apiAxis.Labels.Orientation))
-	} else {
-		m.LabelOrientation = types.StringNull()
-	}
-	m.Scale = typeutils.StringishPointerValue(apiAxis.Scale)
-
-	if apiAxis.Title != nil {
-		m.Title = &models.AxisTitleModel{}
-		lenscommon.AxisTitleFromAPI(m.Title, apiAxis.Title)
-	}
-
-	if apiAxis.Domain != nil {
-		domainJSON, err := json.Marshal(apiAxis.Domain)
-		if err == nil {
-			m.DomainJSON = jsontypes.NewNormalizedValue(string(domainJSON))
-		}
-	}
-
-	return diags
-}
-
-func yAxisConfigToAPIY2(m *models.YAxisConfigModel) (*struct {
-	Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
-	Grid   *struct {
-		Visible bool `json:"visible"`
-	} `json:"grid,omitempty"`
-	Labels *struct {
-		Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-	} `json:"labels,omitempty"`
-	Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
-	Ticks *struct {
-		Visible bool `json:"visible"`
-	} `json:"ticks,omitempty"`
-	Title *struct {
-		Text    *string `json:"text,omitempty"`
-		Visible *bool   `json:"visible,omitempty"`
-	} `json:"title,omitempty"`
-}, diag.Diagnostics) {
-	if m == nil {
-		return nil, nil
-	}
-
-	var diags diag.Diagnostics
-	yAxis := &struct {
-		Domain *kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain `json:"domain,omitempty"`
-		Grid   *struct {
-			Visible bool `json:"visible"`
-		} `json:"grid,omitempty"`
-		Labels *struct {
-			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-		} `json:"labels,omitempty"`
-		Scale *kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale `json:"scale,omitempty"`
-		Ticks *struct {
-			Visible bool `json:"visible"`
-		} `json:"ticks,omitempty"`
-		Title *struct {
-			Text    *string `json:"text,omitempty"`
-			Visible *bool   `json:"visible,omitempty"`
-		} `json:"title,omitempty"`
-	}{}
-
-	if typeutils.IsKnown(m.Grid) {
-		yAxis.Grid = &struct {
-			Visible bool `json:"visible"`
-		}{Visible: m.Grid.ValueBool()}
-	}
-	if typeutils.IsKnown(m.Ticks) {
-		yAxis.Ticks = &struct {
-			Visible bool `json:"visible"`
-		}{Visible: m.Ticks.ValueBool()}
-	}
-	if typeutils.IsKnown(m.LabelOrientation) {
-		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.LabelOrientation.ValueString())
-		yAxis.Labels = &struct {
-			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
-		}{Orientation: &orientation}
-	}
-	if typeutils.IsKnown(m.Scale) {
-		scale := kbapi.KibanaHTTPAPIsVisApiXyAxisConfigY2Scale(m.Scale.ValueString())
-		yAxis.Scale = &scale
-	}
-	if m.Title != nil {
-		yAxis.Title = lenscommon.AxisTitleToAPI(m.Title)
-	}
-	if typeutils.IsKnown(m.DomainJSON) {
-		var domain kbapi.KibanaHTTPAPIsVisApiXyAxisConfig_Y2_Domain
-		domainDiags := m.DomainJSON.Unmarshal(&domain)
-		diags.Append(domainDiags...)
-		if !domainDiags.HasError() {
-			yAxis.Domain = &domain
-		}
-	}
-
-	return yAxis, diags
+	return axis, diags
 }
 
 func axisTitleIsDefault(title *models.AxisTitleModel) bool {
