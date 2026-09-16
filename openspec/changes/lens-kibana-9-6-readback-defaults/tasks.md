@@ -12,9 +12,9 @@
 
 ## 3. Pie / waffle legend defaults
 
-- [ ] 3.1 In `internal/kibana/dashboard/panel/lenspie/alignment.go`, align `legend.truncate_after_lines` (default `1`) and `legend.nested` (default `false`) from plan using `lenscommon.PreserveNullIfStateEquals`.
-- [ ] 3.2 In `internal/kibana/dashboard/panel/lenswaffle/alignment.go`, align `legend.truncate_after_lines` (default `1`) from plan using the same mechanism.
-- [ ] 3.3 Add/update unit tests for both paths and run `TestAccResourceDashboardPieChart`, `TestAccResourceDashboardPieChart_lensPresentationCrossCutting`, `TestAccResourceDashboardWaffle`, and `TestAccLensMinimalProbe_{Pie,Waffle}` in this slice.
+- [x] 3.1 In `internal/kibana/dashboard/panel/lenspie/alignment.go`, align `legend.truncate_after_lines` (default `1`) and `legend.nested` (default `false`) from plan using `lenscommon.PreserveNullIfStateEquals`.
+- [x] 3.2 In `internal/kibana/dashboard/panel/lenswaffle/alignment.go`, align `legend.truncate_after_lines` (default `1`) from plan using the same mechanism.
+- [x] 3.3 Add/update unit tests for both paths and run `TestAccResourceDashboardPieChart`, `TestAccResourceDashboardPieChart_lensPresentationCrossCutting`, `TestAccResourceDashboardWaffle`, and `TestAccLensMinimalProbe_{Pie,Waffle}` in this slice.
 
 ## 4. Partition `value_display.percent_decimals`
 
