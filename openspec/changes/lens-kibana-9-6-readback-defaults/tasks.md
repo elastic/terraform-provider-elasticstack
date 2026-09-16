@@ -24,8 +24,8 @@
 
 ## 5. Heatmap axis-label orientation
 
-- [ ] 5.1 Add `axis.{x,y}.labels.orientation` default (`"horizontal"`) preservation to the heatmap alignment path using `lenscommon.PreserveNullIfStateEquals`, parallel to existing `labels.visible` / `title.visible` handling.
-- [ ] 5.2 Add/update heatmap alignment unit tests and run heatmap acceptance coverage (including `TestAccLensMinimalProbe_Heatmap`) in this slice.
+- [x] 5.1 Add `axis.{x,y}.labels.orientation` default (`"horizontal"`) preservation to the heatmap alignment path using `lenscommon.PreserveNullIfStateEquals`, parallel to existing `labels.visible` / `title.visible` handling.
+- [x] 5.2 Add/update heatmap alignment unit tests and run heatmap acceptance coverage (including `TestAccLensMinimalProbe_Heatmap`) in this slice.
 
 ## 6. Spec sync and validation
 
