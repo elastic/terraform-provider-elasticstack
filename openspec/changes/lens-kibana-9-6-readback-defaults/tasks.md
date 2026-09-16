@@ -29,6 +29,6 @@
 
 ## 6. Spec sync and validation
 
-- [ ] 6.1 After implementation evidence is collected, sync this delta into `openspec/specs/kibana-dashboard/spec.md` (REQ-011) with only verified normative defaults.
-- [ ] 6.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate lens-kibana-9-6-readback-defaults --type change`.
-- [ ] 6.3 During implementation, run `make build`, `go vet ./internal/kibana/dashboard/...`, and `go test ./internal/kibana/dashboard/...`; run the acceptance tests above with `TF_ACC=1` against a running `9.6.0-SNAPSHOT` stack per `dev-docs/high-level/testing.md`.
+- [x] 6.1 After implementation evidence is collected, sync this delta into `openspec/specs/kibana-dashboard/spec.md` (REQ-011) with only verified normative defaults.
+- [x] 6.2 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate lens-kibana-9-6-readback-defaults --type change`.
+- [x] 6.3 During implementation, run `make build`, `go vet ./internal/kibana/dashboard/...`, and `go test ./internal/kibana/dashboard/...`; run the acceptance tests above with `TF_ACC=1` against a running `9.6.0-SNAPSHOT` stack per `dev-docs/high-level/testing.md`.
