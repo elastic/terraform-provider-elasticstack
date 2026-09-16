@@ -53,7 +53,7 @@ func PartitionValueDisplayMatchesKibanaDefault(state *models.PartitionValueDispl
 	}
 	modeIsPercentage := typeutils.IsKnown(state.Mode) && state.Mode.ValueString() == "percentage"
 	percentDecimalsUnset := !typeutils.IsKnown(state.PercentDecimals)
-	percentDecimalsIsDefault := typeutils.IsKnown(state.PercentDecimals) && state.PercentDecimals.Equal(types.Float64Value(2))
+	percentDecimalsIsDefault := state.PercentDecimals.Equal(types.Float64Value(2))
 	return modeIsPercentage && (percentDecimalsUnset || percentDecimalsIsDefault)
 }
 

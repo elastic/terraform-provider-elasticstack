@@ -331,7 +331,7 @@ request legend:  {"size":"m"}
 
 Treemap/mosaic inject both `truncate_after_lines: 1` and `nested: false` when omitted.
 
-## CI 9.6.0-SNAPSHOT shard-0 per-test results (head `4c93afd0`)
+## CI 9.6.0-SNAPSHOT shard-0 per-test results (head `4c93afd0`, reconfirmed `fe7ba57e2`)
 
 Source: Provider CI run [`35054271441`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35054271441) (head `4c93afd050aca5a94a1f89a3d3f4f7f600d3da76`). Snapshot warning comment `<!-- tf-acceptance-snapshot-warning:9.6.0-SNAPSHOT-shard-0 -->` points at this run. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 0)` id `104661401406`: step `TF acceptance tests` has `continue-on-error` (job conclusion `success`) but the warn step ran; annotation `Process completed with exit code 2`. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 1)` id `104661401335`: acceptance step succeeded and the warn step was skipped.
 
@@ -376,4 +376,4 @@ These failed in the same shard-0 job and are **out of scope** for this change (n
 | `TestAccResourceMLDatafeedState_withTimes` | FAIL (4.04s) |
 | `TestAccResourceKibanaSecurityEntityStore_import` | FAIL (23.63s) + re-run 1 FAIL (11.26s) |
 
-The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code.
+The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code. Reconfirmed on head `fe7ba57e2` (Provider CI [`35116764333`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333), shard-0 job [`104864919731`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333/job/104864919731)): `_layers` is still the only in-scope Lens failure; the same out-of-scope ML / entity-store import failures remain. Provider follow-up: https://github.com/elastic/terraform-provider-elasticstack/issues/4959.
