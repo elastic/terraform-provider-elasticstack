@@ -10,7 +10,6 @@
 - [x] 2.2 Add/update unit tests in the relevant `lenscommon` and panel alignment test files for: unset-axis metrics preserving plan intent, explicitly set axis values not being overridden, and composition with `empty_as_null` gating.
 - [x] 2.3 Run the metric-focused acceptance suites listed in issue #4902 except `TestAccResourceDashboardXYChart_layers`. Reconfirmed on head `fe7ba57e2` (run [`35116764333`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333); shard-0 job [`104864919731`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333/job/104864919731), shard-1 job [`104864919751`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35116764333/job/104864919751)): every listed suite except `_layers` passed on `9.6.0-SNAPSHOT`. Listed suites excluding `_layers`: `TestAccResourceDashboardXYChart_basic` plus `_axis`, `_decorations`, `_filters`, `_fitting`, `_layers_reference`, `_legend_inside`, `_legend_outside`, `_chartTimeRangeLifecycle`, `_lensPresentationFields`, `TestAccResourceDashboardXYChartMinimalConfig`, `TestAccDashboardXYMetricEmptyAsNullGating`, `TestAccReproduceIssue3402`, `TestAccReproduceIssue3707`, `TestAccResourceDashboardDatatableChart`, `TestAccResourceDashboardDatatableChart_lensPresentationCrossCutting`, and minimal probes covering `Metric`, `Gauge`, `Tagcloud`, `RegionMap`, and `LegacyMetric`.
 - [x] 2.4 Preserve Kibana 9.6 XY reference-line threshold omit-defaults (`thresholds[].axis` → `"y"`, `operation` → `"static_value"`, `color_json` → `{"type":"auto"}`, `value_json` object→scalar restore) in `internal/kibana/dashboard/panel/lensxy/alignment_panels.go` (`alignXYLayerStateFromPlan` / `preserveThresholdValueJSONIfStateIsPlanValue`). Covered by `TestAccResourceDashboardXYChart_layers_reference`.
-- [ ] 2.5 Deferred: `TestAccResourceDashboardXYChart_layers` still fails on 9.6 because Kibana overwrites ES|QL XY Y-metric static color to `{type:auto}`. Do not skip that test in code. Upstream [elastic/kibana#291451](https://github.com/elastic/kibana/issues/291451); `kibana-esql-xy-static-color-issue.md`. Provider-side re-verify once that Kibana fix lands: [#4959](https://github.com/elastic/terraform-provider-elasticstack/issues/4959). Unit guard that this overwrite is not treated as an omit-default: `TestAlignXYLayerStateFromPlan_staticYColorIsNotNormalizedToAuto`.
 
 ## 3. Pie / waffle legend defaults
 
@@ -27,7 +26,7 @@
 
 ## 5. Heatmap axis-label orientation
 
-- [x] 5.1 Add `axis.{x,y}.labels.orientation` default (`"horizontal"`) preservation to the heatmap alignment path using `lenscommon.PreserveNullIfStateEquals`, parallel to existing `labels.visible` / `title.visible` handling.
+- [x] 5.1 Add `axis.x.labels.orientation` default (`"horizontal"`) preservation to the heatmap alignment path using `lenscommon.PreserveNullIfStateEquals`, parallel to existing `labels.visible` / `title.visible` handling. Y has no `orientation` in the schema or API.
 - [x] 5.2 Add/update heatmap alignment unit tests and run heatmap acceptance coverage (including `TestAccLensMinimalProbe_Heatmap`) in this slice.
 - [x] 5.3 Align `heatmap_config.legend.truncate_after_lines` (default `1`) from plan using `lenscommon.PreserveNullIfStateEquals`.
 

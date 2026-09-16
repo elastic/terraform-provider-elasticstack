@@ -44,3 +44,11 @@ Answers from live 9.6 probes; quotes in `findings.md` §§ 1.1–1.3.
 - [Risk] Hard-coding `axis: "y"` as *the* default in `PopulateLensMetricDefaults` could be wrong for secondary-axis or X-axis metrics, silently normalizing away a real drift instead of a spurious one. Mitigation: implementation should verify against the axis-specific acceptance tests already in the suite (`TestAccResourceDashboardXYChart_axis`) before finalizing the default value/logic.
 - [Risk] Widening `PartitionValueDisplayMatchesKibanaDefault` to accept `percent_decimals = 2` means a practitioner who explicitly wants `percent_decimals = 2` and a practitioner who omitted it entirely become indistinguishable in state once Kibana always fills `2`. This mirrors the pre-existing ambiguity the function already accepted for `null`, and is consistent with REQ-011's existing preserve-plan-intent behavior elsewhere (e.g. `fitting.type` empty-string handling), so it is treated as acceptable rather than a regression.
 - [Risk] Because Kibana 9.6 is still a snapshot build, the exact injected defaults (key names, values) could still change before GA. Mitigation: the acceptance tests this change adds/extends run against the live configured stack (per `dev-docs/high-level/testing.md`), so any mismatch between this design's assumptions and actual 9.6 GA behavior will surface as a test failure rather than silently shipping wrong defaults.
+
+## Deferred / blocked upstream
+
+`TestAccResourceDashboardXYChart_layers` still fails on 9.6 because Kibana overwrites an ES|QL XY Y-metric static color to `{type:auto}`. That is a Kibana persist bug, not unfinished omit-default work in this change. Do not skip that test in code. Do not treat practitioner `{type:static}` as equivalent to Kibana `{type:auto}`.
+
+- Upstream: [elastic/kibana#291451](https://github.com/elastic/kibana/issues/291451); change-local write-up `kibana-esql-xy-static-color-issue.md`.
+- Provider re-verify once the Kibana fix lands: [#4959](https://github.com/elastic/terraform-provider-elasticstack/issues/4959).
+- Unit guard that this overwrite is not treated as an omit-default: `TestAlignXYLayerStateFromPlan_staticYColorIsNotNormalizedToAuto`.
