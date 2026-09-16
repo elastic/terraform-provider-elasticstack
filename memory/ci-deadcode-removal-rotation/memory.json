@@ -1142,6 +1142,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview.NewFieldAttrsValueFrom",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview",
+      "attemptedAt": "2026-09-16T03:10:04.479532426Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
