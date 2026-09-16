@@ -174,6 +174,8 @@ treemap_config.value_display.percent_decimals: was null, now 2
 
 `empty_as_null` also appears on read-back when omitted; that key is already populated by `PopulateLegacyMetricMetricDefaults` and is not new 9.6 drift.
 
+The 1.3 probe used `operation: "count"` only. `color`/`size` injection therefore stays behind `IsFieldMetricOperation`; pipeline operations such as `formula` were not probed.
+
 ### Planned vs actual quotes
 
 `TestAccLensMinimalProbe_LegacyMetric`:

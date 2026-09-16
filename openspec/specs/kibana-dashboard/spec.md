@@ -603,7 +603,7 @@ As of Kibana 9.6.0-SNAPSHOT, XY reference-line `thresholds[]` inject omit-defaul
 
 Datatable `metrics[].config_json` extras injected by Kibana 9.6.0-SNAPSHOT when omitted are `visible:true`, `alignment:"right"`, and `color: {type:"auto"}`. Datatable metrics SHALL NOT assume an `axis` default.
 
-Legacy `legacy_metric_config.metric_json` extras injected by Kibana 9.6.0-SNAPSHOT when omitted are `color: {type:"auto"}` and `size:"m"`. Legacy metrics SHALL NOT assume an `axis` default.
+Legacy `legacy_metric_config.metric_json` extras injected by Kibana 9.6.0-SNAPSHOT when omitted are `color: {type:"auto"}` and `size:"m"` for field-metric operations (`count`, `sum`, `unique_count`, `min`, `max`, `average`, `median`, `standard_deviation`, `last_value`, `percentile`, `percentile_rank`). These extras SHALL NOT be injected for pipeline operations such as `formula`. Legacy metrics SHALL NOT assume an `axis` default.
 
 The resource SHALL NOT treat a practitioner-authored static Y-metric color as semantically equal to Kibana's `{type:"auto"}` read-back. Kibana 9.6 ES|QL XY overwrites practitioner static Y color; that overwrite is out of scope for this requirement.
 
@@ -710,7 +710,7 @@ The resource SHALL NOT treat a practitioner-authored static Y-metric color as se
 
 #### Scenario: Legacy metric_json preserves injected color and size defaults
 
-- GIVEN a legacy metric panel whose `metric_json` omits `color` and `size`
+- GIVEN a legacy metric panel whose `metric_json` uses a field-metric `operation` such as `"count"` and omits `color` and `size`
 - WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `color: {type:"auto"}` and `size:"m"` without an `axis` key
 - THEN the provider SHALL preserve the practitioner's `metric_json` payload in state
 - AND a subsequent plan SHALL show no changes

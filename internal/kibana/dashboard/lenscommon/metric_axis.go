@@ -17,9 +17,9 @@
 
 package lenscommon
 
-// PopulateXYMetricAxisDefault injects Kibana 9.6's omit-default axis value ("y")
+// populateXYMetricAxisDefault injects Kibana 9.6's omit-default axis value ("y")
 // on XY y[] metric config_json when the practitioner omitted axis.
-func PopulateXYMetricAxisDefault(model map[string]any) map[string]any {
+func populateXYMetricAxisDefault(model map[string]any) map[string]any {
 	if model == nil {
 		return model
 	}
@@ -32,7 +32,7 @@ func PopulateXYMetricAxisDefault(model map[string]any) map[string]any {
 // PopulateXYMetricDefaults applies shared Lens metric defaults plus the XY-only
 // axis omit-default. Used for XY y[] config_json, not datatable metrics[].
 func PopulateXYMetricDefaults(model map[string]any) map[string]any {
-	return PopulateXYMetricAxisDefault(PopulateLensMetricDefaults(model))
+	return populateXYMetricAxisDefault(PopulateLensMetricDefaults(model))
 }
 
 // PopulateDatatableMetricDefaults applies shared Lens metric defaults plus

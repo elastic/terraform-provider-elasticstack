@@ -26,7 +26,7 @@ import (
 func TestPopulateXYMetricAxisDefault_injectsYWhenOmitted(t *testing.T) {
 	t.Parallel()
 
-	model := PopulateXYMetricAxisDefault(map[string]any{
+	model := populateXYMetricAxisDefault(map[string]any{
 		"operation":     "count",
 		"empty_as_null": true,
 	})
@@ -37,7 +37,7 @@ func TestPopulateXYMetricAxisDefault_injectsYWhenOmitted(t *testing.T) {
 func TestPopulateXYMetricAxisDefault_preservesExplicitAxis(t *testing.T) {
 	t.Parallel()
 
-	model := PopulateXYMetricAxisDefault(map[string]any{
+	model := populateXYMetricAxisDefault(map[string]any{
 		"operation":     "count",
 		"empty_as_null": true,
 		"axis":          "y2",
