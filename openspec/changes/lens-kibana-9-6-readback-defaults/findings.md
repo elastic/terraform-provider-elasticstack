@@ -270,3 +270,63 @@ Notes:
 - Axis + format omit-defaults from this payload are already handled. The remaining apply diagnostic is solely static → auto.
 
 Do **not** treat practitioner `{type:static,color:#54B399}` as equivalent to Kibana `{type:auto}`. Task 2.3 stays open until the user decides how to handle this Kibana overwrite.
+
+## Explicit `thresholds[].axis` of `left` / `right` (live 9.6 re-check)
+
+Captured `2026-09-16` against the same live stack (ES `9.6.0-SNAPSHOT` `:12288`, Kibana `9.6.0` snapshot `:19870`, `status.overall.level = available`) via `POST /api/dashboards?allowUnmappedKeys=true` with a NoESQL XY chart plus a `reference_lines` layer.
+
+**Kibana does not echo `left`/`right`, and it does not overwrite them to `"y"`.** It **rejects** them with HTTP 400. The OpenAPI/TF schema values `left` / `right` / `bottom` are not valid on this Kibana 9.6 path; accepted values observed here are `"y"` and `"y2"`. Do **not** map `left`→`"y"` in the provider — this is a Kibana contract / schema mismatch, not an omit-default.
+
+Request threshold `{ "axis": "left", "operation": "static_value", "value": 42 }` → **400**. Validation hits include:
+
+```
+path ["thresholds", 0, "axis"]: "Invalid input"
+"Invalid input: expected \"y\""   values: ["y"]
+```
+
+Same 400 shape for `"right"` and `"bottom"`.
+
+Request `{ "axis": "y", "operation": "static_value", "value": 42 }` → **201** (GET matches). Kibana echoes `"y"` and injects omitted `color: {type:auto}`:
+
+```
+request  {"axis":"y","operation":"static_value","value":42}
+201/GET  {"axis":"y","color":{"type":"auto"},"operation":"static_value","value":42}
+```
+
+Request `{ "axis": "y2", "operation": "static_value", "value": 42 }` → **201** (GET matches). Kibana **echoes `"y2"`**; omit-default `"y"` does **not** clobber an explicit accepted axis:
+
+```
+request  {"axis":"y2","operation":"static_value","value":42}
+201/GET  {"axis":"y2","color":{"type":"auto"},"operation":"static_value","value":42}
+```
+
+Omitted axis still injects `"y"` (already quoted under `_layers_reference` above). `PreserveNullIfStateEquals` only rewrites when the plan value is null, so an explicit `"y2"` is not replaced with `"y"`.
+
+## Heatmap / treemap / mosaic `legend.truncate_after_lines` (and `nested`) quotes
+
+Captured `2026-09-16` from `TF_LOG=DEBUG` on `TestAccLensMinimalProbe_{Heatmap,Treemap,Mosaic}` against the same live stack. Practitioner legend was `{ "size": "m" }` only (no `truncate_after_lines` / `nested`).
+
+**Heatmap** (`TestAccLensMinimalProbe_Heatmap`):
+
+```
+request legend:  {"size":"m"}
+201 legend:      {"truncate_after_lines":1,"visibility":"visible","position":"right","size":"m"}
+```
+
+`legend.truncate_after_lines` null → `1`.
+
+**Treemap** (`TestAccLensMinimalProbe_Treemap`):
+
+```
+request legend:  {"size":"m"}
+201 legend:      {"nested":false,"truncate_after_lines":1,"visibility":"auto","size":"m","position":"right"}
+```
+
+**Mosaic** (`TestAccLensMinimalProbe_Mosaic`):
+
+```
+request legend:  {"size":"m"}
+201 legend:      {"nested":false,"truncate_after_lines":1,"visibility":"auto","size":"m","position":"right"}
+```
+
+Treemap/mosaic inject both `truncate_after_lines: 1` and `nested: false` when omitted.
