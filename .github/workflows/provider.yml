@@ -6,6 +6,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+  merge_group:
 
 permissions:
   contents: read
@@ -48,6 +49,34 @@ jobs:
 
       - name: Build
         run: make build-ci
+
+  unit-test:
+    name: Unit Test
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: "go.mod"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Get dependencies
+        run: make vendor
+
+      # Dedicated unit-test job: the targeted-testacc selection only covers
+      # packages with acceptance tests, so unit-test-only packages (entitycore,
+      # generated clients, internal/clients, etc.) would otherwise never run
+      # on PRs. This job is not gated on the targeted selection at all.
+      # -skip '^TestAcc' excludes acceptance tests: they are run by the
+      # acceptance matrix (with a live stack), and several *ExplicitConnection
+      # tests hit endpoint/env assertions before the framework's TF_ACC gate,
+      # so they cannot run here without a stack.
+      - name: Unit tests
+        run: go test ./... -count=1 -parallel=4 -timeout=10m -skip '^TestAcc'
 
   lint:
     name: Lint
@@ -163,8 +192,17 @@ jobs:
       - name: Get dependencies
         run: make vendor
 
+      - id: targeted
+        name: compute-packages — compute targeted acceptance test packages
+        shell: bash
+        run: ./.github/scripts/targeted-testacc-compute.sh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SHARD: ${{ matrix.shard }}
+
       - name: Pre-pull fleet image
-        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet"
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet && steps.targeted.outputs.has_packages == 'true'"
         timeout-minutes: 5
         run: |
           for i in {1..3}; do
@@ -180,6 +218,7 @@ jobs:
           exit 1
 
       - name: Start stack with docker compose
+        if: steps.targeted.outputs.has_packages == 'true'
         timeout-minutes: 10
         run: make docker-fleet
         env:
@@ -189,6 +228,7 @@ jobs:
           FLEET_IMAGE: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}
 
       - name: Wait for stack readiness
+        if: steps.targeted.outputs.has_packages == 'true'
         run: |
           for i in {1..60}; do
             if curl -fsS -u "elastic:${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health > /dev/null; then
@@ -214,6 +254,7 @@ jobs:
 
       - id: get-api-key
         name: Get ES API key
+        if: steps.targeted.outputs.has_packages == 'true'
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
@@ -221,16 +262,26 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
+        if: "steps.targeted.outputs.has_packages == 'true' && fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
         id: tf-acceptance
+        if: steps.targeted.outputs.has_packages == 'true'
         timeout-minutes: 45
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
-        run: make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+        run: |
+          # No re-sharding on the targeted path: the tool already applied
+          # --total-shards/--shard-index during package selection, so the
+          # TARGETED_PKGS list is final for this shard.
+          if [[ -n "$TARGETED_PKGS" ]]; then
+            make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"
+          else
+            make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+          fi
         env:
+          TARGETED_PKGS: ${{ steps.targeted.outputs.targeted_pkgs }}
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
@@ -296,7 +347,7 @@ jobs:
 
   gate:
     name: Provider Gate
-    needs: [classify, build, golangci-lint, lint, load-matrix, test]
+    needs: [classify, build, golangci-lint, lint, load-matrix, test, unit-test]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -313,6 +364,7 @@ jobs:
           PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}
           PROVIDER_GATE_LOAD_MATRIX_RESULT: ${{ needs['load-matrix'].result }}
           PROVIDER_GATE_TEST_RESULT: ${{ needs.test.result }}
+          PROVIDER_GATE_UNIT_TEST_RESULT: ${{ needs['unit-test'].result }}
         with:
           script: |
             const gate = require('${{ github.workspace }}/.github/scripts/workflows/lib/runners/gate.js');
