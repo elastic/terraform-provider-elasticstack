@@ -93,7 +93,7 @@ thresholds[0].operation:   was null, now "static_value"
 thresholds[0].color_json:  was null, now {"type":"auto"}
 ```
 
-Metric `config_json` `axis:"y"` does **not** apply to reference-line `value_json` (that blob collapsed to the scalar `42`; no `axis` / `axis_id` inside it). The typed sibling `thresholds[].axis` (schema documents `left`/`right`/`bottom`) was omitted in plan and read back as `"y"` — a different field from Y-metric `config_json.axis`. Task 2's metric-axis primitive should stay on metric `config_json` / `y[]`, not this threshold attribute.
+Metric `config_json` `axis:"y"` does **not** apply to reference-line `value_json` (that blob collapsed to the scalar `42`; no `axis` / `axis_id` inside it). The typed sibling `thresholds[].axis` (schema documents `left`/`right`/`bottom`) was omitted in plan and read back as `"y"` — a different field from Y-metric `config_json.axis`. The typed sibling `thresholds[].operation` read-back `"static_value"` is an echo of `value_json.operation` from that same blob, not a plan-free omit-default; only this `static_value` shape was probed. Task 2's metric-axis primitive should stay on metric `config_json` / `y[]`, not these threshold attributes.
 
 **Datatable** (`TestAccLensMinimalProbe_Datatable`):
 
@@ -333,9 +333,9 @@ request legend:  {"size":"m"}
 
 Treemap/mosaic inject both `truncate_after_lines: 1` and `nested: false` when omitted.
 
-## CI 9.6.0-SNAPSHOT shard-0 per-test results (head `4c93afd0`, reconfirmed `fe7ba57e2`)
+## CI 9.6.0-SNAPSHOT shard-0 per-test results (head `250bac4a`)
 
-Source: Provider CI run [`35054271441`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35054271441) (head `4c93afd050aca5a94a1f89a3d3f4f7f600d3da76`). Snapshot warning comment `<!-- tf-acceptance-snapshot-warning:9.6.0-SNAPSHOT-shard-0 -->` points at this run. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 0)` id `104661401406`: step `TF acceptance tests` has `continue-on-error` (job conclusion `success`) but the warn step ran; annotation `Process completed with exit code 2`. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 1)` id `104661401335`: acceptance step succeeded and the warn step was skipped.
+Source: Provider CI run [`35158144564`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35158144564) (head `250bac4ad843dd02eaa469cd520b6445cc21b6c9`). Per-test timings below are from the earlier snapshot-warning run [`35054271441`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35054271441); the `250bac4a` reconfirm kept the same pass/fail set. Job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 0)` id `105013489862`; job `Matrix Acceptance Test (9.6.0-SNAPSHOT, 1)` id `105013489856`.
 
 ### Task 2.3 listed suites
 
@@ -378,7 +378,7 @@ These failed in the same shard-0 job and are **out of scope** for this change (n
 | `TestAccResourceMLDatafeedState_withTimes` | FAIL (4.04s) |
 | `TestAccResourceKibanaSecurityEntityStore_import` | FAIL (23.63s) + re-run 1 FAIL (11.26s) |
 
-The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code. Reconfirmed on head `d87f1034` (Provider CI [`35147288738`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35147288738); shard-0 job [`104970527144`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35147288738/job/104970527144), shard-1 job [`104970527195`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35147288738/job/104970527195)): `_layers` is still the only in-scope Lens failure. The same out-of-scope ML / entity-store import failures remain on shard-0. Shard-1 also failed `TestAccResourcePrebuiltRules/in_space` (out of scope; snapshot warning). Provider follow-up: https://github.com/elastic/terraform-provider-elasticstack/issues/4959.
+The only remaining 2.3-listed failure is `TestAccResourceDashboardXYChart_layers` (Kibana ES\|QL static→auto). Do not skip that test in code. Reconfirmed on head `250bac4a` (Provider CI [`35158144564`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35158144564); shard-0 job [`105013489862`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35158144564/job/105013489862), shard-1 job [`105013489856`](https://github.com/elastic/terraform-provider-elasticstack/actions/runs/35158144564/job/105013489856)): `_layers` is still the only in-scope Lens failure. The same out-of-scope ML / entity-store import failures remain on shard-0. Shard-1 also failed `TestAccResourcePrebuiltRules/in_space` (out of scope; snapshot warning). Provider follow-up: https://github.com/elastic/terraform-provider-elasticstack/issues/4959.
 
 ### Other shard-1 failures (not on the 2.3 line)
 
