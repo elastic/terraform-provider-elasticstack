@@ -48,6 +48,7 @@ TEST ?= ./...
 
 # Optional diff baseline for targeted acceptance test selection.
 TARGETED_TESTACC_BASE ?=
+# Go bool flag value: accepts 0/1/true/false (strconv.ParseBool).
 TARGETED_TESTACC_VERBOSE ?= 0
 
 USE_TLS ?= 0

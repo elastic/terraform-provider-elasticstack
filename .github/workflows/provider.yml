@@ -195,43 +195,11 @@ jobs:
       - id: targeted
         name: compute-packages — compute targeted acceptance test packages
         shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
-            echo "has_packages=true" >> "$GITHUB_OUTPUT"
-            echo "targeted_pkgs=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # The actions/checkout step gives us a shallow merge commit only, so
-          # merge-base / HEAD~1 resolution fails and the tool falls back to the
-          # full suite. Fetch the PR base commit and pass it explicitly so the
-          # tool can compute the real diff for this PR.
-          compute_targeted() {
-            local out
-            if ! out=$(go run ./scripts/targeted-testacc/... "$@"); then
-              echo "::error::targeted-testacc failed; refusing to skip tests"
-              exit 1
-            fi
-            targeted=$(printf '%s' "$out" | tr '\n' ' ')
-          }
-          base_ref="refs/remotes/origin/pr-base"
-          if git fetch origin +"${PR_BASE_SHA}":"${base_ref}" --depth=1; then
-            compute_targeted --base="${base_ref}" --total-shards=2 --shard-index=${{ matrix.shard }}
-          else
-            # Base-commit fetch failed (e.g. shallow history / pruned ref);
-            # fall back to re-invoking the tool without --base, which resolves
-            # the baseline from merge-base origin/main HEAD, or HEAD~1 when no
-            # origin/main is available.
-            compute_targeted --total-shards=2 --shard-index=${{ matrix.shard }}
-          fi
-          targeted=$(echo "$targeted" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-          if [[ -n "$targeted" ]]; then
-            echo "has_packages=true" >> "$GITHUB_OUTPUT"
-            echo "targeted_pkgs=$targeted" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_packages=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: ./.github/scripts/targeted-testacc-compute.sh
         env:
+          EVENT_NAME: ${{ github.event_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SHARD: ${{ matrix.shard }}
 
       - name: Pre-pull fleet image
         if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet && steps.targeted.outputs.has_packages == 'true'"
