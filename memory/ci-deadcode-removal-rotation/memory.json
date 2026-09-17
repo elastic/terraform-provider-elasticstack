@@ -1162,6 +1162,34 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-09-17T20:40:08.68972742Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingsElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-09-17T20:40:08.68972758Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event.parseCalendarEventFullCompositeID",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event",
+      "attemptedAt": "2026-09-17T20:40:08.68972768Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.NewKibanaAction",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-09-17T20:47:33.814548365Z",
+      "reason": "build_failed",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
