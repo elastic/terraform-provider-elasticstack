@@ -110,12 +110,7 @@ func readSloErrorBudgetDrilldownsFromAPI(
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
 	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloErrorBudgetAPIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	// This embeddable defaults open_in_new_tab to true (see schema). The shared
 	// helper's built-in default is false, so import must override it or a Kibana

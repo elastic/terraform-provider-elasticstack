@@ -200,12 +200,7 @@ func readSyntheticsStatsOverviewDrilldownsFromAPI(
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
 	items := panelkit.BuildURLDrilldownItems(apiPanel.Config.Drilldowns, func(d syntheticsStatsOverviewAPIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
