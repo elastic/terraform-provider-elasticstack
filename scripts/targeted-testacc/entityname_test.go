@@ -18,11 +18,14 @@
 package main
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -34,7 +37,10 @@ func init() {
 	_ = entitycore.NewResourceBase(entitycore.ComponentKibana, "space")
 }`
 
-	got := extractFromSource(src, nil)
+	got, unresolved := extractFromSource(src)
+	if len(unresolved) != 0 {
+		t.Errorf("unexpected unresolved sites: %v", unresolved)
+	}
 	want := []EntityRef{{Component: "kibana", Name: "space"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
@@ -48,7 +54,7 @@ func init() {
 	_ = NewResourceBase(ComponentKibana, "data_view")
 }`
 
-	got := extractFromSource(src, nil)
+	got, _ := extractFromSource(src)
 	want := []EntityRef{{Component: "kibana", Name: "data_view"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
@@ -62,7 +68,7 @@ func init() {
 	_ = entitycore.NewElasticsearchResource[Model]("index_template", opts)
 }`
 
-	got := extractFromSource(src, nil)
+	got, _ := extractFromSource(src)
 	want := []EntityRef{{Component: "elasticsearch", Name: "index_template"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
@@ -76,7 +82,7 @@ func init() {
 	_ = entitycore.NewKibanaResource[Model](entitycore.ComponentKibana, "slo", opts)
 }`
 
-	got := extractFromSource(src, nil)
+	got, _ := extractFromSource(src)
 	want := []EntityRef{{Component: "kibana", Name: "slo"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
@@ -90,7 +96,7 @@ func init() {
 	_ = entitycore.NewKibanaDataSource[Model](entitycore.ComponentKibana, "spaces", opts)
 }`
 
-	got := extractFromSource(src, nil)
+	got, _ := extractFromSource(src)
 	want := []EntityRef{{Component: "kibana", Name: "spaces"}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
@@ -118,27 +124,27 @@ func init() {
 	_ = entitycore.NewElasticsearchDataSource(entitycore.ComponentElasticsearch, "connector", schema, read)
 }`
 
-	got := extractFromSource(src, nil)
+	got, unresolved := extractFromSource(src)
+	if len(unresolved) != 0 {
+		t.Errorf("unexpected unresolved sites: %v", unresolved)
+	}
 	want := []EntityRef{
-		// baseEntityRE
+		// entities are reported in source order
 		{Component: "kibana", Name: "space"},
 		{Component: "kibana", Name: "data_view"},
 		{Component: "fleet", Name: "agent"},
 		{Component: "apm", Name: "source_map"},
-		// kibanaComponentRE
-		{Component: "kibana", Name: "slo"},
-		{Component: "kibana", Name: "spaces"},
-		// elasticsearchNameRE
 		{Component: "elasticsearch", Name: "index_template"},
 		{Component: "elasticsearch", Name: "role"},
 		{Component: "elasticsearch", Name: "apikey"},
 		{Component: "elasticsearch", Name: "snapshot_create"},
-		// type-inferred call sites (same elasticsearch regex pass)
-		{Component: "elasticsearch", Name: "synonym_set"},
-		{Component: "elasticsearch", Name: "connector"},
-		// kibanaNameRE
+		{Component: "kibana", Name: "slo"},
+		{Component: "kibana", Name: "spaces"},
 		{Component: "kibana", Name: "synthetic"},
 		{Component: "kibana", Name: "bulk_upload"},
+		// type-inferred call sites (no explicit type argument)
+		{Component: "elasticsearch", Name: "synonym_set"},
+		{Component: "elasticsearch", Name: "connector"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("extractFromSource = %v, want %v", got, want)
@@ -206,23 +212,24 @@ func TestEntitycoreConstructorsCovered(t *testing.T) {
 	}
 }
 
-func TestExtractFromSource_HonoursCommentIntervals(t *testing.T) {
+// TestExtractFromSource_IgnoresCommentedCallSites asserts that entities
+// are extracted via the go/ast AST, so constructor invocations written in
+// comments (line comments and block comments alike) are ignored naturally.
+func TestExtractFromSource_IgnoresCommentedCallSites(t *testing.T) {
 	src := `package mixed
 
 // entitycore.NewResourceBase(entitycore.ComponentKibana, "ignored")
 func init() {
+	_ = entitycore.NewResourceBase(entitycore.ComponentKibana, "space")
 	/*
 		entitycore.NewElasticsearchResource[Model]("ignored", opts)
 	*/
 }`
 
-	// Simulate intervals covering the entire source; extractFromSource should
-	// ignore every match.
-	intervals := [][2]int{{0, 200}}
-
-	got := extractFromSource(src, intervals)
-	if len(got) != 0 {
-		t.Errorf("expected no entities, got %v", got)
+	got, _ := extractFromSource(src)
+	want := []EntityRef{{Component: "kibana", Name: "space"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("extractFromSource = %v, want %v", got, want)
 	}
 }
 
@@ -270,10 +277,20 @@ func TestEntityRef_FullName(t *testing.T) {
 	}
 }
 
-// TestExtractEntities_FromRepoCallSites asserts that the extraction regexes
-// still match the real constructor call sites in the repository, rather than
-// only synthetic fixtures. Each listed directory must yield exactly the
-// named entities, so a regex that stops matching the tree fails loudly here.
+// TestExtractEntities_FromRepoCallSites asserts that the AST extraction
+// still matches the real constructor call sites in the repository, rather
+// than only synthetic fixtures. The sampled directories below must each
+// yield the named entities, so an extraction that stops matching the tree
+// fails loudly here.
+//
+// The repo-wide floor below covers the packages the samples cannot: a
+// regression in any unsampled package would drop the extracted-entity
+// totals under the recorded floor. The floor counts unique entities across
+// every enumerated acceptance-test package (measured on the rebase that
+// moved extraction from regexes to the go/ast AST: 136 packages yield 100
+// entity references, 96 unique); the floor deliberately stays below today's
+// count so that legitimate single-package additions do not need a test
+// update, while a systematic extraction regression cannot pass unnoticed.
 func TestExtractEntities_FromRepoCallSites(t *testing.T) {
 	cases := []struct {
 		dir  string
@@ -307,7 +324,7 @@ func TestExtractEntities_FromRepoCallSites(t *testing.T) {
 				names = append(names, e.FullName())
 			}
 			if len(names) == 0 {
-				t.Fatalf("ExtractEntities(%s) extracted no entities; extraction regexes no longer match real call sites", tc.dir)
+				t.Fatalf("ExtractEntities(%s) extracted no entities; extraction no longer matches real call sites", tc.dir)
 			}
 			for _, want := range tc.want {
 				if !slices.Contains(names, want) {
@@ -315,6 +332,128 @@ func TestExtractEntities_FromRepoCallSites(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestExtractEntities_AcrossAllAccPackages iterates every enumerated
+// acceptance-test package and asserts a whole-repo floor on extracted
+// entities. Per-package "must declare an entity" is not sound: many
+// enumerated packages legitimately declare none (the internal/kibana/dashboard/panel/*
+// fixture packages, internal/acctest, internal/clients, provider and other
+// helper packages declare their entities in the packages they test). A
+// unique-entity floor over the whole set still catches a systematic
+// extraction regression across all 136 packages.
+func TestExtractEntities_AcrossAllAccPackages(t *testing.T) {
+	root := repoRoot(t)
+	t.Chdir(root)
+	modulePath, err := currentModulePath()
+	if err != nil {
+		t.Fatalf("cannot resolve module path: %v", err)
+	}
+
+	pkgs, err := FindAccTestPackages(accTestEnumerationRoots, modulePath)
+	if err != nil {
+		t.Fatalf("FindAccTestPackages: %v", err)
+	}
+	if len(pkgs) < 100 {
+		t.Errorf("enumerated only %d acceptance test packages (expected ≥100; enumeration regression?)", len(pkgs))
+	}
+
+	unique := make(map[string]EntityRef)
+	refs := 0
+	for _, pkg := range pkgs {
+		dir := strings.TrimPrefix(pkg, modulePath+"/")
+		ents, err := ExtractEntities(dir)
+		if err != nil {
+			t.Errorf("ExtractEntities(%s): %v", dir, err)
+			continue
+		}
+		refs += len(ents)
+		for _, e := range ents {
+			unique[e.FullName()] = e
+		}
+	}
+
+	// Floor derived from the measured 2025-11-16 count: 136 packages, 100
+	// references, 96 unique entities. Keeps headroom for entity additions
+	// without test updates; set from 96 to catch any broad regression.
+	const floorUnique = 96
+	if len(unique) < floorUnique {
+		sample := make([]string, 0, 10)
+		for name := range unique {
+			sample = append(sample, name)
+		}
+		sort.Strings(sample)
+		if len(sample) > 10 {
+			sample = sample[:10]
+		}
+		t.Errorf("extraction over %d acceptance test packages yielded only %d unique entities (floor %d; %d refs). Sample: %v",
+			len(pkgs), len(unique), floorUnique, refs, sample)
+	}
+}
+
+// TestExtractUnresolvedSites_RepoWide fails when a constructor call site
+// under the tool's enumeration roots cannot have its entity name resolved
+// statically. The only legitimately unresolved sites today are entitycore's
+// own envelope constructors forwarding their (component, name) parameters;
+// any new one — a call site building its entity name from a variable or by
+// concatenation — makes that entity invisible to the selector and must be
+// either rewritten at the call site to a plain string literal or handled
+// explicitly here.
+func TestExtractUnresolvedSites_RepoWide(t *testing.T) {
+	root := repoRoot(t)
+	t.Chdir(root)
+
+	// allowed documents the known unresolved sites, each with the reason it
+	// is acceptable.
+	allowed := map[string]string{
+		"internal/entitycore/action_envelope.go":                  "envelope constructor forwards its (component, name) parameters to NewActionBase",
+		"internal/entitycore/data_source_envelope.go":             "envelope constructor forwards its (component, name) parameters to NewDataSourceBase",
+		"internal/entitycore/elasticsearch_ephemeral_envelope.go": "envelope constructor forwards its name parameter to NewEphemeralBase",
+		"internal/entitycore/kibana_ephemeral_envelope.go":        "envelope constructor forwards its name parameter to NewEphemeralBase",
+		"internal/entitycore/kibana_resource_envelope.go":         "envelope constructor forwards its (component, name) parameters to NewResourceBase",
+		"internal/entitycore/resource_envelope.go":                "envelope constructor forwards its name parameter to NewResourceBase",
+	}
+
+	var unexpected []string
+	for _, top := range accTestEnumerationRoots {
+		err := filepath.WalkDir(top, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				if d.Name() == "testdata" {
+					return fs.SkipDir
+				}
+				return nil
+			}
+			name := d.Name()
+			if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+				return nil
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			_, sites := extractFromFile(path, data)
+			for _, site := range sites {
+				rel := filepath.ToSlash(path)
+				if _, ok := allowed[rel]; ok {
+					continue
+				}
+				unexpected = append(unexpected, fmt.Sprintf("%s:%d %s", rel, site.Line, site.Constructor))
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("walk %s: %v", top, err)
+		}
+	}
+
+	if len(unexpected) > 0 {
+		t.Errorf("covered constructor call sites with non-literal entity names (invisible to the selector):\n%s\n"+
+			"Rewrite the call site to pass a plain string literal, or document it in this test's allowlist.",
+			strings.Join(unexpected, "\n"))
 	}
 }
 

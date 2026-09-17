@@ -24,8 +24,8 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -40,47 +40,11 @@ func (e EntityRef) FullName() string {
 	return fmt.Sprintf("elasticstack_%s_%s", e.Component, e.Name)
 }
 
-var (
-	// Base constructors taking (component, name):
-	// entitycore.NewResourceBase(entitycore.ComponentKibana, "space")
-	// entitycore.NewDataSourceBase(entitycore.ComponentKibana, "data_view")
-	// entitycore.NewEphemeralBase(entitycore.ComponentKibana, "synthetic")
-	// entitycore.NewActionBase(entitycore.ComponentKibana, "action")
-	// The entitycore. prefix and the Component prefix are both optional.
-	baseEntityRE = regexp.MustCompile(`(?:entitycore\.)?New(?:Resource|DataSource|Ephemeral|Action)Base\s*\(\s*(?:entitycore\.)?Component(\w+)\s*,\s*"([^"]+)"\s*\)`)
-
-	// Generic Kibana constructors taking (component, name, ...):
-	// entitycore.NewKibanaResource[Model](entitycore.ComponentKibana, "slo", opts)
-	// entitycore.NewKibanaDataSource[Model](entitycore.ComponentKibana, "spaces", opts)
-	// The type-argument list is optional: the type can be inferred from the
-	// options value, e.g. NewKibanaResource("..."-independent) call sites.
-	kibanaComponentRE = regexp.MustCompile(`(?:entitycore\.)?NewKibana(?:Resource|DataSource)(?:\[[^\]]*\])?\s*\(\s*(?:entitycore\.)?Component(\w+)\s*,\s*"([^"]+)"`)
-
-	// Generic Elasticsearch constructors. The resource/ephemeral/action
-	// envelopes are name-first — NewElasticsearchResource[Model]("index_template", opts),
-	// NewElasticsearchEphemeralResource[Model, State]("apikey", opts),
-	// NewElasticsearchAction[Model]("snapshot_create", opts) — while the data
-	// source envelope is component-first —
-	// NewElasticsearchDataSource[Model](entitycore.ComponentElasticsearch, "role", ...).
-	// The type-argument list is optional (type-inferred call sites exist, e.g.
-	// NewElasticsearchResource("synonym_set", opts)), and the leading component
-	// argument is optional, mirroring kibanaComponentRE.
-	elasticsearchNameRE = regexp.MustCompile(`(?:entitycore\.)?NewElasticsearch(?:Resource|DataSource|EphemeralResource|Action)` +
-		`(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component(\w+)\s*,\s*)?"([^"]+)"`)
-
-	// Kibana generic constructors taking ("name", ...):
-	// entitycore.NewKibanaEphemeralResource[Model, State]("name", opts)
-	// entitycore.NewKibanaAction[Model]("name", opts)
-	// The type-argument list is optional; a leading component argument is
-	// tolerated for symmetry with the other generic constructors.
-	kibanaNameRE = regexp.MustCompile(`(?:entitycore\.)?NewKibana(?:EphemeralResource|Action)(?:\[[^\]]*\])?\s*\(\s*(?:(?:entitycore\.)?Component\w+\s*,\s*)?"([^"]+)"`)
-)
-
 // coveredEntityConstructors lists every entitycore constructor that declares
-// a Terraform entity name and is covered by the regexes above. The guard test
-// TestEntitycoreConstructorsCovered fails when entitycore exports a New*
-// constructor that is not classified here, so future envelope types cannot
-// silently produce phase-2 false negatives.
+// a Terraform entity name and is covered by the AST extraction below. The
+// guard test TestEntitycoreConstructorsCovered fails when entitycore exports
+// a New* constructor that is not classified here, so future envelope types
+// cannot silently produce phase-2 false negatives.
 var coveredEntityConstructors = []string{
 	"NewActionBase",
 	"NewDataSourceBase",
@@ -107,6 +71,53 @@ var nonEntityConstructors = []string{
 	"NewSpaceImporter",
 }
 
+// constructorArgKind classifies how a covered constructor declares its entity
+// name and component in its argument list.
+type constructorArgKind int
+
+const (
+	// argKindComponentFirst constructors take (component, name, ...) with a
+	// mandatory Component<X> first argument:
+	//   entitycore.NewResourceBase(entitycore.ComponentKibana, "space")
+	//   entitycore.NewEphemeralBase(entitycore.ComponentFleet, "agent")
+	//   entitycore.NewKibanaResource[Model](entitycore.ComponentKibana, "slo", opts)
+	// The entitycore. and Component prefixes are optional at the call site:
+	// both a dot-imported shorthand and an aliased import must extract.
+	argKindComponentFirst constructorArgKind = iota
+
+	// argKindElasticsearchNameFirst constructors take ("name", ...) with an
+	// optional leading Component<X> argument that overrides the default
+	// Elasticsearch component:
+	//   entitycore.NewElasticsearchResource[Model]("index_template", opts)
+	//   entitycore.NewElasticsearchDataSource[Model](entitycore.ComponentElasticsearch, "role", schema, read)
+	argKindElasticsearchNameFirst
+
+	// argKindKibanaNameFirst constructors take ("name", ...) with an
+	// optional leading Component<X> argument that overrides the default
+	// Kibana component:
+	//   entitycore.NewKibanaEphemeralResource[Model, State]("synthetic", opts)
+	//   entitycore.NewKibanaAction[Model]("bulk_upload", opts)
+	argKindKibanaNameFirst
+)
+
+// coveredConstructorArgs maps every constructor in coveredEntityConstructors
+// to its argument shape. TestCoveredConstructorClassification keeps this
+// table in sync with coveredEntityConstructors.
+var coveredConstructorArgs = map[string]constructorArgKind{
+	"NewActionBase":                     argKindComponentFirst,
+	"NewDataSourceBase":                 argKindComponentFirst,
+	"NewElasticsearchAction":            argKindElasticsearchNameFirst,
+	"NewElasticsearchDataSource":        argKindElasticsearchNameFirst,
+	"NewElasticsearchEphemeralResource": argKindElasticsearchNameFirst,
+	"NewElasticsearchResource":          argKindElasticsearchNameFirst,
+	"NewEphemeralBase":                  argKindComponentFirst,
+	"NewKibanaAction":                   argKindKibanaNameFirst,
+	"NewKibanaDataSource":               argKindComponentFirst,
+	"NewKibanaEphemeralResource":        argKindKibanaNameFirst,
+	"NewKibanaResource":                 argKindComponentFirst,
+	"NewResourceBase":                   argKindComponentFirst,
+}
+
 const (
 	componentElasticsearch = "elasticsearch"
 	componentKibana        = "kibana"
@@ -130,12 +141,31 @@ func componentName(suffix string) (string, bool) {
 	return "", false
 }
 
+// unresolvedEntitySite records a covered entitycore constructor call site
+// whose entity name (or component argument) cannot be statically resolved —
+// for example a call forwarding a parameter or building the name by
+// concatenation instead of passing a plain string literal. Such a site is
+// distinct from "no entity here": the entity may well exist, but this tool
+// cannot know its name, so silently dropping it would hide a selection gap.
+// Extraction records these sites instead of guessing; the guard test
+// TestExtractUnresolvedSites_RepoWide fails when one appears outside the
+// documented internal/entitycore delegation sites.
+type unresolvedEntitySite struct {
+	Constructor string
+	Filename    string
+	Line        int
+}
+
 // ExtractEntities scans all non-test .go files (files ending in _test.go are
 // excluded to avoid phantom entities from string literals in test source) in
 // dir and returns the unique set of Terraform entities declared in that
-// package directory.
+// package directory. Call sites whose entity name cannot be resolved
+// statically are skipped (mirroring the historical behaviour) but are
+// recorded as unresolvedEntitySite by extractEntities and guarded repo-wide
+// by TestExtractUnresolvedSites_RepoWide.
 func ExtractEntities(dir string) ([]EntityRef, error) {
 	entities := make(map[string]EntityRef)
+	var unresolved []unresolvedEntitySite
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -156,10 +186,11 @@ func ExtractEntities(dir string) ([]EntityRef, error) {
 			return nil, fmt.Errorf("read file %s: %w", path, err)
 		}
 
-		ents := extractFromFile(path, data)
+		ents, sites := extractFromFile(path, data)
 		for _, ent := range ents {
 			entities[ent.FullName()] = ent
 		}
+		unresolved = append(unresolved, sites...)
 	}
 
 	result := make([]EntityRef, 0, len(entities))
@@ -169,116 +200,184 @@ func ExtractEntities(dir string) ([]EntityRef, error) {
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].FullName() < result[j].FullName()
 	})
+	_ = unresolved // consumed by tests via extractEntities
 	return result, nil
 }
 
 // extractFromFile parses a single Go source file and returns all entity
-// references found, ignoring matches inside comments.
-func extractFromFile(filename string, data []byte) []EntityRef {
-	src := string(data)
-
+// references found in it, together with any unresolved constructor call
+// sites. Comments are excluded by construction: the AST never contains call
+// expressions written in comments. Files that cannot be parsed cannot
+// contribute valid entity declarations and are skipped.
+func extractFromFile(filename string, data []byte) ([]EntityRef, []unresolvedEntitySite) {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments|parser.AllErrors)
+	f, err := parser.ParseFile(fset, filename, data, parser.ParseComments|parser.AllErrors)
 	if err != nil {
-		// Skip files that cannot be parsed; they cannot contribute valid entity declarations.
-		return nil
+		return nil, nil
 	}
-
-	intervals := commentIntervals(fset, f.Comments)
-	return extractFromSource(src, intervals)
-}
-
-// commentIntervals converts comment groups into [start, end) byte intervals.
-// It uses the FileSet so that offsets are 0-based byte positions matching
-// the regex locations used by extractFromSource.
-func commentIntervals(fset *token.FileSet, groups []*ast.CommentGroup) [][2]int {
-	intervals := make([][2]int, 0, len(groups))
-	for _, g := range groups {
-		if len(g.List) == 0 {
-			continue
-		}
-		start := fset.Position(g.Pos()).Offset
-		end := fset.Position(g.End()).Offset
-		intervals = append(intervals, [2]int{start, end})
-	}
-	return intervals
-}
-
-// inInterval reports whether p lies inside any of the supplied intervals.
-func inInterval(p int, intervals [][2]int) bool {
-	for _, iv := range intervals {
-		if p >= iv[0] && p < iv[1] {
-			return true
-		}
-	}
-	return false
+	return extractFromAST(fset, f)
 }
 
 // extractFromSource parses a single Go source string and returns all entity
-// references found. The function is exposed independently so unit tests can
-// pass synthetic source snippets. When intervals is non-nil, matches that fall
-// inside a comment interval are ignored.
-func extractFromSource(src string, intervals [][2]int) []EntityRef {
-	var out []EntityRef
-	add := func(componentSuffix, name string) {
-		component, ok := componentName(componentSuffix)
+// references found, together with any unresolved constructor call sites. The
+// function is exposed independently so unit tests can pass synthetic source
+// snippets.
+func extractFromSource(src string) ([]EntityRef, []unresolvedEntitySite) {
+	return extractFromFile("<source>", []byte(src))
+}
+
+// extractFromAST walks a parsed file and collects entity declarations from
+// calls to covered entitycore constructors.
+func extractFromAST(fset *token.FileSet, f *ast.File) ([]EntityRef, []unresolvedEntitySite) {
+	var entities []EntityRef
+	var unresolved []unresolvedEntitySite
+
+	ast.Inspect(f, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
 		if !ok {
-			return
+			return true
 		}
-		out = append(out, EntityRef{Component: component, Name: name})
+		ctor := coveredConstructorName(call.Fun)
+		if ctor == "" {
+			return true
+		}
+
+		ref, resolved := entityRefFromCall(ctor, call.Args)
+		if !resolved {
+			pos := fset.Position(call.Pos())
+			unresolved = append(unresolved, unresolvedEntitySite{
+				Constructor: ctor,
+				Filename:    pos.Filename,
+				Line:        pos.Line,
+			})
+			return true
+		}
+		if ref.Name != "" {
+			entities = append(entities, ref)
+		}
+		return true
+	})
+
+	return entities, unresolved
+}
+
+// coveredConstructorName reports the covered constructor name for a call
+// expression's function operand, unwrapping explicit type-argument lists
+// (NewKibanaResource[Model](...)). The entitycore. qualifier is optional —
+// and any receiver (an aliased import, e.g. ec.NewResourceBase) is accepted,
+// mirroring the historical textual scan.
+func coveredConstructorName(fun ast.Expr) string {
+	var name string
+	switch fn := fun.(type) {
+	case *ast.Ident:
+		name = fn.Name
+	case *ast.SelectorExpr:
+		name = fn.Sel.Name
+	case *ast.IndexExpr:
+		return coveredConstructorName(fn.X)
+	case *ast.IndexListExpr:
+		return coveredConstructorName(fn.X)
+	default:
+		return ""
+	}
+	if _, ok := coveredConstructorArgs[name]; ok {
+		return name
+	}
+	return ""
+}
+
+// entityRefFromCall classifies the arguments of a covered constructor call
+// and returns the entity it declares. resolved is true when the outcome is
+// definitively known either way — the call declares the returned entity, or
+// it declares none (missing name argument, unrecognised component). resolved
+// is false when the call plausibly declares an entity but the name or the
+// component is not statically resolvable (parameter forwarding,
+// concatenation, a name-first spelling of a component-first constructor):
+// the caller records such sites instead of silently dropping them.
+func entityRefFromCall(ctor string, args []ast.Expr) (ref EntityRef, resolved bool) {
+	kind := coveredConstructorArgs[ctor]
+	if len(args) == 0 {
+		// No arguments at all: nothing that could declare an entity name.
+		return EntityRef{}, true
 	}
 
-	// extractComponentMatches extracts from a two-group (component suffix,
-	// name) regex.
-	extractComponentMatches := func(re *regexp.Regexp) {
-		for _, loc := range re.FindAllStringSubmatchIndex(src, -1) {
-			if len(loc) < 6 {
-				continue
+	componentSuffix := ""
+	hasComponent := false
+	nameIdx := 0
+	if suffix, ok := componentExprSuffix(args[0]); ok {
+		hasComponent = true
+		componentSuffix = suffix
+		nameIdx = 1
+	}
+
+	if !hasComponent {
+		switch kind {
+		case argKindComponentFirst:
+			// The component argument is mandatory. Without it the position
+			// of the name cannot be determined statically: either the call
+			// forwards variables (internal/entitycore's own delegation) or it
+			// is spelled name-first. Record, never guess.
+			if len(args) >= 2 {
+				return EntityRef{}, false
 			}
-			if inInterval(loc[0], intervals) {
-				continue
-			}
-			// groups: 1 = component suffix, 2 = name
-			add(src[loc[2]:loc[3]], src[loc[4]:loc[5]])
+			return EntityRef{}, true
+		case argKindElasticsearchNameFirst:
+			componentSuffix = "Elasticsearch"
+		case argKindKibanaNameFirst:
+			componentSuffix = "Kibana"
 		}
 	}
 
-	// extractNameMatches extracts from a one-group (name) regex with a fixed
-	// component.
-	extractNameMatches := func(re *regexp.Regexp, componentSuffix string) {
-		for _, loc := range re.FindAllStringSubmatchIndex(src, -1) {
-			if len(loc) < 4 {
-				continue
-			}
-			if inInterval(loc[0], intervals) {
-				continue
-			}
-			// group 1 = name
-			add(componentSuffix, src[loc[2]:loc[3]])
-		}
+	if nameIdx >= len(args) {
+		// A component argument without a following name declares nothing.
+		return EntityRef{}, true
 	}
 
-	extractComponentMatches(baseEntityRE)
-	extractComponentMatches(kibanaComponentRE)
-	// Elasticsearch constructors default to ComponentElasticsearch when no
-	// component argument is present (name-first envelopes); a leading
-	// Component<X> argument (component-first envelopes such as
-	// NewElasticsearchDataSource) overrides the default.
-	for _, loc := range elasticsearchNameRE.FindAllStringSubmatchIndex(src, -1) {
-		if len(loc) < 6 {
-			continue
-		}
-		if inInterval(loc[0], intervals) {
-			continue
-		}
-		// groups: 1 = optional component suffix, 2 = name
-		componentSuffix := "Elasticsearch"
-		if loc[2] >= 0 {
-			componentSuffix = src[loc[2]:loc[3]]
-		}
-		add(componentSuffix, src[loc[4]:loc[5]])
+	name, ok := stringLiteral(args[nameIdx])
+	if !ok {
+		return EntityRef{}, false
 	}
-	extractNameMatches(kibanaNameRE, "Kibana")
 
-	return out
+	component, ok := componentName(componentSuffix)
+	if !ok {
+		// A component outside the recognised set (ComponentFoo) declares
+		// nothing, mirroring the historical scan.
+		return EntityRef{}, true
+	}
+	return EntityRef{Component: component, Name: name}, true
+}
+
+// componentExprSuffix returns the component suffix ("Kibana", "APM", ...)
+// of a Component<X> argument, written either as the shorthand identifier
+// (ComponentKibana), qualified (entitycore.ComponentKibana), or through an
+// aliased import (ec.ComponentKibana).
+func componentExprSuffix(e ast.Expr) (string, bool) {
+	var name string
+	switch x := e.(type) {
+	case *ast.Ident:
+		name = x.Name
+	case *ast.SelectorExpr:
+		name = x.Sel.Name
+	default:
+		return "", false
+	}
+	if suffix, ok := strings.CutPrefix(name, "Component"); ok && suffix != "" {
+		return suffix, true
+	}
+	return "", false
+}
+
+// stringLiteral returns the value of a plain Go string literal argument,
+// reporting false for anything else (identifiers, concatenations,
+// conversions), so that non-literal names are never silently guessed.
+func stringLiteral(e ast.Expr) (string, bool) {
+	lit, ok := e.(*ast.BasicLit)
+	if !ok || lit.Kind != token.STRING {
+		return "", false
+	}
+	value, err := strconv.Unquote(lit.Value)
+	if err != nil || value == "" {
+		return "", false
+	}
+	return value, true
 }
