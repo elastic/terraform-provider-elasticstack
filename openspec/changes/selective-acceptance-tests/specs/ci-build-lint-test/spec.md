@@ -248,6 +248,12 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 - **AND** `make testacc`'s `acctest.PreCheck` SHALL ensure a default agent download source exists
 - **AND** no separate per-version-gated Fleet setup step SHALL be required for this coverage
 
+#### Scenario: Matrix version list is loaded from the pinned artifact
+
+- **GIVEN** the checked-out commit's `.github/versions/acceptance-test-matrix.json`
+- **WHEN** the acceptance test job's matrix is evaluated
+- **THEN** `strategy.matrix.version` SHALL equal exactly the JSON array in that file for that commit, independent of what a version-matrix computation would currently produce
+
 ---
 
 ### Requirement: Change classification gate (REQ-032–REQ-033)
@@ -273,6 +279,12 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 - **GIVEN** a non-`pull_request` event triggering the workflow (including `push`, `workflow_dispatch`, or `merge_group`)
 - **WHEN** the change-classification job runs
 - **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
+
+#### Scenario: Pinned versions artifact is provider-impacting
+
+- **GIVEN** a `pull_request` workflow run whose only changed file is `.github/versions/acceptance-test-matrix.json`
+- **WHEN** the change-classification job evaluates the diff
+- **THEN** it SHALL report `provider_changes=true`
 
 ### Requirement: Provider gate job (REQ-034–REQ-036)
 
