@@ -29,7 +29,7 @@ The provider already has an established pattern for exactly this class of drift 
 - Preserve legacy `metric_json` extras Kibana 9.6 injects when omitted (`color:{type:"auto"}`, `size:"m"`) via `PopulateLegacyMetricMetricDefaults` (`lenscommon/populate_lens_charts.go`).
 - Align treemap/mosaic `legend.truncate_after_lines` (default `1`) and `legend.nested` (default `false`) via `lenscommon.AlignPartitionLegendStateFromPlan`.
 - Align `heatmap_config.legend.truncate_after_lines` (default `1`) from plan via `lensheatmap` alignment.
-- No schema changes and no state/schema version bump — this is read-path normalization only, following the same pattern as REQ-011's prior fixes.
+- No behavioral schema changes (no validator, type, or state-version bump). The `thresholds[].axis` MarkdownDescription (and generated `docs/resources/kibana_dashboard.md`) records that Kibana 9.6 rejects the current enum; reconciling the validator is #4958. This change is otherwise read-path normalization, following the same pattern as REQ-011's prior fixes.
 - Add or extend acceptance test coverage for each affected chart family so the documented defaults are exercised against a live `9.6.0-SNAPSHOT` (or later) Kibana.
 
 ## Capabilities
