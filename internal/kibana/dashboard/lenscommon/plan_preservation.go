@@ -23,10 +23,12 @@ import (
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -59,15 +61,11 @@ func AlignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 
 // PreservePlanJSONWithDefaultsIfSemanticallyEqual replaces *state with plan when both are known
 // and StringSemanticEquals reports them equal. Lets practitioners keep their plan formatting
-// when only whitespace or default-key ordering differs from the API response.
+// when only whitespace or default-key ordering differs from the API response. Delegates to
+// panelkit.PreservePriorJSONWithDefaultsIfEquivalent, the canonical implementation of this rule.
 func PreservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-	eq, diags := plan.StringSemanticEquals(ctx, *state)
-	if !diags.HasError() && eq {
-		*state = plan
-	}
+	var diags diag.Diagnostics
+	*state = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan, *state, &diags)
 }
 
 // AlignBasicMetricChartStateFromPlan aligns the common "basic metric chart" state
