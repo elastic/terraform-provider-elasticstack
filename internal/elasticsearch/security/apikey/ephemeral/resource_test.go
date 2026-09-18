@@ -262,7 +262,7 @@ func TestCloseAPIKey(t *testing.T) {
 		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
 
 		deleteCalled := false
-		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string) diag.Diagnostics {
+		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ bool) diag.Diagnostics {
 			deleteCalled = true
 			return nil
 		}
@@ -281,7 +281,7 @@ func TestCloseAPIKey(t *testing.T) {
 		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
 
 		deleteCalled := false
-		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string) diag.Diagnostics {
+		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, _ string, _ bool) diag.Diagnostics {
 			deleteCalled = true
 			return nil
 		}
@@ -300,12 +300,14 @@ func TestCloseAPIKey(t *testing.T) {
 		t.Cleanup(func() { deleteAPIKeyFn = originalDelete })
 
 		var (
-			deleteCalled bool
-			deleteKeyID  string
+			deleteCalled          bool
+			deleteKeyID           string
+			deleteRestrictToOwned bool
 		)
-		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, keyID string) diag.Diagnostics {
+		deleteAPIKeyFn = func(_ context.Context, _ *clients.ElasticsearchScopedClient, keyID string, restrictToOwned bool) diag.Diagnostics {
 			deleteCalled = true
 			deleteKeyID = keyID
+			deleteRestrictToOwned = restrictToOwned
 			return nil
 		}
 
@@ -315,6 +317,7 @@ func TestCloseAPIKey(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.True(t, deleteCalled)
 		require.Equal(t, "key-to-delete", deleteKeyID)
+		require.True(t, deleteRestrictToOwned)
 	})
 }
 
