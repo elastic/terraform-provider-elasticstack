@@ -72283,7 +72283,8 @@ type SyntheticsBrowserMonitorFields struct {
 	Screenshots *SyntheticsBrowserMonitorFieldsScreenshots `json:"screenshots,omitempty"`
 
 	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
+	ServiceName *string   `json:"service.name,omitempty"`
+	Spaces      *[]string `json:"spaces,omitempty"`
 
 	// SyntheticsArgs Synthetics agent CLI arguments.
 	SyntheticsArgs *[]string `json:"synthetics_args,omitempty"`
@@ -72351,7 +72352,8 @@ type SyntheticsCommonMonitorFields struct {
 	Schedule *float32 `json:"schedule,omitempty"`
 
 	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
+	ServiceName *string   `json:"service.name,omitempty"`
+	Spaces      *[]string `json:"spaces,omitempty"`
 
 	// Tags An array of tags.
 	Tags *[]string `json:"tags,omitempty"`
@@ -72496,6 +72498,7 @@ type SyntheticsHttpMonitorFields struct {
 
 	// ServiceName The APM service name.
 	ServiceName *string              `json:"service.name,omitempty"`
+	Spaces      *[]string            `json:"spaces,omitempty"`
 	Ssl         *SyntheticsSslConfig `json:"ssl,omitempty"`
 
 	// Tags An array of tags.
@@ -72593,7 +72596,8 @@ type SyntheticsIcmpMonitorFields struct {
 	Schedule *float32 `json:"schedule,omitempty"`
 
 	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
+	ServiceName *string   `json:"service.name,omitempty"`
+	Spaces      *[]string `json:"spaces,omitempty"`
 
 	// Tags An array of tags.
 	Tags *[]string `json:"tags,omitempty"`
@@ -72728,6 +72732,7 @@ type SyntheticsTcpMonitorFields struct {
 
 	// ServiceName The APM service name.
 	ServiceName *string              `json:"service.name,omitempty"`
+	Spaces      *[]string            `json:"spaces,omitempty"`
 	Ssl         *SyntheticsSslConfig `json:"ssl,omitempty"`
 
 	// Tags An array of tags.
@@ -74536,6 +74541,7 @@ type SyntheticsMonitor struct {
 	Schedule                  *SyntheticsMonitorSchedule      `json:"schedule,omitempty"`
 	Screenshots               *string                         `json:"screenshots,omitempty"`
 	ServiceName               *string                         `json:"service.name,omitempty"`
+	Spaces                    *[]string                       `json:"spaces,omitempty"`
 	SslCertificate            *string                         `json:"ssl.certificate,omitempty"`
 	SslCertificateAuthorities *[]string                       `json:"ssl.certificate_authorities,omitempty"`
 	SslKey                    *string                         `json:"ssl.key,omitempty"`
@@ -103348,6 +103354,14 @@ func (a *SyntheticsBrowserMonitorFields) UnmarshalJSON(b []byte) error {
 		delete(object, "service.name")
 	}
 
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
 	if raw, found := object["synthetics_args"]; found {
 		err = json.Unmarshal(raw, &a.SyntheticsArgs)
 		if err != nil {
@@ -103504,6 +103518,13 @@ func (a SyntheticsBrowserMonitorFields) MarshalJSON() ([]byte, error) {
 		object["service.name"], err = json.Marshal(a.ServiceName)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
 		}
 	}
 
@@ -103870,6 +103891,14 @@ func (a *SyntheticsHttpMonitorFields) UnmarshalJSON(b []byte) error {
 		delete(object, "service.name")
 	}
 
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
 	if raw, found := object["ssl"]; found {
 		err = json.Unmarshal(raw, &a.Ssl)
 		if err != nil {
@@ -104072,6 +104101,13 @@ func (a SyntheticsHttpMonitorFields) MarshalJSON() ([]byte, error) {
 		object["service.name"], err = json.Marshal(a.ServiceName)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
 		}
 	}
 
@@ -104326,6 +104362,14 @@ func (a *SyntheticsIcmpMonitorFields) UnmarshalJSON(b []byte) error {
 		delete(object, "service.name")
 	}
 
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
 	if raw, found := object["tags"]; found {
 		err = json.Unmarshal(raw, &a.Tags)
 		if err != nil {
@@ -104454,6 +104498,13 @@ func (a SyntheticsIcmpMonitorFields) MarshalJSON() ([]byte, error) {
 		object["service.name"], err = json.Marshal(a.ServiceName)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
 		}
 	}
 
@@ -104629,6 +104680,14 @@ func (a *SyntheticsTcpMonitorFields) UnmarshalJSON(b []byte) error {
 		delete(object, "service.name")
 	}
 
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
 	if raw, found := object["ssl"]; found {
 		err = json.Unmarshal(raw, &a.Ssl)
 		if err != nil {
@@ -104771,6 +104830,13 @@ func (a SyntheticsTcpMonitorFields) MarshalJSON() ([]byte, error) {
 		object["service.name"], err = json.Marshal(a.ServiceName)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
 		}
 	}
 
@@ -105064,6 +105130,14 @@ func (a *SyntheticsMonitor) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'service.name': %w", err)
 		}
 		delete(object, "service.name")
+	}
+
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
 	}
 
 	if raw, found := object["ssl.certificate"]; found {
@@ -105389,6 +105463,13 @@ func (a SyntheticsMonitor) MarshalJSON() ([]byte, error) {
 		object["service.name"], err = json.Marshal(a.ServiceName)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
 		}
 	}
 
