@@ -21,9 +21,11 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -78,8 +80,9 @@ func AlignStandardPartitionChartStateFromPlan(
 	PreservePlanJSONIfStateAddsOptionalKeys(planDataSourceJSON, stateDataSourceJSON, "time_field", "name")
 	PreserveKnownTfValueIfStateNull(planIgnoreGlobalFilters, stateIgnoreGlobalFilters)
 	PreserveKnownTfValueIfStateNull(planSampling, stateSampling)
-	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planGroupBy, stateGroupBy)
-	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetrics, stateMetrics)
+	var diags diag.Diagnostics
+	*stateGroupBy = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, planGroupBy, *stateGroupBy, &diags)
+	*stateMetrics = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, planMetrics, *stateMetrics, &diags)
 	AlignPartitionLegendStateFromPlan(planLegend, stateLegend)
 	if planValueDisplay == nil && *stateValueDisplay != nil && PartitionValueDisplayMatchesKibanaDefault(*stateValueDisplay) {
 		*stateValueDisplay = nil

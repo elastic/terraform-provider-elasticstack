@@ -22,6 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -44,12 +46,13 @@ func alignPieConfigStateFromPlan(ctx context.Context, plan, state *models.PieCha
 	// Pie group_by/metrics config_json are re-emitted with default keys (color,
 	// rank_by, limit) added by Kibana. PreservePlanJSONWithDefaults handles the
 	// JSONWithDefaults type via semantic-equality.
+	var diags diag.Diagnostics
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
-		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
+		state.Metrics[i].Config = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.Metrics[i].Config, state.Metrics[i].Config, &diags)
 	}
 	g := min(len(plan.GroupBy), len(state.GroupBy))
 	for i := range g {
-		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy[i].Config, &state.GroupBy[i].Config)
+		state.GroupBy[i].Config = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.GroupBy[i].Config, state.GroupBy[i].Config, &diags)
 	}
 }
