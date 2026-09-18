@@ -17,14 +17,35 @@
 
 package lensdatatable
 
-import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+import (
+	"testing"
 
-func populateDatatableLensAttributes(attrs map[string]any) map[string]any {
-	if !lenscommon.InitLensAttrs(attrs) {
-		return attrs
-	}
-	lenscommon.PopulateMapSliceDefaults(attrs, "metrics", lenscommon.PopulateDatatableMetricDefaults)
-	lenscommon.PopulateMapSliceDefaults(attrs, "rows", lenscommon.PopulateLensGroupByDefaults)
-	lenscommon.PopulateMapSliceDefaults(attrs, "split_metrics_by", lenscommon.PopulateLensGroupByDefaults)
-	return attrs
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPopulateDatatableLensAttributes_injectsMetricVisibleAlignmentWithoutAxis(t *testing.T) {
+	t.Parallel()
+
+	attrs := populateDatatableLensAttributes(map[string]any{
+		"metrics": []any{
+			map[string]any{"operation": "count"},
+		},
+		"rows": []any{
+			map[string]any{"operation": "terms", "field": "host.name"},
+		},
+	})
+
+	metrics := attrs["metrics"].([]any)
+	require.Len(t, metrics, 1)
+	metric := metrics[0].(map[string]any)
+	assert.Equal(t, true, metric["visible"])
+	assert.Equal(t, "right", metric["alignment"])
+	_, hasAxis := metric["axis"]
+	assert.False(t, hasAxis)
+
+	rows := attrs["rows"].([]any)
+	require.Len(t, rows, 1)
+	_, rowHasAxis := rows[0].(map[string]any)["axis"]
+	assert.False(t, rowHasAxis)
 }

@@ -3898,7 +3898,7 @@ Optional:
 
 Optional:
 
-- `axis` (String) Which axis the reference line applies to. Valid values: 'left', 'right'.
+- `axis` (String) Which axis the reference line applies to. Not settable against Kibana 9.6: the schema accepts `bottom`/`left`/`right`, all of which Kibana 9.6 rejects, while the values it accepts (`y`, `y2`) are not in the schema. Omit this attribute; it defaults to the Y axis. Tracked in https://github.com/elastic/terraform-provider-elasticstack/issues/4958.
 - `color_json` (String) Color for the reference line. Can be a static color string or dynamic color configuration as JSON.
 - `column` (String) Column to use (for ES|QL layers).
 - `fill` (String) Fill direction for reference line. Valid values: 'none', 'above', 'below'.
@@ -7873,7 +7873,7 @@ Optional:
 
 Optional:
 
-- `axis` (String) Which axis the reference line applies to. Valid values: 'left', 'right'.
+- `axis` (String) Which axis the reference line applies to. Not settable against Kibana 9.6: the schema accepts `bottom`/`left`/`right`, all of which Kibana 9.6 rejects, while the values it accepts (`y`, `y2`) are not in the schema. Omit this attribute; it defaults to the Y axis. Tracked in https://github.com/elastic/terraform-provider-elasticstack/issues/4958.
 - `color_json` (String) Color for the reference line. Can be a static color string or dynamic color configuration as JSON.
 - `column` (String) Column to use (for ES|QL layers).
 - `fill` (String) Fill direction for reference line. Valid values: 'none', 'above', 'below'.

@@ -169,7 +169,7 @@ func dataLayerFromAPINoESQL(ctx context.Context, m *models.DataLayerModel, apiLa
 			if err == nil {
 				cfg := jsontypes.NewNormalizedValue(string(yJSON))
 				if i < len(priorY) {
-					cfg = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateLensMetricDefaults, &diags)
+					cfg = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateXYMetricDefaults, &diags)
 				}
 				m.Y = append(m.Y, models.YMetricModel{
 					ConfigJSON: cfg,
@@ -220,7 +220,7 @@ func dataLayerFromAPIESql(ctx context.Context, m *models.DataLayerModel, apiLaye
 			if err == nil {
 				cfg := jsontypes.NewNormalizedValue(string(yJSON))
 				if i < len(priorY) {
-					cfg = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateLensMetricDefaults, &diags)
+					cfg = panelkit.PreservePriorNormalizedWithDefaultsIfEquivalent(ctx, priorY[i].ConfigJSON, cfg, lenscommon.PopulateXYMetricDefaults, &diags)
 				}
 				m.Y = append(m.Y, models.YMetricModel{
 					ConfigJSON: cfg,
