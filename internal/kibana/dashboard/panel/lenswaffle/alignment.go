@@ -22,6 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleConfigModel) {
@@ -30,12 +32,13 @@ func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleCon
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
+	var diags diag.Diagnostics
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
-		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
+		state.Metrics[i].Config = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.Metrics[i].Config, state.Metrics[i].Config, &diags)
 	}
 	g := min(len(plan.GroupBy), len(state.GroupBy))
 	for i := range g {
-		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBy[i].Config, &state.GroupBy[i].Config)
+		state.GroupBy[i].Config = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.GroupBy[i].Config, state.GroupBy[i].Config, &diags)
 	}
 }
