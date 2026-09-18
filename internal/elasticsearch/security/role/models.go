@@ -309,6 +309,40 @@ func buildFieldSecurityObject(ctx context.Context, fs *estypes.FieldSecurity) (t
 	return fieldSecObj, diags
 }
 
+// flattenIndexPermsCommon converts the fields shared by index permissions and remote index
+// permissions (names, privileges, query, field security, allow_restricted_indices) from their
+// API representation to their Terraform attribute values. Mirrors indexPermissionsToAPIModel
+// on the encode side.
+func flattenIndexPermsCommon(ctx context.Context, names []string, privileges []indexprivilege.IndexPrivilege, query estypes.IndicesPrivilegesQuery, fieldSecurity *estypes.FieldSecurity, allowRestrictedIndices *bool) (namesSet, privSet types.Set, queryVal jsontypes.Normalized, fieldSecObj types.Object, allowRestrictedVal types.Bool, diags diag.Diagnostics) {
+	namesSet, d := types.SetValueFrom(ctx, types.StringType, names)
+	diags.Append(d...)
+	if diags.HasError() {
+		return namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, diags
+	}
+
+	privSet, d = types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(privileges))
+	diags.Append(d...)
+	if diags.HasError() {
+		return namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, diags
+	}
+
+	queryVal, d = marshalIndexQuery(query)
+	diags.Append(d...)
+	if diags.HasError() {
+		return namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, diags
+	}
+
+	fieldSecObj, d = buildFieldSecurityObject(ctx, fieldSecurity)
+	diags.Append(d...)
+	if diags.HasError() {
+		return namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, diags
+	}
+
+	allowRestrictedVal = types.BoolPointerValue(allowRestrictedIndices)
+
+	return namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, diags
+}
+
 // fromAPIModel converts the API model to the Terraform model.
 func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -360,27 +394,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	if len(role.Indices) > 0 {
 		indicesElements := make([]attr.Value, len(role.Indices))
 		for i, index := range role.Indices {
-			namesSet, d := types.SetValueFrom(ctx, types.StringType, index.Names)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			privSet, d := types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(index.Privileges))
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			queryVal, d := marshalIndexQuery(index.Query)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			allowRestrictedVal := types.BoolPointerValue(index.AllowRestrictedIndices)
-
-			fieldSecObj, d := buildFieldSecurityObject(ctx, index.FieldSecurity)
+			namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, d := flattenIndexPermsCommon(ctx, index.Names, index.Privileges, index.Query, index.FieldSecurity, index.AllowRestrictedIndices)
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -415,38 +429,13 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	if len(role.RemoteIndices) > 0 {
 		remoteIndicesElements := make([]attr.Value, len(role.RemoteIndices))
 		for i, remoteIndex := range role.RemoteIndices {
+			namesSet, privSet, queryVal, fieldSecObj, allowRestrictedVal, d := flattenIndexPermsCommon(ctx, remoteIndex.Names, remoteIndex.Privileges, remoteIndex.Query, remoteIndex.FieldSecurity, remoteIndex.AllowRestrictedIndices)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
+			}
+
 			clustersSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Clusters)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			namesSet, d := types.SetValueFrom(ctx, types.StringType, remoteIndex.Names)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			privSet, d := types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(remoteIndex.Privileges))
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			queryVal, d := marshalIndexQuery(remoteIndex.Query)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			var allowRestrictedVal types.Bool
-			if remoteIndex.AllowRestrictedIndices != nil {
-				allowRestrictedVal = types.BoolValue(*remoteIndex.AllowRestrictedIndices)
-			} else {
-				allowRestrictedVal = types.BoolNull()
-			}
-
-			fieldSecObj, d := buildFieldSecurityObject(ctx, remoteIndex.FieldSecurity)
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
