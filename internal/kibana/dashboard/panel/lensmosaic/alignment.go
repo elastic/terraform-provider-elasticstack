@@ -22,6 +22,8 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func alignMosaicConfigStateFromPlan(ctx context.Context, plan, state *models.MosaicConfigModel) {
@@ -44,5 +46,6 @@ func alignMosaicConfigStateFromPlan(ctx context.Context, plan, state *models.Mos
 		state.Legend, &state.ValueDisplay,
 	)
 	// Mosaic also has group_breakdown_by, which is not part of the common partition fields.
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.GroupBreakdownBy, &state.GroupBreakdownBy)
+	var diags diag.Diagnostics
+	state.GroupBreakdownBy = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.GroupBreakdownBy, state.GroupBreakdownBy, &diags)
 }

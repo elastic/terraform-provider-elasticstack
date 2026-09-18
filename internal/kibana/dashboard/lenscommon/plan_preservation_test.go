@@ -18,10 +18,8 @@
 package lenscommon
 
 import (
-	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -240,58 +238,4 @@ func TestPreservePlanJSONIfStateAddsOptionalKeys(t *testing.T) {
 			assert.JSONEq(t, tc.wantState, state.ValueString())
 		})
 	}
-}
-
-func TestPreservePlanJSONWithDefaultsIfSemanticallyEqual(t *testing.T) {
-	t.Parallel()
-
-	t.Run("semantically equal plan and state -> state reverts to plan's exact formatting", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		// Plan has extra whitespace but is semantically identical to state once defaults are
-		// applied. An exact-string check (not JSONEq) proves plan was preserved verbatim rather
-		// than state being left as-is.
-		planJSON := `{"field": "a"}`
-		plan := customtypes.NewJSONWithDefaultsValue(planJSON, identityDefaults)
-		state := customtypes.NewJSONWithDefaultsValue(`{"field":"a"}`, identityDefaults)
-
-		PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan, &state)
-
-		assert.Equal(t, planJSON, state.ValueString()) //nolint:testifylint
-	})
-
-	t.Run("semantically different plan and state -> state is left unchanged", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		plan := customtypes.NewJSONWithDefaultsValue(`{"field":"a"}`, identityDefaults)
-		stateJSON := `{"field":"different"}`
-		state := customtypes.NewJSONWithDefaultsValue(stateJSON, identityDefaults)
-
-		PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan, &state)
-
-		assert.Equal(t, stateJSON, state.ValueString())
-	})
-
-	t.Run("unknown plan -> state is left unchanged", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		plan := customtypes.NewJSONWithDefaultsUnknown[map[string]any](identityDefaults)
-		stateJSON := `{"field":"a"}`
-		state := customtypes.NewJSONWithDefaultsValue(stateJSON, identityDefaults)
-
-		PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan, &state)
-
-		assert.Equal(t, stateJSON, state.ValueString())
-	})
-
-	t.Run("null state -> state is left unchanged", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		plan := customtypes.NewJSONWithDefaultsValue(`{"field":"a"}`, identityDefaults)
-		state := customtypes.NewJSONWithDefaultsNull[map[string]any](identityDefaults)
-
-		PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan, &state)
-
-		assert.True(t, state.IsNull())
-	})
 }

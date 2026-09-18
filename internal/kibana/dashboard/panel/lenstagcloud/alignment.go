@@ -22,7 +22,9 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -48,7 +50,8 @@ func alignTagcloudConfigStateFromPlan(ctx context.Context, plan, state *models.T
 	}
 	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
+	var diags diag.Diagnostics
+	state.TagByJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.TagByJSON, state.TagByJSON, &diags)
 	// Kibana materializes server-side defaults when the practitioner omits these fields.
 	lenscommon.PreserveNullIfStateEquals(plan.Orientation, &state.Orientation, types.StringValue("horizontal"))
 	if plan.FontSize == nil && state.FontSize != nil && fontSizeMatchesKibanaDefault(state.FontSize) {

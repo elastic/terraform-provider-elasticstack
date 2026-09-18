@@ -59,15 +59,6 @@ func AlignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 	PreserveKnownStringIfStateBlank(planDescription, stateDescription)
 }
 
-// PreservePlanJSONWithDefaultsIfSemanticallyEqual replaces *state with plan when both are known
-// and StringSemanticEquals reports them equal. Lets practitioners keep their plan formatting
-// when only whitespace or default-key ordering differs from the API response. Delegates to
-// panelkit.PreservePriorJSONWithDefaultsIfEquivalent, the canonical implementation of this rule.
-func PreservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
-	var diags diag.Diagnostics
-	*state = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan, *state, &diags)
-}
-
 // AlignBasicMetricChartStateFromPlan aligns the common "basic metric chart" state
 // fields (title/description, data_source_json, metric_json) from plan into state.
 // Shared by Lens panel types whose config is just a metric over a data source
@@ -81,7 +72,8 @@ func AlignBasicMetricChartStateFromPlan[T any](
 ) {
 	AlignTitleAndDescriptionFromPlan(planBase.Title, planBase.Description, &stateBase.Title, &stateBase.Description)
 	PreservePlanJSONIfStateAddsOptionalKeys(planBase.DataSourceJSON, &stateBase.DataSourceJSON, "time_field", "name")
-	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetricJSON, stateMetricJSON)
+	var diags diag.Diagnostics
+	*stateMetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, planMetricJSON, *stateMetricJSON, &diags)
 }
 
 // PreserveNormalizedJSONSemanticEquality replaces state with plan when normalized structures match semantically.
