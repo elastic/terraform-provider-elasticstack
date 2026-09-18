@@ -329,7 +329,9 @@ Notes:
 - The resource is marked as technical preview in its schema description; sections are also marked as technical preview.
 - The resource uses only the provider-level Kibana OpenAPI client; there is no resource-local Kibana connection override block.
 - The resource does not declare a schema version, custom state upgrader, or resource-level compatibility gate in CRUD logic.
+
 ## Requirements
+
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
 The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
@@ -768,8 +770,6 @@ The resource SHALL NOT treat a practitioner-authored static Y-metric color as se
 - GIVEN an ES|QL XY panel whose `y[].config_json` sets a static color
 - WHEN Kibana's read-back replaces that color with `{type:"auto"}`
 - THEN the provider SHALL NOT treat the practitioner static color and `{type:"auto"}` as semantically equal
-
----
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
