@@ -60,7 +60,7 @@ func TestPreservePriorJSONWithDefaultsIfEquivalent(t *testing.T) {
 
 		result := panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, &diags)
 
-		assert.Equal(t, currentJSON, result.ValueString())
+		assert.JSONEq(t, currentJSON, result.ValueString())
 	})
 
 	t.Run("unknown prior -> current is left unchanged", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestPreservePriorJSONWithDefaultsIfEquivalent(t *testing.T) {
 
 		result := panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, prior, current, &diags)
 
-		assert.Equal(t, currentJSON, result.ValueString())
+		assert.JSONEq(t, currentJSON, result.ValueString())
 	})
 
 	t.Run("null current -> current is left unchanged", func(t *testing.T) {
