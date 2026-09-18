@@ -125,7 +125,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignMosaicStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignMosaicConfigStateFromPlan(ctx, plan.MosaicConfig, state.MosaicConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

@@ -25,14 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// alignPieStateFromPlan is the canonical pie alignment invoked via VizConverter.AlignStateFromPlan.
-func alignPieStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignPieConfigStateFromPlan(ctx, plan.PieChartConfig, state.PieChartConfig)
-}
-
 func alignPieConfigStateFromPlan(ctx context.Context, plan, state *models.PieChartConfigModel) {
 	if plan == nil || state == nil {
 		return

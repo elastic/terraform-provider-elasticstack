@@ -92,7 +92,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignRegionMapStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignRegionMapConfigStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {
