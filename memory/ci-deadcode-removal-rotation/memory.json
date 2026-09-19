@@ -1212,6 +1212,22 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query.getEcsMappingElemType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query",
+      "attemptedAt": "2026-09-19T03:02:30.859919222Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query.stringSetValue",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query",
+      "attemptedAt": "2026-09-19T03:12:23.372271662Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
