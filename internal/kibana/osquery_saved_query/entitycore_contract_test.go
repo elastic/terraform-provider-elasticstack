@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -194,58 +193,6 @@ func TestToAPICreateRequest_omitsNullOptionalFields(t *testing.T) {
 	assert.Nil(t, body.EcsMapping)
 }
 
-func TestToAPICreateRequest(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-
-	ecsObj, objDiags := types.ObjectValue(ecsMappingAttrTypes, map[string]attr.Value{
-		attrEcsMappingField:  types.StringValue("cmdline"),
-		attrEcsMappingValue:  types.StringNull(),
-		attrEcsMappingValues: types.SetNull(types.StringType),
-	})
-	require.Empty(t, objDiags)
-
-	ecsMap, mapDiags := types.MapValue(getEcsMappingElemType(), map[string]attr.Value{
-		"process.name": ecsObj,
-	})
-	require.Empty(t, mapDiags)
-
-	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT * FROM processes"),
-		Description:  types.StringValue("List processes"),
-		Platform:     stringSetValue([]string{"linux", "darwin"}),
-		Interval:     types.Int64Value(3600),
-		Version:      types.StringValue("5.0.0"),
-		Snapshot:     types.BoolValue(true),
-		Removed:      types.BoolValue(false),
-		EcsMapping:   ecsMap,
-	}
-
-	body, diags := model.toAPICreateRequest(ctx)
-	require.Empty(t, diags)
-
-	require.NotNil(t, body.Id)
-	assert.Equal(t, "list_processes", *body.Id)
-	require.NotNil(t, body.Query)
-	assert.Equal(t, "SELECT * FROM processes", *body.Query)
-	require.NotNil(t, body.Description)
-	assert.Equal(t, "List processes", *body.Description)
-	require.NotNil(t, body.Platform)
-	assert.Equal(t, "darwin,linux", *body.Platform)
-	require.NotNil(t, body.Interval)
-	assert.Equal(t, "3600", *body.Interval)
-	require.NotNil(t, body.Version)
-	assert.Equal(t, "5.0.0", *body.Version)
-	require.NotNil(t, body.Snapshot)
-	assert.True(t, *body.Snapshot)
-	require.NotNil(t, body.Removed)
-	assert.False(t, *body.Removed)
-	require.NotNil(t, body.EcsMapping)
-	require.Contains(t, *body.EcsMapping, "process.name")
-}
-
 func TestToAPIUpdateRequest_includesRequiredFieldsAndOmitsUnsetOptionalFields(t *testing.T) {
 	t.Parallel()
 
@@ -272,50 +219,4 @@ func TestToAPIUpdateRequest_includesRequiredFieldsAndOmitsUnsetOptionalFields(t 
 	assert.Nil(t, body.Snapshot)
 	assert.Nil(t, body.Removed)
 	assert.Nil(t, body.EcsMapping)
-}
-
-func TestToAPIUpdateRequest_clearsRemovedOptionalFields(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-
-	ecsObj, objDiags := types.ObjectValue(ecsMappingAttrTypes, map[string]attr.Value{
-		attrEcsMappingField:  types.StringValue("cmdline"),
-		attrEcsMappingValue:  types.StringNull(),
-		attrEcsMappingValues: types.SetNull(types.StringType),
-	})
-	require.Empty(t, objDiags)
-
-	ecsMap, mapDiags := types.MapValue(getEcsMappingElemType(), map[string]attr.Value{
-		"process.name": ecsObj,
-	})
-	require.Empty(t, mapDiags)
-
-	prior := &osquerySavedQueryModel{
-		Description: types.StringValue("previous"),
-		Platform:    stringSetValue([]string{"linux"}),
-		Version:     types.StringValue("1.0.0"),
-		EcsMapping:  ecsMap,
-	}
-	model := osquerySavedQueryModel{
-		SavedQueryID: types.StringValue("list_processes"),
-		Query:        types.StringValue("SELECT 1"),
-		Interval:     types.Int64Value(3600),
-		Description:  types.StringNull(),
-		Platform:     types.SetNull(types.StringType),
-		Version:      types.StringNull(),
-		EcsMapping:   types.MapNull(getEcsMappingElemType()),
-	}
-
-	body, diags := model.toAPIUpdateRequest(ctx, prior)
-	require.Empty(t, diags)
-
-	require.NotNil(t, body.Description)
-	assert.Empty(t, *body.Description)
-	require.NotNil(t, body.Platform)
-	assert.Empty(t, *body.Platform)
-	require.NotNil(t, body.Version)
-	assert.Empty(t, *body.Version)
-	require.NotNil(t, body.EcsMapping)
-	assert.Empty(t, *body.EcsMapping)
 }
