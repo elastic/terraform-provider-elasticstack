@@ -310,7 +310,3 @@ func parseIntervalString(value string) (types.Int64, diag.Diagnostics) {
 
 	return types.Int64Value(parsed), nil
 }
-
-func stringSetValue(values []string) types.Set {
-	return osquery.StringSetValue(values)
-}
