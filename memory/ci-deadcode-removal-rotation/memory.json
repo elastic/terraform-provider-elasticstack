@@ -1228,6 +1228,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo.NewGroupByUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo",
+      "attemptedAt": "2026-09-20T03:12:59.257415332Z",
+      "reason": "build_failed",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
