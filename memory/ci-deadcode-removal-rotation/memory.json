@@ -1238,6 +1238,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation.NewFloat32PrecisionNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics/privatelocation",
+      "attemptedAt": "2026-09-21T03:13:56.6569283Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
