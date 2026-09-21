@@ -2,7 +2,6 @@
 
 ### Changes
 
-- Add the `elasticstack_fleet_space_settings` resource to manage the allowed namespace prefixes of a space. Requires Elastic Stack 9.1.0+. Declare exactly one resource per space; destroying it resets the prefixes to an empty list and lifts the namespace restriction.
 - Add disable_chunked_encoding and always_sign_requests to the S3 snapshot repository ([#4885](https://github.com/elastic/terraform-provider-elasticstack/pull/4885))
 
 ## [0.16.5] - 2026-09-07
