@@ -42,13 +42,6 @@ func fontSizeMatchesKibanaDefault(m *models.FontSizeModel) bool {
 		typeutils.IsKnown(m.Max) && m.Max.ValueFloat64() == tagcloudDefaultFontSizeMax
 }
 
-func alignTagcloudStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignTagcloudConfigStateFromPlan(ctx, plan.TagcloudConfig, state.TagcloudConfig)
-}
-
 func alignTagcloudConfigStateFromPlan(ctx context.Context, plan, state *models.TagcloudConfigModel) {
 	if plan == nil || state == nil {
 		return

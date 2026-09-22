@@ -24,14 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-// alignRegionMapStateFromPlan is the canonical region_map alignment invoked via VizConverter.AlignStateFromPlan.
-func alignRegionMapStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignRegionMapConfigStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
-}
-
 func alignRegionMapConfigStateFromPlan(ctx context.Context, plan, state *models.RegionMapConfigModel) {
 	if plan == nil || state == nil {
 		return

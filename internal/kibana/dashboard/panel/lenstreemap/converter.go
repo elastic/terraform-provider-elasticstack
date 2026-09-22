@@ -117,7 +117,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignTreemapStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignTreemapConfigStateFromPlan(ctx, plan.TreemapConfig, state.TreemapConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

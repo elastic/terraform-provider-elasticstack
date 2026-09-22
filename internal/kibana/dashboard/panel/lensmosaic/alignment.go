@@ -24,13 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-func alignMosaicStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignMosaicConfigStateFromPlan(ctx, plan.MosaicConfig, state.MosaicConfig)
-}
-
 func alignMosaicConfigStateFromPlan(ctx context.Context, plan, state *models.MosaicConfigModel) {
 	if plan == nil || state == nil {
 		return

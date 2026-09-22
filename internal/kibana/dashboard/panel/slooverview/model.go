@@ -352,12 +352,7 @@ func readSingleDrilldownsFromAPI(
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
 	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloSingleOverviewAPIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }
@@ -377,12 +372,7 @@ func readGroupDrilldownsFromAPI(
 	priorDrilldowns []models.URLDrilldownModel,
 ) []models.URLDrilldownModel {
 	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloGroupOverviewAPIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns)
 }

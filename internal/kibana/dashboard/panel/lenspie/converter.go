@@ -138,7 +138,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignPieStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignPieConfigStateFromPlan(ctx, plan.PieChartConfig, state.PieChartConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {
