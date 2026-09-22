@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createStream(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[streamModel]) (entitycore.KibanaWriteResult[streamModel], diag.Diagnostics) {
@@ -45,8 +44,7 @@ func createStream(ctx context.Context, client *clients.KibanaScopedClient, req e
 	}
 
 	name := plan.GetResourceID().ValueString()
-	compositeID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
-	plan.ID = types.StringValue(compositeID.String())
+	plan.ID = clients.CompositeIDValue(spaceID, name)
 
 	diags.Append(writeStream(ctx, client, plan)...)
 	if diags.HasError() {

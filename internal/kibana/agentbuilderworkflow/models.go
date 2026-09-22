@@ -78,7 +78,7 @@ func (model *workflowModel) populateFromAPI(_ context.Context, spaceID string, d
 
 	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.WorkflowID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.ConfigurationYaml = customtypes.NewNormalizedYamlValue(data.Yaml)

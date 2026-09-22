@@ -71,9 +71,7 @@ func readWorkflowDataSource(ctx context.Context, client *clients.KibanaScopedCli
 		return config, diags
 	}
 
-	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: workflow.ID}
-
-	config.ID = types.StringValue(compositeID.String())
+	config.ID = clients.CompositeIDValue(spaceID, workflow.ID)
 	config.SpaceID = types.StringValue(spaceID)
 	config.WorkflowID = types.StringValue(workflow.ID)
 	config.ConfigurationYaml = customtypes.NewNormalizedYamlValue(workflow.Yaml)

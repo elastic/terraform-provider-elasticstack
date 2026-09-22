@@ -63,7 +63,7 @@ func (model entityLinkModel) GetVersionRequirements(_ context.Context) ([]entity
 func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID string, payload map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.TargetID.ValueString()}).String())
+	model.ID = clients.CompositeIDValue(spaceID, model.TargetID.ValueString())
 	model.SpaceID = types.StringValue(spaceID)
 
 	normalised, err := json.Marshal(payload)

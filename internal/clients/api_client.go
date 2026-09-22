@@ -29,6 +29,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type CompositeID struct {
@@ -69,6 +70,12 @@ func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
 
 func (c *CompositeID) String() string {
 	return fmt.Sprintf("%s/%s", c.ClusterID, c.ResourceID)
+}
+
+// CompositeIDValue builds a Terraform types.String from a cluster/space ID and
+// resource ID, in the same format CompositeIDFromStr expects.
+func CompositeIDValue(clusterID, resourceID string) types.String {
+	return types.StringValue((&CompositeID{ClusterID: clusterID, ResourceID: resourceID}).String())
 }
 
 // apiClient is the internal broad client that holds all configured service

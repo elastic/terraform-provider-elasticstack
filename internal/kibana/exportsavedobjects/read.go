@@ -96,9 +96,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	}
 
 	// Create composite ID for state tracking
-	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: "export"}
-
-	config.ID = types.StringValue(compositeID.String())
+	config.ID = clients.CompositeIDValue(spaceID, "export")
 	config.SpaceID = types.StringValue(spaceID)
 	config.ExcludeExportDetails = types.BoolValue(excludeExportDetails)
 	config.IncludeReferencesDeep = types.BoolValue(includeReferencesDeep)

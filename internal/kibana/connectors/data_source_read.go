@@ -70,8 +70,7 @@ func readConnectorDataSource(ctx context.Context, client *clients.KibanaScopedCl
 	}
 
 	connector := foundConnectors[0]
-	compositeID := &clients.CompositeID{ClusterID: spaceID, ResourceID: connector.ConnectorID}
-	model.ID = types.StringValue(compositeID.String())
+	model.ID = clients.CompositeIDValue(spaceID, connector.ConnectorID)
 	model.ConnectorID = types.StringValue(connector.ConnectorID)
 	model.SpaceID = types.StringValue(connector.SpaceID)
 	model.Name = types.StringValue(connector.Name)

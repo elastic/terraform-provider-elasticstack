@@ -98,7 +98,7 @@ func (model *toolBaseModel) populateFromAPI(ctx context.Context, spaceID string,
 
 	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.ToolID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.Type = types.StringValue(data.Type)
