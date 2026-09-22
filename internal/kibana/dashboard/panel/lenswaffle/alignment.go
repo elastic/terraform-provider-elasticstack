@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleConfigModel) {
@@ -30,6 +31,9 @@ func alignWaffleStateFromPlan(ctx context.Context, plan, state *models.WaffleCon
 	}
 	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field", "name")
+	if plan.Legend != nil && state.Legend != nil {
+		lenscommon.PreserveNullIfStateEquals(plan.Legend.TruncateAfterLines, &state.Legend.TruncateAfterLines, types.Int64Value(1))
+	}
 	m := min(len(plan.Metrics), len(state.Metrics))
 	for i := range m {
 		lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.Metrics[i].Config, &state.Metrics[i].Config)
