@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -32,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -273,6 +275,162 @@ func TestAccResourceFleetServerHost_importFromSpace(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", hostName)),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_server_host.test_host", "space_ids.#"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceFleetServerHost_defaultOmitted verifies that omitting the
+// Optional+Computed `default` attribute from config applies the schema
+// default (false), rather than only ever seeing that value when explicitly
+// configured.
+func TestAccResourceFleetServerHost_defaultOmitted(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
+	hostName := sdkacctest.RandString(22)
+	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id": config.StringVariable(hostID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "name", fmt.Sprintf("FleetServerHost %s", hostName)),
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test_host", "default", "false"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceFleetServerHost_invalidHostID exercises the negative path of
+// the custom host_id validator (fleet.IDValidator): an explicit value
+// containing a path separator and a traversal sequence must fail at plan
+// time rather than reaching the API.
+func TestAccResourceFleetServerHost_invalidHostID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", sdkacctest.RandString(22))),
+					"host_id": config.StringVariable("../etc/passwd"),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)must not contain`),
+			},
+		},
+	})
+}
+
+// TestAccResourceFleetServerHost_hostIDReplace verifies that changing an
+// explicit host_id between two valid values triggers RequiresReplace
+// (destroy-before-create), rather than an in-place update.
+func TestAccResourceFleetServerHost_hostIDReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
+	hostName := sdkacctest.RandString(22)
+	firstHostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
+	secondHostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
+	resourceName := "elasticstack_fleet_server_host.test_host"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id": config.StringVariable(firstHostID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", firstHostID),
+					resource.TestCheckResourceAttr(resourceName, "host_id", firstHostID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id": config.StringVariable(secondHostID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", secondHostID),
+					resource.TestCheckResourceAttr(resourceName, "host_id", secondHostID),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceFleetServerHost_spaceIDsUpdate exercises an in-place update
+// that changes space_ids from a single-element set to a different,
+// two-element set that does not include the prior operational space
+// ("default"). space_ids has no RequiresReplace modifier, so this must
+// succeed as an update, and update.go must resolve the operational space
+// from prior state, not from the new plan set.
+func TestAccResourceFleetServerHost_spaceIDsUpdate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostSpaces, versionutils.FlavorAny)
+
+	hostName := sdkacctest.RandString(22)
+	hostID := fmt.Sprintf("fleet-server-host-%s", sdkacctest.RandString(12))
+	random := sdkacctest.RandString(8)
+	secondSpaceID := fmt.Sprintf("fleet-server-host-space-update-%s", random)
+	thirdSpaceID := fmt.Sprintf("fleet-server-host-space-update-b-%s", random)
+	resourceName := "elasticstack_fleet_server_host.test_host"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("single_space"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id": config.StringVariable(hostID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_ids.#", "1"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", "default"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_space"),
+				ConfigVariables: config.Variables{
+					"name":              config.StringVariable(fmt.Sprintf("FleetServerHost %s", hostName)),
+					"host_id":           config.StringVariable(hostID),
+					"second_space_id":   config.StringVariable(secondSpaceID),
+					"third_space_id":    config.StringVariable(thirdSpaceID),
+					"second_space_name": config.StringVariable(fmt.Sprintf("Fleet Server Host Space Update %s", random)),
+					"third_space_name":  config.StringVariable(fmt.Sprintf("Fleet Server Host Space Update B %s", random)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", hostID),
+					resource.TestCheckResourceAttr(resourceName, "space_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", secondSpaceID),
+					resource.TestCheckTypeSetElemAttr(resourceName, "space_ids.*", thirdSpaceID),
 				),
 			},
 		},

@@ -19,7 +19,6 @@ package rangeslider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -33,10 +32,11 @@ const panelType = "range_slider_control"
 
 // Branch keys for the by_field/by_esql union, exported so callers outside this package (e.g. the
 // dashboard resource's v0->v1 state upgrader) can reference them instead of duplicating the
-// literal strings.
+// literal strings. Sourced from panelkit's shared constants so optionslist and rangeslider don't
+// each declare their own copy.
 const (
-	BranchByField = "by_field"
-	BranchByEsql  = "by_esql"
+	BranchByField = panelkit.BranchByField
+	BranchByEsql  = panelkit.BranchByEsql
 )
 
 // SchemaAttribute returns the dashboard panel range_slider_control_config block. Exactly one of the
@@ -59,13 +59,7 @@ func SchemaAttribute() schema.Attribute {
 // inside a block using NestedAttributes(). Shared by the regular panel schema and the pinned-panel
 // control-bar schema.
 func ExactlyOneOfBranchValidator() validator.Object {
-	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{BranchByField, BranchByEsql},
-		Summary:       "Invalid range_slider_control_config",
-		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`.",
-		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `range_slider_control_config`, not both.",
-		Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `range_slider_control_config`.",
-	})
+	return panelkit.ExactlyOneOfBranchValidator("range_slider_control_config", BranchByField, BranchByEsql)
 }
 
 // NestedAttributes returns the `by_field` / `by_esql` branch attribute map shared by the regular
@@ -140,12 +134,7 @@ func byFieldAttributes() map[string]schema.Attribute {
 // upgrader, which relocates these same names from a flat v0 layout into by_field {}) should use
 // this instead of hardcoding a duplicate list that could drift from the schema.
 func ByFieldAttributeNames() []string {
-	attrs := byFieldAttributes()
-	names := make([]string, 0, len(attrs))
-	for name := range attrs {
-		names = append(names, name)
-	}
-	return names
+	return panelkit.AttributeNames(byFieldAttributes())
 }
 
 func byEsqlAttributes() map[string]schema.Attribute {

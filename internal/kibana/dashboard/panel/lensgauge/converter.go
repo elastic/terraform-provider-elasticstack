@@ -176,7 +176,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignGaugeStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignGaugeConfigStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

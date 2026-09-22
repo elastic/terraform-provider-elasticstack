@@ -19,7 +19,6 @@ package optionslist
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -31,10 +30,11 @@ import (
 const panelType = "options_list_control"
 
 // Options list control discriminator branches. These are reused between the schema validators and
-// the API converter, which maps them back to the Field / ES|QL union reported by Kibana.
+// the API converter, which maps them back to the Field / ES|QL union reported by Kibana. Sourced
+// from panelkit's shared constants so optionslist and rangeslider don't each declare their own copy.
 const (
-	BranchByField = "by_field"
-	BranchByEsql  = "by_esql"
+	BranchByField = panelkit.BranchByField
+	BranchByEsql  = panelkit.BranchByEsql
 )
 
 // SchemaAttribute returns the dashboard panel options_list_control_config block.
@@ -80,13 +80,7 @@ func NestedAttributes() map[string]schema.Attribute {
 // inside a block using NestedAttributes(). Shared by the regular panel schema and the pinned-panel
 // control-bar schema.
 func ExactlyOneOfBranchValidator() validator.Object {
-	return validators.ExactlyOneOfNestedAttrsValidator(validators.ExactlyOneOfNestedAttrsOpts{
-		AttrNames:     []string{BranchByField, BranchByEsql},
-		Summary:       "Invalid options_list_control_config",
-		MissingDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`.",
-		TooManyDetail: "Exactly one of `by_field` or `by_esql` must be configured inside `options_list_control_config`, not both.",
-		Description:   "Ensures exactly one of `by_field` or `by_esql` is configured inside `options_list_control_config`.",
-	})
+	return panelkit.ExactlyOneOfBranchValidator("options_list_control_config", BranchByField, BranchByEsql)
 }
 
 // sharedOptionsListAttributes returns the attribute set common to both the by_field and by_esql
@@ -202,12 +196,7 @@ func byFieldAttributes() map[string]schema.Attribute {
 // upgrader, which relocates these same names from a flat v0 layout into by_field {}) should use
 // this instead of hardcoding a duplicate list that could drift from the schema.
 func ByFieldAttributeNames() []string {
-	attrs := byFieldAttributes()
-	names := make([]string, 0, len(attrs))
-	for name := range attrs {
-		names = append(names, name)
-	}
-	return names
+	return panelkit.AttributeNames(byFieldAttributes())
 }
 
 // byEsqlAttributes returns the attributes for the by_esql branch: the shared attribute set plus the

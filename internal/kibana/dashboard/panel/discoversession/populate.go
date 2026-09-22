@@ -584,12 +584,7 @@ func readDiscoverSessionDrilldownsFromConfig0(
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
 	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig0APIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
@@ -608,12 +603,7 @@ func readDiscoverSessionDrilldownsFromConfig1(
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
 	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig1APIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }

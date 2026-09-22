@@ -39,10 +39,10 @@ import (
 
 var (
 	minVersionPrebuiltRules = version.Must(version.NewVersion("8.0.0"))
-	// 9.4.6 / 9.5.0 / 9.5.3 install-all in a new custom space 400s on a deprecated
-	// rule stub (elastic/kibana#285497). go-version constraints are AND-only, so
-	// each known-bad pin is excluded exactly.
-	prebuiltRulesInSpaceConstraints = version.MustConstraints(version.NewConstraint("!= 9.4.6, != 9.5.0, != 9.5.3"))
+	// 9.4.6 / 9.4.7 / 9.5.0 / 9.5.3 / 9.5.4 install-all in a new custom space 400s
+	// on a deprecated rule stub (elastic/kibana#285497). go-version constraints
+	// are AND-only, so each known-bad pin is excluded exactly.
+	prebuiltRulesInSpaceConstraints = version.MustConstraints(version.NewConstraint("!= 9.4.6, != 9.4.7, != 9.5.0, != 9.5.3, != 9.5.4"))
 )
 
 func TestPrebuiltRulesInSpaceConstraints(t *testing.T) {

@@ -80,10 +80,15 @@ engine:
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
 # https://github.com/github/gh-aw/pull/47571), so with the guard active the
 # proxy rejects every request with HTTP 400 (unknown_model_ai_credits).
-# Setting -1 omits maxAiCredits from the generated AWF config, letting the
-# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
-# still applies.
+# Setting max-ai-credits: -1 omits maxAiCredits from the generated AWF
+# config, letting the agent run.
+# Also disable the per-workflow daily guardrail (max-daily-ai-credits,
+# default 5000/day). Legitimate verify-openspec activity can exceed that
+# rolling 24-hour cap and skip agent activation
+# (see https://github.com/elastic/terraform-provider-elasticstack/issues/4964).
+# Setting max-daily-ai-credits: -1 disables that activation-time gate.
 max-ai-credits: -1
+max-daily-ai-credits: -1
 permissions:
   contents: read
   pull-requests: read

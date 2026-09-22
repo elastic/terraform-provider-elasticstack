@@ -87,7 +87,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignLegacyMetricStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignLegacyMetricConfigStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {
