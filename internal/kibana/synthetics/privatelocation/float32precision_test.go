@@ -45,8 +45,8 @@ func TestFloat32PrecisionValue_Float64SemanticEquals(t *testing.T) {
 		},
 		{
 			name:      "unknown vs unknown",
-			left:      NewFloat32PrecisionUnknown(),
-			right:     NewFloat32PrecisionUnknown(),
+			left:      Float32PrecisionValue{Float64Value: basetypes.NewFloat64Unknown()},
+			right:     Float32PrecisionValue{Float64Value: basetypes.NewFloat64Unknown()},
 			wantEqual: true,
 		},
 		{
