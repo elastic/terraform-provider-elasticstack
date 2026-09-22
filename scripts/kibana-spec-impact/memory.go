@@ -20,14 +20,14 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/elastic/terraform-provider-elasticstack/scripts/internal/memoryio"
 )
 
 const memoryVersion = 1
@@ -50,13 +50,9 @@ type FingerprintRec struct {
 }
 
 func loadMemory(path string) (*Memory, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read memory: %w", err)
-	}
 	var m Memory
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, fmt.Errorf("parse memory: %w", err)
+	if err := memoryio.ReadJSON(path, &m); err != nil {
+		return nil, err
 	}
 	if m.Version == 0 {
 		m.Version = memoryVersion
@@ -74,34 +70,7 @@ func saveMemory(path string, m *Memory) error {
 	if m.ReportedFingerprints == nil {
 		m.ReportedFingerprints = make(map[string]FingerprintRec)
 	}
-	data, err := json.MarshalIndent(m, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal memory: %w", err)
-	}
-	data = append(data, '\n')
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("mkdir for memory: %w", err)
-	}
-	tmp, err := os.CreateTemp(dir, ".kibana-spec-impact-memory-*.json")
-	if err != nil {
-		return fmt.Errorf("temp memory: %w", err)
-	}
-	tmpPath := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("write temp memory: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("close temp memory: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("rename memory: %w", err)
-	}
-	return nil
+	return memoryio.AtomicWriteJSON(path, m, ".kibana-spec-impact-memory-*.json")
 }
 
 func bootstrapMemoryFromSeed(targetPath, seedPath string) error {
