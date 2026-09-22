@@ -96,10 +96,6 @@ func NewFloat32PrecisionNull() Float32PrecisionValue {
 	return Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()}
 }
 
-func NewFloat32PrecisionUnknown() Float32PrecisionValue {
-	return Float32PrecisionValue{Float64Value: basetypes.NewFloat64Unknown()}
-}
-
 func (v Float32PrecisionValue) Type(_ context.Context) attr.Type {
 	return Float32PrecisionType{}
 }
