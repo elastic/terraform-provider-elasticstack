@@ -24,7 +24,12 @@ The provider already has an established pattern for exactly this class of drift 
 - Add legend `truncate_after_lines` (and, for pie, `nested`) null-preservation to `lenspie` and `lenswaffle` alignment, mirroring the existing `AlignPartitionLegendStateFromPlan` pattern already used for `legend.visible`.
 - Confirm the Kibana 9.6 `value_display.percent_decimals` behavior by format first, then widen `lenscommon.PartitionValueDisplayMatchesKibanaDefault` only for the verified default shape(s) rather than hard-coding an unverified constant.
 - Add a heatmap axis-label `orientation` default (`"horizontal"`) to the heatmap alignment path, parallel to the existing `labels.visible` / `title.visible` handling.
-- No schema changes and no state/schema version bump — this is read-path normalization only, following the same pattern as REQ-011's prior fixes.
+- Preserve XY reference-line threshold omit-defaults (`thresholds[].axis` `"y"`, `operation` `"static_value"`, `color_json` `{type:"auto"}`, and `value_json` object→scalar restore) on the existing `lensxy` alignment path. Already implemented in `alignment_panels.go`; covered by `TestAccResourceDashboardXYChart_layers_reference`.
+- Preserve datatable `metrics[].config_json` extras Kibana 9.6 injects when omitted (`visible:true`, `alignment:"right"`) via `PopulateDatatableMetricDefaults` (`lenscommon/metric_defaults.go`, wired in `lensdatatable/{alignment,defaults}.go`).
+- Preserve legacy `metric_json` extras Kibana 9.6 injects when omitted (`color:{type:"auto"}`, `size:"m"`) via `PopulateLegacyMetricMetricDefaults` (`lenscommon/populate_lens_charts.go`).
+- Align treemap/mosaic `legend.truncate_after_lines` (default `1`) and `legend.nested` (default `false`) via `lenscommon.AlignPartitionLegendStateFromPlan`.
+- Align `heatmap_config.legend.truncate_after_lines` (default `1`) from plan via `lensheatmap` alignment.
+- No behavioral schema changes (no validator, type, or state-version bump). The `thresholds[].axis` MarkdownDescription (and generated `docs/resources/kibana_dashboard.md`) records that Kibana 9.6 rejects the current enum; reconciling the validator is #4958. This change is otherwise read-path normalization, following the same pattern as REQ-011's prior fixes.
 - Add or extend acceptance test coverage for each affected chart family so the documented defaults are exercised against a live `9.6.0-SNAPSHOT` (or later) Kibana.
 
 ## Capabilities
@@ -40,8 +45,11 @@ None.
 ## Impact
 
 - `internal/kibana/dashboard/lenscommon/` — add a shared metric-axis normalization helper and wire it into each confirmed metric-default population path.
-- `internal/kibana/dashboard/lenscommon/partition_alignment.go` — widen `PartitionValueDisplayMatchesKibanaDefault` for `percent_decimals`.
+- `internal/kibana/dashboard/lenscommon/partition_alignment.go` — widen `PartitionValueDisplayMatchesKibanaDefault` for `percent_decimals`; `AlignPartitionLegendStateFromPlan` also preserves treemap/mosaic `legend.truncate_after_lines` / `nested`.
 - `internal/kibana/dashboard/panel/lenspie/alignment.go`, `internal/kibana/dashboard/panel/lenswaffle/alignment.go` — align legend `truncate_after_lines` (and pie `nested`) from plan.
-- `internal/kibana/dashboard/panel/lensheatmap/` alignment path — align axis label `orientation` from plan.
+- `internal/kibana/dashboard/panel/lensheatmap/` alignment path — align axis label `orientation` and `legend.truncate_after_lines` from plan.
+- `internal/kibana/dashboard/panel/lensxy/alignment_panels.go` — align omitted reference-line threshold `axis` / `operation` / `color_json` / `value_json` from plan (see `_layers_reference`).
+- `internal/kibana/dashboard/lenscommon/metric_defaults.go` and `internal/kibana/dashboard/panel/lensdatatable/{alignment,defaults}.go` — populate omitted datatable metric `visible` / `alignment` defaults.
+- `internal/kibana/dashboard/lenscommon/populate_lens_charts.go` — populate omitted legacy `metric_json` `color` / `size` defaults.
 - Acceptance tests across `internal/kibana/dashboard/panel/{lensxy,lensdatatable,lenspie,lenswaffle,lensmosaic,lenstreemap,lensheatmap,lenslegacymetric}` for the affected suites named in the issue (e.g. `TestAccResourceDashboardXYChart_basic`, `TestAccResourceDashboardDatatableChart`, `TestAccResourceDashboardPieChart`, `TestAccResourceDashboardWaffle`, `TestAccResourceDashboardMosaic`, `TestAccResourceDashboardTreemap`, `TestAccResourceDashboardLegacyMetricChart`, `TestAccLensMinimalProbe_*`).
 - `openspec/specs/kibana-dashboard/spec.md` — sync the REQ-011 delta once implemented.

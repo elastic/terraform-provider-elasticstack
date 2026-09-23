@@ -18,11 +18,84 @@
 package privatelocation
 
 import (
+	"context"
 	"math"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/require"
 )
+
+func TestFloat32PrecisionValue_Float64SemanticEquals(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	tests := []struct {
+		name      string
+		left      Float32PrecisionValue
+		right     basetypes.Float64Valuable
+		wantEqual bool
+		wantError bool
+	}{
+		{
+			name:      "null vs null",
+			left:      Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()},
+			right:     Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()},
+			wantEqual: true,
+		},
+		{
+			name:      "unknown vs unknown",
+			left:      Float32PrecisionValue{Float64Value: basetypes.NewFloat64Unknown()},
+			right:     Float32PrecisionValue{Float64Value: basetypes.NewFloat64Unknown()},
+			wantEqual: true,
+		},
+		{
+			name:      "float32 degradation",
+			left:      NewFloat32PrecisionValue(42.42),
+			right:     NewFloat32PrecisionValue(42.41999816894531),
+			wantEqual: true,
+		},
+		{
+			name:      "different values",
+			left:      NewFloat32PrecisionValue(42.42),
+			right:     NewFloat32PrecisionValue(42.43),
+			wantEqual: false,
+		},
+		{
+			name:      "value vs null",
+			left:      NewFloat32PrecisionValue(42.42),
+			right:     Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()},
+			wantEqual: false,
+		},
+		{
+			name:      "mismatched value type",
+			left:      NewFloat32PrecisionValue(42.42),
+			right:     basetypes.NewFloat64Value(42.42),
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			gotEqual, diags := tt.left.Float64SemanticEquals(ctx, tt.right)
+			if tt.wantError {
+				require.True(t, diags.HasError())
+				return
+			}
+			require.False(t, diags.HasError())
+			require.Equal(t, tt.wantEqual, gotEqual)
+		})
+	}
+
+	t.Run("NaN vs value", func(t *testing.T) {
+		t.Parallel()
+		// basetypes cannot represent NaN on Go 1.26+; Float64SemanticEquals delegates
+		// the known-value comparison to float64SemanticallyEqualUnderFloat32.
+		require.False(t, float64SemanticallyEqualUnderFloat32(math.NaN(), 42.42))
+	})
+}
 
 func TestFloat64SemanticallyEqualUnderFloat32(t *testing.T) {
 	t.Parallel()

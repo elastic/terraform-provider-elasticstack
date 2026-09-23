@@ -134,7 +134,10 @@ func TestAccResourceDashboardWaffle(t *testing.T) {
 					"panels.0.vis_config.by_value.waffle_config.sampling",
 					// Kibana may retain legend/value_display through panel updates; import read can
 					// diverge from apply state after exercising multiple waffle_config shapes.
+					// Import has no plan, so 9.6's injected legend.truncate_after_lines=1 cannot be
+					// restored to the omitted (null) apply value.
 					"panels.0.vis_config.by_value.waffle_config.legend.visible",
+					"panels.0.vis_config.by_value.waffle_config.legend.truncate_after_lines",
 					"panels.0.vis_config.by_value.waffle_config.value_display",
 				},
 			},

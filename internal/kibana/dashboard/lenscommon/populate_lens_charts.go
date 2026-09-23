@@ -70,7 +70,9 @@ func injectEmptyAsNullDefault(model map[string]any) {
 	}
 }
 
-// PopulateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
+// PopulateLensMetricDefaults populates shared Lens metric defaults (color, format, empty_as_null).
+// XY y[] and datatable metrics[] call this through PopulateXYMetricDefaults and
+// PopulateDatatableMetricDefaults; other families call it directly or via their own wrappers.
 func PopulateLensMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
@@ -356,6 +358,12 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 			model["show_array_values"] = false
 		}
 		injectEmptyAsNullDefault(model)
+		if _, exists := model["color"]; !exists {
+			model["color"] = map[string]any{attrType: colorTypeAuto}
+		}
+		if _, exists := model["size"]; !exists {
+			model["size"] = "m"
+		}
 	}
 
 	format, ok := model["format"].(map[string]any)
