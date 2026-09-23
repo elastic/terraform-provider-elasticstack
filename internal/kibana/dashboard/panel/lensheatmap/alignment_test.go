@@ -76,6 +76,41 @@ func Test_alignHeatmapAxisStateFromPlan_doesNotOverwriteExplicitNonHorizontalOri
 	assert.Equal(t, "vertical", state.X.Labels.Orientation.ValueString())
 }
 
+func Test_alignHeatmapAxisStateFromPlan_XAndYPreserveTheSharedLabelsAndTitleVisibleDefaultsIdentically(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.HeatmapAxesModel{
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{Visible: types.BoolNull()},
+			Title:  &models.AxisTitleModel{Visible: types.BoolNull()},
+		},
+		Y: &models.HeatmapYAxisModel{
+			Labels: &models.HeatmapYAxisLabelsModel{Visible: types.BoolNull()},
+			Title:  &models.AxisTitleModel{Visible: types.BoolNull()},
+		},
+	}
+	state := &models.HeatmapAxesModel{
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{Visible: types.BoolValue(true)},
+			Title:  &models.AxisTitleModel{Visible: types.BoolValue(false)},
+		},
+		Y: &models.HeatmapYAxisModel{
+			Labels: &models.HeatmapYAxisLabelsModel{Visible: types.BoolValue(true)},
+			Title:  &models.AxisTitleModel{Visible: types.BoolValue(false)},
+		},
+	}
+
+	alignHeatmapAxisStateFromPlan(plan, state)
+
+	require.NotNil(t, state.X)
+	assert.True(t, state.X.Labels.Visible.IsNull())
+	assert.True(t, state.X.Title.Visible.IsNull())
+
+	require.NotNil(t, state.Y)
+	assert.True(t, state.Y.Labels.Visible.IsNull())
+	assert.True(t, state.Y.Title.Visible.IsNull())
+}
+
 func Test_alignHeatmapLegendStateFromPlan_preservesNullTruncateWhenKibanaInjectsDefault(t *testing.T) {
 	t.Parallel()
 

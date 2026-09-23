@@ -45,22 +45,33 @@ func alignHeatmapAxisStateFromPlan(plan, state *models.HeatmapAxesModel) {
 	}
 	if plan.X != nil && state.X != nil {
 		if plan.X.Labels != nil && state.X.Labels != nil {
-			lenscommon.PreserveNullIfStateEquals(plan.X.Labels.Visible, &state.X.Labels.Visible, types.BoolValue(true))
+			preserveHeatmapAxisLabelsVisibleFromPlan(plan.X.Labels.Visible, &state.X.Labels.Visible)
 			lenscommon.PreserveNullIfStateEquals(plan.X.Labels.Orientation, &state.X.Labels.Orientation, types.StringValue("horizontal"))
 		}
-		// Kibana reports axis.title.visible=false when the practitioner omits it.
 		if plan.X.Title != nil && state.X.Title != nil {
-			lenscommon.PreserveNullIfStateEquals(plan.X.Title.Visible, &state.X.Title.Visible, types.BoolValue(false))
+			preserveHeatmapAxisTitleVisibleFromPlan(plan.X.Title.Visible, &state.X.Title.Visible)
 		}
 	}
 	if plan.Y != nil && state.Y != nil {
 		if plan.Y.Labels != nil && state.Y.Labels != nil {
-			lenscommon.PreserveNullIfStateEquals(plan.Y.Labels.Visible, &state.Y.Labels.Visible, types.BoolValue(true))
+			preserveHeatmapAxisLabelsVisibleFromPlan(plan.Y.Labels.Visible, &state.Y.Labels.Visible)
 		}
 		if plan.Y.Title != nil && state.Y.Title != nil {
-			lenscommon.PreserveNullIfStateEquals(plan.Y.Title.Visible, &state.Y.Title.Visible, types.BoolValue(false))
+			preserveHeatmapAxisTitleVisibleFromPlan(plan.Y.Title.Visible, &state.Y.Title.Visible)
 		}
 	}
+}
+
+// preserveHeatmapAxisLabelsVisibleFromPlan preserves the null plan when Kibana materializes the
+// axis labels visibility default (true) on read-back. Shared between the X and Y axis blocks.
+func preserveHeatmapAxisLabelsVisibleFromPlan(plan types.Bool, state *types.Bool) {
+	lenscommon.PreserveNullIfStateEquals(plan, state, types.BoolValue(true))
+}
+
+// preserveHeatmapAxisTitleVisibleFromPlan preserves the null plan when Kibana reports
+// axis.title.visible=false on read-back. Shared between the X and Y axis blocks.
+func preserveHeatmapAxisTitleVisibleFromPlan(plan types.Bool, state *types.Bool) {
+	lenscommon.PreserveNullIfStateEquals(plan, state, types.BoolValue(false))
 }
 
 func alignHeatmapStylingStateFromPlan(plan, state *models.HeatmapStylingModel) {

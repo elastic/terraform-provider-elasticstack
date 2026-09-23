@@ -103,21 +103,16 @@ func alignXYXAxisStateFromPlan(plan, state *models.XYAxisConfigModel) {
 		return
 	}
 
-	lenscommon.PreserveNullIfStateEquals(plan.Grid, &state.Grid, types.BoolValue(true))
-	lenscommon.PreserveNullIfStateEquals(plan.Ticks, &state.Ticks, types.BoolValue(true))
-	lenscommon.PreserveNullIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, types.StringValue("horizontal"))
+	preserveXYAxisCommonFieldsFromPlan(
+		plan.Grid, &state.Grid,
+		plan.Ticks, &state.Ticks,
+		plan.LabelOrientation, &state.LabelOrientation,
+		plan.Title, &state.Title,
+		plan.DomainJSON, &state.DomainJSON,
+	)
 	lenscommon.PreserveNullIfStateEquals(plan.Scale, &state.Scale, types.StringValue(string(kbapi.KibanaHTTPAPIsVisApiXyAxisConfigXScaleOrdinal)))
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.Grid, &state.Grid)
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.Ticks, &state.Ticks)
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Scale, &state.Scale)
-	// When axis.title is omitted from config, suppress any server-filled defaults.
-	if plan.Title == nil {
-		state.Title = nil
-	}
-	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
 	lenscommon.PreserveNullJSONIfStateMatchesDefault(plan.DomainJSON, &state.DomainJSON, `{"type":"fit","rounding":false}`)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
 }
 
 func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
@@ -125,19 +120,39 @@ func alignXYYAxisStateFromPlan(plan, state *models.YAxisConfigModel) {
 		return
 	}
 
-	lenscommon.PreserveNullIfStateEquals(plan.Grid, &state.Grid, types.BoolValue(true))
-	lenscommon.PreserveNullIfStateEquals(plan.Ticks, &state.Ticks, types.BoolValue(true))
-	lenscommon.PreserveNullIfStateEquals(plan.LabelOrientation, &state.LabelOrientation, types.StringValue("horizontal"))
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.Grid, &state.Grid)
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.Ticks, &state.Ticks)
-	lenscommon.PreserveKnownTfValueIfStateNull(plan.LabelOrientation, &state.LabelOrientation)
+	preserveXYAxisCommonFieldsFromPlan(
+		plan.Grid, &state.Grid,
+		plan.Ticks, &state.Ticks,
+		plan.LabelOrientation, &state.LabelOrientation,
+		plan.Title, &state.Title,
+		plan.DomainJSON, &state.DomainJSON,
+	)
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Scale, &state.Scale)
+}
+
+// preserveXYAxisCommonFieldsFromPlan applies the field-preservation defaults shared by the X and
+// Y axis alignment functions: grid/ticks/label-orientation defaults, title nil-suppression, and
+// the DomainJSON "rounding" key preservation. Axis-specific defaults (e.g. X's ordinal scale
+// default, X's DomainJSON fit/rounding default) remain in the respective callers.
+func preserveXYAxisCommonFieldsFromPlan(
+	planGrid types.Bool, stateGrid *types.Bool,
+	planTicks types.Bool, stateTicks *types.Bool,
+	planLabelOrientation types.String, stateLabelOrientation *types.String,
+	planTitle *models.AxisTitleModel, stateTitle **models.AxisTitleModel,
+	planDomainJSON jsontypes.Normalized, stateDomainJSON *jsontypes.Normalized,
+) {
+	lenscommon.PreserveNullIfStateEquals(planGrid, stateGrid, types.BoolValue(true))
+	lenscommon.PreserveNullIfStateEquals(planTicks, stateTicks, types.BoolValue(true))
+	lenscommon.PreserveNullIfStateEquals(planLabelOrientation, stateLabelOrientation, types.StringValue("horizontal"))
+	lenscommon.PreserveKnownTfValueIfStateNull(planGrid, stateGrid)
+	lenscommon.PreserveKnownTfValueIfStateNull(planTicks, stateTicks)
+	lenscommon.PreserveKnownTfValueIfStateNull(planLabelOrientation, stateLabelOrientation)
 	// When axis.title is omitted from config, suppress any server-filled defaults.
-	if plan.Title == nil {
-		state.Title = nil
+	if planTitle == nil {
+		*stateTitle = nil
 	}
-	preserveKnownAxisTitleIfStateBlank(plan.Title, &state.Title)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DomainJSON, &state.DomainJSON, "rounding")
+	preserveKnownAxisTitleIfStateBlank(planTitle, stateTitle)
+	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planDomainJSON, stateDomainJSON, "rounding")
 }
 
 func alignXYDecorationsStateFromPlan(plan, state *models.XYDecorationsModel) {

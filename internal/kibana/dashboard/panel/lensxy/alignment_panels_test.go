@@ -104,6 +104,51 @@ func TestAlignXYAxisStateFromPlan(t *testing.T) {
 		require.NotNil(t, state.Y2)
 		assert.Equal(t, "vertical", state.Y2.LabelOrientation.ValueString())
 	})
+
+	t.Run("X and Y axes preserve the shared grid/ticks/label-orientation/title defaults identically", func(t *testing.T) {
+		plan := &models.XYAxisModel{
+			X: &models.XYAxisConfigModel{
+				Grid:             types.BoolNull(),
+				Ticks:            types.BoolNull(),
+				LabelOrientation: types.StringNull(),
+				Title:            nil,
+			},
+			Y: &models.YAxisConfigModel{
+				Grid:             types.BoolNull(),
+				Ticks:            types.BoolNull(),
+				LabelOrientation: types.StringNull(),
+				Title:            nil,
+			},
+		}
+		state := &models.XYAxisModel{
+			X: &models.XYAxisConfigModel{
+				Grid:             types.BoolValue(true),
+				Ticks:            types.BoolValue(true),
+				LabelOrientation: types.StringValue("horizontal"),
+				Title:            &models.AxisTitleModel{Value: types.StringValue("injected")},
+			},
+			Y: &models.YAxisConfigModel{
+				Grid:             types.BoolValue(true),
+				Ticks:            types.BoolValue(true),
+				LabelOrientation: types.StringValue("horizontal"),
+				Title:            &models.AxisTitleModel{Value: types.StringValue("injected")},
+			},
+		}
+
+		alignXYAxisStateFromPlan(plan, state)
+
+		require.NotNil(t, state.X)
+		assert.True(t, state.X.Grid.IsNull())
+		assert.True(t, state.X.Ticks.IsNull())
+		assert.True(t, state.X.LabelOrientation.IsNull())
+		assert.Nil(t, state.X.Title)
+
+		require.NotNil(t, state.Y)
+		assert.True(t, state.Y.Grid.IsNull())
+		assert.True(t, state.Y.Ticks.IsNull())
+		assert.True(t, state.Y.LabelOrientation.IsNull())
+		assert.Nil(t, state.Y.Title)
+	})
 }
 
 func TestAlignXYFittingStateFromPlan(t *testing.T) {
