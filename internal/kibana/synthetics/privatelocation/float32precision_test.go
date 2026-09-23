@@ -39,8 +39,8 @@ func TestFloat32PrecisionValue_Float64SemanticEquals(t *testing.T) {
 	}{
 		{
 			name:      "null vs null",
-			left:      NewFloat32PrecisionNull(),
-			right:     NewFloat32PrecisionNull(),
+			left:      Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()},
+			right:     Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()},
 			wantEqual: true,
 		},
 		{
@@ -64,7 +64,7 @@ func TestFloat32PrecisionValue_Float64SemanticEquals(t *testing.T) {
 		{
 			name:      "value vs null",
 			left:      NewFloat32PrecisionValue(42.42),
-			right:     NewFloat32PrecisionNull(),
+			right:     Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()},
 			wantEqual: false,
 		},
 		{
