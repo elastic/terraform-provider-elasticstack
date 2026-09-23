@@ -75,7 +75,7 @@ func (m osqueryPackBaseModel) GetResourceID() types.String { return m.PackID }
 func (m osqueryPackBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *osqueryPackBaseModel) setCompositeIdentity(spaceID, packID string) {
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: packID}).String())
+	m.ID = clients.CompositeIDValue(spaceID, packID)
 	m.PackID = types.StringValue(packID)
 	m.SpaceID = types.StringValue(spaceID)
 }

@@ -606,7 +606,7 @@ func (m *managedIntegrationModel) populateFromManagedIntegration(ctx context.Con
 		return diags
 	}
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.ID = clients.CompositeIDValue(spaceID, item.Id)
 	m.PolicyID = types.StringValue(item.Id)
 
 	if spaceIDs != nil && len(*spaceIDs) > 0 {

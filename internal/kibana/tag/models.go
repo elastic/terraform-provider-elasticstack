@@ -62,7 +62,7 @@ func (m tagBaseModel) GetResourceID() types.String { return m.TagID }
 func (m tagBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *tagBaseModel) setCompositeIdentity(spaceID, tagID string) {
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: tagID}).String())
+	m.ID = clients.CompositeIDValue(spaceID, tagID)
 	m.TagID = types.StringValue(tagID)
 	m.SpaceID = types.StringValue(spaceID)
 }

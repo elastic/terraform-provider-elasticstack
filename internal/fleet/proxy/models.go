@@ -64,7 +64,7 @@ func (m proxyModel) GetVersionRequirements(_ context.Context) ([]entitycore.Vers
 func (m *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.ID = clients.CompositeIDValue(spaceID, item.Id)
 	m.ProxyID = types.StringValue(item.Id)
 	m.SpaceID = types.StringValue(spaceID)
 	m.Name = types.StringValue(item.Name)

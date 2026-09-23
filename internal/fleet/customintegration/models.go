@@ -54,7 +54,7 @@ func (m customIntegrationModel) GetID() types.String {
 		return m.ID
 	}
 	spaceID := m.GetSpaceID().ValueString()
-	return types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: rawID}).String())
+	return clients.CompositeIDValue(spaceID, rawID)
 }
 
 func (m customIntegrationModel) GetResourceID() types.String {

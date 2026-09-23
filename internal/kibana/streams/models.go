@@ -214,8 +214,7 @@ func (m *streamModel) streamType() string {
 func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.StreamResponse, name, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	resourceID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
-	m.ID = types.StringValue(resourceID.String())
+	m.ID = clients.CompositeIDValue(spaceID, name)
 	m.Name = types.StringValue(name)
 	m.SpaceID = types.StringValue(spaceID)
 	m.Description = types.StringValue(resp.Stream.Description)

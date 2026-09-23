@@ -114,7 +114,7 @@ func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string
 		return diags
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.AgentID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.Name = types.StringValue(data.Name)
