@@ -37,7 +37,7 @@ type spaceSettingsModel struct {
 	ID                       types.String `tfsdk:"id"`
 	KibanaConnection         types.List   `tfsdk:"kibana_connection"`
 	SpaceID                  types.String `tfsdk:"space_id"`
-	AllowedNamespacePrefixes types.List   `tfsdk:"allowed_namespace_prefixes"` // > string
+	AllowedNamespacePrefixes types.Set    `tfsdk:"allowed_namespace_prefixes"` // > string
 	ManagedBy                types.String `tfsdk:"managed_by"`
 }
 
@@ -49,7 +49,7 @@ func (m spaceSettingsModel) GetKibanaConnection() types.List { return m.KibanaCo
 func (m *spaceSettingsModel) populateFromAPI(ctx context.Context, spaceID string, settings *fleet.SpaceSettings) (diags diag.Diagnostics) {
 	m.ID = types.StringValue(spaceID)
 	m.SpaceID = types.StringValue(spaceID)
-	m.AllowedNamespacePrefixes = typeutils.SliceToListTypeString(ctx, nonNil(settings.AllowedNamespacePrefixes), path.Root("allowed_namespace_prefixes"), &diags)
+	m.AllowedNamespacePrefixes = typeutils.SetValueFrom(ctx, nonNil(settings.AllowedNamespacePrefixes), types.StringType, path.Root("allowed_namespace_prefixes"), &diags)
 	m.ManagedBy = types.StringPointerValue(settings.ManagedBy)
 	return diags
 }
@@ -63,11 +63,11 @@ func (m spaceSettingsModel) GetVersionRequirements(_ context.Context) ([]entityc
 
 func (m spaceSettingsModel) prefixesToWrite(ctx context.Context) ([]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	prefixes := typeutils.ListTypeToSliceString(ctx, m.AllowedNamespacePrefixes, path.Root("allowed_namespace_prefixes"), &diags)
+	prefixes := typeutils.SetTypeAs[string](ctx, m.AllowedNamespacePrefixes, path.Root("allowed_namespace_prefixes"), &diags)
 	return nonNil(prefixes), diags
 }
 
-// An empty list must be written as [] and stored as an empty list, never null.
+// An empty set must be written as [] and stored as an empty set, never null.
 func nonNil(values []string) []string {
 	if values == nil {
 		return []string{}

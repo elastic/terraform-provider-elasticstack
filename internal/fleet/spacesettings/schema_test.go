@@ -40,15 +40,15 @@ func validatePrefixes(t *testing.T, prefixes ...string) diag.Diagnostics {
 	for i, prefix := range prefixes {
 		elements[i] = types.StringValue(prefix)
 	}
-	value := types.ListValueMust(types.StringType, elements)
+	value := types.SetValueMust(types.StringType, elements)
 
-	attribute, ok := getSchema(ctx).Attributes["allowed_namespace_prefixes"].(schema.ListAttribute)
+	attribute, ok := getSchema(ctx).Attributes["allowed_namespace_prefixes"].(schema.SetAttribute)
 	require.True(t, ok)
 
 	var diags diag.Diagnostics
 	for _, v := range attribute.Validators {
-		resp := &validator.ListResponse{}
-		v.ValidateList(ctx, validator.ListRequest{Path: path.Root("allowed_namespace_prefixes"), ConfigValue: value}, resp)
+		resp := &validator.SetResponse{}
+		v.ValidateSet(ctx, validator.SetRequest{Path: path.Root("allowed_namespace_prefixes"), ConfigValue: value}, resp)
 		diags.Append(resp.Diagnostics...)
 	}
 	return diags
@@ -63,12 +63,6 @@ func TestSchema_rejectsMoreThanTenPrefixes(t *testing.T) {
 	}
 
 	require.True(t, validatePrefixes(t, prefixes...).HasError())
-}
-
-func TestSchema_rejectsDuplicatePrefixes(t *testing.T) {
-	t.Parallel()
-
-	require.True(t, validatePrefixes(t, "team_a", "team_a").HasError())
 }
 
 func TestSchema_acceptsEmptyPrefixList(t *testing.T) {

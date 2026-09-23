@@ -9,7 +9,7 @@ Source: [elastic/terraform-provider-elasticstack#4980](https://github.com/elasti
 - Add a new Terraform resource `elasticstack_fleet_space_settings` that manages Fleet's per-space settings for one Kibana space, backed by Fleet's space settings API.
 - Practitioners can declaratively set `allowed_namespace_prefixes` for a space and observe the read-only `managed_by` value reported by Fleet.
 - Destroying the resource resets the space's `allowed_namespace_prefixes` to empty rather than removing anything, because the settings object always exists for a space.
-- The API limits writes to 10 prefixes per request (per issue #4980; to be verified in design); the resource rejects larger lists clearly rather than work around the limit. Duplicate prefixes are also rejected, since they carry no meaning in an allow-list. The 10-element limit and the 9.1.0 minimum version were confirmed against the Kibana API documentation.
+- The API limits writes to 10 prefixes per request (per issue #4980; to be verified in design); the resource rejects a larger set clearly rather than work around the limit. `allowed_namespace_prefixes` is a set, so a duplicate value in configuration collapses to one element rather than being rejected. The 10-element limit and the 9.1.0 minimum version were confirmed against the Kibana API documentation.
 - Add documentation, an example, and acceptance tests for the resource.
 
 Non-goals:

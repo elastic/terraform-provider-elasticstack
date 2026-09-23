@@ -27,12 +27,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func prefixList(prefixes ...string) types.List {
+func prefixSet(prefixes ...string) types.Set {
 	elements := make([]attr.Value, len(prefixes))
 	for i, prefix := range prefixes {
 		elements[i] = types.StringValue(prefix)
 	}
-	return types.ListValueMust(types.StringType, elements)
+	return types.SetValueMust(types.StringType, elements)
 }
 
 func TestPopulateFromAPI_setsIdentityPrefixesAndManagedBy(t *testing.T) {
@@ -47,11 +47,11 @@ func TestPopulateFromAPI_setsIdentityPrefixesAndManagedBy(t *testing.T) {
 	require.False(t, diags.HasError(), "%v", diags)
 	require.Equal(t, types.StringValue("team-a"), m.ID)
 	require.Equal(t, types.StringValue("team-a"), m.SpaceID)
-	require.Equal(t, prefixList("team_a", "shared"), m.AllowedNamespacePrefixes)
+	require.Equal(t, prefixSet("team_a", "shared"), m.AllowedNamespacePrefixes)
 	require.Equal(t, types.StringValue("kibana"), m.ManagedBy)
 }
 
-func TestPopulateFromAPI_missingPrefixesBecomeEmptyList(t *testing.T) {
+func TestPopulateFromAPI_missingPrefixesBecomeEmptySet(t *testing.T) {
 	t.Parallel()
 
 	var m spaceSettingsModel
@@ -59,7 +59,7 @@ func TestPopulateFromAPI_missingPrefixesBecomeEmptyList(t *testing.T) {
 
 	require.False(t, diags.HasError(), "%v", diags)
 	require.False(t, m.AllowedNamespacePrefixes.IsNull())
-	require.Equal(t, prefixList(), m.AllowedNamespacePrefixes)
+	require.Equal(t, prefixSet(), m.AllowedNamespacePrefixes)
 }
 
 func TestPopulateFromAPI_absentManagedByIsNull(t *testing.T) {
@@ -88,11 +88,11 @@ func TestPrefixesToWrite(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		prefixes types.List
+		prefixes types.Set
 		want     []string
 	}{
-		{name: "configured prefixes keep their order", prefixes: prefixList("team_a", "shared"), want: []string{"team_a", "shared"}},
-		{name: "empty list is written as an empty slice", prefixes: prefixList(), want: []string{}},
+		{name: "configured prefixes are all written", prefixes: prefixSet("team_a", "shared"), want: []string{"team_a", "shared"}},
+		{name: "empty set is written as an empty slice", prefixes: prefixSet(), want: []string{}},
 	}
 
 	for _, tc := range tests {

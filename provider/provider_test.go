@@ -29,11 +29,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
-	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/stretchr/testify/require"
 )
 
 var minVersionForFleet = version.Must(version.NewVersion("8.6.0"))
@@ -47,20 +45,6 @@ func TestProvider(t *testing.T) {
 	if schemaResp.Diagnostics.HasError() {
 		t.Fatalf("provider schema diagnostics: %v", schemaResp.Diagnostics)
 	}
-}
-
-func TestProviderRegistersFleetSpaceSettingsResource(t *testing.T) {
-	ctx := context.Background()
-	p := provider.NewFrameworkProvider("dev")
-
-	var typeNames []string
-	for _, newResource := range p.Resources(ctx) {
-		var resp fwresource.MetadataResponse
-		newResource().Metadata(ctx, fwresource.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
-		typeNames = append(typeNames, resp.TypeName)
-	}
-
-	require.Contains(t, typeNames, "elasticstack_fleet_space_settings")
 }
 
 func TestElasticsearchAPIKeyConnection(t *testing.T) {

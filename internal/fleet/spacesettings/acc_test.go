@@ -55,7 +55,7 @@ func TestAccResourceFleetSpaceSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "id", spaceID),
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
 					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_a"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
 				),
 			},
 			{
@@ -65,8 +65,8 @@ func TestAccResourceFleetSpaceSettings(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "id", spaceID),
 					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_a"),
-					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.1", "shared"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "shared"),
 				),
 			},
 			{
@@ -96,7 +96,7 @@ func TestAccResourceFleetSpaceSettings_importDefaultSpace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "id", "default"),
-					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_a"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
 				),
 			},
 			{
@@ -126,7 +126,7 @@ func TestAccResourceFleetSpaceSettings_drift(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          variables,
-				Check:                    resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_a"),
+				Check:                    resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
 			},
 			{
 				PreConfig:                func() { putFleetSpaceSettingsOutOfBand(t, spaceID, []string{"team_b"}) },
@@ -135,14 +135,14 @@ func TestAccResourceFleetSpaceSettings_drift(t *testing.T) {
 				ExpectNonEmptyPlan:       true,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_b"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_b"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          variables,
-				Check:                    resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_a"),
+				Check:                    resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
 			},
 		},
 	})
@@ -161,7 +161,7 @@ func TestAccResourceFleetSpaceSettings_destroyResetsPrefixes(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          variables,
-				Check:                    resource.TestCheckResourceAttr("elasticstack_fleet_space_settings.test", "allowed_namespace_prefixes.0", "team_a"),
+				Check:                    resource.TestCheckTypeSetElemAttr("elasticstack_fleet_space_settings.test", "allowed_namespace_prefixes.*", "team_a"),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -197,7 +197,7 @@ func TestAccResourceFleetSpaceSettings_kibanaConnection(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(append([]resource.TestCheckFunc{
 					resource.TestCheckResourceAttr(resourceName, "id", spaceID),
-					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.0", "team_a"),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
 					resource.TestCheckResourceAttr(resourceName, "kibana_connection.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.insecure", "true"),
 					resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.endpoints.#", "1"),

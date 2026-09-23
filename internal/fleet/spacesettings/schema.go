@@ -20,7 +20,7 @@ package spacesettings
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -37,7 +37,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"Fleet keeps exactly one settings object per space, so declare exactly one `elasticstack_fleet_space_settings` resource per space. " +
 			"Multiple resources targeting the same space overwrite each other. " +
 			"The resource neither creates the space nor checks that it exists, and Kibana accepts settings for a space that does not exist, so double-check `space_id`. " +
-			"Destroying the resource resets `allowed_namespace_prefixes` to an empty list, which lifts the namespace restriction for the space.",
+			"Destroying the resource resets `allowed_namespace_prefixes` to an empty set, which lifts the namespace restriction for the space.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "The ID of this resource. Equal to `space_id`.",
@@ -53,14 +53,13 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"allowed_namespace_prefixes": schema.ListAttribute{
+			"allowed_namespace_prefixes": schema.SetAttribute{
 				Description: "Namespace prefixes that integration policies in the space are restricted to. " +
-					"At most 10 unique prefixes; an empty list lifts the restriction.",
+					"At most 10 unique prefixes; an empty set lifts the restriction.",
 				Required:    true,
 				ElementType: types.StringType,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(maxAllowedNamespacePrefixes),
-					listvalidator.UniqueValues(),
+				Validators: []validator.Set{
+					setvalidator.SizeAtMost(maxAllowedNamespacePrefixes),
 				},
 			},
 			"managed_by": schema.StringAttribute{

@@ -7,7 +7,7 @@ Defines the `elasticstack_fleet_space_settings` resource, which manages Fleet's 
 ```hcl
 resource "elasticstack_fleet_space_settings" "example" {
   space_id                   = string       # required, forces replacement
-  allowed_namespace_prefixes = list(string) # required, max 10 unique elements; empty list allowed
+  allowed_namespace_prefixes = set(string)  # required, max 10 elements; empty set allowed
 
   # Read-only
   id         = <computed, string>           # equals space_id
@@ -37,12 +37,12 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-fl
 
 - GIVEN the resource exists with `allowed_namespace_prefixes = ["team_a"]`
 - WHEN the configuration changes to `["team_a", "shared"]` and apply runs
-- THEN the resource SHALL write the settings for the same space with the new list
+- THEN the resource SHALL write the settings for the same space with the new set
 - AND the state SHALL contain `["team_a", "shared"]`
 
 ### Requirement: Schema and validation
 
-`space_id` SHALL be required and SHALL force replacement when changed. `allowed_namespace_prefixes` SHALL be a required list of strings that MAY be empty, SHALL contain at most 10 elements, and SHALL NOT contain duplicate elements. `managed_by` SHALL be computed and read-only. Validation SHALL fail at plan time with a clear error when a constraint is violated.
+`space_id` SHALL be required and SHALL force replacement when changed. `allowed_namespace_prefixes` SHALL be a required set of strings that MAY be empty and SHALL contain at most 10 elements. Because it is a set, a duplicate value in configuration collapses to one element rather than being rejected. `managed_by` SHALL be computed and read-only. Validation SHALL fail at plan time with a clear error when the size constraint is violated.
 
 #### Scenario: More than 10 prefixes is rejected
 
@@ -51,18 +51,12 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-put-fl
 - THEN the provider SHALL return a validation error
 - AND no API call SHALL be made
 
-#### Scenario: Duplicate prefixes are rejected
-
-- GIVEN a configuration with `allowed_namespace_prefixes = ["team_a", "team_a"]`
-- WHEN Terraform validates or plans the configuration
-- THEN the provider SHALL return a validation error
-
-#### Scenario: Empty list is accepted
+#### Scenario: Empty set is accepted
 
 - GIVEN a configuration with `allowed_namespace_prefixes = []`
 - WHEN apply runs
-- THEN the resource SHALL write an empty list for the space
-- AND the state SHALL contain an empty list, not null
+- THEN the resource SHALL write an empty set for the space
+- AND the state SHALL contain an empty set, not null
 
 #### Scenario: Changing space_id replaces the resource
 
@@ -88,7 +82,7 @@ The resource `id` SHALL equal `space_id`. The resource SHALL support import by `
 
 ### Requirement: Read and state mapping
 
-On read, the resource SHALL set `allowed_namespace_prefixes` and `managed_by` from the API response, preserving the order returned by the API. A missing or null `allowed_namespace_prefixes` in the response SHALL map to an empty list, never null. When `managed_by` is absent in the response it SHALL be null in state. Values changed outside Terraform SHALL appear as drift in the next plan.
+On read, the resource SHALL set `allowed_namespace_prefixes` and `managed_by` from the API response. As a set, `allowed_namespace_prefixes` carries no meaningful order. A missing or null `allowed_namespace_prefixes` in the response SHALL map to an empty set, never null. When `managed_by` is absent in the response it SHALL be null in state. Values changed outside Terraform SHALL appear as drift in the next plan.
 
 #### Scenario: Prefixes changed outside Terraform
 
@@ -130,13 +124,13 @@ When the space or its settings cannot be found on read (HTTP 404), the resource 
 
 ### Requirement: Destroy resets prefixes
 
-On destroy, the resource SHALL write an empty `allowed_namespace_prefixes` list for the space and then remove itself from state. The resource SHALL NOT delete the Kibana space. If the space no longer exists when destroy runs (HTTP 404), destroy SHALL succeed.
+On destroy, the resource SHALL write an empty `allowed_namespace_prefixes` set for the space and then remove itself from state. The resource SHALL NOT delete the Kibana space. If the space no longer exists when destroy runs (HTTP 404), destroy SHALL succeed.
 
 #### Scenario: Destroy clears the restriction
 
 - GIVEN the resource exists with `allowed_namespace_prefixes = ["team_a"]`
 - WHEN `terraform destroy` runs
-- THEN the resource SHALL write an empty list for the space
+- THEN the resource SHALL write an empty set for the space
 - AND the resource SHALL be removed from state
 - AND the Kibana space SHALL still exist
 

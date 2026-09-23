@@ -4,14 +4,14 @@ page_title: "elasticstack_fleet_space_settings Resource - terraform-provider-ela
 subcategory: "Fleet"
 description: |-
   Manages the Fleet settings of a Kibana space, currently the namespace prefixes that integration policies in the space may use. Requires Elastic Stack 9.1.0 or newer.
-  Fleet keeps exactly one settings object per space, so declare exactly one elasticstack_fleet_space_settings resource per space. Multiple resources targeting the same space overwrite each other. The resource neither creates the space nor checks that it exists, and Kibana accepts settings for a space that does not exist, so double-check space_id. Destroying the resource resets allowed_namespace_prefixes to an empty list, which lifts the namespace restriction for the space.
+  Fleet keeps exactly one settings object per space, so declare exactly one elasticstack_fleet_space_settings resource per space. Multiple resources targeting the same space overwrite each other. The resource neither creates the space nor checks that it exists, and Kibana accepts settings for a space that does not exist, so double-check space_id. Destroying the resource resets allowed_namespace_prefixes to an empty set, which lifts the namespace restriction for the space.
 ---
 
 # elasticstack_fleet_space_settings (Resource)
 
 Manages the Fleet settings of a Kibana space, currently the namespace prefixes that integration policies in the space may use. Requires Elastic Stack 9.1.0 or newer.
 
-Fleet keeps exactly one settings object per space, so declare exactly one `elasticstack_fleet_space_settings` resource per space. Multiple resources targeting the same space overwrite each other. The resource neither creates the space nor checks that it exists, and Kibana accepts settings for a space that does not exist, so double-check `space_id`. Destroying the resource resets `allowed_namespace_prefixes` to an empty list, which lifts the namespace restriction for the space.
+Fleet keeps exactly one settings object per space, so declare exactly one `elasticstack_fleet_space_settings` resource per space. Multiple resources targeting the same space overwrite each other. The resource neither creates the space nor checks that it exists, and Kibana accepts settings for a space that does not exist, so double-check `space_id`. Destroying the resource resets `allowed_namespace_prefixes` to an empty set, which lifts the namespace restriction for the space.
 ## Example Usage
 
 ```terraform
@@ -35,7 +35,7 @@ resource "elasticstack_fleet_space_settings" "team_a" {
 
 ### Required
 
-- `allowed_namespace_prefixes` (List of String) Namespace prefixes that integration policies in the space are restricted to. At most 10 unique prefixes; an empty list lifts the restriction.
+- `allowed_namespace_prefixes` (Set of String) Namespace prefixes that integration policies in the space are restricted to. At most 10 unique prefixes; an empty set lifts the restriction.
 - `space_id` (String) The ID of the space whose Fleet settings are managed. Changing it forces a new resource.
 
 ### Optional

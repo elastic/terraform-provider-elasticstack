@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -38,6 +39,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// clearKibanaEnvOverrides prevents the config package's environment-variable
+// override machinery (internal/clients/config: KIBANA_ENDPOINT, KIBANA_USERNAME,
+// etc. -- see withNonURLEnvironmentOverrides / withURLEnvironmentOverride) from
+// hijacking the fakeKibana httptest.Server endpoint these tests configure
+// explicitly. Without this, a CI job or developer shell that exports
+// KIBANA_ENDPOINT for the real acceptance-test stack silently redirects these
+// tests at that real Kibana instead of the local fake -- see
+// internal/fleet/managedintegration/topology_test.go for the established
+// pattern this mirrors.
+func clearKibanaEnvOverrides(t *testing.T) {
+	t.Helper()
+	t.Setenv(config.PreferConfiguredKibanaEndpointEnvVar, "true")
+	if orig, ok := os.LookupEnv("FLEET_ENDPOINT"); ok {
+		require.NoError(t, os.Unsetenv("FLEET_ENDPOINT"))
+		t.Cleanup(func() {
+			require.NoError(t, os.Setenv("FLEET_ENDPOINT", orig)) //nolint:usetesting
+		})
+	}
+	for _, key := range []string{
+		"KIBANA_USERNAME", "KIBANA_PASSWORD", "KIBANA_API_KEY", "KIBANA_BEARER_TOKEN",
+		"FLEET_USERNAME", "FLEET_PASSWORD", "FLEET_API_KEY", "FLEET_BEARER_TOKEN",
+	} {
+		t.Setenv(key, "")
+	}
+}
+
 const settingsPath = "/api/fleet/space_settings"
 
 type fakeKibana struct {
@@ -49,6 +76,7 @@ type fakeKibana struct {
 
 func newFakeKibana(t *testing.T, stackVersion string, settingsHandler http.HandlerFunc) *fakeKibana {
 	t.Helper()
+	clearKibanaEnvOverrides(t)
 
 	fake := &fakeKibana{settingsHandler: settingsHandler}
 	fake.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +173,7 @@ func planModel(spaceID string, prefixes ...string) spaceSettingsModel {
 		ID:                       types.StringUnknown(),
 		KibanaConnection:         providerschema.KibanaConnectionNullList(),
 		SpaceID:                  types.StringValue(spaceID),
-		AllowedNamespacePrefixes: prefixList(prefixes...),
+		AllowedNamespacePrefixes: prefixSet(prefixes...),
 		ManagedBy:                types.StringUnknown(),
 	}
 }
