@@ -34,6 +34,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -1155,6 +1156,187 @@ func TestAccResourceExceptionItem_Comments(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_security_exception_item.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceExceptionItem_CommentsAppendOnly verifies the combined
+// behaviour of the comment-id pass-through patch in commentsToUpdateAPI,
+// the UseStateForUnknown plan modifier on comment.id, and the
+// commentsAppendOnlyRequireReplace plan modifier on the comments list:
+//
+//   - Step 1: create with 2 comments → both get server-assigned ids.
+//   - Step 2: re-apply same config → plan is a no-op (regression check
+//     for the silent-duplication bug described in issue #3549).
+//   - Step 3: append a 3rd comment → in-place update, the original 2 ids
+//     survive (id of the new entry is assigned by the server).
+//   - Step 4: edit the text of the first comment → plan modifier marks
+//     RequiresReplace, plan check sees DestroyBeforeCreate.
+//   - Step 5: omit the last comment → DestroyBeforeCreate (Kibana
+//     cannot shrink via PUT, replacement is the only way).
+//   - Step 6: prepend a new comment → DestroyBeforeCreate.
+func TestAccResourceExceptionItem_CommentsAppendOnly(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-append-only-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-append-only-%s", uuid.New().String()[:8])
+	res := "elasticstack_kibana_security_exception_item.test"
+
+	// Captured between steps to assert that existing comment ids survive
+	// (regression coverage for the silent-duplication bug in #3549).
+	var comment0ID, comment1ID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: create with 2 comments.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1_create_with_two_comments"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(res, "comments.#", "2"),
+					resource.TestCheckResourceAttr(res, "comments.0.comment", "first comment"),
+					resource.TestCheckResourceAttr(res, "comments.1.comment", "second comment"),
+					resource.TestCheckResourceAttrSet(res, "comments.0.id"),
+					resource.TestCheckResourceAttrSet(res, "comments.1.id"),
+					func(s *terraform.State) error {
+						r, ok := s.RootModule().Resources[res]
+						if !ok {
+							return fmt.Errorf("resource %s not found in state", res)
+						}
+						comment0ID = r.Primary.Attributes["comments.0.id"]
+						comment1ID = r.Primary.Attributes["comments.1.id"]
+						return nil
+					},
+				),
+			},
+			// Step 2: re-apply same config — plan must be a no-op. This is
+			// the regression test for the silent-duplication bug: prior to
+			// the fix the provider would re-send both comments without ids,
+			// Kibana would append duplicates, and a refresh-then-apply
+			// would see 4 comments where there should still be 2.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step1_create_with_two_comments"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(res, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(res, "comments.#", "2"),
+					// IDs must be unchanged from step 1.
+					resource.TestCheckResourceAttrWith(res, "comments.0.id", func(value string) error {
+						if value != comment0ID {
+							return fmt.Errorf("comments.0.id changed across no-op apply: %q -> %q", comment0ID, value)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttrWith(res, "comments.1.id", func(value string) error {
+						if value != comment1ID {
+							return fmt.Errorf("comments.1.id changed across no-op apply: %q -> %q", comment1ID, value)
+						}
+						return nil
+					}),
+				),
+			},
+			// Step 3: append a third comment — in-place update; the
+			// original 2 ids must survive.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step3_append_third"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(res, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(res, "comments.#", "3"),
+					resource.TestCheckResourceAttr(res, "comments.0.comment", "first comment"),
+					resource.TestCheckResourceAttr(res, "comments.1.comment", "second comment"),
+					resource.TestCheckResourceAttr(res, "comments.2.comment", "third comment"),
+					resource.TestCheckResourceAttrWith(res, "comments.0.id", func(value string) error {
+						if value != comment0ID {
+							return fmt.Errorf("comments.0.id changed when appending: %q -> %q", comment0ID, value)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttrWith(res, "comments.1.id", func(value string) error {
+						if value != comment1ID {
+							return fmt.Errorf("comments.1.id changed when appending: %q -> %q", comment1ID, value)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttrSet(res, "comments.2.id"),
+				),
+			},
+			// Step 4: edit the text of the first comment — plan modifier
+			// must mark the resource for replacement (Kibana silently
+			// ignores text edits on existing comments via PUT).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step4_edit_first_comment_text"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(res, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(res, "comments.0.comment", "first comment EDITED"),
+				),
+			},
+			// Step 5: omit the last comment (shrink) — must replace.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step5_shrink_drop_last"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(res, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(res, "comments.#", "1"),
+				),
+			},
+			// Step 6: prepend a new comment — must replace.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("step6_prepend"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(res, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(res, "comments.#", "2"),
+					resource.TestCheckResourceAttr(res, "comments.0.comment", "newly prepended"),
+				),
 			},
 		},
 	})

@@ -65,7 +65,7 @@ resource "elasticstack_kibana_security_exception_item" "complex_entry" {
 
 ### Optional
 
-- `comments` (Attributes List) Array of comments about the exception item. (see [below for nested schema](#nestedatt--comments))
+- `comments` (Attributes List) Array of comments about the exception item. Kibana's `PUT /api/exception_lists/items` treats this field as append-only and immutable: existing entries cannot be edited, removed, or reordered via the public API, and only new entries appended at the end are accepted. The provider therefore plans a resource replacement (`-/+ destroy and replace`) whenever the diff is not pure append-at-end. Note that the API stamps `created_by` from the authenticated API-key owner unconditionally; a resource replacement re-stamps every comment, so original per-comment authorship is lost on the recreated item. (see [below for nested schema](#nestedatt--comments))
 - `expire_time` (String) The exception item's expiration date in RFC3339 format. This field is only available for regular exception items, not endpoint exceptions.
 - `item_id` (String) The exception item's human readable string identifier.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
