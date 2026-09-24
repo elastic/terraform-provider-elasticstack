@@ -24,27 +24,44 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// buildMatchAPIEntry validates the entry value and builds the shared API match entry
+// used by both the top-level and nested match conversions.
+func buildMatchAPIEntry(
+	value types.String,
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+	missingValueMessage string,
+) (kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var apiEntry kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch
+
+	if !typeutils.IsKnown(value) || value.ValueString() == "" {
+		diags.AddError("Invalid Configuration", missingValueMessage)
+		return apiEntry, diags
+	}
+
+	apiEntry = kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
+		Type:     entryTypeMatch,
+		Field:    field,
+		Operator: operator,
+		Value:    value.ValueString(),
+	}
+	return apiEntry, diags
+}
+
 // convertMatchEntryToAPI converts a match entry to API format
 func convertMatchEntryToAPI(
 	entry EntryModel,
 	field kbapi.SecurityExceptionsAPINonEmptyString,
 	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
 ) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'match'")
+	apiEntry, diags := buildMatchAPIEntry(entry.Value, field, operator, "Attribute 'value' is required when type is 'match'")
+	if diags.HasError() {
 		return result, diags
 	}
 
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     entryTypeMatch,
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
 		diags.AddError("Failed to create match entry", err.Error())
 	}
@@ -86,21 +103,13 @@ func convertNestedMatchEntryToAPI(
 	field kbapi.SecurityExceptionsAPINonEmptyString,
 	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
 ) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required for nested entry when type is 'match'")
+	apiEntry, diags := buildMatchAPIEntry(entry.Value, field, operator, "Attribute 'value' is required for nested entry when type is 'match'")
+	if diags.HasError() {
 		return result, diags
 	}
 
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     entryTypeMatch,
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
 		diags.AddError("Failed to create nested match entry", err.Error())
 	}
@@ -108,13 +117,17 @@ func convertNestedMatchEntryToAPI(
 	return result, diags
 }
 
+// extractValueFromMap reads the "value" string field shared by match/wildcard entries.
+func extractValueFromMap(entryMap map[string]any) types.String {
+	if value, ok := entryMap["value"].(string); ok {
+		return types.StringValue(value)
+	}
+	return types.StringNull()
+}
+
 // convertMatchOrWildcardEntryFromAPI converts match or wildcard entries from API format
 func convertMatchOrWildcardEntryFromAPI(entryMap map[string]any, entry *EntryModel) {
-	if value, ok := entryMap["value"].(string); ok {
-		entry.Value = types.StringValue(value)
-	} else {
-		entry.Value = types.StringNull()
-	}
+	entry.Value = extractValueFromMap(entryMap)
 	entry.Values = types.ListNull(types.StringType)
 	entry.List = types.ObjectNull(getListAttrTypes())
 	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
@@ -122,10 +135,6 @@ func convertMatchOrWildcardEntryFromAPI(entryMap map[string]any, entry *EntryMod
 
 // convertNestedMatchFromMap converts nested match entries from map format
 func convertNestedMatchFromMap(entryMap map[string]any, entry *NestedEntryModel) {
-	if value, ok := entryMap["value"].(string); ok {
-		entry.Value = types.StringValue(value)
-	} else {
-		entry.Value = types.StringNull()
-	}
+	entry.Value = extractValueFromMap(entryMap)
 	entry.Values = types.ListNull(types.StringType)
 }
