@@ -25,20 +25,8 @@ import (
 
 var (
 	convertersByType map[string]VizConverter
-	sortedConverters []VizConverter // cached sorted snapshot returned by All; rebuilt on (Un)Register
+	sortedConverters []VizConverter // cached sorted snapshot returned by All; rebuilt on Register
 )
-
-// UnregisterVizConverter removes the converter registered for vizType and returns it (nil if none).
-// Intended for tests that need to simulate a missing chart implementation.
-func UnregisterVizConverter(vizType string) VizConverter {
-	if convertersByType == nil {
-		return nil
-	}
-	c := convertersByType[vizType]
-	delete(convertersByType, vizType)
-	rebuildSortedConverters()
-	return c
-}
 
 // Register adds a VizConverter keyed by VizType(). Later registration replaces an earlier one with the same VizType().
 func Register(c VizConverter) {
@@ -109,7 +97,7 @@ func FirstForBlocks(blocks *models.LensByValueChartBlocks) (VizConverter, bool) 
 }
 
 // All returns every registered converter sorted by VizType().
-// The returned slice is a cached snapshot rebuilt on Register/Unregister; callers must not mutate it.
+// The returned slice is a cached snapshot rebuilt on Register; callers must not mutate it.
 func All() []VizConverter {
 	return sortedConverters
 }
