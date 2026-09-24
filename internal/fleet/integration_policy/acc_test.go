@@ -395,7 +395,7 @@ func TestAccResourceIntegrationPolicy(t *testing.T) {
 					// namespace changes from "default" to a custom value to
 					// exercise more than the single literal every other test
 					// in this file uses.
-					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "namespace", "custom-ns"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "namespace", "custom_ns"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "description", "Updated Integration Policy"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration_policy.test_policy", "integration_version", "1.16.0"),

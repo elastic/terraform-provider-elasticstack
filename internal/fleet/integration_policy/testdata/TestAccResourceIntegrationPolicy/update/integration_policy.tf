@@ -37,7 +37,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
 resource "elasticstack_fleet_integration_policy" "test_policy" {
   name                = var.policy_name
-  namespace           = "custom-ns"
+  namespace           = "custom_ns"
   description         = "Updated Integration Policy"
   agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.policy_id
   integration_name    = elasticstack_fleet_integration.test_policy.name
