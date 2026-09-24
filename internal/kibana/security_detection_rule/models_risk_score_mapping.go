@@ -31,11 +31,7 @@ import (
 func (d Data) riskScoreMappingToAPI(ctx context.Context) (kbapi.SecurityDetectionsAPIRiskScoreMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(d.RiskScoreMapping) || len(d.RiskScoreMapping.Elements()) == 0 {
-		return nil, diags
-	}
-
-	apiRiskScoreMapping := typeutils.ListTypeToSlice(ctx, d.RiskScoreMapping, path.Root("risk_score_mapping"), &diags,
+	apiRiskScoreMapping := convertListFieldToAPI(ctx, d.RiskScoreMapping, path.Root("risk_score_mapping"), &diags,
 		func(mapping RiskScoreMappingModel, _ typeutils.ListMeta) struct {
 			Field     string                                              `json:"field"`
 			Operator  kbapi.SecurityDetectionsAPIRiskScoreMappingOperator `json:"operator"`
@@ -68,29 +64,22 @@ func (d Data) riskScoreMappingToAPI(ctx context.Context) (kbapi.SecurityDetectio
 
 // convertRiskScoreMappingToModel converts kbapi.SecurityDetectionsAPIRiskScoreMapping to Terraform model
 func convertRiskScoreMappingToModel(ctx context.Context, apiRiskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	return convertAPISliceToListField(ctx, apiRiskScoreMapping, getRiskScoreMappingElementType(),
+		func(apiMapping struct {
+			Field     string                                              `json:"field"`
+			Operator  kbapi.SecurityDetectionsAPIRiskScoreMappingOperator `json:"operator"`
+			RiskScore *kbapi.SecurityDetectionsAPIRiskScore               `json:"risk_score,omitempty"`
+			Value     string                                              `json:"value"`
+		}) RiskScoreMappingModel {
+			return RiskScoreMappingModel{
+				Field:    types.StringValue(apiMapping.Field),
+				Operator: types.StringValue(string(apiMapping.Operator)),
+				Value:    types.StringValue(apiMapping.Value),
 
-	if len(apiRiskScoreMapping) == 0 {
-		return types.ListNull(getRiskScoreMappingElementType()), diags
-	}
-
-	mappings := make([]RiskScoreMappingModel, 0)
-
-	for _, apiMapping := range apiRiskScoreMapping {
-		mapping := RiskScoreMappingModel{
-			Field:    types.StringValue(apiMapping.Field),
-			Operator: types.StringValue(string(apiMapping.Operator)),
-			Value:    types.StringValue(apiMapping.Value),
-
-			// Set optional risk score if provided
-			RiskScore: typeutils.IntPointerToInt64Value(apiMapping.RiskScore)}
-
-		mappings = append(mappings, mapping)
-	}
-
-	listValue, listDiags := types.ListValueFrom(ctx, getRiskScoreMappingElementType(), mappings)
-	diags.Append(listDiags...)
-	return listValue, diags
+				// Set optional risk score if provided
+				RiskScore: typeutils.IntPointerToInt64Value(apiMapping.RiskScore),
+			}
+		})
 }
 
 func (d *Data) updateRiskScoreMappingFromAPI(ctx context.Context, riskScoreMapping kbapi.SecurityDetectionsAPIRiskScoreMapping) diag.Diagnostics {
