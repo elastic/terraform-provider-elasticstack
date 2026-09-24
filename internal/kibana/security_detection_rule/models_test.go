@@ -2607,3 +2607,15 @@ func TestParseDurationToAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestData_GetResourceID(t *testing.T) {
+	t.Run("parses resource id from composite state id", func(t *testing.T) {
+		d := Data{ID: types.StringValue("default/rule-uuid")}
+		require.Equal(t, "rule-uuid", d.GetResourceID().ValueString())
+	})
+
+	t.Run("falls back to rule_id when id is not composite", func(t *testing.T) {
+		d := Data{ID: types.StringNull(), RuleID: types.StringValue("configured-rule-id")}
+		require.Equal(t, "configured-rule-id", d.GetResourceID().ValueString())
+	})
+}
