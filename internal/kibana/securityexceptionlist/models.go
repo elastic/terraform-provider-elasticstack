@@ -33,10 +33,7 @@ import (
 
 func (m ExceptionListModel) GetID() types.String { return m.ID }
 func (m ExceptionListModel) GetResourceID() types.String {
-	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
-		return types.StringValue(compID.ResourceID)
-	}
-	return types.StringValue("")
+	return clients.ResourceIDFromComposite(m.ID, types.StringValue(""))
 }
 func (m ExceptionListModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m ExceptionListModel) GetKibanaConnection() types.List { return m.KibanaConnection }
