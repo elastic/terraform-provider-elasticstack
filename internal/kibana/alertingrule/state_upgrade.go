@@ -62,7 +62,7 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 			if rid, ok := stateMap["rule_id"].(string); ok && rid != "" {
 				ruleID = rid
 			}
-			stateMap["id"] = (&clients.CompositeID{ClusterID: spaceID, ResourceID: ruleID}).String()
+			stateMap["id"] = clients.CompositeIDValue(spaceID, ruleID).ValueString()
 		}
 	}
 

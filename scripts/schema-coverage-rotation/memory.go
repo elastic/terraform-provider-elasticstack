@@ -19,10 +19,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -30,6 +27,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+
+	"github.com/elastic/terraform-provider-elasticstack/scripts/internal/memoryio"
 )
 
 // Memory holds the schema-coverage rotation memory file contents.
@@ -74,18 +73,13 @@ const (
 
 // loadMemory reads and parses the memory file at path.
 func loadMemory(path string) (*Memory, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read memory file: %w", err)
-	}
-
 	// Use raw map to handle null timestamps.
 	var raw struct {
 		Resources   map[string]any `json:"resources"`
 		DataSources map[string]any `json:"data-sources"`
 	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("parse memory file: %w", err)
+	if err := memoryio.ReadJSON(path, &raw); err != nil {
+		return nil, err
 	}
 
 	mem := &Memory{
@@ -156,36 +150,7 @@ func saveMemory(path string, mem *Memory) error {
 		}
 	}
 
-	data, err := json.MarshalIndent(raw, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal memory: %w", err)
-	}
-	data = append(data, '\n')
-
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("create memory directory: %w", err)
-	}
-	tmp, err := os.CreateTemp(dir, ".schema-coverage-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("create temp file: %w", err)
-	}
-	tmpName := tmp.Name()
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return fmt.Errorf("write temp file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("close temp file: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("rename temp file: %w", err)
-	}
-	return nil
+	return memoryio.AtomicWriteJSON(path, raw, ".schema-coverage-*.json.tmp")
 }
 
 // normalizeMemoryKeys migrates legacy memory entries to the canonical Terraform

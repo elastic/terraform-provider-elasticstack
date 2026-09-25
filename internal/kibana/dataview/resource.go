@@ -80,7 +80,7 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 
 	// Align with schema default for space_id and keep id consistent with space_id.
 	spaceID := clients.EffectiveSpaceID(composite.ClusterID)
-	id := (&clients.CompositeID{ClusterID: spaceID, ResourceID: composite.ResourceID}).String()
+	id := clients.CompositeIDValue(spaceID, composite.ResourceID).ValueString()
 
 	stateModel := dataViewModel{
 		Timeouts:         timeoutsValue,

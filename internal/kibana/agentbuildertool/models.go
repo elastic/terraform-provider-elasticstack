@@ -98,13 +98,13 @@ func (model *toolBaseModel) populateFromAPI(ctx context.Context, spaceID string,
 
 	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.ToolID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.Type = types.StringValue(data.Type)
 	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
-	model.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
+	model.Tags, d = typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, &data.Tags, model.Tags)
 	diags.Append(d...)
 
 	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
@@ -176,8 +176,8 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 		body.Description = &desc
 	}
 
-	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
-	if len(tags) > 0 {
+	if !model.Tags.IsNull() {
+		tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 		body.Tags = &tags
 	}
 
@@ -203,8 +203,8 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		body.Description = &desc
 	}
 
-	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
-	if len(tags) > 0 {
+	if !model.Tags.IsNull() {
+		tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 		body.Tags = &tags
 	}
 

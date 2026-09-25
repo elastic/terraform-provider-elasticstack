@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func readSlo(
@@ -47,7 +46,7 @@ func readSlo(
 	}
 
 	apiModel := kibanaoapi.SloResponseToModel(spaceID, res)
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: apiModel.SloID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, apiModel.SloID)
 	diags.Append(model.populateFromAPI(apiModel)...)
 	if diags.HasError() {
 		return model, true, diags

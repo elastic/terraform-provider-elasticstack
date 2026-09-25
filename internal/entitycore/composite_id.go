@@ -65,6 +65,5 @@ func CompositeIDForWrite[T ElasticsearchResourceModel](
 		return priorID, nil
 	}
 
-	updated := &clients.CompositeID{ClusterID: parsed.ClusterID, ResourceID: req.WriteID}
-	return types.StringValue(updated.String()), nil
+	return clients.CompositeIDValue(parsed.ClusterID, req.WriteID), nil
 }

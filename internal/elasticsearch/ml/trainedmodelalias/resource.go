@@ -68,7 +68,7 @@ func (r *trainedModelAliasResource) ImportState(ctx context.Context, req resourc
 		modelID = aliasParts[1]
 	}
 
-	id := (&clients.CompositeID{ClusterID: compID.ClusterID, ResourceID: alias}).String()
+	id := clients.CompositeIDValue(compID.ClusterID, alias).ValueString()
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("model_alias"), alias)...)
 	if modelID != "" {

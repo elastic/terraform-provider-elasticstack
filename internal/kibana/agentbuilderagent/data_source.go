@@ -197,7 +197,7 @@ func agentToolIDsInOrder(agent *models.Agent) []string {
 // toolModelFromToolRef builds a minimal tool row (composite id, space, tool id) without calling the tools API.
 func toolModelFromToolRef(spaceID, toolID string) toolModel {
 	return toolModel{
-		ID:                        types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: toolID}).String()),
+		ID:                        clients.CompositeIDValue(spaceID, toolID),
 		SpaceID:                   types.StringValue(spaceID),
 		ToolID:                    types.StringValue(toolID),
 		Type:                      types.StringNull(),
@@ -215,7 +215,7 @@ func toolModelFromAPI(ctx context.Context, spaceID string, tool *models.Tool, wo
 	var tm toolModel
 	var diags diag.Diagnostics
 
-	tm.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: tool.ID}).String())
+	tm.ID = clients.CompositeIDValue(spaceID, tool.ID)
 	tm.SpaceID = types.StringValue(spaceID)
 	tm.ToolID = types.StringValue(tool.ID)
 	tm.Type = types.StringValue(tool.Type)

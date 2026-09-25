@@ -30,7 +30,7 @@ func populateXYChartLensAttributes(attrs map[string]any) map[string]any {
 				continue
 			}
 			if yArr, ok := layerMap["y"].([]any); ok {
-				lenscommon.PopulateAnySliceDefaults(yArr, lenscommon.PopulateLensMetricDefaults)
+				lenscommon.PopulateAnySliceDefaults(yArr, lenscommon.PopulateXYMetricDefaults)
 			}
 		}
 	}

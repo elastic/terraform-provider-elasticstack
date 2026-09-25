@@ -23,10 +23,12 @@ import (
 	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -57,19 +59,6 @@ func AlignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 	PreserveKnownStringIfStateBlank(planDescription, stateDescription)
 }
 
-// PreservePlanJSONWithDefaultsIfSemanticallyEqual replaces *state with plan when both are known
-// and StringSemanticEquals reports them equal. Lets practitioners keep their plan formatting
-// when only whitespace or default-key ordering differs from the API response.
-func PreservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-	eq, diags := plan.StringSemanticEquals(ctx, *state)
-	if !diags.HasError() && eq {
-		*state = plan
-	}
-}
-
 // AlignBasicMetricChartStateFromPlan aligns the common "basic metric chart" state
 // fields (title/description, data_source_json, metric_json) from plan into state.
 // Shared by Lens panel types whose config is just a metric over a data source
@@ -83,7 +72,8 @@ func AlignBasicMetricChartStateFromPlan[T any](
 ) {
 	AlignTitleAndDescriptionFromPlan(planBase.Title, planBase.Description, &stateBase.Title, &stateBase.Description)
 	PreservePlanJSONIfStateAddsOptionalKeys(planBase.DataSourceJSON, &stateBase.DataSourceJSON, "time_field", "name")
-	PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, planMetricJSON, stateMetricJSON)
+	var diags diag.Diagnostics
+	*stateMetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, planMetricJSON, *stateMetricJSON, &diags)
 }
 
 // PreserveNormalizedJSONSemanticEquality replaces state with plan when normalized structures match semantically.

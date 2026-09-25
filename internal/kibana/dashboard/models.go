@@ -41,8 +41,7 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	data := resp.JSON200
 
 	// Set composite ID
-	resourceID := clients.CompositeID{ClusterID: spaceID, ResourceID: dashboardID}
-	m.ID = types.StringValue(resourceID.String())
+	m.ID = clients.CompositeIDValue(spaceID, dashboardID)
 	m.DashboardID = types.StringValue(dashboardID)
 	m.SpaceID = types.StringValue(spaceID)
 

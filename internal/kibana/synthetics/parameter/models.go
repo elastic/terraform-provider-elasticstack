@@ -58,7 +58,7 @@ func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
 func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
 	spaceID = clients.EffectiveSpaceID(spaceID)
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
+	m.ID = clients.CompositeIDValue(spaceID, resourceID)
 	m.SpaceID = types.StringValue(spaceID)
 }
 
