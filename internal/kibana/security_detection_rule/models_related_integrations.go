@@ -31,13 +31,8 @@ import (
 func (d Data) relatedIntegrationsToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIRelatedIntegrationArray, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(d.RelatedIntegrations) || len(d.RelatedIntegrations.Elements()) == 0 {
-		return nil, diags
-	}
-
-	apiRelatedIntegrations := typeutils.ListTypeToSlice(ctx, d.RelatedIntegrations, path.Root("related_integrations"), &diags,
+	apiRelatedIntegrations := convertListFieldToAPI(ctx, d.RelatedIntegrations, path.Root("related_integrations"), &diags,
 		func(integration RelatedIntegrationModel, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPIRelatedIntegration {
-
 			apiIntegration := kbapi.SecurityDetectionsAPIRelatedIntegration{
 				Package: integration.Package.ValueString(),
 				Version: integration.Version.ValueString(),
@@ -51,34 +46,25 @@ func (d Data) relatedIntegrationsToAPI(ctx context.Context) (*kbapi.SecurityDete
 
 			return apiIntegration
 		})
+	if apiRelatedIntegrations == nil {
+		return nil, diags
+	}
 
 	return &apiRelatedIntegrations, diags
 }
 
 // convertRelatedIntegrationsToModel converts kbapi.SecurityDetectionsAPIRelatedIntegrationArray to Terraform model
 func convertRelatedIntegrationsToModel(ctx context.Context, apiRelatedIntegrations kbapi.SecurityDetectionsAPIRelatedIntegrationArray) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
+	return convertAPISliceToListField(ctx, apiRelatedIntegrations, getRelatedIntegrationElementType(),
+		func(apiIntegration kbapi.SecurityDetectionsAPIRelatedIntegration) RelatedIntegrationModel {
+			return RelatedIntegrationModel{
+				Package: types.StringValue(apiIntegration.Package),
+				Version: types.StringValue(apiIntegration.Version),
 
-	if len(apiRelatedIntegrations) == 0 {
-		return types.ListNull(getRelatedIntegrationElementType()), diags
-	}
-
-	integrations := make([]RelatedIntegrationModel, 0)
-
-	for _, apiIntegration := range apiRelatedIntegrations {
-		integration := RelatedIntegrationModel{
-			Package: types.StringValue(apiIntegration.Package),
-			Version: types.StringValue(apiIntegration.Version),
-
-			// Set optional integration field if provided
-			Integration: typeutils.StringishPointerValue(apiIntegration.Integration)}
-
-		integrations = append(integrations, integration)
-	}
-
-	listValue, listDiags := types.ListValueFrom(ctx, getRelatedIntegrationElementType(), integrations)
-	diags.Append(listDiags...)
-	return listValue, diags
+				// Set optional integration field if provided
+				Integration: typeutils.StringishPointerValue(apiIntegration.Integration),
+			}
+		})
 }
 
 func (d *Data) updateRelatedIntegrationsFromAPI(ctx context.Context, relatedIntegrations *kbapi.SecurityDetectionsAPIRelatedIntegrationArray) diag.Diagnostics {

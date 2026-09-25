@@ -31,21 +31,14 @@ import (
 func (d Data) exceptionsListToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleExceptionList, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(d.ExceptionsList) || len(d.ExceptionsList.Elements()) == 0 {
-		return nil, diags
-	}
-
-	apiExceptionsList := typeutils.ListTypeToSlice(ctx, d.ExceptionsList, path.Root("exceptions_list"), &diags,
+	apiExceptionsList := convertListFieldToAPI(ctx, d.ExceptionsList, path.Root("exceptions_list"), &diags,
 		func(exception ExceptionsListModel, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPIRuleExceptionList {
-
-			apiException := kbapi.SecurityDetectionsAPIRuleExceptionList{
+			return kbapi.SecurityDetectionsAPIRuleExceptionList{
 				Id:            exception.ID.ValueString(),
 				ListId:        exception.ListID.ValueString(),
 				NamespaceType: kbapi.SecurityDetectionsAPIRuleExceptionListNamespaceType(exception.NamespaceType.ValueString()),
 				Type:          kbapi.SecurityDetectionsAPIExceptionListType(exception.Type.ValueString()),
 			}
-
-			return apiException
 		})
 
 	// Filter out empty exceptions (where required fields were null)
@@ -61,28 +54,15 @@ func (d Data) exceptionsListToAPI(ctx context.Context) ([]kbapi.SecurityDetectio
 
 // convertExceptionsListToModel converts kbapi.SecurityDetectionsAPIRuleExceptionList slice to Terraform model
 func convertExceptionsListToModel(ctx context.Context, apiExceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if len(apiExceptionsList) == 0 {
-		return types.ListNull(getExceptionsListElementType()), diags
-	}
-
-	exceptions := make([]ExceptionsListModel, 0)
-
-	for _, apiException := range apiExceptionsList {
-		exception := ExceptionsListModel{
-			ID:            types.StringValue(apiException.Id),
-			ListID:        types.StringValue(apiException.ListId),
-			NamespaceType: types.StringValue(string(apiException.NamespaceType)),
-			Type:          types.StringValue(string(apiException.Type)),
-		}
-
-		exceptions = append(exceptions, exception)
-	}
-
-	listValue, listDiags := types.ListValueFrom(ctx, getExceptionsListElementType(), exceptions)
-	diags.Append(listDiags...)
-	return listValue, diags
+	return convertAPISliceToListField(ctx, apiExceptionsList, getExceptionsListElementType(),
+		func(apiException kbapi.SecurityDetectionsAPIRuleExceptionList) ExceptionsListModel {
+			return ExceptionsListModel{
+				ID:            types.StringValue(apiException.Id),
+				ListID:        types.StringValue(apiException.ListId),
+				NamespaceType: types.StringValue(string(apiException.NamespaceType)),
+				Type:          types.StringValue(string(apiException.Type)),
+			}
+		})
 }
 
 func (d *Data) updateExceptionsListFromAPI(ctx context.Context, exceptionsList []kbapi.SecurityDetectionsAPIRuleExceptionList) diag.Diagnostics {

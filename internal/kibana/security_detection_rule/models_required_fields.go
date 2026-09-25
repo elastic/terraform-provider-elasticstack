@@ -31,45 +31,30 @@ import (
 func (d Data) requiredFieldsToAPI(ctx context.Context) (*[]kbapi.SecurityDetectionsAPIRequiredFieldInput, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(d.RequiredFields) || len(d.RequiredFields.Elements()) == 0 {
-		return nil, diags
-	}
-
-	apiRequiredFields := typeutils.ListTypeToSlice(ctx, d.RequiredFields, path.Root("required_fields"), &diags,
+	apiRequiredFields := convertListFieldToAPI(ctx, d.RequiredFields, path.Root("required_fields"), &diags,
 		func(field RequiredFieldModel, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPIRequiredFieldInput {
-
 			return kbapi.SecurityDetectionsAPIRequiredFieldInput{
 				Name: field.Name.ValueString(),
 				Type: field.Type.ValueString(),
 			}
 		})
+	if apiRequiredFields == nil {
+		return nil, diags
+	}
 
 	return &apiRequiredFields, diags
 }
 
 // convertRequiredFieldsToModel converts kbapi.SecurityDetectionsAPIRequiredFieldArray to Terraform model
 func convertRequiredFieldsToModel(ctx context.Context, apiRequiredFields kbapi.SecurityDetectionsAPIRequiredFieldArray) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if len(apiRequiredFields) == 0 {
-		return types.ListNull(getRequiredFieldElementType()), diags
-	}
-
-	fields := make([]RequiredFieldModel, 0)
-
-	for _, apiField := range apiRequiredFields {
-		field := RequiredFieldModel{
-			Name: types.StringValue(apiField.Name),
-			Type: types.StringValue(apiField.Type),
-			Ecs:  types.BoolValue(apiField.Ecs),
-		}
-
-		fields = append(fields, field)
-	}
-
-	listValue, listDiags := types.ListValueFrom(ctx, getRequiredFieldElementType(), fields)
-	diags.Append(listDiags...)
-	return listValue, diags
+	return convertAPISliceToListField(ctx, apiRequiredFields, getRequiredFieldElementType(),
+		func(apiField kbapi.SecurityDetectionsAPIRequiredField) RequiredFieldModel {
+			return RequiredFieldModel{
+				Name: types.StringValue(apiField.Name),
+				Type: types.StringValue(apiField.Type),
+				Ecs:  types.BoolValue(apiField.Ecs),
+			}
+		})
 }
 
 func (d *Data) updateRequiredFieldsFromAPI(ctx context.Context, requiredFields *kbapi.SecurityDetectionsAPIRequiredFieldArray) diag.Diagnostics {
