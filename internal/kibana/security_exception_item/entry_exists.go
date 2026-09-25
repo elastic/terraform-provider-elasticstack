@@ -23,6 +23,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// buildExistsAPIEntry builds the shared API exists entry used by both the
+// top-level and nested exists conversions.
+func buildExistsAPIEntry(
+	field kbapi.SecurityExceptionsAPINonEmptyString,
+	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
+) kbapi.SecurityExceptionsAPIExceptionListItemEntryExists {
+	return kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
+		Type:     entryTypeExists,
+		Field:    field,
+		Operator: operator,
+	}
+}
+
 // convertExistsEntryToAPI converts an exists entry to API format
 func convertExistsEntryToAPI(
 	field kbapi.SecurityExceptionsAPINonEmptyString,
@@ -31,11 +44,7 @@ func convertExistsEntryToAPI(
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
 
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     entryTypeExists,
-		Field:    field,
-		Operator: operator,
-	}
+	apiEntry := buildExistsAPIEntry(field, operator)
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryExists(apiEntry); err != nil {
 		diags.AddError("Failed to create exists entry", err.Error())
 	}
@@ -51,11 +60,7 @@ func convertNestedExistsEntryToAPI(
 	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
 
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     "exists",
-		Field:    field,
-		Operator: operator,
-	}
+	apiEntry := buildExistsAPIEntry(field, operator)
 	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryExists(apiEntry); err != nil {
 		diags.AddError("Failed to create nested exists entry", err.Error())
 	}
