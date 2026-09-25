@@ -1,0 +1,306 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"testing"
+)
+
+func writeFile(t *testing.T, dir, name, content string) {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatalf("mkdir %s: %v", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatalf("write file %s: %v", path, err)
+	}
+}
+
+func TestClassifier_Classify_MapsGoFileToPackage(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	writeFile(t, root, "internal/kibana/slo/resource.go", "package slo")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/kibana/slo/resource.go"})
+
+	want := []string{"github.com/example/mod/internal/kibana/slo"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+	if res.ForceAll {
+		t.Errorf("ForceAll = true, want false")
+	}
+}
+
+func TestClassifier_Classify_MapsTestdataFileToAncestorPackage(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	writeFile(t, root, "internal/kibana/slo/testdata/main.tf", "resource {}\n")
+	writeFile(t, root, "internal/kibana/slo/resource.go", "package slo")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/kibana/slo/testdata/main.tf"})
+
+	want := []string{"github.com/example/mod/internal/kibana/slo"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+}
+
+func TestClassifier_Classify_MapsEmbeddedDescriptionFileToAncestorPackage(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// go:embed'ed schema description: the descriptions/ directory holds no
+	// .go files, so the nearest ancestor Go package is the embedding package.
+	writeFile(t, root, "internal/elasticsearch/index/index/descriptions/resource.md", "# description\n")
+	writeFile(t, root, "internal/elasticsearch/index/index/resource.go", "package index")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/elasticsearch/index/index/descriptions/resource.md"})
+
+	want := []string{"github.com/example/mod/internal/elasticsearch/index/index"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+	if res.ForceAll {
+		t.Errorf("ForceAll = true, want false")
+	}
+}
+
+func TestClassifier_Classify_MapsNonTestdataFixtureDirToAncestorPackage(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// Fixture directory that is not named exactly testdata: the owning
+	// package is still the nearest ancestor directory with a .go file.
+	writeFile(t, root, "internal/kibana/defaultdataview/test_data/basic.tf", "resource {}\n")
+	writeFile(t, root, "internal/kibana/defaultdataview/resource.go", "package defaultdataview")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/kibana/defaultdataview/test_data/basic.tf"})
+
+	want := []string{"github.com/example/mod/internal/kibana/defaultdataview"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+}
+
+func TestClassifier_Classify_IgnoresNonRelevantFiles(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	writeFile(t, root, "docs/index.md", "# docs\n")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"docs/index.md", "README.md"})
+
+	if len(res.Packages) != 0 {
+		t.Errorf("packages = %v, want empty", res.Packages)
+	}
+	if res.HasCode {
+		t.Errorf("HasCode = true, want false")
+	}
+}
+
+func TestClassifier_Classify_DeduplicatesPackages(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	writeFile(t, root, "internal/a/resource.go", "package a")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/a/resource.go", "internal/a/resource_test.go"})
+
+	want := []string{"github.com/example/mod/internal/a"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+}
+
+func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
+	prefixes := []string{
+		"provider/config.go",
+		"internal/acctest/provider_factory.go",
+		"internal/clients/clients.go",
+		"internal/entitycore/resource.go",
+		"generated/kibana/client.go",
+		"xpprovider/xpprovider.go",
+		".github/workflows/provider.yml",
+		"examples/resources/elasticstack_index/resource.tf",
+		"scripts/targeted-testacc/main.go",
+		"internal/kibana/dashboard/dashboardacctest/helpers.go",
+		"internal/kibana/dashboard/panelkit/contracttest/harness.go",
+		"internal/providerfwtest/helpers.go",
+	}
+
+	for _, file := range prefixes {
+		t.Run(file, func(t *testing.T) {
+			c := NewClassifier("github.com/example/mod")
+			res := c.Classify([]string{file})
+			if !res.ForceAll {
+				t.Errorf("ForceAll = false for %s, want true", file)
+			}
+		})
+	}
+}
+
+func TestClassifier_Classify_ForceAllFiles(t *testing.T) {
+	files := []string{
+		"go.mod",
+		"go.sum",
+		"Makefile",
+		"main.go",
+		".terraform-version",
+		".env.template",
+		"docker-compose.yml",
+		"docker-compose.tls.yml",
+	}
+
+	for _, file := range files {
+		t.Run(file, func(t *testing.T) {
+			c := NewClassifier("github.com/example/mod")
+			res := c.Classify([]string{file})
+			if !res.ForceAll {
+				t.Errorf("ForceAll = false for %s, want true", file)
+			}
+		})
+	}
+}
+
+func TestClassifier_Classify_NoForceAllForSimilarPaths(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// Materialize the referenced package directories so that the
+	// deleted-package fail-safe (directory missing → ForceAll) does not fire
+	// for these valid paths.
+	for _, dir := range []string{
+		"internal/clientspkg",
+		"providerx",
+		"internal/entitycorepkg",
+		"internal/a",
+	} {
+		writeFile(t, root, dir+"/stub.go", "package stub\n")
+	}
+
+	files := []string{
+		"internal/clientspkg/client.go",
+		"providerx/config.go",
+		"internal/entitycorepkg/base.go",
+		"my-go.mod",
+		"docs/Makefile",
+		"internal/a/main.go",
+		"internal/a/.terraform-version",
+		"docs/.env.template",
+		"internal/a/docker-compose.yml.txt",
+	}
+
+	for _, file := range files {
+		t.Run(file, func(t *testing.T) {
+			c := NewClassifier("github.com/example/mod")
+			res := c.Classify([]string{file})
+			if res.ForceAll {
+				t.Errorf("ForceAll = true for %s, want false", file)
+			}
+		})
+	}
+}
+
+func TestClassifier_Classify_DeletedPackageDirForcesAll(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	// The deleted package's directory does not exist on disk; only internal/a
+	// exists.
+	writeFile(t, root, "internal/a/main.go", "package a")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/a/main.go", "internal/deleted/main.go"})
+
+	want := []string{"github.com/example/mod/internal/a"}
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if !res.HasCode {
+		t.Errorf("HasCode = false, want true")
+	}
+	if !res.ForceAll {
+		t.Errorf("ForceAll = false, want true: deleting a package directory must fail safe to the full suite")
+	}
+}
+
+func TestPackageDir_TestdataNestedUnderSubdirectory(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	writeFile(t, root, "internal/pkg/testdata/sub/main.tf", "")
+	writeFile(t, root, "internal/pkg/resource.go", "package pkg")
+
+	c := NewClassifier("github.com/example/mod")
+	dir, ok := c.packageDir("internal/pkg/testdata/sub/main.tf")
+	if !ok {
+		t.Fatalf("packageDir returned false, want true")
+	}
+	want := "internal/pkg"
+	if dir != want {
+		t.Errorf("packageDir = %q, want %q", dir, want)
+	}
+}
+
+func TestClassifyResult_PackagesAreSorted(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+
+	writeFile(t, root, "internal/z/main.go", "package z")
+	writeFile(t, root, "internal/a/main.go", "package a")
+	writeFile(t, root, "internal/m/main.go", "package m")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{"internal/z/main.go", "internal/a/main.go", "internal/m/main.go"})
+
+	want := []string{
+		"github.com/example/mod/internal/a",
+		"github.com/example/mod/internal/m",
+		"github.com/example/mod/internal/z",
+	}
+	sort.Strings(res.Packages)
+	if !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+}

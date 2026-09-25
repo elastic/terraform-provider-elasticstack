@@ -18,6 +18,7 @@ test('all-pass (classify=true, all success) → passed', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, true);
   assert.match(result.reason, /all jobs succeeded/);
@@ -31,6 +32,7 @@ test('all-skipped-legitimately (classify=false, all skipped) → passed', () => 
     golangciLintResult: 'skipped',
     loadMatrixResult: 'skipped',
     testResult: 'skipped',
+    unitTestResult: 'skipped',
   });
   assert.equal(result.passed, true);
   assert.match(result.reason, /legitimately skipped/);
@@ -44,6 +46,7 @@ test('unexpected-skip (classify=true, build=skipped, others=success) → failed'
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /Unexpected skip/);
@@ -57,6 +60,7 @@ test('any-failure (classify=true, build=failure) → failed', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -70,6 +74,7 @@ test('cancelled (classify=true, test=cancelled) → failed', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'cancelled',
+    unitTestResult: 'cancelled',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -85,6 +90,7 @@ test('invalid classifyResult → failed', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /Invalid classify result/);
@@ -98,6 +104,7 @@ test('invalid job result → failed', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /Invalid job result/);
@@ -111,6 +118,7 @@ test('classify=false but not all skipped → failed', () => {
     golangciLintResult: 'skipped',
     loadMatrixResult: 'skipped',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
 });
@@ -123,6 +131,7 @@ test('lint failure → failed', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -136,6 +145,7 @@ test('golangci-lint failure (classify=true, golangciLintResult=failure, others=s
     golangciLintResult: 'failure',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -150,6 +160,7 @@ test('golangci-lint cancelled (classify=true, golangciLintResult=cancelled, othe
     golangciLintResult: 'cancelled',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -164,6 +175,7 @@ test('golangci-lint unexpected skip (classify=true, golangciLintResult=skipped, 
     golangciLintResult: 'skipped',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /Unexpected skip/);
@@ -178,6 +190,7 @@ test('load-matrix failure is named and takes priority over skipped test', () => 
     golangciLintResult: 'success',
     loadMatrixResult: 'failure',
     testResult: 'skipped',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -193,6 +206,7 @@ test('load-matrix unexpected skip (classify=true, loadMatrixResult=skipped, othe
     golangciLintResult: 'success',
     loadMatrixResult: 'skipped',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /Unexpected skip/);
@@ -207,6 +221,7 @@ test('all cancelled → failed', () => {
     golangciLintResult: 'cancelled',
     loadMatrixResult: 'cancelled',
     testResult: 'cancelled',
+    unitTestResult: 'cancelled',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
@@ -220,8 +235,52 @@ test('failure takes priority over unexpected skip', () => {
     golangciLintResult: 'success',
     loadMatrixResult: 'success',
     testResult: 'success',
+    unitTestResult: 'success',
   });
   assert.equal(result.passed, false);
   assert.match(result.reason, /failed or were cancelled/);
   assert.doesNotMatch(result.reason, /Unexpected skip/);
+});
+
+test('unit-test failure (classify=true, unitTestResult=failure, others=success) → failed', () => {
+  const result = gateProvider({
+    classifyResult: 'true',
+    buildResult: 'success',
+    lintResult: 'success',
+    golangciLintResult: 'success',
+    loadMatrixResult: 'success',
+    testResult: 'success',
+    unitTestResult: 'failure',
+  });
+  assert.equal(result.passed, false);
+  assert.match(result.reason, /failed or were cancelled/);
+  assert.match(result.reason, /unit-test=failure/);
+});
+
+test('unit-test unexpected skip (classify=true, unitTestResult=skipped, others=success) → failed', () => {
+  const result = gateProvider({
+    classifyResult: 'true',
+    buildResult: 'success',
+    lintResult: 'success',
+    golangciLintResult: 'success',
+    loadMatrixResult: 'success',
+    testResult: 'success',
+    unitTestResult: 'skipped',
+  });
+  assert.equal(result.passed, false);
+  assert.match(result.reason, /Unexpected skip/);
+  assert.match(result.reason, /unit-test=skipped/);
+});
+
+test('missing unitTestResult (undefined) → failed (invalid job result)', () => {
+  const result = gateProvider({
+    classifyResult: 'true',
+    buildResult: 'success',
+    lintResult: 'success',
+    golangciLintResult: 'success',
+    loadMatrixResult: 'success',
+    testResult: 'success',
+  });
+  assert.equal(result.passed, false);
+  assert.match(result.reason, /Invalid job result/);
 });
