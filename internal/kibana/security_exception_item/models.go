@@ -118,6 +118,35 @@ type NestedEntryModel struct {
 	Values   types.List   `tfsdk:"values"`
 }
 
+// resetEntryModelFields nulls every EntryModel value field (value/values/list/entries)
+// except the one named active, so a converter for one entry type can't leave stale data
+// from another entry type on the model. Pass "" to null out all of them.
+func resetEntryModelFields(entry *EntryModel, active string) {
+	if active != attrValue {
+		entry.Value = types.StringNull()
+	}
+	if active != attrValues {
+		entry.Values = types.ListNull(types.StringType)
+	}
+	if active != entryTypeList {
+		entry.List = types.ObjectNull(getListAttrTypes())
+	}
+	if active != attrEntries {
+		entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
+	}
+}
+
+// resetNestedEntryModelFields nulls every NestedEntryModel value field (value/values)
+// except the one named active. Pass "" to null out all of them.
+func resetNestedEntryModelFields(entry *NestedEntryModel, active string) {
+	if active != attrValue {
+		entry.Value = types.StringNull()
+	}
+	if active != attrValues {
+		entry.Values = types.ListNull(types.StringType)
+	}
+}
+
 // convertEntriesToAPI converts Terraform entry models to API entry models
 func convertEntriesToAPI(ctx context.Context, entries types.List) (kbapi.SecurityExceptionsAPIExceptionListItemEntryArray, diag.Diagnostics) {
 	var diags diag.Diagnostics

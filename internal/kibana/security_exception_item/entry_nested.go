@@ -99,6 +99,7 @@ func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]any, ent
 
 	// Nested entries don't have an operator field in the API
 	entry.Operator = types.StringNull()
+	resetEntryModelFields(entry, attrEntries)
 	if entriesData, ok := entryMap["entries"].([]any); ok {
 		nestedEntries := make([]NestedEntryModel, 0, len(entriesData))
 		for _, neData := range entriesData {
@@ -116,9 +117,6 @@ func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]any, ent
 	} else {
 		entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
 	}
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-	entry.List = types.ObjectNull(getListAttrTypes())
 	return diags
 }
 
