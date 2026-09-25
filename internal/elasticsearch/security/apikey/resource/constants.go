@@ -24,4 +24,5 @@ const (
 	attrAccess          = "access"
 	attrMetadata        = "metadata"
 	attrExpiration      = "expiration"
+	attrRestrictToOwned = "restrict_to_owned"
 )

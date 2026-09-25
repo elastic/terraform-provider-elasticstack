@@ -34,6 +34,7 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 					return
 				}
 				stateutil.NullifyEmptyString(stateMap, attrExpiration, attrMetadata, attrRoleDescriptors)
+				backfillRestrictToOwnedDefault(stateMap)
 				stateutil.MarshalStateMap(stateMap, resp)
 			},
 		},
@@ -47,8 +48,38 @@ func (r *Resource) UpgradeState(_ context.Context) map[int64]fwresource.StateUpg
 				if v, ok := stateMap[attrType]; !ok || v == nil || v == "" {
 					stateMap[attrType] = apikey.DefaultAPIKeyType
 				}
+				backfillRestrictToOwnedDefault(stateMap)
 				stateutil.MarshalStateMap(stateMap, resp)
 			},
 		},
+		2: {
+			// The `restrict_to_owned` attribute was added without any other schema change,
+			// so states written at version 2 (by this provider prior to the
+			// `restrict_to_owned` attribute existing, or by published releases that
+			// already reached schema version 2) need only have `restrict_to_owned`
+			// backfilled to reach version 3.
+			StateUpgrader: func(_ context.Context, req fwresource.UpgradeStateRequest, resp *fwresource.UpgradeStateResponse) {
+				stateMap := stateutil.UnmarshalStateMap(req, resp)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				backfillRestrictToOwnedDefault(stateMap)
+				stateutil.MarshalStateMap(stateMap, resp)
+			},
+		},
+	}
+}
+
+// backfillRestrictToOwnedDefault sets the `restrict_to_owned` attribute to its schema default
+// (false) when it is absent from prior state. The `restrict_to_owned` attribute was added
+// after schema versions 0, 1, and 2 shipped, so any state written before it
+// existed (including states written by published provider versions prior to
+// this change) has no `restrict_to_owned` key at all. Without this backfill, the first
+// plan against such state would compute `restrict_to_owned` via the schema's Default
+// (going from null to `false`), which Terraform treats as an in-place update
+// and triggers a real Update API Key call - unnecessarily.
+func backfillRestrictToOwnedDefault(m map[string]any) {
+	if _, ok := m[attrRestrictToOwned]; !ok {
+		m[attrRestrictToOwned] = false
 	}
 }

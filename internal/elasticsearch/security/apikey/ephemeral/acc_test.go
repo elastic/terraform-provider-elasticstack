@@ -260,7 +260,7 @@ func checkEphemeralAPIKeyExistsInElasticsearch(expectInvalidated bool) resource.
 			return err
 		}
 
-		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, keyID)
+		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, keyID, true)
 		if diags.HasError() {
 			return fmt.Errorf("unable to get API key %q: %v", keyID, diags)
 		}
@@ -304,7 +304,7 @@ func cleanupEphemeralAPIKeyFromEchoCapture(state *terraform.State) error {
 		return err
 	}
 
-	diags := elasticsearch.DeleteAPIKey(context.Background(), client, keyID)
+	diags := elasticsearch.DeleteAPIKey(context.Background(), client, keyID, true)
 	if diags.HasError() {
 		return fmt.Errorf("failed to invalidate API key %q: %v", keyID, diags)
 	}
