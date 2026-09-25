@@ -18,13 +18,17 @@
 package agentbuilderworkflow_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
@@ -55,6 +59,7 @@ func TestAccResourceAgentBuilderWorkflow(t *testing.T) {
 					"workflow_id": config.StringVariable(workflowID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceID, "id", regexp.MustCompile(`^default/workflow-`)),
 					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
 					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Test Workflow"),
@@ -232,6 +237,60 @@ func TestAccResourceAgentBuilderWorkflowInvalidUpdate(t *testing.T) {
 					"workflow_id": config.StringVariable(workflowID),
 				},
 				ExpectError: regexp.MustCompile(`(?i)invalid workflow`),
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentBuilderWorkflowInvalidDrift verifies that `valid` is
+// surfaced as `false` on a workflow that already exists in state, without an
+// error diagnostic. This can't happen through Terraform's own Create/Update
+// path: populateWrittenCreate/populateWrittenUpdate (create.go, update.go)
+// deliberately turn `valid: false` from those responses into an error so the
+// write fails outright, meaning the resource is never persisted to state with
+// valid = false via apply. But the underlying Kibana API does accept and
+// store such YAML (that's the response those callbacks are reacting to), so
+// a workflow can go invalid out-of-band -- e.g. a later API/UI edit -- and
+// Terraform's plain Read (populateFromAPI) has no such guard, so a refresh
+// must surface valid = false cleanly.
+func TestAccResourceAgentBuilderWorkflowInvalidDrift(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	workflowUUID := uuid.New()
+	workflowID := "workflow-" + workflowUUID.String()
+	resourceID := "elasticstack_kibana_agentbuilder_workflow.test_invalid"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_valid"),
+				ConfigVariables: config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+				),
+			},
+			{
+				// Mutate the workflow's YAML directly via the API (bypassing
+				// Terraform) to a configuration Kibana accepts but flags
+				// invalid -- the same YAML TestAccResourceAgentBuilderWorkflowInvalidUpdate
+				// uses to trigger the write-path error -- then refresh and
+				// confirm the resource picks up valid = false with no error.
+				// RefreshState reuses the prior step's config; it cannot be
+				// combined with ConfigDirectory/ConfigVariables.
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					setWorkflowYamlDirect(t, "default", workflowID, "not_working: hello_world")
+				},
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "valid", "false"),
+				),
 			},
 		},
 	})
@@ -491,6 +550,55 @@ func TestAccResourceAgentBuilderWorkflowKibanaConnection(t *testing.T) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 			},
+			{
+				// insecure = true variant, matching the tool resource's
+				// kibana_connection coverage (agentbuildertool/acc_test.go).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "workflow_id", workflowID),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.insecure", "true"),
+					resource.TestCheckResourceAttr(resourceID, "valid", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"workflow_id": config.StringVariable(workflowID),
+				}),
+				ResourceName:            resourceID,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"kibana_connection"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
 		},
 	})
+}
+
+// setWorkflowYamlDirect updates a workflow's YAML directly through the Kibana
+// API, bypassing Terraform entirely, so tests can put a workflow into a state
+// (e.g. valid = false) that the resource's own Create/Update callbacks would
+// otherwise turn into an apply-time error.
+func setWorkflowYamlDirect(t *testing.T, spaceID, workflowID, yaml string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create Kibana client: %v", err)
+	}
+
+	_, diags := kibanaoapi.UpdateWorkflow(context.Background(), client.GetKibanaOapiClient(), spaceID, workflowID, kbapi.PutWorkflowsWorkflowIdJSONRequestBody{
+		Yaml: &yaml,
+	})
+	if diags.HasError() {
+		t.Fatalf("failed to update workflow directly: %v", diags)
+	}
 }
