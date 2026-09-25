@@ -20,7 +20,6 @@ package securityexceptionitem
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // convertExistsEntryToAPI converts an exists entry to API format
@@ -65,14 +64,10 @@ func convertNestedExistsEntryToAPI(
 
 // convertExistsEntryFromAPI converts exists entries from API format
 func convertExistsEntryFromAPI(entry *EntryModel) {
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-	entry.List = types.ObjectNull(getListAttrTypes())
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
+	resetEntryModelFields(entry, "")
 }
 
 // convertNestedExistsFromMap converts nested exists entries from map format
 func convertNestedExistsFromMap(entry *NestedEntryModel) {
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
+	resetNestedEntryModelFields(entry, "")
 }
