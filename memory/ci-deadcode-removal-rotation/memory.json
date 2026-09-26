@@ -1334,6 +1334,34 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/models",
       "attemptedAt": "2026-09-25T03:05:07.112465231Z",
       "reason": "tests_failed"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.GetKbActionConnectionBlock",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-09-26T03:02:48.481524075Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.GetKbEphemeralConnectionBlock",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-09-26T03:02:48.481524225Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.fwAttributeToAttrType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-09-26T03:02:48.481524305Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.fwNestedBlockAttributesToAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-09-26T03:10:00.378554143Z",
+      "reason": "build_failed",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
