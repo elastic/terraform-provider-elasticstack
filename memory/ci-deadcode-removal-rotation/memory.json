@@ -1372,6 +1372,12 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewDurationPointerValue",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-09-28T03:14:19.869135796Z",
+      "reason": "build_failed"
     }
   ]
 }
