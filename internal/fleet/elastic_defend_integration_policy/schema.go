@@ -163,7 +163,7 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 		Default:     objectdefault.StaticValue(protectionModeDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			attrMode: schema.StringAttribute{
-				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Description: descProtectionMode,
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
@@ -172,7 +172,7 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 				},
 			},
 			attrSupported: schema.BoolAttribute{
-				Description: "Whether this protection is supported on the platform.",
+				Description: descProtectionSupported,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Optional:    true,
@@ -189,7 +189,7 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 		Default:     objectdefault.StaticValue(behaviorProtectionDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			attrMode: schema.StringAttribute{
-				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Description: descProtectionMode,
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
@@ -198,7 +198,7 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 				},
 			},
 			attrSupported: schema.BoolAttribute{
-				Description: "Whether this protection is supported on the platform.",
+				Description: descProtectionSupported,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Optional:    true,
@@ -221,7 +221,7 @@ func memoryProtectionSchema(description string) schema.SingleNestedAttribute {
 		Default:     objectdefault.StaticValue(memoryProtectionDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			attrMode: schema.StringAttribute{
-				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Description: descProtectionMode,
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
@@ -230,7 +230,7 @@ func memoryProtectionSchema(description string) schema.SingleNestedAttribute {
 				},
 			},
 			attrSupported: schema.BoolAttribute{
-				Description: "Whether this protection is supported on the platform.",
+				Description: descProtectionSupported,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Optional:    true,
@@ -348,7 +348,7 @@ func windowsPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrDNS: schema.BoolAttribute{
-						Description: "Collect DNS events.",
+						Description: descCollectDNSEvents,
 						Optional:    true,
 					},
 					attrRegistry: schema.BoolAttribute{
@@ -385,7 +385,7 @@ func windowsPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrOnWriteScan: schema.BoolAttribute{
-						Description: "Whether on-write scan is enabled.",
+						Description: descOnWriteScan,
 						Optional:    true,
 					},
 					attrNotifyUser: schema.BoolAttribute{
@@ -495,7 +495,7 @@ func macPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrDNS: schema.BoolAttribute{
-						Description: "Collect DNS events.",
+						Description: descCollectDNSEvents,
 						Optional:    true,
 					},
 					attrSecurity: schema.BoolAttribute{
@@ -520,7 +520,7 @@ func macPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrOnWriteScan: schema.BoolAttribute{
-						Description: "Whether on-write scan is enabled.",
+						Description: descOnWriteScan,
 						Optional:    true,
 					},
 					attrNotifyUser: schema.BoolAttribute{
@@ -591,7 +591,7 @@ func linuxPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrDNS: schema.BoolAttribute{
-						Description: "Collect DNS events.",
+						Description: descCollectDNSEvents,
 						Optional:    true,
 					},
 				},
@@ -612,7 +612,7 @@ func linuxPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrOnWriteScan: schema.BoolAttribute{
-						Description: "Whether on-write scan is enabled.",
+						Description: descOnWriteScan,
 						Optional:    true,
 					},
 				},

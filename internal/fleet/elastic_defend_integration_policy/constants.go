@@ -70,4 +70,8 @@ const (
 	descBlocklistEnabled     = "Whether blocklist is enabled."
 	descMalwareMode          = "Malware protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`."
 	descLoggingFileLevel     = "Log level for file logging. Valid values: `\"info\"`, `\"debug\"`, `\"warning\"`, `\"error\"`, `\"critical\"`."
+	descCollectDNSEvents     = "Collect DNS events."
+	descOnWriteScan          = "Whether on-write scan is enabled."
+	descProtectionMode       = "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`."
+	descProtectionSupported  = "Whether this protection is supported on the platform."
 )
