@@ -213,6 +213,56 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 	}
 }
 
+func memoryProtectionSchema(description string) schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Computed:    true,
+		Optional:    true,
+		Description: description,
+		Default:     objectdefault.StaticValue(memoryProtectionDefaultValue()),
+		Attributes: map[string]schema.Attribute{
+			attrMode: schema.StringAttribute{
+				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Computed:    true,
+				Default:     stringdefault.StaticString("off"),
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("off", "detect", "prevent"),
+				},
+			},
+			attrSupported: schema.BoolAttribute{
+				Description: "Whether this protection is supported on the platform.",
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+				Optional:    true,
+			},
+			attrCustomYara: schema.BoolAttribute{
+				Description: "Whether custom YARA signatures are enabled for memory protection.",
+				Optional:    true,
+			},
+		},
+	}
+}
+
+func deviceControlSchema(description string) schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Description: description,
+		Optional:    true,
+		Attributes: map[string]schema.Attribute{
+			attrEnabled: schema.BoolAttribute{
+				Description: "Whether device control is enabled.",
+				Optional:    true,
+			},
+			attrUsbStorage: schema.StringAttribute{
+				Description: "Access level for USB storage devices. Valid values: `\"audit\"`, `\"read_only\"`, `\"no_execute\"`, `\"deny_all\"`.",
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("audit", "read_only", "no_execute", "deny_all"),
+				},
+			},
+		},
+	}
+}
+
 func popupItemDefaultValue() types.Object {
 	return types.ObjectValueMust(popupItemAttrTypes(), map[string]attr.Value{
 		attrMessage: types.StringValue(""),
@@ -224,6 +274,14 @@ func protectionModeDefaultValue() types.Object {
 	return types.ObjectValueMust(protectionModeAttrTypes(), map[string]attr.Value{
 		attrMode:      types.StringValue("off"),
 		attrSupported: types.BoolValue(true),
+	})
+}
+
+func memoryProtectionDefaultValue() types.Object {
+	return types.ObjectValueMust(memoryProtectionAttrTypes(), map[string]attr.Value{
+		attrMode:       types.StringValue("off"),
+		attrSupported:  types.BoolValue(true),
+		attrCustomYara: types.BoolNull(),
 	})
 }
 
@@ -260,6 +318,7 @@ func windowsPopupDefaultValue() types.Object {
 		attrRansomware:         popupItemDefaultValue(),
 		attrMemoryProtection:   popupItemDefaultValue(),
 		attrBehaviorProtection: popupItemDefaultValue(),
+		attrDeviceControl:      popupItemDefaultValue(),
 	})
 }
 
@@ -284,24 +343,28 @@ func windowsPolicySchema() schema.Attribute {
 						Description: descCollectFileEvents,
 						Optional:    true,
 					},
-					"dll_and_driver_load": schema.BoolAttribute{
+					attrDllAndDriverLoad: schema.BoolAttribute{
 						Description: "Collect DLL and driver load events.",
 						Optional:    true,
 					},
-					"dns": schema.BoolAttribute{
+					attrDNS: schema.BoolAttribute{
 						Description: "Collect DNS events.",
 						Optional:    true,
 					},
-					"registry": schema.BoolAttribute{
+					attrRegistry: schema.BoolAttribute{
 						Description: "Collect registry events.",
 						Optional:    true,
 					},
-					"security": schema.BoolAttribute{
+					attrSecurity: schema.BoolAttribute{
 						Description: "Collect security events.",
 						Optional:    true,
 					},
-					"authentication": schema.BoolAttribute{
+					attrAuthentication: schema.BoolAttribute{
 						Description: "Collect authentication events.",
+						Optional:    true,
+					},
+					attrCredentialAccess: schema.BoolAttribute{
+						Description: "Collect credential access events.",
 						Optional:    true,
 					},
 				},
@@ -332,8 +395,9 @@ func windowsPolicySchema() schema.Attribute {
 				},
 			},
 			attrRansomware:         protectionModeSchema("Windows ransomware protection settings."),
-			attrMemoryProtection:   protectionModeSchema("Windows memory protection settings."),
+			attrMemoryProtection:   memoryProtectionSchema("Windows memory protection settings."),
 			attrBehaviorProtection: behaviorProtectionSchema("Windows behavior protection settings."),
+			attrDeviceControl:      deviceControlSchema("Windows device control settings."),
 			attrPopup: schema.SingleNestedAttribute{
 				Description: "Windows popup notification settings.",
 				Computed:    true,
@@ -344,6 +408,7 @@ func windowsPolicySchema() schema.Attribute {
 					attrRansomware:         popupItemSchema(),
 					attrMemoryProtection:   popupItemSchema(),
 					attrBehaviorProtection: popupItemSchema(),
+					attrDeviceControl:      popupItemSchema(),
 				},
 			},
 			attrLogging: schema.SingleNestedAttribute{
@@ -359,7 +424,7 @@ func windowsPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"antivirus_registration": schema.SingleNestedAttribute{
+			attrAntivirusRegistration: schema.SingleNestedAttribute{
 				Description: "Windows antivirus registration settings.",
 				Computed:    true,
 				Optional:    true,
@@ -382,7 +447,7 @@ func windowsPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"attack_surface_reduction": schema.SingleNestedAttribute{
+			attrAttackSurfaceReduction: schema.SingleNestedAttribute{
 				Description: "Windows attack surface reduction settings.",
 				Computed:    true,
 				Optional:    true,
@@ -429,6 +494,14 @@ func macPolicySchema() schema.Attribute {
 						Description: descCollectFileEvents,
 						Optional:    true,
 					},
+					attrDNS: schema.BoolAttribute{
+						Description: "Collect DNS events.",
+						Optional:    true,
+					},
+					attrSecurity: schema.BoolAttribute{
+						Description: "Collect security events.",
+						Optional:    true,
+					},
 				},
 			},
 			attrMalware: schema.SingleNestedAttribute{
@@ -456,15 +529,19 @@ func macPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			attrMemoryProtection:   protectionModeSchema("macOS memory protection settings."),
+			attrRansomware:         protectionModeSchema("macOS ransomware protection settings."),
+			attrMemoryProtection:   memoryProtectionSchema("macOS memory protection settings."),
 			attrBehaviorProtection: behaviorProtectionSchema("macOS behavior protection settings."),
+			attrDeviceControl:      deviceControlSchema("macOS device control settings."),
 			attrPopup: schema.SingleNestedAttribute{
 				Description: "macOS popup notification settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					attrMalware:            popupItemSchema(),
+					attrRansomware:         popupItemSchema(),
 					attrMemoryProtection:   popupItemSchema(),
 					attrBehaviorProtection: popupItemSchema(),
+					attrDeviceControl:      popupItemSchema(),
 				},
 			},
 			attrLogging: schema.SingleNestedAttribute{
@@ -505,12 +582,16 @@ func linuxPolicySchema() schema.Attribute {
 						Description: descCollectFileEvents,
 						Optional:    true,
 					},
-					"session_data": schema.BoolAttribute{
+					attrSessionData: schema.BoolAttribute{
 						Description: "Collect session data events.",
 						Optional:    true,
 					},
-					"tty_io": schema.BoolAttribute{
+					attrTtyIO: schema.BoolAttribute{
 						Description: "Collect TTY I/O events.",
+						Optional:    true,
+					},
+					attrDNS: schema.BoolAttribute{
+						Description: "Collect DNS events.",
 						Optional:    true,
 					},
 				},
@@ -530,9 +611,13 @@ func linuxPolicySchema() schema.Attribute {
 						Description: descBlocklistEnabled,
 						Optional:    true,
 					},
+					attrOnWriteScan: schema.BoolAttribute{
+						Description: "Whether on-write scan is enabled.",
+						Optional:    true,
+					},
 				},
 			},
-			attrMemoryProtection:   protectionModeSchema("Linux memory protection settings."),
+			attrMemoryProtection:   memoryProtectionSchema("Linux memory protection settings."),
 			attrBehaviorProtection: behaviorProtectionSchema("Linux behavior protection settings."),
 			attrPopup: schema.SingleNestedAttribute{
 				Description: "Linux popup notification settings.",

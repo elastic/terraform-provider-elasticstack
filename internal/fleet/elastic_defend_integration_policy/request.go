@@ -264,14 +264,15 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		}
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
-		typeutils.SetBoolInMap(events, "network", em.Network)
-		typeutils.SetBoolInMap(events, "file", em.File)
-		typeutils.SetBoolInMap(events, "dll_and_driver_load", em.DllAndDriverLoad)
-		typeutils.SetBoolInMap(events, "dns", em.DNS)
-		typeutils.SetBoolInMap(events, "registry", em.Registry)
-		typeutils.SetBoolInMap(events, "security", em.Security)
-		typeutils.SetBoolInMap(events, "authentication", em.Authentication)
-		win["events"] = events
+		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
+		typeutils.SetBoolInMap(events, attrFile, em.File)
+		typeutils.SetBoolInMap(events, attrDllAndDriverLoad, em.DllAndDriverLoad)
+		typeutils.SetBoolInMap(events, attrDNS, em.DNS)
+		typeutils.SetBoolInMap(events, attrRegistry, em.Registry)
+		typeutils.SetBoolInMap(events, attrSecurity, em.Security)
+		typeutils.SetBoolInMap(events, attrAuthentication, em.Authentication)
+		typeutils.SetBoolInMap(events, attrCredentialAccess, em.CredentialAccess)
+		win[attrEvents] = events
 	}
 
 	if typeutils.IsKnown(wm.Malware) {
@@ -282,11 +283,11 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, "mode", mm.Mode)
-		typeutils.SetBoolInMap(malware, "blocklist", mm.Blocklist)
+		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
 		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
 		typeutils.SetBoolInMap(malware, attrNotifyUser, mm.NotifyUser)
-		win["malware"] = malware
+		win[attrMalware] = malware
 	}
 
 	if typeutils.IsKnown(wm.Ransomware) {
@@ -297,22 +298,23 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		ransomware := map[string]any{}
-		typeutils.SetStringInMap(ransomware, "mode", rm.Mode)
+		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
 		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
 		win[attrRansomware] = ransomware
 	}
 
 	if typeutils.IsKnown(wm.MemoryProtection) {
-		var mm protectionModeModel
+		var mm memoryProtectionModel
 		d = wm.MemoryProtection.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, "mode", mm.Mode)
+		typeutils.SetStringInMap(memProt, attrMode, mm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, mm.Supported)
-		win["memory_protection"] = memProt
+		typeutils.SetBoolInMap(memProt, attrCustomYara, mm.CustomYaraSignatures)
+		win[attrMemoryProtection] = memProt
 	}
 
 	if typeutils.IsKnown(wm.BehaviorProtection) {
@@ -323,10 +325,23 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
 		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		win["behavior_protection"] = behProt
+		win[attrBehaviorProtection] = behProt
+	}
+
+	if typeutils.IsKnown(wm.DeviceControl) {
+		var dm deviceControlModel
+		d = wm.DeviceControl.As(ctx, &dm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		deviceControl := map[string]any{}
+		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
+		win[attrDeviceControl] = deviceControl
 	}
 
 	if typeutils.IsKnown(wm.Popup) {
@@ -337,10 +352,11 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		popup := map[string]any{}
-		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
+		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
 		setPopupItem(ctx, popup, attrRansomware, pm.Ransomware, &diags)
-		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
-		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
+		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrDeviceControl, pm.DeviceControl, &diags)
 		win[attrPopup] = popup
 	}
 
@@ -352,8 +368,8 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, "file", lm.File)
-		win["logging"] = logging
+		typeutils.SetStringInMap(logging, attrFile, lm.File)
+		win[attrLogging] = logging
 	}
 
 	if typeutils.IsKnown(wm.AntivirusRegistration) {
@@ -364,9 +380,9 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		avr := map[string]any{}
-		typeutils.SetStringInMap(avr, "mode", am.Mode)
-		typeutils.SetBoolInMap(avr, "enabled", am.Enabled)
-		win["antivirus_registration"] = avr
+		typeutils.SetStringInMap(avr, attrMode, am.Mode)
+		typeutils.SetBoolInMap(avr, attrEnabled, am.Enabled)
+		win[attrAntivirusRegistration] = avr
 	}
 
 	if typeutils.IsKnown(wm.AttackSurfaceReduction) {
@@ -385,10 +401,10 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 				return nil, diags
 			}
 			ch := map[string]any{}
-			typeutils.SetBoolInMap(ch, "enabled", cm.Enabled)
-			asr["credential_hardening"] = ch
+			typeutils.SetBoolInMap(ch, attrEnabled, cm.Enabled)
+			asr[attrCredentialHardening] = ch
 		}
-		win["attack_surface_reduction"] = asr
+		win[attrAttackSurfaceReduction] = asr
 	}
 
 	return win, diags
@@ -418,9 +434,11 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		}
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
-		typeutils.SetBoolInMap(events, "network", em.Network)
-		typeutils.SetBoolInMap(events, "file", em.File)
-		mac["events"] = events
+		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
+		typeutils.SetBoolInMap(events, attrFile, em.File)
+		typeutils.SetBoolInMap(events, attrDNS, em.DNS)
+		typeutils.SetBoolInMap(events, attrSecurity, em.Security)
+		mac[attrEvents] = events
 	}
 
 	if typeutils.IsKnown(mm.Malware) {
@@ -431,24 +449,38 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, "mode", malwareModel.Mode)
-		typeutils.SetBoolInMap(malware, "blocklist", malwareModel.Blocklist)
+		typeutils.SetStringInMap(malware, attrMode, malwareModel.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, malwareModel.Blocklist)
 		typeutils.SetBoolInMap(malware, attrOnWriteScan, malwareModel.OnWriteScan)
 		typeutils.SetBoolInMap(malware, attrNotifyUser, malwareModel.NotifyUser)
-		mac["malware"] = malware
+		mac[attrMalware] = malware
+	}
+
+	if typeutils.IsKnown(mm.Ransomware) {
+		var rm protectionModeModel
+		d = mm.Ransomware.As(ctx, &rm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		ransomware := map[string]any{}
+		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
+		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
+		mac[attrRansomware] = ransomware
 	}
 
 	if typeutils.IsKnown(mm.MemoryProtection) {
-		var pm protectionModeModel
+		var pm memoryProtectionModel
 		d = mm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, "mode", pm.Mode)
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
-		mac["memory_protection"] = memProt
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		mac[attrMemoryProtection] = memProt
 	}
 
 	if typeutils.IsKnown(mm.BehaviorProtection) {
@@ -459,23 +491,38 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
 		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		mac["behavior_protection"] = behProt
+		mac[attrBehaviorProtection] = behProt
+	}
+
+	if typeutils.IsKnown(mm.DeviceControl) {
+		var dm deviceControlModel
+		d = mm.DeviceControl.As(ctx, &dm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		deviceControl := map[string]any{}
+		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
+		mac[attrDeviceControl] = deviceControl
 	}
 
 	if typeutils.IsKnown(mm.Popup) {
-		var pm macLinuxPopupModel
+		var pm macPopupModel
 		d = mm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		popup := map[string]any{}
-		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
-		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
-		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
+		setPopupItem(ctx, popup, attrRansomware, pm.Ransomware, &diags)
+		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
+		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrDeviceControl, pm.DeviceControl, &diags)
 		mac[attrPopup] = popup
 	}
 
@@ -487,8 +534,8 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, "file", lm.File)
-		mac["logging"] = logging
+		typeutils.SetStringInMap(logging, attrFile, lm.File)
+		mac[attrLogging] = logging
 	}
 
 	return mac, diags
@@ -518,11 +565,12 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		}
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
-		typeutils.SetBoolInMap(events, "network", em.Network)
-		typeutils.SetBoolInMap(events, "file", em.File)
-		typeutils.SetBoolInMap(events, "session_data", em.SessionData)
-		typeutils.SetBoolInMap(events, "tty_io", em.TtyIO)
-		linux["events"] = events
+		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
+		typeutils.SetBoolInMap(events, attrFile, em.File)
+		typeutils.SetBoolInMap(events, attrSessionData, em.SessionData)
+		typeutils.SetBoolInMap(events, attrTtyIO, em.TtyIO)
+		typeutils.SetBoolInMap(events, attrDNS, em.DNS)
+		linux[attrEvents] = events
 	}
 
 	if typeutils.IsKnown(lm.Malware) {
@@ -533,22 +581,24 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, "mode", mm.Mode)
-		typeutils.SetBoolInMap(malware, "blocklist", mm.Blocklist)
-		linux["malware"] = malware
+		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
+		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
+		linux[attrMalware] = malware
 	}
 
 	if typeutils.IsKnown(lm.MemoryProtection) {
-		var pm protectionModeModel
+		var pm memoryProtectionModel
 		d = lm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, "mode", pm.Mode)
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
-		linux["memory_protection"] = memProt
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		linux[attrMemoryProtection] = memProt
 	}
 
 	if typeutils.IsKnown(lm.BehaviorProtection) {
@@ -559,23 +609,23 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
 		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		linux["behavior_protection"] = behProt
+		linux[attrBehaviorProtection] = behProt
 	}
 
 	if typeutils.IsKnown(lm.Popup) {
-		var pm macLinuxPopupModel
+		var pm linuxPopupModel
 		d = lm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		popup := map[string]any{}
-		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
-		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
-		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
+		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
+		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
 		linux[attrPopup] = popup
 	}
 
@@ -587,8 +637,8 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, "file", logm.File)
-		linux["logging"] = logging
+		typeutils.SetStringInMap(logging, attrFile, logm.File)
+		linux[attrLogging] = logging
 	}
 
 	return linux, diags
@@ -623,7 +673,7 @@ func setPopupItem(ctx context.Context, m map[string]any, key string, obj types.O
 	d := obj.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 	diags.Append(d...)
 	item := map[string]any{}
-	typeutils.SetStringInMap(item, "message", pm.Message)
-	typeutils.SetBoolInMap(item, "enabled", pm.Enabled)
+	typeutils.SetStringInMap(item, attrMessage, pm.Message)
+	typeutils.SetBoolInMap(item, attrEnabled, pm.Enabled)
 	m[key] = item
 }

@@ -74,6 +74,7 @@ Optional:
 
 Optional:
 
+- `dns` (Boolean) Collect DNS events.
 - `file` (Boolean) Collect file events.
 - `network` (Boolean) Collect network events.
 - `process` (Boolean) Collect process events.
@@ -96,6 +97,7 @@ Optional:
 
 - `blocklist` (Boolean) Whether blocklist is enabled.
 - `mode` (String) Malware protection mode. Valid values: `"off"`, `"detect"`, `"prevent"`.
+- `on_write_scan` (Boolean) Whether on-write scan is enabled.
 
 
 <a id="nestedatt--policy--linux--memory_protection"></a>
@@ -103,6 +105,7 @@ Optional:
 
 Optional:
 
+- `custom_yara_signatures` (Boolean) Whether custom YARA signatures are enabled for memory protection.
 - `mode` (String) Protection mode. Valid values: `"off"`, `"detect"`, `"prevent"`.
 - `supported` (Boolean) Whether this protection is supported on the platform.
 
@@ -151,11 +154,13 @@ Optional:
 Optional:
 
 - `behavior_protection` (Attributes) macOS behavior protection settings. (see [below for nested schema](#nestedatt--policy--mac--behavior_protection))
+- `device_control` (Attributes) macOS device control settings. (see [below for nested schema](#nestedatt--policy--mac--device_control))
 - `events` (Attributes) macOS event collection settings. (see [below for nested schema](#nestedatt--policy--mac--events))
 - `logging` (Attributes) macOS logging settings. (see [below for nested schema](#nestedatt--policy--mac--logging))
 - `malware` (Attributes) macOS malware protection settings. (see [below for nested schema](#nestedatt--policy--mac--malware))
 - `memory_protection` (Attributes) macOS memory protection settings. (see [below for nested schema](#nestedatt--policy--mac--memory_protection))
 - `popup` (Attributes) macOS popup notification settings. (see [below for nested schema](#nestedatt--policy--mac--popup))
+- `ransomware` (Attributes) macOS ransomware protection settings. (see [below for nested schema](#nestedatt--policy--mac--ransomware))
 
 <a id="nestedatt--policy--mac--behavior_protection"></a>
 ### Nested Schema for `policy.mac.behavior_protection`
@@ -167,14 +172,25 @@ Optional:
 - `supported` (Boolean) Whether this protection is supported on the platform.
 
 
+<a id="nestedatt--policy--mac--device_control"></a>
+### Nested Schema for `policy.mac.device_control`
+
+Optional:
+
+- `enabled` (Boolean) Whether device control is enabled.
+- `usb_storage` (String) Access level for USB storage devices. Valid values: `"audit"`, `"read_only"`, `"no_execute"`, `"deny_all"`.
+
+
 <a id="nestedatt--policy--mac--events"></a>
 ### Nested Schema for `policy.mac.events`
 
 Optional:
 
+- `dns` (Boolean) Collect DNS events.
 - `file` (Boolean) Collect file events.
 - `network` (Boolean) Collect network events.
 - `process` (Boolean) Collect process events.
+- `security` (Boolean) Collect security events.
 
 
 <a id="nestedatt--policy--mac--logging"></a>
@@ -201,6 +217,7 @@ Optional:
 
 Optional:
 
+- `custom_yara_signatures` (Boolean) Whether custom YARA signatures are enabled for memory protection.
 - `mode` (String) Protection mode. Valid values: `"off"`, `"detect"`, `"prevent"`.
 - `supported` (Boolean) Whether this protection is supported on the platform.
 
@@ -211,11 +228,22 @@ Optional:
 Optional:
 
 - `behavior_protection` (Attributes) (see [below for nested schema](#nestedatt--policy--mac--popup--behavior_protection))
+- `device_control` (Attributes) (see [below for nested schema](#nestedatt--policy--mac--popup--device_control))
 - `malware` (Attributes) (see [below for nested schema](#nestedatt--policy--mac--popup--malware))
 - `memory_protection` (Attributes) (see [below for nested schema](#nestedatt--policy--mac--popup--memory_protection))
+- `ransomware` (Attributes) (see [below for nested schema](#nestedatt--policy--mac--popup--ransomware))
 
 <a id="nestedatt--policy--mac--popup--behavior_protection"></a>
 ### Nested Schema for `policy.mac.popup.behavior_protection`
+
+Optional:
+
+- `enabled` (Boolean) Whether the popup notification is enabled.
+- `message` (String) The popup message text.
+
+
+<a id="nestedatt--policy--mac--popup--device_control"></a>
+### Nested Schema for `policy.mac.popup.device_control`
 
 Optional:
 
@@ -241,6 +269,24 @@ Optional:
 - `message` (String) The popup message text.
 
 
+<a id="nestedatt--policy--mac--popup--ransomware"></a>
+### Nested Schema for `policy.mac.popup.ransomware`
+
+Optional:
+
+- `enabled` (Boolean) Whether the popup notification is enabled.
+- `message` (String) The popup message text.
+
+
+
+<a id="nestedatt--policy--mac--ransomware"></a>
+### Nested Schema for `policy.mac.ransomware`
+
+Optional:
+
+- `mode` (String) Protection mode. Valid values: `"off"`, `"detect"`, `"prevent"`.
+- `supported` (Boolean) Whether this protection is supported on the platform.
+
 
 
 <a id="nestedatt--policy--windows"></a>
@@ -251,6 +297,7 @@ Optional:
 - `antivirus_registration` (Attributes) Windows antivirus registration settings. (see [below for nested schema](#nestedatt--policy--windows--antivirus_registration))
 - `attack_surface_reduction` (Attributes) Windows attack surface reduction settings. (see [below for nested schema](#nestedatt--policy--windows--attack_surface_reduction))
 - `behavior_protection` (Attributes) Windows behavior protection settings. (see [below for nested schema](#nestedatt--policy--windows--behavior_protection))
+- `device_control` (Attributes) Windows device control settings. (see [below for nested schema](#nestedatt--policy--windows--device_control))
 - `events` (Attributes) Windows event collection settings. (see [below for nested schema](#nestedatt--policy--windows--events))
 - `logging` (Attributes) Windows logging settings. (see [below for nested schema](#nestedatt--policy--windows--logging))
 - `malware` (Attributes) Windows malware protection settings. (see [below for nested schema](#nestedatt--policy--windows--malware))
@@ -293,12 +340,22 @@ Optional:
 - `supported` (Boolean) Whether this protection is supported on the platform.
 
 
+<a id="nestedatt--policy--windows--device_control"></a>
+### Nested Schema for `policy.windows.device_control`
+
+Optional:
+
+- `enabled` (Boolean) Whether device control is enabled.
+- `usb_storage` (String) Access level for USB storage devices. Valid values: `"audit"`, `"read_only"`, `"no_execute"`, `"deny_all"`.
+
+
 <a id="nestedatt--policy--windows--events"></a>
 ### Nested Schema for `policy.windows.events`
 
 Optional:
 
 - `authentication` (Boolean) Collect authentication events.
+- `credential_access` (Boolean) Collect credential access events.
 - `dll_and_driver_load` (Boolean) Collect DLL and driver load events.
 - `dns` (Boolean) Collect DNS events.
 - `file` (Boolean) Collect file events.
@@ -332,6 +389,7 @@ Optional:
 
 Optional:
 
+- `custom_yara_signatures` (Boolean) Whether custom YARA signatures are enabled for memory protection.
 - `mode` (String) Protection mode. Valid values: `"off"`, `"detect"`, `"prevent"`.
 - `supported` (Boolean) Whether this protection is supported on the platform.
 
@@ -342,12 +400,22 @@ Optional:
 Optional:
 
 - `behavior_protection` (Attributes) (see [below for nested schema](#nestedatt--policy--windows--popup--behavior_protection))
+- `device_control` (Attributes) (see [below for nested schema](#nestedatt--policy--windows--popup--device_control))
 - `malware` (Attributes) (see [below for nested schema](#nestedatt--policy--windows--popup--malware))
 - `memory_protection` (Attributes) (see [below for nested schema](#nestedatt--policy--windows--popup--memory_protection))
 - `ransomware` (Attributes) (see [below for nested schema](#nestedatt--policy--windows--popup--ransomware))
 
 <a id="nestedatt--policy--windows--popup--behavior_protection"></a>
 ### Nested Schema for `policy.windows.popup.behavior_protection`
+
+Optional:
+
+- `enabled` (Boolean) Whether the popup notification is enabled.
+- `message` (String) The popup message text.
+
+
+<a id="nestedatt--policy--windows--popup--device_control"></a>
+### Nested Schema for `policy.windows.popup.device_control`
 
 Optional:
 

@@ -26,6 +26,7 @@ import (
 	edip "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
 const testArtifactManifest = "WzEyMywxXQ=="
@@ -665,4 +666,120 @@ func TestExtractPrivateStateFromResponse(t *testing.T) {
 	if ps.ArtifactManifest == nil {
 		t.Error("expected ArtifactManifest to be non-nil")
 	}
+}
+
+func popupItem(message string, enabled bool) map[string]any {
+	return map[string]any{"message": message, "enabled": enabled}
+}
+
+// fullyModeledPolicy returns a Defend policy payload containing every key the
+// typed schema models, so it survives an API -> state -> API round trip intact.
+func fullyModeledPolicy() map[string]any {
+	return map[string]any{
+		"windows": map[string]any{
+			"events": map[string]any{
+				"process": true, "network": true, "file": true, "dll_and_driver_load": true,
+				"dns": true, "registry": true, "security": true, "authentication": false,
+				"credential_access": true,
+			},
+			"malware":             map[string]any{"mode": "prevent", "blocklist": true, "on_write_scan": true, "notify_user": true},
+			"ransomware":          map[string]any{"mode": "prevent", "supported": true},
+			"memory_protection":   map[string]any{"mode": "prevent", "supported": true, "custom_yara_signatures": true},
+			"behavior_protection": map[string]any{"mode": "prevent", "supported": true, "reputation_service": true},
+			"device_control":      map[string]any{"enabled": true, "usb_storage": "deny_all"},
+			"popup": map[string]any{
+				"malware":             popupItem("win malware", true),
+				"ransomware":          popupItem("win ransomware", true),
+				"memory_protection":   popupItem("win memory", true),
+				"behavior_protection": popupItem("win behavior", true),
+				"device_control":      popupItem("win device", true),
+			},
+			"logging":                  map[string]any{"file": "info"},
+			"antivirus_registration":   map[string]any{"mode": "sync_with_malware_prevent", "enabled": false},
+			"attack_surface_reduction": map[string]any{"credential_hardening": map[string]any{"enabled": true}},
+		},
+		"mac": map[string]any{
+			"events":              map[string]any{"process": true, "network": true, "file": true, "dns": true, "security": true},
+			"malware":             map[string]any{"mode": "prevent", "blocklist": true, "on_write_scan": true, "notify_user": true},
+			"ransomware":          map[string]any{"mode": "detect", "supported": true},
+			"memory_protection":   map[string]any{"mode": "prevent", "supported": true, "custom_yara_signatures": false},
+			"behavior_protection": map[string]any{"mode": "prevent", "supported": true, "reputation_service": true},
+			"device_control":      map[string]any{"enabled": true, "usb_storage": "read_only"},
+			"popup": map[string]any{
+				"malware":             popupItem("mac malware", true),
+				"ransomware":          popupItem("mac ransomware", true),
+				"memory_protection":   popupItem("mac memory", true),
+				"behavior_protection": popupItem("mac behavior", true),
+				"device_control":      popupItem("mac device", true),
+			},
+			"logging": map[string]any{"file": "info"},
+		},
+		"linux": map[string]any{
+			"events":              map[string]any{"process": true, "network": true, "file": true, "session_data": true, "tty_io": false, "dns": true},
+			"malware":             map[string]any{"mode": "prevent", "blocklist": true, "on_write_scan": true},
+			"memory_protection":   map[string]any{"mode": "prevent", "supported": true, "custom_yara_signatures": true},
+			"behavior_protection": map[string]any{"mode": "prevent", "supported": true, "reputation_service": true},
+			"popup": map[string]any{
+				"malware":             popupItem("linux malware", true),
+				"memory_protection":   popupItem("linux memory", true),
+				"behavior_protection": popupItem("linux behavior", true),
+			},
+			"logging": map[string]any{"file": "info"},
+		},
+	}
+}
+
+func populateFromPolicyData(t *testing.T, policyData map[string]any) *edip.ElasticDefendIntegrationPolicyModel {
+	t.Helper()
+
+	config := map[string]struct {
+		Frozen *bool   `json:"frozen,omitempty"`
+		Type   *string `json:"type,omitempty"`
+		Value  any     `json:"value,omitempty"`
+	}{
+		"policy": buildConfigEntry(policyData),
+	}
+	inputs := kbapi.PackagePolicyTypedInputs{{
+		Type:    "endpoint",
+		Enabled: true,
+		Config:  &config,
+		Streams: []kbapi.PackagePolicyTypedInputStream{},
+	}}
+	policy := buildTestPackagePolicy("policy-123", "my-endpoint", "endpoint", "9.4.0", true, inputs)
+
+	model := &edip.ElasticDefendIntegrationPolicyModel{AdvancedSettings: types.MapNull(types.StringType)}
+	diags := edip.PopulateModelFromAPI(context.Background(), model, policy)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	return model
+}
+
+// TestPolicyRoundTripsAllModeledKeys verifies every modeled Defend policy key,
+// including device control, macOS ransomware, custom YARA signatures and the
+// newer event flags, is mapped into state and written back to the API payload.
+func TestPolicyRoundTripsAllModeledKeys(t *testing.T) {
+	want := fullyModeledPolicy()
+	model := populateFromPolicyData(t, want)
+
+	got, diags := edip.BuildPolicyPayload(context.Background(), model, nil)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	require.Equal(t, want, got)
+}
+
+// TestPolicyOmitsUnconfiguredOptionalObjects verifies that device control,
+// macOS ransomware, and custom YARA signatures stay null when absent from the
+// API response and are not sent back.
+func TestPolicyOmitsUnconfiguredOptionalObjects(t *testing.T) {
+	policyData := fullyModeledPolicy()
+	win := policyData["windows"].(map[string]any)
+	mac := policyData["mac"].(map[string]any)
+	delete(win, "device_control")
+	delete(win["memory_protection"].(map[string]any), "custom_yara_signatures")
+	delete(mac, "device_control")
+	delete(mac, "ransomware")
+
+	model := populateFromPolicyData(t, policyData)
+
+	got, diags := edip.BuildPolicyPayload(context.Background(), model, nil)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	require.Equal(t, policyData, got)
 }
