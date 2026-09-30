@@ -50,9 +50,11 @@ func (realGitDiffRunner) DiffNameOnly(base string, twoDot bool) ([]string, error
 	if !twoDot {
 		sep = "..."
 	}
-	out, err := exec.Command("git", "diff", "--name-only", base+sep+"HEAD").Output()
+	// --no-renames lists both the old and new path of a rename, so the source
+	// package of a moved file is still selected.
+	out, err := exec.Command("git", "diff", "--name-only", "--no-renames", base+sep+"HEAD").Output()
 	if err != nil {
-		return nil, fmt.Errorf("git diff --name-only %s%sHEAD: %w", base, sep, err)
+		return nil, fmt.Errorf("git diff --name-only --no-renames %s%sHEAD: %w", base, sep, err)
 	}
 	return splitLines(string(out)), nil
 }

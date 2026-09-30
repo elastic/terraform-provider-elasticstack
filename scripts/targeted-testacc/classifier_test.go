@@ -164,6 +164,7 @@ func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
 		".github/workflows/provider.yml",
 		"examples/resources/elasticstack_index/resource.tf",
 		"scripts/targeted-testacc/main.go",
+		".github/scripts/targeted-testacc-compute.sh",
 		"internal/kibana/dashboard/dashboardacctest/helpers.go",
 		"internal/kibana/dashboard/panelkit/contracttest/harness.go",
 		"internal/providerfwtest/helpers.go",
@@ -190,6 +191,8 @@ func TestClassifier_Classify_ForceAllFiles(t *testing.T) {
 		".env.template",
 		"docker-compose.yml",
 		"docker-compose.tls.yml",
+		"kibana.yml",
+		"kibana-9.4.yml",
 	}
 
 	for _, file := range files {
@@ -302,5 +305,14 @@ func TestClassifyResult_PackagesAreSorted(t *testing.T) {
 	sort.Strings(res.Packages)
 	if !reflect.DeepEqual(res.Packages, want) {
 		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+}
+
+func TestClassifier_Classify_KibanaConfigForceAllOnlyAtRoot(t *testing.T) {
+	c := NewClassifier("github.com/example/mod")
+	for _, file := range []string{"docs/kibana.yml", "kibana.yaml", "kibana-9.4.yml.bak", "kibanax.yml"} {
+		if c.Classify([]string{file}).ForceAll {
+			t.Errorf("ForceAll = true for %s, want false", file)
+		}
 	}
 }

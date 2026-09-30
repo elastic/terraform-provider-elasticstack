@@ -105,3 +105,17 @@ func TestWalkReverseDeps_NoImporters(t *testing.T) {
 		t.Errorf("WalkReverseDeps = %v, want %v", got, want)
 	}
 }
+
+func TestWalkReverseDeps_TestOnlyImporterReached(t *testing.T) {
+	// acc's _test.go files import helper (recorded as a forward edge), so a
+	// change to helper must reach acc even though no non-test code links them.
+	forward := map[string][]string{
+		"acc":    {"helper"},
+		"helper": {},
+	}
+	got := WalkReverseDeps(BuildReverseDepGraph(forward), []string{"helper"})
+	want := []string{"acc", "helper"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("WalkReverseDeps = %v, want %v", got, want)
+	}
+}

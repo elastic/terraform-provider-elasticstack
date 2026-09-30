@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -54,84 +55,39 @@ func goList(t *testing.T, repoRoot, format, pattern string) string {
 	return string(out)
 }
 
-// TestTestOnlyImportedPackagesGuard fails when a package under internal/ is
-// imported only from test files (no non-test importer exists in the module)
-// and is neither covered by a force-all prefix nor entity-declaring. Such
-// packages are invisible to both selection phases: phase 1 walks non-test
-// imports only, and phase 2 only covers packages that declare Terraform
-// entities. A change to such a package would silently skip relevant
-// acceptance tests, so when a new shared test-helper package is introduced
-// it must either be added to forceAllPrefixes or declare entities.
-func TestTestOnlyImportedPackagesGuard(t *testing.T) {
-	// The test's working directory is the package dir (scripts/targeted-testacc),
-	// so every repository path below must be resolved against the module root.
+// TestImportGraphIncludesTestImports fails when BuildImportGraph drops any
+// TestImports/XTestImports edge. Phase 1 must see packages imported only from
+// test files (shared acceptance-test helpers and the like), otherwise a change
+// to such a package would silently skip the acceptance tests that import it.
+func TestImportGraphIncludesTestImports(t *testing.T) {
 	root := repoRoot(t)
 	modulePath, err := currentModulePath()
 	if err != nil {
 		t.Fatalf("cannot resolve module path: %v", err)
 	}
-	// The findings filter is the whole module, not just internal/: the blind
-	// spot this guard exists for — a package with no non-test importer,
-	// invisible to the phase-1 non-test import graph — also exists for
-	// in-module packages outside the enumeration roots (live instance:
-	// examples/, which is test-imported by internal/acctest with no non-test
-	// importer anywhere). examples/ passes today only because it matches
-	// matchesForceAll; a future sibling top-level helper or fixtures package
-	// imported only from acceptance test files would otherwise be silently
-	// invisible to phase 1 with this guard green.
 	modulePrefix := modulePath + "/"
 
-	// The guard scans the test imports of both ./internal/... and ./provider/...:
-	// a package under internal/ whose only test importers live under provider/
-	// would never enter the guard's candidate set under an internal/-only
-	// pattern, so the guard could not fire for it (internal/acctest, which has
-	// no non-test importer anywhere in the module, is test-imported by
-	// provider/'s test files).
-	goListPattern := "./internal/... ./provider/..."
-	nonTestImported := map[string]bool{}
-	for _, fields := range scanGoList(goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", goListPattern)) {
+	t.Chdir(root)
+	g, err := BuildImportGraph()
+	if err != nil {
+		t.Fatalf("BuildImportGraph: %v", err)
+	}
+
+	out := goList(t, root, "{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", "./internal/... ./provider/...")
+	var missing []string
+	for _, fields := range scanGoList(out) {
+		pkg := fields[0]
 		for _, imp := range fields[1:] {
-			if strings.HasPrefix(imp, modulePrefix) {
-				nonTestImported[imp] = true
+			if imp == pkg || !strings.HasPrefix(imp, modulePrefix) {
+				continue
+			}
+			if !slices.Contains(g.Forward[pkg], imp) {
+				missing = append(missing, pkg+" -> "+imp)
 			}
 		}
 	}
-
-	testImportsOut := goList(t, root, "{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", goListPattern)
-	testImported := map[string]bool{}
-	for _, fields := range scanGoList(testImportsOut) {
-		for _, imp := range fields[1:] {
-			if imp != fields[0] && strings.HasPrefix(imp, modulePrefix) {
-				testImported[imp] = true
-			}
-		}
-	}
-
-	var unguarded []string
-	for pkg := range testImported {
-		if nonTestImported[pkg] {
-			continue
-		}
-		dir := strings.TrimPrefix(pkg, modulePath+"/")
-		// forceAllPrefixes entries carry a trailing slash, so the bare dir must
-		// be slash-terminated before matching (a bare-dir comparison would miss
-		// every force-all directory and report false positives).
-		if matchesForceAll(dir + "/") {
-			continue
-		}
-		entities, err := ExtractEntities(filepath.Join(root, dir))
-		if err != nil {
-			t.Errorf("extract entities for %s: %v", dir, err)
-			continue
-		}
-		if len(entities) == 0 {
-			unguarded = append(unguarded, dir)
-		}
-	}
-
-	if len(unguarded) > 0 {
-		t.Errorf("packages are imported only from test files but are neither force-all nor entity-declaring: %v\n"+
-			"Phase 1 uses non-test imports only, so these packages are invisible to selection. Add them to forceAllPrefixes or ensure they declare Terraform entities.", unguarded)
+	if len(missing) > 0 {
+		t.Errorf("import graph is missing test-import edges: %v", missing)
 	}
 }
 

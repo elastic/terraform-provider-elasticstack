@@ -34,6 +34,9 @@ var forceAllPrefixes = []string{
 	"generated/",
 	"xpprovider/",
 	".github/workflows/",
+	// CI helper scripts that compute, classify and gate the selection: a PR
+	// touching only these would otherwise select zero packages.
+	".github/scripts/",
 	// The embedded example tree: consumed only from test code
 	// (internal/acctest/examples_plan_test.go embeds examples/ and drives
 	// TestAccExamples_planOnly over every embedded example), so examples/ is
@@ -46,9 +49,10 @@ var forceAllPrefixes = []string{
 	// would otherwise select zero acceptance packages, so changes to the
 	// selection tool are always exercised by the full acceptance suite.
 	"scripts/targeted-testacc/",
-	// Shared acceptance-test helper packages: imported only from test files,
-	// so the phase-1 reverse-dependency walk (non-test imports) cannot see
-	// them and they do not declare Terraform entities for phase 2.
+	// Shared acceptance-test helper packages: imported only from test files
+	// and they do not declare Terraform entities for phase 2. The phase-1
+	// graph now includes test imports, but these stay force-all as a
+	// conservative default.
 	"internal/kibana/dashboard/dashboardacctest/",
 	"internal/kibana/dashboard/panelkit/contracttest/",
 	"internal/providerfwtest/",
@@ -76,6 +80,19 @@ func isForceAllDockerComposeFile(file string) bool {
 		return false
 	}
 	return strings.HasSuffix(name, ".yml") || strings.HasSuffix(name, ".yaml")
+}
+
+// isForceAllKibanaConfigFile reports whether the file is a root-level Kibana
+// config (kibana.yml or kibana-*.yml). docker-compose mounts one of these into
+// the stack, so editing it changes Kibana for every acceptance test.
+func isForceAllKibanaConfigFile(file string) bool {
+	if strings.Contains(file, "/") || !strings.HasPrefix(file, "kibana") {
+		return false
+	}
+	if file == "kibana.yml" {
+		return true
+	}
+	return strings.HasPrefix(file, "kibana-") && strings.HasSuffix(file, ".yml")
 }
 
 // Classifier maps changed file paths to Go package import paths and detects
@@ -196,5 +213,5 @@ func matchesForceAll(file string) bool {
 	if slices.Contains(forceAllFiles, file) {
 		return true
 	}
-	return isForceAllDockerComposeFile(file)
+	return isForceAllDockerComposeFile(file) || isForceAllKibanaConfigFile(file)
 }
