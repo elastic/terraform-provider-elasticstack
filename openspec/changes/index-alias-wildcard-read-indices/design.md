@@ -34,6 +34,7 @@ Each `read_indices` element gains `concrete_indices` (computed `set(string)`). `
 - **Plan (`ModifyPlan`)**: resolve every `read_indices[*].name` and compare the desired targets with state. When creation or an in-place update is required, leave the affected computed `concrete_indices` values unknown. Terraform therefore shows the resource update without constraining the final membership to a stale plan-time set. When no update is needed, preserve the current concrete membership in the plan.
 - **Apply (create/update)**: re-resolve the expressions, compute actions against the live alias response, then read back. Because the affected computed values were unknown, a target created between plan and apply can be attached and recorded without producing an inconsistent result.
 - **Read**: resolve the configured expression, fetch the alias's actual associations, and store the intersection as that element's `concrete_indices`. Storing the whole resolved set would hide a missing attachment and prevent Terraform from planning it.
+- **Overlapping expressions**: a member covered by several elements appears in each covering element's `concrete_indices` and is not emitted as a singleton. Each element keeps its own configured settings. Overlap with differing settings is rejected during plan, create and update, so read never arbitrates between elements.
 - **Unconfigured members**: alias members not covered by any configured expression are emitted as singleton `read_indices` entries (`name` equals the concrete index, `concrete_indices` equals `{name}`), preserving the current full-ownership semantics so the next plan removes them.
 - **Write index**: the alias's write index remains modeled only by `write_index`; it is excluded from `read_indices` coverage when classifying members.
 
@@ -43,7 +44,7 @@ The implementation must not assume that a `SetNestedAttribute` ignores its compu
 
 Elasticsearch has no persistent alias object without an associated target. When there is no `write_index` and every `read_indices` expression resolves to an empty set, create and update retain a virtual Terraform resource state instead of attempting to create an empty alias. The state retains the configured expressions and empty `concrete_indices` sets.
 
-On read, a missing alias is retained only when the prior state has no `write_index`, every prior `read_indices` element has empty `concrete_indices`, and desired membership is still empty. A missing alias with a write index, non-empty prior concrete membership, or any resolved read target remains normal not-found drift and removes the resource from state. When a later plan resolves a target, the virtual resource receives an in-place update that creates the alias association. Deleting virtual state makes no Update Aliases API call.
+On read, a missing alias is retained only when the prior state has no `write_index` and every prior `read_indices` element has empty `concrete_indices`. Read deliberately does not resolve the expressions for this decision: if it dropped the resource whenever a target now matches, the next plan would show a create instead of the in-place update promised for a later-created match, and the resource would appear deleted. Instead, `ModifyPlan` resolves the expressions, sees desired membership that differs from the empty state, and plans the in-place update that creates the alias association. A missing alias with a write index or non-empty prior concrete membership remains normal not-found drift and removes the resource from state. Deleting virtual state makes no Update Aliases API call.
 
 ### Selector resolution
 
@@ -86,7 +87,8 @@ Update the `read_indices.name` and `write_index.name` descriptions, add a `concr
 - **Mixed resolver target kinds**: Elasticsearch cannot add an alias to regular indices and data streams in one target set. Resolver aliases are ignored; mixed attachable target kinds fail with a diagnostic rather than producing a partial alias.
 - **Plan-time API calls**: `ModifyPlan` now issues a Resolve Index call. When the cluster is unreachable at plan time the plan fails with a clear diagnostic; unknown `name` values skip resolution and leave `concrete_indices` unknown.
 - **Narrow drift detection**: out-of-band filter/routing/hidden changes on an attached target do not trigger a plan on their own. This is a documented limitation.
-- **Large expansions**: `_all` or broad wildcards can produce many actions in one atomic request; accepted for now.
+- **Large expansions**: broad wildcards can produce many actions in one atomic request; accepted for now.
+- **`_all` and bare `*`**: these get no special handling and are subject to the mixed-kind and write-index checks. On clusters that hold both regular indices and data streams (for example Fleet or APM), or when the expression resolves to the `write_index`, they fail with a diagnostic. Practitioners narrow them with a prefix or `-` exclusions. Auto-subtracting the write index or filtering by target kind is deliberately not done, because it would silently change which targets the alias covers.
 
 ## Migration Plan
 

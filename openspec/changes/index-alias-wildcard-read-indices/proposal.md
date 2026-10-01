@@ -6,7 +6,7 @@ Source: [elastic/terraform-provider-elasticstack#5027](https://github.com/elasti
 
 ## What Changes
 
-- `read_indices[*].name` accepts any Elasticsearch multi-target expression (`*`, `?`, comma-separated lists, `-` exclusions, `_all`). The user's original expression stays in `name`.
+- `read_indices[*].name` accepts any Elasticsearch multi-target expression (`*`, `?`, comma-separated lists, `-` exclusions). The user's original expression stays in `name`. `_all` and bare `*` get no special handling: they fail with a diagnostic when they resolve to both regular indices and data streams or to the `write_index`, and can be narrowed with a prefix or `-` exclusions.
 - Add a computed `concrete_indices` set of strings inside each `read_indices` element. It holds the concrete indices and data streams currently attached to the alias for that expression.
 - The provider resolves expressions (with `expand_wildcards=all` and `allow_no_indices=true`) during plan (`ModifyPlan`), create, read and update:
   - Plan shows an in-place update when a resolved target is not yet attached to the alias.

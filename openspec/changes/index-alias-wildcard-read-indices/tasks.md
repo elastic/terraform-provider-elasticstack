@@ -4,7 +4,7 @@
 - [ ] 1.2 Add the computed `concrete_indices` `set(string)` attribute to `read_indices` in `schema.go` and the model, updating attribute-type helpers; verify with a schema unit test and `make build`
 - [ ] 1.3 Implement action computation: expand each `read_indices` element to per-target configs, deduplicate identical settings, error on conflicting settings or a target that is also the write index; verify with unit tests for overlapping-identical, overlapping-conflicting and write-index-collision cases
 - [ ] 1.4 Rework create and update to use resolved targets and diff against the live Get Alias response per concrete name (no remove/add churn for attached targets, no Update Aliases call when no actions); verify with unit tests on the action builder
-- [ ] 1.5 Rework read to store per-element `concrete_indices` as the intersection of resolved targets and actual alias members, preserve configured read-index settings, surface uncovered members as singleton `read_indices` entries, and retain virtual state only for an absent alias with empty desired membership and empty prior concrete membership; verify with unit tests for full match, partial attachment, no match, virtual state, unconfigured member, settings preservation and real not-found drift
+- [ ] 1.5 Rework read to store per-element `concrete_indices` as the intersection of resolved targets and actual alias members, preserve configured read-index settings, list a member covered by several elements in each covering element's `concrete_indices` without a singleton, surface uncovered members as singleton `read_indices` entries, and retain virtual state for an absent alias whenever prior state has no write index and empty prior concrete membership (without consulting current resolution); verify with unit tests for full match, partial attachment, no match, virtual state, virtual state with a newly matching target, overlapping expressions, unconfigured member, settings preservation and real not-found drift
 - [ ] 1.6 Rework delete to remove the alias from its live Get Alias members and to delete virtual state without an API call; verify with unit tests that no selector strings reach the API
 - [ ] 1.7 Add acceptance test for wildcard create, read, update and delete that ends with a clean follow-up plan, reproducing the scenario from issue #5027 (alias on `traces-apm*`-style indices)
 
@@ -12,7 +12,7 @@
 
 - [ ] 2.1 Implement `ModifyPlan` on the alias resource to resolve expressions and detect membership drift, preserving known membership only for no-op plans and planning affected `concrete_indices` as unknown; verify unit coverage for unknown names and set-element correlation
 - [ ] 2.2 Add acceptance coverage for a newly matching but unattached target producing an in-place update, virtual empty state becoming a concrete alias, an unconfigured alias member producing a removal plan, settings-only drift producing a clean plan and being repaired during a later membership update, and a target created after plan but before apply without an inconsistent-result error
-- [ ] 2.3 Add acceptance coverage for no-match expressions, comma-separated, exclusion and `_all` expressions, and hidden and closed matching targets
+- [ ] 2.3 Add acceptance coverage for no-match expressions, comma-separated and exclusion expressions, a broad expression covering the write index being rejected and succeeding once the write index is excluded, and hidden and closed matching targets
 
 ## 3. Practitioner gets early errors for invalid `write_index` selectors and safe upgrades
 
