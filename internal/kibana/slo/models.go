@@ -83,14 +83,7 @@ func (m tfModel) GetID() types.String {
 }
 
 func (m tfModel) GetResourceID() types.String {
-	if m.ID.IsNull() || m.ID.IsUnknown() {
-		return types.StringNull()
-	}
-	compID, _ := clients.CompositeIDFromStr(m.ID.ValueString())
-	if compID != nil {
-		return types.StringValue(compID.ResourceID)
-	}
-	return m.ID // fallback
+	return clients.ResourceIDFromComposite(m.ID, m.ID)
 }
 
 func (m tfModel) GetSpaceID() types.String {

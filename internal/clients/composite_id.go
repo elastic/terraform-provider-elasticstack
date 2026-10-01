@@ -70,3 +70,15 @@ func (c *CompositeID) String() string {
 func CompositeIDValue(clusterID, resourceID string) types.String {
 	return types.StringValue((&CompositeID{ClusterID: clusterID, ResourceID: resourceID}).String())
 }
+
+// ResourceIDFromComposite extracts the resource segment from a composite
+// "<cluster_uuid>/<resource_identifier>" ID (as produced by CompositeIDValue).
+// If id is null, unknown, or cannot be parsed as a composite ID, fallback is
+// returned instead.
+func ResourceIDFromComposite(id types.String, fallback types.String) types.String {
+	compID, diags := CompositeIDFromStr(id.ValueString())
+	if diags.HasError() {
+		return fallback
+	}
+	return types.StringValue(compID.ResourceID)
+}

@@ -20,6 +20,7 @@ package clients
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,5 +55,33 @@ func TestCompositeIDFromStr(t *testing.T) {
 	t.Run("rejects missing slash", func(t *testing.T) {
 		_, diags := CompositeIDFromStr("not-a-composite-import-id")
 		require.True(t, diags.HasError())
+	})
+}
+
+func TestResourceIDFromComposite(t *testing.T) {
+	t.Run("extracts resource segment from composite id", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringValue("default/auto-gen-uuid"), types.StringValue("fallback"))
+		assert.Equal(t, "auto-gen-uuid", got.ValueString())
+	})
+
+	t.Run("falls back when id is not composite", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringValue("not-composite"), types.StringValue("fallback"))
+		assert.Equal(t, "fallback", got.ValueString())
+	})
+
+	t.Run("falls back when id is null", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringNull(), types.StringValue("fallback"))
+		assert.Equal(t, "fallback", got.ValueString())
+	})
+
+	t.Run("falls back when id is unknown", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringUnknown(), types.StringValue("fallback"))
+		assert.Equal(t, "fallback", got.ValueString())
+	})
+
+	t.Run("falls back to null id yields null when fallback is the id itself", func(t *testing.T) {
+		id := types.StringNull()
+		got := ResourceIDFromComposite(id, id)
+		assert.True(t, got.IsNull())
 	})
 }

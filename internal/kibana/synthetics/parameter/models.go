@@ -47,11 +47,7 @@ func (m Model) GetResourceID() types.String {
 	if m.ID.IsNull() || m.ID.IsUnknown() {
 		return types.StringNull()
 	}
-	compID, diags := clients.CompositeIDFromStr(m.ID.ValueString())
-	if !diags.HasError() {
-		return types.StringValue(compID.ResourceID)
-	}
-	return m.ID
+	return clients.ResourceIDFromComposite(m.ID, m.ID)
 }
 
 func (m Model) GetSpaceID() types.String { return m.SpaceID }
