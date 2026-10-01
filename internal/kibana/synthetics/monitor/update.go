@@ -50,7 +50,7 @@ func updateMonitor(
 
 	spaceID := req.SpaceID
 	monitorID := req.WriteID
-	result, updateDiags := kibanaoapi.UpdateMonitor(ctx, oapiClient, spaceID, monitorID, *input)
+	result, syncErrors, updateDiags := kibanaoapi.UpdateMonitor(ctx, oapiClient, spaceID, monitorID, *input)
 	diags.Append(updateDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
@@ -70,6 +70,8 @@ func updateMonitor(
 		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
 	}
 	planModel = *updatedPlan
+
+	diags.Append(updateSyncErrorsWarning(planModel.Name.ValueString(), planModel.ID.ValueString(), syncErrors)...)
 
 	return entitycore.KibanaWriteResult[tfModelV0]{Model: planModel}, diags
 }
