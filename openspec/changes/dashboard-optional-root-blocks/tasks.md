@@ -31,5 +31,5 @@
 
 ## 6. Verification
 
-- [ ] 6.1 `make build`, `make check-lint`, and `make check-openspec` pass.
-- [ ] 6.2 Run the new unit tests and targeted acceptance tests against an available stack.
+- [x] 6.1 `make build`, `make check-lint`, and `make check-openspec` pass.
+- [x] 6.2 Run the new unit tests and targeted acceptance tests against an available stack.
