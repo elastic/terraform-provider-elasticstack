@@ -20,6 +20,7 @@ package agentbuilderskill_test
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -295,6 +296,48 @@ func TestAccDataSourceKibanaAgentBuilderSkill(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.0.content", "Content available via the data source."),
 				),
 			},
+			{
+				// Multiple tool_ids and referenced_content entries; verifies API order is preserved.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_multi"),
+				ConfigVariables: config.Variables{
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceID, "id", "default/"+skillID),
+					resource.TestCheckResourceAttr(dataSourceID, "skill_id", skillID),
+					resource.TestCheckResourceAttr(dataSourceID, "name", "Datasource Skill Multi"),
+					resource.TestCheckResourceAttr(dataSourceID, "description", "A skill with multiple tools and references."),
+					resource.TestCheckResourceAttr(dataSourceID, "content", "Multi content."),
+					resource.TestCheckResourceAttr(dataSourceID, "tool_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr(dataSourceID, "tool_ids.*", "platform.core.index_explorer"),
+					resource.TestCheckTypeSetElemAttr(dataSourceID, "tool_ids.*", "platform.core.search"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.#", "3"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.0.name", "First"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.0.relative_path", "./first/path.md"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.0.content", "First referenced content."),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.1.name", "Second"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.1.relative_path", "./second/path.md"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.1.content", "Second referenced content."),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.2.name", "Third"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.2.relative_path", "./third/path.md"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.2.content", "Third referenced content."),
+				),
+			},
+			{
+				// Skill without tool_ids or referenced_content.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_empty"),
+				ConfigVariables: config.Variables{
+					"skill_id": config.StringVariable(skillID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceID, "skill_id", skillID),
+					resource.TestCheckResourceAttr(dataSourceID, "name", "Datasource Skill Empty"),
+					resource.TestCheckResourceAttr(dataSourceID, "tool_ids.#", "0"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.#", "0"),
+				),
+			},
 		},
 	})
 }
@@ -317,11 +360,14 @@ func TestAccDataSourceKibanaAgentBuilderSkillSpace(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrPair(dataSourceID, "id", testResourceID, "id"),
-					resource.TestCheckResourceAttrPair(dataSourceID, "skill_id", testResourceID, "skill_id"),
+					resource.TestCheckResourceAttr(dataSourceID, "id", spaceID+"/"+skillID),
+					resource.TestCheckResourceAttr(dataSourceID, "skill_id", skillID),
 					resource.TestCheckResourceAttr(dataSourceID, "space_id", spaceID),
-					resource.TestCheckResourceAttrPair(dataSourceID, "name", testResourceID, "name"),
-					resource.TestCheckResourceAttrSet(dataSourceID, "description"),
-					resource.TestCheckResourceAttrSet(dataSourceID, "content"),
+					resource.TestCheckResourceAttr(dataSourceID, "name", "Space Skill"),
+					resource.TestCheckResourceAttr(dataSourceID, "description", "A space-scoped skill for export."),
+					resource.TestCheckResourceAttr(dataSourceID, "content", "Answer questions about this space."),
+					resource.TestCheckResourceAttr(dataSourceID, "tool_ids.#", "0"),
+					resource.TestCheckResourceAttr(dataSourceID, "referenced_content.#", "0"),
 				),
 			},
 		},
@@ -338,8 +384,10 @@ func TestAccDataSourceKibanaAgentBuilderSkillKibanaConnection(t *testing.T) {
 		resource.TestCheckResourceAttr(dataSourceID, "skill_id", skillID),
 		resource.TestCheckResourceAttr(dataSourceID, "space_id", "default"),
 		resource.TestCheckResourceAttr(dataSourceID, "name", "Skill datasource kibana_connection"),
-		resource.TestCheckResourceAttrSet(dataSourceID, "description"),
-		resource.TestCheckResourceAttrSet(dataSourceID, "content"),
+		resource.TestCheckResourceAttr(dataSourceID, "description", "A skill exported through an entity-local Kibana connection."),
+		resource.TestCheckResourceAttr(dataSourceID, "content", "Be helpful."),
+		resource.TestCheckResourceAttr(dataSourceID, "tool_ids.#", "0"),
+		resource.TestCheckResourceAttr(dataSourceID, "referenced_content.#", "0"),
 		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.#", "1"),
 		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.0.endpoints.#", "1"),
 		resource.TestCheckResourceAttr(dataSourceID, "kibana_connection.0.endpoints.0", strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))),
@@ -360,6 +408,66 @@ func TestAccDataSourceKibanaAgentBuilderSkillKibanaConnection(t *testing.T) {
 					"skill_id": config.StringVariable(skillID),
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(checks...),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAgentBuilderSkillCompositeID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+
+	skillID := "test-skill-comp-ds-" + uuid.New().String()[:8]
+	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+
+	checks := resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr(dataSourceID, "id", spaceID+"/"+skillID),
+		resource.TestCheckResourceAttr(dataSourceID, "skill_id", skillID),
+		resource.TestCheckResourceAttr(dataSourceID, "space_id", spaceID),
+		resource.TestCheckResourceAttr(dataSourceID, "name", "Composite Skill"),
+		resource.TestCheckResourceAttr(dataSourceID, "description", "A space-scoped skill read via composite id."),
+		resource.TestCheckResourceAttr(dataSourceID, "content", "Composite content."),
+	)
+
+	vars := config.Variables{
+		"skill_id": config.StringVariable(skillID),
+		"space_id": config.StringVariable(spaceID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// space_id is unset on the data source; the space comes from the composite skill_id.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_composite"),
+				ConfigVariables:          vars,
+				Check:                    checks,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_composite_with_space"),
+				ConfigVariables:          vars,
+				Check:                    checks,
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAgentBuilderSkillNotFound(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderSkillsAPIVersion, versionutils.FlavorAny)
+
+	skillID := "test-skill-missing-" + uuid.New().String()[:8]
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"skill_id": config.StringVariable(skillID),
+				},
+				ExpectError: regexp.MustCompile("Skill not found"),
 			},
 		},
 	})
