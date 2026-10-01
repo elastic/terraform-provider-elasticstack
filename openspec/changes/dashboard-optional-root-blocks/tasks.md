@@ -18,10 +18,10 @@
 
 - [x] 4.1 Unit tests for `dashboardToAPICreateRequest` / `dashboardToAPIUpdateRequest`: nil blocks are omitted (including `options` on update); set blocks are sent.
 - [x] 4.2 Schema validation unit test: a title-only configuration validates, and `time_range = { from = "now-7d" }` (missing `to`) returns a diagnostic for the missing nested attribute.
-- [ ] 4.3 Acceptance test: title-only create, empty re-plan, and import verify.
-- [ ] 4.4 Acceptance test: add then remove each of `time_range`, `refresh_interval`, and `query`; removal leaves the block null in state.
-- [ ] 4.5 Acceptance test: non-default values for each block.
-- [ ] 4.6 Optionally cover a `dashboard` panel with `use_time_range` on a title-only dashboard; otherwise note as unverified.
+- [x] 4.3 Acceptance test: title-only create, empty re-plan, and import verify.
+- [x] 4.4 Acceptance test: add then remove each of `time_range`, `refresh_interval`, and `query`; removal leaves the block null in state.
+- [x] 4.5 Acceptance test: non-default values for each block.
+- [x] 4.6 Optionally cover a `dashboard` panel with `use_time_range` on a title-only dashboard; otherwise note as unverified.
 
 ## 5. Examples and docs
 
