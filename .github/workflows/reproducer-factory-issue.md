@@ -320,7 +320,7 @@ steps:
     with:
       name: reproducer-factory-issue-context
       path: /tmp/reproducer-factory-context/
-model: "anthropic/claude-sonnet-5-5"
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
   args:
@@ -330,7 +330,7 @@ engine:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 # Disable the per-run AI Credits budget guard. The OpenRouter model slug
-# "anthropic/claude-sonnet-5-5" may be absent from the AWF api-proxy's built-in
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
 # pricing table. gh-aw's models.providers frontmatter override does not
 # propagate to apiProxy.defaultAiCreditsPricing
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
@@ -415,7 +415,7 @@ safe-outputs:
 
 # Reproducer Factory issue reproduction worker
 
-You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
+You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled`reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
 
 Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced).
 
