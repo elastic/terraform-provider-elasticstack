@@ -39,7 +39,7 @@ safe-outputs:
     max: 3
 
 timeout-minutes: 15
-model: "anthropic/claude-sonnet-5"
+model: "anthropic/claude-sonnet-5-5"
 engine:
   id: claude
   args:
@@ -49,7 +49,7 @@ engine:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 # Disable the per-run AI Credits budget guard. The OpenRouter model slug
-# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# "anthropic/claude-sonnet-5-5" may be absent from the AWF api-proxy's built-in
 # pricing table. gh-aw's models.providers frontmatter override does not
 # propagate to apiProxy.defaultAiCreditsPricing
 # (see https://github.com/github/gh-aw/issues/47365, fix pending in
