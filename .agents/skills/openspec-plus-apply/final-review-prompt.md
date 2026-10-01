@@ -10,16 +10,15 @@ Dispatch the whole-change reviewer subagent at Phase 3 (after all slices `[x]`, 
 
 > type-general-purpose dispatch: Claude Code `Agent(general-purpose)` · Devin/Windsurf `run_subagent(subagent_general)` · OpenCode `@general` · Codex `spawn_agent` (`multi_agent=true`) · Antigravity `invoke_subagent(self)` · Pi `subagent` · unlisted → self-assess; no dispatch tool → main agent chooses inline.
 
-> **MAIN AGENT:** Copy the `prompt:` block below verbatim — substitute ONLY `{PLACEHOLDER}` tokens. Do NOT summarize, shorten, or drop any line. The urge to "tighten" this is the failure mode.
+> **MAIN AGENT:** Dispatch a subagent with description "Final whole-change review for {CHANGE_NAME}". Its prompt argument MUST be EXACTLY the fenced text below, copied verbatim — substitute ONLY `{PLACEHOLDER}` tokens, drop no line. Nothing above this line is part of the prompt argument.
 
 ```
-Dispatch subagent of type general-purpose (use your subagent/task tool):
-  description: "Final whole-change review for {CHANGE_NAME}"
-  prompt: |
-    You are reviewing the complete implementation of an OpenSpec change
+You are reviewing the complete implementation of an OpenSpec change
     end-to-end. Each slice has already been individually approved by
     spec-compliance and code-quality reviewers. Your job is to verify
     that slices fit together as one coherent change.
+
+    MUST review this change yourself. MUST NOT dispatch a subagent, invoke this orchestrator, or create a task/thread/session.
 
     ## Change
 
