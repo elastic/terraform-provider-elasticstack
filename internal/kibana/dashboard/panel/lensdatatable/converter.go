@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable)
+	return string(kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -64,11 +64,11 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	}
 	blocks.DatatableConfig = &models.DatatableConfigModel{}
 
-	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsDatatableNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(datatableNoESQL.DataSource) {
+	if datatableNoESQL, err := attrs.AsKibanaHTTPAPIsVisDatatableNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(datatableNoESQL.DataSource) {
 		blocks.DatatableConfig.NoESQL = &models.DatatableNoESQLConfigModel{}
 		return datatableNoESQLConfigFromAPI(ctx, blocks.DatatableConfig.NoESQL, priorNo, datatableNoESQL)
 	}
-	datatableESQL, err := attrs.AsKibanaHTTPAPIsDatatableESQLByValuePanel()
+	datatableESQL, err := attrs.AsKibanaHTTPAPIsVisDatatableESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -93,7 +93,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 			return lenscommon.VisByValueConfig0{}, diags
 		}
 
-		if err := attrs.FromKibanaHTTPAPIsDatatableNoESQLByValuePanel(noESQL); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsVisDatatableNoESQLByValuePanel(noESQL); err != nil {
 			diags.AddError("Failed to convert datatable no-esql config", err.Error())
 			return lenscommon.VisByValueConfig0{}, diags
 		}
@@ -104,7 +104,7 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 			return lenscommon.VisByValueConfig0{}, diags
 		}
 
-		if err := attrs.FromKibanaHTTPAPIsDatatableESQLByValuePanel(esql); err != nil {
+		if err := attrs.FromKibanaHTTPAPIsVisDatatableESQLByValuePanel(esql); err != nil {
 			diags.AddError("Failed to convert datatable esql config", err.Error())
 			return lenscommon.VisByValueConfig0{}, diags
 		}

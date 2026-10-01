@@ -596,6 +596,7 @@ var transformers = []TransformFunc{
 	transformKibanaPaths,
 	transformFleetPaths,
 	removeBrokenDiscriminator,
+	fixStreamsForkWhere,
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
 	fixSpaceResponseSchemas,
@@ -1009,6 +1010,25 @@ func removeBrokenDiscriminator(schema *Schema) {
 	for path, method := range brokenDiscriminatorPaths {
 		schema.MustGetPath(path).MustGetEndpoint(method).Delete("requestBody.content.application/json.schema.discriminator")
 	}
+
+	// The discriminators on the color and url format params have no mapping
+	// and their oneOf branches are inline schemas, which oapi-codegen rejects.
+	schema.Components.Delete("schemas.Kibana_HTTP_APIs_kbn-field-format-color.properties.params.discriminator")
+	schema.Components.Delete("schemas.Kibana_HTTP_APIs_kbn-field-format-url.properties.params.discriminator")
+}
+
+// fixStreamsForkWhere collapses the recursive `where` condition on the streams
+// fork request body to a free-form value. Upstream inlines the and/or/not
+// condition tree instead of referencing a component, and oapi-codegen expands
+// that into ~23k generated types (a ~3x larger kibana.gen.go that lint cannot
+// process). The provider does not use this endpoint.
+func fixStreamsForkWhere(schema *Schema) {
+	const whereKey = "requestBody.content.application/json.schema.properties.where"
+	path, ok := schema.Paths["/api/streams/{name}/_fork"]
+	if !ok || path == nil || path.Post == nil || !path.Post.Has(whereKey) {
+		return
+	}
+	path.Post.Set(whereKey, Map{"description": "Condition that selects the documents routed to the forked stream."})
 }
 
 func fixPutSecurityRoleName(schema *Schema) {
@@ -1124,18 +1144,18 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 // fixVisByValueConfig restores the previous by-value vis config shape that
 // oapi-codegen and the dashboard Lens converters expect.
 //
-// Upstream now emits vis config.anyOf.0 as allOf(lensApiConfig, chrome).
+// Upstream now emits vis config.anyOf.0 as allOf(visApiConfig, chrome).
 // oapi-codegen drops the chart union and keeps only chrome, so generated
 // VisConfig0 has no As*ByValuePanel helpers and leaf charts lose
 // drilldowns/time_range/hide_*. This transform:
 //  1. copies chrome properties onto each leaf chart schema
-//  2. flattens lensApiConfig.anyOf to those leaves
+//  2. flattens visApiConfig.anyOf to those leaves
 //  3. renames leaves to *ByValuePanel (the names the provider already uses)
 //  4. inlines that leaf union as vis config.anyOf.0 (so VisConfig0 keeps As* helpers)
 func fixVisByValueConfig(schema *Schema) {
 	const (
 		visByValueKey = "schemas.Kibana_HTTP_APIs_kbn-dashboard-panel-type-vis.properties.config.anyOf.0"
-		lensKey       = "schemas.Kibana_HTTP_APIs_lensApiConfig"
+		lensKey       = "schemas.Kibana_HTTP_APIs_visApiConfig"
 	)
 
 	byValue, ok := schema.Components.GetMap(visByValueKey)
@@ -1214,7 +1234,7 @@ func fixVisByValueConfig(schema *Schema) {
 	}
 	lens.Set("anyOf", newAnyOf)
 	// Inline the leaf union so oapi-codegen emits VisConfig0 with As*ByValuePanel
-	// methods. A $ref to lensApiConfig would alias the type away.
+	// methods. A $ref to visApiConfig would alias the type away.
 	schema.Components.Set(visByValueKey, Map{"anyOf": cloneSchemaValue(newAnyOf)})
 }
 

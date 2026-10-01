@@ -34,7 +34,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap)
+	return string(kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -52,9 +52,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.HeatmapConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.HeatmapConfig, prior,
-		attrs.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsHeatmapESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisHeatmapNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisHeatmapESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		heatmapConfigFromAPINoESQL,

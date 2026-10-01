@@ -220,24 +220,25 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response kbapi.KibanaHTTPA
 
 /* HELPERS */
 
-func (model *Scope) toAPIRequest() *kbapi.KibanaHTTPAPIsMaintenanceWindowScope {
+func (model *Scope) toAPIRequest() *kbapi.KibanaHTTPAPIsMaintenanceWindowScopeRequest {
 	if model == nil {
 		return nil
 	}
 
-	return &kbapi.KibanaHTTPAPIsMaintenanceWindowScope{
-		Alerting: struct {
-			Query struct {
-				Kql string `json:"kql"`
-			} `json:"query"`
+	alerting := &kbapi.KibanaHTTPAPIsMaintenanceWindowScopeRequest{}
+	alerting.Alerting = &struct {
+		Enabled *bool `json:"enabled,omitempty"`
+		Query   *struct {
+			Kql string `json:"kql"`
+		} `json:"query,omitempty"`
+	}{
+		Query: &struct {
+			Kql string `json:"kql"`
 		}{
-			Query: struct {
-				Kql string `json:"kql"`
-			}{
-				Kql: model.Alerting.Kql.ValueString(),
-			},
+			Kql: model.Alerting.Kql.ValueString(),
 		},
 	}
+	return alerting
 }
 
 func (model *ScheduleRecurring) toAPIRequest(ctx context.Context) (*kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRecurringRequest, diag.Diagnostics) {

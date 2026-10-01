@@ -149,7 +149,8 @@ func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEnt
 		}
 		if p := typeutils.OptionalString(hs.Frequency); p != nil {
 			body.HistorySnapshot = &struct {
-				Frequency *string `json:"frequency,omitempty"`
+				Frequency     *string `json:"frequency,omitempty"`
+				RetentionDays *int    `json:"retentionDays,omitempty"`
 			}{Frequency: p}
 		}
 	}

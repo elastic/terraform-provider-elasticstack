@@ -32,7 +32,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -59,7 +59,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		},
 		Styling: &models.DatatableStylingModel{
 			Density: &models.DatatableDensityModel{
-				Mode: types.StringValue(string(kbapi.KibanaHTTPAPIsDatatableDensityModeExpanded)),
+				Mode: types.StringValue(string(kbapi.KibanaHTTPAPIsVisDatatableDensityModeExpanded)),
 			},
 		},
 		Metrics: []models.DatatableMetricModel{
@@ -85,30 +85,30 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	ctx := t.Context()
 	var c converter
-	metric := kbapi.KibanaHTTPAPIsDatatableESQLMetric{
+	metric := kbapi.KibanaHTTPAPIsVisDatatableESQLMetric{
 		Column: "host.name",
 	}
 	title := "Datatable ESQL RT"
 	desc := "Converter test"
 	igf := false
 	samp := float32(1)
-	densityMode := kbapi.KibanaHTTPAPIsDatatableDensityModeExpanded
-	styling := kbapi.KibanaHTTPAPIsDatatableStyling{
-		Density: &kbapi.KibanaHTTPAPIsDatatableDensity{Mode: &densityMode},
+	densityMode := kbapi.KibanaHTTPAPIsVisDatatableDensityModeExpanded
+	styling := kbapi.KibanaHTTPAPIsVisDatatableStyling{
+		Density: &kbapi.KibanaHTTPAPIsVisDatatableDensity{Mode: &densityMode},
 	}
-	api := kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel{
-		Type:                kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelTypeDataTable,
+	api := kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanel{
+		Type:                kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanelTypeDataTable,
 		Title:               &title,
 		Description:         &desc,
 		IgnoreGlobalFilters: &igf,
 		Sampling:            &samp,
 		Styling:             &styling,
-		Metrics:             &[]kbapi.KibanaHTTPAPIsDatatableESQLMetric{metric},
+		Metrics:             &[]kbapi.KibanaHTTPAPIsVisDatatableESQLMetric{metric},
 	}
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"esql","query":"FROM metrics-* | LIMIT 10"}`), &api.DataSource))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsDatatableESQLByValuePanel(api))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsVisDatatableESQLByValuePanel(api))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -121,9 +121,9 @@ func TestConverter_roundTrip_ESQL_datatable(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsKibanaHTTPAPIsDatatableESQLByValuePanel()
+	out, err := attrs2.AsKibanaHTTPAPIsVisDatatableESQLByValuePanel()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelTypeDataTable, out.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanelTypeDataTable, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "Datatable ESQL RT", *out.Title)
 	dsBytes, err := json.Marshal(out.DataSource)

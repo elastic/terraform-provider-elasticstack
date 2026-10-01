@@ -32,11 +32,11 @@ import (
 // (treemap, mosaic, waffle, pie). It acts as a neutral adapter between the package-local
 // anonymous kbapi struct slices and the shared conversion helpers below.
 type EsqlGroupByAPIFields struct {
-	CollapseBy *kbapi.KibanaHTTPAPIsCollapseBy   `json:"collapse_by,omitempty"`
-	Color      *kbapi.KibanaHTTPAPIsColorMapping `json:"color,omitempty"`
-	Column     string                            `json:"column"`
-	Format     *kbapi.KibanaHTTPAPIsFormatType   `json:"format,omitempty"`
-	Label      *string                           `json:"label,omitempty"`
+	CollapseBy *kbapi.KibanaHTTPAPIsVisCollapseBy   `json:"collapse_by,omitempty"`
+	Color      *kbapi.KibanaHTTPAPIsVisColorMapping `json:"color,omitempty"`
+	Column     string                               `json:"column"`
+	Format     *kbapi.KibanaHTTPAPIsVisFormatType   `json:"format,omitempty"`
+	Label      *string                              `json:"label,omitempty"`
 }
 
 // BuildEsqlGroupBySliceForAPI converts a []EsqlGroupByAPIFields into a []T by marshaling
@@ -110,10 +110,10 @@ func BuildPartitionEsqlGroupByForAPI(src []models.PartitionEsqlGroupByModel, dia
 	out := make([]EsqlGroupByAPIFields, len(src))
 	for i, eg := range src {
 		out[i].Column = eg.Column.ValueString()
-		collapseBy := kbapi.KibanaHTTPAPIsCollapseBy(eg.CollapseBy.ValueString())
+		collapseBy := kbapi.KibanaHTTPAPIsVisCollapseBy(eg.CollapseBy.ValueString())
 		out[i].CollapseBy = &collapseBy
 
-		var color kbapi.KibanaHTTPAPIsColorMapping
+		var color kbapi.KibanaHTTPAPIsVisColorMapping
 		if err := json.Unmarshal([]byte(eg.ColorJSON.ValueString()), &color); err != nil {
 			diags.AddError("Failed to unmarshal esql group_by color_json", err.Error())
 			return out
@@ -124,7 +124,7 @@ func BuildPartitionEsqlGroupByForAPI(src []models.PartitionEsqlGroupByModel, dia
 		if typeutils.IsKnown(eg.FormatJSON) {
 			formatSrc = eg.FormatJSON.ValueString()
 		}
-		var format kbapi.KibanaHTTPAPIsFormatType
+		var format kbapi.KibanaHTTPAPIsVisFormatType
 		if err := json.Unmarshal([]byte(formatSrc), &format); err != nil {
 			diags.AddError("Failed to unmarshal esql group_by format_json", err.Error())
 			return out

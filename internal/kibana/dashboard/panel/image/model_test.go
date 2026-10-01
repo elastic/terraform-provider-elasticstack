@@ -77,7 +77,7 @@ func Test_imagePanelToAPI_urlSrc(t *testing.T) {
 	require.NoError(t, err)
 	src1, err := img.Config.ImageConfig.Src.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.Url, src1.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1TypeUrl, src1.Type)
 	assert.Equal(t, "https://example.com/x.png", src1.Url)
 }
 
