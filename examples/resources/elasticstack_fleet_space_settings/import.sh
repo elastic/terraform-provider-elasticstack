@@ -1,0 +1,1 @@
+terraform import elasticstack_fleet_space_settings.example <space_id>
