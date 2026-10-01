@@ -110,22 +110,20 @@ func convertNestedMatchEntryToAPI(
 
 // convertMatchOrWildcardEntryFromAPI converts match or wildcard entries from API format
 func convertMatchOrWildcardEntryFromAPI(entryMap map[string]any, entry *EntryModel) {
+	resetEntryModelFields(entry, attrValue)
 	if value, ok := entryMap["value"].(string); ok {
 		entry.Value = types.StringValue(value)
 	} else {
 		entry.Value = types.StringNull()
 	}
-	entry.Values = types.ListNull(types.StringType)
-	entry.List = types.ObjectNull(getListAttrTypes())
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
 }
 
 // convertNestedMatchFromMap converts nested match entries from map format
 func convertNestedMatchFromMap(entryMap map[string]any, entry *NestedEntryModel) {
+	resetNestedEntryModelFields(entry, attrValue)
 	if value, ok := entryMap["value"].(string); ok {
 		entry.Value = types.StringValue(value)
 	} else {
 		entry.Value = types.StringNull()
 	}
-	entry.Values = types.ListNull(types.StringType)
 }

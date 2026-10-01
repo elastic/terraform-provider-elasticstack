@@ -108,6 +108,7 @@ func convertNestedMatchAnyEntryToAPI(
 // convertMatchAnyEntryFromAPI converts match_any entries from API format
 func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
+	resetEntryModelFields(entry, attrValues)
 
 	if values, ok := entryMap["value"].([]any); ok {
 		strValues := make([]string, 0, len(values))
@@ -122,15 +123,13 @@ func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]any, e
 	} else {
 		entry.Values = types.ListNull(types.StringType)
 	}
-	entry.Value = types.StringNull()
-	entry.List = types.ObjectNull(getListAttrTypes())
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
 	return diags
 }
 
 // convertNestedMatchAnyFromMap converts nested match_any entries from map format
 func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]any, entry *NestedEntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
+	resetNestedEntryModelFields(entry, attrValues)
 
 	if values, ok := entryMap["value"].([]any); ok {
 		strValues := make([]string, 0, len(values))
@@ -145,6 +144,5 @@ func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]any, 
 	} else {
 		entry.Values = types.ListNull(types.StringType)
 	}
-	entry.Value = types.StringNull()
 	return diags
 }

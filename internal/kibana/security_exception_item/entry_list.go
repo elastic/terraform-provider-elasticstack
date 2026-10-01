@@ -65,6 +65,7 @@ func convertListEntryToAPI(
 // convertListEntryFromAPI converts list entries from API format
 func convertListEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
 	var diags diag.Diagnostics
+	resetEntryModelFields(entry, entryTypeList)
 
 	if listData, ok := entryMap["list"].(map[string]any); ok {
 		listModel := EntryListModel{
@@ -77,8 +78,5 @@ func convertListEntryFromAPI(ctx context.Context, entryMap map[string]any, entry
 	} else {
 		entry.List = types.ObjectNull(getListAttrTypes())
 	}
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
 	return diags
 }
