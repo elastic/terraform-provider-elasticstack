@@ -13,11 +13,12 @@ Source: [elastic/terraform-provider-elasticstack#5027](https://github.com/elasti
   - Create and update attach the alias to every currently resolved target, re-resolving at apply time so targets created between plan and apply are included.
   - Read stores, per element, the intersection of the resolved targets and the alias's actual members.
   - Delete removes the alias from its live concrete members instead of from selector strings or stale state.
-- An expression with no current match is allowed; later plans re-resolve it and attach newly matching targets.
+- An expression with no current match is allowed. When the desired alias has no members at all, the provider keeps virtual state for the configured alias so a later plan can attach newly matching targets.
 - Alias members not covered by any configured `read_indices` expression remain drift: read surfaces them as concrete singleton `read_indices` entries so the next plan removes them.
 - Resolved targets that are aliases or remote-cluster targets are rejected with a clear diagnostic. Overlapping expressions with identical settings are deduplicated; conflicting settings on the same target are a configuration error.
 - `write_index.name` is validated to reject multi-target syntax (wildcards, commas, exclusions, `_all`) while continuing to accept currently valid single-target names.
 - Update diffing compares against the live alias response per concrete target rather than selector strings, avoiding remove/add churn.
+- When membership can change, planning uses resolution only to decide that an update is required and leaves `concrete_indices` unknown. This permits apply-time re-resolution to include targets created after plan without producing an inconsistent result.
 - Update the schema descriptions, generated docs, and add unit and acceptance tests.
 
 Non-goals:
@@ -39,4 +40,4 @@ Non-goals:
 - `internal/elasticsearch/index/alias/` (schema, models, plan modification, create/update/read/delete), possibly a new Resolve Index / index-expression helper in `internal/clients/elasticsearch/`.
 - Resource schema change (new nested computed attribute) requires a state-compatibility strategy for existing state that lacks `concrete_indices`.
 - Regenerated docs for `elasticstack_elasticsearch_index_alias` and a changelog entry.
-- Acceptance tests that create multiple indices, including hidden and closed ones.
+- Acceptance tests that create multiple indices, including hidden and closed ones, virtual empty aliases, and targets created between plan and apply.

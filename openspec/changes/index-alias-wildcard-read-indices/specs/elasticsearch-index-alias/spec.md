@@ -32,13 +32,13 @@ The resource SHALL reject multi-target selector syntax in `write_index.name`: a 
 
 ### Requirement: Create (REQ-010–REQ-012)
 
-On create, the resource SHALL convert `write_index` (if set) and all entries in `read_indices` (if set) into `add` alias actions and submit them in a single atomic Update Aliases API call. Each `read_indices[*].name` expression SHALL be resolved at apply time (not only at plan time) to its current concrete targets, and one `add` action SHALL be produced per resolved target. The `write_index` entry SHALL be submitted with `is_write_index: true`; `read_indices` entries SHALL be submitted without `is_write_index`. After a successful API call, the resource SHALL perform a read to refresh state before storing the final state.
+On create, the resource SHALL convert `write_index` (if set) and all entries in `read_indices` (if set) into `add` alias actions. Each `read_indices[*].name` expression SHALL be resolved at apply time (not only at plan time) to its current concrete targets, and one `add` action SHALL be produced per resolved target. The `write_index` entry SHALL be submitted with `is_write_index: true`; `read_indices` entries SHALL be submitted without `is_write_index`. When one or more actions exist, the resource SHALL submit them in a single atomic Update Aliases API call and perform a read to refresh state before storing the final state. When no actions exist because there is no write index and no resolved read target, the resource SHALL retain virtual state without calling Update Aliases.
 
 #### Scenario: Atomic create
 
 - GIVEN both `write_index` and `read_indices` are configured
 - WHEN create runs
-- THEN a single Update Aliases call SHALL include one `add` action per configured index
+- THEN a single Update Aliases call SHALL include one `add` action for the write index and one for each resolved concrete read target
 
 #### Scenario: Wildcard create attaches every match
 
@@ -91,13 +91,16 @@ If two expressions resolve to the same target with identical settings, the resou
 
 ### Requirement: Read (REQ-016–REQ-018)
 
-On read, the resource SHALL call the Get Alias API with the alias name from state. If the API returns an empty result (no indices) or the alias name is not present in any returned index, the resource SHALL remove itself from state without an error. When alias data is returned, the resource SHALL classify each index as write or read based on the `is_write_index` flag from the API response and populate `write_index` and `read_indices` accordingly.
+On read, the resource SHALL call the Get Alias API with the alias name from state. If the API returns an empty result (no indices) or the alias name is not present in any returned index, the resource SHALL remove itself from state without an error except when it qualifies for virtual empty-alias state. When alias data is returned, the resource SHALL classify each index as write or read based on the `is_write_index` flag from the API response and populate `write_index` and `read_indices` accordingly.
 
 For each `read_indices` element in prior state or plan, the resource SHALL resolve its `name` expression and set the element's `concrete_indices` to the intersection of the resolved targets and the alias's actual members. Alias members that are not covered by any configured `read_indices` expression and are not the write index SHALL be returned as additional `read_indices` entries whose `name` and sole `concrete_indices` value are the concrete index name, so that the next plan removes them. When no prior configuration exists (for example immediately after import), every read member SHALL be returned in this singleton form.
+
+When an alias is absent and the prior state has no `write_index` and only `read_indices` expressions that currently resolve to empty sets, the resource SHALL retain virtual state with empty `concrete_indices` values. In every other absent-alias case, the resource SHALL remove itself from state.
 
 #### Scenario: Alias not found on read
 
 - GIVEN the Get Alias API returns an empty map or the alias name is missing
+- AND the resource does not qualify for virtual empty-alias state
 - WHEN read runs
 - THEN the resource SHALL be removed from state
 
@@ -119,6 +122,13 @@ For each `read_indices` element in prior state or plan, the resource SHALL resol
 - WHEN read runs
 - THEN the element's `concrete_indices` SHALL contain only the attached index
 - AND the next plan SHALL show an in-place update to attach the other
+
+#### Scenario: Virtual empty alias state
+
+- GIVEN an alias resource has no `write_index` and all configured `read_indices` expressions resolve to no targets
+- AND Elasticsearch has no alias with the configured name
+- WHEN read runs
+- THEN the resource SHALL remain in state with empty `concrete_indices` values
 
 #### Scenario: Unconfigured member is drift
 
@@ -147,17 +157,19 @@ On delete, the resource SHALL read the alias's live associations with the Get Al
 
 ### Requirement: Read indices selector expressions
 
-`read_indices[*].name` SHALL accept any Elasticsearch multi-target expression, including `*` and `?` wildcards, comma-separated lists, `-` exclusions and `_all`, and SHALL retain the user's original expression in state. The resource SHALL resolve expressions during plan (`ModifyPlan`), create, read and update using an explicit `expand_wildcards=all` policy (open, closed and hidden targets) and `allow_no_indices=true`. An expression with no current matches SHALL be valid and SHALL resolve to an empty set; it SHALL be re-resolved on later plans. Only resolved concrete indices and data streams SHALL be accepted as targets; if an expression resolves to an alias or to a remote-cluster target the resource SHALL return an error diagnostic identifying the target.
+`read_indices[*].name` SHALL accept any Elasticsearch multi-target expression, including `*` and `?` wildcards, comma-separated lists, `-` exclusions and `_all`, and SHALL retain the user's original expression in state. The resource SHALL resolve expressions during plan (`ModifyPlan`), create, read and update using an explicit `expand_wildcards=all` policy (open, closed and hidden targets) and `allow_no_indices=true`. An expression with no current matches SHALL be valid and SHALL resolve to an empty set; it SHALL be re-resolved on later plans. If the desired alias has no write index and no resolved read target, the resource SHALL retain virtual state until a later plan resolves a target or the resource is deleted. Only resolved concrete indices and data streams SHALL be accepted as targets; if an expression resolves to an alias or to a remote-cluster target the resource SHALL return an error diagnostic identifying the target.
 
 #### Scenario: No-match expression
 
 - GIVEN a `read_indices` expression matches no indices
 - WHEN create runs
 - THEN the apply SHALL succeed and the element's `concrete_indices` SHALL be an empty set
+- AND the resource SHALL remain in virtual state when no write index or other resolved read target exists
 
 #### Scenario: Later-created match is attached on next apply
 
-- GIVEN an expression had no matches at create time and a matching index is created later
+- GIVEN an expression had no matches at create time and the resource is in virtual state
+- AND a matching index is created later
 - WHEN the next plan runs
 - THEN the plan SHALL show an in-place update, and applying it SHALL attach the alias to the new index
 
@@ -181,7 +193,7 @@ On delete, the resource SHALL read the alias's live associations with the Get Al
 
 ### Requirement: Computed concrete_indices
 
-Each `read_indices` element SHALL expose a computed `concrete_indices` attribute of type `set(string)` containing the concrete indices and data streams currently attached to the alias for that element's `name` expression. During plan the resource SHALL populate it with the full set of currently resolved targets for the expression, so that a resolved but unattached target produces an in-place update. During read it SHALL contain only the intersection of the resolved targets and the alias's actual members. When `name` is unknown at plan time, `concrete_indices` SHALL be unknown.
+Each `read_indices` element SHALL expose a computed `concrete_indices` attribute of type `set(string)` containing the concrete indices and data streams currently attached to the alias for that element's `name` expression. During plan the resource SHALL resolve the expression and compare the desired membership to state. When create or update is required, the resource SHALL plan the affected `concrete_indices` value as unknown so apply-time resolution can determine the final membership. When no change is required, the resource SHALL preserve the current concrete membership in the plan. During read it SHALL contain only the intersection of the resolved targets and the alias's actual members. When `name` is unknown at plan time, `concrete_indices` SHALL be unknown.
 
 State created before this attribute existed SHALL be handled without error: the initial refresh and plan SHALL succeed and converge to the same result as for newly created state.
 
@@ -189,13 +201,23 @@ State created before this attribute existed SHALL be handled without error: the 
 
 - GIVEN `read_indices` contains `name = "traces-apm*"` and two indices match
 - WHEN plan runs on create
-- THEN the planned `concrete_indices` SHALL contain both indices
+- THEN the plan SHALL create the alias resource
+- AND the planned `concrete_indices` SHALL be unknown
 
 #### Scenario: Unattached resolved target plans an update
 
 - GIVEN state records one attached index for an expression and a second matching index exists
 - WHEN plan runs
 - THEN the plan SHALL show an in-place update for that `read_indices` element
+- AND the planned `concrete_indices` SHALL be unknown
+
+#### Scenario: Target created between plan and apply
+
+- GIVEN a create or update plan has unknown `concrete_indices` for a read expression
+- AND another target begins matching that expression after plan completes
+- WHEN apply re-resolves the expression
+- THEN the alias SHALL be attached to the newly matching target
+- AND the apply SHALL complete without an inconsistent-result error
 
 #### Scenario: Existing state without concrete_indices
 

@@ -31,11 +31,19 @@ The implementation research comment recommended Approach A (reject wildcard and 
 
 Each `read_indices` element gains `concrete_indices` (computed `set(string)`). `name` keeps the user's expression; `concrete_indices` is the set of concrete targets currently attached to the alias for that expression. Because `read_indices` is a set, elements remain identified by their configured values (`name` plus settings); there is no positional index.
 
-- **Plan (`ModifyPlan`)**: resolve every `read_indices[*].name` and set that element's planned `concrete_indices` to the full resolved set. If any resolved target is not attached in state, the planned value differs from state and Terraform shows an in-place update. This plan-time population is also what lets the planned set element correlate with the post-apply element.
-- **Apply (create/update)**: re-resolve the expressions, compute actions against the live alias response, then read back. Because expressions are resolved again, a target created between plan and apply is attached. The read-back `concrete_indices` for that element may then differ from the plan-time value, which Terraform treats as an inconsistent result unless the planned value was unknown; how to plan the attribute to tolerate this is an open question below.
+- **Plan (`ModifyPlan`)**: resolve every `read_indices[*].name` and compare the desired targets with state. When creation or an in-place update is required, leave the affected computed `concrete_indices` values unknown. Terraform therefore shows the resource update without constraining the final membership to a stale plan-time set. When no update is needed, preserve the current concrete membership in the plan.
+- **Apply (create/update)**: re-resolve the expressions, compute actions against the live alias response, then read back. Because the affected computed values were unknown, a target created between plan and apply can be attached and recorded without producing an inconsistent result.
 - **Read**: resolve the configured expression, fetch the alias's actual associations, and store the intersection as that element's `concrete_indices`. Storing the whole resolved set would hide a missing attachment and prevent Terraform from planning it.
 - **Unconfigured members**: alias members not covered by any configured expression are emitted as singleton `read_indices` entries (`name` equals the concrete index, `concrete_indices` equals `{name}`), preserving the current full-ownership semantics so the next plan removes them.
 - **Write index**: the alias's write index remains modeled only by `write_index`; it is excluded from `read_indices` coverage when classifying members.
+
+The implementation must not assume that a `SetNestedAttribute` ignores its computed child when correlating elements. Its planning behavior must be verified with framework and acceptance tests for partial membership, unknown planned membership, and the final post-apply state.
+
+### Virtual state for an empty desired alias
+
+Elasticsearch has no persistent alias object without an associated target. When there is no `write_index` and every `read_indices` expression resolves to an empty set, create and update retain a virtual Terraform resource state instead of attempting to create an empty alias. The state retains the configured expressions and empty `concrete_indices` sets.
+
+On read, a missing alias is retained only when the prior state is virtual and the desired membership is still empty. A missing alias with a write index or any resolved read target remains normal not-found drift and removes the resource from state. When a later plan resolves a target, the virtual resource receives an in-place update that creates the alias association. Deleting virtual state makes no Update Aliases API call.
 
 ### Selector resolution
 
@@ -71,7 +79,9 @@ Update the `read_indices.name` and `write_index.name` descriptions, add a `concr
 
 ## Risks / Trade-offs
 
-- **Plan-vs-apply consistency**: Terraform requires post-apply values to match planned known values. A target created between plan and apply changes the resolved set. Mitigation options: plan `concrete_indices` as unknown whenever the element is changing, or otherwise ensure the post-apply value is an exact match for the plan. The implementer must confirm the chosen behavior with an acceptance test for "target created after plan, before apply".
+- **Plan-vs-apply consistency**: Terraform requires post-apply values to match planned known values. Create and changing updates therefore plan affected computed memberships as unknown, and acceptance tests verify a target created between plan and apply is attached without an inconsistent result.
+- **Set element correlation**: `concrete_indices` is a computed child of a `read_indices` set element. Unknown-on-change planning avoids constraining its final value, but framework and acceptance tests must prove that partial memberships and final read-back correlate correctly.
+- **Virtual empty alias state**: The provider represents a configured but targetless alias even though Elasticsearch has no alias object. Read must retain this state only while membership remains empty; otherwise it would mask real deletion drift.
 - **Plan-time API calls**: `ModifyPlan` now issues a Resolve Index call. When the cluster is unreachable at plan time the plan fails with a clear diagnostic; unknown `name` values skip resolution and leave `concrete_indices` unknown.
 - **Narrow drift detection**: out-of-band filter/routing/hidden changes on an attached target do not trigger a plan on their own. This is a documented limitation.
 - **Large expansions**: `_all` or broad wildcards can produce many actions in one atomic request; accepted for now.
@@ -89,5 +99,4 @@ Additive schema change. Existing configurations with concrete `read_indices` nam
   - If B is chosen: what should plan and import do when config holds a pattern but state holds the expanded set? *(Superseded by the `concrete_indices` design.)*
   - Should a pattern-based alias be re-evaluated on update, so newly created matching indices get attached, or remain a one-time expansion? *(Resolved: re-evaluated on every plan and apply.)*
 - Is a `StateUpgrader`/schema version bump required for adding `concrete_indices`, or is null-tolerant handling sufficient?
-- How should `concrete_indices` be planned so that a target created between plan and apply does not violate Terraform's planned-value consistency rules (unknown vs. exact value)?
 - Should date-math expressions (for example `<logs-{now/d}>`) be rejected in `write_index.name`?
