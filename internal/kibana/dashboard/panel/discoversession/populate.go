@@ -889,7 +889,12 @@ func discoverSessionPreserveESQLTabNullIntent(existing *models.DiscoverSessionES
 	}
 }
 
-func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.DiscoverSessionOverridesModel, prior *models.DiscoverSessionOverridesModel, api discoverSessionOverridesAPI) diag.Diagnostics {
+func discoverSessionMergeOverridesFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionOverridesModel,
+	prior *models.DiscoverSessionOverridesModel,
+	api discoverSessionOverridesAPI,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if prior != nil && typeutils.IsKnown(prior.ColumnOrder) && api.ColumnOrder != nil {

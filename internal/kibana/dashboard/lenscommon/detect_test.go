@@ -37,9 +37,13 @@ func TestDetectVizType_chartKindsPerArm(t *testing.T) {
 	t.Parallel()
 
 	noESQLHeader := kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header{}
-	require.NoError(t, noESQLHeader.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader0(kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0TypeAuto}))
+	require.NoError(t, noESQLHeader.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader0(
+		kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0TypeAuto},
+	))
 	noESQLValue := kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value{}
-	require.NoError(t, noESQLValue.FromKibanaHTTPAPIsVisDatatableDensityHeightValue0(kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0TypeAuto}))
+	require.NoError(t, noESQLValue.FromKibanaHTTPAPIsVisDatatableDensityHeightValue0(
+		kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0TypeAuto},
+	))
 	minDatatableNoESQL := kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel{
 		Type:    kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable,
 		Query:   &kbapi.KibanaHTTPAPIsVisFilterSimple{},

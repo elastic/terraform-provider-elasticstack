@@ -596,6 +596,7 @@ var transformers = []TransformFunc{
 	transformKibanaPaths,
 	transformFleetPaths,
 	removeBrokenDiscriminator,
+	fixStreamsForkWhere,
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
 	fixSpaceResponseSchemas,
@@ -1014,6 +1015,20 @@ func removeBrokenDiscriminator(schema *Schema) {
 	// and their oneOf branches are inline schemas, which oapi-codegen rejects.
 	schema.Components.Delete("schemas.Kibana_HTTP_APIs_kbn-field-format-color.properties.params.discriminator")
 	schema.Components.Delete("schemas.Kibana_HTTP_APIs_kbn-field-format-url.properties.params.discriminator")
+}
+
+// fixStreamsForkWhere collapses the recursive `where` condition on the streams
+// fork request body to a free-form value. Upstream inlines the and/or/not
+// condition tree instead of referencing a component, and oapi-codegen expands
+// that into ~23k generated types (a ~3x larger kibana.gen.go that lint cannot
+// process). The provider does not use this endpoint.
+func fixStreamsForkWhere(schema *Schema) {
+	const whereKey = "requestBody.content.application/json.schema.properties.where"
+	path, ok := schema.Paths["/api/streams/{name}/_fork"]
+	if !ok || path == nil || path.Post == nil || !path.Post.Has(whereKey) {
+		return
+	}
+	path.Post.Set(whereKey, Map{"description": "Condition that selects the documents routed to the forked stream."})
 }
 
 func fixPutSecurityRoleName(schema *Schema) {

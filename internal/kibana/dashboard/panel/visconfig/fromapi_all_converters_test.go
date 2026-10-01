@@ -76,9 +76,13 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 
 	case string(kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable):
 		noESQLHeader := kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header{}
-		require.NoError(t, noESQLHeader.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader0(kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0TypeAuto}))
+		require.NoError(t, noESQLHeader.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader0(
+			kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0TypeAuto},
+		))
 		noESQLValue := kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value{}
-		require.NoError(t, noESQLValue.FromKibanaHTTPAPIsVisDatatableDensityHeightValue0(kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0TypeAuto}))
+		require.NoError(t, noESQLValue.FromKibanaHTTPAPIsVisDatatableDensityHeightValue0(
+			kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0TypeAuto},
+		))
 		minDatatableNoESQL := kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel{
 			Type:    kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable,
 			Query:   &kbapi.KibanaHTTPAPIsVisFilterSimple{},
