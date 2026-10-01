@@ -44,7 +44,7 @@ var _ entitycore.KibanaResourceModel = Model{}
 func (m Model) GetID() types.String { return m.ID }
 
 func (m Model) GetResourceID() types.String {
-if m.ID.IsNull() || m.ID.IsUnknown() {
+	if m.ID.IsNull() || m.ID.IsUnknown() {
 		return types.StringNull()
 	}
 	return clients.ResourceIDFromComposite(m.ID, m.ID)
