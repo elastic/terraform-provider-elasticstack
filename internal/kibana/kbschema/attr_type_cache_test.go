@@ -49,7 +49,7 @@ func TestAttrTypesCache_Get_PopulatesOnce(t *testing.T) {
 		set("key", map[string]attr.Type{"value": types.StringType})
 	}
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		cache.Get("key", populate)
 	}
 
