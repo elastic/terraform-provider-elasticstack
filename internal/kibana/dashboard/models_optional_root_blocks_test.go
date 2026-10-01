@@ -166,3 +166,85 @@ func Test_resourceSchema_timeRangeMissingToRejected(t *testing.T) {
 	}
 	require.True(t, found, "expected an error diagnostic on time_range.to, got %v", diags)
 }
+
+// rootBlockValue builds an object value for the named root block from the
+// resource schema, with every nested attribute null except the given overrides.
+func rootBlockValue(t *testing.T, block string, overrides map[string]string) tftypes.Value {
+	t.Helper()
+	objType, ok := getSchema().Attributes[block].GetType().TerraformType(context.Background()).(tftypes.Object)
+	require.True(t, ok)
+	vals := make(map[string]tftypes.Value, len(objType.AttributeTypes))
+	for name, typ := range objType.AttributeTypes {
+		vals[name] = tftypes.NewValue(typ, nil)
+	}
+	for name, v := range overrides {
+		typ := objType.AttributeTypes[name]
+		switch {
+		case typ.Equal(tftypes.Bool):
+			vals[name] = tftypes.NewValue(tftypes.Bool, v == "true")
+		case typ.Equal(tftypes.Number):
+			var n int64
+			for _, c := range v {
+				n = n*10 + int64(c-'0')
+			}
+			vals[name] = tftypes.NewValue(tftypes.Number, n)
+		default:
+			vals[name] = tftypes.NewValue(typ, v)
+		}
+	}
+	return tftypes.NewValue(objType, vals)
+}
+
+func hasErrorAt(diags []*tfprotov6.Diagnostic, p *tftypes.AttributePath) bool {
+	for _, d := range diags {
+		if d.Severity == tfprotov6.DiagnosticSeverityError && d.Attribute != nil && d.Attribute.Equal(p) {
+			return true
+		}
+	}
+	return false
+}
+
+func Test_resourceSchema_rootBlockNestedValidation(t *testing.T) {
+	title := tftypes.NewValue(tftypes.String, "t")
+	at := func(block, attr string) *tftypes.AttributePath {
+		return tftypes.NewAttributePath().WithAttributeName(block).WithAttributeName(attr)
+	}
+
+	tests := []struct {
+		name     string
+		block    string
+		nested   map[string]string
+		errBlock string
+		errAttr  string
+		wantErr  bool
+	}{
+		{"query text and json both set", "query", map[string]string{"language": "kql", "text": "a:b", "json": `{"match_all":{}}`}, "query", "text", true},
+		{"query neither text nor json", "query", map[string]string{"language": "kql"}, "query", "text", true},
+		{"query invalid language", "query", map[string]string{"language": "sql", "text": "a"}, "query", "language", true},
+		{"query missing language", "query", map[string]string{"text": "a"}, "query", "language", true},
+		{"query text only valid", "query", map[string]string{"language": "kql", "text": "a"}, "", "", false},
+		{"refresh_interval missing pause", "refresh_interval", map[string]string{"value": "1000"}, "refresh_interval", "pause", true},
+		{"refresh_interval missing value", "refresh_interval", map[string]string{"pause": "true"}, "refresh_interval", "value", true},
+		{"refresh_interval valid", "refresh_interval", map[string]string{"pause": "true", "value": "0"}, "", "", false},
+		{"time_range invalid mode", "time_range", map[string]string{"from": "a", "to": "b", "mode": "bogus"}, "time_range", "mode", true},
+		{"time_range valid mode", "time_range", map[string]string{"from": "a", "to": "b", "mode": "relative"}, "", "", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			diags := validateDashboardConfig(t, map[string]tftypes.Value{
+				"title":  title,
+				tc.block: rootBlockValue(t, tc.block, tc.nested),
+			})
+			if tc.wantErr {
+				// ExactlyOneOf reports on the attribute it is attached to; accept either branch attribute.
+				found := hasErrorAt(diags, at(tc.errBlock, tc.errAttr)) ||
+					(tc.errAttr == "text" && hasErrorAt(diags, at(tc.errBlock, "json")))
+				require.True(t, found, "expected error at %s.%s, got %v", tc.errBlock, tc.errAttr, diags)
+				return
+			}
+			for _, d := range diags {
+				require.NotEqual(t, tfprotov6.DiagnosticSeverityError, d.Severity, "%s: %s", d.Summary, d.Detail)
+			}
+		})
+	}
+}
