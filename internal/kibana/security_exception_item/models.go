@@ -271,7 +271,7 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 		d := convertListEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case entryTypeExists:
-		convertExistsEntryFromAPI(&entry)
+		resetEntryModelFields(&entry, "")
 	case entryTypeNested:
 		d := convertNestedEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)

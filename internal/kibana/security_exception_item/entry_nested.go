@@ -143,7 +143,7 @@ func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]any) (Ne
 		d := convertNestedMatchAnyFromMap(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case entryTypeExists:
-		convertNestedExistsFromMap(&entry)
+		resetNestedEntryModelFields(&entry, "")
 	}
 
 	return entry, diags

@@ -61,13 +61,3 @@ func convertNestedExistsEntryToAPI(
 
 	return result, diags
 }
-
-// convertExistsEntryFromAPI converts exists entries from API format
-func convertExistsEntryFromAPI(entry *EntryModel) {
-	resetEntryModelFields(entry, "")
-}
-
-// convertNestedExistsFromMap converts nested exists entries from map format
-func convertNestedExistsFromMap(entry *NestedEntryModel) {
-	resetNestedEntryModelFields(entry, "")
-}
