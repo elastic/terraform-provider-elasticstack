@@ -13,6 +13,7 @@ A hidden prerequisite exists: the hand-maintained `PUT /api/dashboards/{id}` ope
 - Change the PUT `required` list in `generated/kbapi/dashboard-paths.json` to `["title"]`, regenerate `generated/kbapi/kibana.gen.go` (generated diff in its own commit), and update `dashboardToAPIUpdateRequest` for the resulting pointer fields, including `Options`.
 - Read side: plain `Optional` semantics with **no** null-preservation or default-detection logic. Blocks present in the API response populate state; absent blocks are null.
 - Update `openspec/specs/kibana-dashboard/spec.md` (schema sketch, REQ-036, REQ-007, REQ-009) with scenarios for omitted blocks and for removal clearing a block.
+- Correct the REQ-007 create-method sentence so it defers to REQ-003/REQ-003a (create uses `PUT` when a practitioner-supplied `dashboard_id` is set, otherwise `POST`), so the title-only payload-omission guarantee covers both create paths.
 - Examples and docs: existing examples stay explicit; `panel_no_time_range.tf` drops its now-unneeded blocks; add a title-only example; document that removing a block clears it rather than resetting it to a default; regenerate `docs/resources/kibana_dashboard.md`.
 - Tests: unit tests for omit-on-write; acceptance tests for title-only create, empty re-plan and import, add-then-remove of each block, and non-default values.
 
