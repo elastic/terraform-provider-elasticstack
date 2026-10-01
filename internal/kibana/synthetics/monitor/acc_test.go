@@ -119,6 +119,7 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet(bmMonitorID, "id"),
 					resource.TestCheckResourceAttr(bmMonitorID, "name", "TestHttpMonitorResource - "+bmName),
 					resource.TestCheckResourceAttr(bmMonitorID, "space_id", ""),
+					resource.TestCheckNoResourceAttr(bmMonitorID, "kibana_spaces"),
 					resource.TestCheckResourceAttr(bmMonitorID, "namespace", "default"),
 					resource.TestCheckResourceAttr(bmMonitorID, "alert.status.enabled", "true"),
 					resource.TestCheckResourceAttr(bmMonitorID, "alert.tls.enabled", "true"),
@@ -277,6 +278,48 @@ func TestSyntheticMonitorHTTPResource(t *testing.T) {
 				),
 			},
 			// Delete testing automatically occurs in TestCase
+		},
+	})
+}
+
+func TestSyntheticMonitorHTTPResourceKibanaSpaces(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, monitor.MinKibanaSpacesVersion, versionutils.FlavorAny)
+
+	monitorID := "elasticstack_kibana_synthetics_monitor.http-monitor"
+	name := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	visibilitySpaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_kibana_spaces"),
+				ConfigVariables: config.Variables{
+					"name":                config.StringVariable(name),
+					"visibility_space_id": config.StringVariable(visibilitySpaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(monitorID, "id"),
+					resource.TestCheckResourceAttr(monitorID, "space_id", ""),
+					resource.TestCheckResourceAttr(monitorID, "kibana_spaces.#", "1"),
+					resource.TestCheckResourceAttr(monitorID, "kibana_spaces.0", visibilitySpaceID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             monitorID,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_kibana_spaces"),
+				ConfigVariables: config.Variables{
+					"name":                config.StringVariable(name),
+					"visibility_space_id": config.StringVariable(visibilitySpaceID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(monitorID, "id"),
+					resource.TestCheckResourceAttr(monitorID, "space_id", ""),
+					resource.TestCheckNoResourceAttr(monitorID, "kibana_spaces"),
+				),
+			},
 		},
 	})
 }
