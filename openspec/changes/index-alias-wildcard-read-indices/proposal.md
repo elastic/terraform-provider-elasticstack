@@ -15,7 +15,7 @@ Source: [elastic/terraform-provider-elasticstack#5027](https://github.com/elasti
   - Delete removes the alias from its live concrete members instead of from selector strings or stale state.
 - An expression with no current match is allowed. When the desired alias has no members at all, the provider keeps virtual state for the configured alias so a later plan can attach newly matching targets.
 - Alias members not covered by any configured `read_indices` expression remain drift: read surfaces them as concrete singleton `read_indices` entries so the next plan removes them.
-- Resolved targets that are aliases or remote-cluster targets are rejected with a clear diagnostic. Overlapping expressions with identical settings are deduplicated; conflicting settings on the same target are a configuration error.
+- Resolver alias results are ignored, remote-cluster targets are rejected, and an expression resolving to both regular indices and data streams returns a clear diagnostic. Overlapping expressions with identical settings are deduplicated; conflicting settings on the same target are a configuration error.
 - `write_index.name` is validated to reject multi-target syntax (wildcards, commas, exclusions, `_all`) while continuing to accept currently valid single-target names.
 - Update diffing compares against the live alias response per concrete target rather than selector strings, avoiding remove/add churn.
 - When membership can change, planning uses resolution only to decide that an update is required and leaves `concrete_indices` unknown. This permits apply-time re-resolution to include targets created after plan without producing an inconsistent result.

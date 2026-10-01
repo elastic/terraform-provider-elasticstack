@@ -43,12 +43,13 @@ The implementation must not assume that a `SetNestedAttribute` ignores its compu
 
 Elasticsearch has no persistent alias object without an associated target. When there is no `write_index` and every `read_indices` expression resolves to an empty set, create and update retain a virtual Terraform resource state instead of attempting to create an empty alias. The state retains the configured expressions and empty `concrete_indices` sets.
 
-On read, a missing alias is retained only when the prior state is virtual and the desired membership is still empty. A missing alias with a write index or any resolved read target remains normal not-found drift and removes the resource from state. When a later plan resolves a target, the virtual resource receives an in-place update that creates the alias association. Deleting virtual state makes no Update Aliases API call.
+On read, a missing alias is retained only when the prior state has no `write_index`, every prior `read_indices` element has empty `concrete_indices`, and desired membership is still empty. A missing alias with a write index, non-empty prior concrete membership, or any resolved read target remains normal not-found drift and removes the resource from state. When a later plan resolves a target, the virtual resource receives an in-place update that creates the alias association. Deleting virtual state makes no Update Aliases API call.
 
 ### Selector resolution
 
 - Expressions are resolved with the Elasticsearch Resolve Index API (`GET /_resolve/index/<expr>`) or an equivalent typed-client call, with `expand_wildcards=all` so open, closed and hidden targets are included, and `allow_no_indices=true` so expressions with no match return an empty result instead of an error.
-- Only resolved `indices` and `data_streams` entries are accepted. If the expression resolves to aliases, or contains remote-cluster (`cluster:index`) targets, the provider returns an error diagnostic naming the offending target, since neither can be a member of this alias.
+- Resolver alias entries are incidental discovery results and are ignored. Remote-cluster (`cluster:index`) targets are rejected with a diagnostic because they cannot be members of this alias.
+- A resolver result is valid only when its attachable targets are homogeneous: either regular indices or data streams. Data-stream backing indices are excluded when their data stream is returned. A result containing both regular indices and data streams is rejected before any alias action, because Elasticsearch cannot attach one alias across both target kinds.
 - A data stream target is attached by its data stream name, matching what Update Aliases accepts.
 - Resolution runs through a single helper used by plan, create, update and read so all four see identical semantics.
 
@@ -71,7 +72,7 @@ Delete uses the live Get Alias response to build `remove` actions for every curr
 
 ### Schema and state compatibility
 
-`concrete_indices` is `Computed` `set(string)` inside the existing `read_indices` nested object. Existing state lacks this field; the schema change is additive, so the framework fills the missing attribute with null on first load and the first refresh and plan must treat null as "unknown membership" rather than an error. Decide in implementation whether a schema `Version` bump with a `StateUpgrader` is needed or whether null-tolerant read plus plan-time population is enough; either way, an existing-state acceptance test (apply with the previous provider version, then upgrade) must pass with a clean follow-up plan. Import continues to use passthrough id; read after import must produce `read_indices` entries consistent with the alias's live members (singletons, since no configured expression exists yet), and a subsequent plan against wildcard config shows the expected in-place update.
+`concrete_indices` is `Computed` `set(string)` inside the existing `read_indices` nested object. The schema change is additive: existing state loads the absent field as null, and read/plan treat null as unknown membership rather than an error. No schema version bump or `StateUpgrader` is required. An existing-state acceptance test (apply with the previous provider version, then upgrade) must pass with a clean follow-up plan. Import continues to use passthrough id; read after import must produce `read_indices` entries consistent with the alias's live members (singletons, since no configured expression exists yet), and a subsequent plan against wildcard config shows the expected in-place update.
 
 ### Documentation
 
@@ -82,6 +83,7 @@ Update the `read_indices.name` and `write_index.name` descriptions, add a `concr
 - **Plan-vs-apply consistency**: Terraform requires post-apply values to match planned known values. Create and changing updates therefore plan affected computed memberships as unknown, and acceptance tests verify a target created between plan and apply is attached without an inconsistent result.
 - **Set element correlation**: `concrete_indices` is a computed child of a `read_indices` set element. Unknown-on-change planning avoids constraining its final value, but framework and acceptance tests must prove that partial memberships and final read-back correlate correctly.
 - **Virtual empty alias state**: The provider represents a configured but targetless alias even though Elasticsearch has no alias object. Read must retain this state only while membership remains empty; otherwise it would mask real deletion drift.
+- **Mixed resolver target kinds**: Elasticsearch cannot add an alias to regular indices and data streams in one target set. Resolver aliases are ignored; mixed attachable target kinds fail with a diagnostic rather than producing a partial alias.
 - **Plan-time API calls**: `ModifyPlan` now issues a Resolve Index call. When the cluster is unreachable at plan time the plan fails with a clear diagnostic; unknown `name` values skip resolution and leave `concrete_indices` unknown.
 - **Narrow drift detection**: out-of-band filter/routing/hidden changes on an attached target do not trigger a plan on their own. This is a documented limitation.
 - **Large expansions**: `_all` or broad wildcards can produce many actions in one atomic request; accepted for now.
@@ -89,14 +91,3 @@ Update the `read_indices.name` and `write_index.name` descriptions, add a `concr
 ## Migration Plan
 
 Additive schema change. Existing configurations with concrete `read_indices` names keep working: their `concrete_indices` is the single name. No config changes are required. Existing wildcard users who currently hit the apply error get a working resource.
-
-## Open questions
-
-- Implementation research open questions, copied verbatim for traceability. Resolved by the maintainer comment on the issue, summarized after each:
-  - Is wildcard support in `read_indices.name` an intentional, supported use case, or only incidental behavior that happened to work at the API level? The answer decides between A and B. *(Resolved: supported.)*
-  - Does anyone rely on today's behavior (alias created despite the apply error) such that rejecting wildcards in a minor release would be considered breaking? Is a changelog "breaking change" note acceptable? *(Moot: wildcards are not rejected for `read_indices`.)*
-  - Should the validator also reject comma-separated lists, `_all`, exclusions (`-index`) and date-math expressions, or only `*` and `?`? *(Resolved for `write_index.name`: reject `*`, `?`, comma lists, exclusions, `_all`. Date-math handling in `write_index.name` is not specified; the implementer should confirm whether date-math should be rejected or passed through.)*
-  - If B is chosen: what should plan and import do when config holds a pattern but state holds the expanded set? *(Superseded by the `concrete_indices` design.)*
-  - Should a pattern-based alias be re-evaluated on update, so newly created matching indices get attached, or remain a one-time expansion? *(Resolved: re-evaluated on every plan and apply.)*
-- Is a `StateUpgrader`/schema version bump required for adding `concrete_indices`, or is null-tolerant handling sufficient?
-- Should date-math expressions (for example `<logs-{now/d}>`) be rejected in `write_index.name`?

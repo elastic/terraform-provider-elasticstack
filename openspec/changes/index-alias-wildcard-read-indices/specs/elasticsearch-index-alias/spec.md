@@ -95,7 +95,7 @@ On read, the resource SHALL call the Get Alias API with the alias name from stat
 
 For each `read_indices` element in prior state or plan, the resource SHALL resolve its `name` expression and set the element's `concrete_indices` to the intersection of the resolved targets and the alias's actual members. Alias members that are not covered by any configured `read_indices` expression and are not the write index SHALL be returned as additional `read_indices` entries whose `name` and sole `concrete_indices` value are the concrete index name, so that the next plan removes them. When no prior configuration exists (for example immediately after import), every read member SHALL be returned in this singleton form.
 
-When an alias is absent and the prior state has no `write_index` and only `read_indices` expressions that currently resolve to empty sets, the resource SHALL retain virtual state with empty `concrete_indices` values. In every other absent-alias case, the resource SHALL remove itself from state.
+When an alias is absent, the resource SHALL retain virtual state only when prior state has no `write_index`, every prior `read_indices` element has empty `concrete_indices`, and all configured expressions currently resolve to empty sets. In every other absent-alias case, the resource SHALL remove itself from state.
 
 #### Scenario: Alias not found on read
 
@@ -126,6 +126,7 @@ When an alias is absent and the prior state has no `write_index` and only `read_
 #### Scenario: Virtual empty alias state
 
 - GIVEN an alias resource has no `write_index` and all configured `read_indices` expressions resolve to no targets
+- AND every prior `concrete_indices` value is empty
 - AND Elasticsearch has no alias with the configured name
 - WHEN read runs
 - THEN the resource SHALL remain in state with empty `concrete_indices` values
@@ -153,11 +154,48 @@ On delete, the resource SHALL read the alias's live associations with the Get Al
 - WHEN delete runs
 - THEN the Update Aliases call SHALL include `remove` actions for the two concrete indices and none for `traces-apm*`
 
+### Requirement: Mapping — filter field (REQ-020–REQ-021)
+
+`filter` in both `write_index` and `read_indices` entries SHALL be declared as a JSON-normalized string and validated as JSON by the schema type. On create and update, if `filter` is set, the resource SHALL unmarshal it into a map and pass it to the Update Aliases API. On read, if the API response contains a non-nil filter, the resource SHALL marshal it back to a JSON string and store it in state, except that a `read_indices` element retained from prior configuration SHALL preserve its configured filter value.
+
+#### Scenario: Filter round-trip
+
+- GIVEN a `filter` JSON value is configured
+- WHEN create runs
+- THEN the filter SHALL be sent as a map in the API payload and stored back as JSON on read
+
+#### Scenario: Configured selector filter drift
+
+- GIVEN a configured read-index selector is attached to a concrete target
+- AND the target's alias filter is changed outside Terraform
+- WHEN refresh and plan run without a membership or configuration change
+- THEN the configured filter SHALL remain in state and no change SHALL be planned
+
+### Requirement: Mapping — routing and hidden fields (REQ-022)
+
+On create and update, `index_routing`, `routing`, and `search_routing` SHALL be omitted from the API payload when their values are null or empty. `is_hidden` SHALL be included in the API payload only when its value is `true`. On read, string routing fields that are empty in the API response SHALL be stored as null, except that a `read_indices` element retained from prior configuration SHALL preserve its configured routing values.
+
+#### Scenario: Empty routing omitted
+
+- GIVEN `routing` is null in configuration
+- WHEN the alias action is built
+- THEN the `routing` key SHALL NOT appear in the API payload
+
+### Requirement: Mapping — is_hidden default (REQ-023)
+
+`is_hidden` in both `write_index` and `read_indices` entries SHALL default to `false` when not explicitly configured. On read, the API-returned boolean value for `is_hidden` SHALL be written to state, except that a `read_indices` element retained from prior configuration SHALL preserve its configured `is_hidden` value.
+
+#### Scenario: Default is_hidden
+
+- GIVEN `is_hidden` is not set in configuration
+- WHEN plan is computed
+- THEN `is_hidden` SHALL default to `false`
+
 ## ADDED Requirements
 
 ### Requirement: Read indices selector expressions
 
-`read_indices[*].name` SHALL accept any Elasticsearch multi-target expression, including `*` and `?` wildcards, comma-separated lists, `-` exclusions and `_all`, and SHALL retain the user's original expression in state. The resource SHALL resolve expressions during plan (`ModifyPlan`), create, read and update using an explicit `expand_wildcards=all` policy (open, closed and hidden targets) and `allow_no_indices=true`. An expression with no current matches SHALL be valid and SHALL resolve to an empty set; it SHALL be re-resolved on later plans. If the desired alias has no write index and no resolved read target, the resource SHALL retain virtual state until a later plan resolves a target or the resource is deleted. Only resolved concrete indices and data streams SHALL be accepted as targets; if an expression resolves to an alias or to a remote-cluster target the resource SHALL return an error diagnostic identifying the target.
+`read_indices[*].name` SHALL accept any Elasticsearch multi-target expression, including `*` and `?` wildcards, comma-separated lists, `-` exclusions and `_all`, and SHALL retain the user's original expression in state. The resource SHALL resolve expressions during plan (`ModifyPlan`), create, read and update using an explicit `expand_wildcards=all` policy (open, closed and hidden targets) and `allow_no_indices=true`. An expression with no current matches SHALL be valid and SHALL resolve to an empty set; it SHALL be re-resolved on later plans. If the desired alias has no write index and no resolved read target, the resource SHALL retain virtual state until a later plan resolves a target or the resource is deleted. Resolved alias entries SHALL be ignored. Remote-cluster targets SHALL return an error diagnostic. The remaining attachable targets SHALL be either regular indices or data streams, but not both; data-stream backing indices SHALL be excluded when their data stream is resolved.
 
 #### Scenario: No-match expression
 
@@ -185,11 +223,24 @@ On delete, the resource SHALL read the alias's live associations with the Get Al
 - WHEN they are resolved
 - THEN the resolved targets SHALL follow Elasticsearch multi-target semantics
 
-#### Scenario: Alias or remote target rejected
+#### Scenario: Alias entries ignored
 
-- GIVEN an expression resolves to an alias or to a remote-cluster target
+- GIVEN an expression resolves to an alias and regular indices
+- WHEN plan, create or update runs
+- THEN the alias entry SHALL not be attached
+- AND the regular indices SHALL remain eligible targets
+
+#### Scenario: Remote target rejected
+
+- GIVEN an expression resolves to a remote-cluster target
 - WHEN plan, create or update runs
 - THEN the resource SHALL return an error diagnostic naming that target
+
+#### Scenario: Mixed target kinds rejected
+
+- GIVEN an expression resolves to both regular indices and data streams
+- WHEN plan, create or update runs
+- THEN the resource SHALL return an error diagnostic before any alias action
 
 ### Requirement: Computed concrete_indices
 
