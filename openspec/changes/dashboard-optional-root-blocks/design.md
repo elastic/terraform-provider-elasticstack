@@ -51,8 +51,5 @@ The implementation-research comment recommended Approach A *with* read-side defa
 
 ## Open questions
 
-- **[blocking, resolved]** What exact values does Kibana return for `time_range`, `refresh_interval` and `query` when omitted, and are they stable across supported stack versions? Resolved: none; they are absent on POST/GET/PUT responses (9.4.2, 9.6.0-SNAPSHOT). 9.5 untested.
-- **[blocking, resolved]** Should the PUT overlay change land in this change or as a precursor? Resolved: same change, generated diff in its own commit.
-- Is reset-to-default semantics on block removal acceptable? Resolved: there is no default; removal makes the block absent and the docs say so.
-- Does Kibana ever return these fields as absent on GET? Resolved: yes, always when not set.
-- Does omitting `query` interact with root `filters` or panel `use_time_range`? Root blocks are only read in `models.go`; panel `use_time_range` is independent. Not probed against Kibana.
+- Panel-level `use_time_range` on a title-only dashboard has not been probed against Kibana (see Decision 6).
+- Kibana 9.5 behavior for the three root blocks has not been probed (see Risks).

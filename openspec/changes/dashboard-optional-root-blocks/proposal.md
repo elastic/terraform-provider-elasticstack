@@ -1,6 +1,6 @@
 ## Why
 
-`elasticstack_kibana_dashboard` marks the root `time_range`, `refresh_interval`, and `query` blocks as required, but the published Kibana Dashboards API (`kbn-dashboard-data`) only requires `title` on create and update. The requirement is a historical Terraform schema choice (originally flat `time_from` / `time_to` attributes that were later nested while keeping their requiredness), not something derived from the OpenAPI spec. Practitioners cannot create a title-only dashboard even though Kibana accepts one.
+`elasticstack_kibana_dashboard` marks the root `time_range`, `refresh_interval`, and `query` blocks as required, but the published Kibana Dashboards API (`kbn-dashboard-data`) only requires `title` on create and update. The requirement comes from the Terraform schema, not from the OpenAPI spec. Practitioners cannot create a title-only dashboard even though Kibana accepts one.
 
 Live probing (Kibana 9.4.2 and 9.6.0-SNAPSHOT) established that Kibana applies **no defaults** to these three blocks: a title-only POST or PUT succeeds and a GET returns the blocks as absent. A PUT is a full replace, so omitting a block on update clears it.
 
