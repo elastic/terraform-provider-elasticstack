@@ -26,6 +26,7 @@ resource "elasticstack_fleet_output" "example" {
   default_integrations  = <optional+computed, bool> # default false
   default_monitoring    = <optional+computed, bool> # default false
   config_yaml           = <optional, string, sensitive>
+  preset                = <optional+computed, string> # one of: "balanced", "custom", "latency", "scale", "throughput"; only for type "elasticsearch" or "remote_elasticsearch"
   space_ids             = <optional+computed, set(string)>
 
   ssl {
@@ -296,6 +297,60 @@ The `kafka.connection_type` attribute SHALL only be accepted when `kafka.auth_ty
 - WHEN the resource is configured
 - THEN schema validation SHALL return an error
 
+### Requirement: Preset type constraint and compatibility
+
+The `preset` attribute SHALL only accept the values `balanced`, `custom`, `latency`, `scale`, and `throughput`. The schema validator SHALL only accept a configured `preset` when `type` is `"elasticsearch"` or `"remote_elasticsearch"`. When `preset` has a known value in the plan, the resource SHALL verify that the server version is at least 8.12.0 before calling the create or update API. If the server version is lower, the resource SHALL fail with an error diagnostic stating that preset requires server version 8.12.0 or higher, and SHALL NOT call the Fleet API.
+
+#### Scenario: preset with a non-Elasticsearch output type
+
+- GIVEN `type = "logstash"` and `preset = "scale"`
+- WHEN the resource is configured
+- THEN schema validation SHALL return an error
+
+#### Scenario: preset on old server
+
+- GIVEN `preset` is configured and server version < 8.12.0
+- WHEN create or update runs
+- THEN the resource SHALL return an error diagnostic and SHALL NOT call the Fleet API
+
+### Requirement: Preset planning when not configured
+
+When `preset` is not configured, the resource SHALL plan it as follows:
+
+- When `type` is neither `"elasticsearch"` nor `"remote_elasticsearch"`, `preset` SHALL be planned as null.
+- When the resource is being created, `preset` SHALL be planned as unknown so Fleet can select it.
+- When `type` is unchanged, `config_yaml` is semantically unchanged, and state holds a preset, the stored preset SHALL be planned and SHALL be sent in the update request. This keeps behavior consistent across Fleet versions that differ in whether an omitted preset is re-derived on update.
+- Otherwise, `preset` SHALL be planned as unknown and SHALL be omitted from the update request so Fleet can select it.
+
+Removing `preset` from the configuration SHALL NOT reset the stored value.
+
+#### Scenario: Fleet selects the preset on create
+
+- GIVEN `type = "elasticsearch"` and `preset` is omitted
+- WHEN the resource is created
+- THEN `preset` SHALL be omitted from the create request and state SHALL contain the preset returned by Fleet
+
+#### Scenario: Stored preset is kept on an unrelated update
+
+- GIVEN state contains `preset = "scale"` and `preset` is not configured
+- AND `hosts` changes while `type` and `config_yaml` are unchanged
+- WHEN Terraform generates a plan
+- THEN `preset` SHALL be planned as `"scale"` and sent in the update request
+
+#### Scenario: config_yaml change lets Fleet select the preset
+
+- GIVEN state contains a preset and `preset` is not configured
+- AND `config_yaml` changes
+- WHEN Terraform generates a plan
+- THEN `preset` SHALL be planned as unknown and omitted from the update request
+
+#### Scenario: Type change to an output without presets
+
+- GIVEN state contains `type = "elasticsearch"` and a preset
+- AND `type` changes to `"logstash"`
+- WHEN Terraform generates a plan
+- THEN `preset` SHALL be planned as null
+
 ### Requirement: Space-aware create (REQ-013)
 
 On create, when `space_ids` is configured with at least one space ID, the resource SHALL pass the first space ID from `space_ids` to the Fleet create API as the space context. When `space_ids` is null or unknown, the resource SHALL call the create API without a space prefix (default space).
@@ -338,7 +393,7 @@ On read, if the Fleet API returns an error or a nil response for the output, the
 
 ### Requirement: State mapping — output type dispatch (REQ-017)
 
-On read, the resource SHALL dispatch state population based on the output type discriminator. For `OutputElasticsearch`, `OutputLogstash`, `OutputKafka`, and `OutputRemoteElasticsearch` responses, the resource SHALL map all common fields (`id`, `output_id`, `name`, `type`, `hosts`, `ca_sha256`, `ca_trusted_fingerprint`, `default_integrations`, `default_monitoring`, `config_yaml`, `ssl`). For `OutputKafka`, the resource SHALL additionally map all Kafka-specific fields. For `OutputRemoteElasticsearch`, the resource SHALL additionally map remote Elasticsearch-specific fields. If an unrecognized output type is returned, the resource SHALL surface an error diagnostic.
+On read, the resource SHALL dispatch state population based on the output type discriminator. For `OutputElasticsearch`, `OutputLogstash`, `OutputKafka`, and `OutputRemoteElasticsearch` responses, the resource SHALL map all common fields (`id`, `output_id`, `name`, `type`, `hosts`, `ca_sha256`, `ca_trusted_fingerprint`, `default_integrations`, `default_monitoring`, `config_yaml`, `ssl`). For `OutputKafka`, the resource SHALL additionally map all Kafka-specific fields. For `OutputRemoteElasticsearch`, the resource SHALL additionally map remote Elasticsearch-specific fields. For `OutputElasticsearch` and `OutputRemoteElasticsearch`, the resource SHALL map `preset` from the response; for all other output types `preset` SHALL be null in state. If an unrecognized output type is returned, the resource SHALL surface an error diagnostic.
 
 When mapping `config_yaml`, the resource SHALL fold a nil or empty-string value from the Fleet API into a null state value. This normalisation keeps state stable for outputs that were never configured with a `config_yaml`, since Fleet echoes an empty string in update responses for such outputs.
 
