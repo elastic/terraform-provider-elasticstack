@@ -19,7 +19,6 @@ package securitydetectionrule
 
 import (
 	"regexp"
-	"sync"
 
 	kibanavalidators "github.com/elastic/terraform-provider-elasticstack/internal/kibana/validators"
 
@@ -921,46 +920,44 @@ func GetSchema() schema.Schema {
 	}
 }
 
-var (
-	attrTypesOnce                    sync.Once
-	cachedActionFrequencyTypes       map[string]attr.Type
-	cachedAlertsFilterTypes          map[string]attr.Type
-	cachedAlertsFilterQueryTypes     map[string]attr.Type
-	cachedAlertsFilterTimeframeTypes map[string]attr.Type
+var attrTypesCache kbschema.AttrTypesCache
+
+const (
+	attrTypesKeyActionFrequency       = "action_frequency"
+	attrTypesKeyAlertsFilter          = "alerts_filter"
+	attrTypesKeyAlertsFilterQuery     = "alerts_filter_query"
+	attrTypesKeyAlertsFilterTimeframe = "alerts_filter_timeframe"
 )
 
-func initActionAttrTypes() {
+func initActionAttrTypes(set kbschema.Set) {
 	s := GetSchema()
 
 	actionsAttr := s.Attributes[attrActions].(schema.ListNestedAttribute)
 	actionAttrs := actionsAttr.NestedObject.Attributes
 
 	freqAttr := actionAttrs["frequency"].(schema.SingleNestedAttribute)
-	cachedActionFrequencyTypes = freqAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyActionFrequency, freqAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	filterAttr := actionAttrs["alerts_filter"].(schema.SingleNestedAttribute)
-	cachedAlertsFilterTypes = filterAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyAlertsFilter, filterAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	queryAttr := filterAttr.Attributes[attrQuery].(schema.SingleNestedAttribute)
-	cachedAlertsFilterQueryTypes = queryAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyAlertsFilterQuery, queryAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	tfAttr := filterAttr.Attributes["timeframe"].(schema.SingleNestedAttribute)
-	cachedAlertsFilterTimeframeTypes = tfAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyAlertsFilterTimeframe, tfAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 }
 
 func getAlertsFilterAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initActionAttrTypes)
-	return cachedAlertsFilterTypes
+	return attrTypesCache.Get(attrTypesKeyAlertsFilter, initActionAttrTypes)
 }
 
 func getAlertsFilterQueryAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initActionAttrTypes)
-	return cachedAlertsFilterQueryTypes
+	return attrTypesCache.Get(attrTypesKeyAlertsFilterQuery, initActionAttrTypes)
 }
 
 func getAlertsFilterTimeframeAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initActionAttrTypes)
-	return cachedAlertsFilterTimeframeTypes
+	return attrTypesCache.Get(attrTypesKeyAlertsFilterTimeframe, initActionAttrTypes)
 }
 
 // func getCardinalityType() map[string]attr.Type {
@@ -1018,8 +1015,7 @@ func getActionElementType() attr.Type {
 }
 
 func getActionFrequencyType() map[string]attr.Type {
-	attrTypesOnce.Do(initActionAttrTypes)
-	return cachedActionFrequencyTypes
+	return attrTypesCache.Get(attrTypesKeyActionFrequency, initActionAttrTypes)
 }
 
 func getExceptionsListElementType() attr.Type {

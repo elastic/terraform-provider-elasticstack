@@ -19,7 +19,6 @@ package alertingrule
 
 import (
 	"context"
-	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
@@ -44,16 +43,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	attrTypesOnce                 sync.Once
-	cachedActionsTypes            map[string]attr.Type
-	cachedFrequencyTypes          map[string]attr.Type
-	cachedFilterTypes             map[string]attr.Type
-	cachedTimeframeTypes          map[string]attr.Type
-	cachedFlappingTypes           map[string]attr.Type
-	cachedArtifactsTypes          map[string]attr.Type
-	cachedInvestigationGuideTypes map[string]attr.Type
-	cachedDashboardTypes          map[string]attr.Type
+var attrTypesCache kbschema.AttrTypesCache
+
+const (
+	attrTypesKeyActions            = "actions"
+	attrTypesKeyFrequency          = "frequency"
+	attrTypesKeyAlertsFilter       = "alerts_filter"
+	attrTypesKeyTimeframe          = "timeframe"
+	attrTypesKeyFlapping           = "flapping"
+	attrTypesKeyArtifacts          = "artifacts"
+	attrTypesKeyInvestigationGuide = "investigation_guide"
+	attrTypesKeyDashboard          = "dashboard"
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -385,84 +385,76 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-// initAttrTypes initializes and caches all attribute types from the schema.
-// This is called once via sync.Once to avoid repeatedly parsing the schema.
-func initAttrTypes() {
+// initAttrTypes reflects all attribute types out of the schema once, via the
+// shared kbschema.AttrTypesCache, to avoid repeatedly parsing the schema.
+func initAttrTypes(set kbschema.Set) {
 	s := getSchema(context.Background())
 
 	actionsBlock := s.Blocks["actions"].(schema.ListNestedBlock)
-	cachedActionsTypes = actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyActions, actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	freqBlock := actionsBlock.NestedObject.Blocks["frequency"].(schema.SingleNestedBlock)
-	cachedFrequencyTypes = freqBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyFrequency, freqBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	filterBlock := actionsBlock.NestedObject.Blocks["alerts_filter"].(schema.SingleNestedBlock)
-	cachedFilterTypes = filterBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyAlertsFilter, filterBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	tfBlock := filterBlock.Blocks["timeframe"].(schema.SingleNestedBlock)
-	cachedTimeframeTypes = tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyTimeframe, tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
-	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyFlapping, flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	artifactsAttr := s.Attributes[attrArtifacts].(schema.SingleNestedAttribute)
-	cachedArtifactsTypes = artifactsAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyArtifacts, artifactsAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	investigationGuideAttr := artifactsAttr.Attributes[attrInvestigationGuide].(schema.SingleNestedAttribute)
-	cachedInvestigationGuideTypes = investigationGuideAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyInvestigationGuide, investigationGuideAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	dashboardsAttr := artifactsAttr.Attributes[attrDashboards].(schema.ListNestedAttribute)
-	cachedDashboardTypes = dashboardsAttr.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyDashboard, dashboardsAttr.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
 func getActionsAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedActionsTypes
+	return attrTypesCache.Get(attrTypesKeyActions, initAttrTypes)
 }
 
 // getFrequencyAttrTypes returns the attribute types for frequency object.
 func getFrequencyAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedFrequencyTypes
+	return attrTypesCache.Get(attrTypesKeyFrequency, initAttrTypes)
 }
 
 // getAlertsFilterAttrTypes returns the attribute types for alerts_filter object.
 func getAlertsFilterAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedFilterTypes
+	return attrTypesCache.Get(attrTypesKeyAlertsFilter, initAttrTypes)
 }
 
 // getTimeframeAttrTypes returns the attribute types for timeframe object.
 func getTimeframeAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedTimeframeTypes
+	return attrTypesCache.Get(attrTypesKeyTimeframe, initAttrTypes)
 }
 
 // getFlappingAttrTypes returns the attribute types for the flapping object.
 func getFlappingAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedFlappingTypes
+	return attrTypesCache.Get(attrTypesKeyFlapping, initAttrTypes)
 }
 
 // getArtifactsAttrTypes returns the attribute types for the artifacts object.
 func getArtifactsAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedArtifactsTypes
+	return attrTypesCache.Get(attrTypesKeyArtifacts, initAttrTypes)
 }
 
 // getInvestigationGuideAttrTypes returns the attribute types for the
 // investigation_guide object.
 func getInvestigationGuideAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedInvestigationGuideTypes
+	return attrTypesCache.Get(attrTypesKeyInvestigationGuide, initAttrTypes)
 }
 
 // getDashboardAttrTypes returns the attribute types for a single dashboards
 // list element.
 func getDashboardAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedDashboardTypes
+	return attrTypesCache.Get(attrTypesKeyDashboard, initAttrTypes)
 }
 
 // getDashboardsElementType returns the object type of a dashboards list element.
