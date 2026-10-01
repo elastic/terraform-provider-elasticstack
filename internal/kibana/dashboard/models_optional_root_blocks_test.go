@@ -20,6 +20,7 @@ package dashboard
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
@@ -113,9 +114,7 @@ func validateDashboardConfig(t *testing.T, overrides map[string]tftypes.Value) [
 	for name, typ := range objType.AttributeTypes {
 		vals[name] = tftypes.NewValue(typ, nil)
 	}
-	for name, v := range overrides {
-		vals[name] = v
-	}
+	maps.Copy(vals, overrides)
 	cfg, err := tfprotov6.NewDynamicValue(objType, tftypes.NewValue(objType, vals))
 	require.NoError(t, err)
 

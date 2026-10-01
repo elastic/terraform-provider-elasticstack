@@ -185,12 +185,12 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 - `pinned_panels` (Attributes List) Ordered dashboard-level pinned controls (Kibana’s control bar above the grid). Each element uses the same typed `*_control_config` shapes as `panels[]` for these control kinds, without a `grid` block.
 
 When omitted from configuration and Kibana returns an empty list, Terraform keeps this attribute unset (see dashboard resource unset-vs-empty semantics). When set, order is preserved for API requests and read back in API order. (see [below for nested schema](#nestedatt--pinned_panels))
-- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). Optional: when omitted, no query is sent to Kibana and none is applied. Removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--query))
-- `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. Optional: when omitted, no refresh interval is sent to Kibana and none is applied. Removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--refresh_interval))
+- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--query))
+- `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--refresh_interval))
 - `sections` (Attributes List) Sections organize panels into collapsible groups. This is a technical preview feature. (see [below for nested schema](#nestedatt--sections))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) An array of tag IDs applied to this dashboard.
-- `time_range` (Attributes) Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. Optional: when omitted, no time range is sent to Kibana and none is applied. Removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--time_range))
+- `time_range` (Attributes) Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--time_range))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
