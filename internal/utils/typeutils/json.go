@@ -30,6 +30,9 @@ import (
 // WalkJSON recursively walks a decoded JSON value tree, applying leaf to every
 // non-container node. Container nodes (map[string]any and []any) are always
 // traversed. If leaf is nil, non-container values are returned unchanged.
+//
+// For callers that also need to collapse or rewrite map/slice nodes
+// themselves (not just leaves), see TreeVisitor.
 func WalkJSON(v any, leaf func(any) any) any {
 	switch val := v.(type) {
 	case map[string]any:
@@ -49,6 +52,88 @@ func WalkJSON(v any, leaf func(any) any) any {
 			return leaf(val)
 		}
 		return val
+	}
+}
+
+// TreeVisitor customizes a recursive walk over a decoded JSON tree (the
+// map[string]any / []any / scalar shape produced by encoding/json). All
+// fields are optional; a zero-value TreeVisitor returns a structural copy of
+// the input unchanged.
+//
+// Several packages normalize JSON decoded from Elasticsearch/Kibana API
+// responses because the typed go-elasticsearch client reshapes JSON
+// differently than how users author it or the raw API echoes it back - for
+// example coercing a single string into a one-element array, or expanding a
+// shorthand "field": "x" into "field": {"value": "x"}. Each caller's
+// normalization rule differs, but the recursion over nested maps and slices
+// is identical; TreeVisitor owns that recursion so callers only need to
+// supply their own collapsing/leaf rules. Use WalkJSON instead when the only
+// customization needed is a per-leaf transform.
+type TreeVisitor struct {
+	// Map, when set, is called with a map node before its children are
+	// walked. If ok is true, result is returned immediately in place of the
+	// node and its children are not visited. If ok is false, the walk
+	// continues over the node's children - since maps are reference types,
+	// any in-place mutation Map made to node is visible to that recursion.
+	Map func(node map[string]any) (result any, ok bool)
+
+	// MapChild, when set, post-processes each child value of a map node,
+	// keyed by its parent key, after that child has already been walked.
+	MapChild func(key string, walked any) any
+
+	// PostMap, when set, post-processes a map node's fully-walked and
+	// MapChild-transformed children before the map is returned.
+	PostMap func(walked map[string]any) any
+
+	// Slice, when set, is called with a slice node before its elements are
+	// walked. If ok is true, result is returned immediately in place of the
+	// node and its elements are not visited.
+	Slice func(node []any) (result any, ok bool)
+
+	// Leaf, when set, transforms any value that is not a map[string]any or
+	// []any.
+	Leaf func(node any) any
+}
+
+// Walk recursively applies vis to v, which is expected to be a value
+// produced by decoding JSON into `any` (i.e. composed of map[string]any,
+// []any, string, float64, bool, and nil).
+func (vis TreeVisitor) Walk(v any) any {
+	switch node := v.(type) {
+	case map[string]any:
+		if vis.Map != nil {
+			if result, ok := vis.Map(node); ok {
+				return result
+			}
+		}
+		out := make(map[string]any, len(node))
+		for k, child := range node {
+			walked := vis.Walk(child)
+			if vis.MapChild != nil {
+				walked = vis.MapChild(k, walked)
+			}
+			out[k] = walked
+		}
+		if vis.PostMap != nil {
+			return vis.PostMap(out)
+		}
+		return out
+	case []any:
+		if vis.Slice != nil {
+			if result, ok := vis.Slice(node); ok {
+				return result
+			}
+		}
+		out := make([]any, len(node))
+		for i, child := range node {
+			out[i] = vis.Walk(child)
+		}
+		return out
+	default:
+		if vis.Leaf != nil {
+			return vis.Leaf(node)
+		}
+		return v
 	}
 }
 

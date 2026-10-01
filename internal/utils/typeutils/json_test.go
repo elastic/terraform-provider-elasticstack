@@ -99,6 +99,166 @@ func TestNormalizeJSONScalar(t *testing.T) {
 	}
 }
 
+func TestTreeVisitor(t *testing.T) {
+	t.Parallel()
+
+	t.Run("zero value returns structural copy", func(t *testing.T) {
+		t.Parallel()
+		input := map[string]any{
+			"a": []any{"x", "y"},
+			"b": map[string]any{"c": float64(1)},
+		}
+		var vis typeutils.TreeVisitor
+		require.Equal(t, input, vis.Walk(input))
+	})
+
+	t.Run("slice collapse short-circuits elements", func(t *testing.T) {
+		t.Parallel()
+		vis := typeutils.TreeVisitor{
+			Slice: func(s []any) (any, bool) {
+				if len(s) == 1 {
+					if str, ok := s[0].(string); ok {
+						return str, true
+					}
+				}
+				return nil, false
+			},
+		}
+		require.Equal(t, "solo", vis.Walk([]any{"solo"}))
+		require.Equal(t, []any{"a", "b"}, vis.Walk([]any{"a", "b"}))
+	})
+
+	t.Run("map short-circuits children", func(t *testing.T) {
+		t.Parallel()
+		vis := typeutils.TreeVisitor{
+			Map: func(m map[string]any) (any, bool) {
+				if len(m) == 1 {
+					if inner, ok := m["value"]; ok {
+						return inner, true
+					}
+				}
+				return nil, false
+			},
+		}
+		require.Equal(t, "x", vis.Walk(map[string]any{"value": "x"}))
+		require.Equal(t,
+			map[string]any{"term": "x"},
+			vis.Walk(map[string]any{"term": map[string]any{"value": "x"}}),
+		)
+	})
+
+	t.Run("map mutates before continuing recursion", func(t *testing.T) {
+		t.Parallel()
+		vis := typeutils.TreeVisitor{
+			Map: func(m map[string]any) (any, bool) {
+				if field, ok := m["field"].(map[string]any); ok {
+					for k, v := range field {
+						if arr, ok := v.([]any); ok && len(arr) == 1 {
+							field[k] = arr[0]
+						}
+					}
+				}
+				return nil, false
+			},
+		}
+		got := vis.Walk(map[string]any{
+			"field": map[string]any{"key": []any{"username"}},
+		})
+		require.Equal(t, map[string]any{
+			"field": map[string]any{"key": "username"},
+		}, got)
+	})
+
+	t.Run("map child and post map", func(t *testing.T) {
+		t.Parallel()
+		vis := typeutils.TreeVisitor{
+			MapChild: func(key string, walked any) any {
+				if key == "match" {
+					if arr, ok := walked.([]any); ok && len(arr) == 1 {
+						if s, ok := arr[0].(string); ok {
+							return s
+						}
+					}
+				}
+				return walked
+			},
+			PostMap: func(m map[string]any) any {
+				if m["type"] == "object" {
+					if _, ok := m["properties"]; ok {
+						delete(m, "type")
+					}
+				}
+				return m
+			},
+		}
+		got := vis.Walk(map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
+			"match":      []any{"name_*"},
+		})
+		require.Equal(t, map[string]any{
+			"properties": map[string]any{},
+			"match":      "name_*",
+		}, got)
+	})
+
+	t.Run("leaf transforms scalars only", func(t *testing.T) {
+		t.Parallel()
+		vis := typeutils.TreeVisitor{
+			Leaf: func(v any) any {
+				if s, ok := v.(string); ok && s == "true" {
+					return true
+				}
+				return v
+			},
+		}
+		got := vis.Walk(map[string]any{"dynamic": "true", "other": "x"})
+		require.Equal(t, map[string]any{"dynamic": true, "other": "x"}, got)
+	})
+
+	t.Run("nested structures", func(t *testing.T) {
+		t.Parallel()
+		vis := typeutils.TreeVisitor{
+			Slice: func(s []any) (any, bool) {
+				if len(s) == 1 {
+					switch s[0].(type) {
+					case string, float64, bool:
+						return s[0], true
+					}
+				}
+				return nil, false
+			},
+		}
+		input := map[string]any{
+			"remove": map[string]any{
+				"field": []any{"my_field"},
+				"on_failure": []any{
+					map[string]any{
+						"set": map[string]any{
+							"field": "error.message",
+							"value": []any{"failed"},
+						},
+					},
+				},
+			},
+		}
+		want := map[string]any{
+			"remove": map[string]any{
+				"field": "my_field",
+				"on_failure": []any{
+					map[string]any{
+						"set": map[string]any{
+							"field": "error.message",
+							"value": "failed",
+						},
+					},
+				},
+			},
+		}
+		require.Equal(t, want, vis.Walk(input))
+	})
+}
+
 func TestIsEmptyJSONObject(t *testing.T) {
 	t.Parallel()
 
