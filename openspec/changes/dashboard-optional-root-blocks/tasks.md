@@ -1,23 +1,23 @@
 ## 1. Generated client (own commit)
 
-- [ ] 1.1 Edit the `PUT /api/dashboards/{id}` request-body `required` list in `generated/kbapi/dashboard-paths.json` to `["title"]`.
-- [ ] 1.2 Regenerate `generated/kbapi/kibana.gen.go` (see `dev-docs/high-level/generated-clients.md`) and confirm `PutDashboardsIdJSONBody` now has pointer `TimeRange`, `RefreshInterval`, `Query`, and `Options`. Commit the generated diff separately.
+- [x] 1.1 Edit the `PUT /api/dashboards/{id}` request-body `required` list in `generated/kbapi/dashboard-paths.json` to `["title"]`.
+- [x] 1.2 Regenerate `generated/kbapi/kibana.gen.go` (see `dev-docs/high-level/generated-clients.md`) and confirm `PutDashboardsIdJSONBody` now has pointer `TimeRange`, `RefreshInterval`, `Query`, and `Options`. Commit the generated diff separately.
 
 ## 2. Provider implementation
 
-- [ ] 2.1 In `internal/kibana/dashboard/schema.go`, make `time_range` (via `timeRangeSingleNestedAttribute(..., false)`), `refresh_interval`, and `query` optional. Keep nested attributes required. Do not bump the schema version.
-- [ ] 2.2 Update `dashboardToAPIUpdateRequest` in `internal/kibana/dashboard/models.go` to set `TimeRange`, `RefreshInterval`, `Query`, and `Options` only when the model block is non-nil, adapting to the pointer fields. Fix any other `PutDashboardsIdJSONBody` call sites flagged by the compiler.
-- [ ] 2.3 Confirm `dashboardToAPICreateRequest` already omits nil blocks; add no read-side null-preservation or default detection for the three blocks.
+- [x] 2.1 In `internal/kibana/dashboard/schema.go`, make `time_range` (via `timeRangeSingleNestedAttribute(..., false)`), `refresh_interval`, and `query` optional. Keep nested attributes required. Do not bump the schema version.
+- [x] 2.2 Update `dashboardToAPIUpdateRequest` in `internal/kibana/dashboard/models.go` to set `TimeRange`, `RefreshInterval`, `Query`, and `Options` only when the model block is non-nil, adapting to the pointer fields. Fix any other `PutDashboardsIdJSONBody` call sites flagged by the compiler.
+- [x] 2.3 Confirm `dashboardToAPICreateRequest` already omits nil blocks; add no read-side null-preservation or default detection for the three blocks.
 
 ## 3. Specs
 
-- [ ] 3.1 Sync the delta in `openspec/changes/dashboard-optional-root-blocks/specs/kibana-dashboard/spec.md` into `openspec/specs/kibana-dashboard/spec.md` (REQ-036, REQ-007, REQ-009).
-- [ ] 3.2 In the canonical spec's `## Schema` HCL sketch, mark `time_range`, `refresh_interval`, and `query` as `<optional, object>`.
+- [x] 3.1 Sync the delta in `openspec/changes/dashboard-optional-root-blocks/specs/kibana-dashboard/spec.md` into `openspec/specs/kibana-dashboard/spec.md` (REQ-036, REQ-007, REQ-009).
+- [x] 3.2 In the canonical spec's `## Schema` HCL sketch, mark `time_range`, `refresh_interval`, and `query` as `<optional, object>`.
 
 ## 4. Tests
 
-- [ ] 4.1 Unit tests for `dashboardToAPICreateRequest` / `dashboardToAPIUpdateRequest`: nil blocks are omitted (including `options` on update); set blocks are sent.
-- [ ] 4.2 Schema validation unit test: a title-only configuration validates, and `time_range = { from = "now-7d" }` (missing `to`) returns a diagnostic for the missing nested attribute.
+- [x] 4.1 Unit tests for `dashboardToAPICreateRequest` / `dashboardToAPIUpdateRequest`: nil blocks are omitted (including `options` on update); set blocks are sent.
+- [x] 4.2 Schema validation unit test: a title-only configuration validates, and `time_range = { from = "now-7d" }` (missing `to`) returns a diagnostic for the missing nested attribute.
 - [ ] 4.3 Acceptance test: title-only create, empty re-plan, and import verify.
 - [ ] 4.4 Acceptance test: add then remove each of `time_range`, `refresh_interval`, and `query`; removal leaves the block null in state.
 - [ ] 4.5 Acceptance test: non-default values for each block.
