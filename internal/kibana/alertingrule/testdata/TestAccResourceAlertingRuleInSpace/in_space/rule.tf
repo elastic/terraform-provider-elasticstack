@@ -21,10 +21,11 @@ resource "elasticstack_kibana_space" "test" {
 }
 
 resource "elasticstack_kibana_alerting_rule" "test_rule" {
-  name     = var.name
-  rule_id  = var.rule_id
-  space_id = elasticstack_kibana_space.test.space_id
-  consumer = "alerts"
+  name        = var.name
+  rule_id     = var.rule_id
+  space_id    = elasticstack_kibana_space.test.space_id
+  consumer    = "alerts"
+  notify_when = "onActiveAlert"
   params = jsonencode({
     aggType             = "avg"
     groupBy             = "top"
