@@ -85149,6 +85149,12 @@ type GetFleetUninstallTokensParams struct {
 	Page *float32 `form:"page,omitempty" json:"page,omitempty"`
 }
 
+// PostKibanaGlobalSettingsJSONBody defines parameters for PostKibanaGlobalSettings.
+type PostKibanaGlobalSettingsJSONBody struct {
+	// Changes Settings to update, keyed by setting name. A null value resets the setting to its default.
+	Changes map[string]interface{} `json:"changes"`
+}
+
 // GetLinksParams defines parameters for GetLinks.
 type GetLinksParams struct {
 	// Page The page of results to return.
@@ -92021,6 +92027,12 @@ type UpdateExceptionListItem400JSONResponseBody struct {
 	union json.RawMessage
 }
 
+// PostKibanaSettingsJSONBody defines parameters for PostKibanaSettings.
+type PostKibanaSettingsJSONBody struct {
+	// Changes Settings to update, keyed by setting name. A null value resets the setting to its default.
+	Changes map[string]interface{} `json:"changes"`
+}
+
 // DeleteListParams defines parameters for DeleteList.
 type DeleteListParams struct {
 	// Id Value list identifier to delete, including all of its list items.
@@ -92995,6 +93007,9 @@ type PutFleetSettingsJSONRequestBody PutFleetSettingsJSONBody
 // PutFleetSpaceSettingsJSONRequestBody defines body for PutFleetSpaceSettings for application/json ContentType.
 type PutFleetSpaceSettingsJSONRequestBody PutFleetSpaceSettingsJSONBody
 
+// PostKibanaGlobalSettingsJSONRequestBody defines body for PostKibanaGlobalSettings for application/json ContentType.
+type PostKibanaGlobalSettingsJSONRequestBody PostKibanaGlobalSettingsJSONBody
+
 // PostLinksJSONRequestBody defines body for PostLinks for application/json ContentType.
 type PostLinksJSONRequestBody PostLinksJSONBody
 
@@ -93384,6 +93399,9 @@ type CreateExceptionListItemJSONRequestBody = SecurityExceptionsAPICreateExcepti
 
 // UpdateExceptionListItemJSONRequestBody defines body for UpdateExceptionListItem for application/json ContentType.
 type UpdateExceptionListItemJSONRequestBody = SecurityExceptionsAPIUpdateExceptionListItem
+
+// PostKibanaSettingsJSONRequestBody defines body for PostKibanaSettings for application/json ContentType.
+type PostKibanaSettingsJSONRequestBody PostKibanaSettingsJSONBody
 
 // PatchListJSONRequestBody defines body for PatchList for application/json ContentType.
 type PatchListJSONRequestBody PatchListJSONBody
@@ -178446,6 +178464,14 @@ type ClientInterface interface {
 	// GetFleetUninstallTokensUninstalltokenid request
 	GetFleetUninstallTokensUninstalltokenid(ctx context.Context, uninstallTokenId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetKibanaGlobalSettings request
+	GetKibanaGlobalSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostKibanaGlobalSettingsWithBody request with any body
+	PostKibanaGlobalSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostKibanaGlobalSettings(ctx context.Context, body PostKibanaGlobalSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLinks request
 	GetLinks(ctx context.Context, params *GetLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -179468,6 +179494,14 @@ type ClientInterface interface {
 	UpdateExceptionListItemWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateExceptionListItem(ctx context.Context, spaceId SpaceId, body UpdateExceptionListItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetKibanaSettings request
+	GetKibanaSettings(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostKibanaSettingsWithBody request with any body
+	PostKibanaSettingsWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostKibanaSettings(ctx context.Context, spaceId SpaceId, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteList request
 	DeleteList(ctx context.Context, spaceId SpaceId, params *DeleteListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -187646,6 +187680,42 @@ func (c *Client) GetFleetUninstallTokensUninstalltokenid(ctx context.Context, un
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetKibanaGlobalSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetKibanaGlobalSettingsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostKibanaGlobalSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostKibanaGlobalSettingsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostKibanaGlobalSettings(ctx context.Context, body PostKibanaGlobalSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostKibanaGlobalSettingsRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetLinks(ctx context.Context, params *GetLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLinksRequest(c.Server, params)
 	if err != nil {
@@ -192232,6 +192302,42 @@ func (c *Client) UpdateExceptionListItemWithBody(ctx context.Context, spaceId Sp
 
 func (c *Client) UpdateExceptionListItem(ctx context.Context, spaceId SpaceId, body UpdateExceptionListItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateExceptionListItemRequest(c.Server, spaceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetKibanaSettings(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetKibanaSettingsRequest(c.Server, spaceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostKibanaSettingsWithBody(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostKibanaSettingsRequestWithBody(c.Server, spaceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostKibanaSettings(ctx context.Context, spaceId SpaceId, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostKibanaSettingsRequest(c.Server, spaceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -216485,6 +216591,73 @@ func NewGetFleetUninstallTokensUninstalltokenidRequest(server string, uninstallT
 	return req, nil
 }
 
+// NewGetKibanaGlobalSettingsRequest generates requests for GetKibanaGlobalSettings
+func NewGetKibanaGlobalSettingsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/kibana/global_settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostKibanaGlobalSettingsRequest calls the generic PostKibanaGlobalSettings builder with application/json body
+func NewPostKibanaGlobalSettingsRequest(server string, body PostKibanaGlobalSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostKibanaGlobalSettingsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostKibanaGlobalSettingsRequestWithBody generates requests for PostKibanaGlobalSettings with any type of body
+func NewPostKibanaGlobalSettingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/kibana/global_settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetLinksRequest generates requests for GetLinks
 func NewGetLinksRequest(server string, params *GetLinksParams) (*http.Request, error) {
 	var err error
@@ -230578,6 +230751,87 @@ func NewUpdateExceptionListItemRequestWithBody(server string, spaceId SpaceId, c
 	return req, nil
 }
 
+// NewGetKibanaSettingsRequest generates requests for GetKibanaSettings
+func NewGetKibanaSettingsRequest(server string, spaceId SpaceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "spaceId", spaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/kibana/settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostKibanaSettingsRequest calls the generic PostKibanaSettings builder with application/json body
+func NewPostKibanaSettingsRequest(server string, spaceId SpaceId, body PostKibanaSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostKibanaSettingsRequestWithBody(server, spaceId, "application/json", bodyReader)
+}
+
+// NewPostKibanaSettingsRequestWithBody generates requests for PostKibanaSettings with any type of body
+func NewPostKibanaSettingsRequestWithBody(server string, spaceId SpaceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "spaceId", spaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/s/%s/api/kibana/settings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeleteListRequest generates requests for DeleteList
 func NewDeleteListRequest(server string, spaceId SpaceId, params *DeleteListParams) (*http.Request, error) {
 	var err error
@@ -234216,6 +234470,14 @@ type ClientWithResponsesInterface interface {
 	// GetFleetUninstallTokensUninstalltokenidWithResponse request
 	GetFleetUninstallTokensUninstalltokenidWithResponse(ctx context.Context, uninstallTokenId string, reqEditors ...RequestEditorFn) (*GetFleetUninstallTokensUninstalltokenidResponse, error)
 
+	// GetKibanaGlobalSettingsWithResponse request
+	GetKibanaGlobalSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetKibanaGlobalSettingsResponse, error)
+
+	// PostKibanaGlobalSettingsWithBodyWithResponse request with any body
+	PostKibanaGlobalSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostKibanaGlobalSettingsResponse, error)
+
+	PostKibanaGlobalSettingsWithResponse(ctx context.Context, body PostKibanaGlobalSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostKibanaGlobalSettingsResponse, error)
+
 	// GetLinksWithResponse request
 	GetLinksWithResponse(ctx context.Context, params *GetLinksParams, reqEditors ...RequestEditorFn) (*GetLinksResponse, error)
 
@@ -235238,6 +235500,14 @@ type ClientWithResponsesInterface interface {
 	UpdateExceptionListItemWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateExceptionListItemResponse, error)
 
 	UpdateExceptionListItemWithResponse(ctx context.Context, spaceId SpaceId, body UpdateExceptionListItemJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateExceptionListItemResponse, error)
+
+	// GetKibanaSettingsWithResponse request
+	GetKibanaSettingsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetKibanaSettingsResponse, error)
+
+	// PostKibanaSettingsWithBodyWithResponse request with any body
+	PostKibanaSettingsWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error)
+
+	PostKibanaSettingsWithResponse(ctx context.Context, spaceId SpaceId, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error)
 
 	// DeleteListWithResponse request
 	DeleteListWithResponse(ctx context.Context, spaceId SpaceId, params *DeleteListParams, reqEditors ...RequestEditorFn) (*DeleteListResponse, error)
@@ -253552,6 +253822,84 @@ func (r GetFleetUninstallTokensUninstalltokenidResponse) ContentType() string {
 	return ""
 }
 
+type GetKibanaGlobalSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+		Settings map[string]struct {
+			// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+			IsOverridden *bool `json:"isOverridden,omitempty"`
+
+			// UserValue The value stored for the setting.
+			UserValue interface{} `json:"userValue,omitempty"`
+		} `json:"settings"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetKibanaGlobalSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetKibanaGlobalSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetKibanaGlobalSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostKibanaGlobalSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+		Settings map[string]struct {
+			// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+			IsOverridden *bool `json:"isOverridden,omitempty"`
+
+			// UserValue The value stored for the setting.
+			UserValue interface{} `json:"userValue,omitempty"`
+		} `json:"settings"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostKibanaGlobalSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostKibanaGlobalSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostKibanaGlobalSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetLinksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -261798,6 +262146,84 @@ func (r UpdateExceptionListItemResponse) ContentType() string {
 	return ""
 }
 
+type GetKibanaSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+		Settings map[string]struct {
+			// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+			IsOverridden *bool `json:"isOverridden,omitempty"`
+
+			// UserValue The value stored for the setting.
+			UserValue interface{} `json:"userValue,omitempty"`
+		} `json:"settings"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetKibanaSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetKibanaSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetKibanaSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostKibanaSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+		Settings map[string]struct {
+			// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+			IsOverridden *bool `json:"isOverridden,omitempty"`
+
+			// UserValue The value stored for the setting.
+			UserValue interface{} `json:"userValue,omitempty"`
+		} `json:"settings"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostKibanaSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostKibanaSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostKibanaSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -268710,6 +269136,32 @@ func (c *ClientWithResponses) GetFleetUninstallTokensUninstalltokenidWithRespons
 	return ParseGetFleetUninstallTokensUninstalltokenidResponse(rsp)
 }
 
+// GetKibanaGlobalSettingsWithResponse request returning *GetKibanaGlobalSettingsResponse
+func (c *ClientWithResponses) GetKibanaGlobalSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetKibanaGlobalSettingsResponse, error) {
+	rsp, err := c.GetKibanaGlobalSettings(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetKibanaGlobalSettingsResponse(rsp)
+}
+
+// PostKibanaGlobalSettingsWithBodyWithResponse request with arbitrary body returning *PostKibanaGlobalSettingsResponse
+func (c *ClientWithResponses) PostKibanaGlobalSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostKibanaGlobalSettingsResponse, error) {
+	rsp, err := c.PostKibanaGlobalSettingsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostKibanaGlobalSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostKibanaGlobalSettingsWithResponse(ctx context.Context, body PostKibanaGlobalSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostKibanaGlobalSettingsResponse, error) {
+	rsp, err := c.PostKibanaGlobalSettings(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostKibanaGlobalSettingsResponse(rsp)
+}
+
 // GetLinksWithResponse request returning *GetLinksResponse
 func (c *ClientWithResponses) GetLinksWithResponse(ctx context.Context, params *GetLinksParams, reqEditors ...RequestEditorFn) (*GetLinksResponse, error) {
 	rsp, err := c.GetLinks(ctx, params, reqEditors...)
@@ -272029,6 +272481,32 @@ func (c *ClientWithResponses) UpdateExceptionListItemWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseUpdateExceptionListItemResponse(rsp)
+}
+
+// GetKibanaSettingsWithResponse request returning *GetKibanaSettingsResponse
+func (c *ClientWithResponses) GetKibanaSettingsWithResponse(ctx context.Context, spaceId SpaceId, reqEditors ...RequestEditorFn) (*GetKibanaSettingsResponse, error) {
+	rsp, err := c.GetKibanaSettings(ctx, spaceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetKibanaSettingsResponse(rsp)
+}
+
+// PostKibanaSettingsWithBodyWithResponse request with arbitrary body returning *PostKibanaSettingsResponse
+func (c *ClientWithResponses) PostKibanaSettingsWithBodyWithResponse(ctx context.Context, spaceId SpaceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error) {
+	rsp, err := c.PostKibanaSettingsWithBody(ctx, spaceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostKibanaSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostKibanaSettingsWithResponse(ctx context.Context, spaceId SpaceId, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error) {
+	rsp, err := c.PostKibanaSettings(ctx, spaceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostKibanaSettingsResponse(rsp)
 }
 
 // DeleteListWithResponse request returning *DeleteListResponse
@@ -292614,6 +293092,76 @@ func ParseGetFleetUninstallTokensUninstalltokenidResponse(rsp *http.Response) (*
 	return response, nil
 }
 
+// ParseGetKibanaGlobalSettingsResponse parses an HTTP response from a GetKibanaGlobalSettingsWithResponse call
+func ParseGetKibanaGlobalSettingsResponse(rsp *http.Response) (*GetKibanaGlobalSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetKibanaGlobalSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+			Settings map[string]struct {
+				// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+				IsOverridden *bool `json:"isOverridden,omitempty"`
+
+				// UserValue The value stored for the setting.
+				UserValue interface{} `json:"userValue,omitempty"`
+			} `json:"settings"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostKibanaGlobalSettingsResponse parses an HTTP response from a PostKibanaGlobalSettingsWithResponse call
+func ParsePostKibanaGlobalSettingsResponse(rsp *http.Response) (*PostKibanaGlobalSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostKibanaGlobalSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+			Settings map[string]struct {
+				// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+				IsOverridden *bool `json:"isOverridden,omitempty"`
+
+				// UserValue The value stored for the setting.
+				UserValue interface{} `json:"userValue,omitempty"`
+			} `json:"settings"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetLinksResponse parses an HTTP response from a GetLinksWithResponse call
 func ParseGetLinksResponse(rsp *http.Response) (*GetLinksResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -299535,6 +300083,76 @@ func ParseUpdateExceptionListItemResponse(rsp *http.Response) (*UpdateExceptionL
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetKibanaSettingsResponse parses an HTTP response from a GetKibanaSettingsWithResponse call
+func ParseGetKibanaSettingsResponse(rsp *http.Response) (*GetKibanaSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetKibanaSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+			Settings map[string]struct {
+				// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+				IsOverridden *bool `json:"isOverridden,omitempty"`
+
+				// UserValue The value stored for the setting.
+				UserValue interface{} `json:"userValue,omitempty"`
+			} `json:"settings"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostKibanaSettingsResponse parses an HTTP response from a PostKibanaSettingsWithResponse call
+func ParsePostKibanaSettingsResponse(rsp *http.Response) (*PostKibanaSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostKibanaSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Settings Advanced settings that differ from the Kibana defaults, keyed by setting name.
+			Settings map[string]struct {
+				// IsOverridden True when the setting is overridden in kibana.yml and cannot be changed through the API.
+				IsOverridden *bool `json:"isOverridden,omitempty"`
+
+				// UserValue The value stored for the setting.
+				UserValue interface{} `json:"userValue,omitempty"`
+			} `json:"settings"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

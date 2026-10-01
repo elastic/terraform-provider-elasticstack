@@ -589,6 +589,7 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	injectDashboardAPIPaths,
+	injectKibanaSettingsAPIPaths,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -634,6 +635,25 @@ func injectDashboardAPIPaths(schema *Schema) {
 		log.Fatalf("failed to unmarshal dashboard-paths.json: %v", err)
 	}
 	for path, pathInfo := range dashboardPaths.Paths {
+		schema.Paths[path] = pathInfo
+	}
+}
+
+//go:embed kibana-settings-paths.json
+var kibanaSettingsPathsJSON string
+
+// injectKibanaSettingsAPIPaths merges the advanced settings (uiSettings) HTTP
+// path definitions for /api/kibana/settings and /api/kibana/global_settings,
+// which the upstream OpenAPI export does not include. Kibana registers these
+// routes without public access, so callers must send the
+// x-elastic-internal-origin header until
+// https://github.com/elastic/kibana/issues/279134 is resolved.
+func injectKibanaSettingsAPIPaths(schema *Schema) {
+	var settingsPaths Schema
+	if err := yaml.Unmarshal([]byte(kibanaSettingsPathsJSON), &settingsPaths); err != nil {
+		log.Fatalf("failed to unmarshal kibana-settings-paths.json: %v", err)
+	}
+	for path, pathInfo := range settingsPaths.Paths {
 		schema.Paths[path] = pathInfo
 	}
 }
@@ -763,6 +783,7 @@ func transformKibanaPaths(schema *Schema) {
 		"/api/lists",
 		"/api/lists/index",
 		"/api/lists/items",
+		"/api/kibana/settings",
 	}
 
 	// Add a spaceId parameter if not already present

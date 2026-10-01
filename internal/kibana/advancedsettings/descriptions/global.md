@@ -1,0 +1,1 @@
+When `true`, manages the global advanced settings that apply to every space instead of the settings of a single space. `space_id` cannot be set when `global` is `true`. Requires Kibana 8.7.0 or later.
