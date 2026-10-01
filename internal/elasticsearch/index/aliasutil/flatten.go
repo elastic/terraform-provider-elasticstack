@@ -216,28 +216,18 @@ func FlattenAliasSet(ctx context.Context, aliases map[string]models.IndexAlias, 
 // produced by the typed client back to their shorthand form.
 // For example: {"term":{"field":{"value":"x"}}} → {"term":{"field":"x"}}
 func normalizeQueryFilter(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		if len(val) == 1 {
-			if inner, ok := val["value"]; ok {
-				switch inner.(type) {
-				case string, float64, bool, int, int64:
-					return inner
+	vis := typeutils.TreeVisitor{
+		Map: func(m map[string]any) (any, bool) {
+			if len(m) == 1 {
+				if inner, ok := m["value"]; ok {
+					switch inner.(type) {
+					case string, float64, bool, int, int64:
+						return inner, true
+					}
 				}
 			}
-		}
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			out[k] = normalizeQueryFilter(vv)
-		}
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = normalizeQueryFilter(vv)
-		}
-		return out
-	default:
-		return v
+			return nil, false
+		},
 	}
+	return vis.Walk(v)
 }

@@ -231,49 +231,44 @@ func (v MappingsValue) decodeMappingPair(other MappingsValue) (map[string]any, m
 //     original apply (Elasticsearch echoes some boolean fields such as
 //     dynamic as the JSON string "false" instead of the boolean false).
 func normalizeMappings(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			normalized := normalizeMappings(vv)
-			switch k {
+	vis := typeutils.TreeVisitor{
+		MapChild: func(key string, walked any) any {
+			switch key {
 			case "match", "match_mapping_type", "path_match", "path_unmatch",
 				"unmatch", "unmatch_mapping_type":
-				if arr, ok := normalized.([]any); ok && len(arr) == 1 {
+				if arr, ok := walked.([]any); ok && len(arr) == 1 {
 					if s, ok := arr[0].(string); ok {
-						normalized = s
+						return s
 					}
 				}
 			}
-			out[k] = normalized
-		}
-
-		// Strip "type":"object" when "properties" is also present: it is the
-		// implicit default type and the typed ES client always injects it even
-		// when absent from the original JSON.
-		if typeVal, hasType := out["type"]; hasType && typeVal == "object" {
-			if _, hasProps := out["properties"]; hasProps {
-				delete(out, "type")
+			return walked
+		},
+		PostMap: func(out map[string]any) any {
+			// Strip "type":"object" when "properties" is also present: it is the
+			// implicit default type and the typed ES client always injects it even
+			// when absent from the original JSON.
+			if typeVal, hasType := out["type"]; hasType && typeVal == "object" {
+				if _, hasProps := out["properties"]; hasProps {
+					delete(out, "type")
+				}
 			}
-		}
-
-		return out
-	case []any:
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = normalizeMappings(vv)
-		}
-		return out
-	case string:
-		// Convert string-encoded JSON booleans and null back to their native
-		// types. Elasticsearch echoes some mapping fields (e.g. dynamic) as
-		// JSON strings instead of booleans. Normalizing here ensures the stored
-		// value after import matches the value stored after the initial apply,
-		// so ImportStateVerify does not fail due to "false" vs false.
-		return typeutils.NormalizeJSONScalar(val)
-	default:
-		return v
+			return out
+		},
+		Leaf: func(leaf any) any {
+			if s, ok := leaf.(string); ok {
+				// Convert string-encoded JSON booleans and null back to their
+				// native types. Elasticsearch echoes some mapping fields (e.g.
+				// dynamic) as JSON strings instead of booleans. Normalizing
+				// here ensures the stored value after import matches the
+				// value stored after the initial apply, so ImportStateVerify
+				// does not fail due to "false" vs false.
+				return typeutils.NormalizeJSONScalar(s)
+			}
+			return leaf
+		},
 	}
+	return vis.Walk(v)
 }
 
 // NewMappingsNull creates an MappingsValue with a null value.

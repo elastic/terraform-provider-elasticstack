@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -138,8 +139,8 @@ func normalizeRulesJSONString(raw string) (string, error) {
 	if err := json.Unmarshal([]byte(raw), &tree); err != nil {
 		return "", err
 	}
-	normalizeRuleNode(tree)
-	out, err := json.Marshal(tree)
+	normalized := normalizeRuleNode(tree)
+	out, err := json.Marshal(normalized)
 	if err != nil {
 		return "", err
 	}
@@ -148,24 +149,18 @@ func normalizeRulesJSONString(raw string) (string, error) {
 
 // normalizeRuleNode walks a parsed JSON rule tree and collapses
 // single-element arrays inside "field" objects to plain string values.
-func normalizeRuleNode(node any) {
-	switch v := node.(type) {
-	case map[string]any:
-		if field, ok := v["field"]; ok {
-			if fieldMap, ok := field.(map[string]any); ok {
-				for key, val := range fieldMap {
+func normalizeRuleNode(node any) any {
+	vis := typeutils.TreeVisitor{
+		Map: func(m map[string]any) (any, bool) {
+			if field, ok := m["field"].(map[string]any); ok {
+				for key, val := range field {
 					if arr, ok := val.([]any); ok && len(arr) == 1 {
-						fieldMap[key] = arr[0]
+						field[key] = arr[0]
 					}
 				}
 			}
-		}
-		for _, child := range v {
-			normalizeRuleNode(child)
-		}
-	case []any:
-		for _, child := range v {
-			normalizeRuleNode(child)
-		}
+			return nil, false
+		},
 	}
+	return vis.Walk(node)
 }

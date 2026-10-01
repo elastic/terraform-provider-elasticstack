@@ -142,28 +142,18 @@ func (v ProcessorJSONValue) StringSemanticEquals(ctx context.Context, newValuabl
 // compensates for the typed go-elasticsearch client converting fields like
 // remove.field from a string to a []string on deserialization.
 func normalizeProcessorJSON(v any) any {
-	switch val := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(val))
-		for k, vv := range val {
-			out[k] = normalizeProcessorJSON(vv)
-		}
-		return out
-	case []any:
-		if len(val) == 1 {
-			switch val[0].(type) {
-			case string, float64, bool:
-				return val[0]
+	vis := typeutils.TreeVisitor{
+		Slice: func(s []any) (any, bool) {
+			if len(s) == 1 {
+				switch s[0].(type) {
+				case string, float64, bool:
+					return s[0], true
+				}
 			}
-		}
-		out := make([]any, len(val))
-		for i, vv := range val {
-			out[i] = normalizeProcessorJSON(vv)
-		}
-		return out
-	default:
-		return v
+			return nil, false
+		},
 	}
+	return vis.Walk(v)
 }
 
 func NewProcessorJSONNull() ProcessorJSONValue {
