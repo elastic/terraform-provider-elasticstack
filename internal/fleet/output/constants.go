@@ -46,3 +46,5 @@ const (
 )
 
 const kafkaCompressionGzip = "gzip"
+
+var outputPresets = []string{"balanced", "custom", "latency", "scale", "throughput"}

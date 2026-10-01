@@ -145,6 +145,21 @@ func getSchema(_ context.Context) schema.Schema {
 				Sensitive:  true,
 				CustomType: customtypes.NormalizedYamlType{},
 			},
+			"preset": schema.StringAttribute{
+				Description: "Performance tuning preset for elasticsearch and remote_elasticsearch outputs. One of `balanced`, `custom`, `latency`, `scale`, `throughput`. " +
+					"When omitted, the current preset is kept unless `type` or `config_yaml` changes. Otherwise Fleet selects it: `custom` when `config_yaml` " +
+					"contains performance tuning keys (such as `bulk_max_size` or `worker`) and `balanced` otherwise. Removing `preset` from the configuration " +
+					"does not reset it; set it explicitly to change it. `balanced` cannot be used when `config_yaml` contains performance tuning keys.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					presetPlanModifier(),
+				},
+				Validators: []validator.String{
+					stringvalidator.OneOf(outputPresets...),
+					validators.AllowedIfDependentPathOneOf(path.Root("type"), []string{outputTypeElasticsearch, outputTypeRemoteElasticsearch}, validators.AllowedIfOptions{}),
+				},
+			},
 			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 			attrSSL: schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
