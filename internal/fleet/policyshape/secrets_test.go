@@ -59,8 +59,8 @@ func buildPackagePolicyWithMappedInputs(t *testing.T, secretRefs *[]kbapi.Packag
 	return p
 }
 
-// buildPackagePolicyRequestMapped creates a PackagePolicyRequest from mapped inputs.
-func buildPackagePolicyRequestMapped(t *testing.T, inputs *map[string]kbapi.PackagePolicyRequestMappedInput, vars *map[string]any) kbapi.PackagePolicyRequest {
+// buildPackagePolicyRequestMapped creates a PackagePolicyRequestMappedInputs request.
+func buildPackagePolicyRequestMapped(t *testing.T, inputs *map[string]kbapi.PackagePolicyRequestMappedInput, vars *map[string]any) kbapi.PackagePolicyRequestMappedInputs {
 	t.Helper()
 	mapped := kbapi.PackagePolicyRequestMappedInputs{
 		Name:    "test",
@@ -70,9 +70,7 @@ func buildPackagePolicyRequestMapped(t *testing.T, inputs *map[string]kbapi.Pack
 	if vars != nil {
 		mapped.Vars = policyshape.VarsMapToTypedMap[kbapi.KibanaHTTPAPIsSimplifiedCreatePackagePolicyRequest_Vars_AdditionalProperties](*vars)
 	}
-	var req kbapi.PackagePolicyRequest
-	require.NoError(t, req.FromPackagePolicyRequestMappedInputs(mapped))
-	return req
+	return mapped
 }
 
 func TestHandleRespSecrets(t *testing.T) {
@@ -328,12 +326,10 @@ func TestHandleReqRespSecrets(t *testing.T) {
 
 			// Check private data based on req vars (round-trip the typed
 			// wrapper through a generic map for inspection).
-			reqMapped, err := req.AsPackagePolicyRequestMappedInputs()
-			require.NoError(t, err)
 			privateWants := privateData{"secrets": `{}`}
 			reqVarsMap := map[string]any{}
-			if reqMapped.Vars != nil {
-				bytes, err := json.Marshal(*reqMapped.Vars)
+			if req.Vars != nil {
+				bytes, err := json.Marshal(*req.Vars)
 				require.NoError(t, err)
 				require.NoError(t, json.Unmarshal(bytes, &reqVarsMap))
 			}

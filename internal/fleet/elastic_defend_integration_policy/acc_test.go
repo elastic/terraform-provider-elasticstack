@@ -725,14 +725,14 @@ func TestAccResourceElasticDefendIntegrationPolicy_preset(t *testing.T) {
 }
 
 // TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace verifies that
-// policy_id accepts an explicit user-supplied value and that changing it
-// triggers RequiresReplace (destroy-before-create). The replacement plan is
-// never applied, since the resource always derives its own policy_id from
-// the bootstrap create response regardless of what is configured.
+// an explicit policy_id is used as the package policy ID on create, and that
+// changing it triggers RequiresReplace (destroy-before-create).
 func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	explicitPolicyID := fmt.Sprintf("%s-policy-id", policyName)
+	changedPolicyID := fmt.Sprintf("%s-policy-id-changed", policyName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -753,14 +753,34 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(explicitPolicyID),
 				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PostApplyPreRefresh: []plancheck.PlanCheck{
+					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
 					},
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", explicitPolicyID),
+					resource.TestCheckResourceAttr(resourceName, "id", "default/"+explicitPolicyID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(changedPolicyID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", changedPolicyID),
+					resource.TestCheckResourceAttr(resourceName, "id", "default/"+changedPolicyID),
+				),
 			},
 		},
 	})
