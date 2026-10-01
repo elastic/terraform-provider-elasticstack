@@ -33,24 +33,25 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 		return types.ObjectNull(windowsAttrTypes()), diags
 	}
 
-	eventsObj, d := mapOptionalObject(ctx, data, "events", windowsEventsAttrTypes(), func(m map[string]any) windowsEventsModel {
+	eventsObj, d := mapOptionalObject(ctx, data, attrEvents, windowsEventsAttrTypes(), func(m map[string]any) windowsEventsModel {
 		return windowsEventsModel{
 			Process:          typeutils.BoolFromMap(m, attrProcess),
-			Network:          typeutils.BoolFromMap(m, "network"),
-			File:             typeutils.BoolFromMap(m, "file"),
-			DllAndDriverLoad: typeutils.BoolFromMap(m, "dll_and_driver_load"),
-			DNS:              typeutils.BoolFromMap(m, "dns"),
-			Registry:         typeutils.BoolFromMap(m, "registry"),
-			Security:         typeutils.BoolFromMap(m, "security"),
-			Authentication:   typeutils.BoolFromMap(m, "authentication"),
+			Network:          typeutils.BoolFromMap(m, attrNetwork),
+			File:             typeutils.BoolFromMap(m, attrFile),
+			DllAndDriverLoad: typeutils.BoolFromMap(m, attrDllAndDriverLoad),
+			DNS:              typeutils.BoolFromMap(m, attrDNS),
+			Registry:         typeutils.BoolFromMap(m, attrRegistry),
+			Security:         typeutils.BoolFromMap(m, attrSecurity),
+			Authentication:   typeutils.BoolFromMap(m, attrAuthentication),
+			CredentialAccess: typeutils.BoolFromMap(m, attrCredentialAccess),
 		}
 	})
 	diags.Append(d...)
 
-	malwareObj, d := mapOptionalObject(ctx, data, "malware", malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
+	malwareObj, d := mapOptionalObject(ctx, data, attrMalware, malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
 		return malwareFullModel{
-			Mode:        typeutils.StringFromMap(m, "mode"),
-			Blocklist:   typeutils.BoolFromMap(m, "blocklist"),
+			Mode:        typeutils.StringFromMap(m, attrMode),
+			Blocklist:   typeutils.BoolFromMap(m, attrBlocklist),
 			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
 			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
 		}
@@ -59,7 +60,7 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 
 	ransomwareObj, d := mapOptionalObject(ctx, data, attrRansomware, protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
 		return protectionModeModel{
-			Mode:      typeutils.StringFromMap(m, "mode"),
+			Mode:      typeutils.StringFromMap(m, attrMode),
 			Supported: typeutils.BoolFromMap(m, attrSupported),
 		}
 	})
@@ -68,26 +69,34 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 	common, d := mapCommonPolicyFieldsFromAPI(ctx, data)
 	diags.Append(d...)
 
+	deviceControlObj, d := mapOptionalObject(ctx, data, attrDeviceControl, deviceControlAttrTypes(), func(m map[string]any) deviceControlModel {
+		return deviceControlModel{
+			Enabled:    typeutils.BoolFromMap(m, attrEnabled),
+			UsbStorage: typeutils.StringFromMap(m, attrUsbStorage),
+		}
+	})
+	diags.Append(d...)
+
 	popupData := getMap(data, attrPopup)
 	popupObj, d := mapWindowsPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
-	avrObj, d := mapOptionalObject(ctx, data, "antivirus_registration", antivirusRegistrationAttrTypes(), func(m map[string]any) antivirusRegistrationModel {
+	avrObj, d := mapOptionalObject(ctx, data, attrAntivirusRegistration, antivirusRegistrationAttrTypes(), func(m map[string]any) antivirusRegistrationModel {
 		return antivirusRegistrationModel{
-			Mode:    typeutils.StringFromMap(m, "mode"),
-			Enabled: typeutils.BoolFromMap(m, "enabled"),
+			Mode:    typeutils.StringFromMap(m, attrMode),
+			Enabled: typeutils.BoolFromMap(m, attrEnabled),
 		}
 	})
 	diags.Append(d...)
 
 	// attack_surface_reduction contains a nested credential_hardening object,
 	// so it requires two levels of mapOptionalObject.
-	asrData := getMap(data, "attack_surface_reduction")
+	asrData := getMap(data, attrAttackSurfaceReduction)
 	var asrObj types.Object
 	if asrData != nil {
-		chObj, d := mapOptionalObject(ctx, asrData, "credential_hardening", credentialHardeningAttrTypes(), func(m map[string]any) credentialHardeningModel {
+		chObj, d := mapOptionalObject(ctx, asrData, attrCredentialHardening, credentialHardeningAttrTypes(), func(m map[string]any) credentialHardeningModel {
 			return credentialHardeningModel{
-				Enabled: typeutils.BoolFromMap(m, "enabled"),
+				Enabled: typeutils.BoolFromMap(m, attrEnabled),
 			}
 		})
 		diags.Append(d...)
@@ -105,6 +114,7 @@ func mapWindowsPolicyFromAPI(ctx context.Context, data map[string]any) (types.Ob
 		Ransomware:             ransomwareObj,
 		MemoryProtection:       common.MemoryProtection,
 		BehaviorProtection:     common.BehaviorProtection,
+		DeviceControl:          deviceControlObj,
 		Popup:                  popupObj,
 		Logging:                common.Logging,
 		AntivirusRegistration:  avrObj,
@@ -138,14 +148,15 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		}
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
-		typeutils.SetBoolInMap(events, "network", em.Network)
-		typeutils.SetBoolInMap(events, "file", em.File)
-		typeutils.SetBoolInMap(events, "dll_and_driver_load", em.DllAndDriverLoad)
-		typeutils.SetBoolInMap(events, "dns", em.DNS)
-		typeutils.SetBoolInMap(events, "registry", em.Registry)
-		typeutils.SetBoolInMap(events, "security", em.Security)
-		typeutils.SetBoolInMap(events, "authentication", em.Authentication)
-		win["events"] = events
+		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
+		typeutils.SetBoolInMap(events, attrFile, em.File)
+		typeutils.SetBoolInMap(events, attrDllAndDriverLoad, em.DllAndDriverLoad)
+		typeutils.SetBoolInMap(events, attrDNS, em.DNS)
+		typeutils.SetBoolInMap(events, attrRegistry, em.Registry)
+		typeutils.SetBoolInMap(events, attrSecurity, em.Security)
+		typeutils.SetBoolInMap(events, attrAuthentication, em.Authentication)
+		typeutils.SetBoolInMap(events, attrCredentialAccess, em.CredentialAccess)
+		win[attrEvents] = events
 	}
 
 	if typeutils.IsKnown(wm.Malware) {
@@ -156,11 +167,11 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, "mode", mm.Mode)
-		typeutils.SetBoolInMap(malware, "blocklist", mm.Blocklist)
+		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
 		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
 		typeutils.SetBoolInMap(malware, attrNotifyUser, mm.NotifyUser)
-		win["malware"] = malware
+		win[attrMalware] = malware
 	}
 
 	if typeutils.IsKnown(wm.Ransomware) {
@@ -171,22 +182,23 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		ransomware := map[string]any{}
-		typeutils.SetStringInMap(ransomware, "mode", rm.Mode)
+		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
 		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
 		win[attrRansomware] = ransomware
 	}
 
 	if typeutils.IsKnown(wm.MemoryProtection) {
-		var mm protectionModeModel
+		var mm memoryProtectionModel
 		d = wm.MemoryProtection.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, "mode", mm.Mode)
+		typeutils.SetStringInMap(memProt, attrMode, mm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, mm.Supported)
-		win["memory_protection"] = memProt
+		typeutils.SetBoolInMap(memProt, attrCustomYara, mm.CustomYaraSignatures)
+		win[attrMemoryProtection] = memProt
 	}
 
 	if typeutils.IsKnown(wm.BehaviorProtection) {
@@ -197,10 +209,23 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
 		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		win["behavior_protection"] = behProt
+		win[attrBehaviorProtection] = behProt
+	}
+
+	if typeutils.IsKnown(wm.DeviceControl) {
+		var dm deviceControlModel
+		d = wm.DeviceControl.As(ctx, &dm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		deviceControl := map[string]any{}
+		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
+		win[attrDeviceControl] = deviceControl
 	}
 
 	if typeutils.IsKnown(wm.Popup) {
@@ -211,10 +236,11 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		popup := map[string]any{}
-		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
+		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
 		setPopupItem(ctx, popup, attrRansomware, pm.Ransomware, &diags)
-		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
-		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
+		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrDeviceControl, pm.DeviceControl, &diags)
 		win[attrPopup] = popup
 	}
 
@@ -226,8 +252,8 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, "file", lm.File)
-		win["logging"] = logging
+		typeutils.SetStringInMap(logging, attrFile, lm.File)
+		win[attrLogging] = logging
 	}
 
 	if typeutils.IsKnown(wm.AntivirusRegistration) {
@@ -238,9 +264,9 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 			return nil, diags
 		}
 		avr := map[string]any{}
-		typeutils.SetStringInMap(avr, "mode", am.Mode)
-		typeutils.SetBoolInMap(avr, "enabled", am.Enabled)
-		win["antivirus_registration"] = avr
+		typeutils.SetStringInMap(avr, attrMode, am.Mode)
+		typeutils.SetBoolInMap(avr, attrEnabled, am.Enabled)
+		win[attrAntivirusRegistration] = avr
 	}
 
 	if typeutils.IsKnown(wm.AttackSurfaceReduction) {
@@ -259,10 +285,10 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 				return nil, diags
 			}
 			ch := map[string]any{}
-			typeutils.SetBoolInMap(ch, "enabled", cm.Enabled)
-			asr["credential_hardening"] = ch
+			typeutils.SetBoolInMap(ch, attrEnabled, cm.Enabled)
+			asr[attrCredentialHardening] = ch
 		}
-		win["attack_surface_reduction"] = asr
+		win[attrAttackSurfaceReduction] = asr
 	}
 
 	return win, diags
@@ -270,14 +296,15 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 
 func windowsEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrProcess:           types.BoolType,
-		attrNetwork:           types.BoolType,
-		attrFile:              types.BoolType,
-		"dll_and_driver_load": types.BoolType,
-		"dns":                 types.BoolType,
-		"registry":            types.BoolType,
-		"security":            types.BoolType,
-		"authentication":      types.BoolType,
+		attrProcess:          types.BoolType,
+		attrNetwork:          types.BoolType,
+		attrFile:             types.BoolType,
+		attrDllAndDriverLoad: types.BoolType,
+		attrDNS:              types.BoolType,
+		attrRegistry:         types.BoolType,
+		attrSecurity:         types.BoolType,
+		attrAuthentication:   types.BoolType,
+		attrCredentialAccess: types.BoolType,
 	}
 }
 
@@ -305,11 +332,12 @@ func windowsAttrTypes() map[string]attr.Type {
 		attrEvents:                 types.ObjectType{AttrTypes: windowsEventsAttrTypes()},
 		attrMalware:                types.ObjectType{AttrTypes: malwareFullAttrTypes()},
 		attrRansomware:             types.ObjectType{AttrTypes: protectionModeAttrTypes()},
-		attrMemoryProtection:       types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		attrMemoryProtection:       types.ObjectType{AttrTypes: memoryProtectionAttrTypes()},
+		attrDeviceControl:          types.ObjectType{AttrTypes: deviceControlAttrTypes()},
 		attrBehaviorProtection:     types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
 		attrPopup:                  types.ObjectType{AttrTypes: windowsPopupAttrTypes()},
 		attrLogging:                types.ObjectType{AttrTypes: loggingAttrTypes()},
-		"antivirus_registration":   types.ObjectType{AttrTypes: antivirusRegistrationAttrTypes()},
-		"attack_surface_reduction": types.ObjectType{AttrTypes: attackSurfaceReductionAttrTypes()},
+		attrAntivirusRegistration:  types.ObjectType{AttrTypes: antivirusRegistrationAttrTypes()},
+		attrAttackSurfaceReduction: types.ObjectType{AttrTypes: attackSurfaceReductionAttrTypes()},
 	}
 }

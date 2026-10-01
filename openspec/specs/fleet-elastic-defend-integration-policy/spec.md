@@ -35,6 +35,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         registry            = <optional, bool>
         security            = <optional, bool>
         authentication      = <optional, bool>
+        credential_access   = <optional, bool>
       }
       malware = <optional, single nested attribute> {
         mode          = <optional, string>
@@ -47,13 +48,18 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         supported = <optional+computed, bool>    # default true
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional+computed, string>  # default "off"
-        supported = <optional+computed, bool>    # default true
+        mode                   = <optional+computed, string>  # default "off"
+        supported              = <optional+computed, bool>    # default true
+        custom_yara_signatures = <optional, bool>
       }
       behavior_protection = <optional, single nested attribute> {
         mode               = <optional+computed, string>  # default "off"
         supported          = <optional+computed, bool>    # default true
         reputation_service = <optional+computed, bool>    # default false
+      }
+      device_control = <optional, single nested attribute> {
+        enabled     = <optional, bool>
+        usb_storage = <optional, string>  # one of "audit", "read_only", "no_execute", "deny_all"
       }
       popup = <optional+computed, single nested attribute> {
         malware = <optional, single nested attribute> {
@@ -69,6 +75,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
           enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
+        }
+        device_control = <optional, single nested attribute> {
           message = <optional+computed, string>  # default ""
           enabled = <optional+computed, bool>    # default false
         }
@@ -88,9 +98,11 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
     }
     mac = <optional, single nested attribute> {
       events = <optional, single nested attribute> {
-        process = <optional, bool>
-        network = <optional, bool>
-        file    = <optional, bool>
+        process  = <optional, bool>
+        network  = <optional, bool>
+        file     = <optional, bool>
+        dns      = <optional, bool>
+        security = <optional, bool>
       }
       malware = <optional, single nested attribute> {
         mode          = <optional, string>
@@ -98,17 +110,30 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         on_write_scan = <optional, bool>
         notify_user   = <optional, bool>
       }
-      memory_protection = <optional, single nested attribute> {
+      ransomware = <optional, single nested attribute> {
         mode      = <optional+computed, string>  # default "off"
         supported = <optional+computed, bool>    # default true
+      }
+      memory_protection = <optional, single nested attribute> {
+        mode                   = <optional+computed, string>  # default "off"
+        supported              = <optional+computed, bool>    # default true
+        custom_yara_signatures = <optional, bool>
       }
       behavior_protection = <optional, single nested attribute> {
         mode               = <optional+computed, string>  # default "off"
         supported          = <optional+computed, bool>    # default true
         reputation_service = <optional+computed, bool>    # default false
       }
+      device_control = <optional, single nested attribute> {
+        enabled     = <optional, bool>
+        usb_storage = <optional, string>  # one of "audit", "read_only", "no_execute", "deny_all"
+      }
       popup = <optional, single nested attribute> {
         malware = <optional, single nested attribute> {
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
+        }
+        ransomware = <optional, single nested attribute> {
           message = <optional+computed, string>  # default ""
           enabled = <optional+computed, bool>    # default false
         }
@@ -117,6 +142,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
           enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
+        }
+        device_control = <optional, single nested attribute> {
           message = <optional+computed, string>  # default ""
           enabled = <optional+computed, bool>    # default false
         }
@@ -132,14 +161,17 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         file         = <optional, bool>
         session_data = <optional, bool>
         tty_io       = <optional, bool>
+        dns          = <optional, bool>
       }
       malware = <optional, single nested attribute> {
-        mode      = <optional, string>
-        blocklist = <optional, bool>
+        mode          = <optional, string>
+        blocklist     = <optional, bool>
+        on_write_scan = <optional, bool>
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional+computed, string>  # default "off"
-        supported = <optional+computed, bool>    # default true
+        mode                   = <optional+computed, string>  # default "off"
+        supported              = <optional+computed, bool>    # default true
+        custom_yara_signatures = <optional, bool>
       }
       behavior_protection = <optional, single nested attribute> {
         mode               = <optional+computed, string>  # default "off"
@@ -249,6 +281,7 @@ On read and import, the resource SHALL validate that the resolved package policy
 ### Requirement: Typed Defend configuration schema (REQ-006)
 
 The resource SHALL model Defend-owned configuration through typed Terraform attributes and nested attributes. The `preset` attribute SHALL map to `config.integration_config.value.endpointConfig.preset` in read/update payloads. The `policy` attribute SHALL contain optional `windows`, `mac`, and `linux` nested attributes, each with a distinct schema containing only the fields applicable to that operating system. Structurally invalid combinations (such as `policy.linux.ransomware`) SHALL be impossible at plan time without requiring custom validation. The typed schema SHALL also model the provider-known Defend defaults for popup entries, protection mode objects, behavior protection, Windows antivirus registration, and Windows attack surface reduction credential hardening so omitted or empty nested blocks plan with the same effective values the Defend policy uses.
+The `policy.{windows,mac}.device_control` object SHALL NOT have an object-level default, so it remains null (and is omitted from the request payload) unless configured.
 
 #### Scenario: Policy settings are modeled as typed attributes
 
@@ -264,12 +297,29 @@ The resource SHALL model Defend-owned configuration through typed Terraform attr
 - THEN the typed schema SHALL include the documented Linux-specific event flags
 - AND those flags SHALL include `session_data` and `tty_io`
 
+#### Scenario: Device control, macOS ransomware, and custom YARA settings are modeled
+
+- GIVEN a configuration that sets `policy.{windows,mac}.device_control`, `policy.mac.ransomware`, `policy.{windows,mac}.popup.device_control`, `policy.mac.popup.ransomware`, or `policy.{windows,mac,linux}.memory_protection.custom_yara_signatures`
+- WHEN the provider builds the finalize or update request
+- THEN those values SHALL be written to the matching keys under the Defend `policy` payload
+- AND `device_control.usb_storage` SHALL accept only `"audit"`, `"read_only"`, `"no_execute"`, or `"deny_all"`
+- AND reading the policy SHALL map those keys back into the same attributes
+
+#### Scenario: Event and malware flags cover documented per-OS leaves
+
+- GIVEN a configuration for Defend event collection or malware protection
+- WHEN Terraform maps the policy schema to and from the API
+- THEN `policy.windows.events` SHALL include `credential_access`
+- AND `policy.mac.events` SHALL include `dns` and `security`
+- AND `policy.linux.events` SHALL include `dns`
+- AND `policy.linux.malware` SHALL include `on_write_scan`
+
 #### Scenario: Omitted nested policy settings use modeled defaults
 
 - GIVEN a configuration that omits or leaves empty a popup item, protection-mode object, behavior-protection object, Windows antivirus registration object, or Windows attack-surface-reduction credential hardening object
 - WHEN Terraform plans the Defend resource
 - THEN the omitted or empty nested object SHALL use the modeled defaults
-- AND `policy.windows.popup` SHALL default to an object whose `malware`, `ransomware`, `memory_protection`, and `behavior_protection` entries each use the popup-item defaults
+- AND `policy.windows.popup` SHALL default to an object whose `malware`, `ransomware`, `memory_protection`, `behavior_protection`, and `device_control` entries each use the popup-item defaults
 - AND popup items SHALL default to `{ message = "", enabled = false }`
 - AND protection-mode objects SHALL default to `{ mode = "off", supported = true }`
 - AND behavior-protection objects SHALL default to `{ mode = "off", supported = true, reputation_service = false }`

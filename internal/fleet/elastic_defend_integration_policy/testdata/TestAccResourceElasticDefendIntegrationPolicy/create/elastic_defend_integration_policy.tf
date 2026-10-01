@@ -32,6 +32,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         registry            = false
         security            = false
         authentication      = false
+        credential_access   = true
       }
       malware = {
         mode          = "prevent"
@@ -43,11 +44,16 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         mode = "prevent"
       }
       memory_protection = {
-        mode = "detect"
+        mode                   = "detect"
+        custom_yara_signatures = true
       }
       behavior_protection = {
         mode               = "prevent"
         reputation_service = true
+      }
+      device_control = {
+        enabled     = true
+        usb_storage = "deny_all"
       }
       popup = {
         malware = {
@@ -66,6 +72,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
           message = ""
           enabled = false
         }
+        device_control = {
+          message = "Windows device blocked"
+          enabled = true
+        }
       }
       antivirus_registration = {
         mode    = "enabled"
@@ -82,8 +92,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
     }
     mac = {
       events = {
-        process = true
-        file    = true
+        process  = true
+        file     = true
+        dns      = true
+        security = false
       }
       malware = {
         mode          = "prevent"
@@ -91,12 +103,20 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         on_write_scan = true
         notify_user   = true
       }
-      memory_protection = {
+      ransomware = {
         mode = "prevent"
+      }
+      memory_protection = {
+        mode                   = "prevent"
+        custom_yara_signatures = false
       }
       behavior_protection = {
         mode               = "detect"
         reputation_service = true
+      }
+      device_control = {
+        enabled     = true
+        usb_storage = "read_only"
       }
       popup = {
         malware = {
@@ -108,6 +128,14 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
           enabled = false
         }
         behavior_protection = {
+          message = ""
+          enabled = false
+        }
+        ransomware = {
+          message = "Mac ransomware blocked"
+          enabled = true
+        }
+        device_control = {
           message = ""
           enabled = false
         }
@@ -123,13 +151,16 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         file         = true
         session_data = true
         tty_io       = false
+        dns          = true
       }
       malware = {
-        mode      = "detect"
-        blocklist = true
+        mode          = "detect"
+        blocklist     = true
+        on_write_scan = true
       }
       memory_protection = {
-        mode = "prevent"
+        mode                   = "prevent"
+        custom_yara_signatures = true
       }
       behavior_protection = {
         mode               = "detect"

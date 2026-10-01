@@ -33,21 +33,31 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 		return types.ObjectNull(macAttrTypes()), diags
 	}
 
-	eventsObj, d := mapOptionalObject(ctx, data, "events", macEventsAttrTypes(), func(m map[string]any) macEventsModel {
+	eventsObj, d := mapOptionalObject(ctx, data, attrEvents, macEventsAttrTypes(), func(m map[string]any) macEventsModel {
 		return macEventsModel{
-			Process: typeutils.BoolFromMap(m, attrProcess),
-			Network: typeutils.BoolFromMap(m, "network"),
-			File:    typeutils.BoolFromMap(m, "file"),
+			Process:  typeutils.BoolFromMap(m, attrProcess),
+			Network:  typeutils.BoolFromMap(m, attrNetwork),
+			File:     typeutils.BoolFromMap(m, attrFile),
+			DNS:      typeutils.BoolFromMap(m, attrDNS),
+			Security: typeutils.BoolFromMap(m, attrSecurity),
 		}
 	})
 	diags.Append(d...)
 
-	malwareObj, d := mapOptionalObject(ctx, data, "malware", malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
+	malwareObj, d := mapOptionalObject(ctx, data, attrMalware, malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
 		return malwareFullModel{
-			Mode:        typeutils.StringFromMap(m, "mode"),
-			Blocklist:   typeutils.BoolFromMap(m, "blocklist"),
+			Mode:        typeutils.StringFromMap(m, attrMode),
+			Blocklist:   typeutils.BoolFromMap(m, attrBlocklist),
 			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
 			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
+		}
+	})
+	diags.Append(d...)
+
+	ransomwareObj, d := mapOptionalObject(ctx, data, attrRansomware, protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
+		return protectionModeModel{
+			Mode:      typeutils.StringFromMap(m, attrMode),
+			Supported: typeutils.BoolFromMap(m, attrSupported),
 		}
 	})
 	diags.Append(d...)
@@ -55,15 +65,25 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 	common, d := mapCommonPolicyFieldsFromAPI(ctx, data)
 	diags.Append(d...)
 
+	deviceControlObj, d := mapOptionalObject(ctx, data, attrDeviceControl, deviceControlAttrTypes(), func(m map[string]any) deviceControlModel {
+		return deviceControlModel{
+			Enabled:    typeutils.BoolFromMap(m, attrEnabled),
+			UsbStorage: typeutils.StringFromMap(m, attrUsbStorage),
+		}
+	})
+	diags.Append(d...)
+
 	popupData := getMap(data, attrPopup)
-	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
+	popupObj, d := mapMacPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
 	macObj, d := types.ObjectValueFrom(ctx, macAttrTypes(), macPolicyModel{
 		Events:             eventsObj,
 		Malware:            malwareObj,
+		Ransomware:         ransomwareObj,
 		MemoryProtection:   common.MemoryProtection,
 		BehaviorProtection: common.BehaviorProtection,
+		DeviceControl:      deviceControlObj,
 		Popup:              popupObj,
 		Logging:            common.Logging,
 	})
@@ -95,9 +115,11 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		}
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
-		typeutils.SetBoolInMap(events, "network", em.Network)
-		typeutils.SetBoolInMap(events, "file", em.File)
-		mac["events"] = events
+		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
+		typeutils.SetBoolInMap(events, attrFile, em.File)
+		typeutils.SetBoolInMap(events, attrDNS, em.DNS)
+		typeutils.SetBoolInMap(events, attrSecurity, em.Security)
+		mac[attrEvents] = events
 	}
 
 	if typeutils.IsKnown(mm.Malware) {
@@ -108,24 +130,38 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, "mode", malwareModel.Mode)
-		typeutils.SetBoolInMap(malware, "blocklist", malwareModel.Blocklist)
+		typeutils.SetStringInMap(malware, attrMode, malwareModel.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, malwareModel.Blocklist)
 		typeutils.SetBoolInMap(malware, attrOnWriteScan, malwareModel.OnWriteScan)
 		typeutils.SetBoolInMap(malware, attrNotifyUser, malwareModel.NotifyUser)
-		mac["malware"] = malware
+		mac[attrMalware] = malware
+	}
+
+	if typeutils.IsKnown(mm.Ransomware) {
+		var rm protectionModeModel
+		d = mm.Ransomware.As(ctx, &rm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		ransomware := map[string]any{}
+		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
+		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
+		mac[attrRansomware] = ransomware
 	}
 
 	if typeutils.IsKnown(mm.MemoryProtection) {
-		var pm protectionModeModel
+		var pm memoryProtectionModel
 		d = mm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, "mode", pm.Mode)
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
-		mac["memory_protection"] = memProt
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		mac[attrMemoryProtection] = memProt
 	}
 
 	if typeutils.IsKnown(mm.BehaviorProtection) {
@@ -136,23 +172,38 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
 		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		mac["behavior_protection"] = behProt
+		mac[attrBehaviorProtection] = behProt
+	}
+
+	if typeutils.IsKnown(mm.DeviceControl) {
+		var dm deviceControlModel
+		d = mm.DeviceControl.As(ctx, &dm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+		diags.Append(d...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		deviceControl := map[string]any{}
+		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
+		mac[attrDeviceControl] = deviceControl
 	}
 
 	if typeutils.IsKnown(mm.Popup) {
-		var pm macLinuxPopupModel
+		var pm macPopupModel
 		d = mm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		popup := map[string]any{}
-		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
-		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
-		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
+		setPopupItem(ctx, popup, attrRansomware, pm.Ransomware, &diags)
+		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
+		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrDeviceControl, pm.DeviceControl, &diags)
 		mac[attrPopup] = popup
 	}
 
@@ -164,8 +215,8 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 			return nil, diags
 		}
 		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, "file", lm.File)
-		mac["logging"] = logging
+		typeutils.SetStringInMap(logging, attrFile, lm.File)
+		mac[attrLogging] = logging
 	}
 
 	return mac, diags
@@ -173,9 +224,11 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 
 func macEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrProcess: types.BoolType,
-		attrNetwork: types.BoolType,
-		attrFile:    types.BoolType,
+		attrProcess:  types.BoolType,
+		attrNetwork:  types.BoolType,
+		attrFile:     types.BoolType,
+		attrDNS:      types.BoolType,
+		attrSecurity: types.BoolType,
 	}
 }
 
@@ -183,9 +236,11 @@ func macAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrEvents:             types.ObjectType{AttrTypes: macEventsAttrTypes()},
 		attrMalware:            types.ObjectType{AttrTypes: malwareFullAttrTypes()},
-		attrMemoryProtection:   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		attrRansomware:         types.ObjectType{AttrTypes: protectionModeAttrTypes()},
+		attrMemoryProtection:   types.ObjectType{AttrTypes: memoryProtectionAttrTypes()},
 		attrBehaviorProtection: types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		attrPopup:              types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
+		attrDeviceControl:      types.ObjectType{AttrTypes: deviceControlAttrTypes()},
+		attrPopup:              types.ObjectType{AttrTypes: macPopupAttrTypes()},
 		attrLogging:            types.ObjectType{AttrTypes: loggingAttrTypes()},
 	}
 }

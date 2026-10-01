@@ -34,6 +34,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         registry            = true
         security            = true
         authentication      = true
+        credential_access   = false
       }
       malware = {
         mode          = "detect"
@@ -45,11 +46,16 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         mode = "detect"
       }
       memory_protection = {
-        mode = "prevent"
+        mode                   = "prevent"
+        custom_yara_signatures = false
       }
       behavior_protection = {
         mode               = "detect"
         reputation_service = false
+      }
+      device_control = {
+        enabled     = false
+        usb_storage = "audit"
       }
       popup = {
         malware = {
@@ -65,6 +71,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
           enabled = true
         }
         behavior_protection = {
+          message = ""
+          enabled = false
+        }
+        device_control = {
           message = ""
           enabled = false
         }
@@ -84,19 +94,29 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
     }
     mac = {
       events = {
-        process = true
-        network = false
-        file    = false
+        process  = true
+        network  = false
+        file     = false
+        dns      = false
+        security = true
       }
       malware = {
         mode = "detect"
       }
-      memory_protection = {
+      ransomware = {
         mode = "detect"
+      }
+      memory_protection = {
+        mode                   = "detect"
+        custom_yara_signatures = true
       }
       behavior_protection = {
         mode               = "prevent"
         reputation_service = false
+      }
+      device_control = {
+        enabled     = false
+        usb_storage = "deny_all"
       }
       popup = {
         malware = {
@@ -111,6 +131,14 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
           message = ""
           enabled = false
         }
+        ransomware = {
+          message = ""
+          enabled = false
+        }
+        device_control = {
+          message = "Mac device blocked"
+          enabled = true
+        }
       }
       logging = {
         file = "error"
@@ -123,13 +151,16 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
         file         = false
         session_data = false
         tty_io       = true
+        dns          = false
       }
       malware = {
-        mode      = "prevent"
-        blocklist = false
+        mode          = "prevent"
+        blocklist     = false
+        on_write_scan = false
       }
       memory_protection = {
-        mode = "detect"
+        mode                   = "detect"
+        custom_yara_signatures = false
       }
       behavior_protection = {
         mode               = "prevent"

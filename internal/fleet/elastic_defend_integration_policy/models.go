@@ -76,6 +76,7 @@ type windowsPolicyModel struct {
 	Ransomware             types.Object `tfsdk:"ransomware"`
 	MemoryProtection       types.Object `tfsdk:"memory_protection"`
 	BehaviorProtection     types.Object `tfsdk:"behavior_protection"`
+	DeviceControl          types.Object `tfsdk:"device_control"`
 	Popup                  types.Object `tfsdk:"popup"`
 	Logging                types.Object `tfsdk:"logging"`
 	AntivirusRegistration  types.Object `tfsdk:"antivirus_registration"`
@@ -86,8 +87,10 @@ type windowsPolicyModel struct {
 type macPolicyModel struct {
 	Events             types.Object `tfsdk:"events"`
 	Malware            types.Object `tfsdk:"malware"`
+	Ransomware         types.Object `tfsdk:"ransomware"`
 	MemoryProtection   types.Object `tfsdk:"memory_protection"`
 	BehaviorProtection types.Object `tfsdk:"behavior_protection"`
+	DeviceControl      types.Object `tfsdk:"device_control"`
 	Popup              types.Object `tfsdk:"popup"`
 	Logging            types.Object `tfsdk:"logging"`
 }
@@ -112,13 +115,16 @@ type windowsEventsModel struct {
 	Registry         types.Bool `tfsdk:"registry"`
 	Security         types.Bool `tfsdk:"security"`
 	Authentication   types.Bool `tfsdk:"authentication"`
+	CredentialAccess types.Bool `tfsdk:"credential_access"`
 }
 
 // macEventsModel holds the macOS event collection flags.
 type macEventsModel struct {
-	Process types.Bool `tfsdk:"process"`
-	Network types.Bool `tfsdk:"network"`
-	File    types.Bool `tfsdk:"file"`
+	Process  types.Bool `tfsdk:"process"`
+	Network  types.Bool `tfsdk:"network"`
+	File     types.Bool `tfsdk:"file"`
+	DNS      types.Bool `tfsdk:"dns"`
+	Security types.Bool `tfsdk:"security"`
 }
 
 // linuxEventsModel holds the Linux event collection flags.
@@ -128,6 +134,7 @@ type linuxEventsModel struct {
 	File        types.Bool `tfsdk:"file"`
 	SessionData types.Bool `tfsdk:"session_data"`
 	TtyIO       types.Bool `tfsdk:"tty_io"`
+	DNS         types.Bool `tfsdk:"dns"`
 }
 
 // malwareModel holds malware protection settings (Windows/Mac have notify_user and on_write_scan).
@@ -138,16 +145,30 @@ type malwareFullModel struct {
 	NotifyUser  types.Bool   `tfsdk:"notify_user"`
 }
 
-// malwareLinuxModel holds malware protection settings for Linux (no on_write_scan/notify_user).
+// malwareLinuxModel holds malware protection settings for Linux (no notify_user).
 type malwareLinuxModel struct {
-	Mode      types.String `tfsdk:"mode"`
-	Blocklist types.Bool   `tfsdk:"blocklist"`
+	Mode        types.String `tfsdk:"mode"`
+	Blocklist   types.Bool   `tfsdk:"blocklist"`
+	OnWriteScan types.Bool   `tfsdk:"on_write_scan"`
 }
 
-// protectionModeModel holds mode+supported settings for ransomware and memory protection.
+// protectionModeModel holds mode+supported settings for ransomware protection.
 type protectionModeModel struct {
 	Mode      types.String `tfsdk:"mode"`
 	Supported types.Bool   `tfsdk:"supported"`
+}
+
+// memoryProtectionModel holds memory protection settings.
+type memoryProtectionModel struct {
+	Mode                 types.String `tfsdk:"mode"`
+	Supported            types.Bool   `tfsdk:"supported"`
+	CustomYaraSignatures types.Bool   `tfsdk:"custom_yara_signatures"`
+}
+
+// deviceControlModel holds the Windows/macOS device control settings.
+type deviceControlModel struct {
+	Enabled    types.Bool   `tfsdk:"enabled"`
+	UsbStorage types.String `tfsdk:"usb_storage"`
 }
 
 // behaviorProtectionModel holds mode+supported+reputation_service settings.
@@ -169,10 +190,15 @@ type windowsPopupModel struct {
 	Ransomware         types.Object `tfsdk:"ransomware"`
 	MemoryProtection   types.Object `tfsdk:"memory_protection"`
 	BehaviorProtection types.Object `tfsdk:"behavior_protection"`
+	DeviceControl      types.Object `tfsdk:"device_control"`
 }
 
-// macLinuxPopupModel holds the Mac/Linux popup notification settings (no ransomware).
-type macLinuxPopupModel struct {
+// macPopupModel holds the macOS popup notification settings, which share the
+// Windows shape.
+type macPopupModel = windowsPopupModel
+
+// linuxPopupModel holds the Linux popup notification settings (no ransomware or device control).
+type linuxPopupModel struct {
 	Malware            types.Object `tfsdk:"malware"`
 	MemoryProtection   types.Object `tfsdk:"memory_protection"`
 	BehaviorProtection types.Object `tfsdk:"behavior_protection"`

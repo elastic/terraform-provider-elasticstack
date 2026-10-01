@@ -267,26 +267,27 @@ type commonPolicyFields struct {
 func mapCommonPolicyFieldsFromAPI(ctx context.Context, data map[string]any) (commonPolicyFields, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	memProtObj, d := mapOptionalObject(ctx, data, "memory_protection", protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
-		return protectionModeModel{
-			Mode:      typeutils.StringFromMap(m, "mode"),
-			Supported: typeutils.BoolFromMap(m, attrSupported),
+	memProtObj, d := mapOptionalObject(ctx, data, attrMemoryProtection, memoryProtectionAttrTypes(), func(m map[string]any) memoryProtectionModel {
+		return memoryProtectionModel{
+			Mode:                 typeutils.StringFromMap(m, attrMode),
+			Supported:            typeutils.BoolFromMap(m, attrSupported),
+			CustomYaraSignatures: typeutils.BoolFromMap(m, attrCustomYara),
 		}
 	})
 	diags.Append(d...)
 
-	behProtObj, d := mapOptionalObject(ctx, data, "behavior_protection", behaviorProtectionAttrTypes(), func(m map[string]any) behaviorProtectionModel {
+	behProtObj, d := mapOptionalObject(ctx, data, attrBehaviorProtection, behaviorProtectionAttrTypes(), func(m map[string]any) behaviorProtectionModel {
 		return behaviorProtectionModel{
-			Mode:              typeutils.StringFromMap(m, "mode"),
+			Mode:              typeutils.StringFromMap(m, attrMode),
 			Supported:         typeutils.BoolFromMap(m, attrSupported),
 			ReputationService: typeutils.BoolFromMap(m, attrReputationService),
 		}
 	})
 	diags.Append(d...)
 
-	loggingObj, d := mapOptionalObject(ctx, data, "logging", loggingAttrTypes(), func(m map[string]any) loggingModel {
+	loggingObj, d := mapOptionalObject(ctx, data, attrLogging, loggingAttrTypes(), func(m map[string]any) loggingModel {
 		return loggingModel{
-			File: typeutils.StringFromMap(m, "file"),
+			File: typeutils.StringFromMap(m, attrFile),
 		}
 	})
 	diags.Append(d...)
@@ -313,6 +314,21 @@ func protectionModeAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrMode:      types.StringType,
 		attrSupported: types.BoolType,
+	}
+}
+
+func memoryProtectionAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrMode:       types.StringType,
+		attrSupported:  types.BoolType,
+		attrCustomYara: types.BoolType,
+	}
+}
+
+func deviceControlAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrEnabled:    types.BoolType,
+		attrUsbStorage: types.StringType,
 	}
 }
 

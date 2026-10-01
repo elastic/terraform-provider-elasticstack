@@ -33,21 +33,23 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 		return types.ObjectNull(linuxAttrTypes()), diags
 	}
 
-	eventsObj, d := mapOptionalObject(ctx, data, "events", linuxEventsAttrTypes(), func(m map[string]any) linuxEventsModel {
+	eventsObj, d := mapOptionalObject(ctx, data, attrEvents, linuxEventsAttrTypes(), func(m map[string]any) linuxEventsModel {
 		return linuxEventsModel{
 			Process:     typeutils.BoolFromMap(m, attrProcess),
-			Network:     typeutils.BoolFromMap(m, "network"),
-			File:        typeutils.BoolFromMap(m, "file"),
-			SessionData: typeutils.BoolFromMap(m, "session_data"),
-			TtyIO:       typeutils.BoolFromMap(m, "tty_io"),
+			Network:     typeutils.BoolFromMap(m, attrNetwork),
+			File:        typeutils.BoolFromMap(m, attrFile),
+			SessionData: typeutils.BoolFromMap(m, attrSessionData),
+			TtyIO:       typeutils.BoolFromMap(m, attrTtyIO),
+			DNS:         typeutils.BoolFromMap(m, attrDNS),
 		}
 	})
 	diags.Append(d...)
 
-	malwareObj, d := mapOptionalObject(ctx, data, "malware", malwareLinuxAttrTypes(), func(m map[string]any) malwareLinuxModel {
+	malwareObj, d := mapOptionalObject(ctx, data, attrMalware, malwareLinuxAttrTypes(), func(m map[string]any) malwareLinuxModel {
 		return malwareLinuxModel{
-			Mode:      typeutils.StringFromMap(m, "mode"),
-			Blocklist: typeutils.BoolFromMap(m, "blocklist"),
+			Mode:        typeutils.StringFromMap(m, attrMode),
+			Blocklist:   typeutils.BoolFromMap(m, attrBlocklist),
+			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
 		}
 	})
 	diags.Append(d...)
@@ -56,7 +58,7 @@ func mapLinuxPolicyFromAPI(ctx context.Context, data map[string]any) (types.Obje
 	diags.Append(d...)
 
 	popupData := getMap(data, attrPopup)
-	popupObj, d := mapMacLinuxPopupFromAPI(ctx, popupData)
+	popupObj, d := mapLinuxPopupFromAPI(ctx, popupData)
 	diags.Append(d...)
 
 	linuxObj, d := types.ObjectValueFrom(ctx, linuxAttrTypes(), linuxPolicyModel{
@@ -95,11 +97,12 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		}
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
-		typeutils.SetBoolInMap(events, "network", em.Network)
-		typeutils.SetBoolInMap(events, "file", em.File)
-		typeutils.SetBoolInMap(events, "session_data", em.SessionData)
-		typeutils.SetBoolInMap(events, "tty_io", em.TtyIO)
-		linux["events"] = events
+		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
+		typeutils.SetBoolInMap(events, attrFile, em.File)
+		typeutils.SetBoolInMap(events, attrSessionData, em.SessionData)
+		typeutils.SetBoolInMap(events, attrTtyIO, em.TtyIO)
+		typeutils.SetBoolInMap(events, attrDNS, em.DNS)
+		linux[attrEvents] = events
 	}
 
 	if typeutils.IsKnown(lm.Malware) {
@@ -110,22 +113,24 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, "mode", mm.Mode)
-		typeutils.SetBoolInMap(malware, "blocklist", mm.Blocklist)
-		linux["malware"] = malware
+		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
+		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
+		linux[attrMalware] = malware
 	}
 
 	if typeutils.IsKnown(lm.MemoryProtection) {
-		var pm protectionModeModel
+		var pm memoryProtectionModel
 		d = lm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, "mode", pm.Mode)
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
-		linux["memory_protection"] = memProt
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		linux[attrMemoryProtection] = memProt
 	}
 
 	if typeutils.IsKnown(lm.BehaviorProtection) {
@@ -136,23 +141,23 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, "mode", bm.Mode)
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
 		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		linux["behavior_protection"] = behProt
+		linux[attrBehaviorProtection] = behProt
 	}
 
 	if typeutils.IsKnown(lm.Popup) {
-		var pm macLinuxPopupModel
+		var pm linuxPopupModel
 		d = lm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 		diags.Append(d...)
 		if diags.HasError() {
 			return nil, diags
 		}
 		popup := map[string]any{}
-		setPopupItem(ctx, popup, "malware", pm.Malware, &diags)
-		setPopupItem(ctx, popup, "memory_protection", pm.MemoryProtection, &diags)
-		setPopupItem(ctx, popup, "behavior_protection", pm.BehaviorProtection, &diags)
+		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
+		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
+		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
 		linux[attrPopup] = popup
 	}
 
@@ -164,8 +169,8 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 			return nil, diags
 		}
 		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, "file", logm.File)
-		linux["logging"] = logging
+		typeutils.SetStringInMap(logging, attrFile, logm.File)
+		linux[attrLogging] = logging
 	}
 
 	return linux, diags
@@ -173,28 +178,30 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 
 func linuxEventsAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrProcess:    types.BoolType,
-		attrNetwork:    types.BoolType,
-		attrFile:       types.BoolType,
-		"session_data": types.BoolType,
-		"tty_io":       types.BoolType,
+		attrProcess:     types.BoolType,
+		attrNetwork:     types.BoolType,
+		attrFile:        types.BoolType,
+		attrSessionData: types.BoolType,
+		attrTtyIO:       types.BoolType,
+		attrDNS:         types.BoolType,
 	}
 }
 
 func malwareLinuxAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		attrMode:      types.StringType,
-		attrBlocklist: types.BoolType,
+		attrMode:        types.StringType,
+		attrBlocklist:   types.BoolType,
+		attrOnWriteScan: types.BoolType,
 	}
 }
 
 func linuxAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"events":              types.ObjectType{AttrTypes: linuxEventsAttrTypes()},
-		"malware":             types.ObjectType{AttrTypes: malwareLinuxAttrTypes()},
-		"memory_protection":   types.ObjectType{AttrTypes: protectionModeAttrTypes()},
-		"behavior_protection": types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
-		attrPopup:             types.ObjectType{AttrTypes: macLinuxPopupAttrTypes()},
-		"logging":             types.ObjectType{AttrTypes: loggingAttrTypes()},
+		attrEvents:             types.ObjectType{AttrTypes: linuxEventsAttrTypes()},
+		attrMalware:            types.ObjectType{AttrTypes: malwareLinuxAttrTypes()},
+		attrMemoryProtection:   types.ObjectType{AttrTypes: memoryProtectionAttrTypes()},
+		attrBehaviorProtection: types.ObjectType{AttrTypes: behaviorProtectionAttrTypes()},
+		attrPopup:              types.ObjectType{AttrTypes: linuxPopupAttrTypes()},
+		attrLogging:            types.ObjectType{AttrTypes: loggingAttrTypes()},
 	}
 }

@@ -31,8 +31,8 @@ import (
 func mapPopupItemFromAPI(ctx context.Context, data map[string]any, key string) (types.Object, diag.Diagnostics) {
 	itemData := getMap(data, key)
 	return types.ObjectValueFrom(ctx, popupItemAttrTypes(), popupItemModel{
-		Message: typeutils.StringFromMap(itemData, "message"),
-		Enabled: typeutils.BoolFromMap(itemData, "enabled"),
+		Message: typeutils.StringFromMap(itemData, attrMessage),
+		Enabled: typeutils.BoolFromMap(itemData, attrEnabled),
 	})
 }
 
@@ -45,8 +45,8 @@ func setPopupItem(ctx context.Context, m map[string]any, key string, obj types.O
 	d := obj.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
 	diags.Append(d...)
 	item := map[string]any{}
-	typeutils.SetStringInMap(item, "message", pm.Message)
-	typeutils.SetBoolInMap(item, "enabled", pm.Enabled)
+	typeutils.SetStringInMap(item, attrMessage, pm.Message)
+	typeutils.SetBoolInMap(item, attrEnabled, pm.Enabled)
 	m[key] = item
 }
 
@@ -56,16 +56,19 @@ func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Obj
 		return types.ObjectNull(windowsPopupAttrTypes()), diags
 	}
 
-	malwareObj, d := mapPopupItemFromAPI(ctx, data, "malware")
+	malwareObj, d := mapPopupItemFromAPI(ctx, data, attrMalware)
 	diags.Append(d...)
 
 	ransomwareObj, d := mapPopupItemFromAPI(ctx, data, attrRansomware)
 	diags.Append(d...)
 
-	memProtObj, d := mapPopupItemFromAPI(ctx, data, "memory_protection")
+	memProtObj, d := mapPopupItemFromAPI(ctx, data, attrMemoryProtection)
 	diags.Append(d...)
 
-	behProtObj, d := mapPopupItemFromAPI(ctx, data, "behavior_protection")
+	behProtObj, d := mapPopupItemFromAPI(ctx, data, attrBehaviorProtection)
+	diags.Append(d...)
+
+	deviceControlObj, d := mapPopupItemFromAPI(ctx, data, attrDeviceControl)
 	diags.Append(d...)
 
 	obj, d := types.ObjectValueFrom(ctx, windowsPopupAttrTypes(), windowsPopupModel{
@@ -73,27 +76,33 @@ func mapWindowsPopupFromAPI(ctx context.Context, data map[string]any) (types.Obj
 		Ransomware:         ransomwareObj,
 		MemoryProtection:   memProtObj,
 		BehaviorProtection: behProtObj,
+		DeviceControl:      deviceControlObj,
 	})
 	diags.Append(d...)
 	return obj, diags
 }
 
-func mapMacLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
+// mapMacPopupFromAPI maps the macOS popup settings, which share the Windows shape.
+func mapMacPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
+	return mapWindowsPopupFromAPI(ctx, data)
+}
+
+func mapLinuxPopupFromAPI(ctx context.Context, data map[string]any) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(data) == 0 {
-		return types.ObjectNull(macLinuxPopupAttrTypes()), diags
+		return types.ObjectNull(linuxPopupAttrTypes()), diags
 	}
 
-	malwareObj, d := mapPopupItemFromAPI(ctx, data, "malware")
+	malwareObj, d := mapPopupItemFromAPI(ctx, data, attrMalware)
 	diags.Append(d...)
 
-	memProtObj, d := mapPopupItemFromAPI(ctx, data, "memory_protection")
+	memProtObj, d := mapPopupItemFromAPI(ctx, data, attrMemoryProtection)
 	diags.Append(d...)
 
-	behProtObj, d := mapPopupItemFromAPI(ctx, data, "behavior_protection")
+	behProtObj, d := mapPopupItemFromAPI(ctx, data, attrBehaviorProtection)
 	diags.Append(d...)
 
-	obj, d := types.ObjectValueFrom(ctx, macLinuxPopupAttrTypes(), macLinuxPopupModel{
+	obj, d := types.ObjectValueFrom(ctx, linuxPopupAttrTypes(), linuxPopupModel{
 		Malware:            malwareObj,
 		MemoryProtection:   memProtObj,
 		BehaviorProtection: behProtObj,
@@ -115,10 +124,17 @@ func windowsPopupAttrTypes() map[string]attr.Type {
 		attrRansomware:         types.ObjectType{AttrTypes: popupItemAttrTypes()},
 		attrMemoryProtection:   types.ObjectType{AttrTypes: popupItemAttrTypes()},
 		attrBehaviorProtection: types.ObjectType{AttrTypes: popupItemAttrTypes()},
+		attrDeviceControl:      types.ObjectType{AttrTypes: popupItemAttrTypes()},
 	}
 }
 
-func macLinuxPopupAttrTypes() map[string]attr.Type {
+// macPopupAttrTypes returns the macOS popup attribute types, which share the
+// Windows shape.
+func macPopupAttrTypes() map[string]attr.Type {
+	return windowsPopupAttrTypes()
+}
+
+func linuxPopupAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		attrMalware:            types.ObjectType{AttrTypes: popupItemAttrTypes()},
 		attrMemoryProtection:   types.ObjectType{AttrTypes: popupItemAttrTypes()},
