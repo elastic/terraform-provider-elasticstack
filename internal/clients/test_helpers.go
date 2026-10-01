@@ -19,6 +19,7 @@ package clients
 
 import (
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 )
 
 // NewElasticsearchScopedClientForTest creates an ElasticsearchScopedClient
@@ -27,5 +28,14 @@ func NewElasticsearchScopedClientForTest(typedClient *elasticsearch.TypedClient,
 	return &ElasticsearchScopedClient{
 		typedClient: typedClient,
 		esEndpoints: endpoints,
+	}
+}
+
+// NewKibanaScopedClientForTest creates a KibanaScopedClient backed by the given
+// Kibana OpenAPI client. It is intended for unit tests.
+func NewKibanaScopedClientForTest(kibanaOapi *kibanaoapi.Client) *KibanaScopedClient {
+	return &KibanaScopedClient{
+		kibanaOapi:     kibanaOapi,
+		kibanaEndpoint: kibanaOapi.URL,
 	}
 }

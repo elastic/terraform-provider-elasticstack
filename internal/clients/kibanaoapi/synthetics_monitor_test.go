@@ -155,11 +155,34 @@ func TestCreateMonitor200(t *testing.T) {
 	defer srv.Close()
 
 	client := newTestClient(t, srv)
-	result, diags := CreateMonitor(context.Background(), client, "default", req)
+	result, syncErrors, diags := CreateMonitor(context.Background(), client, "default", req)
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
 	assert.Equal(t, "created-id", *result.Id)
 	assert.Equal(t, kbapi.SyntheticsMonitorTypeHttp, *result.Type)
+	assert.Empty(t, syncErrors)
+}
+
+// pushErrorBody is the HTTP 200 body Kibana's add-monitor route returns when the
+// Synthetics Service reports push errors, captured from Kibana 9.4.0.
+const pushErrorBody = `{"message":"error pushing monitor to the service","attributes":{"errors":[{"locationId":"us_west"}]},"id":"e3c90fb3-46c0-46d2-8827-7524f234f58d"}`
+
+func TestCreateMonitorPushErrorBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(pushErrorBody))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(t, srv)
+	req := httpMonitorRequest(t, "new-monitor", "https://example.com")
+	result, syncErrors, diags := CreateMonitor(context.Background(), client, "default", req)
+	assert.False(t, diags.HasError(), diags)
+	require.NotNil(t, result)
+	assert.Equal(t, "e3c90fb3-46c0-46d2-8827-7524f234f58d", *result.Id)
+	assert.Nil(t, result.Type)
+	assert.Equal(t, []SyncError{{LocationID: "us_west"}}, syncErrors)
 }
 
 func TestUpdateMonitor200(t *testing.T) {
@@ -196,12 +219,89 @@ func TestUpdateMonitor200(t *testing.T) {
 	defer srv.Close()
 
 	client := newTestClient(t, srv)
-	result, diags := UpdateMonitor(context.Background(), client, "default", "monitor-id", req)
+	result, syncErrors, diags := UpdateMonitor(context.Background(), client, "default", "monitor-id", req)
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
 	assert.Equal(t, "monitor-id", *result.Id)
 	assert.Equal(t, "updated-monitor", *result.Name)
 	assert.Equal(t, "http://localhost", *result.ProxyUrl)
+	assert.Empty(t, syncErrors)
+}
+
+func TestUpdateMonitorPushErrorBody(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		switch r.Method {
+		case http.MethodPut:
+			_, _ = w.Write([]byte(`{"message":"error pushing monitor to the service","attributes":{"errors":[{"locationId":"us_west","error":{"reason":"boom","status":500}}]}}`))
+		case http.MethodGet:
+			_ = json.NewEncoder(w).Encode(kbapi.SyntheticsMonitor{
+				Id:   new("monitor-id"),
+				Type: new(kbapi.SyntheticsMonitorTypeHttp),
+			})
+		}
+	}))
+	defer srv.Close()
+
+	client := newTestClient(t, srv)
+	req := httpMonitorRequest(t, "updated-monitor", "https://example.com")
+	result, syncErrors, diags := UpdateMonitor(context.Background(), client, "default", "monitor-id", req)
+	assert.False(t, diags.HasError(), diags)
+	require.NotNil(t, result)
+	assert.Equal(t, "monitor-id", *result.Id)
+	assert.Equal(t, []SyncError{{LocationID: "us_west", Reason: "boom", Status: 500}}, syncErrors)
+}
+
+func TestSyncErrorsFromBody(t *testing.T) {
+	testcases := []struct {
+		name string
+		body string
+		want []SyncError
+	}{
+		{
+			name: "captured add-monitor push error body",
+			body: pushErrorBody,
+			want: []SyncError{{LocationID: "us_west"}},
+		},
+		{
+			name: "entries with reason and status",
+			body: `{"attributes":{"errors":[{"locationId":"us_west","error":{"reason":"boom","status":500}},{"locationId":"eu_west","error":{"reason":"unavailable"}}]}}`,
+			want: []SyncError{
+				{LocationID: "us_west", Reason: "boom", Status: 500},
+				{LocationID: "eu_west", Reason: "unavailable"},
+			},
+		},
+		{
+			name: "monitor body",
+			body: `{"id":"abc","type":"http","name":"m"}`,
+		},
+		{
+			name: "empty errors",
+			body: `{"attributes":{"errors":[]}}`,
+		},
+		{
+			name: "attributes is not an object",
+			body: `{"attributes":"nope"}`,
+		},
+		{
+			name: "errors is not a list",
+			body: `{"attributes":{"errors":{"locationId":"us_west"}}}`,
+		},
+		{
+			name: "not JSON",
+			body: `oops`,
+		},
+		{
+			name: "empty body",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, syncErrorsFromBody([]byte(tc.body)))
+		})
+	}
 }
 
 func TestDeleteMonitor200(t *testing.T) {
@@ -252,7 +352,7 @@ func TestCreateMonitorSpaceAwarePath(t *testing.T) {
 
 	client := newTestClient(t, srv)
 	req := httpMonitorRequest(t, "space-monitor", "https://example.com")
-	result, diags := CreateMonitor(context.Background(), client, "my-space", req)
+	result, _, diags := CreateMonitor(context.Background(), client, "my-space", req)
 	assert.False(t, diags.HasError(), diags)
 	require.NotNil(t, result)
 }

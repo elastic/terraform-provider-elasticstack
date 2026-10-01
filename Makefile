@@ -70,6 +70,21 @@ ifneq (,$(filter 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
 
+# Kibana 8.14+ (the synthetics monitor resource minimum) runs with a stub
+# Synthetics Service: one Elastic-managed location (us_west) whose service URL
+# is unreachable, so monitor pushes fail as they intermittently do on Elastic
+# Cloud. The location manifest is a document seeded into Elasticsearch by the
+# kibana_settings compose service. Older Kibana versions reject these settings.
+SYNTHETICS_STUB_MANIFEST_INDEX := tf-stub-synthetics-manifest
+KIBANA_SYNTHETICS_STUB := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$${v\#*.}"; minor="$${rest%%.*}"; \
+	if [ "$$major" -gt 8 ] 2>/dev/null || { [ "$$major" -eq 8 ] && [ "$$minor" -ge 14 ]; } 2>/dev/null; then echo 1; fi)
+ifeq ($(KIBANA_SYNTHETICS_STUB),1)
+KIBANA_EXTRA_ARGS := --xpack.uptime.service.manifestUrl=http://elastic:$(ELASTICSEARCH_PASSWORD)@elasticsearch:9200/$(SYNTHETICS_STUB_MANIFEST_INDEX)/_source/manifest \
+	--xpack.uptime.service.username=stub \
+	--xpack.uptime.service.password=stub
+endif
+export KIBANA_SYNTHETICS_STUB KIBANA_EXTRA_ARGS SYNTHETICS_STUB_MANIFEST_INDEX
+
 RERUN_FAILS ?= 5
 RERUN_FAILS_MAX_FAILURES ?= 20
 

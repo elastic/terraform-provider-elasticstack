@@ -32,18 +32,65 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
+// SyncError is a Synthetics Service push error for an Elastic-managed location,
+// as reported in the attributes.errors field of an add-monitor or update-monitor
+// response. Reason and Status are empty when the service did not respond.
+type SyncError struct {
+	LocationID string
+	Reason     string
+	Status     int
+}
+
+// syncErrorsFromBody extracts Synthetics Service push errors from a monitor
+// write response. Kibana returns HTTP 200 with
+// {"message":"error pushing monitor to the service","attributes":{"errors":[...]}}
+// in place of the monitor when pushes fail. Bodies without that shape yield nil.
+func syncErrorsFromBody(body []byte) []SyncError {
+	var parsed struct {
+		Attributes *struct {
+			Errors []struct {
+				LocationID string `json:"locationId"`
+				Error      *struct {
+					Reason string `json:"reason"`
+					Status int    `json:"status"`
+				} `json:"error"`
+			} `json:"errors"`
+		} `json:"attributes"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil || parsed.Attributes == nil {
+		return nil
+	}
+
+	var syncErrors []SyncError
+	for _, e := range parsed.Attributes.Errors {
+		syncError := SyncError{LocationID: e.LocationID}
+		if e.Error != nil {
+			syncError.Reason = e.Error.Reason
+			syncError.Status = e.Error.Status
+		}
+		syncErrors = append(syncErrors, syncError)
+	}
+	return syncErrors
+}
+
 // CreateMonitor creates a new synthetics monitor via POST /api/synthetics/monitors.
-func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
+// The returned monitor may carry only an ID when Kibana reports Synthetics Service
+// push errors; those errors are returned separately.
+func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, []SyncError, diag.Diagnostics) {
 	resp, err := client.API.PostSyntheticMonitorsWithResponse(
 		ctx, req,
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+		return nil, nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
+	result, diags := HandleMutateTypedResponse(resp.StatusCode(), resp.Body,
 		func() *kbapi.SyntheticsMonitor { return resp.JSON200 })
+	if diags.HasError() {
+		return nil, nil, diags
+	}
+	return result, syncErrorsFromBody(resp.Body), diags
 }
 
 // GetMonitor reads a synthetics monitor by ID via GET /api/synthetics/monitors/{id}.
@@ -61,21 +108,27 @@ func GetMonitor(ctx context.Context, client *Client, spaceID string, monitorID s
 		func() *kbapi.SyntheticsMonitor { return resp.JSON200 })
 }
 
-// UpdateMonitor updates a synthetics monitor via PUT /api/synthetics/monitors/{id}.
-func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, diag.Diagnostics) {
+// UpdateMonitor updates a synthetics monitor via PUT /api/synthetics/monitors/{id}
+// and returns the monitor as read back via GET, together with any Synthetics
+// Service push errors reported by the PUT response.
+func UpdateMonitor(ctx context.Context, client *Client, spaceID string, monitorID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, []SyncError, diag.Diagnostics) {
 	resp, err := client.API.PutSyntheticMonitorWithResponse(
 		ctx, monitorID, req,
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
+		return nil, nil, diagutil.FrameworkDiagFromError(err)
 	}
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return GetMonitor(ctx, client, spaceID, monitorID)
+		result, diags := GetMonitor(ctx, client, spaceID, monitorID)
+		if diags.HasError() {
+			return nil, nil, diags
+		}
+		return result, syncErrorsFromBody(resp.Body), diags
 	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		return nil, nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 	}
 }
 
