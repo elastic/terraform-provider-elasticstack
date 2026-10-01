@@ -5,7 +5,7 @@ subcategory: "Kibana"
 description: |-
   Manages Kibana dashboards https://www.elastic.co/docs/api/doc/kibana. This functionality is in technical preview and may be changed or removed in a future release.
   Notes
-  Image file_id: image_config.src.file.file_id is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future elasticstack_kibana_file resource may cover uploads.discover_session data_source_json: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (data_view_reference, data_view_spec, etc.) and the ES|QL branch for tab.esql. Follow the OpenAPI shapes published with the Kibana REST API https://www.elastic.co/docs/api/doc/kibana (kbn-dashboard-panel-type-discover_session). For data_view_reference, use ref_id (not id) for the linked data view.Single Discover tab: discover_session_config.by_value.tab is one object because the API currently allows a single tab entry; a future tabs list could be added without breaking existing configs if Kibana lifts the limit.
+  Image file_id: image_config.src.file.file_id is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future elasticstack_kibana_file resource may cover uploads.discover_session data_source_json: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (data_view_reference, data_view_spec, etc.) and the ES|QL branch for tab.esql. Follow the OpenAPI shapes published with the Kibana REST API https://www.elastic.co/docs/api/doc/kibana (kbn-dashboard-panel-type-discover_session). For data_view_reference, use ref_id (not id) for the linked data view.Single Discover tab: discover_session_config.by_value.tab is one object because the API currently allows a single tab entry; a future tabs list could be added without breaking existing configs if Kibana lifts the limit.Optional root blocks: Only title is required. time_range, refresh_interval, and query are optional and Kibana applies no defaults for them. Removing one of these blocks from configuration clears it in Kibana (the dashboard update is a full replace) rather than resetting it to a default.
 ---
 
 # elasticstack_kibana_dashboard (Resource)
@@ -17,6 +17,7 @@ Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This fu
 - **Image `file_id`**: `image_config.src.file.file_id` is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future `elasticstack_kibana_file` resource may cover uploads.
 - **`discover_session` `data_source_json`**: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (`data_view_reference`, `data_view_spec`, etc.) and the ES|QL branch for `tab.esql`. Follow the OpenAPI shapes published with the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.
 - **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.
+- **Optional root blocks**: Only `title` is required. `time_range`, `refresh_interval`, and `query` are optional and Kibana applies no defaults for them. Removing one of these blocks from configuration clears it in Kibana (the dashboard update is a full replace) rather than resetting it to a default.
 
 ## See also
 
@@ -170,9 +171,6 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 
 ### Required
 
-- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). (see [below for nested schema](#nestedatt--query))
-- `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. (see [below for nested schema](#nestedatt--refresh_interval))
-- `time_range` (Attributes) Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. (see [below for nested schema](#nestedatt--time_range))
 - `title` (String) A human-readable title for the dashboard.
 
 ### Optional
@@ -187,49 +185,17 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 - `pinned_panels` (Attributes List) Ordered dashboard-level pinned controls (Kibana’s control bar above the grid). Each element uses the same typed `*_control_config` shapes as `panels[]` for these control kinds, without a `grid` block.
 
 When omitted from configuration and Kibana returns an empty list, Terraform keeps this attribute unset (see dashboard resource unset-vs-empty semantics). When set, order is preserved for API requests and read back in API order. (see [below for nested schema](#nestedatt--pinned_panels))
+- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--query))
+- `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--refresh_interval))
 - `sections` (Attributes List) Sections organize panels into collapsible groups. This is a technical preview feature. (see [below for nested schema](#nestedatt--sections))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) An array of tag IDs applied to this dashboard.
+- `time_range` (Attributes) Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--time_range))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
 - `id` (String) Generated composite identifier for the dashboard.
-
-<a id="nestedatt--query"></a>
-### Nested Schema for `query`
-
-Required:
-
-- `language` (String) Query language (`kql` or `lucene`).
-
-Optional:
-
-- `json` (String) Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.
-- `text` (String) Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.
-
-
-<a id="nestedatt--refresh_interval"></a>
-### Nested Schema for `refresh_interval`
-
-Required:
-
-- `pause` (Boolean) When true, auto-refresh is paused.
-- `value` (Number) Refresh interval in milliseconds when not paused.
-
-
-<a id="nestedatt--time_range"></a>
-### Nested Schema for `time_range`
-
-Required:
-
-- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
-- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
-
-Optional:
-
-- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
-
 
 <a id="nestedatt--access_control"></a>
 ### Nested Schema for `access_control`
@@ -4228,6 +4194,28 @@ Optional:
 
 
 
+<a id="nestedatt--query"></a>
+### Nested Schema for `query`
+
+Required:
+
+- `language` (String) Query language (`kql` or `lucene`).
+
+Optional:
+
+- `json` (String) Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.
+- `text` (String) Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.
+
+
+<a id="nestedatt--refresh_interval"></a>
+### Nested Schema for `refresh_interval`
+
+Required:
+
+- `pause` (Boolean) When true, auto-refresh is paused.
+- `value` (Number) Refresh interval in milliseconds when not paused.
+
+
 <a id="nestedatt--sections"></a>
 ### Nested Schema for `sections`
 
@@ -7998,6 +7986,19 @@ Optional:
 
 
 
+
+
+<a id="nestedatt--time_range"></a>
+### Nested Schema for `time_range`
+
+Required:
+
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
+
+Optional:
+
+- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
 
 
 <a id="nestedatt--timeouts"></a>

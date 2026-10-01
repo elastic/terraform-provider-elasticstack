@@ -148,33 +148,44 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	return diags
 }
 
+// refreshIntervalToAPI maps the refresh_interval block, returning nil when it is unset.
+func refreshIntervalToAPI(m *models.RefreshIntervalModel) *kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema {
+	if m == nil {
+		return nil
+	}
+	return &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
+		Pause: m.Pause.ValueBool(),
+		Value: float32(m.Value.ValueInt64()),
+	}
+}
+
+// timeRangeToAPI maps the time_range block (including mode), returning nil when it is unset.
+func timeRangeToAPI(m *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	if m == nil {
+		return nil
+	}
+	tr := &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+		From: m.From.ValueString(),
+		To:   m.To.ValueString(),
+	}
+	if typeutils.IsKnown(m.Mode) {
+		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.Mode.ValueString())
+		tr.Mode = &mode
+	}
+	return tr
+}
+
 // toAPICreateRequest converts the Terraform model to an API create request
 func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
 	req := kbapi.PostDashboardsJSONRequestBody{
 		Title: m.Title.ValueString()}
-	if m.RefreshInterval != nil {
-		req.RefreshInterval = &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
-			Pause: m.RefreshInterval.Pause.ValueBool(),
-			Value: float32(m.RefreshInterval.Value.ValueInt64()),
-		}
-	}
-	if m.TimeRange != nil {
-		req.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-			From: m.TimeRange.From.ValueString(),
-			To:   m.TimeRange.To.ValueString(),
-		}
-	}
+	req.RefreshInterval = refreshIntervalToAPI(m.RefreshInterval)
+	req.TimeRange = timeRangeToAPI(m.TimeRange)
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
 		desc := m.Description.ValueString()
 		req.Description = &desc
-	}
-
-	// Set time range mode
-	if req.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
-		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
-		req.TimeRange.Mode = &mode
 	}
 
 	// Set query text - Query is a union type with json.RawMessage
@@ -215,14 +226,8 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
 	req := kbapi.PutDashboardsIdJSONRequestBody{
 		Title: m.Title.ValueString()}
-	if m.RefreshInterval != nil {
-		req.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
-		req.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
-	}
-	if m.TimeRange != nil {
-		req.TimeRange.From = m.TimeRange.From.ValueString()
-		req.TimeRange.To = m.TimeRange.To.ValueString()
-	}
+	req.RefreshInterval = refreshIntervalToAPI(m.RefreshInterval)
+	req.TimeRange = timeRangeToAPI(m.TimeRange)
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -230,18 +235,10 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 		req.Description = &desc
 	}
 
-	// Set time range mode
-	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
-		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
-		req.TimeRange.Mode = &mode
-	}
-
 	// Set query text - Query is a union type with json.RawMessage
 	queryModel, queryDiags := dashboardQueryToAPI(m)
 	diags.Append(queryDiags...)
-	if queryModel != nil {
-		req.Query = *queryModel
-	}
+	req.Query = queryModel
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
@@ -254,9 +251,7 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	// Set options
 	options, optionsDiags := dashboardOptionsToAPI(m)
 	diags.Append(optionsDiags...)
-	if options != nil {
-		req.Options = *options
-	}
+	req.Options = options
 
 	// Set panels.
 	panels, panelsDiags := dashboardPanelsToAPI(ctx, m)

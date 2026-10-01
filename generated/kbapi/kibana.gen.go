@@ -80762,7 +80762,7 @@ type PutDashboardsIdJSONBody struct {
 	Filters *DashboardFilters `json:"filters,omitempty"`
 
 	// Options Display and behavior settings for the dashboard.
-	Options KibanaHTTPAPIsKbnDashboardOptions `json:"options"`
+	Options *KibanaHTTPAPIsKbnDashboardOptions `json:"options,omitempty"`
 
 	// Panels Panels and sections in the dashboard. Each entry is either a panel (with a `type` and `config`) or a collapsible section (with a `title`, `collapsed` state, and nested `panels`).
 	Panels *DashboardPanels `json:"panels,omitempty"`
@@ -80774,16 +80774,16 @@ type PutDashboardsIdJSONBody struct {
 	ProjectRouting *string `json:"project_routing,omitempty"`
 
 	// Query A search query consisting of an expression and its language. Supports KQL and Lucene syntax.
-	Query KibanaHTTPAPIsKbnAsCodeQuery `json:"query"`
+	Query *KibanaHTTPAPIsKbnAsCodeQuery `json:"query,omitempty"`
 
 	// RefreshInterval Specifies the auto-refresh interval for the object.
-	RefreshInterval KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema `json:"refresh_interval"`
+	RefreshInterval *KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema `json:"refresh_interval,omitempty"`
 
 	// Tags Tag IDs to associate with this dashboard.
 	Tags *[]string `json:"tags,omitempty"`
 
 	// TimeRange Specifies the time range for a query.
-	TimeRange KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema `json:"time_range"`
+	TimeRange *KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema `json:"time_range,omitempty"`
 
 	// Title A human-readable title for the dashboard.
 	Title string `json:"title"`

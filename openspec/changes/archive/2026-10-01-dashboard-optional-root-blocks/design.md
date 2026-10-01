@@ -51,5 +51,4 @@ The implementation-research comment recommended Approach A *with* read-side defa
 
 ## Open questions
 
-- Panel-level `use_time_range` on a title-only dashboard has not been probed against Kibana (see Decision 6).
-- Kibana 9.5 behavior for the three root blocks has not been probed (see Risks).
+None remaining. Both were answered by CI on the PR: the new acceptance tests, including panel-level `use_time_range` on a title-only dashboard (`_titleOnlyPanelUseTimeRange`), passed on Kibana 9.5.4 and 9.6.0-SNAPSHOT.

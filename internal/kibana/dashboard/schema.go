@@ -71,7 +71,10 @@ func getSchema() schema.Schema {
 		"(https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). " +
 		"For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.\n" +
 		"- **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows " +
-		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit."
+		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.\n" +
+		"- **Optional root blocks**: Only `title` is required. `time_range`, `refresh_interval`, and `query` are optional and " +
+		"Kibana applies no defaults for them. Removing one of these blocks from configuration clears it in Kibana " +
+		"(the dashboard update is a full replace) rather than resetting it to a default."
 
 	return schema.Schema{
 		Version: 1,
@@ -107,13 +110,16 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_range": timeRangeSingleNestedAttribute(
-				"Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
-				true,
-			),
+			"time_range": schema.SingleNestedAttribute{
+				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object." +
+					" Optional; removing the block clears it in Kibana rather than resetting it to a default.",
+				Optional:   true,
+				Attributes: timeRangeSchemaAttributes(),
+			},
 			"refresh_interval": schema.SingleNestedAttribute{
-				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
-				Required:            true,
+				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object." +
+					" Optional; removing the block clears it in Kibana rather than resetting it to a default.",
+				Optional: true,
 				Attributes: map[string]schema.Attribute{
 					"pause": schema.BoolAttribute{
 						MarkdownDescription: "When true, auto-refresh is paused.",
@@ -126,8 +132,9 @@ func getSchema() schema.Schema {
 				},
 			},
 			"query": schema.SingleNestedAttribute{
-				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch).",
-				Required:            true,
+				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch)." +
+					" Optional; removing the block clears it in Kibana rather than resetting it to a default.",
+				Optional: true,
 				Attributes: map[string]schema.Attribute{
 					"language": schema.StringAttribute{
 						MarkdownDescription: "Query language (`kql` or `lucene`).",
