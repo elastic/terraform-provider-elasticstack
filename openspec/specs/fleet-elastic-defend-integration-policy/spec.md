@@ -239,7 +239,7 @@ The resource SHALL expose a familiar package-policy envelope with `id`, `policy_
 
 ### Requirement: Identity and import (REQ-004)
 
-The resource SHALL expose computed `id` and `policy_id` attributes whose values are set from the Kibana package policy id returned by the API. `policy_id` SHALL be the import key. Changes to a configured `policy_id` SHALL require replacement.
+The resource SHALL expose a computed `id` attribute and an optional, computed `policy_id` attribute whose values are set from the Kibana package policy id returned by the API. When `policy_id` is configured, the package policy SHALL be created with that id (see REQ-008); otherwise Kibana assigns the id. `policy_id` SHALL be the import key. Changes to a configured `policy_id` SHALL require replacement.
 
 The resource SHALL support import with both plain and composite import IDs.
 
@@ -343,6 +343,8 @@ On create, the resource SHALL create the Elastic Defend package policy using the
 
 When `agent_policy_ids` is configured, the bootstrap request SHALL set `PolicyIds` to the full list and `PolicyId` to the first element for compatibility.
 
+When `policy_id` is configured with a known, non-empty value, the bootstrap request SHALL set the package policy `id` to that value. When `policy_id` is null or unknown, the bootstrap request SHALL omit `id` so that Kibana assigns one.
+
 **Note:** Kibana rejects `"ENDPOINT_INTEGRATION_CONFIG"` as the input type and `"_config"` as the config key. Both bootstrap and finalize/update paths use `"endpoint"` and `"integration_config"` respectively.
 
 #### Scenario: Create bootstraps a new Defend package policy
@@ -351,6 +353,20 @@ When `agent_policy_ids` is configured, the bootstrap request SHALL set `PolicyId
 - WHEN create runs
 - THEN the provider SHALL first create the underlying package policy through the Defend bootstrap request flow
 - AND the provider SHALL capture the returned package policy id and server-managed Defend payloads from the response
+
+#### Scenario: Create with an explicit policy_id
+
+- GIVEN a configuration with `policy_id = "my-defend-policy"`
+- WHEN create runs
+- THEN the bootstrap request SHALL include `id = "my-defend-policy"`
+- AND `policy_id` in state SHALL be `"my-defend-policy"`
+
+#### Scenario: Create without policy_id
+
+- GIVEN a configuration that does not set `policy_id`
+- WHEN create runs
+- THEN the bootstrap request SHALL NOT include `id`
+- AND `policy_id` in state SHALL be the id assigned by Kibana
 
 ### Requirement: Create finalizes the modeled policy after bootstrap (REQ-009)
 
