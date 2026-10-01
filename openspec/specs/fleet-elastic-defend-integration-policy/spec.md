@@ -10,7 +10,7 @@ Manage Elastic Defend Fleet integration policies (package policies for the `endp
 
 ```hcl
 resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
-  id                  = <computed, string>             # same as policy_id; UseStateForUnknown
+  id                  = <computed, string>             # "<space_id>/<policy_id>" when a space is known, else policy_id; UseStateForUnknown
   policy_id           = <optional+computed, string>    # force new; UseStateForUnknown; import key
   name                = <required, string>
   namespace           = <required, string>
@@ -239,7 +239,7 @@ The resource SHALL expose a familiar package-policy envelope with `id`, `policy_
 
 ### Requirement: Identity and import (REQ-004)
 
-The resource SHALL expose a computed `id` attribute and an optional, computed `policy_id` attribute whose values are set from the Kibana package policy id returned by the API. When `policy_id` is configured, the package policy SHALL be created with that id (see REQ-008); otherwise Kibana assigns the id. `policy_id` SHALL be the import key. Changes to a configured `policy_id` SHALL require replacement.
+The resource SHALL expose a computed `id` attribute in the form `<space_id>/<policy_id>` when an operational space is known (the first of the API's `space_ids`, or else the first configured `space_ids`), and equal to `policy_id` otherwise. The resource SHALL expose an optional, computed `policy_id` attribute set from the Kibana package policy id returned by the API. When `policy_id` is configured, the package policy SHALL be created with that id (see REQ-008); otherwise Kibana assigns the id. `policy_id` SHALL be the import key. Changes to a configured `policy_id` SHALL require replacement.
 
 The resource SHALL support import with both plain and composite import IDs.
 
