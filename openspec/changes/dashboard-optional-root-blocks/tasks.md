@@ -25,9 +25,9 @@
 
 ## 5. Examples and docs
 
-- [ ] 5.1 Drop the unneeded root blocks from `examples/resources/elasticstack_kibana_dashboard/panel_no_time_range.tf`; keep other examples explicit.
-- [ ] 5.2 Add a title-only example under `examples/resources/elasticstack_kibana_dashboard/`.
-- [ ] 5.3 Document that removing `time_range`, `refresh_interval`, or `query` clears it (no Kibana default is applied), then regenerate `docs/resources/kibana_dashboard.md` (`make docs-generate`).
+- [x] 5.1 Drop the unneeded root blocks from `examples/resources/elasticstack_kibana_dashboard/panel_no_time_range.tf`; keep other examples explicit.
+- [x] 5.2 Add a title-only example under `examples/resources/elasticstack_kibana_dashboard/`.
+- [x] 5.3 Document that removing `time_range`, `refresh_interval`, or `query` clears it (no Kibana default is applied), then regenerate `docs/resources/kibana_dashboard.md` (`make docs-generate`).
 
 ## 6. Verification
 

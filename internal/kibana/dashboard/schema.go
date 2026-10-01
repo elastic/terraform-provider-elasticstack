@@ -71,7 +71,10 @@ func getSchema() schema.Schema {
 		"(https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). " +
 		"For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.\n" +
 		"- **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows " +
-		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit."
+		"a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.\n" +
+		"- **Optional root blocks**: Only `title` is required. `time_range`, `refresh_interval`, and `query` are optional and " +
+		"Kibana applies no defaults for them. Removing one of these blocks from configuration clears it in Kibana " +
+		"(the dashboard update is a full replace) rather than resetting it to a default."
 
 	return schema.Schema{
 		Version: 1,
