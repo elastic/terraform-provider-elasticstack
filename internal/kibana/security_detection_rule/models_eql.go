@@ -65,42 +65,7 @@ func toEqlRuleCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetections
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
-	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:                           &eqlRule.Actions,
-		ResponseActions:                   &eqlRule.ResponseActions,
-		RuleID:                            &eqlRule.RuleId,
-		Enabled:                           &eqlRule.Enabled,
-		From:                              &eqlRule.From,
-		To:                                &eqlRule.To,
-		Interval:                          &eqlRule.Interval,
-		Index:                             &eqlRule.Index,
-		Author:                            &eqlRule.Author,
-		Tags:                              &eqlRule.Tags,
-		FalsePositives:                    &eqlRule.FalsePositives,
-		References:                        &eqlRule.References,
-		License:                           &eqlRule.License,
-		Note:                              &eqlRule.Note,
-		Setup:                             &eqlRule.Setup,
-		MaxSignals:                        &eqlRule.MaxSignals,
-		Version:                           &eqlRule.Version,
-		ExceptionsList:                    &eqlRule.ExceptionsList,
-		AlertSuppression:                  &eqlRule.AlertSuppression,
-		RiskScoreMapping:                  &eqlRule.RiskScoreMapping,
-		SeverityMapping:                   &eqlRule.SeverityMapping,
-		RelatedIntegrations:               &eqlRule.RelatedIntegrations,
-		RequiredFields:                    &eqlRule.RequiredFields,
-		BuildingBlockType:                 &eqlRule.BuildingBlockType,
-		DataViewID:                        &eqlRule.DataViewId,
-		Namespace:                         &eqlRule.Namespace,
-		RuleNameOverride:                  &eqlRule.RuleNameOverride,
-		TimestampOverride:                 &eqlRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &eqlRule.InvestigationFields,
-		Filters:                           &eqlRule.Filters,
-		Threat:                            &eqlRule.Threat,
-		TimelineID:                        &eqlRule.TimelineId,
-		TimelineTitle:                     &eqlRule.TimelineTitle,
-	}, &diags)
+	d.setCommonCreateProps(ctx, buildCommonRuleProps(&eqlRule), &diags)
 
 	// Set EQL-specific fields
 	if typeutils.IsKnown(d.TiebreakerField) {
@@ -146,42 +111,7 @@ func toEqlRuleUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetections
 		eqlRule.Id = nil // if rule_id is set, we cant send id
 	}
 
-	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:                           &eqlRule.Actions,
-		ResponseActions:                   &eqlRule.ResponseActions,
-		RuleID:                            &eqlRule.RuleId,
-		Enabled:                           &eqlRule.Enabled,
-		From:                              &eqlRule.From,
-		To:                                &eqlRule.To,
-		Interval:                          &eqlRule.Interval,
-		Index:                             &eqlRule.Index,
-		Author:                            &eqlRule.Author,
-		Tags:                              &eqlRule.Tags,
-		FalsePositives:                    &eqlRule.FalsePositives,
-		References:                        &eqlRule.References,
-		License:                           &eqlRule.License,
-		Note:                              &eqlRule.Note,
-		Setup:                             &eqlRule.Setup,
-		MaxSignals:                        &eqlRule.MaxSignals,
-		Version:                           &eqlRule.Version,
-		ExceptionsList:                    &eqlRule.ExceptionsList,
-		AlertSuppression:                  &eqlRule.AlertSuppression,
-		RiskScoreMapping:                  &eqlRule.RiskScoreMapping,
-		SeverityMapping:                   &eqlRule.SeverityMapping,
-		RelatedIntegrations:               &eqlRule.RelatedIntegrations,
-		RequiredFields:                    &eqlRule.RequiredFields,
-		BuildingBlockType:                 &eqlRule.BuildingBlockType,
-		DataViewID:                        &eqlRule.DataViewId,
-		Namespace:                         &eqlRule.Namespace,
-		RuleNameOverride:                  &eqlRule.RuleNameOverride,
-		TimestampOverride:                 &eqlRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &eqlRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &eqlRule.InvestigationFields,
-		Filters:                           &eqlRule.Filters,
-		Threat:                            &eqlRule.Threat,
-		TimelineID:                        &eqlRule.TimelineId,
-		TimelineTitle:                     &eqlRule.TimelineTitle,
-	}, &diags)
+	d.setCommonUpdateProps(ctx, buildCommonRuleProps(&eqlRule), &diags)
 
 	// Set EQL-specific fields
 	if typeutils.IsKnown(d.TiebreakerField) {
@@ -203,52 +133,7 @@ func toEqlRuleUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetections
 func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEqlRule, d *Data) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
-		ResourceID:                        rule.Id.String(),
-		RuleID:                            rule.RuleId,
-		Name:                              rule.Name,
-		Type:                              string(rule.Type),
-		Enabled:                           rule.Enabled,
-		From:                              rule.From,
-		To:                                rule.To,
-		Interval:                          rule.Interval,
-		Description:                       rule.Description,
-		RiskScore:                         int64(rule.RiskScore),
-		Severity:                          string(rule.Severity),
-		MaxSignals:                        int64(rule.MaxSignals),
-		Version:                           int64(rule.Version),
-		Revision:                          int64(rule.Revision),
-		CreatedAt:                         rule.CreatedAt,
-		CreatedBy:                         rule.CreatedBy,
-		UpdatedAt:                         rule.UpdatedAt,
-		UpdatedBy:                         rule.UpdatedBy,
-		TimelineID:                        rule.TimelineId,
-		TimelineTitle:                     rule.TimelineTitle,
-		DataViewID:                        rule.DataViewId,
-		Namespace:                         rule.Namespace,
-		RuleNameOverride:                  rule.RuleNameOverride,
-		TimestampOverride:                 rule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
-		BuildingBlockType:                 rule.BuildingBlockType,
-		License:                           rule.License,
-		Note:                              rule.Note,
-		Setup:                             rule.Setup,
-		Index:                             rule.Index,
-		Author:                            rule.Author,
-		Tags:                              rule.Tags,
-		FalsePositives:                    rule.FalsePositives,
-		References:                        rule.References,
-		Actions:                           rule.Actions,
-		ExceptionsList:                    rule.ExceptionsList,
-		RiskScoreMapping:                  rule.RiskScoreMapping,
-		InvestigationFields:               rule.InvestigationFields,
-		Threat:                            rule.Threat,
-		SeverityMapping:                   rule.SeverityMapping,
-		RelatedIntegrations:               rule.RelatedIntegrations,
-		RequiredFields:                    rule.RequiredFields,
-		AlertSuppression:                  rule.AlertSuppression,
-		ResponseActions:                   rule.ResponseActions,
-	})...)
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, buildCommonAPIRuleFields(rule.Id.String(), rule))...)
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))

@@ -71,42 +71,8 @@ func (d Data) toThresholdRuleCreateProps(ctx context.Context) (kbapi.SecurityDet
 		thresholdRule.Threshold = *threshold
 	}
 
-	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:                           &thresholdRule.Actions,
-		ResponseActions:                   &thresholdRule.ResponseActions,
-		RuleID:                            &thresholdRule.RuleId,
-		Enabled:                           &thresholdRule.Enabled,
-		From:                              &thresholdRule.From,
-		To:                                &thresholdRule.To,
-		Interval:                          &thresholdRule.Interval,
-		Index:                             &thresholdRule.Index,
-		Author:                            &thresholdRule.Author,
-		Tags:                              &thresholdRule.Tags,
-		FalsePositives:                    &thresholdRule.FalsePositives,
-		References:                        &thresholdRule.References,
-		License:                           &thresholdRule.License,
-		Note:                              &thresholdRule.Note,
-		Setup:                             &thresholdRule.Setup,
-		MaxSignals:                        &thresholdRule.MaxSignals,
-		Version:                           &thresholdRule.Version,
-		ExceptionsList:                    &thresholdRule.ExceptionsList,
-		RiskScoreMapping:                  &thresholdRule.RiskScoreMapping,
-		SeverityMapping:                   &thresholdRule.SeverityMapping,
-		RelatedIntegrations:               &thresholdRule.RelatedIntegrations,
-		RequiredFields:                    &thresholdRule.RequiredFields,
-		BuildingBlockType:                 &thresholdRule.BuildingBlockType,
-		DataViewID:                        &thresholdRule.DataViewId,
-		Namespace:                         &thresholdRule.Namespace,
-		RuleNameOverride:                  &thresholdRule.RuleNameOverride,
-		TimestampOverride:                 &thresholdRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &thresholdRule.InvestigationFields,
-		Filters:                           &thresholdRule.Filters,
-		Threat:                            &thresholdRule.Threat,
-		AlertSuppression:                  nil, // Handle specially for threshold rule
-		TimelineID:                        &thresholdRule.TimelineId,
-		TimelineTitle:                     &thresholdRule.TimelineTitle,
-	}, &diags)
+	// Threshold's AlertSuppression is a distinct API type; excluded here and handled specially below.
+	d.setCommonCreateProps(ctx, buildCommonRuleProps(&thresholdRule, "AlertSuppression"), &diags)
 
 	// Handle threshold-specific alert suppression
 	if typeutils.IsKnown(d.AlertSuppression) {
@@ -167,42 +133,8 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context) (kbapi.SecurityDet
 		thresholdRule.Threshold = *threshold
 	}
 
-	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:                           &thresholdRule.Actions,
-		ResponseActions:                   &thresholdRule.ResponseActions,
-		RuleID:                            &thresholdRule.RuleId,
-		Enabled:                           &thresholdRule.Enabled,
-		From:                              &thresholdRule.From,
-		To:                                &thresholdRule.To,
-		Interval:                          &thresholdRule.Interval,
-		Index:                             &thresholdRule.Index,
-		Author:                            &thresholdRule.Author,
-		Tags:                              &thresholdRule.Tags,
-		FalsePositives:                    &thresholdRule.FalsePositives,
-		References:                        &thresholdRule.References,
-		License:                           &thresholdRule.License,
-		Note:                              &thresholdRule.Note,
-		InvestigationFields:               &thresholdRule.InvestigationFields,
-		Setup:                             &thresholdRule.Setup,
-		MaxSignals:                        &thresholdRule.MaxSignals,
-		Version:                           &thresholdRule.Version,
-		ExceptionsList:                    &thresholdRule.ExceptionsList,
-		RiskScoreMapping:                  &thresholdRule.RiskScoreMapping,
-		SeverityMapping:                   &thresholdRule.SeverityMapping,
-		RelatedIntegrations:               &thresholdRule.RelatedIntegrations,
-		RequiredFields:                    &thresholdRule.RequiredFields,
-		BuildingBlockType:                 &thresholdRule.BuildingBlockType,
-		DataViewID:                        &thresholdRule.DataViewId,
-		Namespace:                         &thresholdRule.Namespace,
-		RuleNameOverride:                  &thresholdRule.RuleNameOverride,
-		TimestampOverride:                 &thresholdRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &thresholdRule.TimestampOverrideFallbackDisabled,
-		Filters:                           &thresholdRule.Filters,
-		Threat:                            &thresholdRule.Threat,
-		AlertSuppression:                  nil, // Handle specially for threshold rule
-		TimelineID:                        &thresholdRule.TimelineId,
-		TimelineTitle:                     &thresholdRule.TimelineTitle,
-	}, &diags)
+	// Threshold's AlertSuppression is a distinct API type; excluded here and handled specially below.
+	d.setCommonUpdateProps(ctx, buildCommonRuleProps(&thresholdRule, "AlertSuppression"), &diags)
 
 	// Handle threshold-specific alert suppression
 	if typeutils.IsKnown(d.AlertSuppression) {
@@ -235,53 +167,9 @@ func (d Data) toThresholdRuleUpdateProps(ctx context.Context) (kbapi.SecurityDet
 func (d *Data) updateFromThresholdRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIThresholdRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Threshold rules use a different AlertSuppression type, so we pass nil and handle it separately below.
-	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
-		ResourceID:                        rule.Id.String(),
-		RuleID:                            rule.RuleId,
-		Name:                              rule.Name,
-		Type:                              string(rule.Type),
-		Enabled:                           rule.Enabled,
-		From:                              rule.From,
-		To:                                rule.To,
-		Interval:                          rule.Interval,
-		Description:                       rule.Description,
-		RiskScore:                         int64(rule.RiskScore),
-		Severity:                          string(rule.Severity),
-		MaxSignals:                        int64(rule.MaxSignals),
-		Version:                           int64(rule.Version),
-		Revision:                          int64(rule.Revision),
-		CreatedAt:                         rule.CreatedAt,
-		CreatedBy:                         rule.CreatedBy,
-		UpdatedAt:                         rule.UpdatedAt,
-		UpdatedBy:                         rule.UpdatedBy,
-		TimelineID:                        rule.TimelineId,
-		TimelineTitle:                     rule.TimelineTitle,
-		DataViewID:                        rule.DataViewId,
-		Namespace:                         rule.Namespace,
-		RuleNameOverride:                  rule.RuleNameOverride,
-		TimestampOverride:                 rule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
-		BuildingBlockType:                 rule.BuildingBlockType,
-		License:                           rule.License,
-		Note:                              rule.Note,
-		Setup:                             rule.Setup,
-		Index:                             rule.Index,
-		Author:                            rule.Author,
-		Tags:                              rule.Tags,
-		FalsePositives:                    rule.FalsePositives,
-		References:                        rule.References,
-		Actions:                           rule.Actions,
-		ExceptionsList:                    rule.ExceptionsList,
-		RiskScoreMapping:                  rule.RiskScoreMapping,
-		InvestigationFields:               rule.InvestigationFields,
-		Threat:                            rule.Threat,
-		SeverityMapping:                   rule.SeverityMapping,
-		RelatedIntegrations:               rule.RelatedIntegrations,
-		RequiredFields:                    rule.RequiredFields,
-		AlertSuppression:                  nil, // handled below via updateThresholdAlertSuppressionFromAPI
-		ResponseActions:                   rule.ResponseActions,
-	})...)
+	// Threshold rules use a different AlertSuppression type, so we exclude it here and handle it
+	// separately below via updateThresholdAlertSuppressionFromAPI.
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, buildCommonAPIRuleFields(rule.Id.String(), rule, "AlertSuppression"))...)
 
 	d.Query = typeutils.StringishValue(rule.Query)
 	d.Language = typeutils.StringishValue(rule.Language)

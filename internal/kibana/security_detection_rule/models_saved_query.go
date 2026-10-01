@@ -66,42 +66,7 @@ func (d Data) toSavedQueryRuleCreateProps(ctx context.Context) (kbapi.SecurityDe
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
-	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:                           &savedQueryRule.Actions,
-		ResponseActions:                   &savedQueryRule.ResponseActions,
-		RuleID:                            &savedQueryRule.RuleId,
-		Enabled:                           &savedQueryRule.Enabled,
-		From:                              &savedQueryRule.From,
-		To:                                &savedQueryRule.To,
-		Interval:                          &savedQueryRule.Interval,
-		Index:                             &savedQueryRule.Index,
-		Author:                            &savedQueryRule.Author,
-		Tags:                              &savedQueryRule.Tags,
-		FalsePositives:                    &savedQueryRule.FalsePositives,
-		References:                        &savedQueryRule.References,
-		License:                           &savedQueryRule.License,
-		Note:                              &savedQueryRule.Note,
-		Setup:                             &savedQueryRule.Setup,
-		MaxSignals:                        &savedQueryRule.MaxSignals,
-		Version:                           &savedQueryRule.Version,
-		ExceptionsList:                    &savedQueryRule.ExceptionsList,
-		AlertSuppression:                  &savedQueryRule.AlertSuppression,
-		RiskScoreMapping:                  &savedQueryRule.RiskScoreMapping,
-		SeverityMapping:                   &savedQueryRule.SeverityMapping,
-		RelatedIntegrations:               &savedQueryRule.RelatedIntegrations,
-		RequiredFields:                    &savedQueryRule.RequiredFields,
-		BuildingBlockType:                 &savedQueryRule.BuildingBlockType,
-		DataViewID:                        &savedQueryRule.DataViewId,
-		Namespace:                         &savedQueryRule.Namespace,
-		RuleNameOverride:                  &savedQueryRule.RuleNameOverride,
-		TimestampOverride:                 &savedQueryRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &savedQueryRule.InvestigationFields,
-		Filters:                           &savedQueryRule.Filters,
-		Threat:                            &savedQueryRule.Threat,
-		TimelineID:                        &savedQueryRule.TimelineId,
-		TimelineTitle:                     &savedQueryRule.TimelineTitle,
-	}, &diags)
+	d.setCommonCreateProps(ctx, buildCommonRuleProps(&savedQueryRule), &diags)
 
 	// Set optional query for saved query rules
 	if typeutils.IsKnown(d.Query) {
@@ -149,42 +114,7 @@ func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDe
 		savedQueryRule.Id = nil // if rule_id is set, we cant send id
 	}
 
-	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:                           &savedQueryRule.Actions,
-		ResponseActions:                   &savedQueryRule.ResponseActions,
-		RuleID:                            &savedQueryRule.RuleId,
-		Enabled:                           &savedQueryRule.Enabled,
-		From:                              &savedQueryRule.From,
-		To:                                &savedQueryRule.To,
-		Interval:                          &savedQueryRule.Interval,
-		Index:                             &savedQueryRule.Index,
-		Author:                            &savedQueryRule.Author,
-		Tags:                              &savedQueryRule.Tags,
-		FalsePositives:                    &savedQueryRule.FalsePositives,
-		References:                        &savedQueryRule.References,
-		License:                           &savedQueryRule.License,
-		Note:                              &savedQueryRule.Note,
-		InvestigationFields:               &savedQueryRule.InvestigationFields,
-		Setup:                             &savedQueryRule.Setup,
-		MaxSignals:                        &savedQueryRule.MaxSignals,
-		Version:                           &savedQueryRule.Version,
-		ExceptionsList:                    &savedQueryRule.ExceptionsList,
-		AlertSuppression:                  &savedQueryRule.AlertSuppression,
-		RiskScoreMapping:                  &savedQueryRule.RiskScoreMapping,
-		SeverityMapping:                   &savedQueryRule.SeverityMapping,
-		RelatedIntegrations:               &savedQueryRule.RelatedIntegrations,
-		RequiredFields:                    &savedQueryRule.RequiredFields,
-		BuildingBlockType:                 &savedQueryRule.BuildingBlockType,
-		DataViewID:                        &savedQueryRule.DataViewId,
-		Namespace:                         &savedQueryRule.Namespace,
-		RuleNameOverride:                  &savedQueryRule.RuleNameOverride,
-		TimestampOverride:                 &savedQueryRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &savedQueryRule.TimestampOverrideFallbackDisabled,
-		Filters:                           &savedQueryRule.Filters,
-		Threat:                            &savedQueryRule.Threat,
-		TimelineID:                        &savedQueryRule.TimelineId,
-		TimelineTitle:                     &savedQueryRule.TimelineTitle,
-	}, &diags)
+	d.setCommonUpdateProps(ctx, buildCommonRuleProps(&savedQueryRule), &diags)
 
 	// Set optional query for saved query rules
 	if typeutils.IsKnown(d.Query) {
@@ -210,52 +140,7 @@ func (d Data) toSavedQueryRuleUpdateProps(ctx context.Context) (kbapi.SecurityDe
 func (d *Data) updateFromSavedQueryRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPISavedQueryRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
-		ResourceID:                        rule.Id.String(),
-		RuleID:                            rule.RuleId,
-		Name:                              rule.Name,
-		Type:                              string(rule.Type),
-		Enabled:                           rule.Enabled,
-		From:                              rule.From,
-		To:                                rule.To,
-		Interval:                          rule.Interval,
-		Description:                       rule.Description,
-		RiskScore:                         int64(rule.RiskScore),
-		Severity:                          string(rule.Severity),
-		MaxSignals:                        int64(rule.MaxSignals),
-		Version:                           int64(rule.Version),
-		Revision:                          int64(rule.Revision),
-		CreatedAt:                         rule.CreatedAt,
-		CreatedBy:                         rule.CreatedBy,
-		UpdatedAt:                         rule.UpdatedAt,
-		UpdatedBy:                         rule.UpdatedBy,
-		TimelineID:                        rule.TimelineId,
-		TimelineTitle:                     rule.TimelineTitle,
-		DataViewID:                        rule.DataViewId,
-		Namespace:                         rule.Namespace,
-		RuleNameOverride:                  rule.RuleNameOverride,
-		TimestampOverride:                 rule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
-		BuildingBlockType:                 rule.BuildingBlockType,
-		License:                           rule.License,
-		Note:                              rule.Note,
-		Setup:                             rule.Setup,
-		Index:                             rule.Index,
-		Author:                            rule.Author,
-		Tags:                              rule.Tags,
-		FalsePositives:                    rule.FalsePositives,
-		References:                        rule.References,
-		Actions:                           rule.Actions,
-		ExceptionsList:                    rule.ExceptionsList,
-		RiskScoreMapping:                  rule.RiskScoreMapping,
-		InvestigationFields:               rule.InvestigationFields,
-		Threat:                            rule.Threat,
-		SeverityMapping:                   rule.SeverityMapping,
-		RelatedIntegrations:               rule.RelatedIntegrations,
-		RequiredFields:                    rule.RequiredFields,
-		AlertSuppression:                  rule.AlertSuppression,
-		ResponseActions:                   rule.ResponseActions,
-	})...)
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, buildCommonAPIRuleFields(rule.Id.String(), rule))...)
 
 	d.SavedID = types.StringValue(rule.SavedId)
 	d.Query = types.StringPointerValue(rule.Query)
