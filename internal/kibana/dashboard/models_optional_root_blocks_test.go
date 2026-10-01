@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"maps"
+	"strconv"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
@@ -183,10 +184,8 @@ func rootBlockValue(t *testing.T, block string, overrides map[string]string) tft
 		case typ.Equal(tftypes.Bool):
 			vals[name] = tftypes.NewValue(tftypes.Bool, v == "true")
 		case typ.Equal(tftypes.Number):
-			var n int64
-			for _, c := range v {
-				n = n*10 + int64(c-'0')
-			}
+			n, err := strconv.ParseInt(v, 10, 64)
+			require.NoError(t, err)
 			vals[name] = tftypes.NewValue(tftypes.Number, n)
 		default:
 			vals[name] = tftypes.NewValue(typ, v)

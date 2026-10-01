@@ -36,12 +36,11 @@ func timeRangeSchemaAttributes() map[string]schema.Attribute {
 }
 
 // timeRangeSingleNestedAttribute builds a SingleNestedAttribute wrapping timeRangeSchemaAttributes.
-// When required is false the attribute is Optional (for panel-level `time_range`); when true it matches dashboard-root usage.
-func timeRangeSingleNestedAttribute(markdownDescription string, required bool) schema.SingleNestedAttribute {
+// The attribute is always Optional; its nested attributes stay Required.
+func timeRangeSingleNestedAttribute(markdownDescription string) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		MarkdownDescription: markdownDescription,
-		Required:            required,
-		Optional:            !required,
+		Optional:            true,
 		Attributes:          timeRangeSchemaAttributes(),
 	}
 }
