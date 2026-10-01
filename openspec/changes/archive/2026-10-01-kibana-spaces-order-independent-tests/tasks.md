@@ -14,4 +14,4 @@
 
 - [x] 3.1 Run `go build ./...` and `go vet ./internal/kibana/spaces/...`.
 - [x] 3.2 Run the five affected acceptance tests with `TF_ACC=1` against a running Kibana/Elasticsearch stack per `dev-docs/high-level/testing.md`: `TestAccSpacesDataSource`, `TestAccSpacesDataSource_multipleSpaces`, `TestAccSpacesDataSource_noDescription`, `TestAccSpacesDataSource_withImageURL`, `TestAccSpacesDataSource_withKibanaConnection`.
-- [ ] 3.3 If a `9.6.0-SNAPSHOT` (or later) stack is available, additionally confirm the previously-failing `TestAccSpacesDataSource_withImageURL` passes against it.
+- [x] 3.3 If a `9.6.0-SNAPSHOT` (or later) stack is available, additionally confirm the previously-failing `TestAccSpacesDataSource_withImageURL` passes against it.
