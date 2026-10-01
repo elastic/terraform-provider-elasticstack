@@ -108,12 +108,12 @@ func getSchema() schema.Schema {
 				Optional:            true,
 			},
 			"time_range": timeRangeSingleNestedAttribute(
-				"Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object.",
-				true,
+				"Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. Optional: when omitted, no time range is sent to Kibana and none is applied. Removing the block clears it in Kibana rather than resetting it to a default.",
+				false,
 			),
 			"refresh_interval": schema.SingleNestedAttribute{
-				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object.",
-				Required:            true,
+				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. Optional: when omitted, no refresh interval is sent to Kibana and none is applied. Removing the block clears it in Kibana rather than resetting it to a default.",
+				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"pause": schema.BoolAttribute{
 						MarkdownDescription: "When true, auto-refresh is paused.",
@@ -126,8 +126,8 @@ func getSchema() schema.Schema {
 				},
 			},
 			"query": schema.SingleNestedAttribute{
-				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch).",
-				Required:            true,
+				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). Optional: when omitted, no query is sent to Kibana and none is applied. Removing the block clears it in Kibana rather than resetting it to a default.",
+				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"language": schema.StringAttribute{
 						MarkdownDescription: "Query language (`kql` or `lucene`).",
