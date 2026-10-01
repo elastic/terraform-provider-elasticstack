@@ -4,7 +4,7 @@
 
 The resource SHALL validate that the index named in `write_index.name` does not also appear in any entry of `read_indices`, either by literal name equality or, once expressions are resolved during plan and apply, as a concrete target of any `read_indices` expression. If the same index appears in both roles, the resource SHALL return an "Invalid Configuration" error diagnostic and SHALL NOT proceed to create or update. Literal-name validation is applied both at plan time (`ValidateConfig`) and at apply time before API calls.
 
-The resource SHALL reject multi-target selector syntax in `write_index.name`: a name containing `*`, `?` or `,`, a name beginning with `-`, or the name `_all`. This validation SHALL be syntactic, SHALL be skipped for unknown values, and SHALL NOT reject single-target names that were previously accepted.
+The resource SHALL reject multi-target selector syntax in `write_index.name`: a name containing `*`, `?` or `,`, a name beginning with `-` or `<` (date math), or the name `_all`. This validation SHALL be syntactic, SHALL be skipped for unknown values, and SHALL NOT reject single-target names that were previously accepted.
 
 #### Scenario: Write index in read indices
 
@@ -20,7 +20,7 @@ The resource SHALL reject multi-target selector syntax in `write_index.name`: a 
 
 #### Scenario: Wildcard write index rejected
 
-- GIVEN `write_index.name` is `logs-*`, `a,b`, `-a` or `_all`
+- GIVEN `write_index.name` is `logs-*`, `a,b`, `-a`, `<logs-{now/d}>` or `_all`
 - WHEN config is validated
 - THEN the provider SHALL return an error diagnostic before any API call
 
@@ -97,7 +97,7 @@ For each `read_indices` element in prior state or plan, the resource SHALL resol
 
 A member is "covered" when it is in the resolved set of at least one configured `read_indices` element. A member covered by more than one element SHALL appear in the `concrete_indices` of every covering element and SHALL NOT also be emitted as a singleton entry. Each retained element SHALL preserve its own configured settings, so read never has to choose between overlapping elements: overlapping expressions that resolve to the same target with different settings are rejected during plan, create and update, and therefore cannot reach read.
 
-When an alias is absent, the resource SHALL retain virtual state only when prior state has no `write_index` and every prior `read_indices` element has empty `concrete_indices`. Read SHALL NOT consider whether the configured expressions currently resolve to targets: a target that begins matching after the virtual state was recorded is membership drift for `ModifyPlan` to report as an in-place update, not evidence that the resource was deleted. In every other absent-alias case, the resource SHALL remove itself from state.
+When an alias is absent, the resource SHALL retain virtual state only when prior state has no `write_index` and every prior `read_indices` element has empty `concrete_indices`. Read SHALL NOT consider whether the configured expressions currently resolve to targets: a target that begins matching after the virtual state was recorded is membership drift for `ModifyPlan` to report as an in-place update, not evidence that the resource was deleted. The read that follows a successful create or update SHALL instead retain virtual state, with empty `concrete_indices` values, whenever that apply determined the desired alias has no `write_index` and no resolved read target, regardless of prior membership. In every other absent-alias case, the resource SHALL remove itself from state.
 
 #### Scenario: Alias not found on read
 
@@ -141,6 +141,14 @@ When an alias is absent, the resource SHALL retain virtual state only when prior
 - WHEN read runs
 - THEN the resource SHALL remain in state with empty `concrete_indices` values
 - AND the next plan SHALL show an in-place update, not a create
+
+#### Scenario: Update removes the last association
+
+- GIVEN prior state has a non-empty `concrete_indices` value and no `write_index`
+- AND the updated configuration resolves to no targets
+- WHEN update removes the last alias association and the post-update read finds no alias
+- THEN the resource SHALL remain in state with empty `concrete_indices` values
+- AND the next refresh and plan SHALL be clean
 
 #### Scenario: Missing alias with prior membership is deleted drift
 
@@ -220,7 +228,7 @@ On create and update, `index_routing`, `routing`, and `search_routing` SHALL be 
 
 ### Requirement: Read indices selector expressions
 
-`read_indices[*].name` SHALL accept any Elasticsearch multi-target expression, including `*` and `?` wildcards, comma-separated lists and `-` exclusions, and SHALL retain the user's original expression in state. The resource SHALL resolve expressions during plan (`ModifyPlan`), create, read and update using an explicit `expand_wildcards=all` policy (open, closed and hidden targets) and `allow_no_indices=true`. An expression with no current matches SHALL be valid and SHALL resolve to an empty set; it SHALL be re-resolved on later plans. If the desired alias has no write index and no resolved read target, the resource SHALL retain virtual state until a later plan resolves a target or the resource is deleted. Resolved alias entries SHALL be ignored. Remote-cluster targets SHALL return an error diagnostic. The remaining attachable targets SHALL be either regular indices or data streams, but not both; data-stream backing indices SHALL be excluded when their data stream is resolved.
+`read_indices[*].name` SHALL accept any Elasticsearch multi-target expression, including `*` and `?` wildcards, comma-separated lists and `-` exclusions, and SHALL retain the user's original expression in state. The resource SHALL resolve expressions during plan (`ModifyPlan`), create, read and update using an explicit `expand_wildcards=all` policy (open, closed and hidden targets) and `allow_no_indices=true`. An expression with no current matches SHALL be valid and SHALL resolve to an empty set; it SHALL be re-resolved on later plans. If the desired alias has no write index and no resolved read target, the resource SHALL retain virtual state until a later plan resolves a target or the resource is deleted. A resolution result containing any alias entry SHALL return an error diagnostic naming the alias, and SHALL NOT be treated as a no-match. Remote-cluster targets SHALL also return an error diagnostic. The remaining attachable targets SHALL be either regular indices or data streams, but not both; data-stream backing indices SHALL be excluded when their data stream is resolved.
 
 `_all` and bare `*` are not given special treatment. They are passed to Elasticsearch like any other expression and are subject to the same checks as every expression, including the mixed-kind rejection and the REQ-009 check that no resolved target is the `write_index`. Consequently they are only usable when the cluster has a single attachable target kind and the expression does not resolve to the `write_index`; otherwise the resource SHALL return an error diagnostic, and practitioners narrow the expression with a prefix or `-` exclusions (for example `logs-*,-logs-current`).
 
@@ -269,12 +277,12 @@ On create and update, `index_routing`, `routing`, and `search_routing` SHALL be 
 - WHEN plan, create or update runs
 - THEN the resource SHALL return the mixed-kind error diagnostic before any alias action
 
-#### Scenario: Alias entries ignored
+#### Scenario: Alias results rejected
 
-- GIVEN an expression resolves to an alias and regular indices
+- GIVEN an expression resolves to an alias, with or without regular indices
 - WHEN plan, create or update runs
-- THEN the alias entry SHALL not be attached
-- AND the regular indices SHALL remain eligible targets
+- THEN the resource SHALL return an error diagnostic naming the alias before any alias action
+- AND the expression SHALL NOT be treated as an empty match or produce virtual state
 
 #### Scenario: Remote target rejected
 
