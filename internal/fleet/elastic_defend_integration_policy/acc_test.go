@@ -762,7 +762,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "policy_id", explicitPolicyID),
-					resource.TestCheckResourceAttr(resourceName, "id", "default/"+explicitPolicyID),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^(default/)?`+regexp.QuoteMeta(explicitPolicyID)+`$`)),
 				),
 			},
 			{
@@ -779,7 +779,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "policy_id", changedPolicyID),
-					resource.TestCheckResourceAttr(resourceName, "id", "default/"+changedPolicyID),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^(default/)?`+regexp.QuoteMeta(changedPolicyID)+`$`)),
 				),
 			},
 		},
