@@ -139,13 +139,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 
 	win := map[string]any{}
 
-	if typeutils.IsKnown(wm.Events) {
-		var em windowsEventsModel
-		d = wm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if em, ok := decodeObjectField[windowsEventsModel](ctx, wm.Events, &diags); ok {
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
 		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
@@ -159,13 +153,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrEvents] = events
 	}
 
-	if typeutils.IsKnown(wm.Malware) {
-		var mm malwareFullModel
-		d = wm.Malware.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if mm, ok := decodeObjectField[malwareFullModel](ctx, wm.Malware, &diags); ok {
 		malware := map[string]any{}
 		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
 		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
@@ -174,26 +162,14 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrMalware] = malware
 	}
 
-	if typeutils.IsKnown(wm.Ransomware) {
-		var rm protectionModeModel
-		d = wm.Ransomware.As(ctx, &rm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if rm, ok := decodeObjectField[protectionModeModel](ctx, wm.Ransomware, &diags); ok {
 		ransomware := map[string]any{}
 		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
 		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
 		win[attrRansomware] = ransomware
 	}
 
-	if typeutils.IsKnown(wm.MemoryProtection) {
-		var mm memoryProtectionModel
-		d = wm.MemoryProtection.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if mm, ok := decodeObjectField[memoryProtectionModel](ctx, wm.MemoryProtection, &diags); ok {
 		memProt := map[string]any{}
 		typeutils.SetStringInMap(memProt, attrMode, mm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, mm.Supported)
@@ -201,13 +177,7 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrMemoryProtection] = memProt
 	}
 
-	if typeutils.IsKnown(wm.BehaviorProtection) {
-		var bm behaviorProtectionModel
-		d = wm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, wm.BehaviorProtection, &diags); ok {
 		behProt := map[string]any{}
 		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
@@ -215,26 +185,14 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrBehaviorProtection] = behProt
 	}
 
-	if typeutils.IsKnown(wm.DeviceControl) {
-		var dm deviceControlModel
-		d = wm.DeviceControl.As(ctx, &dm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if dm, ok := decodeObjectField[deviceControlModel](ctx, wm.DeviceControl, &diags); ok {
 		deviceControl := map[string]any{}
 		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
 		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
 		win[attrDeviceControl] = deviceControl
 	}
 
-	if typeutils.IsKnown(wm.Popup) {
-		var pm windowsPopupModel
-		d = wm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if pm, ok := decodeObjectField[windowsPopupModel](ctx, wm.Popup, &diags); ok {
 		popup := map[string]any{}
 		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
 		setPopupItem(ctx, popup, attrRansomware, pm.Ransomware, &diags)
@@ -244,46 +202,22 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrPopup] = popup
 	}
 
-	if typeutils.IsKnown(wm.Logging) {
-		var lm loggingModel
-		d = wm.Logging.As(ctx, &lm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if lm, ok := decodeObjectField[loggingModel](ctx, wm.Logging, &diags); ok {
 		logging := map[string]any{}
 		typeutils.SetStringInMap(logging, attrFile, lm.File)
 		win[attrLogging] = logging
 	}
 
-	if typeutils.IsKnown(wm.AntivirusRegistration) {
-		var am antivirusRegistrationModel
-		d = wm.AntivirusRegistration.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if am, ok := decodeObjectField[antivirusRegistrationModel](ctx, wm.AntivirusRegistration, &diags); ok {
 		avr := map[string]any{}
 		typeutils.SetStringInMap(avr, attrMode, am.Mode)
 		typeutils.SetBoolInMap(avr, attrEnabled, am.Enabled)
 		win[attrAntivirusRegistration] = avr
 	}
 
-	if typeutils.IsKnown(wm.AttackSurfaceReduction) {
-		var am attackSurfaceReductionModel
-		d = wm.AttackSurfaceReduction.As(ctx, &am, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if am, ok := decodeObjectField[attackSurfaceReductionModel](ctx, wm.AttackSurfaceReduction, &diags); ok {
 		asr := map[string]any{}
-		if typeutils.IsKnown(am.CredentialHardening) {
-			var cm credentialHardeningModel
-			d = am.CredentialHardening.As(ctx, &cm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-			diags.Append(d...)
-			if diags.HasError() {
-				return nil, diags
-			}
+		if cm, ok := decodeObjectField[credentialHardeningModel](ctx, am.CredentialHardening, &diags); ok {
 			ch := map[string]any{}
 			typeutils.SetBoolInMap(ch, attrEnabled, cm.Enabled)
 			asr[attrCredentialHardening] = ch
@@ -291,6 +225,9 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrAttackSurfaceReduction] = asr
 	}
 
+	if diags.HasError() {
+		return nil, diags
+	}
 	return win, diags
 }
 

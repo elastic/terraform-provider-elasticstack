@@ -88,13 +88,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 
 	linux := map[string]any{}
 
-	if typeutils.IsKnown(lm.Events) {
-		var em linuxEventsModel
-		d = lm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if em, ok := decodeObjectField[linuxEventsModel](ctx, lm.Events, &diags); ok {
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
 		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
@@ -105,13 +99,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrEvents] = events
 	}
 
-	if typeutils.IsKnown(lm.Malware) {
-		var mm malwareLinuxModel
-		d = lm.Malware.As(ctx, &mm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if mm, ok := decodeObjectField[malwareLinuxModel](ctx, lm.Malware, &diags); ok {
 		malware := map[string]any{}
 		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
 		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
@@ -119,13 +107,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrMalware] = malware
 	}
 
-	if typeutils.IsKnown(lm.MemoryProtection) {
-		var pm memoryProtectionModel
-		d = lm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, lm.MemoryProtection, &diags); ok {
 		memProt := map[string]any{}
 		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
@@ -133,13 +115,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrMemoryProtection] = memProt
 	}
 
-	if typeutils.IsKnown(lm.BehaviorProtection) {
-		var bm behaviorProtectionModel
-		d = lm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, lm.BehaviorProtection, &diags); ok {
 		behProt := map[string]any{}
 		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
@@ -147,13 +123,7 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrBehaviorProtection] = behProt
 	}
 
-	if typeutils.IsKnown(lm.Popup) {
-		var pm linuxPopupModel
-		d = lm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if pm, ok := decodeObjectField[linuxPopupModel](ctx, lm.Popup, &diags); ok {
 		popup := map[string]any{}
 		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
 		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
@@ -161,18 +131,15 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrPopup] = popup
 	}
 
-	if typeutils.IsKnown(lm.Logging) {
-		var logm loggingModel
-		d = lm.Logging.As(ctx, &logm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if logm, ok := decodeObjectField[loggingModel](ctx, lm.Logging, &diags); ok {
 		logging := map[string]any{}
 		typeutils.SetStringInMap(logging, attrFile, logm.File)
 		linux[attrLogging] = logging
 	}
 
+	if diags.HasError() {
+		return nil, diags
+	}
 	return linux, diags
 }
 
