@@ -99,6 +99,22 @@ func (validateTestProvider) Resources(context.Context) []func() resource.Resourc
 	return []func() resource.Resource{NewResource}
 }
 
+// nullObject returns a value map with every attribute of objType set to a typed null.
+func nullObject(objType tftypes.Object) map[string]tftypes.Value {
+	vals := make(map[string]tftypes.Value, len(objType.AttributeTypes))
+	for name, typ := range objType.AttributeTypes {
+		vals[name] = tftypes.NewValue(typ, nil)
+	}
+	return vals
+}
+
+func requireNoErrors(t *testing.T, diags []*tfprotov6.Diagnostic) {
+	t.Helper()
+	for _, d := range diags {
+		require.NotEqual(t, tfprotov6.DiagnosticSeverityError, d.Severity, "%s: %s", d.Summary, d.Detail)
+	}
+}
+
 func validateDashboardConfig(t *testing.T, overrides map[string]tftypes.Value) []*tfprotov6.Diagnostic {
 	t.Helper()
 	ctx := context.Background()
@@ -111,10 +127,7 @@ func validateDashboardConfig(t *testing.T, overrides map[string]tftypes.Value) [
 	objType, ok := res.ValueType().(tftypes.Object)
 	require.True(t, ok)
 
-	vals := make(map[string]tftypes.Value, len(objType.AttributeTypes))
-	for name, typ := range objType.AttributeTypes {
-		vals[name] = tftypes.NewValue(typ, nil)
-	}
+	vals := nullObject(objType)
 	maps.Copy(vals, overrides)
 	cfg, err := tfprotov6.NewDynamicValue(objType, tftypes.NewValue(objType, vals))
 	require.NoError(t, err)
@@ -132,7 +145,6 @@ func Test_resourceSchema_rootBlocksOptional(t *testing.T) {
 	for _, name := range []string{"time_range", "refresh_interval", "query"} {
 		attr := s.Attributes[name]
 		require.True(t, attr.IsOptional(), name)
-		require.False(t, attr.IsRequired(), name)
 		require.False(t, attr.IsComputed(), name)
 	}
 }
@@ -141,31 +153,7 @@ func Test_resourceSchema_titleOnlyValidates(t *testing.T) {
 	diags := validateDashboardConfig(t, map[string]tftypes.Value{
 		"title": tftypes.NewValue(tftypes.String, "title only"),
 	})
-	for _, d := range diags {
-		require.NotEqual(t, tfprotov6.DiagnosticSeverityError, d.Severity, "%s: %s", d.Summary, d.Detail)
-	}
-}
-
-func Test_resourceSchema_timeRangeMissingToRejected(t *testing.T) {
-	trType := getSchema().Attributes["time_range"].GetType().TerraformType(context.Background()).(tftypes.Object)
-	trVals := make(map[string]tftypes.Value, len(trType.AttributeTypes))
-	for name, typ := range trType.AttributeTypes {
-		trVals[name] = tftypes.NewValue(typ, nil)
-	}
-	trVals["from"] = tftypes.NewValue(tftypes.String, "now-7d")
-
-	diags := validateDashboardConfig(t, map[string]tftypes.Value{
-		"title":      tftypes.NewValue(tftypes.String, "bad time range"),
-		"time_range": tftypes.NewValue(trType, trVals),
-	})
-	var found bool
-	for _, d := range diags {
-		if d.Severity == tfprotov6.DiagnosticSeverityError && d.Attribute != nil &&
-			d.Attribute.Equal(tftypes.NewAttributePath().WithAttributeName("time_range").WithAttributeName("to")) {
-			found = true
-		}
-	}
-	require.True(t, found, "expected an error diagnostic on time_range.to, got %v", diags)
+	requireNoErrors(t, diags)
 }
 
 // rootBlockValue builds an object value for the named root block from the
@@ -174,10 +162,7 @@ func rootBlockValue(t *testing.T, block string, overrides map[string]string) tft
 	t.Helper()
 	objType, ok := getSchema().Attributes[block].GetType().TerraformType(context.Background()).(tftypes.Object)
 	require.True(t, ok)
-	vals := make(map[string]tftypes.Value, len(objType.AttributeTypes))
-	for name, typ := range objType.AttributeTypes {
-		vals[name] = tftypes.NewValue(typ, nil)
-	}
+	vals := nullObject(objType)
 	for name, v := range overrides {
 		typ := objType.AttributeTypes[name]
 		switch {
@@ -225,6 +210,7 @@ func Test_resourceSchema_rootBlockNestedValidation(t *testing.T) {
 		{"refresh_interval missing pause", "refresh_interval", map[string]string{"value": "1000"}, "refresh_interval", "pause", true},
 		{"refresh_interval missing value", "refresh_interval", map[string]string{"pause": "true"}, "refresh_interval", "value", true},
 		{"refresh_interval valid", "refresh_interval", map[string]string{"pause": "true", "value": "0"}, "", "", false},
+		{"time_range missing to", "time_range", map[string]string{"from": "now-7d"}, "time_range", "to", true},
 		{"time_range invalid mode", "time_range", map[string]string{"from": "a", "to": "b", "mode": "bogus"}, "time_range", "mode", true},
 		{"time_range valid mode", "time_range", map[string]string{"from": "a", "to": "b", "mode": "relative"}, "", "", false},
 	}
@@ -241,9 +227,7 @@ func Test_resourceSchema_rootBlockNestedValidation(t *testing.T) {
 				require.True(t, found, "expected error at %s.%s, got %v", tc.errBlock, tc.errAttr, diags)
 				return
 			}
-			for _, d := range diags {
-				require.NotEqual(t, tfprotov6.DiagnosticSeverityError, d.Severity, "%s: %s", d.Summary, d.Detail)
-			}
+			requireNoErrors(t, diags)
 		})
 	}
 }

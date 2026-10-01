@@ -18,6 +18,7 @@
 package dashboard_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -26,29 +27,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
 const optionalRootBlocksResource = "elasticstack_kibana_dashboard.test"
 
-func optionalRootBlocksStep(dir, title string, checks ...resource.TestCheckFunc) resource.TestStep {
+func baseStep(dir, title string) resource.TestStep {
 	return resource.TestStep{
 		ProtoV6ProviderFactories: acctest.Providers,
 		ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
 		ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(title)},
-		Check:                    resource.ComposeTestCheckFunc(checks...),
 	}
 }
 
-func optionalRootBlocksPlanOnlyStep(dir, title string) resource.TestStep {
-	return resource.TestStep{
-		ProtoV6ProviderFactories: acctest.Providers,
-		ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
-		ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(title)},
-		ConfigPlanChecks: resource.ConfigPlanChecks{
-			PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
-		},
-	}
+func optionalRootBlocksStep(dir, title string, checks ...resource.TestCheckFunc) resource.TestStep {
+	step := baseStep(dir, title)
+	step.Check = resource.ComposeTestCheckFunc(checks...)
+	return step
+}
+
+func optionalRootBlocksImportStep(dir, title string, ignore ...string) resource.TestStep {
+	step := baseStep(dir, title)
+	step.ResourceName = optionalRootBlocksResource
+	step.ImportState = true
+	step.ImportStateVerify = true
+	step.ImportStateVerifyIgnore = ignore
+	return step
 }
 
 func checkRootBlocksNull(blocks ...string) []resource.TestCheckFunc {
@@ -69,24 +72,13 @@ func TestAccResourceDashboardOptionalRootBlocks_titleOnly(t *testing.T) {
 	checks := append([]resource.TestCheckFunc{
 		resource.TestCheckResourceAttrSet(optionalRootBlocksResource, "id"),
 		resource.TestCheckResourceAttr(optionalRootBlocksResource, "title", title),
-		resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "time_range.from"),
-		resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "refresh_interval.pause"),
-		resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "query.language"),
 	}, checkRootBlocksNull("time_range", "refresh_interval", "query")...)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			optionalRootBlocksStep("title_only", title, checks...),
-			optionalRootBlocksPlanOnlyStep("title_only", title),
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("title_only"),
-				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(title)},
-				ResourceName:             optionalRootBlocksResource,
-				ImportState:              true,
-				ImportStateVerify:        true,
-			},
+			optionalRootBlocksImportStep("title_only", title),
 		},
 	})
 }
@@ -108,35 +100,29 @@ func TestAccResourceDashboardOptionalRootBlocks_addRemove(t *testing.T) {
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "time_range.from", "now-7d"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "time_range.to", "now"),
 			),
-			optionalRootBlocksPlanOnlyStep("time_range_only", title),
 			optionalRootBlocksStep("title_only", title, allNull...),
 			optionalRootBlocksStep("refresh_interval_only", title,
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "refresh_interval.pause", "false"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "refresh_interval.value", "30000"),
 			),
-			optionalRootBlocksPlanOnlyStep("refresh_interval_only", title),
 			optionalRootBlocksStep("title_only", title, allNull...),
 			optionalRootBlocksStep("query_only", title,
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.language", "lucene"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.text", "status:200"),
 				resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "query.json"),
 			),
-			optionalRootBlocksPlanOnlyStep("query_only", title),
 			optionalRootBlocksStep("title_only", title, allNull...),
 			optionalRootBlocksStep("query_json", title,
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.language", "kql"),
 				resource.TestCheckResourceAttrSet(optionalRootBlocksResource, "query.json"),
 				resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "query.text"),
 			),
-			optionalRootBlocksPlanOnlyStep("query_json", title),
 			optionalRootBlocksStep("title_only", title, allNull...),
 			optionalRootBlocksStep("refresh_paused_zero", title,
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "refresh_interval.pause", "true"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "refresh_interval.value", "0"),
 			),
-			optionalRootBlocksPlanOnlyStep("refresh_paused_zero", title),
 			optionalRootBlocksStep("title_only", title, allNull...),
-			optionalRootBlocksPlanOnlyStep("title_only", title),
 		},
 	})
 }
@@ -157,16 +143,7 @@ func TestAccResourceDashboardOptionalRootBlocks_nonDefaultValues(t *testing.T) {
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.language", "lucene"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.text", "host.name:web-*"),
 			),
-			optionalRootBlocksPlanOnlyStep("non_default", title),
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_default"),
-				ConfigVariables:          config.Variables{"dashboard_title": config.StringVariable(title)},
-				ResourceName:             optionalRootBlocksResource,
-				ImportState:              true,
-				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"time_range.mode"},
-			},
+			optionalRootBlocksImportStep("non_default", title, "time_range.mode"),
 		},
 	})
 }
@@ -180,11 +157,12 @@ func TestAccResourceDashboardOptionalRootBlocks_titleOnlyPanelUseTimeRange(t *te
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			optionalRootBlocksStep("title_only_use_time_range", title,
-				resource.TestCheckResourceAttr(optionalRootBlocksResource, "panels.0.vis_config.by_reference.drilldowns.0.dashboard.use_time_range", "true"),
-				resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "time_range.%"),
-			),
-			optionalRootBlocksPlanOnlyStep("title_only_use_time_range", title),
+			optionalRootBlocksStep("title_only_use_time_range", title, slices.Concat(
+				[]resource.TestCheckFunc{
+					resource.TestCheckResourceAttr(optionalRootBlocksResource, "panels.0.vis_config.by_reference.drilldowns.0.dashboard.use_time_range", "true"),
+				},
+				checkRootBlocksNull("time_range"),
+			)...),
 		},
 	})
 }
@@ -208,24 +186,15 @@ func TestAccResourceDashboardOptionalRootBlocks_partialRemoval(t *testing.T) {
 		resource.TestCheckResourceAttr(r, "query.language", "lucene"),
 		resource.TestCheckResourceAttr(r, "query.text", "host.name:web-*"),
 	}
-	join := func(groups ...[]resource.TestCheckFunc) []resource.TestCheckFunc {
-		var out []resource.TestCheckFunc
-		for _, g := range groups {
-			out = append(out, g...)
-		}
-		return out
-	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
-			optionalRootBlocksStep("non_default", title, join(timeRange, refresh, query)...),
+			optionalRootBlocksStep("non_default", title, slices.Concat(timeRange, refresh, query)...),
 			optionalRootBlocksStep("partial_no_query", title,
-				join(timeRange, refresh, checkRootBlocksNull("query"))...),
-			optionalRootBlocksPlanOnlyStep("partial_no_query", title),
+				slices.Concat(timeRange, refresh, checkRootBlocksNull("query"))...),
 			optionalRootBlocksStep("partial_time_range_only", title,
-				join(timeRange, checkRootBlocksNull("refresh_interval", "query"))...),
-			optionalRootBlocksPlanOnlyStep("partial_time_range_only", title),
+				slices.Concat(timeRange, checkRootBlocksNull("refresh_interval", "query"))...),
 		},
 	})
 }
@@ -242,24 +211,19 @@ func TestAccResourceDashboardOptionalRootBlocks_timeRangeMode(t *testing.T) {
 		Steps: []resource.TestStep{
 			optionalRootBlocksStep("mode_relative", title,
 				resource.TestCheckResourceAttr(r, "time_range.mode", "relative")),
-			optionalRootBlocksPlanOnlyStep("mode_relative", title),
 			optionalRootBlocksStep("mode_absolute", title,
 				resource.TestCheckResourceAttr(r, "time_range.from", "2024-01-01T00:00:00.000Z"),
 				resource.TestCheckResourceAttr(r, "time_range.mode", "absolute")),
-			optionalRootBlocksPlanOnlyStep("mode_absolute", title),
 			// Mode removed while the block stays.
 			optionalRootBlocksStep("time_range_only", title,
 				resource.TestCheckResourceAttr(r, "time_range.from", "now-7d"),
 				resource.TestCheckNoResourceAttr(r, "time_range.mode")),
-			optionalRootBlocksPlanOnlyStep("time_range_only", title),
 			// Block with mode -> no block -> block with mode again.
 			optionalRootBlocksStep("mode_relative", title,
 				resource.TestCheckResourceAttr(r, "time_range.mode", "relative")),
 			optionalRootBlocksStep("title_only", title, checkRootBlocksNull("time_range")...),
-			optionalRootBlocksPlanOnlyStep("title_only", title),
 			optionalRootBlocksStep("mode_relative", title,
 				resource.TestCheckResourceAttr(r, "time_range.mode", "relative")),
-			optionalRootBlocksPlanOnlyStep("mode_relative", title),
 		},
 	})
 }

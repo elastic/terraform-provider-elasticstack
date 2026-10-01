@@ -34,13 +34,3 @@ func timeRangeSchemaAttributes() map[string]schema.Attribute {
 	}
 	return attrs
 }
-
-// timeRangeSingleNestedAttribute builds a SingleNestedAttribute wrapping timeRangeSchemaAttributes.
-// The attribute is always Optional; its nested attributes stay Required.
-func timeRangeSingleNestedAttribute(markdownDescription string) schema.SingleNestedAttribute {
-	return schema.SingleNestedAttribute{
-		MarkdownDescription: markdownDescription,
-		Optional:            true,
-		Attributes:          timeRangeSchemaAttributes(),
-	}
-}

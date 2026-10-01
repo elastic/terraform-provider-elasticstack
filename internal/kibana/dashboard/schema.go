@@ -110,10 +110,12 @@ func getSchema() schema.Schema {
 				MarkdownDescription: "A short description of the dashboard.",
 				Optional:            true,
 			},
-			"time_range": timeRangeSingleNestedAttribute(
-				"Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object." +
+			"time_range": schema.SingleNestedAttribute{
+				MarkdownDescription: "Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object." +
 					" Optional; removing the block clears it in Kibana rather than resetting it to a default.",
-			),
+				Optional:   true,
+				Attributes: timeRangeSchemaAttributes(),
+			},
 			"refresh_interval": schema.SingleNestedAttribute{
 				MarkdownDescription: "Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object." +
 					" Optional; removing the block clears it in Kibana rather than resetting it to a default.",
