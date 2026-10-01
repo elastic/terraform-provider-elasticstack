@@ -34,7 +34,7 @@ func datatableNoESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableNoESQLConfigModel,
 	prior *models.DatatableNoESQLConfigModel,
-	api kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -100,9 +100,9 @@ func datatableSplitByConfigOf(m *models.DatatableSplitByModel) *jsontypes.Normal
 	return &m.ConfigJSON
 }
 
-func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel, diag.Diagnostics) {
+func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable}
+	api := kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -129,7 +129,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
+		metrics := make([]kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel_Metrics_Item, len(m.Metrics))
 		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, datatableMetricConfigOf, "metric", &diags) {
 			return api, diags
 		}
@@ -137,7 +137,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	}
 
 	if len(m.Rows) > 0 {
-		rows := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Rows_Item, len(m.Rows))
+		rows := make([]kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel_Rows_Item, len(m.Rows))
 		if !lenscommon.UnmarshalJSONSliceInto(m.Rows, rows, datatableRowConfigOf, "row", &diags) {
 			return api, diags
 		}
@@ -145,7 +145,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 	}
 
 	if len(m.SplitMetricsBy) > 0 {
-		splits := make([]kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_SplitMetricsBy_Item, len(m.SplitMetricsBy))
+		splits := make([]kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel_SplitMetricsBy_Item, len(m.SplitMetricsBy))
 		if !lenscommon.UnmarshalJSONSliceInto(m.SplitMetricsBy, splits, datatableSplitByConfigOf, "split_metrics_by", &diags) {
 			return api, diags
 		}
@@ -158,7 +158,7 @@ func datatableNoESQLConfigToAPI(m *models.DatatableNoESQLConfigModel) (kbapi.Kib
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
@@ -169,7 +169,7 @@ func datatableESQLConfigFromAPI(
 	ctx context.Context,
 	m *models.DatatableESQLConfigModel,
 	prior *models.DatatableESQLConfigModel,
-	api kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -220,9 +220,9 @@ func datatableESQLConfigFromAPI(
 	return diags
 }
 
-func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel, diag.Diagnostics) {
+func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	api := kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelTypeDataTable}
+	api := kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanelTypeDataTable}
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -245,7 +245,7 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 	api.Filters = lenscommon.BuildFiltersForAPI(m.Filters, &diags)
 
 	if len(m.Metrics) > 0 {
-		metrics := make([]kbapi.KibanaHTTPAPIsDatatableESQLMetric, len(m.Metrics))
+		metrics := make([]kbapi.KibanaHTTPAPIsVisDatatableESQLMetric, len(m.Metrics))
 		if !lenscommon.UnmarshalJSONSliceInto(m.Metrics, metrics, datatableMetricConfigOf, "metric", &diags) {
 			return api, diags
 		}
@@ -254,16 +254,16 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 
 	if len(m.Rows) > 0 {
 		rows := make([]struct {
-			Alignment    *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsAlignment    `json:"alignment,omitempty"`
-			ApplyColorTo *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanelRowsApplyColorTo `json:"apply_color_to,omitempty"`
-			ClickFilter  *bool                                                          `json:"click_filter,omitempty"`
-			CollapseBy   *kbapi.KibanaHTTPAPIsCollapseBy                                `json:"collapse_by,omitempty"`
-			Color        *kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Rows_Color      `json:"color,omitempty"`
-			Column       string                                                         `json:"column"`
-			Format       *kbapi.KibanaHTTPAPIsFormatType                                `json:"format,omitempty"`
-			Label        *string                                                        `json:"label,omitempty"`
-			Visible      *bool                                                          `json:"visible,omitempty"`
-			Width        *float32                                                       `json:"width,omitempty"`
+			Alignment    *kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanelRowsAlignment    `json:"alignment,omitempty"`
+			ApplyColorTo *kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanelRowsApplyColorTo `json:"apply_color_to,omitempty"`
+			ClickFilter  *bool                                                             `json:"click_filter,omitempty"`
+			CollapseBy   *kbapi.KibanaHTTPAPIsVisCollapseBy                                `json:"collapse_by,omitempty"`
+			Color        *kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanel_Rows_Color      `json:"color,omitempty"`
+			Column       string                                                            `json:"column"`
+			Format       *kbapi.KibanaHTTPAPIsVisFormatType                                `json:"format,omitempty"`
+			Label        *string                                                           `json:"label,omitempty"`
+			Visible      *bool                                                             `json:"visible,omitempty"`
+			Width        *float32                                                          `json:"width,omitempty"`
 		}, len(m.Rows))
 		if !lenscommon.UnmarshalJSONSliceInto(m.Rows, rows, datatableRowConfigOf, "row", &diags) {
 			return api, diags
@@ -273,9 +273,9 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 
 	if len(m.SplitMetricsBy) > 0 {
 		splits := make([]struct {
-			Column string                          `json:"column"`
-			Format *kbapi.KibanaHTTPAPIsFormatType `json:"format,omitempty"`
-			Label  *string                         `json:"label,omitempty"`
+			Column string                             `json:"column"`
+			Format *kbapi.KibanaHTTPAPIsVisFormatType `json:"format,omitempty"`
+			Label  *string                            `json:"label,omitempty"`
 		}, len(m.SplitMetricsBy))
 		if !lenscommon.UnmarshalJSONSliceInto(m.SplitMetricsBy, splits, datatableSplitByConfigOf, "split_metrics_by", &diags) {
 			return api, diags
@@ -289,14 +289,14 @@ func datatableESQLConfigToAPI(m *models.DatatableESQLConfigModel) (kbapi.KibanaH
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsDatatableESQLByValuePanel_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsVisDatatableESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaHTTPAPIsDatatableStyling) diag.Diagnostics {
+func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaHTTPAPIsVisDatatableStyling) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if api == nil {
 		return diags
@@ -337,13 +337,13 @@ func datatableStylingFromAPI(m *models.DatatableStylingModel, api *kbapi.KibanaH
 	return diags
 }
 
-func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAPIsDatatableStyling, diag.Diagnostics) {
+func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAPIsVisDatatableStyling, diag.Diagnostics) {
 	if m == nil {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	styling := &kbapi.KibanaHTTPAPIsDatatableStyling{}
+	styling := &kbapi.KibanaHTTPAPIsVisDatatableStyling{}
 
 	if m.Density != nil {
 		density, densityDiags := datatableDensityToAPI(m.Density)
@@ -355,7 +355,7 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAP
 	}
 
 	if typeutils.IsKnown(m.SortByJSON) {
-		var sortBy kbapi.KibanaHTTPAPIsDatatableStyling_SortBy
+		var sortBy kbapi.KibanaHTTPAPIsVisDatatableStyling_SortBy
 		if err := json.Unmarshal([]byte(m.SortByJSON.ValueString()), &sortBy); err != nil {
 			diags.AddError("Failed to unmarshal sort_by", err.Error())
 			return styling, diags
@@ -369,7 +369,7 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAP
 			diags.AddError("Failed to encode datatable paging", err.Error())
 			return styling, diags
 		}
-		var paging kbapi.KibanaHTTPAPIsDatatableStyling_Paging
+		var paging kbapi.KibanaHTTPAPIsVisDatatableStyling_Paging
 		if err := json.Unmarshal(raw, &paging); err != nil {
 			diags.AddError("Failed to unmarshal datatable paging", err.Error())
 			return styling, diags
@@ -380,7 +380,7 @@ func datatableStylingToAPI(m *models.DatatableStylingModel) (*kbapi.KibanaHTTPAP
 	return styling, diags
 }
 
-func datatableDensityFromAPI(m *models.DatatableDensityModel, api *kbapi.KibanaHTTPAPIsDatatableDensity) diag.Diagnostics {
+func datatableDensityFromAPI(m *models.DatatableDensityModel, api *kbapi.KibanaHTTPAPIsVisDatatableDensity) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if api == nil {
 		return diags
@@ -397,23 +397,23 @@ func datatableDensityFromAPI(m *models.DatatableDensityModel, api *kbapi.KibanaH
 	return diags
 }
 
-func datatableDensityToAPI(m *models.DatatableDensityModel) (*kbapi.KibanaHTTPAPIsDatatableDensity, diag.Diagnostics) {
+func datatableDensityToAPI(m *models.DatatableDensityModel) (*kbapi.KibanaHTTPAPIsVisDatatableDensity, diag.Diagnostics) {
 	if m == nil {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	density := &kbapi.KibanaHTTPAPIsDatatableDensity{}
+	density := &kbapi.KibanaHTTPAPIsVisDatatableDensity{}
 
 	if typeutils.IsKnown(m.Mode) {
-		mode := kbapi.KibanaHTTPAPIsDatatableDensityMode(m.Mode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsVisDatatableDensityMode(m.Mode.ValueString())
 		density.Mode = &mode
 	}
 
 	if m.Height != nil {
 		height := &struct {
-			Header *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header `json:"header,omitempty"`
-			Value  *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value  `json:"value,omitempty"`
+			Header *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header `json:"header,omitempty"`
+			Value  *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value  `json:"value,omitempty"`
 		}{}
 
 		if m.Height.Header != nil {
@@ -441,8 +441,8 @@ func datatableDensityToAPI(m *models.DatatableDensityModel) (*kbapi.KibanaHTTPAP
 }
 
 func datatableDensityHeightFromAPI(m *models.DatatableDensityHeightModel, api *struct {
-	Header *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header `json:"header,omitempty"`
-	Value  *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value  `json:"value,omitempty"`
+	Header *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header `json:"header,omitempty"`
+	Value  *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value  `json:"value,omitempty"`
 }) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if api == nil {
@@ -464,7 +464,7 @@ func datatableDensityHeightFromAPI(m *models.DatatableDensityHeightModel, api *s
 	return diags
 }
 
-func datatableDensityHeightHeaderFromAPI(m *models.DatatableDensityHeightHeaderModel, api *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header) diag.Diagnostics {
+func datatableDensityHeightHeaderFromAPI(m *models.DatatableDensityHeightHeaderModel, api *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if api == nil {
 		return diags
@@ -496,28 +496,28 @@ func datatableDensityHeightHeaderFromAPI(m *models.DatatableDensityHeightHeaderM
 	return diags
 }
 
-func datatableDensityHeightHeaderToAPI(m *models.DatatableDensityHeightHeaderModel) (*kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header, diag.Diagnostics) {
+func datatableDensityHeightHeaderToAPI(m *models.DatatableDensityHeightHeaderModel) (*kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header, diag.Diagnostics) {
 	if m == nil || !typeutils.IsKnown(m.Type) {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	var header kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header
+	var header kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header
 
 	switch m.Type.ValueString() {
 	case "auto":
-		auto := kbapi.KibanaHTTPAPIsDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightHeader0TypeAuto}
-		if err := header.FromKibanaHTTPAPIsDatatableDensityHeightHeader0(auto); err != nil {
+		auto := kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0TypeAuto}
+		if err := header.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader0(auto); err != nil {
 			diags.AddError("Failed to marshal header density", err.Error())
 			return nil, diags
 		}
 	case "custom":
-		custom := kbapi.KibanaHTTPAPIsDatatableDensityHeightHeader1{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightHeader1TypeCustom}
+		custom := kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader1{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader1TypeCustom}
 		if typeutils.IsKnown(m.MaxLines) {
 			maxLines := float32(m.MaxLines.ValueFloat64())
 			custom.MaxLines = &maxLines
 		}
-		if err := header.FromKibanaHTTPAPIsDatatableDensityHeightHeader1(custom); err != nil {
+		if err := header.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader1(custom); err != nil {
 			diags.AddError("Failed to marshal header density", err.Error())
 			return nil, diags
 		}
@@ -528,7 +528,7 @@ func datatableDensityHeightHeaderToAPI(m *models.DatatableDensityHeightHeaderMod
 	return &header, diags
 }
 
-func datatableDensityHeightValueFromAPI(m *models.DatatableDensityHeightValueModel, api *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value) diag.Diagnostics {
+func datatableDensityHeightValueFromAPI(m *models.DatatableDensityHeightValueModel, api *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if api == nil {
 		return diags
@@ -560,28 +560,28 @@ func datatableDensityHeightValueFromAPI(m *models.DatatableDensityHeightValueMod
 	return diags
 }
 
-func datatableDensityHeightValueToAPI(m *models.DatatableDensityHeightValueModel) (*kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value, diag.Diagnostics) {
+func datatableDensityHeightValueToAPI(m *models.DatatableDensityHeightValueModel) (*kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value, diag.Diagnostics) {
 	if m == nil || !typeutils.IsKnown(m.Type) {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	var value kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value
+	var value kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value
 
 	switch m.Type.ValueString() {
 	case "auto":
-		auto := kbapi.KibanaHTTPAPIsDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightValue0TypeAuto}
-		if err := value.FromKibanaHTTPAPIsDatatableDensityHeightValue0(auto); err != nil {
+		auto := kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0TypeAuto}
+		if err := value.FromKibanaHTTPAPIsVisDatatableDensityHeightValue0(auto); err != nil {
 			diags.AddError("Failed to marshal value density", err.Error())
 			return nil, diags
 		}
 	case "custom":
-		custom := kbapi.KibanaHTTPAPIsDatatableDensityHeightValue1{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightValue1TypeCustom}
+		custom := kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue1{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue1TypeCustom}
 		if typeutils.IsKnown(m.Lines) {
 			lines := float32(m.Lines.ValueFloat64())
 			custom.Lines = &lines
 		}
-		if err := value.FromKibanaHTTPAPIsDatatableDensityHeightValue1(custom); err != nil {
+		if err := value.FromKibanaHTTPAPIsVisDatatableDensityHeightValue1(custom); err != nil {
 			diags.AddError("Failed to marshal value density", err.Error())
 			return nil, diags
 		}

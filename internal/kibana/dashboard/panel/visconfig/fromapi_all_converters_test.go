@@ -35,7 +35,7 @@ import (
 func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisByValueConfig0 {
 	t.Helper()
 	switch vizType {
-	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy):
+	case string(kbapi.KibanaHTTPAPIsVisXyChartNoESQLByValuePanelTypeXy):
 		raw := `{
 					"type":"xy","title":"t","axis":{"x":{},"y":{}},
 					"layers":[{"type":"line","data_source":{"type":"dataView","id":"l"},"ignore_global_filters":false,"sampling":1,"y":[{"operation":"count"}]}],
@@ -43,46 +43,46 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 					"filters":[],"styling":{"line":{"curve":"linear"}},
 					"query":{"expression":"*","language":"kql"}
 				}`
-		var x kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanel
+		var x kbapi.KibanaHTTPAPIsVisXyChartNoESQLByValuePanel
 		require.NoError(t, json.Unmarshal([]byte(raw), &x))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsXyChartNoESQLByValuePanel(x))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisXyChartNoESQLByValuePanel(x))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap):
+	case string(kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanelTypeTreemap):
 		apiJSON := `{"type":"treemap","title":"t",` +
 			`"data_source":{"type":"dataView","id":"m"},` +
 			`"query":{"language":"kql","expression":""},` +
 			`"legend":{"size":"small"},` +
 			`"metrics":[{"operation":"count"}],` +
 			`"group_by":[{"operation":"terms","field":"host.name","collapse_by":"avg"}]}`
-		var api kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel
+		var api kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanel
 		require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsTreemapNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisTreemapNoESQLByValuePanel(api))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic):
+	case string(kbapi.KibanaHTTPAPIsVisMosaicNoESQLByValuePanelTypeMosaic):
 		const grp = `{"mode":"categorical","palette":"default","mapping":[],"unassigned":{"type":"color_code","value":"#D3DAE6"}}`
 		groupBy := `[{"operation":"terms","collapse_by":"avg","fields":["host.name"],"color":` + grp + `}]`
 		apiJSON := `{"type":"mosaic","title":"m","data_source":{"type":"dataView","id":"x"},` +
 			`"query":{"language":"kql","expression":""},"legend":{"size":"small"},` +
 			`"metric":{"operation":"count"},"group_by":` + groupBy + `,"group_breakdown_by":` + groupBy + `}`
-		var api kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel
+		var api kbapi.KibanaHTTPAPIsVisMosaicNoESQLByValuePanel
 		require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsMosaicNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisMosaicNoESQLByValuePanel(api))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable):
-		noESQLHeader := kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header{}
-		require.NoError(t, noESQLHeader.FromKibanaHTTPAPIsDatatableDensityHeightHeader0(kbapi.KibanaHTTPAPIsDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightHeader0TypeAuto}))
-		noESQLValue := kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value{}
-		require.NoError(t, noESQLValue.FromKibanaHTTPAPIsDatatableDensityHeightValue0(kbapi.KibanaHTTPAPIsDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsDatatableDensityHeightValue0TypeAuto}))
-		minDatatableNoESQL := kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanel{
-			Type:    kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable,
-			Query:   &kbapi.KibanaHTTPAPIsFilterSimple{},
-			Styling: &kbapi.KibanaHTTPAPIsDatatableStyling{Density: &kbapi.KibanaHTTPAPIsDatatableDensity{Mode: new(kbapi.KibanaHTTPAPIsDatatableDensityModeDefault)}},
+	case string(kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable):
+		noESQLHeader := kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header{}
+		require.NoError(t, noESQLHeader.FromKibanaHTTPAPIsVisDatatableDensityHeightHeader0(kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightHeader0TypeAuto}))
+		noESQLValue := kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value{}
+		require.NoError(t, noESQLValue.FromKibanaHTTPAPIsVisDatatableDensityHeightValue0(kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0{Type: kbapi.KibanaHTTPAPIsVisDatatableDensityHeightValue0TypeAuto}))
+		minDatatableNoESQL := kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanel{
+			Type:    kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable,
+			Query:   &kbapi.KibanaHTTPAPIsVisFilterSimple{},
+			Styling: &kbapi.KibanaHTTPAPIsVisDatatableStyling{Density: &kbapi.KibanaHTTPAPIsVisDatatableDensity{Mode: new(kbapi.KibanaHTTPAPIsVisDatatableDensityModeDefault)}},
 			Metrics: nil,
 			TimeRange: func() *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
 				var tr kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema
@@ -93,16 +93,16 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 		require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"i"}`), &minDatatableNoESQL.DataSource))
 		require.NoError(t, json.Unmarshal([]byte(`{"language":"kql","expression":"*"}`), &minDatatableNoESQL.Query))
 		minDatatableNoESQL.Styling.Density.Height = &struct {
-			Header *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Header `json:"header,omitempty"`
-			Value  *kbapi.KibanaHTTPAPIsDatatableDensity_Height_Value  `json:"value,omitempty"`
+			Header *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Header `json:"header,omitempty"`
+			Value  *kbapi.KibanaHTTPAPIsVisDatatableDensity_Height_Value  `json:"value,omitempty"`
 		}{Header: &noESQLHeader, Value: &noESQLValue}
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsDatatableNoESQLByValuePanel(minDatatableNoESQL))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisDatatableNoESQLByValuePanel(minDatatableNoESQL))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud):
-		api := kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel{
-			Type: kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud,
+	case string(kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanelTypeTagCloud):
+		api := kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel{
+			Type: kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanelTypeTagCloud,
 		}
 		require.NoError(t, json.Unmarshal([]byte(`{"index":"i"}`), &api.DataSource))
 		require.NoError(t, json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query))
@@ -114,32 +114,32 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 		require.NoError(t, json.Unmarshal([]byte(`{"from":"now-7d","to":"now"}`), &tr))
 		api.TimeRange = &tr
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisTagcloudNoESQLByValuePanel(api))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap):
-		heatmap := kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel{
-			Type: kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap,
-			Query: &kbapi.KibanaHTTPAPIsFilterSimple{
+	case string(kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap):
+		heatmap := kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanel{
+			Type: kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap,
+			Query: &kbapi.KibanaHTTPAPIsVisFilterSimple{
 				Expression: "*",
-				Language:   new(kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")),
+				Language:   new(kbapi.KibanaHTTPAPIsVisFilterSimpleLanguage("kql")),
 			},
-			Axis:    &kbapi.KibanaHTTPAPIsHeatmapAxes{X: &kbapi.KibanaHTTPAPIsHeatmapXAxis{}, Y: &kbapi.KibanaHTTPAPIsHeatmapYAxis{}},
-			Styling: &kbapi.KibanaHTTPAPIsHeatmapStyling{Cells: &kbapi.KibanaHTTPAPIsHeatmapCells{}},
-			Legend:  &kbapi.KibanaHTTPAPIsHeatmapLegend{Size: new(kbapi.KibanaHTTPAPIsLegendSizeM)},
+			Axis:    &kbapi.KibanaHTTPAPIsVisHeatmapAxes{X: &kbapi.KibanaHTTPAPIsVisHeatmapXAxis{}, Y: &kbapi.KibanaHTTPAPIsVisHeatmapYAxis{}},
+			Styling: &kbapi.KibanaHTTPAPIsVisHeatmapStyling{Cells: &kbapi.KibanaHTTPAPIsVisHeatmapCells{}},
+			Legend:  &kbapi.KibanaHTTPAPIsVisHeatmapLegend{Size: new(kbapi.KibanaHTTPAPIsVisLegendSizeM)},
 		}
 		require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"m"}`), &heatmap.DataSource))
 		require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
 		require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsHeatmapNoESQLByValuePanel(heatmap))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisHeatmapNoESQLByValuePanel(heatmap))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap):
-		lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
-		api := kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel{
-			Type: kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap,
-			Query: &kbapi.KibanaHTTPAPIsFilterSimple{
+	case string(kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanelTypeRegionMap):
+		lang := kbapi.KibanaHTTPAPIsVisFilterSimpleLanguage("kql")
+		api := kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanel{
+			Type: kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanelTypeRegionMap,
+			Query: &kbapi.KibanaHTTPAPIsVisFilterSimple{
 				Language:   &lang,
 				Expression: "*",
 			},
@@ -148,19 +148,19 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 		require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 		require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"filter":{"query":"*","language":"kql"},"label":"A"}]}`), &api.Region))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsRegionMapNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisRegionMapNoESQLByValuePanel(api))
 		return v
 
 	case string(kbapi.LegacyMetric):
 		raw := `{"type":"legacy_metric","title":"l","data_source":{"type":"data_view_spec","index_pattern":"m"},` +
 			`"query":{"language":"kql","query":"*"},"metric":{"operation":"count","format":{"type":"number"}}}`
-		var api kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel
+		var api kbapi.KibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel
 		require.NoError(t, json.Unmarshal([]byte(raw), &api))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel(api))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric):
+	case string(kbapi.KibanaHTTPAPIsVisMetricNoESQLByValuePanelTypeMetric):
 		const inner = `{
 		"type": "metric",
 		"title": "M",
@@ -171,36 +171,36 @@ func minimalVisConfig0ForChartKind(t *testing.T, vizType string) lenscommon.VisB
 		require.NoError(t, json.Unmarshal([]byte(inner), &v))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie):
-		api := kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel{
-			Type:    kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie,
-			Query:   &kbapi.KibanaHTTPAPIsFilterSimple{Expression: "*", Language: new(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql)},
-			Styling: &kbapi.KibanaHTTPAPIsPieStyling{},
+	case string(kbapi.KibanaHTTPAPIsVisPieNoESQLByValuePanelTypePie):
+		api := kbapi.KibanaHTTPAPIsVisPieNoESQLByValuePanel{
+			Type:    kbapi.KibanaHTTPAPIsVisPieNoESQLByValuePanelTypePie,
+			Query:   &kbapi.KibanaHTTPAPIsVisFilterSimple{Expression: "*", Language: new(kbapi.KibanaHTTPAPIsVisFilterSimpleLanguageKql)},
+			Styling: &kbapi.KibanaHTTPAPIsVisPieStyling{},
 			Metrics: nil,
 		}
 		require.NoError(t, json.Unmarshal([]byte(`{}`), &api.DataSource))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsPieNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisPieNoESQLByValuePanel(api))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge):
-		api := kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge}
+	case string(kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanelTypeGauge):
+		api := kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanel{Type: kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanelTypeGauge}
 		require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"m"}`), &api.DataSource))
 		require.NoError(t, json.Unmarshal([]byte(`{"expression":"*","language":"kql"}`), &api.Query))
 		require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &api.Metric))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsGaugeNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisGaugeNoESQLByValuePanel(api))
 		return v
 
-	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle):
+	case string(kbapi.KibanaHTTPAPIsVisWaffleNoESQLByValuePanelTypeWaffle):
 		raw := `{"type":"waffle","data_source":{"type":"dataView","id":"m"},` +
 			`"query":{"language":"kql","query":""},` +
 			`"legend":{"size":"medium","visible":"auto"},"styling":{"values":{}},` +
 			`"metrics":[{"operation":"count"}]}`
-		var api kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanel
+		var api kbapi.KibanaHTTPAPIsVisWaffleNoESQLByValuePanel
 		require.NoError(t, json.Unmarshal([]byte(raw), &api))
 		var v lenscommon.VisByValueConfig0
-		require.NoError(t, v.FromKibanaHTTPAPIsWaffleNoESQLByValuePanel(api))
+		require.NoError(t, v.FromKibanaHTTPAPIsVisWaffleNoESQLByValuePanel(api))
 		return v
 
 	default:

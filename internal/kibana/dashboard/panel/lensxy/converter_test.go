@@ -63,7 +63,7 @@ func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsVisXyChartNoESQLByValuePanelTypeXy), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -107,7 +107,7 @@ func TestConverter_BuildAttributes_omitsTimeRangeWhenUnset(t *testing.T) {
 	attrs, diags := c.BuildAttributes(&models.LensByValueChartBlocks{XYChartConfig: in})
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel()
+	out, err := attrs.AsKibanaHTTPAPIsVisXyChartNoESQLByValuePanel()
 	require.NoError(t, err)
 	assert.Nil(t, out.TimeRange)
 }
@@ -138,11 +138,11 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 		"styling": { "line": { "curve": "linear" } },
 		"time_range": { "from": "now-7d", "to": "now" }
 	}`
-	var chart kbapi.KibanaHTTPAPIsXyChartESQLByValuePanel
+	var chart kbapi.KibanaHTTPAPIsVisXyChartESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(xyESQLJSON), &chart))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsXyChartESQLByValuePanel(chart))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsVisXyChartESQLByValuePanel(chart))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -154,13 +154,15 @@ func TestConverter_roundTrip_ESQL_xy(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsKibanaHTTPAPIsXyChartESQLByValuePanel()
+	out, err := attrs2.AsKibanaHTTPAPIsVisXyChartESQLByValuePanel()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsXyChartESQLByValuePanelTypeXy, out.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsVisXyChartESQLByValuePanelTypeXy, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "XY ESQL RT", *out.Title)
 	require.Len(t, out.Layers, 1)
-	dsBytes, err := json.Marshal(out.Layers[0].DataSource)
+	layer0, err := out.Layers[0].AsKibanaHTTPAPIsVisXyLayerESQL()
+	require.NoError(t, err)
+	dsBytes, err := json.Marshal(layer0.DataSource)
 	require.NoError(t, err)
 	assert.Contains(t, string(dsBytes), "FROM logs-*")
 }

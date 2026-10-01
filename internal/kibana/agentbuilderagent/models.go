@@ -239,8 +239,10 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		ConnectorIds              *[]string `json:"connector_ids,omitempty"` //nolint:revive
 		EnableElasticCapabilities *bool     `json:"enable_elastic_capabilities,omitempty"`
 		Instructions              *string   `json:"instructions,omitempty"`
-		PluginIds                 *[]string `json:"plugin_ids,omitempty"` //nolint:revive
-		SkillIds                  *[]string `json:"skill_ids,omitempty"`  //nolint:revive
+		PluginIds                 *[]string `json:"plugin_ids,omitempty"`                  //nolint:revive
+		PostExecutionWorkflowIds  *[]string `json:"post_execution_workflow_ids,omitempty"` //nolint:revive
+		SkillIds                  *[]string `json:"skill_ids,omitempty"`                   //nolint:revive
+		SubagentIds               *[]string `json:"subagent_ids,omitempty"`                //nolint:revive
 		Tools                     *[]struct {
 			ToolIds []string `json:"tool_ids"` //nolint:revive
 		} `json:"tools,omitempty"`

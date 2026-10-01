@@ -38,11 +38,11 @@ func TestDataLayerFromAPINoESQL_preservesPriorYWhenKibanaInjectsAxis(t *testing.
 		}},
 	}
 
-	var yItem kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item
+	var yItem kbapi.KibanaHTTPAPIsVisXyLayerNoESQL_Y_Item
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count","empty_as_null":true,"axis":"y","color":{"type":"auto"}}`), &yItem))
 
-	diags := dataLayerFromAPINoESQL(t.Context(), m, kbapi.KibanaHTTPAPIsXyLayerNoESQL{
-		Y: []kbapi.KibanaHTTPAPIsXyLayerNoESQL_Y_Item{yItem},
+	diags := dataLayerFromAPINoESQL(t.Context(), m, kbapi.KibanaHTTPAPIsVisXyLayerNoESQL{
+		Y: []kbapi.KibanaHTTPAPIsVisXyLayerNoESQL_Y_Item{yItem},
 	})
 	require.False(t, diags.HasError(), "%v", diags)
 	require.Len(t, m.Y, 1)

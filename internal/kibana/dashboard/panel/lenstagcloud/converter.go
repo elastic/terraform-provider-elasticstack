@@ -40,7 +40,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud)
+	return string(kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanelTypeTagCloud)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -145,9 +145,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.TagcloudConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.TagcloudConfig, prior,
-		attrs.AsKibanaHTTPAPIsTagcloudNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsTagcloudESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisTagcloudNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisTagcloudESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		tagcloudConfigFromAPI,

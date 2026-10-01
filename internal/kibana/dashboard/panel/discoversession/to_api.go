@@ -377,37 +377,9 @@ func discoverSessionESQLTabToAPI(ctx context.Context, m models.DiscoverSessionES
 	return api, diags
 }
 
-func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSessionOverridesModel) (struct {
-	ColumnOrder    *[]string `json:"column_order,omitempty"`
-	ColumnSettings *map[string]struct {
-		Width *float32 `json:"width,omitempty"`
-	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
-	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
-	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
-	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
-	SampleSize      *float32                                                                                     `json:"sample_size,omitempty"`
-	Sort            *[]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-		Name      string                                                                                `json:"name"`
-	} `json:"sort,omitempty"`
-}, diag.Diagnostics) {
+func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSessionOverridesModel) (discoverSessionOverridesAPI, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api struct {
-		ColumnOrder    *[]string `json:"column_order,omitempty"`
-		ColumnSettings *map[string]struct {
-			Width *float32 `json:"width,omitempty"`
-		} `json:"column_settings,omitempty"`
-		Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
-		HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
-		RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
-		RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
-		SampleSize      *float32                                                                                     `json:"sample_size,omitempty"`
-		Sort            *[]struct {
-			Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-			Name      string                                                                                `json:"name"`
-		} `json:"sort,omitempty"`
-	}
+	var api discoverSessionOverridesAPI
 
 	if typeutils.IsKnown(m.ColumnOrder) && !m.ColumnOrder.IsNull() {
 		co := typeutils.ListTypeToSliceString(ctx, m.ColumnOrder, path.Empty(), &diags)

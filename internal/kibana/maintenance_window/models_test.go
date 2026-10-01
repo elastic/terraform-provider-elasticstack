@@ -124,7 +124,8 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 				},
 				Scope: &kbapi.KibanaHTTPAPIsMaintenanceWindowScope{
 					Alerting: struct {
-						Query struct {
+						Enabled *bool `json:"enabled,omitempty"`
+						Query   struct {
 							Kql string `json:"kql"`
 						} `json:"query"`
 					}{
