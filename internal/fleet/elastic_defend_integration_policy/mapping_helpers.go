@@ -20,9 +20,11 @@ package elasticdefendintegrationpolicy
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Helper to extract sub-map from a map.
@@ -46,4 +48,19 @@ func mapOptionalObject[M any](ctx context.Context, data map[string]any, key stri
 		return types.ObjectNull(attrTypes), nil
 	}
 	return types.ObjectValueFrom(ctx, attrTypes, build(sub))
+}
+
+// decodeObjectField decodes obj into an M when it is known, appending any
+// diagnostics produced by the decode. The second return value reports
+// whether obj was known and decoded without error, mirroring the
+// IsKnown-decode-bail block repeated throughout the build*PolicyPayload
+// functions.
+func decodeObjectField[M any](ctx context.Context, obj types.Object, diags *diag.Diagnostics) (M, bool) {
+	var m M
+	if !typeutils.IsKnown(obj) {
+		return m, false
+	}
+	d := obj.As(ctx, &m, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+	diags.Append(d...)
+	return m, !d.HasError()
 }

@@ -106,13 +106,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 
 	mac := map[string]any{}
 
-	if typeutils.IsKnown(mm.Events) {
-		var em macEventsModel
-		d = mm.Events.As(ctx, &em, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if em, ok := decodeObjectField[macEventsModel](ctx, mm.Events, &diags); ok {
 		events := map[string]any{}
 		typeutils.SetBoolInMap(events, attrProcess, em.Process)
 		typeutils.SetBoolInMap(events, attrNetwork, em.Network)
@@ -122,13 +116,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrEvents] = events
 	}
 
-	if typeutils.IsKnown(mm.Malware) {
-		var malwareModel malwareFullModel
-		d = mm.Malware.As(ctx, &malwareModel, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if malwareModel, ok := decodeObjectField[malwareFullModel](ctx, mm.Malware, &diags); ok {
 		malware := map[string]any{}
 		typeutils.SetStringInMap(malware, attrMode, malwareModel.Mode)
 		typeutils.SetBoolInMap(malware, attrBlocklist, malwareModel.Blocklist)
@@ -137,26 +125,14 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrMalware] = malware
 	}
 
-	if typeutils.IsKnown(mm.Ransomware) {
-		var rm protectionModeModel
-		d = mm.Ransomware.As(ctx, &rm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if rm, ok := decodeObjectField[protectionModeModel](ctx, mm.Ransomware, &diags); ok {
 		ransomware := map[string]any{}
 		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
 		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
 		mac[attrRansomware] = ransomware
 	}
 
-	if typeutils.IsKnown(mm.MemoryProtection) {
-		var pm memoryProtectionModel
-		d = mm.MemoryProtection.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, mm.MemoryProtection, &diags); ok {
 		memProt := map[string]any{}
 		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
 		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
@@ -164,13 +140,7 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrMemoryProtection] = memProt
 	}
 
-	if typeutils.IsKnown(mm.BehaviorProtection) {
-		var bm behaviorProtectionModel
-		d = mm.BehaviorProtection.As(ctx, &bm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, mm.BehaviorProtection, &diags); ok {
 		behProt := map[string]any{}
 		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
 		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
@@ -178,26 +148,14 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrBehaviorProtection] = behProt
 	}
 
-	if typeutils.IsKnown(mm.DeviceControl) {
-		var dm deviceControlModel
-		d = mm.DeviceControl.As(ctx, &dm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if dm, ok := decodeObjectField[deviceControlModel](ctx, mm.DeviceControl, &diags); ok {
 		deviceControl := map[string]any{}
 		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
 		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
 		mac[attrDeviceControl] = deviceControl
 	}
 
-	if typeutils.IsKnown(mm.Popup) {
-		var pm macPopupModel
-		d = mm.Popup.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if pm, ok := decodeObjectField[macPopupModel](ctx, mm.Popup, &diags); ok {
 		popup := map[string]any{}
 		setPopupItem(ctx, popup, attrMalware, pm.Malware, &diags)
 		setPopupItem(ctx, popup, attrRansomware, pm.Ransomware, &diags)
@@ -207,18 +165,15 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrPopup] = popup
 	}
 
-	if typeutils.IsKnown(mm.Logging) {
-		var lm loggingModel
-		d = mm.Logging.As(ctx, &lm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
-		diags.Append(d...)
-		if diags.HasError() {
-			return nil, diags
-		}
+	if lm, ok := decodeObjectField[loggingModel](ctx, mm.Logging, &diags); ok {
 		logging := map[string]any{}
 		typeutils.SetStringInMap(logging, attrFile, lm.File)
 		mac[attrLogging] = logging
 	}
 
+	if diags.HasError() {
+		return nil, diags
+	}
 	return mac, diags
 }
 
