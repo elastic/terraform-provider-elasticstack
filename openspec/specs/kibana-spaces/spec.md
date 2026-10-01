@@ -103,12 +103,11 @@ The kbapi types used for each entry in the Get All Spaces response SHALL decode 
 - **WHEN** read completes
 - **THEN** each nested `spaces` entry SHALL carry the same Terraform-visible values for `id`, `name`, `description`, `disabled_features`, `initials`, `color`, `image_url`, and `solution` as the pre-migration mapping
 
-
 ### Requirement: No ordering contract on the spaces list (REQ-008)
 
 The `spaces` computed list attribute SHALL NOT be assumed to return entries in any particular order, including the built-in `default` space. Neither the Kibana Get All Spaces API nor this data source's mapping (REQ-001, REQ-004–REQ-005) guarantees a stable position for any space, and the position of a given space (including `default`) MAY differ across Kibana versions or between calls.
 
-Acceptance tests for this data source MUST NOT assert a specific space's attributes by a fixed list index (for example `spaces.0.id`). They MUST instead look up the entry by its `id` (for example by scanning `spaces.#` and matching `spaces.<i>.id`, as `testCheckSpaceAttrByID` in `internal/kibana/spaces/data_source_test.go` already does) before asserting on its other attributes.
+Acceptance tests for this data source MUST NOT assert a specific space's attributes by a fixed list index (for example `spaces.0.id`). They MUST instead look up the entry by its `id` (for example by scanning `spaces.#` and matching `spaces.<i>.id`, as `testCheckSpaceByID`, and the `testCheckSpaceAttrByID` wrapper over it, in `internal/kibana/spaces/data_source_test.go` already do) before asserting on its other attributes.
 
 #### Scenario: Default space is not guaranteed to be first
 
