@@ -2,7 +2,7 @@
 name: openspec-plus-tdd
 description: "MANDATORY skill that activates whenever code is written to implement an OpenSpec change task. Triggers: openspec-plus-apply is active, /opsx-apply is running, the user is implementing tasks from an OpenSpec change, an implementer subagent dispatched by openspec-plus-apply is starting work, or the user invokes phrases like 'TDD for the change', 'implementing change tasks', or 'writing tests for spec scenarios'. Load before any production code is written for an OpenSpec change. Enforces strict RED-GREEN-REFACTOR per test (any test — acceptance, unit, edge case, helper). Iron Law: NO PRODUCTION CODE WITHOUT A FAILING TEST. Gherkin scenarios in spec.md are the canonical source for acceptance tests (every scenario MUST become at least one test); additional unit, edge-case, and helper tests are encouraged and follow the same per-test cycle."
 metadata:
-  version: 1.6.0
+  version: 1.6.1
   priority: high
   disable-user-invocation: true
 ---
