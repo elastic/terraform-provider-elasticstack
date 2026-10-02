@@ -20,6 +20,7 @@ package spacesettings_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -31,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -56,6 +58,7 @@ func TestAccResourceFleetSpaceSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID),
 					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.#", "1"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
+					resource.TestCheckNoResourceAttr(resourceName, "managed_by"),
 				),
 			},
 			{
@@ -67,6 +70,7 @@ func TestAccResourceFleetSpaceSettings(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.#", "2"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "shared"),
+					resource.TestCheckNoResourceAttr(resourceName, "managed_by"),
 				),
 			},
 			{
@@ -77,6 +81,15 @@ func TestAccResourceFleetSpaceSettings(t *testing.T) {
 				ImportState:              true,
 				ImportStateId:            spaceID,
 				ImportStateVerify:        true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables:          variables,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", spaceID),
+					resource.TestCheckResourceAttr(resourceName, "allowed_namespace_prefixes.#", "0"),
+				),
 			},
 		},
 	})
@@ -202,6 +215,85 @@ func TestAccResourceFleetSpaceSettings_kibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.insecure", "true"),
 					resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.endpoints.#", "1"),
 				}, acctest.KibanaConnectionAuthChecks(resourceName)...)...),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetSpaceSettings_validation_tooManyPrefixes(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetSpaceSettings, versionutils.FlavorAny)
+
+	spaceID := fmt.Sprintf("tf-acc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha))
+	prefixes := make([]string, 0, 11)
+	for i := 0; i < 11; i++ {
+		prefixes = append(prefixes, fmt.Sprintf("prefix_%d", i))
+	}
+	variables := config.Variables{
+		"space_id":                   config.StringVariable(spaceID),
+		"allowed_namespace_prefixes": config.SetVariable(toStringVariables(prefixes)...),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid"),
+				ConfigVariables:          variables,
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?i)(at most|10)`),
+			},
+		},
+	})
+}
+
+func toStringVariables(values []string) []config.Variable {
+	variables := make([]config.Variable, 0, len(values))
+	for _, value := range values {
+		variables = append(variables, config.StringVariable(value))
+	}
+	return variables
+}
+
+func TestAccResourceFleetSpaceSettings_spaceIDForcesReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetSpaceSettings, versionutils.FlavorAny)
+
+	spaceID1 := fmt.Sprintf("tf-acc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha))
+	spaceID2 := fmt.Sprintf("tf-acc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha))
+	variables := config.Variables{
+		"space_id_1": config.StringVariable(spaceID1),
+		"space_id_2": config.StringVariable(spaceID2),
+	}
+	const resourceName = "elasticstack_fleet_space_settings.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          variables,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", spaceID1),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID1),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          variables,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "id", spaceID2),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID2),
+					resource.TestCheckTypeSetElemAttr(resourceName, "allowed_namespace_prefixes.*", "team_a"),
+					checkSpaceSettingsHaveNoPrefixes(spaceID1),
+				),
 			},
 		},
 	})
