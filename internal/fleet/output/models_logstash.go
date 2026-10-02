@@ -25,34 +25,15 @@ import (
 )
 
 func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseLogstash) diag.Diagnostics {
-	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
-		id:                   data.Id,
-		name:                 data.Name,
-		outputType:           string(data.Type),
-		hosts:                data.Hosts,
-		caSha256:             data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault,
-		isDefaultMonitoring:  data.IsDefaultMonitoring,
-		configYaml:           data.ConfigYaml,
-		ssl:                  data.Ssl,
-	})
+	return model.fromAPISimpleOutput(ctx, buildCommonOutputReadData(data))
 }
 
 func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	return model.toAPICreateSimpleOutput(ctx, func(f commonNewOutputBody) (kbapi.NewOutputUnion, error) {
 		body := kbapi.KibanaHTTPAPIsNewOutputLogstash{
-			Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			Id:                   f.ID,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
+			Type: kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
 		}
+		populateCommonOutputFields(&body, f)
 		var union kbapi.NewOutputUnion
 		return union, union.FromKibanaHTTPAPIsNewOutputLogstash(body)
 	})
@@ -62,16 +43,9 @@ func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.Up
 	return model.toAPIUpdateSimpleOutput(ctx, func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error) {
 		outputType := kbapi.Logstash
 		body := kbapi.KibanaHTTPAPIsUpdateOutputLogstash{
-			Type:                 &outputType,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
+			Type: &outputType,
 		}
+		populateCommonOutputFields(&body, f)
 		var union kbapi.UpdateOutputUnion
 		return union, union.FromKibanaHTTPAPIsUpdateOutputLogstash(body)
 	})

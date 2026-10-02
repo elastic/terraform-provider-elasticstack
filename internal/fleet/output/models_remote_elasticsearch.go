@@ -26,18 +26,7 @@ import (
 )
 
 func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch) (diags diag.Diagnostics) {
-	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
-		id:                   data.Id,
-		name:                 data.Name,
-		outputType:           string(data.Type),
-		hosts:                data.Hosts,
-		caSha256:             data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault,
-		isDefaultMonitoring:  data.IsDefaultMonitoring,
-		configYaml:           data.ConfigYaml,
-		ssl:                  data.Ssl,
-	})
+	diags = model.fromAPICommonFields(ctx, buildCommonOutputReadData(data))
 
 	// Preserve configured secret when Fleet omits/redacts it in read responses.
 	if data.ServiceToken != nil {

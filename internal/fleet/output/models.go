@@ -20,6 +20,7 @@ package output
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -141,16 +142,100 @@ func clearRemoteElasticsearchOnlyFields(model *outputModel) {
 }
 
 type commonOutputReadData struct {
-	id                   *string
-	name                 string
-	outputType           string
-	hosts                []string
-	caSha256             *string
-	caTrustedFingerprint *string
-	isDefault            *bool
-	isDefaultMonitoring  *bool
-	configYaml           *string
-	ssl                  *kbapi.KibanaHTTPAPIsOutputResponseSsl
+	ID                   *string
+	Name                 string
+	OutputType           string
+	Hosts                []string
+	CaSha256             *string
+	CaTrustedFingerprint *string
+	IsDefault            *bool
+	IsDefaultMonitoring  *bool
+	ConfigYaml           *string
+	Ssl                  *kbapi.KibanaHTTPAPIsOutputResponseSsl
+}
+
+// outputReadFieldNameOverrides maps a commonOutputReadData field name to the
+// differently-named field on the generated kbapi output response structs.
+var outputReadFieldNameOverrides = map[string]string{
+	"ID":         "Id",
+	"OutputType": "Type",
+}
+
+// buildCommonOutputReadData reflects over data (a pointer to a generated
+// kbapi output response struct, e.g. KibanaHTTPAPIsOutputResponseElasticsearch
+// or KibanaHTTPAPIsOutputResponseLogstash) and copies every commonOutputReadData
+// field from the identically-named (or overridden) field on data, converting
+// between the generated per-type Type enum and the plain string OutputType.
+// This replicates what every simple output type's fromAPI builder previously
+// did by hand in a ~10-field struct literal.
+//
+// A field present on both structs under a non-convertible type is a
+// programmer error (not a runtime condition), so it panics rather than
+// silently dropping the field.
+func buildCommonOutputReadData[T any](data *T) commonOutputReadData {
+	var d commonOutputReadData
+	dVal := reflect.ValueOf(&d).Elem()
+	dType := dVal.Type()
+	dataVal := reflect.ValueOf(data).Elem()
+
+	for i := range dType.NumField() {
+		field := dType.Field(i)
+		srcName := field.Name
+		if override, ok := outputReadFieldNameOverrides[field.Name]; ok {
+			srcName = override
+		}
+
+		source := dataVal.FieldByName(srcName)
+		if !source.IsValid() {
+			continue
+		}
+
+		if !source.Type().ConvertibleTo(field.Type) {
+			panic(fmt.Sprintf("output: common field %q type mismatch: want %s, got %s on %T", field.Name, field.Type, source.Type(), data))
+		}
+
+		dVal.Field(i).Set(source.Convert(field.Type))
+	}
+
+	return d
+}
+
+// populateCommonOutputFields reflects over target (a pointer to a generated
+// kbapi output New/Update struct, e.g. KibanaHTTPAPIsNewOutputElasticsearch or
+// KibanaHTTPAPIsUpdateOutputLogstash) and sets every field on target whose
+// name (ID on src maps to Id on target) and type match a field on src (a
+// commonNewOutputBody or commonUpdateOutputBody), replicating what every
+// simple output type's toAPICreate/toAPIUpdate builder previously did by hand
+// in a ~8-field struct literal. Fields on target that have no counterpart on
+// src (e.g. the per-type Type discriminator, or type-specific fields) are
+// left untouched for the caller to set directly.
+//
+// A field present on both structs under a mismatched type is a programmer
+// error (not a runtime condition), so it panics rather than silently dropping
+// the field.
+func populateCommonOutputFields[T any](target *T, src any) {
+	targetVal := reflect.ValueOf(target).Elem()
+	srcVal := reflect.ValueOf(src)
+	srcType := srcVal.Type()
+
+	for i := range srcType.NumField() {
+		field := srcType.Field(i)
+		name := field.Name
+		if name == "ID" {
+			name = "Id"
+		}
+
+		targetField := targetVal.FieldByName(name)
+		if !targetField.IsValid() {
+			continue
+		}
+
+		if targetField.Type() != field.Type {
+			panic(fmt.Sprintf("output: common field %q type mismatch: want %s, got %s on %T", name, targetField.Type(), field.Type, target))
+		}
+
+		targetField.Set(srcVal.Field(i))
+	}
 }
 
 func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutputReadData) (diags diag.Diagnostics) {
@@ -169,26 +254,26 @@ func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutpu
 	existingConfigYaml := model.ConfigYaml
 	isImport := model.Name.IsNull() || model.Name.IsUnknown()
 
-	model.ID = types.StringPointerValue(d.id)
-	model.OutputID = types.StringPointerValue(d.id)
-	model.Name = types.StringValue(d.name)
-	model.Type = types.StringValue(d.outputType)
-	model.Hosts = typeutils.SliceToListTypeString(ctx, d.hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(d.caSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(d.caTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
-	model.ConfigYaml = configYamlFromAPI(d.configYaml)
+	model.ID = types.StringPointerValue(d.ID)
+	model.OutputID = types.StringPointerValue(d.ID)
+	model.Name = types.StringValue(d.Name)
+	model.Type = types.StringValue(d.OutputType)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, d.Hosts, path.Root("hosts"), &diags)
+	model.CaSha256 = types.StringPointerValue(d.CaSha256)
+	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(d.CaTrustedFingerprint)
+	model.DefaultIntegrations = types.BoolPointerValue(d.IsDefault)
+	model.DefaultMonitoring = types.BoolPointerValue(d.IsDefaultMonitoring)
+	model.ConfigYaml = configYamlFromAPI(d.ConfigYaml)
 	if !isImport && existingConfigYaml.IsNull() {
 		model.ConfigYaml = customtypes.NewNormalizedYamlNull()
 	}
-	if d.ssl != nil {
+	if d.Ssl != nil {
 		verificationMode := (*kbapi.KibanaHTTPAPIsOutputSslVerificationMode)(nil)
-		if d.ssl.VerificationMode != nil {
-			mode := kbapi.KibanaHTTPAPIsOutputSslVerificationMode(*d.ssl.VerificationMode)
+		if d.Ssl.VerificationMode != nil {
+			mode := kbapi.KibanaHTTPAPIsOutputSslVerificationMode(*d.Ssl.VerificationMode)
 			verificationMode = &mode
 		}
-		model.Ssl, diags = sslToObjectValue(ctx, d.ssl.Certificate, d.ssl.CertificateAuthorities, d.ssl.Key, verificationMode)
+		model.Ssl, diags = sslToObjectValue(ctx, d.Ssl.Certificate, d.Ssl.CertificateAuthorities, d.Ssl.Key, verificationMode)
 	} else {
 		model.Ssl, diags = sslToObjectValue(ctx, nil, nil, nil, nil)
 	}

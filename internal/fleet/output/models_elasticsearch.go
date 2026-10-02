@@ -25,34 +25,15 @@ import (
 )
 
 func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseElasticsearch) diag.Diagnostics {
-	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
-		id:                   data.Id,
-		name:                 data.Name,
-		outputType:           string(data.Type),
-		hosts:                data.Hosts,
-		caSha256:             data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault,
-		isDefaultMonitoring:  data.IsDefaultMonitoring,
-		configYaml:           data.ConfigYaml,
-		ssl:                  data.Ssl,
-	})
+	return model.fromAPISimpleOutput(ctx, buildCommonOutputReadData(data))
 }
 
 func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	return model.toAPICreateSimpleOutput(ctx, func(f commonNewOutputBody) (kbapi.NewOutputUnion, error) {
 		body := kbapi.KibanaHTTPAPIsNewOutputElasticsearch{
-			Type:                 kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			Id:                   f.ID,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
+			Type: kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
 		}
+		populateCommonOutputFields(&body, f)
 		var union kbapi.NewOutputUnion
 		return union, union.FromKibanaHTTPAPIsNewOutputElasticsearch(body)
 	})
@@ -62,16 +43,9 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 	return model.toAPIUpdateSimpleOutput(ctx, func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error) {
 		outputType := kbapi.Elasticsearch
 		body := kbapi.KibanaHTTPAPIsUpdateOutputElasticsearch{
-			Type:                 &outputType,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
+			Type: &outputType,
 		}
+		populateCommonOutputFields(&body, f)
 		var union kbapi.UpdateOutputUnion
 		return union, union.FromKibanaHTTPAPIsUpdateOutputElasticsearch(body)
 	})
