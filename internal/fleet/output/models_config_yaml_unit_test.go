@@ -150,10 +150,10 @@ func TestFromAPICommonFields_ConfigYamlNormalization(t *testing.T) {
 				Name:       tc.existingName,
 			}
 			diags := model.fromAPICommonFields(context.Background(), commonOutputReadData{
-				name:       "example",
-				outputType: "elasticsearch",
-				hosts:      hosts,
-				configYaml: tc.api,
+				Name:       "example",
+				OutputType: "elasticsearch",
+				Hosts:      hosts,
+				ConfigYaml: tc.api,
 			})
 			require.False(t, diags.HasError(), "unexpected diags: %v", diags)
 

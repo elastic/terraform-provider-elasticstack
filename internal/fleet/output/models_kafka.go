@@ -513,18 +513,7 @@ func (model outputModel) toAPIUpdateKafkaModel(ctx context.Context) (kbapi.Updat
 }
 
 func (model *outputModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseKafka) (diags diag.Diagnostics) {
-	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
-		id:                   data.Id,
-		name:                 data.Name,
-		outputType:           string(data.Type),
-		hosts:                data.Hosts,
-		caSha256:             data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault,
-		isDefaultMonitoring:  data.IsDefaultMonitoring,
-		configYaml:           data.ConfigYaml,
-		ssl:                  data.Ssl,
-	})
+	diags = model.fromAPICommonFields(ctx, buildCommonOutputReadData(data))
 
 	// Capture the configured password and sasl before re-initializing kafkaModel
 	// so that we can preserve them when Fleet omits/redacts or adds server-side
