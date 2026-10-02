@@ -17,7 +17,11 @@
 
 package typeutils
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"math"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 // StringFromAny converts an any value to a Terraform types.String, returning
 // types.StringNull() when v is nil or not a string.
@@ -53,6 +57,23 @@ func Int32FromAnyFloat64(v any) types.Int32 {
 func Int64FromAnyFloat64(v any) types.Int64 {
 	if f, ok := v.(float64); ok {
 		return types.Int64Value(int64(f))
+	}
+	return types.Int64Null()
+}
+
+// Int64FromAnyNumeric converts an any value holding a float64, int64, or int
+// (as produced by JSON decoding, or already-typed numeric values) to a
+// Terraform types.Int64, returning types.Int64Null() when v is nil or not a
+// supported numeric type. Unlike Int64FromAnyFloat64, float64 values are
+// rounded to the nearest integer rather than truncated.
+func Int64FromAnyNumeric(v any) types.Int64 {
+	switch val := v.(type) {
+	case float64:
+		return types.Int64Value(int64(math.Round(val)))
+	case int64:
+		return types.Int64Value(val)
+	case int:
+		return types.Int64Value(int64(val))
 	}
 	return types.Int64Null()
 }
