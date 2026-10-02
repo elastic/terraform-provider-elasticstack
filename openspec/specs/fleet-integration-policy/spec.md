@@ -149,7 +149,7 @@ When `output_id` is configured with a known value, the resource SHALL verify the
 
 ### Requirement: Create — API request body (REQ-011)
 
-On create, the resource SHALL construct a `PackagePolicyRequest` from the plan model and submit it to the Fleet create package policy API. The request body SHALL include `name`, `namespace`, `description` (if set), `force` (if set), `integration_name` and `integration_version` as the package reference, `agent_policy_id` or `policy_ids` based on which attribute is configured, `output_id` if set, `additional_datastreams_permissions` if set, `vars` from `vars_json` (with provider-internal context keys stripped before sending), and `inputs` derived from the `inputs` attribute. When `space_ids` is configured with a known value, the first element SHALL be used as the space context for the create API call.
+On create, the resource SHALL construct a simplified (mapped-inputs) package policy request from the plan model and submit it to the Fleet create package policy API. The request body SHALL include `id` from `policy_id` when `policy_id` is configured with a known value, `name`, `namespace`, `description` (if set), `force` (if set), `integration_name` and `integration_version` as the package reference, `agent_policy_id` or `policy_ids` based on which attribute is configured, `output_id` if set, `additional_datastreams_permissions` if set, `vars` from `vars_json` (with provider-internal context keys stripped before sending), and `inputs` derived from the `inputs` attribute. When `space_ids` is configured with a known value, the first element SHALL be used as the space context for the create API call.
 
 #### Scenario: space context from space_ids
 

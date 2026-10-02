@@ -48,12 +48,16 @@ func resourceSchema() schema.Schema {
 				},
 			},
 			"policy_id": schema.StringAttribute{
-				Description: "Unique identifier of the Elastic Defend integration policy. Used as the import key.",
-				Computed:    true,
-				Optional:    true,
+				Description: "Unique identifier of the Elastic Defend integration policy. Used as the import key. " +
+					"When set, the policy is created with this ID; otherwise Kibana assigns one. Changing it forces replacement.",
+				Computed: true,
+				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"name": schema.StringAttribute{

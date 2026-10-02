@@ -30,7 +30,7 @@ Manages an Elastic Defend Fleet integration policy (package policy for the `endp
 - `enabled` (Boolean) Enable the integration policy.
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `policy_id` (String) Unique identifier of the Elastic Defend integration policy. Used as the import key.
+- `policy_id` (String) Unique identifier of the Elastic Defend integration policy. Used as the import key. When set, the policy is created with this ID; otherwise Kibana assigns one. Changing it forces replacement.
 - `preset` (String) Elastic Defend preset configuration. Maps to `endpointConfig.preset` in the Defend API. Common values include `"NGAv1"`, `"NGAV"`, `"dataCollection"`, `"EDRComplete"`, `"EDREssential"`.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. If not set, will be inherited from the agent policy.
 
