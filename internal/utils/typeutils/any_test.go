@@ -107,3 +107,38 @@ func TestInt64FromAnyFloat64(t *testing.T) {
 		require.True(t, typeutils.Int64FromAnyFloat64("not-a-number").IsNull())
 	})
 }
+
+func TestInt64FromAnyNumeric(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil returns null", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.Int64FromAnyNumeric(nil).IsNull())
+	})
+
+	t.Run("float64 value rounded to nearest int64", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.Int64FromAnyNumeric(float64(7.6))
+		require.False(t, got.IsNull())
+		require.Equal(t, int64(8), got.ValueInt64())
+	})
+
+	t.Run("int64 value returned as-is", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.Int64FromAnyNumeric(int64(42))
+		require.False(t, got.IsNull())
+		require.Equal(t, int64(42), got.ValueInt64())
+	})
+
+	t.Run("int value coerced to int64", func(t *testing.T) {
+		t.Parallel()
+		got := typeutils.Int64FromAnyNumeric(int(42))
+		require.False(t, got.IsNull())
+		require.Equal(t, int64(42), got.ValueInt64())
+	})
+
+	t.Run("wrong type returns null", func(t *testing.T) {
+		t.Parallel()
+		require.True(t, typeutils.Int64FromAnyNumeric("not-a-number").IsNull())
+	})
+}

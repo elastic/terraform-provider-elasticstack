@@ -18,11 +18,9 @@
 package logstash
 
 import (
-	"math"
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // queueMaxBytesRegexp validates the queue.max_bytes setting value format.
@@ -87,78 +85,48 @@ func expandSettings(data Data) map[string]any {
 // populates the corresponding typed fields on *Data.
 func flattenSettings(apiSettings map[string]any, data *Data) {
 	if v, ok := apiSettings["pipeline.batch.delay"]; ok {
-		data.PipelineBatchDelay = types.Int64Value(toInt64(v))
+		data.PipelineBatchDelay = typeutils.Int64FromAnyNumeric(v)
 	}
 	if v, ok := apiSettings["pipeline.batch.size"]; ok {
-		data.PipelineBatchSize = types.Int64Value(toInt64(v))
+		data.PipelineBatchSize = typeutils.Int64FromAnyNumeric(v)
 	}
 	if v, ok := apiSettings["pipeline.ecs_compatibility"]; ok {
-		data.PipelineEcsCompatibility = types.StringValue(toString(v))
+		data.PipelineEcsCompatibility = typeutils.StringFromAny(v)
 	}
 	if v, ok := apiSettings["pipeline.ordered"]; ok {
-		data.PipelineOrdered = types.StringValue(toString(v))
+		data.PipelineOrdered = typeutils.StringFromAny(v)
 	}
 	if v, ok := apiSettings["pipeline.plugin_classloaders"]; ok {
-		data.PipelinePluginClassloaders = types.BoolValue(toBool(v))
+		data.PipelinePluginClassloaders = typeutils.BoolFromAny(v)
 	}
 	if v, ok := apiSettings["pipeline.unsafe_shutdown"]; ok {
-		data.PipelineUnsafeShutdown = types.BoolValue(toBool(v))
+		data.PipelineUnsafeShutdown = typeutils.BoolFromAny(v)
 	}
 	if v, ok := apiSettings["pipeline.workers"]; ok {
-		data.PipelineWorkers = types.Int64Value(toInt64(v))
+		data.PipelineWorkers = typeutils.Int64FromAnyNumeric(v)
 	}
 	if v, ok := apiSettings["queue.checkpoint.acks"]; ok {
-		data.QueueCheckpointAcks = types.Int64Value(toInt64(v))
+		data.QueueCheckpointAcks = typeutils.Int64FromAnyNumeric(v)
 	}
 	if v, ok := apiSettings["queue.checkpoint.retry"]; ok {
-		data.QueueCheckpointRetry = types.BoolValue(toBool(v))
+		data.QueueCheckpointRetry = typeutils.BoolFromAny(v)
 	}
 	if v, ok := apiSettings["queue.checkpoint.writes"]; ok {
-		data.QueueCheckpointWrites = types.Int64Value(toInt64(v))
+		data.QueueCheckpointWrites = typeutils.Int64FromAnyNumeric(v)
 	}
 	if v, ok := apiSettings["queue.drain"]; ok {
-		data.QueueDrain = types.BoolValue(toBool(v))
+		data.QueueDrain = typeutils.BoolFromAny(v)
 	}
 	if v, ok := apiSettings["queue.max_bytes"]; ok {
-		data.QueueMaxBytes = types.StringValue(toString(v))
+		data.QueueMaxBytes = typeutils.StringFromAny(v)
 	}
 	if v, ok := apiSettings["queue.max_events"]; ok {
-		data.QueueMaxEvents = types.Int64Value(toInt64(v))
+		data.QueueMaxEvents = typeutils.Int64FromAnyNumeric(v)
 	}
 	if v, ok := apiSettings["queue.page_capacity"]; ok {
-		data.QueuePageCapacity = types.StringValue(toString(v))
+		data.QueuePageCapacity = typeutils.StringFromAny(v)
 	}
 	if v, ok := apiSettings["queue.type"]; ok {
-		data.QueueType = types.StringValue(toString(v))
+		data.QueueType = typeutils.StringFromAny(v)
 	}
-}
-
-// toInt64 converts a value from the Logstash API (typically float64 from JSON
-// decode) to int64.
-func toInt64(v any) int64 {
-	switch val := v.(type) {
-	case float64:
-		return int64(math.Round(val))
-	case int64:
-		return val
-	case int:
-		return int64(val)
-	}
-	return 0
-}
-
-// toString converts a value from the API response to string.
-func toString(v any) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
-}
-
-// toBool converts a value from the API response to bool.
-func toBool(v any) bool {
-	if b, ok := v.(bool); ok {
-		return b
-	}
-	return false
 }
