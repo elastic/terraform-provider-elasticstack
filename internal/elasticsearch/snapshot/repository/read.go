@@ -30,21 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// strSettingNullWithFallback returns the API value for key if present, otherwise
-// the prior state value when it is known. This keeps explicitly configured empty
-// strings ("") from drifting to null after apply because the write path omits
-// them from the API request.
-func strSettingNullWithFallback(settings map[string]any, key string, fallback types.String) types.String {
-	v := strSettingNull(settings, key)
-	if !v.IsNull() {
-		return v
-	}
-	if typeutils.IsKnown(fallback) {
-		return fallback
-	}
-	return types.StringNull()
-}
-
 func readSnapshotRepository(ctx context.Context, client *esclients.ElasticsearchScopedClient, resourceID string, state Data) (Data, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 

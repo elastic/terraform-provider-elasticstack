@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -118,4 +119,19 @@ func int64Setting(settings map[string]any, key string, fallback int64) int64 {
 		return fallback
 	}
 	return i.ValueInt64()
+}
+
+// strSettingNullWithFallback returns the API value for key if present, otherwise
+// the prior state value when it is known. This keeps explicitly configured empty
+// strings ("") from drifting to null after apply because the write path omits
+// them from the API request.
+func strSettingNullWithFallback(settings map[string]any, key string, fallback types.String) types.String {
+	v := strSettingNull(settings, key)
+	if !v.IsNull() {
+		return v
+	}
+	if typeutils.IsKnown(fallback) {
+		return fallback
+	}
+	return types.StringNull()
 }
