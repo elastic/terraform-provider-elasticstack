@@ -38,7 +38,7 @@ func TestAccDataSourceIngestProcessorDate(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "formats.#", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "formats.0", "dd/MM/yyyy HH:mm:ss"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "timezone", "Europe/Amsterdam"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "locale", "ENGLISH"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "locale", "en"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "output_format", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date.test", "json", expectedJSONDate),
@@ -85,7 +85,7 @@ func TestAccDataSourceIngestProcessorDate(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "formats.0", "ISO8601"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "target_field", "@timestamp"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "timezone", "UTC"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "locale", "ENGLISH"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "locale", "en"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "output_format", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_date.test", "ignore_failure", "false"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_date.test", "json", expectedJSONDateDefaults),
@@ -102,7 +102,7 @@ const expectedJSONDate = `{
       "dd/MM/yyyy HH:mm:ss"
     ],
     "ignore_failure": false,
-    "locale": "ENGLISH",
+    "locale": "en",
     "output_format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
     "target_field": "timestamp",
     "timezone": "Europe/Amsterdam"
@@ -131,7 +131,7 @@ const expectedJSONDateOnFailure = `{
     "field": "initial_date",
     "formats": ["dd/MM/yyyy HH:mm:ss"],
     "ignore_failure": false,
-    "locale": "ENGLISH",
+    "locale": "en",
     "on_failure": [
       {
         "set": {
@@ -152,7 +152,7 @@ const expectedJSONDateDefaults = `{
     "field": "timestamp_raw",
     "formats": ["ISO8601"],
     "ignore_failure": false,
-    "locale": "ENGLISH",
+    "locale": "en",
     "output_format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
     "target_field": "@timestamp",
     "timezone": "UTC"
