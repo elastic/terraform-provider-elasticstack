@@ -51,6 +51,7 @@ type outputModel struct {
 	SyncIntegrations            types.Bool                      `tfsdk:"sync_integrations"`
 	SyncUninstalledIntegrations types.Bool                      `tfsdk:"sync_uninstalled_integrations"`
 	WriteToLogsStreams          types.Bool                      `tfsdk:"write_to_logs_streams"`
+	Preset                      types.String                    `tfsdk:"preset"`
 }
 
 func (model outputModel) GetID() types.String             { return model.ID }
@@ -74,6 +75,13 @@ func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entityco
 				ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
 			})
 		}
+	}
+
+	if typeutils.IsKnown(model.Preset) {
+		reqs = append(reqs, entitycore.VersionRequirement{
+			MinVersion:   *MinVersionOutputPreset,
+			ErrorMessage: fmt.Sprintf("preset requires server version %s or higher", MinVersionOutputPreset.String()),
+		})
 	}
 
 	if model.Type.ValueString() == outputTypeKafka {
@@ -179,6 +187,7 @@ func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutpu
 	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
 	model.ConfigYaml = configYamlFromAPI(d.configYaml)
+	model.Preset = types.StringNull()
 	if !isImport && existingConfigYaml.IsNull() {
 		model.ConfigYaml = customtypes.NewNormalizedYamlNull()
 	}
