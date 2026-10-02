@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -40,6 +41,10 @@ const mappingsResourceName = "elasticstack_elasticsearch_index_mappings.test"
 
 var indexMappingsIDRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]+/.+$`)
 
+func indexMappingsIDRegexpForIndex(indexName string) *regexp.Regexp {
+	return regexp.MustCompile(`^[A-Za-z0-9_-]+/` + regexp.QuoteMeta(indexName) + `$`)
+}
+
 func TestAccResourceIndexMappings_basic(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -55,7 +60,7 @@ func TestAccResourceIndexMappings_basic(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
-					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexpForIndex(indexName)),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -111,6 +116,36 @@ func TestAccResourceIndexMappings_update(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("two_fields"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("one_field"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(mappingsResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
+					checkStateMappingsProperties([]string{"title"}, []string{"body"}),
+					// Removing a field from the config only stops tracking it; the mapping stays on the index.
+					checkIndexMappingsContainField(indexName, "body"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("one_field"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -305,11 +340,10 @@ func TestAccResourceIndexMappings_import(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ResourceName:            mappingsResourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateIdFunc:       importStateIDForIndexName(indexName),
-				ImportStateVerifyIgnore: []string{"id"},
+				ResourceName:      mappingsResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: importStateIDForIndexName(indexName),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -529,6 +563,162 @@ func TestAccResourceIndexMappings_updateTopLevelKey(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceIndexMappings_elasticsearchConnection(t *testing.T) {
+	endpoints := esEndpointsFromEnv()
+	if len(endpoints) == 0 {
+		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
+	}
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
+	}
+
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
+		resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexpForIndex(indexName)),
+		checkStateMappingsProperties([]string{"title"}, nil),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.#", "1"),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.endpoints.#", fmt.Sprintf("%d", len(endpoints))),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.insecure", "true"),
+	}
+	// An api_key, when set, is used exclusively; otherwise username/password are configured.
+	if apiKey != "" {
+		checks = append(checks, resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.api_key", apiKey))
+	} else {
+		checks = append(checks,
+			resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.username", username),
+			resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.password", password),
+		)
+	}
+
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+		"endpoints":  config.ListVariable(endpointVars...),
+		"api_key":    config.StringVariable(apiKey),
+		"username":   config.StringVariable(username),
+		"password":   config.StringVariable(password),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          vars,
+				Check:                    resource.ComposeTestCheckFunc(checks...),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_semanticEquality(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ordered"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamic(false),
+					checkStateMappingsProperties([]string{"title", "body"}, nil),
+				),
+			},
+			{
+				// Elasticsearch returns mappings in its own key order; the config order must not cause drift.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ordered"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				// Same mappings with different key order and whitespace.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reordered"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamic(false),
+					checkStateMappingsProperties([]string{"title", "body"}, nil),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reordered"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_invalidMappings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	stepWithMappings := func(mappings string, expectErr *regexp.Regexp) resource.TestStep {
+		return resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+			ConfigVariables: config.Variables{
+				"index_name": config.StringVariable(indexName),
+				"mappings":   config.StringVariable(mappings),
+			},
+			PlanOnly:    true,
+			ExpectError: expectErr,
+		}
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			stepWithMappings("not json", regexp.MustCompile(`Invalid JSON String Value`)),
+			stepWithMappings("[]", regexp.MustCompile(`(?s)expected value to be a JSON\s+object`)),
+		},
+	})
+}
+
+func esEndpointsFromEnv() []string {
+	parts := strings.Split(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+	return endpoints
 }
 
 func stateMappingsFromResource(s *terraform.State) (map[string]any, error) {
