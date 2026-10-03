@@ -41,18 +41,7 @@ func (model *outputModel) fromAPILogstashModel(ctx context.Context, data *kbapi.
 
 func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	return model.toAPICreateSimpleOutput(ctx, func(f commonNewOutputBody) (kbapi.NewOutputUnion, error) {
-		body := kbapi.KibanaHTTPAPIsNewOutputLogstash{
-			Type:                 kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			Id:                   f.ID,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
-		}
+		body := buildSimpleOutputCreateBody[kbapi.KibanaHTTPAPIsNewOutputLogstash](f, kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash)
 		var union kbapi.NewOutputUnion
 		return union, union.FromKibanaHTTPAPIsNewOutputLogstash(body)
 	})
@@ -60,18 +49,7 @@ func (model outputModel) toAPICreateLogstashModel(ctx context.Context) (kbapi.Ne
 
 func (model outputModel) toAPIUpdateLogstashModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
 	return model.toAPIUpdateSimpleOutput(ctx, func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error) {
-		outputType := kbapi.Logstash
-		body := kbapi.KibanaHTTPAPIsUpdateOutputLogstash{
-			Type:                 &outputType,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
-		}
+		body := buildSimpleOutputUpdateBody[kbapi.KibanaHTTPAPIsUpdateOutputLogstash](f, kbapi.Logstash)
 		var union kbapi.UpdateOutputUnion
 		return union, union.FromKibanaHTTPAPIsUpdateOutputLogstash(body)
 	})

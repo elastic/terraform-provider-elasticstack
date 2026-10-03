@@ -20,6 +20,7 @@ package output
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -311,4 +312,75 @@ func (model outputModel) toAPIUpdateSimpleOutput(
 		return kbapi.UpdateOutputUnion{}, diags
 	}
 	return union, diags
+}
+
+// buildSimpleOutputCreateBody reflects over f (commonNewOutputBody) and
+// copies each identically-named field onto a zero-valued B — a generated
+// KibanaHTTPAPIsNewOutput<Kind> struct such as KibanaHTTPAPIsNewOutputElasticsearch
+// or KibanaHTTPAPIsNewOutputLogstash — then sets Type to typeValue. These
+// "simple" output kinds are independently generated structs that are
+// structurally identical today, so this replicates once the field-copy each
+// kind previously duplicated in a full struct literal.
+//
+// A field present on B under a non-assignable type is a programmer error (not
+// a runtime condition), so it panics rather than silently dropping the field.
+func buildSimpleOutputCreateBody[B any, T any](f commonNewOutputBody, typeValue T) B {
+	var body B
+	bodyVal := reflect.ValueOf(&body).Elem()
+	bodyType := bodyVal.Type()
+	srcVal := reflect.ValueOf(f)
+
+	for i := range bodyType.NumField() {
+		field := bodyType.Field(i)
+		if field.Name == "Type" {
+			bodyVal.Field(i).Set(reflect.ValueOf(typeValue))
+			continue
+		}
+
+		srcName := field.Name
+		if srcName == "Id" {
+			srcName = "ID"
+		}
+
+		source := srcVal.FieldByName(srcName)
+		if !source.IsValid() {
+			continue
+		}
+		if !source.Type().AssignableTo(field.Type) {
+			panic(fmt.Sprintf("output: simple output create field %q type mismatch: want %s, got %s", field.Name, field.Type, source.Type()))
+		}
+		bodyVal.Field(i).Set(source)
+	}
+
+	return body
+}
+
+// buildSimpleOutputUpdateBody is the toAPIUpdateModel equivalent of
+// buildSimpleOutputCreateBody; see its docs for the field-copy semantics. The
+// Type field on update bodies is a pointer to the kind-specific enum, so
+// typeValue is boxed into a fresh variable before its address is taken.
+func buildSimpleOutputUpdateBody[B any, T any](f commonUpdateOutputBody, typeValue T) B {
+	var body B
+	bodyVal := reflect.ValueOf(&body).Elem()
+	bodyType := bodyVal.Type()
+	srcVal := reflect.ValueOf(f)
+
+	for i := range bodyType.NumField() {
+		field := bodyType.Field(i)
+		if field.Name == "Type" {
+			bodyVal.Field(i).Set(reflect.ValueOf(&typeValue))
+			continue
+		}
+
+		source := srcVal.FieldByName(field.Name)
+		if !source.IsValid() {
+			continue
+		}
+		if !source.Type().AssignableTo(field.Type) {
+			panic(fmt.Sprintf("output: simple output update field %q type mismatch: want %s, got %s", field.Name, field.Type, source.Type()))
+		}
+		bodyVal.Field(i).Set(source)
+	}
+
+	return body
 }

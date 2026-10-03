@@ -25,6 +25,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// RemoteElasticsearch intentionally doesn't use the buildSimpleOutput*Body
+// helpers shared by models_elasticsearch.go/models_logstash.go: it carries
+// extra fields (ServiceToken, SyncIntegrations, ...) and needs its own
+// secret-preserving read logic, so folding it into the "simple" output
+// template would obscure rather than reduce the real differences.
 func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch) (diags diag.Diagnostics) {
 	diags = model.fromAPICommonFields(ctx, commonOutputReadData{
 		id:                   data.Id,

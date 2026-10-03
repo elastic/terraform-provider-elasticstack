@@ -41,18 +41,7 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 
 func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
 	return model.toAPICreateSimpleOutput(ctx, func(f commonNewOutputBody) (kbapi.NewOutputUnion, error) {
-		body := kbapi.KibanaHTTPAPIsNewOutputElasticsearch{
-			Type:                 kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			Id:                   f.ID,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
-		}
+		body := buildSimpleOutputCreateBody[kbapi.KibanaHTTPAPIsNewOutputElasticsearch](f, kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch)
 		var union kbapi.NewOutputUnion
 		return union, union.FromKibanaHTTPAPIsNewOutputElasticsearch(body)
 	})
@@ -60,18 +49,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 
 func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kbapi.UpdateOutputUnion, diag.Diagnostics) {
 	return model.toAPIUpdateSimpleOutput(ctx, func(f commonUpdateOutputBody) (kbapi.UpdateOutputUnion, error) {
-		outputType := kbapi.Elasticsearch
-		body := kbapi.KibanaHTTPAPIsUpdateOutputElasticsearch{
-			Type:                 &outputType,
-			CaSha256:             f.CaSha256,
-			CaTrustedFingerprint: f.CaTrustedFingerprint,
-			ConfigYaml:           f.ConfigYaml,
-			Hosts:                f.Hosts,
-			IsDefault:            f.IsDefault,
-			IsDefaultMonitoring:  f.IsDefaultMonitoring,
-			Name:                 f.Name,
-			Ssl:                  f.Ssl,
-		}
+		body := buildSimpleOutputUpdateBody[kbapi.KibanaHTTPAPIsUpdateOutputElasticsearch](f, kbapi.Elasticsearch)
 		var union kbapi.UpdateOutputUnion
 		return union, union.FromKibanaHTTPAPIsUpdateOutputElasticsearch(body)
 	})
