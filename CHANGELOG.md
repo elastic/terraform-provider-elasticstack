@@ -2,6 +2,10 @@
 
 ### Changes
 
+- Make the root `time_range`, `refresh_interval` and `query` blocks optional on `elasticstack_kibana_dashboard`. ([#5031](https://github.com/elastic/terraform-provider-elasticstack/pull/5031))
+- Add the `elasticstack_fleet_space_settings` resource to manage Fleet's per-space settings (`allowed_namespace_prefixes`). Requires Elastic Stack 9.1.0 or newer. ([#4988](https://github.com/elastic/terraform-provider-elasticstack/pull/4988))
+- Fix `elasticstack_kibana_synthetics_monitor` create failing with `unsupported monitor type` and orphaning the monitor when Kibana reports Synthetics Service push errors; push errors are now surfaced as warnings. ([#4999](https://github.com/elastic/terraform-provider-elasticstack/pull/4999))
+- Add missing Elastic Defend policy settings (device control, macOS ransomware, custom YARA signatures, and additional event and malware flags) to `elasticstack_fleet_elastic_defend_integration_policy`. ([#5024](https://github.com/elastic/terraform-provider-elasticstack/pull/5024))
 - `elasticstack_kibana_agentbuilder_tool` now correctly clears `tags` when set to an explicit empty collection (`tags = []`) on create/update, instead of silently leaving the previous tags unchanged server-side. ([#4954](https://github.com/elastic/terraform-provider-elasticstack/pull/4954))
 - Normalize Kibana 9.6 Lens dashboard read-back defaults so apply no longer reports inconsistent results. ([#4948](https://github.com/elastic/terraform-provider-elasticstack/pull/4948))
 - Add disable_chunked_encoding and always_sign_requests to the S3 snapshot repository ([#4885](https://github.com/elastic/terraform-provider-elasticstack/pull/4885))
