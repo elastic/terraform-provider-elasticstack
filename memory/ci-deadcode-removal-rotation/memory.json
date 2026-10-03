@@ -1478,6 +1478,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes.NewAlertingDurationUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/kibanacustomtypes",
+      "attemptedAt": "2026-10-03T03:22:56.80584695Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
