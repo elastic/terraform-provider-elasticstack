@@ -1,0 +1,212 @@
+{
+  "paths": {
+    "/api/kibana/settings": {
+      "get": {
+        "summary": "Get space advanced settings",
+        "description": "Returns the space Kibana advanced settings that have been changed from their defaults. Kibana registers this endpoint without public access and does not include it in the upstream Kibana OpenAPI document; requests must send the x-elastic-internal-origin header.",
+        "operationId": "get-kibana-settings",
+        "tags": [
+          "advanced settings"
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicates a successful call. Returns the user-provided advanced settings for the scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "Advanced settings that differ from the Kibana defaults, keyed by setting name.",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "userValue": {
+                            "description": "The value stored for the setting."
+                          },
+                          "isOverridden": {
+                            "type": "boolean",
+                            "description": "True when the setting is overridden in kibana.yml and cannot be changed through the API."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update space advanced settings",
+        "description": "Updates one or more space Kibana advanced settings. Kibana registers this endpoint without public access and does not include it in the upstream Kibana OpenAPI document; requests must send the x-elastic-internal-origin header.",
+        "operationId": "post-kibana-settings",
+        "tags": [
+          "advanced settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "changes": {
+                    "type": "object",
+                    "description": "Settings to update, keyed by setting name. A null value resets the setting to its default.",
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "changes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Indicates a successful call. Returns the user-provided advanced settings for the scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "Advanced settings that differ from the Kibana defaults, keyed by setting name.",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "userValue": {
+                            "description": "The value stored for the setting."
+                          },
+                          "isOverridden": {
+                            "type": "boolean",
+                            "description": "True when the setting is overridden in kibana.yml and cannot be changed through the API."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kibana/global_settings": {
+      "get": {
+        "summary": "Get global advanced settings",
+        "description": "Returns the global Kibana advanced settings that have been changed from their defaults. Kibana registers this endpoint without public access and does not include it in the upstream Kibana OpenAPI document; requests must send the x-elastic-internal-origin header.",
+        "operationId": "get-kibana-global-settings",
+        "tags": [
+          "advanced settings"
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicates a successful call. Returns the user-provided advanced settings for the scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "Advanced settings that differ from the Kibana defaults, keyed by setting name.",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "userValue": {
+                            "description": "The value stored for the setting."
+                          },
+                          "isOverridden": {
+                            "type": "boolean",
+                            "description": "True when the setting is overridden in kibana.yml and cannot be changed through the API."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update global advanced settings",
+        "description": "Updates one or more global Kibana advanced settings. Kibana registers this endpoint without public access and does not include it in the upstream Kibana OpenAPI document; requests must send the x-elastic-internal-origin header.",
+        "operationId": "post-kibana-global-settings",
+        "tags": [
+          "advanced settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "changes": {
+                    "type": "object",
+                    "description": "Settings to update, keyed by setting name. A null value resets the setting to its default.",
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "changes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Indicates a successful call. Returns the user-provided advanced settings for the scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "Advanced settings that differ from the Kibana defaults, keyed by setting name.",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "userValue": {
+                            "description": "The value stored for the setting."
+                          },
+                          "isOverridden": {
+                            "type": "boolean",
+                            "description": "True when the setting is overridden in kibana.yml and cannot be changed through the API."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

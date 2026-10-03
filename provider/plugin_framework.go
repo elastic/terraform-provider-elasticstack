@@ -86,6 +86,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/spacesettings"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/advancedsettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderagent"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
@@ -239,6 +240,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		dashboard.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
+		advancedsettings.NewResource,
 		parameter.NewResource,
 		privatelocation.NewResource,
 		index.NewResource,
