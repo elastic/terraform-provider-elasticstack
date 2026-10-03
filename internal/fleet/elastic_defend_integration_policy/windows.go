@@ -169,28 +169,13 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		win[attrRansomware] = ransomware
 	}
 
-	if mm, ok := decodeObjectField[memoryProtectionModel](ctx, wm.MemoryProtection, &diags); ok {
-		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, attrMode, mm.Mode)
-		typeutils.SetBoolInMap(memProt, attrSupported, mm.Supported)
-		typeutils.SetBoolInMap(memProt, attrCustomYara, mm.CustomYaraSignatures)
-		win[attrMemoryProtection] = memProt
-	}
+	buildCommonPolicyPayloadFields(ctx, win, commonPolicyPayloadFields{
+		MemoryProtection:   wm.MemoryProtection,
+		BehaviorProtection: wm.BehaviorProtection,
+		Logging:            wm.Logging,
+	}, &diags)
 
-	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, wm.BehaviorProtection, &diags); ok {
-		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
-		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
-		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		win[attrBehaviorProtection] = behProt
-	}
-
-	if dm, ok := decodeObjectField[deviceControlModel](ctx, wm.DeviceControl, &diags); ok {
-		deviceControl := map[string]any{}
-		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
-		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
-		win[attrDeviceControl] = deviceControl
-	}
+	buildDeviceControlPayloadField(ctx, win, wm.DeviceControl, &diags)
 
 	if pm, ok := decodeObjectField[windowsPopupModel](ctx, wm.Popup, &diags); ok {
 		popup := map[string]any{}
@@ -200,12 +185,6 @@ func buildWindowsPolicyPayload(ctx context.Context, winObj types.Object) (map[st
 		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
 		setPopupItem(ctx, popup, attrDeviceControl, pm.DeviceControl, &diags)
 		win[attrPopup] = popup
-	}
-
-	if lm, ok := decodeObjectField[loggingModel](ctx, wm.Logging, &diags); ok {
-		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, attrFile, lm.File)
-		win[attrLogging] = logging
 	}
 
 	if am, ok := decodeObjectField[antivirusRegistrationModel](ctx, wm.AntivirusRegistration, &diags); ok {

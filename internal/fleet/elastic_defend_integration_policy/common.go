@@ -299,6 +299,56 @@ func mapCommonPolicyFieldsFromAPI(ctx context.Context, data map[string]any) (com
 	}, diags
 }
 
+// commonPolicyPayloadFields holds the memory_protection, behavior_protection,
+// and logging model objects shared identically by all three OS payload
+// builders (buildLinuxPolicyPayload, buildMacPolicyPayload,
+// buildWindowsPolicyPayload).
+type commonPolicyPayloadFields struct {
+	MemoryProtection   types.Object
+	BehaviorProtection types.Object
+	Logging            types.Object
+}
+
+// buildCommonPolicyPayloadFields decodes memory_protection,
+// behavior_protection, and logging — blocks that are byte-for-byte identical
+// across all three OS build functions — and writes the resulting maps into
+// target under their respective attribute keys when present.
+func buildCommonPolicyPayloadFields(ctx context.Context, target map[string]any, fields commonPolicyPayloadFields, diags *diag.Diagnostics) {
+	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, fields.MemoryProtection, diags); ok {
+		memProt := map[string]any{}
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
+		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		target[attrMemoryProtection] = memProt
+	}
+
+	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, fields.BehaviorProtection, diags); ok {
+		behProt := map[string]any{}
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
+		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
+		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
+		target[attrBehaviorProtection] = behProt
+	}
+
+	if logm, ok := decodeObjectField[loggingModel](ctx, fields.Logging, diags); ok {
+		logging := map[string]any{}
+		typeutils.SetStringInMap(logging, attrFile, logm.File)
+		target[attrLogging] = logging
+	}
+}
+
+// buildDeviceControlPayloadField decodes device_control — a block that is
+// byte-for-byte identical across buildMacPolicyPayload and
+// buildWindowsPolicyPayload — and writes it into target when present.
+func buildDeviceControlPayloadField(ctx context.Context, target map[string]any, deviceControl types.Object, diags *diag.Diagnostics) {
+	if dm, ok := decodeObjectField[deviceControlModel](ctx, deviceControl, diags); ok {
+		dc := map[string]any{}
+		typeutils.SetBoolInMap(dc, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(dc, attrUsbStorage, dm.UsbStorage)
+		target[attrDeviceControl] = dc
+	}
+}
+
 // ---- attr types shared by two or more OS-specific policy types ----
 
 func malwareFullAttrTypes() map[string]attr.Type {
