@@ -132,28 +132,13 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrRansomware] = ransomware
 	}
 
-	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, mm.MemoryProtection, &diags); ok {
-		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
-		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
-		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
-		mac[attrMemoryProtection] = memProt
-	}
+	buildCommonPolicyPayloadFields(ctx, mac, commonPolicyPayloadFields{
+		MemoryProtection:   mm.MemoryProtection,
+		BehaviorProtection: mm.BehaviorProtection,
+		Logging:            mm.Logging,
+	}, &diags)
 
-	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, mm.BehaviorProtection, &diags); ok {
-		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
-		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
-		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		mac[attrBehaviorProtection] = behProt
-	}
-
-	if dm, ok := decodeObjectField[deviceControlModel](ctx, mm.DeviceControl, &diags); ok {
-		deviceControl := map[string]any{}
-		typeutils.SetBoolInMap(deviceControl, attrEnabled, dm.Enabled)
-		typeutils.SetStringInMap(deviceControl, attrUsbStorage, dm.UsbStorage)
-		mac[attrDeviceControl] = deviceControl
-	}
+	buildDeviceControlPayloadField(ctx, mac, mm.DeviceControl, &diags)
 
 	if pm, ok := decodeObjectField[macPopupModel](ctx, mm.Popup, &diags); ok {
 		popup := map[string]any{}
@@ -163,12 +148,6 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
 		setPopupItem(ctx, popup, attrDeviceControl, pm.DeviceControl, &diags)
 		mac[attrPopup] = popup
-	}
-
-	if lm, ok := decodeObjectField[loggingModel](ctx, mm.Logging, &diags); ok {
-		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, attrFile, lm.File)
-		mac[attrLogging] = logging
 	}
 
 	if diags.HasError() {
