@@ -212,10 +212,6 @@ func NewAlertingDurationNull() AlertingDuration {
 	return AlertingDuration{StringValue: basetypes.NewStringNull()}
 }
 
-func NewAlertingDurationUnknown() AlertingDuration {
-	return AlertingDuration{StringValue: basetypes.NewStringUnknown()}
-}
-
 func NewAlertingDurationValue(value string) AlertingDuration {
 	return AlertingDuration{StringValue: basetypes.NewStringValue(value)}
 }
