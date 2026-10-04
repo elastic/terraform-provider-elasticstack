@@ -1488,6 +1488,28 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack.ecsMappingAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack",
+      "attemptedAt": "2026-10-04T04:01:48.44496853Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack.ecsMappingMapElemType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack",
+      "attemptedAt": "2026-10-04T04:01:48.44496865Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query.ecsMappingFromAPIType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query",
+      "attemptedAt": "2026-10-04T04:05:21.261470523Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
