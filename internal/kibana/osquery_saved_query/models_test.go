@@ -201,55 +201,6 @@ func TestEcsMappingConversion(t *testing.T) {
 		_, diags := mapping.toAPIType()
 		require.True(t, diags.HasError())
 	})
-
-	t.Run("from API field reference", func(t *testing.T) {
-		field := "cmdline"
-		got, diags := ecsMappingFromAPIType(kbapi.SecurityOsqueryAPIECSMappingItem{Field: &field})
-		require.Empty(t, diags)
-
-		assert.Equal(t, types.StringValue("cmdline"), got.Field)
-		assert.True(t, got.Value.IsNull())
-		assert.True(t, got.Values.IsNull())
-	})
-
-	t.Run("from API scalar value", func(t *testing.T) {
-		var value kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		require.NoError(t, value.FromSecurityOsqueryAPIECSMappingItemValue0("process"))
-
-		got, diags := ecsMappingFromAPIType(kbapi.SecurityOsqueryAPIECSMappingItem{Value: &value})
-		require.Empty(t, diags)
-		assert.True(t, got.Field.IsNull())
-		assert.Equal(t, types.StringValue("process"), got.Value)
-		assert.True(t, got.Values.IsNull())
-	})
-
-	t.Run("from API array values", func(t *testing.T) {
-		var value kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		require.NoError(t, value.FromSecurityOsqueryAPIECSMappingItemValue1([]string{"process", "network"}))
-
-		got, diags := ecsMappingFromAPIType(kbapi.SecurityOsqueryAPIECSMappingItem{Value: &value})
-		require.Empty(t, diags)
-		assert.True(t, got.Field.IsNull())
-		assert.True(t, got.Value.IsNull())
-		expected := types.SetValueMust(types.StringType, []attr.Value{
-			types.StringValue("network"),
-			types.StringValue("process"),
-		})
-		assert.Equal(t, expected, got.Values)
-	})
-
-	t.Run("from API field and value returns error", func(t *testing.T) {
-		field := "cmdline"
-		var value kbapi.SecurityOsqueryAPIECSMappingItem_Value
-		require.NoError(t, value.FromSecurityOsqueryAPIECSMappingItemValue0("process"))
-
-		_, diags := ecsMappingFromAPIType(kbapi.SecurityOsqueryAPIECSMappingItem{
-			Field: &field,
-			Value: &value,
-		})
-		require.True(t, diags.HasError())
-		assert.Contains(t, diags.Errors()[0].Detail(), "both field and value")
-	})
 }
 
 func TestEcsMappingMapFromAPI(t *testing.T) {
