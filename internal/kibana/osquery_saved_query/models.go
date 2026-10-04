@@ -197,11 +197,6 @@ func (e ecsMapping) toAPIType() (kbapi.SecurityOsqueryAPIECSMappingItem, diag.Di
 	return osquery.ECSMapping(e).ToAPIType()
 }
 
-func ecsMappingFromAPIType(item kbapi.SecurityOsqueryAPIECSMappingItem) (ecsMapping, diag.Diagnostics) {
-	result, diags := osquery.ECSMappingFromAPIType("", item)
-	return ecsMapping(result), diags
-}
-
 func intervalFromCreateAPI(interval *kbapi.SecurityOsqueryAPICreateSavedQueryResponse_Data_Interval) (types.Int64, diag.Diagnostics) {
 	if interval == nil {
 		return types.Int64Null(), nil
