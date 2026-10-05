@@ -80,7 +80,9 @@ func (m Model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 
 	reqs = entitycore.AppendVersionRequirementIf(reqs,
 		typeutils.IsKnown(m.IgnoreMissingComponentTemplates) && len(m.IgnoreMissingComponentTemplates.Elements()) > 0,
-		index.MinSupportedIgnoreMissingComponentTemplateVersion, "'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String())
+		index.MinSupportedIgnoreMissingComponentTemplateVersion,
+		"'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above",
+		index.MinSupportedIgnoreMissingComponentTemplateVersion.String())
 
 	return reqs, diags
 }
