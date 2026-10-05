@@ -23,6 +23,7 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -41,6 +42,18 @@ func priorHasDeclaredToggle(_ context.Context, prior types.Object, toggle string
 		return false
 	}
 	return typeutils.IsKnown(objV)
+}
+
+func priorHasEmptyAllocateFilter(prior types.Object, filter string) bool {
+	if prior.IsNull() || prior.IsUnknown() {
+		return false
+	}
+	allocate, ok := prior.Attributes()[ilmActionAllocate].(types.Object)
+	if !ok || allocate.IsNull() || allocate.IsUnknown() {
+		return false
+	}
+	value, ok := allocate.Attributes()[filter].(jsontypes.Normalized)
+	return ok && !value.IsNull() && !value.IsUnknown() && value.ValueString() == "{}"
 }
 
 func flattenPhase(ctx context.Context, phaseName string, minAge string, actions map[string]map[string]any, prior types.Object) (types.Object, diag.Diagnostics) {
@@ -76,8 +89,9 @@ func flattenPhase(ctx context.Context, phaseName string, minAge string, actions 
 						return types.ObjectUnknown(phaseObjectType(phaseName).AttrTypes), diags
 					}
 					s := string(res)
-					// Omit empty objects so unset optional JSON attrs stay null (matches config).
-					if s != "{}" {
+					// Omit API defaults for unset optional JSON attrs, but preserve an
+					// explicitly configured empty object from the prior plan or state.
+					if s != "{}" || priorHasEmptyAllocateFilter(prior, f) {
 						allocateAction[f] = s
 					}
 				}
