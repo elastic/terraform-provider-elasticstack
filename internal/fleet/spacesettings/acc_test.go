@@ -225,7 +225,7 @@ func TestAccResourceFleetSpaceSettings_validation_tooManyPrefixes(t *testing.T) 
 
 	spaceID := fmt.Sprintf("tf-acc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlpha))
 	prefixes := make([]string, 0, 11)
-	for i := 0; i < 11; i++ {
+	for i := range 11 {
 		prefixes = append(prefixes, fmt.Sprintf("prefix_%d", i))
 	}
 	variables := config.Variables{
