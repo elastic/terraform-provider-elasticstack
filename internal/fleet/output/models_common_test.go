@@ -194,6 +194,36 @@ func TestPopulateCommonOutputFields(t *testing.T) {
 		assert.Equal(t, kbapi.KibanaHTTPAPIsNewOutputElasticsearchTypeElasticsearch, body.Type)
 	})
 
+	t.Run("NewOutputLogstash", func(t *testing.T) {
+		f := commonNewOutputBody{
+			CaSha256:             &caSha256,
+			CaTrustedFingerprint: &caTrustedFingerprint,
+			ConfigYaml:           &configYaml,
+			Hosts:                hosts,
+			ID:                   &id,
+			IsDefault:            &isDefault,
+			IsDefaultMonitoring:  &isDefaultMonitoring,
+			Name:                 "logstash-output",
+			Ssl:                  ssl,
+		}
+
+		body := kbapi.KibanaHTTPAPIsNewOutputLogstash{
+			Type: kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash,
+		}
+		populateCommonOutputFields(&body, f)
+
+		assert.Equal(t, &id, body.Id)
+		assert.Equal(t, "logstash-output", body.Name)
+		assert.Same(t, ssl, body.Ssl)
+		assert.Equal(t, hosts, body.Hosts)
+		assert.Equal(t, &caSha256, body.CaSha256)
+		assert.Equal(t, &caTrustedFingerprint, body.CaTrustedFingerprint)
+		assert.Equal(t, &isDefault, body.IsDefault)
+		assert.Equal(t, &isDefaultMonitoring, body.IsDefaultMonitoring)
+		assert.Equal(t, &configYaml, body.ConfigYaml)
+		assert.Equal(t, kbapi.KibanaHTTPAPIsNewOutputLogstashTypeLogstash, body.Type)
+	})
+
 	t.Run("UpdateOutputLogstash", func(t *testing.T) {
 		f := commonUpdateOutputBody{
 			CaSha256:             &caSha256,
@@ -220,8 +250,37 @@ func TestPopulateCommonOutputFields(t *testing.T) {
 		assert.Equal(t, &isDefaultMonitoring, body.IsDefaultMonitoring)
 		assert.Equal(t, &configYaml, body.ConfigYaml)
 		assert.Equal(t, &id, body.Name)
-		// Update structs have no ID field; populateCommonOutputFields must not panic
-		// just because commonUpdateOutputBody has no ID field to look for.
+		// commonUpdateOutputBody has no ID field, so the generated Id field remains nil.
+		assert.Nil(t, body.Id)
+		assert.Equal(t, &outputType, body.Type)
+	})
+
+	t.Run("UpdateOutputElasticsearch", func(t *testing.T) {
+		f := commonUpdateOutputBody{
+			CaSha256:             &caSha256,
+			CaTrustedFingerprint: &caTrustedFingerprint,
+			ConfigYaml:           &configYaml,
+			Hosts:                &hosts,
+			IsDefault:            &isDefault,
+			IsDefaultMonitoring:  &isDefaultMonitoring,
+			Name:                 &id,
+			Ssl:                  ssl,
+		}
+
+		outputType := kbapi.Elasticsearch
+		body := kbapi.KibanaHTTPAPIsUpdateOutputElasticsearch{
+			Type: &outputType,
+		}
+		populateCommonOutputFields(&body, f)
+
+		assert.Same(t, ssl, body.Ssl)
+		assert.Equal(t, &hosts, body.Hosts)
+		assert.Equal(t, &caSha256, body.CaSha256)
+		assert.Equal(t, &caTrustedFingerprint, body.CaTrustedFingerprint)
+		assert.Equal(t, &isDefault, body.IsDefault)
+		assert.Equal(t, &isDefaultMonitoring, body.IsDefaultMonitoring)
+		assert.Equal(t, &configYaml, body.ConfigYaml)
+		assert.Equal(t, &id, body.Name)
 		assert.Nil(t, body.Id)
 		assert.Equal(t, &outputType, body.Type)
 	})
