@@ -40,7 +40,7 @@ type ResolvedIndexTargets struct {
 	Names []string
 }
 
-func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchScopedClient, expression string, excludedAliases ...string) (ResolvedIndexTargets, fwdiags.Diagnostics) {
+func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchScopedClient, expression, excludedAlias string) (ResolvedIndexTargets, fwdiags.Diagnostics) {
 	response, err := client.GetESClient().Indices.ResolveIndex(expression).
 		ExpandWildcards(expandwildcard.All).
 		AllowNoIndices(true).
@@ -49,12 +49,8 @@ func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchSc
 	if err != nil {
 		return ResolvedIndexTargets{}, diagutil.FrameworkDiagFromError(err)
 	}
-	excludedAliasNames := make(map[string]struct{}, len(excludedAliases))
-	for _, alias := range excludedAliases {
-		excludedAliasNames[alias] = struct{}{}
-	}
 	for _, alias := range response.Aliases {
-		if _, excluded := excludedAliasNames[alias.Name]; excluded {
+		if alias.Name == excludedAlias {
 			continue
 		}
 		return ResolvedIndexTargets{}, fwdiags.Diagnostics{

@@ -35,6 +35,7 @@ func TestResolveIndexExpression(t *testing.T) {
 		wantKind          IndexTargetKind
 		wantNames         []string
 		wantDiagnosticFor string
+		excludedAlias     string
 	}{
 		{
 			name:       "resolves wildcard targets",
@@ -99,6 +100,7 @@ func TestResolveIndexExpression(t *testing.T) {
 			expression:        "*",
 			response:          `{"indices":[{"name":"logs-1"}],"aliases":[{"name":"managed-alias","indices":["logs-1"]},{"name":"unrelated-alias","indices":["logs-1"]}],"data_streams":[]}`,
 			wantDiagnosticFor: "unrelated-alias",
+			excludedAlias:     "managed-alias",
 		},
 		{
 			name:              "rejects remote index targets",
@@ -147,11 +149,7 @@ func TestResolveIndexExpression(t *testing.T) {
 			})
 			defer server.Close()
 
-			excludedAliases := []string(nil)
-			if tt.name == "rejects unrelated alias after excluding managed alias" {
-				excludedAliases = []string{"managed-alias"}
-			}
-			targets, diags := ResolveIndexExpression(context.Background(), newMockScopedClient(t, server), tt.expression, excludedAliases...)
+			targets, diags := ResolveIndexExpression(context.Background(), newMockScopedClient(t, server), tt.expression, tt.excludedAlias)
 
 			if tt.wantDiagnosticFor != "" {
 				require.True(t, diags.HasError())

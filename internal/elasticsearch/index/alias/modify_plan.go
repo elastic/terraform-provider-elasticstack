@@ -39,7 +39,12 @@ func (model *tfModel) modifyPlanReadIndexMembership(
 		return diags
 	}
 
-	forceUnknown := resolveIndexExpression == nil || !hasSameReadIndexConfigurations(ctx, readIndices, state)
+	stateReadIndices, stateDiags := readIndexModels(ctx, state.ReadIndices)
+	if stateDiags.HasError() {
+		return stateDiags
+	}
+
+	forceUnknown := resolveIndexExpression == nil || !hasSameReadIndexConfigurations(readIndices, stateReadIndices, state.ReadIndices)
 	updated := false
 	for i := range readIndices {
 		if forceUnknown || readIndices[i].Name.IsUnknown() {
@@ -48,7 +53,7 @@ func (model *tfModel) modifyPlanReadIndexMembership(
 			continue
 		}
 
-		stateReadIndex, found := stateReadIndexForPlan(ctx, readIndices[i], state)
+		stateReadIndex, found := stateReadIndexForPlan(readIndices[i], stateReadIndices)
 		if found {
 			readIndices[i].ConcreteIndices = stateReadIndex.ConcreteIndices
 			updated = true
@@ -80,18 +85,30 @@ func (model *tfModel) modifyPlanReadIndexMembership(
 	return nil
 }
 
-func hasSameReadIndexConfigurations(ctx context.Context, planReadIndices []readIndexModel, state tfModel) bool {
-	if state.ReadIndices.IsNull() || state.ReadIndices.IsUnknown() {
+func readIndexModels(ctx context.Context, value types.Set) ([]readIndexModel, diag.Diagnostics) {
+	if value.IsNull() || value.IsUnknown() {
+		return nil, nil
+	}
+
+	var readIndices []readIndexModel
+	diags := value.ElementsAs(ctx, &readIndices, false)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return readIndices, nil
+}
+
+func hasSameReadIndexConfigurations(planReadIndices, stateReadIndices []readIndexModel, stateReadIndicesValue types.Set) bool {
+	if stateReadIndicesValue.IsNull() || stateReadIndicesValue.IsUnknown() {
 		return len(planReadIndices) == 0
 	}
 
-	var stateReadIndices []readIndexModel
-	diags := state.ReadIndices.ElementsAs(ctx, &stateReadIndices, false)
-	if diags.HasError() || len(planReadIndices) != len(stateReadIndices) {
+	if len(planReadIndices) != len(stateReadIndices) {
 		return false
 	}
 	for _, planReadIndex := range planReadIndices {
-		if _, found := stateReadIndexForPlan(ctx, planReadIndex, state); !found {
+		if _, found := stateReadIndexForPlan(planReadIndex, stateReadIndices); !found {
 			return false
 		}
 	}
@@ -99,16 +116,7 @@ func hasSameReadIndexConfigurations(ctx context.Context, planReadIndices []readI
 	return true
 }
 
-func stateReadIndexForPlan(ctx context.Context, planReadIndex readIndexModel, state tfModel) (readIndexModel, bool) {
-	if state.ReadIndices.IsNull() || state.ReadIndices.IsUnknown() {
-		return readIndexModel{}, false
-	}
-
-	var stateReadIndices []readIndexModel
-	diags := state.ReadIndices.ElementsAs(ctx, &stateReadIndices, false)
-	if diags.HasError() {
-		return readIndexModel{}, false
-	}
+func stateReadIndexForPlan(planReadIndex readIndexModel, stateReadIndices []readIndexModel) (readIndexModel, bool) {
 	for _, stateReadIndex := range stateReadIndices {
 		if sameReadIndexConfiguration(planReadIndex, stateReadIndex) {
 			return stateReadIndex, true

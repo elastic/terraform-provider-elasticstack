@@ -144,8 +144,19 @@ func (r *aliasResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	type resolution struct {
+		targets elasticsearch.ResolvedIndexTargets
+		diags   diag.Diagnostics
+	}
+	resolutions := make(map[string]resolution)
 	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression, plan.Name.ValueString())
+		if resolution, found := resolutions[expression]; found {
+			return resolution.targets, resolution.diags
+		}
+
+		targets, resolveDiags := elasticsearch.ResolveIndexExpression(ctx, client, expression, plan.Name.ValueString())
+		resolutions[expression] = resolution{targets: targets, diags: resolveDiags}
+		return targets, resolveDiags
 	}
 
 	_, resolveDiags := plan.resolveAliasConfigs(ctx, resolveIndexExpression)

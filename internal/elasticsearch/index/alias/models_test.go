@@ -360,11 +360,6 @@ func TestIndexConfig_Equals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip tests that would panic due to maps.Equal limitations
-			// if tt.name == "Filter with nested maps - demonstrates maps.Equal limitation" ||
-			// 	tt.name == "Filter with slices - demonstrates maps.Equal panic" {
-			// 	t.Skip("This test demonstrates the limitation of maps.Equal with uncomparable types - it would panic")
-			// }
 			result := tt.a.Equals(tt.b)
 			assert.Equal(t, tt.expected, result, "Equals() returned unexpected result")
 		})
@@ -898,7 +893,7 @@ func TestTfModel_BuildResolvedAliasActions_SkipsAttachedWildcardTargets(t *testi
 	model := tfModel{ReadIndices: mustReadIndexSet(ctx, t,
 		readIndexModelWithRouting("traces-apm*", "shared-route"),
 	)}
-	actions, diags := model.buildResolvedAliasActions(ctx, "traces", map[string]IndexConfig{
+	actions, _, diags := model.buildResolvedAliasActionsWithOutcome(ctx, "traces", map[string]IndexConfig{
 		"traces-apm-default":     {Name: "traces-apm-default", Routing: "shared-route"},
 		"traces-apm.rum-default": {Name: "traces-apm.rum-default", Routing: "shared-route"},
 	}, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {

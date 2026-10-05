@@ -228,6 +228,7 @@ func (model *tfModel) populateReadState(
 
 	var writeIndex *indexModel
 	readAliasData := make(map[string]esTypes.AliasDefinition)
+	readIndicesByName := make(map[string]readIndexModel)
 	for indexName, aliasData := range indices {
 		index, diags := indexFromAlias(indexName, aliasData)
 		if diags.HasError() {
@@ -247,6 +248,7 @@ func (model *tfModel) populateReadState(
 		}
 
 		readAliasData[indexName] = aliasData
+		readIndicesByName[indexName] = index
 	}
 
 	if writeIndex != nil {
@@ -291,15 +293,11 @@ func (model *tfModel) populateReadState(
 		readIndices = append(readIndices, readIndex)
 	}
 
-	for indexName, aliasData := range readAliasData {
+	for indexName := range readAliasData {
 		if _, exists := covered[indexName]; exists {
 			continue
 		}
-		readIndex, diags := indexFromAlias(indexName, aliasData)
-		if diags.HasError() {
-			return diags
-		}
-		readIndices = append(readIndices, readIndex)
+		readIndices = append(readIndices, readIndicesByName[indexName])
 	}
 
 	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
@@ -596,16 +594,6 @@ func buildAliasActions(aliasName string, current map[string]IndexConfig, desired
 	}
 
 	return actions
-}
-
-func (model *tfModel) buildResolvedAliasActions(
-	ctx context.Context,
-	aliasName string,
-	current map[string]IndexConfig,
-	resolveIndexExpression resolveIndexExpressionFunc,
-) ([]elasticsearch.AliasAction, diag.Diagnostics) {
-	actions, _, diags := model.buildResolvedAliasActionsWithOutcome(ctx, aliasName, current, resolveIndexExpression)
-	return actions, diags
 }
 
 func (model *tfModel) buildResolvedAliasActionsWithOutcome(
