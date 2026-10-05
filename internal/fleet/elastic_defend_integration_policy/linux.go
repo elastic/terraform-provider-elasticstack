@@ -107,21 +107,11 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		linux[attrMalware] = malware
 	}
 
-	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, lm.MemoryProtection, &diags); ok {
-		memProt := map[string]any{}
-		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
-		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
-		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
-		linux[attrMemoryProtection] = memProt
-	}
-
-	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, lm.BehaviorProtection, &diags); ok {
-		behProt := map[string]any{}
-		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
-		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
-		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
-		linux[attrBehaviorProtection] = behProt
-	}
+	buildCommonPolicyPayloadFields(ctx, linux, commonPolicyPayloadFields{
+		MemoryProtection:   lm.MemoryProtection,
+		BehaviorProtection: lm.BehaviorProtection,
+		Logging:            lm.Logging,
+	}, &diags)
 
 	if pm, ok := decodeObjectField[linuxPopupModel](ctx, lm.Popup, &diags); ok {
 		popup := map[string]any{}
@@ -129,12 +119,6 @@ func buildLinuxPolicyPayload(ctx context.Context, linuxObj types.Object) (map[st
 		setPopupItem(ctx, popup, attrMemoryProtection, pm.MemoryProtection, &diags)
 		setPopupItem(ctx, popup, attrBehaviorProtection, pm.BehaviorProtection, &diags)
 		linux[attrPopup] = popup
-	}
-
-	if logm, ok := decodeObjectField[loggingModel](ctx, lm.Logging, &diags); ok {
-		logging := map[string]any{}
-		typeutils.SetStringInMap(logging, attrFile, logm.File)
-		linux[attrLogging] = logging
 	}
 
 	if diags.HasError() {

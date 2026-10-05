@@ -174,7 +174,7 @@ func buildUpdateBody(ctx context.Context, model tfModel) (kbapi.PutSecurityEntit
 	if diags.HasError() {
 		return body, diags
 	}
-	body.LogExtraction = *le
+	body.LogExtraction = le
 	return body, diags
 }
 

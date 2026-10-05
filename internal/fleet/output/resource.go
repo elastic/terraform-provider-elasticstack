@@ -29,6 +29,7 @@ import (
 var (
 	MinVersionOutputKafka               = version.Must(version.NewVersion("8.13.0"))
 	MinVersionOutputSSLVerificationMode = version.Must(version.NewVersion("8.10.0"))
+	MinVersionOutputPreset              = version.Must(version.NewVersion("8.12.0"))
 )
 
 var (
