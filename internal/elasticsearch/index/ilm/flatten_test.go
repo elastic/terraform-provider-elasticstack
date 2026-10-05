@@ -57,6 +57,36 @@ func TestFlattenPhaseAllocateOmitsAbsentReplicaShardFields(t *testing.T) {
 	assert.JSONEq(t, `{"zone":"zone-1"}`, requireVal.ValueString())
 }
 
+func TestFlattenPhaseAllocatePreservesExplicitEmptyFilters(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	prior, diags := phaseMapToObjectValue(ctx, ilmPhaseWarm, map[string]any{
+		ilmActionAllocate: []any{map[string]any{
+			attrInclude: "{}",
+			attrExclude: "{}",
+		}},
+	})
+	require.False(t, diags.HasError(), "%s", diags)
+
+	obj, diags := flattenPhase(ctx, ilmPhaseWarm, "", map[string]map[string]any{
+		ilmActionAllocate: {
+			attrInclude: map[string]any{},
+			attrExclude: map[string]any{},
+		},
+	}, prior)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	allocate, ok := obj.Attributes()[ilmActionAllocate].(types.Object)
+	require.True(t, ok)
+	include, ok := allocate.Attributes()[attrInclude].(jsontypes.Normalized)
+	require.True(t, ok)
+	assert.JSONEq(t, "{}", include.ValueString())
+	exclude, ok := allocate.Attributes()[attrExclude].(jsontypes.Normalized)
+	require.True(t, ok)
+	assert.JSONEq(t, "{}", exclude.ValueString())
+}
+
 func TestFlattenPhaseSearchableSnapshotForceMergeOnClone(t *testing.T) {
 	t.Parallel()
 

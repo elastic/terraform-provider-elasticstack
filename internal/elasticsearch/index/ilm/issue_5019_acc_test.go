@@ -18,17 +18,16 @@
 package ilm_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // TestAccReproduceIssue5019 reproduces https://github.com/elastic/terraform-provider-elasticstack/issues/5019.
-// Explicitly configuring warm.allocate.include/exclude as jsonencode({}) plans "{}" but
-// flatten reads the empty object back as null, so Terraform reports an inconsistent result after apply.
+// Explicitly configuring warm.allocate.include/exclude as jsonencode({}) must round-trip as "{}".
 func TestAccReproduceIssue5019(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 
@@ -37,33 +36,14 @@ func TestAccReproduceIssue5019(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				Config: `
-provider "elasticstack" {
-  elasticsearch {}
-}
-
-resource "elasticstack_elasticsearch_index_lifecycle" "issue_5019" {
-  name = "` + policyName + `"
-
-  hot {
-    min_age = "0ms"
-    rollover {
-      max_age = "90d"
-    }
-  }
-
-  warm {
-    min_age = "0ms"
-    allocate {
-      number_of_replicas    = 1
-      total_shards_per_node = -1
-      include               = jsonencode({})
-      exclude               = jsonencode({})
-    }
-  }
-}
-`,
-				ExpectError: regexp.MustCompile(`(?s)inconsistent result after apply`),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.issue_5019", "warm.allocate.include", "{}"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_index_lifecycle.issue_5019", "warm.allocate.exclude", "{}"),
+				),
 			},
 		},
 	})
