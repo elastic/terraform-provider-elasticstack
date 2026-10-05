@@ -209,7 +209,7 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
 					resource.TestCheckResourceAttrSet(mappingsResourceName, "mappings"),
 					checkStateMappingsTopLevelKeys("dynamic", "_source", "dynamic_templates", "runtime", "properties"),
-					checkStateMappingsDynamic(false),
+					checkStateMappingsDynamic(),
 					checkStateMappingsSourceEnabled(true),
 					checkStateMappingsRuntimeFields("day_of_week"),
 					checkStateMappingsDynamicTemplates("strings_as_keywords"),
@@ -545,7 +545,7 @@ func TestAccResourceIndexMappings_updateTopLevelKey(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamic(false),
+					checkStateMappingsDynamic(),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -646,7 +646,7 @@ func TestAccResourceIndexMappings_semanticEquality(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("ordered"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamic(false),
+					checkStateMappingsDynamic(),
 					checkStateMappingsProperties([]string{"title", "body"}, nil),
 				),
 			},
@@ -667,7 +667,7 @@ func TestAccResourceIndexMappings_semanticEquality(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("reordered"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamic(false),
+					checkStateMappingsDynamic(),
 					checkStateMappingsProperties([]string{"title", "body"}, nil),
 				),
 			},
@@ -780,8 +780,8 @@ func checkStateMappingsTopLevelKeys(keys ...string) resource.TestCheckFunc {
 	}
 }
 
-func checkStateMappingsDynamic(expected bool) resource.TestCheckFunc {
-	return checkStateMappingsBoolAt(expected, "dynamic")
+func checkStateMappingsDynamic() resource.TestCheckFunc {
+	return checkStateMappingsBoolAt(false, "dynamic")
 }
 
 func checkStateMappingsSourceEnabled(expected bool) resource.TestCheckFunc {
