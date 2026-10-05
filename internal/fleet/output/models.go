@@ -69,27 +69,15 @@ func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entityco
 	var reqs []entitycore.VersionRequirement
 
 	if sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), nil); sslModel != nil {
-		if typeutils.IsKnown(sslModel.VerificationMode) {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *MinVersionOutputSSLVerificationMode,
-				ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
-			})
-		}
+		reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(sslModel.VerificationMode),
+			MinVersionOutputSSLVerificationMode, "ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String())
 	}
 
-	if typeutils.IsKnown(model.Preset) {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionOutputPreset,
-			ErrorMessage: fmt.Sprintf("preset requires server version %s or higher", MinVersionOutputPreset.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(model.Preset),
+		MinVersionOutputPreset, "preset requires server version %s or higher", MinVersionOutputPreset.String())
 
-	if model.Type.ValueString() == outputTypeKafka {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionOutputKafka,
-			ErrorMessage: fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, model.Type.ValueString() == outputTypeKafka,
+		MinVersionOutputKafka, "Kafka output type requires server version %s or higher", MinVersionOutputKafka.String())
 
 	return reqs, nil
 }

@@ -173,7 +173,7 @@ func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private p
 
 // HandleReqRespSecrets extracts the wrapped value from each response var, then
 // maps any secret refs to the original request value.
-func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, resp *kbapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
+func HandleReqRespSecrets(ctx context.Context, reqMapped kbapi.PackagePolicyRequestMappedInputs, resp *kbapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
 	secrets, nd := newSecretStore(ctx, resp, private)
 	diags.Append(nd...)
 	if diags.HasError() {
@@ -233,13 +233,7 @@ func HandleReqRespSecrets(ctx context.Context, req kbapi.PackagePolicyRequest, r
 		}
 	}
 
-	// Extract mapped inputs from union types for secrets handling.
-	// If either extraction fails (e.g. nil or malformed union), skip secrets
-	// processing to avoid clobbering secret values with nil.
-	reqMapped, err := req.AsPackagePolicyRequestMappedInputs()
-	if err != nil {
-		return
-	}
+	// Extract mapped inputs from the response union for secrets handling.
 	respMapped, err := resp.Inputs.AsPackagePolicyMappedInputs()
 	if err != nil {
 		respMapped = kbapi.PackagePolicyMappedInputs{}

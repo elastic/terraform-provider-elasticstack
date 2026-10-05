@@ -20,7 +20,6 @@ package apikey
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -114,12 +113,8 @@ func (model TfModel) GetVersionRequirements(_ context.Context) ([]entitycore.Ver
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
-	if model.Type.ValueString() == CrossClusterAPIKeyType {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionWithCrossCluster,
-			ErrorMessage: fmt.Sprintf("Cross-cluster API keys are only supported in Elasticsearch version %s and above.", MinVersionWithCrossCluster.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, model.Type.ValueString() == CrossClusterAPIKeyType,
+		MinVersionWithCrossCluster, "Cross-cluster API keys are only supported in Elasticsearch version %s and above.", MinVersionWithCrossCluster.String())
 
 	if typeutils.IsKnown(model.RoleDescriptors) {
 		var roleDescriptors map[string]models.APIKeyRoleDescriptor
@@ -135,16 +130,10 @@ func (model TfModel) GetVersionRequirements(_ context.Context) ([]entitycore.Ver
 				keysWithRestrictions = append(keysWithRestrictions, key)
 			}
 		}
-		if len(keysWithRestrictions) > 0 {
-			sort.Strings(keysWithRestrictions)
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion: *MinVersionWithRestriction,
-				ErrorMessage: fmt.Sprintf(
-					"Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s",
-					strings.Join(keysWithRestrictions, ", "),
-				),
-			})
-		}
+		sort.Strings(keysWithRestrictions)
+		reqs = entitycore.AppendVersionRequirementIf(reqs, len(keysWithRestrictions) > 0, MinVersionWithRestriction,
+			"Specifying `restriction` on an API key role description is not supported in this version of Elasticsearch. Role descriptor(s) %s",
+			strings.Join(keysWithRestrictions, ", "))
 	}
 
 	return reqs, diags
