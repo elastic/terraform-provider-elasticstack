@@ -725,19 +725,32 @@ func TestAccResourceElasticDefendIntegrationPolicy_preset(t *testing.T) {
 }
 
 // TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace verifies that
-// policy_id accepts an explicit user-supplied value and that changing it
-// triggers RequiresReplace (destroy-before-create). The replacement plan is
-// never applied, since the resource always derives its own policy_id from
-// the bootstrap create response regardless of what is configured.
+// an empty policy_id is rejected at plan time, that an explicit policy_id is
+// used as the package policy ID on create and can be imported, and that
+// changing it triggers RequiresReplace (destroy-before-create) and removes the
+// previous policy.
 func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	explicitPolicyID := fmt.Sprintf("%s-policy-id", policyName)
+	changedPolicyID := fmt.Sprintf("%s-policy-id-changed", policyName)
+	var generatedPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
 		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(""),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)string length must be at least 1`),
+			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
@@ -746,6 +759,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
+					captureResourceAttr(resourceName, "policy_id", &generatedPolicyID),
 				),
 			},
 			{
@@ -753,17 +767,91 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(explicitPolicyID),
 				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PostApplyPreRefresh: []plancheck.PlanCheck{
+					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
 					},
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", explicitPolicyID),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^(default/)?`+regexp.QuoteMeta(explicitPolicyID)+`$`)),
+					checkDefendPolicyDeleted(&generatedPolicyID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(explicitPolicyID),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateId:     explicitPolicyID,
+				ImportStateVerify: true,
+				// description is Optional-only (unmanaged): import starts with a blank
+				// model (all-null), so it stays null even when Kibana has a value.
+				ImportStateVerifyIgnore: []string{"force", "description"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(changedPolicyID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", changedPolicyID),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^(default/)?`+regexp.QuoteMeta(changedPolicyID)+`$`)),
+					checkDefendPolicyDeleted(&explicitPolicyID),
+				),
 			},
 		},
 	})
+}
+
+// captureResourceAttr stores the named attribute's value in dst so a later
+// step can refer to it.
+func captureResourceAttr(resourceName, attr string, dst *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found", resourceName)
+		}
+		*dst = rs.Primary.Attributes[attr]
+		return nil
+	}
+}
+
+// checkDefendPolicyDeleted verifies that the Elastic Defend policy with the
+// given ID no longer exists, e.g. after a replacement.
+func checkDefendPolicyDeleted(policyID *string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		if *policyID == "" {
+			return fmt.Errorf("no policy ID to check")
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), apiClient.GetFleetClient(), *policyID, "")
+		if diags.HasError() {
+			return fmt.Errorf("error checking policy %q: %v", *policyID, diags)
+		}
+		if policy != nil {
+			return fmt.Errorf("Elastic Defend policy %q still exists after replacement", *policyID)
+		}
+		return nil
+	}
 }
 
 func testImportStateIDFunc(resourceName string) resource.ImportStateIdFunc {

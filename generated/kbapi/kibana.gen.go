@@ -38972,6 +38972,91 @@ type KibanaHTTPAPIsCreateManagedIntegrationRequest_Vars_AdditionalProperties str
 	union json.RawMessage
 }
 
+// KibanaHTTPAPIsCreatePackagePolicyRequest defines model for Kibana_HTTP_APIs_create_package_policy_request.
+type KibanaHTTPAPIsCreatePackagePolicyRequest struct {
+	// AdditionalDatastreamsPermissions Additional data stream permissions that will be added to the agent policy.
+	AdditionalDatastreamsPermissions *[]string `json:"additional_datastreams_permissions,omitempty"`
+
+	// CloudConnectorId ID of the cloud connector associated with this package policy.
+	CloudConnectorId *string `json:"cloud_connector_id,omitempty"`
+
+	// CloudConnectorName Transient field for cloud connector name during creation.
+	CloudConnectorName *string `json:"cloud_connector_name,omitempty"`
+
+	// Condition Agent condition expression to evaluate whether to apply this integration to its inputs.
+	Condition *string `json:"condition,omitempty"`
+
+	// CreateDatasetTemplates When true, install dedicated index templates for streams with a custom data_stream.dataset. Defaults to true for input packages, false for integration packages.
+	CreateDatasetTemplates *bool `json:"create_dataset_templates,omitempty"`
+
+	// Description Package policy description
+	Description *string `json:"description,omitempty"`
+	Enabled     *bool   `json:"enabled,omitempty"`
+
+	// Force Force package policy creation even if the package is not verified, or if the agent policy is managed.
+	Force          *bool `json:"force,omitempty"`
+	GlobalDataTags *[]struct {
+		// Name The name of the custom field. Cannot contain spaces.
+		Name string `json:"name"`
+
+		// Value The value of the custom field.
+		Value KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value `json:"value"`
+	} `json:"global_data_tags,omitempty"`
+
+	// Id Package policy unique identifier
+	Id        *string                          `json:"id,omitempty"`
+	Inputs    []PackagePolicyRequestTypedInput `json:"inputs"`
+	IsManaged *bool                            `json:"is_managed,omitempty"`
+
+	// Name Unique name for the package policy.
+	Name string `json:"name"`
+
+	// Namespace The package policy namespace. Leave blank to inherit the agent policy's namespace.
+	Namespace *string `json:"namespace,omitempty"`
+	OutputId  *string `json:"output_id,omitempty"`
+
+	// Overrides Override settings that are defined in the package policy. The override option should be used only in unusual circumstances and not as a routine procedure.
+	Overrides *struct {
+		Inputs *map[string]*interface{} `json:"inputs,omitempty"`
+	} `json:"overrides,omitempty"`
+	Package                      *PackagePolicyRequestPackage `json:"package,omitempty"`
+	PackageAgentVersionCondition *string                      `json:"package_agent_version_condition,omitempty"`
+
+	// PolicyId ID of the agent policy which the package policy will be added to.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	PolicyId  *string   `json:"policy_id,omitempty"`
+	PolicyIds *[]string `json:"policy_ids,omitempty"`
+	SpaceIds  *[]string `json:"spaceIds,omitempty"`
+
+	// SupportsAgentless Indicates whether the package policy belongs to an agentless agent policy. Deprecated in favor of the Fleet managed integrations API.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	SupportsAgentless *bool `json:"supports_agentless,omitempty"`
+
+	// SupportsCloudConnector Indicates whether the package policy supports cloud connectors.
+	SupportsCloudConnector *bool `json:"supports_cloud_connector,omitempty"`
+
+	// VarGroupSelections Variable group selections. Maps var_group name to the selected option name within that group.
+	VarGroupSelections *map[string]string `json:"var_group_selections,omitempty"`
+
+	// Vars Package variable (see integration documentation for more information)
+	Vars *map[string]struct {
+		Frozen *bool       `json:"frozen,omitempty"`
+		Type   *string     `json:"type,omitempty"`
+		Value  interface{} `json:"value,omitempty"`
+	} `json:"vars,omitempty"`
+}
+
+// KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0 defines model for .
+type KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0 = string
+
+// KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1 defines model for .
+type KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1 = float32
+
+// KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value The value of the custom field.
+type KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value struct {
+	union json.RawMessage
+}
+
 // KibanaHTTPAPIsCreatePackagePolicyResponse defines model for Kibana_HTTP_APIs_create_package_policy_response.
 type KibanaHTTPAPIsCreatePackagePolicyResponse struct {
 	Item KibanaHTTPAPIsPackagePolicyResponse `json:"item"`
@@ -76674,6 +76759,14 @@ type OutputUnion struct {
 // PackagePolicy defines model for package_policy.
 type PackagePolicy = KibanaHTTPAPIsPackagePolicyResponse
 
+// PackagePolicyCreateRequest You should use inputs as an object and not use the deprecated inputs array.
+type PackagePolicyCreateRequest struct {
+	union json.RawMessage
+}
+
+// PackagePolicyCreateRequestTypedInputs defines model for package_policy_create_request_typed_inputs.
+type PackagePolicyCreateRequestTypedInputs = KibanaHTTPAPIsCreatePackagePolicyRequest
+
 // PackagePolicyMappedInput defines model for package_policy_mapped_input.
 type PackagePolicyMappedInput struct {
 	// Condition Agent condition expression to evaluate whether to apply this input.
@@ -76760,11 +76853,6 @@ type PackagePolicyMappedInputStream_Vars_AdditionalProperties struct {
 
 // PackagePolicyMappedInputs Package policy inputs. Refer to the integration documentation to know which inputs are available.
 type PackagePolicyMappedInputs map[string]PackagePolicyMappedInput
-
-// PackagePolicyRequest defines model for package_policy_request.
-type PackagePolicyRequest struct {
-	union json.RawMessage
-}
 
 // PackagePolicyRequestMappedInput defines model for package_policy_request_mapped_input.
 type PackagePolicyRequestMappedInput struct {
@@ -76933,9 +77021,6 @@ type PackagePolicyRequestTypedInputStream struct {
 // PackagePolicyRequestTypedInputStreamRelease defines model for PackagePolicyRequestTypedInputStream.Release.
 type PackagePolicyRequestTypedInputStreamRelease string
 
-// PackagePolicyRequestTypedInputs defines model for package_policy_request_typed_inputs.
-type PackagePolicyRequestTypedInputs = KibanaHTTPAPIsUpdatePackagePolicyRequest
-
 // PackagePolicySecretRef defines model for package_policy_secret_ref.
 type PackagePolicySecretRef struct {
 	Id string `json:"id"`
@@ -77022,6 +77107,14 @@ type PackagePolicyTypedInputStreamRelease string
 
 // PackagePolicyTypedInputs defines model for package_policy_typed_inputs.
 type PackagePolicyTypedInputs = []PackagePolicyTypedInput
+
+// PackagePolicyUpdateRequest defines model for package_policy_update_request.
+type PackagePolicyUpdateRequest struct {
+	union json.RawMessage
+}
+
+// PackagePolicyUpdateRequestTypedInputs defines model for package_policy_update_request_typed_inputs.
+type PackagePolicyUpdateRequestTypedInputs = KibanaHTTPAPIsUpdatePackagePolicyRequest
 
 // PagerdutyConfig Defines properties for connectors when type is `.pagerduty`.
 type PagerdutyConfig struct {
@@ -92902,7 +92995,7 @@ type PostFleetOutputsJSONRequestBody = NewOutputUnion
 type PutFleetOutputsOutputidJSONRequestBody = UpdateOutputUnion
 
 // PostFleetPackagePoliciesJSONRequestBody defines body for PostFleetPackagePolicies for application/json ContentType.
-type PostFleetPackagePoliciesJSONRequestBody = PackagePolicyRequest
+type PostFleetPackagePoliciesJSONRequestBody = PackagePolicyCreateRequest
 
 // PostFleetPackagePoliciesBulkGetJSONRequestBody defines body for PostFleetPackagePoliciesBulkGet for application/json ContentType.
 type PostFleetPackagePoliciesBulkGetJSONRequestBody PostFleetPackagePoliciesBulkGetJSONBody
@@ -92917,7 +93010,7 @@ type PostFleetPackagePoliciesUpgradeJSONRequestBody = KibanaHTTPAPIsUpgradePacka
 type PostFleetPackagePoliciesUpgradeDryrunJSONRequestBody = KibanaHTTPAPIsDryRunPackagePoliciesRequest
 
 // PutFleetPackagePoliciesPackagepolicyidJSONRequestBody defines body for PutFleetPackagePoliciesPackagepolicyid for application/json ContentType.
-type PutFleetPackagePoliciesPackagepolicyidJSONRequestBody = PackagePolicyRequest
+type PutFleetPackagePoliciesPackagepolicyidJSONRequestBody = PackagePolicyUpdateRequest
 
 // PostFleetProxiesJSONRequestBody defines body for PostFleetProxies for application/json ContentType.
 type PostFleetProxiesJSONRequestBody PostFleetProxiesJSONBody
@@ -121651,6 +121744,68 @@ func (t KibanaHTTPAPIsCreateManagedIntegrationRequest_Vars_AdditionalProperties)
 }
 
 func (t *KibanaHTTPAPIsCreateManagedIntegrationRequest_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0 returns the union data inside the KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value as a KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0
+func (t KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) AsKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0() (KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0, error) {
+	var body KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0 overwrites any union data inside the KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value as the provided KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0
+func (t *KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) FromKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0(v KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0 performs a merge with any union data inside the KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value, using the provided KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0
+func (t *KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) MergeKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0(v KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1 returns the union data inside the KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value as a KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1
+func (t KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) AsKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1() (KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1, error) {
+	var body KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1 overwrites any union data inside the KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value as the provided KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1
+func (t *KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) FromKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1(v KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1 performs a merge with any union data inside the KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value, using the provided KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1
+func (t *KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) MergeKibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1(v KibanaHTTPAPIsCreatePackagePolicyRequestGlobalDataTagsValue1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsCreatePackagePolicyRequest_GlobalDataTags_Value) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -162226,6 +162381,68 @@ func (t *OutputUnion) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsPackagePolicyCreateRequestTypedInputs returns the union data inside the PackagePolicyCreateRequest as a PackagePolicyCreateRequestTypedInputs
+func (t PackagePolicyCreateRequest) AsPackagePolicyCreateRequestTypedInputs() (PackagePolicyCreateRequestTypedInputs, error) {
+	var body PackagePolicyCreateRequestTypedInputs
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackagePolicyCreateRequestTypedInputs overwrites any union data inside the PackagePolicyCreateRequest as the provided PackagePolicyCreateRequestTypedInputs
+func (t *PackagePolicyCreateRequest) FromPackagePolicyCreateRequestTypedInputs(v PackagePolicyCreateRequestTypedInputs) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackagePolicyCreateRequestTypedInputs performs a merge with any union data inside the PackagePolicyCreateRequest, using the provided PackagePolicyCreateRequestTypedInputs
+func (t *PackagePolicyCreateRequest) MergePackagePolicyCreateRequestTypedInputs(v PackagePolicyCreateRequestTypedInputs) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackagePolicyRequestMappedInputs returns the union data inside the PackagePolicyCreateRequest as a PackagePolicyRequestMappedInputs
+func (t PackagePolicyCreateRequest) AsPackagePolicyRequestMappedInputs() (PackagePolicyRequestMappedInputs, error) {
+	var body PackagePolicyRequestMappedInputs
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackagePolicyRequestMappedInputs overwrites any union data inside the PackagePolicyCreateRequest as the provided PackagePolicyRequestMappedInputs
+func (t *PackagePolicyCreateRequest) FromPackagePolicyRequestMappedInputs(v PackagePolicyRequestMappedInputs) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackagePolicyRequestMappedInputs performs a merge with any union data inside the PackagePolicyCreateRequest, using the provided PackagePolicyRequestMappedInputs
+func (t *PackagePolicyCreateRequest) MergePackagePolicyRequestMappedInputs(v PackagePolicyRequestMappedInputs) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackagePolicyCreateRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackagePolicyCreateRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsPackagePolicyMappedInputVars0 returns the union data inside the PackagePolicyMappedInput_Vars_AdditionalProperties as a PackagePolicyMappedInputVars0
 func (t PackagePolicyMappedInput_Vars_AdditionalProperties) AsPackagePolicyMappedInputVars0() (PackagePolicyMappedInputVars0, error) {
 	var body PackagePolicyMappedInputVars0
@@ -162558,68 +162775,6 @@ func (t *PackagePolicyMappedInputStream_Vars_AdditionalProperties) UnmarshalJSON
 	return err
 }
 
-// AsPackagePolicyRequestTypedInputs returns the union data inside the PackagePolicyRequest as a PackagePolicyRequestTypedInputs
-func (t PackagePolicyRequest) AsPackagePolicyRequestTypedInputs() (PackagePolicyRequestTypedInputs, error) {
-	var body PackagePolicyRequestTypedInputs
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPackagePolicyRequestTypedInputs overwrites any union data inside the PackagePolicyRequest as the provided PackagePolicyRequestTypedInputs
-func (t *PackagePolicyRequest) FromPackagePolicyRequestTypedInputs(v PackagePolicyRequestTypedInputs) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePackagePolicyRequestTypedInputs performs a merge with any union data inside the PackagePolicyRequest, using the provided PackagePolicyRequestTypedInputs
-func (t *PackagePolicyRequest) MergePackagePolicyRequestTypedInputs(v PackagePolicyRequestTypedInputs) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPackagePolicyRequestMappedInputs returns the union data inside the PackagePolicyRequest as a PackagePolicyRequestMappedInputs
-func (t PackagePolicyRequest) AsPackagePolicyRequestMappedInputs() (PackagePolicyRequestMappedInputs, error) {
-	var body PackagePolicyRequestMappedInputs
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPackagePolicyRequestMappedInputs overwrites any union data inside the PackagePolicyRequest as the provided PackagePolicyRequestMappedInputs
-func (t *PackagePolicyRequest) FromPackagePolicyRequestMappedInputs(v PackagePolicyRequestMappedInputs) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePackagePolicyRequestMappedInputs performs a merge with any union data inside the PackagePolicyRequest, using the provided PackagePolicyRequestMappedInputs
-func (t *PackagePolicyRequest) MergePackagePolicyRequestMappedInputs(v PackagePolicyRequestMappedInputs) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t PackagePolicyRequest) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *PackagePolicyRequest) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsPackagePolicyRequestMappedInputVars0 returns the union data inside the PackagePolicyRequestMappedInput_Vars_AdditionalProperties as a PackagePolicyRequestMappedInputVars0
 func (t PackagePolicyRequestMappedInput_Vars_AdditionalProperties) AsPackagePolicyRequestMappedInputVars0() (PackagePolicyRequestMappedInputVars0, error) {
 	var body PackagePolicyRequestMappedInputVars0
@@ -162948,6 +163103,68 @@ func (t PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties) Marshal
 }
 
 func (t *PackagePolicyRequestMappedInputStream_Vars_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsPackagePolicyUpdateRequestTypedInputs returns the union data inside the PackagePolicyUpdateRequest as a PackagePolicyUpdateRequestTypedInputs
+func (t PackagePolicyUpdateRequest) AsPackagePolicyUpdateRequestTypedInputs() (PackagePolicyUpdateRequestTypedInputs, error) {
+	var body PackagePolicyUpdateRequestTypedInputs
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackagePolicyUpdateRequestTypedInputs overwrites any union data inside the PackagePolicyUpdateRequest as the provided PackagePolicyUpdateRequestTypedInputs
+func (t *PackagePolicyUpdateRequest) FromPackagePolicyUpdateRequestTypedInputs(v PackagePolicyUpdateRequestTypedInputs) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackagePolicyUpdateRequestTypedInputs performs a merge with any union data inside the PackagePolicyUpdateRequest, using the provided PackagePolicyUpdateRequestTypedInputs
+func (t *PackagePolicyUpdateRequest) MergePackagePolicyUpdateRequestTypedInputs(v PackagePolicyUpdateRequestTypedInputs) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsPackagePolicyRequestMappedInputs returns the union data inside the PackagePolicyUpdateRequest as a PackagePolicyRequestMappedInputs
+func (t PackagePolicyUpdateRequest) AsPackagePolicyRequestMappedInputs() (PackagePolicyRequestMappedInputs, error) {
+	var body PackagePolicyRequestMappedInputs
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPackagePolicyRequestMappedInputs overwrites any union data inside the PackagePolicyUpdateRequest as the provided PackagePolicyRequestMappedInputs
+func (t *PackagePolicyUpdateRequest) FromPackagePolicyRequestMappedInputs(v PackagePolicyRequestMappedInputs) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePackagePolicyRequestMappedInputs performs a merge with any union data inside the PackagePolicyUpdateRequest, using the provided PackagePolicyRequestMappedInputs
+func (t *PackagePolicyUpdateRequest) MergePackagePolicyRequestMappedInputs(v PackagePolicyRequestMappedInputs) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PackagePolicyUpdateRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PackagePolicyUpdateRequest) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }

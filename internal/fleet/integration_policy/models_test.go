@@ -69,7 +69,7 @@ func TestOutputIdHandling(t *testing.T) {
 		body, diags := model.toAPIModel(context.Background(), feat)
 		require.Empty(t, diags)
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -145,7 +145,7 @@ func TestConditionHandling(t *testing.T) {
 		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: true})
 		require.False(t, diags.HasError())
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -172,7 +172,7 @@ func TestConditionHandling(t *testing.T) {
 		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: true})
 		require.False(t, diags.HasError())
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -355,7 +355,7 @@ func TestAdditionalDatastreamsPermissionsHandling(t *testing.T) {
 		body, diags := model.toAPIModel(ctx, feat)
 		require.False(t, diags.HasError())
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any

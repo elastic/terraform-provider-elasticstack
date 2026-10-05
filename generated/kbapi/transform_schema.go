@@ -1645,11 +1645,13 @@ func transformFleetPaths(schema *Schema) {
 
 	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
 
-	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_update_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
-	epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_update_request", "requestBody.content.application/json.schema")
 
-	epmPoliciesPath.Post.Set("requestBody.content.application/json.schema", epmPolicyPath.Put.MustGetMap("requestBody.content.application/json.schema"))
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_create_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_create_request", "requestBody.content.application/json.schema")
 
 	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
@@ -1674,6 +1676,7 @@ func transformFleetPaths(schema *Schema) {
 	// to point at a single short-named ref via CreateRef.
 	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_simplified_create_package_policy_request.properties.package")
 	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.package")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_create_package_policy_request.properties.package")
 
 	// Request-side mapped (simplified) inputs/streams
 	schema.Components.CreateRef(schema, "package_policy_request_mapped_input", "schemas.Kibana_HTTP_APIs_simplified_create_package_policy_request.properties.inputs.additionalProperties")
@@ -1682,6 +1685,7 @@ func transformFleetPaths(schema *Schema) {
 	// Request-side typed inputs/streams (sourced from the underlying
 	// update_package_policy_request component for the same chain-ref reason).
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.inputs.items")
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.Kibana_HTTP_APIs_create_package_policy_request.properties.inputs.items")
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input_stream", "schemas.package_policy_request_typed_input.properties.streams.items")
 }
 

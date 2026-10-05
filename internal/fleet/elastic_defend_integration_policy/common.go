@@ -408,23 +408,25 @@ func policyAttrTypes() map[string]attr.Type {
 // for the first create step (bootstrap). Kibana expects the create bootstrap to
 // use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
 // under config._config.value.endpointConfig.preset.
-func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyCreateRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
 	}
-	req := kbapi.PackagePolicyRequestTypedInputs{
-		Name:      &[]string{model.Name.ValueString()}[0],
+	req := kbapi.PackagePolicyCreateRequestTypedInputs{
+		Id:        typeutils.OptionalString(model.PolicyID),
+		Name:      model.Name.ValueString(),
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
 	if d.HasError() {
 		return req, d
 	}
+	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
 	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
@@ -454,7 +456,7 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	if len(config) > 0 {
 		input.Config = &config
 	}
-	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
+	req.Inputs = []kbapi.PackagePolicyRequestTypedInput{input}
 
 	return req, diags
 }
@@ -468,24 +470,25 @@ func buildFinalizeRequest(
 	model *elasticDefendIntegrationPolicyModel,
 	priorAdvanced map[string]string,
 	ps defendPrivateState,
-) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+) (kbapi.PackagePolicyUpdateRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
 	}
-	req := kbapi.PackagePolicyRequestTypedInputs{
+	req := kbapi.PackagePolicyUpdateRequestTypedInputs{
 		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
 	if d.HasError() {
 		// Propagate errors from ElementsAs
 		return req, d
 	}
+	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
 	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
@@ -611,22 +614,21 @@ func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPoli
 	return policy, diags
 }
 
-// setAgentPoliciesOnRequest populates PolicyIds / PolicyId on a request from the model.
-func setAgentPoliciesOnRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, req *kbapi.PackagePolicyRequestTypedInputs) diag.Diagnostics {
+// agentPoliciesFromModel returns the PolicyId / PolicyIds request values for the model.
+func agentPoliciesFromModel(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (*string, *[]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if typeutils.IsKnown(model.AgentPolicyIDs) {
 		var ids []string
 		d := model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
 		if d.HasError() {
 			diags.Append(d...)
-			return diags
+			return nil, nil, diags
 		}
-		req.PolicyIds = &ids
+		var policyID *string
 		if len(ids) > 0 {
-			req.PolicyId = &ids[0]
+			policyID = &ids[0]
 		}
-	} else {
-		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
+		return policyID, &ids, diags
 	}
-	return diags
+	return model.AgentPolicyID.ValueStringPointer(), nil, diags
 }
