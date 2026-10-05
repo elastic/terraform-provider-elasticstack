@@ -21,11 +21,12 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseElasticsearch) diag.Diagnostics {
-	return model.fromAPISimpleOutput(ctx, commonOutputReadData{
+	diags := model.fromAPISimpleOutput(ctx, commonOutputReadData{
 		id:                   data.Id,
 		name:                 data.Name,
 		outputType:           string(data.Type),
@@ -37,6 +38,8 @@ func (model *outputModel) fromAPIElasticsearchModel(ctx context.Context, data *k
 		configYaml:           data.ConfigYaml,
 		ssl:                  data.Ssl,
 	})
+	model.Preset = typeutils.StringishPointerValue(data.Preset)
+	return diags
 }
 
 func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
@@ -51,6 +54,7 @@ func (model outputModel) toAPICreateElasticsearchModel(ctx context.Context) (kba
 			IsDefault:            f.IsDefault,
 			IsDefaultMonitoring:  f.IsDefaultMonitoring,
 			Name:                 f.Name,
+			Preset:               (*kbapi.KibanaHTTPAPIsNewOutputElasticsearchPreset)(typeutils.OptionalString(model.Preset)),
 			Ssl:                  f.Ssl,
 		}
 		var union kbapi.NewOutputUnion
@@ -70,6 +74,7 @@ func (model outputModel) toAPIUpdateElasticsearchModel(ctx context.Context) (kba
 			IsDefault:            f.IsDefault,
 			IsDefaultMonitoring:  f.IsDefaultMonitoring,
 			Name:                 f.Name,
+			Preset:               (*kbapi.KibanaHTTPAPIsUpdateOutputElasticsearchPreset)(typeutils.OptionalString(model.Preset)),
 			Ssl:                  f.Ssl,
 		}
 		var union kbapi.UpdateOutputUnion

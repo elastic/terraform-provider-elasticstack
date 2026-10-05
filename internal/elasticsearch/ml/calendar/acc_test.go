@@ -81,6 +81,55 @@ func TestAccResourceMLCalendar(t *testing.T) {
 	})
 }
 
+func TestAccResourceMLCalendar_calendarIDForcesReplace(t *testing.T) {
+	calendarID := fmt.Sprintf("test-calendar-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	newCalendarID := fmt.Sprintf("test-calendar-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(calendarID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", calendarID),
+					resource.TestMatchResourceAttr(
+						"elasticstack_elasticsearch_ml_calendar.test",
+						"id",
+						regexp.MustCompile(`^[^/]+/`+regexp.QuoteMeta(calendarID)+`$`),
+					),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(newCalendarID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"elasticstack_elasticsearch_ml_calendar.test",
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_ml_calendar.test", "calendar_id", newCalendarID),
+					resource.TestMatchResourceAttr(
+						"elasticstack_elasticsearch_ml_calendar.test",
+						"id",
+						regexp.MustCompile(`^[^/]+/`+regexp.QuoteMeta(newCalendarID)+`$`),
+					),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceMLCalendarNoJobs(t *testing.T) {
 	calendarID := fmt.Sprintf("test-cal-nojobs-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 

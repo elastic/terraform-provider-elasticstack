@@ -299,6 +299,56 @@ func mapCommonPolicyFieldsFromAPI(ctx context.Context, data map[string]any) (com
 	}, diags
 }
 
+// commonPolicyPayloadFields holds the memory_protection, behavior_protection,
+// and logging model objects shared identically by all three OS payload
+// builders (buildLinuxPolicyPayload, buildMacPolicyPayload,
+// buildWindowsPolicyPayload).
+type commonPolicyPayloadFields struct {
+	MemoryProtection   types.Object
+	BehaviorProtection types.Object
+	Logging            types.Object
+}
+
+// buildCommonPolicyPayloadFields decodes memory_protection,
+// behavior_protection, and logging — blocks that are byte-for-byte identical
+// across all three OS build functions — and writes the resulting maps into
+// target under their respective attribute keys when present.
+func buildCommonPolicyPayloadFields(ctx context.Context, target map[string]any, fields commonPolicyPayloadFields, diags *diag.Diagnostics) {
+	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, fields.MemoryProtection, diags); ok {
+		memProt := map[string]any{}
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
+		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		target[attrMemoryProtection] = memProt
+	}
+
+	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, fields.BehaviorProtection, diags); ok {
+		behProt := map[string]any{}
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
+		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
+		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
+		target[attrBehaviorProtection] = behProt
+	}
+
+	if logm, ok := decodeObjectField[loggingModel](ctx, fields.Logging, diags); ok {
+		logging := map[string]any{}
+		typeutils.SetStringInMap(logging, attrFile, logm.File)
+		target[attrLogging] = logging
+	}
+}
+
+// buildDeviceControlPayloadField decodes device_control — a block that is
+// byte-for-byte identical across buildMacPolicyPayload and
+// buildWindowsPolicyPayload — and writes it into target when present.
+func buildDeviceControlPayloadField(ctx context.Context, target map[string]any, deviceControl types.Object, diags *diag.Diagnostics) {
+	if dm, ok := decodeObjectField[deviceControlModel](ctx, deviceControl, diags); ok {
+		dc := map[string]any{}
+		typeutils.SetBoolInMap(dc, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(dc, attrUsbStorage, dm.UsbStorage)
+		target[attrDeviceControl] = dc
+	}
+}
+
 // ---- attr types shared by two or more OS-specific policy types ----
 
 func malwareFullAttrTypes() map[string]attr.Type {
@@ -358,23 +408,25 @@ func policyAttrTypes() map[string]attr.Type {
 // for the first create step (bootstrap). Kibana expects the create bootstrap to
 // use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
 // under config._config.value.endpointConfig.preset.
-func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyCreateRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
 	}
-	req := kbapi.PackagePolicyRequestTypedInputs{
-		Name:      &[]string{model.Name.ValueString()}[0],
+	req := kbapi.PackagePolicyCreateRequestTypedInputs{
+		Id:        typeutils.OptionalString(model.PolicyID),
+		Name:      model.Name.ValueString(),
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
 	if d.HasError() {
 		return req, d
 	}
+	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
 	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
@@ -404,7 +456,7 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	if len(config) > 0 {
 		input.Config = &config
 	}
-	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
+	req.Inputs = []kbapi.PackagePolicyRequestTypedInput{input}
 
 	return req, diags
 }
@@ -418,24 +470,25 @@ func buildFinalizeRequest(
 	model *elasticDefendIntegrationPolicyModel,
 	priorAdvanced map[string]string,
 	ps defendPrivateState,
-) (kbapi.PackagePolicyRequestTypedInputs, diag.Diagnostics) {
+) (kbapi.PackagePolicyUpdateRequestTypedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pkg := kbapi.PackagePolicyRequestPackage{
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
 	}
-	req := kbapi.PackagePolicyRequestTypedInputs{
+	req := kbapi.PackagePolicyUpdateRequestTypedInputs{
 		Name:      &[]string{model.Name.ValueString()}[0],
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	d := setAgentPoliciesOnRequest(ctx, model, &req)
+	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
 	if d.HasError() {
 		// Propagate errors from ElementsAs
 		return req, d
 	}
+	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
 	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
@@ -561,22 +614,21 @@ func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPoli
 	return policy, diags
 }
 
-// setAgentPoliciesOnRequest populates PolicyIds / PolicyId on a request from the model.
-func setAgentPoliciesOnRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel, req *kbapi.PackagePolicyRequestTypedInputs) diag.Diagnostics {
+// agentPoliciesFromModel returns the PolicyId / PolicyIds request values for the model.
+func agentPoliciesFromModel(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (*string, *[]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if typeutils.IsKnown(model.AgentPolicyIDs) {
 		var ids []string
 		d := model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
 		if d.HasError() {
 			diags.Append(d...)
-			return diags
+			return nil, nil, diags
 		}
-		req.PolicyIds = &ids
+		var policyID *string
 		if len(ids) > 0 {
-			req.PolicyId = &ids[0]
+			policyID = &ids[0]
 		}
-	} else {
-		req.PolicyId = model.AgentPolicyID.ValueStringPointer()
+		return policyID, &ids, diags
 	}
-	return diags
+	return model.AgentPolicyID.ValueStringPointer(), nil, diags
 }

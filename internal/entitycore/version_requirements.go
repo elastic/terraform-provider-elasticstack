@@ -19,6 +19,7 @@ package entitycore
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -70,6 +71,22 @@ func NewAttributeVersionCheckRequirement(attr path.Path, check VersionCheck, err
 // GetVersionRequirements has exactly one resource-level requirement.
 func SingleVersionRequirement(minVersion version.Version, errorMessage string) []VersionRequirement {
 	return []VersionRequirement{{MinVersion: minVersion, ErrorMessage: errorMessage}}
+}
+
+// AppendVersionRequirementIf appends a resource-level minimum-version
+// requirement to reqs when cond is true, formatting ErrorMessage from format
+// and args via fmt.Sprintf. It returns reqs unchanged when cond is false,
+// letting GetVersionRequirements implementations collapse each conditional
+// append into a single line instead of repeating the
+// if/append/VersionRequirement{} boilerplate at every call site.
+func AppendVersionRequirementIf(reqs []VersionRequirement, cond bool, minVersion *version.Version, format string, args ...any) []VersionRequirement {
+	if !cond {
+		return reqs
+	}
+	return append(reqs, VersionRequirement{
+		MinVersion:   *minVersion,
+		ErrorMessage: fmt.Sprintf(format, args...),
+	})
 }
 
 // WithVersionRequirements is an optional interface that entity models may

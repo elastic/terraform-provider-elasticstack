@@ -19,7 +19,6 @@ package security_role
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -69,19 +68,11 @@ func (m resourceModel) GetVersionRequirements(_ context.Context) ([]entitycore.V
 	var reqs []entitycore.VersionRequirement
 	var diags diag.Diagnostics
 
-	if m.requiresDescriptionVersion() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *minSupportedDescriptionVersion,
-			ErrorMessage: fmt.Sprintf(`'description' is supported only for Kibana v%s and above`, minSupportedDescriptionVersion.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, m.requiresDescriptionVersion(),
+		minSupportedDescriptionVersion, `'description' is supported only for Kibana v%s and above`, minSupportedDescriptionVersion.String())
 
-	if m.requiresRemoteIndicesVersion() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *minSupportedRemoteIndicesVersion,
-			ErrorMessage: fmt.Sprintf(`'remote_indices' is supported only for Kibana v%s and above`, minSupportedRemoteIndicesVersion.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, m.requiresRemoteIndicesVersion(),
+		minSupportedRemoteIndicesVersion, `'remote_indices' is supported only for Kibana v%s and above`, minSupportedRemoteIndicesVersion.String())
 
 	return reqs, diags
 }

@@ -224,15 +224,11 @@ func TestBuildBootstrapRequest(t *testing.T) {
 		t.Errorf("expected package name %q, got %q", "endpoint", name)
 	}
 
-	if req.Inputs == nil || len(*req.Inputs) != 1 {
-		count := 0
-		if req.Inputs != nil {
-			count = len(*req.Inputs)
-		}
-		t.Fatalf("expected 1 input, got %d", count)
+	if len(req.Inputs) != 1 {
+		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
 	}
 
-	input := (*req.Inputs)[0]
+	input := req.Inputs[0]
 	if input.Type != "ENDPOINT_INTEGRATION_CONFIG" {
 		t.Errorf("expected input type=%q, got %q", "ENDPOINT_INTEGRATION_CONFIG", input.Type)
 	}
@@ -315,21 +311,55 @@ func TestBuildBootstrapRequestNullPreset(t *testing.T) {
 		t.Fatalf("unexpected error: %v", diags)
 	}
 
-	if req.Inputs == nil || len(*req.Inputs) != 1 {
-		count := 0
-		if req.Inputs != nil {
-			count = len(*req.Inputs)
-		}
-		t.Fatalf("expected 1 input, got %d", count)
+	if len(req.Inputs) != 1 {
+		t.Fatalf("expected 1 input, got %d", len(req.Inputs))
 	}
 
-	input := (*req.Inputs)[0]
+	input := req.Inputs[0]
 
 	// When preset is null, Config should be nil (no _config)
 	if input.Config != nil {
 		if _, ok := (*input.Config)["_config"]; ok {
 			t.Error("expected _config to be absent from bootstrap input config when preset is null")
 		}
+	}
+}
+
+// TestBuildBootstrapRequestPolicyID tests that a configured policy_id is sent
+// as the package policy id on create, and omitted when not configured.
+func TestBuildBootstrapRequestPolicyID(t *testing.T) {
+	for name, tc := range map[string]struct {
+		policyID types.String
+		want     *string
+	}{
+		"configured": {policyID: types.StringValue("my-defend-policy"), want: new("my-defend-policy")},
+		"null":       {policyID: types.StringNull()},
+		"unknown":    {policyID: types.StringUnknown()},
+	} {
+		t.Run(name, func(t *testing.T) {
+			model := &edip.ElasticDefendIntegrationPolicyModel{
+				PolicyID:           tc.policyID,
+				Name:               types.StringValue("my-endpoint"),
+				Namespace:          types.StringValue("default"),
+				AgentPolicyID:      types.StringValue("agent-123"),
+				IntegrationVersion: types.StringValue("8.14.0"),
+			}
+
+			req, diags := edip.BuildBootstrapRequest(context.Background(), model)
+			require.False(t, diags.HasError(), "unexpected error: %v", diags)
+			require.Equal(t, tc.want, req.Id)
+
+			body, err := json.Marshal(req)
+			require.NoError(t, err)
+			var decoded map[string]any
+			require.NoError(t, json.Unmarshal(body, &decoded))
+			id, ok := decoded["id"]
+			if tc.want == nil {
+				require.False(t, ok, "expected id to be omitted, got %v", id)
+			} else {
+				require.Equal(t, *tc.want, id)
+			}
+		})
 	}
 }
 

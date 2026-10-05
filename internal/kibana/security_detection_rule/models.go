@@ -19,7 +19,6 @@ package securitydetectionrule
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -604,12 +603,8 @@ func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionR
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(d.ResponseActions) && len(d.ResponseActions.Elements()) > 0 {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionResponseActions,
-			ErrorMessage: fmt.Sprintf("Response actions require server version %s or higher", MinVersionResponseActions.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(d.ResponseActions) && len(d.ResponseActions.Elements()) > 0,
+		MinVersionResponseActions, "Response actions require server version %s or higher", MinVersionResponseActions.String())
 
 	if typeutils.IsKnown(d.Actions) && len(d.Actions.Elements()) > 0 {
 		var actions []ActionModel
@@ -617,15 +612,15 @@ func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionR
 		if diags.HasError() {
 			return nil, diags
 		}
+		hasAlertsFilter := false
 		for _, action := range actions {
 			if typeutils.IsKnown(action.AlertsFilter) {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *MinVersionAlertsFilter,
-					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
-				})
+				hasAlertsFilter = true
 				break
 			}
 		}
+		reqs = entitycore.AppendVersionRequirementIf(reqs, hasAlertsFilter,
+			MinVersionAlertsFilter, "actions.alerts_filter is only supported for Kibana v8.9 or higher")
 	}
 
 	return reqs, diags

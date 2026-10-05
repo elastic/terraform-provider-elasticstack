@@ -78,19 +78,13 @@ var _ entitycore.WithVersionRequirements = integrationModel{}
 func (m integrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(m.IgnoreMappingUpdateErrors) && m.IgnoreMappingUpdateErrors.ValueBool() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionIgnoreMappingUpdateErrors,
-			ErrorMessage: "The 'ignore_mapping_update_errors' parameter requires server version " + MinVersionIgnoreMappingUpdateErrors.String() + " or higher.",
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.IgnoreMappingUpdateErrors) && m.IgnoreMappingUpdateErrors.ValueBool(),
+		MinVersionIgnoreMappingUpdateErrors, "The 'ignore_mapping_update_errors' parameter requires server version %s or higher.", MinVersionIgnoreMappingUpdateErrors.String())
 
-	if typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionSkipDataStreamRollover,
-			ErrorMessage: "The 'skip_data_stream_rollover' parameter requires server version " + MinVersionSkipDataStreamRollover.String() + " or higher.",
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool(),
+		MinVersionSkipDataStreamRollover, "The 'skip_data_stream_rollover' parameter requires server version %s or higher.", MinVersionSkipDataStreamRollover.String())
 
 	return reqs, nil
 }

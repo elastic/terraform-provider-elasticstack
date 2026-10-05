@@ -287,7 +287,7 @@ func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, 
 	model.Inputs = inputsMap
 }
 
-func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integrationPolicyFeatures) (kbapi.PackagePolicyRequest, diag.Diagnostics) {
+func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integrationPolicyFeatures) (kbapi.PackagePolicyRequestMappedInputs, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	// Decode the 'inputs' attribute (including each input's nested 'streams'
@@ -369,12 +369,7 @@ func (model integrationPolicyModel) toAPIModel(ctx context.Context, feat integra
 		return nil
 	}()
 
-	var body kbapi.PackagePolicyRequest
-	if err := body.FromPackagePolicyRequestMappedInputs(mappedBody); err != nil {
-		diags.AddError("Failed to build package policy request", err.Error())
-		return kbapi.PackagePolicyRequest{}, diags
-	}
-	return body, diags
+	return mappedBody, diags
 }
 
 // decodedInput is the once-decoded form of a single `inputs` map element,
