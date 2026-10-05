@@ -44,32 +44,39 @@ func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	}
 	plan.ID = basetypes.NewStringValue(id.String())
 
-	configs, configDiags := plan.toAliasConfigs(ctx)
-	diags.Append(configDiags...)
+	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, aliasName)
+	diags.Append(readDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	// Convert to alias actions
-	var actions []elasticsearch.AliasAction
-	for _, config := range configs {
-		action := elasticsearch.AliasAction{
-			Type:          "add",
-			Index:         config.Name,
-			Alias:         aliasName,
-			IsWriteIndex:  config.IsWriteIndex,
-			Filter:        config.Filter,
-			IndexRouting:  config.IndexRouting,
-			IsHidden:      config.IsHidden,
-			Routing:       config.Routing,
-			SearchRouting: config.SearchRouting,
+	currentConfigs, currentDiags := currentAliasConfigs(aliasName, currentIndices)
+	diags.Append(currentDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
+	}
+
+	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
+	}
+	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, aliasName, currentConfigs, resolveIndexExpression)
+	diags.Append(actionDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
+	}
+
+	if len(actions) > 0 {
+		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
+		if diags.HasError() {
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
 		}
-		actions = append(actions, action)
 	}
 
-	diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
-	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: plan}, diags
+	if desiredEmpty {
+		diags.Append(plan.markDesiredEmptyAfterWrite(ctx)...)
+		if diags.HasError() {
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
+		}
 	}
 
 	return entitycore.WriteResult[tfModel]{Model: plan}, diags

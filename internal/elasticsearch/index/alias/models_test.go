@@ -21,11 +21,61 @@ import (
 	"context"
 	"testing"
 
+	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func readIndexModelWithRouting(name, routing string) readIndexModel {
+	return readIndexModel{
+		Name:            types.StringValue(name),
+		ConcreteIndices: types.SetNull(types.StringType),
+		Filter:          jsontypes.NewNormalizedNull(),
+		IndexRouting:    types.StringNull(),
+		IsHidden:        types.BoolValue(false),
+		Routing:         types.StringValue(routing),
+		SearchRouting:   types.StringNull(),
+	}
+}
+
+func mustReadIndexSet(ctx context.Context, t *testing.T, indices ...readIndexModel) types.Set {
+	t.Helper()
+
+	value, diags := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: getReadIndexAttrTypes(ctx)}, indices)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	return value
+}
+
+func TestReadIndexModel_ConcreteIndices(t *testing.T) {
+	t.Parallel()
+
+	concreteIndices := types.SetValueMust(
+		types.StringType,
+		[]attr.Value{types.StringValue("traces-apm-default")},
+	)
+
+	model := readIndexModel{
+		ConcreteIndices: concreteIndices,
+	}
+
+	require.Equal(t, concreteIndices, model.ConcreteIndices)
+}
+
+func TestTfModel_PopulateFromAPI_UsesReadIndexAttributeTypes(t *testing.T) {
+	t.Parallel()
+
+	model := tfModel{}
+	diags := model.populateFromAPI(context.Background(), "logs", map[string]esTypes.AliasDefinition{
+		"logs-1": {},
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+}
 
 func TestIndexConfig_Equals(t *testing.T) {
 	tests := []struct {
@@ -310,11 +360,6 @@ func TestIndexConfig_Equals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip tests that would panic due to maps.Equal limitations
-			// if tt.name == "Filter with nested maps - demonstrates maps.Equal limitation" ||
-			// 	tt.name == "Filter with slices - demonstrates maps.Equal panic" {
-			// 	t.Skip("This test demonstrates the limitation of maps.Equal with uncomparable types - it would panic")
-			// }
 			result := tt.a.Equals(tt.b)
 			assert.Equal(t, tt.expected, result, "Equals() returned unexpected result")
 		})
@@ -326,33 +371,49 @@ func TestTfModel_Validate(t *testing.T) {
 
 	ctx := context.Background()
 	indexAttrTypes := getIndexAttrTypes(context.Background())
-	indexObjectType := types.ObjectType{AttrTypes: indexAttrTypes}
+	readIndexAttrTypes := getReadIndexAttrTypes(context.Background())
+	readIndexObjectType := types.ObjectType{AttrTypes: readIndexAttrTypes}
 
-	indexModelForName := func(name types.String) indexModel {
-		return indexModel{
+	indexModelForName := func(name types.String) readIndexModel {
+		return readIndexModel{
+			Name:            name,
+			ConcreteIndices: types.SetValueMust(types.StringType, nil),
+			Filter:          jsontypes.NewNormalizedNull(),
+			IndexRouting:    types.StringNull(),
+			IsHidden:        types.BoolValue(false),
+			Routing:         types.StringNull(),
+			SearchRouting:   types.StringNull(),
+		}
+	}
+
+	mustIndexObject := func(t *testing.T, name types.String) types.Object {
+		t.Helper()
+		obj, diags := types.ObjectValueFrom(ctx, indexAttrTypes, struct {
+			Name          types.String         `tfsdk:"name"`
+			Filter        jsontypes.Normalized `tfsdk:"filter"`
+			IndexRouting  types.String         `tfsdk:"index_routing"`
+			IsHidden      types.Bool           `tfsdk:"is_hidden"`
+			Routing       types.String         `tfsdk:"routing"`
+			SearchRouting types.String         `tfsdk:"search_routing"`
+		}{
 			Name:          name,
 			Filter:        jsontypes.NewNormalizedNull(),
 			IndexRouting:  types.StringNull(),
 			IsHidden:      types.BoolValue(false),
 			Routing:       types.StringNull(),
 			SearchRouting: types.StringNull(),
-		}
-	}
-
-	mustIndexObject := func(t *testing.T, name types.String) types.Object {
-		t.Helper()
-		obj, diags := types.ObjectValueFrom(ctx, indexAttrTypes, indexModelForName(name))
+		})
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 		return obj
 	}
 
 	mustIndexSet := func(t *testing.T, names ...types.String) types.Set {
 		t.Helper()
-		indices := make([]indexModel, 0, len(names))
+		indices := make([]readIndexModel, 0, len(names))
 		for _, name := range names {
 			indices = append(indices, indexModelForName(name))
 		}
-		setVal, diags := types.SetValueFrom(ctx, indexObjectType, indices)
+		setVal, diags := types.SetValueFrom(ctx, readIndexObjectType, indices)
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 		return setVal
 	}
@@ -381,7 +442,7 @@ func TestTfModel_Validate(t *testing.T) {
 		t.Parallel()
 		m := tfModel{
 			WriteIndex:  mustIndexObject(t, types.StringValue("w1")),
-			ReadIndices: types.SetNull(indexObjectType),
+			ReadIndices: types.SetNull(readIndexObjectType),
 		}
 		diags := m.Validate(ctx)
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
@@ -391,7 +452,7 @@ func TestTfModel_Validate(t *testing.T) {
 		t.Parallel()
 		m := tfModel{
 			WriteIndex:  mustIndexObject(t, types.StringValue("w1")),
-			ReadIndices: types.SetUnknown(indexObjectType),
+			ReadIndices: types.SetUnknown(readIndexObjectType),
 		}
 		diags := m.Validate(ctx)
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
@@ -438,4 +499,433 @@ func TestTfModel_Validate(t *testing.T) {
 		diags := m.Validate(ctx)
 		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	})
+}
+
+func TestTfModel_ResolveAliasConfigs_DeduplicatesOverlappingIdenticalSettings(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{ReadIndices: mustReadIndexSet(ctx, t,
+		readIndexModelWithRouting("logs-*", "shared-route"),
+		readIndexModelWithRouting("logs-current", "shared-route"),
+	)}
+	configs, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		switch expression {
+		case "logs-*":
+			return elasticsearch.ResolvedIndexTargets{Names: []string{"logs-1", "logs-2"}}, nil
+		case "logs-current":
+			return elasticsearch.ResolvedIndexTargets{Names: []string{"logs-2"}}, nil
+		default:
+			require.FailNowf(t, "unexpected expression", "%q", expression)
+			return elasticsearch.ResolvedIndexTargets{}, nil
+		}
+	})
+
+	require.False(t, configDiags.HasError(), "unexpected diagnostics: %v", configDiags.Errors())
+	require.ElementsMatch(t, []IndexConfig{
+		{Name: "logs-1", Routing: "shared-route"},
+		{Name: "logs-2", Routing: "shared-route"},
+	}, configs)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsOverlappingConflictingSettings(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{ReadIndices: mustReadIndexSet(ctx, t,
+		readIndexModelWithRouting("logs-*", "route-a"),
+		readIndexModelWithRouting("logs-current", "route-b"),
+	)}
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		require.Contains(t, []string{"logs-*", "logs-current"}, expression)
+		return elasticsearch.ResolvedIndexTargets{Names: []string{"logs-1"}}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Contains(t, configDiags.Errors()[0].Detail(), "logs-1")
+	require.Contains(t, configDiags.Errors()[0].Detail(), "logs-*")
+	require.Contains(t, configDiags.Errors()[0].Detail(), "logs-current")
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsMixedKindsAcrossExpressions(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{ReadIndices: mustReadIndexSet(ctx, t,
+		readIndexModelWithRouting("logs-*", ""),
+		readIndexModelWithRouting("metrics-*", ""),
+	)}
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		switch expression {
+		case "logs-*":
+			return elasticsearch.ResolvedIndexTargets{
+				Kind:  elasticsearch.RegularIndexTarget,
+				Names: []string{"logs-1"},
+			}, nil
+		case "metrics-*":
+			return elasticsearch.ResolvedIndexTargets{
+				Kind:  elasticsearch.DataStreamTarget,
+				Names: []string{"metrics-default"},
+			}, nil
+		default:
+			require.FailNowf(t, "unexpected expression", "%q", expression)
+			return elasticsearch.ResolvedIndexTargets{}, nil
+		}
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Detail(), "both regular indices and data streams")
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsResolvedWriteIndexCollision(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	writeIndex, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), indexModel{
+		Name:          types.StringValue("logs-current"),
+		Filter:        jsontypes.NewNormalizedNull(),
+		IndexRouting:  types.StringNull(),
+		IsHidden:      types.BoolValue(false),
+		Routing:       types.StringNull(),
+		SearchRouting: types.StringNull(),
+	})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+
+	model := tfModel{
+		WriteIndex:  writeIndex,
+		ReadIndices: mustReadIndexSet(ctx, t, readIndexModelWithRouting("logs-*", "")),
+	}
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		require.Equal(t, "logs-*", expression)
+		return elasticsearch.ResolvedIndexTargets{Names: []string{"logs-current"}}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Contains(t, configDiags.Errors()[0].Detail(), "logs-*")
+	require.Contains(t, configDiags.Errors()[0].Detail(), "logs-current")
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsEmptyReadNameBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t, readIndexModelWithRouting("", "")),
+	}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsUnknownReadNameBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t, readIndexModel{
+			Name:            types.StringUnknown(),
+			ConcreteIndices: types.SetNull(types.StringType),
+			Filter:          jsontypes.NewNormalizedNull(),
+			IndexRouting:    types.StringNull(),
+			IsHidden:        types.BoolValue(false),
+			Routing:         types.StringNull(),
+			SearchRouting:   types.StringNull(),
+		}),
+	}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsUnknownWriteIndexBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{
+		WriteIndex: types.ObjectUnknown(getIndexAttrTypes(ctx)),
+	}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsUnknownWriteIndexNameBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	writeIndex, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), indexModel{
+		Name:          types.StringUnknown(),
+		Filter:        jsontypes.NewNormalizedNull(),
+		IndexRouting:  types.StringNull(),
+		IsHidden:      types.BoolValue(false),
+		Routing:       types.StringNull(),
+		SearchRouting: types.StringNull(),
+	})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+
+	model := tfModel{WriteIndex: writeIndex}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsKnownWriteIndexSelectorBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	writeIndex, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), indexModel{
+		Name:          types.StringValue("logs-*"),
+		Filter:        jsontypes.NewNormalizedNull(),
+		IndexRouting:  types.StringNull(),
+		IsHidden:      types.BoolValue(false),
+		Routing:       types.StringNull(),
+		SearchRouting: types.StringNull(),
+	})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+
+	model := tfModel{WriteIndex: writeIndex}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_ValidatesLaterInvalidReadNameBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t,
+			readIndexModelWithRouting("logs-valid", ""),
+			readIndexModelWithRouting("", "")),
+	}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsUnknownReadIndicesBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{
+		ReadIndices: types.SetUnknown(types.ObjectType{AttrTypes: getReadIndexAttrTypes(ctx)}),
+	}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ModifyPlanReadIndexMembership_MarksUnknownNamesMembershipUnknown(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	plan := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t, readIndexModel{
+			Name:            types.StringUnknown(),
+			ConcreteIndices: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("logs-1")}),
+			Filter:          jsontypes.NewNormalizedNull(),
+			IndexRouting:    types.StringNull(),
+			IsHidden:        types.BoolValue(false),
+			Routing:         types.StringNull(),
+			SearchRouting:   types.StringNull(),
+		}),
+	}
+	resolveCalls := 0
+
+	diags := plan.modifyPlanReadIndexMembership(ctx, tfModel{}, func(context.Context, string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Zero(t, resolveCalls)
+
+	var readIndices []readIndexModel
+	diags = plan.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, readIndices, 1)
+	require.True(t, readIndices[0].ConcreteIndices.IsUnknown())
+}
+
+func TestTfModel_ModifyPlanReadIndexMembership_NilResolverMarksMembershipUnknown(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	state := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t, readIndexModel{
+			Name:            types.StringValue("logs-*"),
+			ConcreteIndices: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("logs-1")}),
+			Filter:          jsontypes.NewNormalizedNull(),
+			IndexRouting:    types.StringNull(),
+			IsHidden:        types.BoolValue(false),
+			Routing:         types.StringNull(),
+			SearchRouting:   types.StringNull(),
+		}),
+	}
+	plan := state
+
+	diags := plan.modifyPlanReadIndexMembership(ctx, state, nil)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	var readIndices []readIndexModel
+	diags = plan.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, readIndices, 1)
+	require.True(t, readIndices[0].ConcreteIndices.IsUnknown())
+}
+
+func TestTfModel_ModifyPlanReadIndexMembership_PreservesSetElementCorrelation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	state := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t,
+			readIndexModel{
+				Name:            types.StringValue("logs-*"),
+				ConcreteIndices: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("logs-1")}),
+				Filter:          jsontypes.NewNormalizedNull(),
+				IndexRouting:    types.StringNull(),
+				IsHidden:        types.BoolValue(false),
+				Routing:         types.StringNull(),
+				SearchRouting:   types.StringNull(),
+			},
+			readIndexModel{
+				Name:            types.StringValue("metrics-*"),
+				ConcreteIndices: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("metrics-1")}),
+				Filter:          jsontypes.NewNormalizedNull(),
+				IndexRouting:    types.StringNull(),
+				IsHidden:        types.BoolValue(false),
+				Routing:         types.StringNull(),
+				SearchRouting:   types.StringNull(),
+			},
+		),
+	}
+	plan := state
+
+	diags := plan.modifyPlanReadIndexMembership(ctx, state, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		switch expression {
+		case "logs-*":
+			return elasticsearch.ResolvedIndexTargets{Names: []string{"logs-1", "logs-2"}}, nil
+		case "metrics-*":
+			return elasticsearch.ResolvedIndexTargets{Names: []string{"metrics-1"}}, nil
+		default:
+			require.FailNowf(t, "unexpected expression", "%q", expression)
+			return elasticsearch.ResolvedIndexTargets{}, nil
+		}
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	var readIndices []readIndexModel
+	diags = plan.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, readIndices, 2)
+	for _, readIndex := range readIndices {
+		switch readIndex.Name.ValueString() {
+		case "logs-*":
+			require.True(t, readIndex.ConcreteIndices.IsUnknown())
+		case "metrics-*":
+			require.Equal(t, types.SetValueMust(types.StringType, []attr.Value{types.StringValue("metrics-1")}), readIndex.ConcreteIndices)
+		default:
+			require.FailNowf(t, "unexpected read index", "%q", readIndex.Name.ValueString())
+		}
+	}
+}
+
+func TestBuildAliasActions_SkipsIdenticalConcreteTarget(t *testing.T) {
+	t.Parallel()
+
+	config := IndexConfig{Name: "traces-apm-default", Routing: "shared-route"}
+	actions := buildAliasActions("traces", map[string]IndexConfig{
+		config.Name: config,
+	}, []IndexConfig{config})
+
+	require.Empty(t, actions)
+}
+
+func TestTfModel_BuildResolvedAliasActions_SkipsAttachedWildcardTargets(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{ReadIndices: mustReadIndexSet(ctx, t,
+		readIndexModelWithRouting("traces-apm*", "shared-route"),
+	)}
+	actions, _, diags := model.buildResolvedAliasActionsWithOutcome(ctx, "traces", map[string]IndexConfig{
+		"traces-apm-default":     {Name: "traces-apm-default", Routing: "shared-route"},
+		"traces-apm.rum-default": {Name: "traces-apm.rum-default", Routing: "shared-route"},
+	}, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		require.Equal(t, "traces-apm*", expression)
+		return elasticsearch.ResolvedIndexTargets{Names: []string{
+			"traces-apm-default",
+			"traces-apm.rum-default",
+		}}, nil
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Empty(t, actions)
+}
+
+func TestCurrentAliasConfigs_UsesConcreteAssociationsForAlias(t *testing.T) {
+	t.Parallel()
+
+	configs, diags := currentAliasConfigs("traces", map[string]esTypes.IndexAliases{
+		"traces-apm-default": {
+			Aliases: map[string]esTypes.AliasDefinition{
+				"traces": {},
+			},
+		},
+		"unrelated": {
+			Aliases: map[string]esTypes.AliasDefinition{
+				"other": {},
+			},
+		},
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Equal(t, map[string]IndexConfig{
+		"traces-apm-default": {Name: "traces-apm-default"},
+	}, configs)
 }
