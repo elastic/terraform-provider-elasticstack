@@ -245,18 +245,7 @@ The `gate` job SHALL provide a stable required-check target that can be used by 
 
 ### Requirement: Snapshot-to-GA version promotion
 
-When the Elastic Stack release tracked by the acceptance matrix's snapshot-labeled entry
-(`<version>-SNAPSHOT`) reaches general availability, the pinned versions artifact SHALL be rewritten
-to replace that entry with the released version string rather than adding a separate, additional
-entry for the same stack line. This rewrite SHALL be performed by the version-matrix generator
-(`ci-version-matrix-generation` capability) as part of its normal desired-list computation, not by a
-human hand-editing the workflow YAML. Because per-version step conditions match by
-numeric major.minor range rather than by exact version string (see "Per-version environment rules
-match version ranges, not exact patches"), a promoted entry SHALL continue to receive the same step
-coverage it received while labeled as a snapshot without requiring any edit to those conditions. The
-promoted entry SHALL no longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be
-treated as blocking (`continue-on-error: false`) like every other non-snapshot matrix entry, and
-SHALL NOT trigger the snapshot-failure PR warning comment.
+The pinned versions artifact SHALL be rewritten when the Elastic Stack release tracked by the acceptance matrix's snapshot-labeled entry (`<version>-SNAPSHOT`) reaches general availability, replacing that entry with the released version string rather than adding a separate additional entry for the same stack line. This rewrite SHALL be performed by the version-matrix generator (`ci-version-matrix-generation` capability) as part of its normal desired-list computation, not by a human hand-editing the workflow YAML. Because per-version step conditions match by numeric major.minor range rather than by exact version string (see "Per-version environment rules match version ranges, not exact patches"), a promoted entry SHALL continue to receive the same step coverage it received while labeled as a snapshot without requiring any edit to those conditions. The promoted entry SHALL no longer match `endsWith(matrix.version, '-SNAPSHOT')` and SHALL therefore be treated as blocking (`continue-on-error: false`) like every other non-snapshot matrix entry, and SHALL NOT trigger the snapshot-failure PR warning comment.
 
 #### Scenario: Snapshot entry is promoted to its GA release
 

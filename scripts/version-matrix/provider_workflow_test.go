@@ -124,10 +124,10 @@ func TestProviderWorkflow_derivedFlagsReplaceMatrixRunnerAndFleetImage(t *testin
 			synthetics = step
 		}
 	}
-	assert.Equal(t, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet", prePull.If)
+	assert.Equal(t, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet && steps.targeted.outputs.has_packages == 'true'", prePull.If)
 	assert.Contains(t, prePull.Run, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage")
 	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}", compose.Env["FLEET_IMAGE"])
-	assert.Equal(t, "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics", synthetics.If)
+	assert.Equal(t, "steps.targeted.outputs.has_packages == 'true' && fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics", synthetics.If)
 }
 
 func TestProviderWorkflow_gateInspectsLoadMatrix(t *testing.T) {
@@ -136,7 +136,7 @@ func TestProviderWorkflow_gateInspectsLoadMatrix(t *testing.T) {
 	wf := loadProviderWorkflow(t)
 	gate, ok := wf.Jobs["gate"]
 	require.True(t, ok, "missing gate job")
-	assert.ElementsMatch(t, []string{"classify", "build", "golangci-lint", "lint", "test", "load-matrix"}, providerNeeds(t, gate))
+	assert.ElementsMatch(t, []string{"classify", "build", "golangci-lint", "lint", "test", "load-matrix", "unit-test"}, providerNeeds(t, gate))
 
 	var gateStep providerWorkflowStep
 	for _, step := range gate.Steps {
