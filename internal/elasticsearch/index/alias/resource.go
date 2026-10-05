@@ -89,6 +89,18 @@ func (r *aliasResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 		return
 	}
 
+	// A newly configured alias can refer to indices created in the same apply,
+	// so resolving its read index expressions during planning can return 404.
+	// Mark the membership unknown and defer resolution until Create instead.
+	if req.State.Raw.IsNull() {
+		resp.Diagnostics.Append(plan.modifyPlanReadIndexMembership(ctx, state, nil)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
+		return
+	}
+
 	var readIndices []readIndexModel
 	resp.Diagnostics.Append(plan.ReadIndices.ElementsAs(ctx, &readIndices, false)...)
 	if resp.Diagnostics.HasError() {
