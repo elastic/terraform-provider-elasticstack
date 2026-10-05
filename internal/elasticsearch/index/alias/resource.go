@@ -112,7 +112,7 @@ func (r *aliasResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 		return
 	}
 	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression)
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, plan.Name.ValueString())
 	}
 
 	_, resolveDiags := plan.resolveAliasConfigs(ctx, resolveIndexExpression)

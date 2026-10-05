@@ -94,6 +94,12 @@ func TestResolveIndexExpression(t *testing.T) {
 			wantDiagnosticFor: "existing-alias",
 		},
 		{
+			name:              "rejects unrelated alias after excluding managed alias",
+			expression:        "*",
+			response:          `{"indices":[{"name":"logs-1"}],"aliases":[{"name":"managed-alias","indices":["logs-1"]},{"name":"unrelated-alias","indices":["logs-1"]}],"data_streams":[]}`,
+			wantDiagnosticFor: "unrelated-alias",
+		},
+		{
 			name:              "rejects remote index targets",
 			expression:        "remote-cluster:logs-*",
 			response:          `{"indices":[{"name":"remote-cluster:logs-1"}],"aliases":[],"data_streams":[]}`,
@@ -111,6 +117,13 @@ func TestResolveIndexExpression(t *testing.T) {
 			response:   `{"indices":[{"name":".ds-logs-default-000001","data_stream":"logs-default"}],"aliases":[],"data_streams":[{"name":"logs-default","backing_indices":[".ds-logs-default-000001"]}]}`,
 			wantKind:   DataStreamTarget,
 			wantNames:  []string{"logs-default"},
+		},
+		{
+			name:       "keeps explicitly resolved backing index",
+			expression: ".ds-logs-default-000001",
+			response:   `{"indices":[{"name":".ds-logs-default-000001","data_stream":"logs-default"}],"aliases":[],"data_streams":[]}`,
+			wantKind:   RegularIndexTarget,
+			wantNames:  []string{".ds-logs-default-000001"},
 		},
 		{
 			name:       "rejects mixed target kinds",
@@ -133,7 +146,11 @@ func TestResolveIndexExpression(t *testing.T) {
 			})
 			defer server.Close()
 
-			targets, diags := ResolveIndexExpression(context.Background(), newMockScopedClient(t, server), tt.expression)
+			excludedAliases := []string(nil)
+			if tt.name == "rejects unrelated alias after excluding managed alias" {
+				excludedAliases = []string{"managed-alias"}
+			}
+			targets, diags := ResolveIndexExpression(context.Background(), newMockScopedClient(t, server), tt.expression, excludedAliases...)
 
 			if tt.wantDiagnosticFor != "" {
 				require.True(t, diags.HasError())

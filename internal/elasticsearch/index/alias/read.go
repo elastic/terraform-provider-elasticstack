@@ -37,7 +37,7 @@ func readAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 
 	retainVirtualState := state.desiredEmptyAfterWrite || state.isVirtualState(ctx)
 	diags = readAliasIntoModelWithResolution(ctx, aliasName, indices, &state, func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression)
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
 	})
 	if diags.HasError() {
 		return state, false, diags

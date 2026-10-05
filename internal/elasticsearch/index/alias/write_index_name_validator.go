@@ -34,13 +34,17 @@ func (writeIndexNameValidator) ValidateString(_ context.Context, req validator.S
 	}
 
 	name := req.ConfigValue.ValueString()
-	if strings.ContainsAny(name, "*?,") || strings.HasPrefix(name, "-") || strings.HasPrefix(name, "<") || name == "_all" {
+	if isWriteIndexSelector(name) {
 		resp.Diagnostics.AddAttributeError(
 			req.Path,
 			"Invalid write index name",
 			fmt.Sprintf("%q must name a single index", name),
 		)
 	}
+}
+
+func isWriteIndexSelector(name string) bool {
+	return strings.ContainsAny(name, "*?,") || strings.HasPrefix(name, "-") || strings.HasPrefix(name, "<") || name == "_all"
 }
 
 func (writeIndexNameValidator) Description(context.Context) string {

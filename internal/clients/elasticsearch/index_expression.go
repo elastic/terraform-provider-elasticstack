@@ -40,7 +40,7 @@ type ResolvedIndexTargets struct {
 	Names []string
 }
 
-func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchScopedClient, expression string) (ResolvedIndexTargets, fwdiags.Diagnostics) {
+func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchScopedClient, expression string, excludedAliases ...string) (ResolvedIndexTargets, fwdiags.Diagnostics) {
 	response, err := client.GetESClient().Indices.ResolveIndex(expression).
 		ExpandWildcards(expandwildcard.All).
 		AllowNoIndices(true).
@@ -48,19 +48,33 @@ func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchSc
 	if err != nil {
 		return ResolvedIndexTargets{}, diagutil.FrameworkDiagFromError(err)
 	}
-	if len(response.Aliases) > 0 {
+	excludedAliasNames := make(map[string]struct{}, len(excludedAliases))
+	for _, alias := range excludedAliases {
+		excludedAliasNames[alias] = struct{}{}
+	}
+	for _, alias := range response.Aliases {
+		if _, excluded := excludedAliasNames[alias.Name]; excluded {
+			continue
+		}
 		return ResolvedIndexTargets{}, fwdiags.Diagnostics{
 			fwdiags.NewErrorDiagnostic(
 				"Invalid Configuration",
-				fmt.Sprintf("Index expression %q resolves to alias %q, which cannot be an alias target", expression, response.Aliases[0].Name),
+				fmt.Sprintf("Index expression %q resolves to alias %q, which cannot be an alias target", expression, alias.Name),
 			),
 		}
+	}
+
+	resolvedDataStreams := make(map[string]struct{}, len(response.DataStreams))
+	for _, dataStream := range response.DataStreams {
+		resolvedDataStreams[dataStream.Name] = struct{}{}
 	}
 
 	targets := ResolvedIndexTargets{Kind: RegularIndexTarget}
 	for _, index := range response.Indices {
 		if index.DataStream != nil {
-			continue
+			if _, resolved := resolvedDataStreams[*index.DataStream]; resolved {
+				continue
+			}
 		}
 		if strings.Contains(index.Name, ":") {
 			return ResolvedIndexTargets{}, remoteTargetDiagnostic(expression, index.Name)

@@ -418,6 +418,14 @@ func (model *tfModel) resolveAliasConfigs(ctx context.Context, resolveIndexExpre
 				),
 			}
 		}
+		if isWriteIndexSelector(writeIndexModel.Name.ValueString()) {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid Configuration",
+					fmt.Sprintf("Write index name %q must name a single index", writeIndexModel.Name.ValueString()),
+				),
+			}
+		}
 
 		config, configDiags := indexToConfig(writeIndexModel, true)
 		if configDiags.HasError() {
@@ -458,11 +466,25 @@ func (model *tfModel) resolveAliasConfigs(ctx context.Context, resolveIndexExpre
 
 	configByTarget := make(map[string]IndexConfig)
 	expressionByTarget := make(map[string]string)
+	var targetKind elasticsearch.IndexTargetKind
+	hasTargetKind := false
 	for _, readIndex := range readIndices {
 		expression := readIndex.Name.ValueString()
 		targets, resolveDiags := resolveIndexExpression(ctx, expression)
 		if resolveDiags.HasError() {
 			return nil, resolveDiags
+		}
+		if len(targets.Names) > 0 {
+			if hasTargetKind && targetKind != targets.Kind {
+				return nil, diag.Diagnostics{
+					diag.NewErrorDiagnostic(
+						"Invalid Configuration",
+						"Read index expressions resolve to both regular indices and data streams",
+					),
+				}
+			}
+			targetKind = targets.Kind
+			hasTargetKind = true
 		}
 
 		config, configDiags := readIndexToConfig(readIndex)

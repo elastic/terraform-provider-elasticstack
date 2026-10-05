@@ -553,6 +553,36 @@ func TestTfModel_ResolveAliasConfigs_RejectsOverlappingConflictingSettings(t *te
 	require.Contains(t, configDiags.Errors()[0].Detail(), "logs-current")
 }
 
+func TestTfModel_ResolveAliasConfigs_RejectsMixedKindsAcrossExpressions(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	model := tfModel{ReadIndices: mustReadIndexSet(ctx, t,
+		readIndexModelWithRouting("logs-*", ""),
+		readIndexModelWithRouting("metrics-*", ""),
+	)}
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		switch expression {
+		case "logs-*":
+			return elasticsearch.ResolvedIndexTargets{
+				Kind:  elasticsearch.RegularIndexTarget,
+				Names: []string{"logs-1"},
+			}, nil
+		case "metrics-*":
+			return elasticsearch.ResolvedIndexTargets{
+				Kind:  elasticsearch.DataStreamTarget,
+				Names: []string{"metrics-default"},
+			}, nil
+		default:
+			require.FailNowf(t, "unexpected expression", "%q", expression)
+			return elasticsearch.ResolvedIndexTargets{}, nil
+		}
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Detail(), "both regular indices and data streams")
+}
+
 func TestTfModel_ResolveAliasConfigs_RejectsResolvedWriteIndexCollision(t *testing.T) {
 	t.Parallel()
 
@@ -650,6 +680,32 @@ func TestTfModel_ResolveAliasConfigs_RejectsUnknownWriteIndexNameBeforeResolutio
 	ctx := context.Background()
 	writeIndex, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), indexModel{
 		Name:          types.StringUnknown(),
+		Filter:        jsontypes.NewNormalizedNull(),
+		IndexRouting:  types.StringNull(),
+		IsHidden:      types.BoolValue(false),
+		Routing:       types.StringNull(),
+		SearchRouting: types.StringNull(),
+	})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+
+	model := tfModel{WriteIndex: writeIndex}
+	resolveCalls := 0
+	_, configDiags := model.resolveAliasConfigs(ctx, func(_ context.Context, _ string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		resolveCalls++
+		return elasticsearch.ResolvedIndexTargets{}, nil
+	})
+
+	require.True(t, configDiags.HasError())
+	require.Contains(t, configDiags.Errors()[0].Summary(), "Invalid Configuration")
+	require.Zero(t, resolveCalls)
+}
+
+func TestTfModel_ResolveAliasConfigs_RejectsKnownWriteIndexSelectorBeforeResolution(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	writeIndex, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), indexModel{
+		Name:          types.StringValue("logs-*"),
 		Filter:        jsontypes.NewNormalizedNull(),
 		IndexRouting:  types.StringNull(),
 		IsHidden:      types.BoolValue(false),

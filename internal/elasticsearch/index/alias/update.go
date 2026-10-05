@@ -50,7 +50,7 @@ func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	}
 
 	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression)
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
 	}
 	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, aliasName, currentConfigs, resolveIndexExpression)
 	diags.Append(actionDiags...)
