@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -247,6 +248,177 @@ func TestAccResourceMLCalendarEvent_importWrongIDFormat(t *testing.T) {
 				ImportStateVerify:        false,
 				ImportStateId:            "missing-slash-segment",
 				ExpectError:              regexp.MustCompile(`Wrong resource ID`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLCalendarEvent_forceReplaceOnChange(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-evt-rep-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_calendar_event.test"
+	vars := config.Variables{
+		"calendar_id": config.StringVariable(calendarID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "Replace test initial description"),
+					resource.TestCheckResourceAttrSet(resourceName, "event_id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "Replace test changed description"),
+					resource.TestCheckResourceAttrSet(resourceName, "event_id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLCalendarEvent_optionalSchedulingFieldsUnsupportedVersion asserts that
+// setting force_time_shift against an Elasticsearch cluster older than
+// mlCalendarEventOptionalSchedulingMinElasticsearch fails with the version-gate error raised
+// by createCalendarEvent. It runs only on older stateful clusters.
+func TestAccResourceMLCalendarEvent_optionalSchedulingFieldsUnsupportedVersion(t *testing.T) {
+	isStateful, err := versionutils.CheckIfNotServerless()()
+	if err != nil {
+		t.Fatalf("failed to check whether stack is serverless: %v", err)
+	}
+	if !isStateful {
+		t.Skip("serverless supports optional scheduling fields; skipping version gate test")
+	}
+
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(mlCalendarEventOptionalSchedulingMinElasticsearch)()
+	if err != nil {
+		t.Fatalf("failed to check stack version: %v", err)
+	}
+	if !unsupported {
+		t.Skip("stack supports optional scheduling fields; skipping version gate test")
+	}
+
+	calendarID := fmt.Sprintf("test-cal-evt-ver-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(calendarID),
+				},
+				ExpectError: regexp.MustCompile(`optional scheduling fields not supported`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLCalendarEvent_validation_emptyForceTimeShift asserts that force_time_shift
+// rejects an empty string via its stringvalidator.LengthAtLeast(1) validator.
+func TestAccResourceMLCalendarEvent_validation_emptyForceTimeShift(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-evt-fts-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				ConfigVariables: config.Variables{
+					"holder_calendar_id": config.StringVariable(calendarID),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)(string length must be at least|force_time_shift)`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLCalendarEvent_nonZOffsetTimes confirms RFC3339 start_time/end_time values
+// using an explicit non-Z UTC offset round-trip through create and refresh.
+func TestAccResourceMLCalendarEvent_nonZOffsetTimes(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-evt-off-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_calendar_event.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(calendarID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "start_time", "2027-03-01T02:00:00+02:00"),
+					resource.TestCheckResourceAttr(resourceName, "end_time", "2027-03-01T04:30:00+02:00"),
+					resource.TestCheckResourceAttrSet(resourceName, "event_id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLCalendarEvent_validation_malformedStartTime asserts that a malformed
+// (non-RFC3339) start_time string produces a clear validation error at plan time.
+func TestAccResourceMLCalendarEvent_validation_malformedStartTime(t *testing.T) {
+	calendarID := fmt.Sprintf("test-cal-evt-mal-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("plan"),
+				ConfigVariables: config.Variables{
+					"holder_calendar_id": config.StringVariable(calendarID),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)(RFC.?3339|invalid|not a valid)`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLCalendarEvent_optionalSchedulingFieldsPartial sets only force_time_shift
+// while leaving skip_result and skip_model_update omitted, confirming the raw-POST-body path
+// and version gate trigger correctly for partial combinations and that the omitted fields
+// remain server-populated (computed).
+func TestAccResourceMLCalendarEvent_optionalSchedulingFieldsPartial(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, mlCalendarEventOptionalSchedulingMinElasticsearch, versionutils.FlavorAny)
+	calendarID := fmt.Sprintf("test-cal-evt-par-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := "elasticstack_elasticsearch_ml_calendar_event.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"calendar_id": config.StringVariable(calendarID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "force_time_shift", "1800"),
+					resource.TestCheckResourceAttrSet(resourceName, "skip_result"),
+					resource.TestCheckResourceAttrSet(resourceName, "skip_model_update"),
+					resource.TestCheckResourceAttrSet(resourceName, "event_id"),
+				),
 			},
 		},
 	})
