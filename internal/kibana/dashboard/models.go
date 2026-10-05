@@ -117,10 +117,16 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	}
 	dashboardMapDashboardFiltersFromAPI(ctx, m, &data.Data, &diags)
 
-	// Map tags
-	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
+	// Map tags. Kibana omits tags (or returns an empty array) when the
+	// dashboard has none, so an explicit `tags = []` in the prior plan/state
+	// must be preserved; otherwise Terraform reports an inconsistent result
+	// (empty list -> null) after apply.
+	switch {
+	case data.Data.Tags != nil && len(*data.Data.Tags) > 0:
 		m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
-	} else {
+	case typeutils.IsKnown(m.Tags) && len(m.Tags.Elements()) == 0:
+		m.Tags = types.ListValueMust(types.StringType, []attr.Value{})
+	default:
 		m.Tags = types.ListNull(types.StringType)
 	}
 
