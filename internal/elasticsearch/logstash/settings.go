@@ -21,6 +21,7 @@ import (
 	"regexp"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // queueMaxBytesRegexp validates the queue.max_bytes setting value format.
@@ -85,48 +86,72 @@ func expandSettings(data Data) map[string]any {
 // populates the corresponding typed fields on *Data.
 func flattenSettings(apiSettings map[string]any, data *Data) {
 	if v, ok := apiSettings["pipeline.batch.delay"]; ok {
-		data.PipelineBatchDelay = typeutils.Int64FromAnyNumeric(v)
+		data.PipelineBatchDelay = int64FromAnyOrZero(v)
 	}
 	if v, ok := apiSettings["pipeline.batch.size"]; ok {
-		data.PipelineBatchSize = typeutils.Int64FromAnyNumeric(v)
+		data.PipelineBatchSize = int64FromAnyOrZero(v)
 	}
 	if v, ok := apiSettings["pipeline.ecs_compatibility"]; ok {
-		data.PipelineEcsCompatibility = typeutils.StringFromAny(v)
+		data.PipelineEcsCompatibility = stringFromAnyOrEmpty(v)
 	}
 	if v, ok := apiSettings["pipeline.ordered"]; ok {
-		data.PipelineOrdered = typeutils.StringFromAny(v)
+		data.PipelineOrdered = stringFromAnyOrEmpty(v)
 	}
 	if v, ok := apiSettings["pipeline.plugin_classloaders"]; ok {
-		data.PipelinePluginClassloaders = typeutils.BoolFromAny(v)
+		data.PipelinePluginClassloaders = boolFromAnyOrFalse(v)
 	}
 	if v, ok := apiSettings["pipeline.unsafe_shutdown"]; ok {
-		data.PipelineUnsafeShutdown = typeutils.BoolFromAny(v)
+		data.PipelineUnsafeShutdown = boolFromAnyOrFalse(v)
 	}
 	if v, ok := apiSettings["pipeline.workers"]; ok {
-		data.PipelineWorkers = typeutils.Int64FromAnyNumeric(v)
+		data.PipelineWorkers = int64FromAnyOrZero(v)
 	}
 	if v, ok := apiSettings["queue.checkpoint.acks"]; ok {
-		data.QueueCheckpointAcks = typeutils.Int64FromAnyNumeric(v)
+		data.QueueCheckpointAcks = int64FromAnyOrZero(v)
 	}
 	if v, ok := apiSettings["queue.checkpoint.retry"]; ok {
-		data.QueueCheckpointRetry = typeutils.BoolFromAny(v)
+		data.QueueCheckpointRetry = boolFromAnyOrFalse(v)
 	}
 	if v, ok := apiSettings["queue.checkpoint.writes"]; ok {
-		data.QueueCheckpointWrites = typeutils.Int64FromAnyNumeric(v)
+		data.QueueCheckpointWrites = int64FromAnyOrZero(v)
 	}
 	if v, ok := apiSettings["queue.drain"]; ok {
-		data.QueueDrain = typeutils.BoolFromAny(v)
+		data.QueueDrain = boolFromAnyOrFalse(v)
 	}
 	if v, ok := apiSettings["queue.max_bytes"]; ok {
-		data.QueueMaxBytes = typeutils.StringFromAny(v)
+		data.QueueMaxBytes = stringFromAnyOrEmpty(v)
 	}
 	if v, ok := apiSettings["queue.max_events"]; ok {
-		data.QueueMaxEvents = typeutils.Int64FromAnyNumeric(v)
+		data.QueueMaxEvents = int64FromAnyOrZero(v)
 	}
 	if v, ok := apiSettings["queue.page_capacity"]; ok {
-		data.QueuePageCapacity = typeutils.StringFromAny(v)
+		data.QueuePageCapacity = stringFromAnyOrEmpty(v)
 	}
 	if v, ok := apiSettings["queue.type"]; ok {
-		data.QueueType = typeutils.StringFromAny(v)
+		data.QueueType = stringFromAnyOrEmpty(v)
 	}
+}
+
+func int64FromAnyOrZero(v any) types.Int64 {
+	value := typeutils.Int64FromAnyNumeric(v)
+	if value.IsNull() {
+		return types.Int64Value(0)
+	}
+	return value
+}
+
+func stringFromAnyOrEmpty(v any) types.String {
+	value := typeutils.StringFromAny(v)
+	if value.IsNull() {
+		return types.StringValue("")
+	}
+	return value
+}
+
+func boolFromAnyOrFalse(v any) types.Bool {
+	value := typeutils.BoolFromAny(v)
+	if value.IsNull() {
+		return types.BoolValue(false)
+	}
+	return value
 }

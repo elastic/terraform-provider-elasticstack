@@ -76,6 +76,23 @@ func TestFlattenSettings_MissingKeysLeaveFieldsUnset(t *testing.T) {
 	require.True(t, data.PipelinePluginClassloaders.IsNull())
 }
 
+func TestFlattenSettings_InvalidPresentValuesUseLegacyDefaults(t *testing.T) {
+	t.Parallel()
+
+	apiSettings := map[string]any{
+		"pipeline.batch.delay":         "not-a-number",
+		"pipeline.ecs_compatibility":   false,
+		"pipeline.plugin_classloaders": "not-a-bool",
+	}
+
+	var data Data
+	flattenSettings(apiSettings, &data)
+
+	require.Equal(t, types.Int64Value(0), data.PipelineBatchDelay)
+	require.Equal(t, types.StringValue(""), data.PipelineEcsCompatibility)
+	require.Equal(t, types.BoolValue(false), data.PipelinePluginClassloaders)
+}
+
 func TestExpandSettings(t *testing.T) {
 	t.Parallel()
 
