@@ -23,10 +23,12 @@ import (
 	"reflect"
 
 	esTypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -39,6 +41,7 @@ type tfModel struct {
 	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
 	WriteIndex              types.Object `tfsdk:"write_index"`
 	ReadIndices             types.Set    `tfsdk:"read_indices"`
+	desiredEmptyAfterWrite  bool
 }
 
 func (model tfModel) GetID() types.String                    { return model.ID }
@@ -73,7 +76,7 @@ func (model *tfModel) Validate(ctx context.Context) diag.Diagnostics {
 	}
 
 	// Decode read indices and compare
-	var readIndices []indexModel
+	var readIndices []readIndexModel
 	diags = model.ReadIndices.ElementsAs(ctx, &readIndices, false)
 	if diags.HasError() {
 		return diags
@@ -104,6 +107,16 @@ type indexModel struct {
 	IsHidden      types.Bool           `tfsdk:"is_hidden"`
 	Routing       types.String         `tfsdk:"routing"`
 	SearchRouting types.String         `tfsdk:"search_routing"`
+}
+
+type readIndexModel struct {
+	Name            types.String         `tfsdk:"name"`
+	ConcreteIndices types.Set            `tfsdk:"concrete_indices"`
+	Filter          jsontypes.Normalized `tfsdk:"filter"`
+	IndexRouting    types.String         `tfsdk:"index_routing"`
+	IsHidden        types.Bool           `tfsdk:"is_hidden"`
+	Routing         types.String         `tfsdk:"routing"`
+	SearchRouting   types.String         `tfsdk:"search_routing"`
 }
 
 // IndexConfig represents a single index configuration within an alias
@@ -159,7 +172,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 	model.Name = types.StringValue(aliasName)
 
 	var writeIndex *indexModel
-	var readIndices []indexModel
+	var readIndices []readIndexModel
 
 	for indexName, aliasData := range indices {
 		// Convert AliasDefinition to indexModel
@@ -169,7 +182,14 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 		}
 
 		if aliasData.IsWriteIndex != nil && *aliasData.IsWriteIndex {
-			writeIndex = &index
+			writeIndex = &indexModel{
+				Name:          index.Name,
+				Filter:        index.Filter,
+				IndexRouting:  index.IndexRouting,
+				IsHidden:      index.IsHidden,
+				Routing:       index.Routing,
+				SearchRouting: index.SearchRouting,
+			}
 		} else {
 			readIndices = append(readIndices, index)
 		}
@@ -188,7 +208,7 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 
 	// Set read indices
 	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
-		AttrTypes: getIndexAttrTypes(ctx),
+		AttrTypes: getReadIndexAttrTypes(ctx),
 	}, readIndices)
 	if diags.HasError() {
 		return diags
@@ -198,29 +218,184 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 	return nil
 }
 
-// indexFromAlias converts a esTypes.AliasDefinition to an indexModel
-func indexFromAlias(indexName string, aliasData esTypes.AliasDefinition) (indexModel, diag.Diagnostics) {
-	index := indexModel{
-		Name:          types.StringValue(indexName),
-		IsHidden:      types.BoolValue(aliasData.IsHidden != nil && *aliasData.IsHidden),
-		IndexRouting:  typeutils.NonEmptyStringishPointerValue(aliasData.IndexRouting),
-		Routing:       typeutils.NonEmptyStringishPointerValue(aliasData.Routing),
-		SearchRouting: typeutils.NonEmptyStringishPointerValue(aliasData.SearchRouting),
+func (model *tfModel) populateReadState(
+	ctx context.Context,
+	aliasName string,
+	indices map[string]esTypes.AliasDefinition,
+	resolveIndexExpression resolveIndexExpressionFunc,
+) diag.Diagnostics {
+	model.Name = types.StringValue(aliasName)
+
+	var writeIndex *indexModel
+	readAliasData := make(map[string]esTypes.AliasDefinition)
+	for indexName, aliasData := range indices {
+		index, diags := indexFromAlias(indexName, aliasData)
+		if diags.HasError() {
+			return diags
+		}
+
+		if aliasData.IsWriteIndex != nil && *aliasData.IsWriteIndex {
+			writeIndex = &indexModel{
+				Name:          index.Name,
+				Filter:        index.Filter,
+				IndexRouting:  index.IndexRouting,
+				IsHidden:      index.IsHidden,
+				Routing:       index.Routing,
+				SearchRouting: index.SearchRouting,
+			}
+			continue
+		}
+
+		readAliasData[indexName] = aliasData
+	}
+
+	if writeIndex != nil {
+		writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), *writeIndex)
+		if diags.HasError() {
+			return diags
+		}
+		model.WriteIndex = writeIndexObj
+	} else {
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
+	}
+
+	var priorReadIndices []readIndexModel
+	if !model.ReadIndices.IsNull() && !model.ReadIndices.IsUnknown() {
+		diags := model.ReadIndices.ElementsAs(ctx, &priorReadIndices, false)
+		if diags.HasError() {
+			return diags
+		}
+	}
+
+	if len(priorReadIndices) == 0 {
+		return model.populateFromAPI(ctx, aliasName, indices)
+	}
+
+	covered := make(map[string]struct{})
+	readIndices := make([]readIndexModel, 0, len(priorReadIndices)+len(readAliasData))
+	for _, readIndex := range priorReadIndices {
+		targets, diags := resolveIndexExpression(ctx, readIndex.Name.ValueString())
+		if diags.HasError() {
+			return diags
+		}
+
+		concreteIndices := make([]attr.Value, 0, len(targets.Names))
+		for _, target := range targets.Names {
+			if _, exists := readAliasData[target]; !exists {
+				continue
+			}
+			covered[target] = struct{}{}
+			concreteIndices = append(concreteIndices, types.StringValue(target))
+		}
+		readIndex.ConcreteIndices = types.SetValueMust(types.StringType, concreteIndices)
+		readIndices = append(readIndices, readIndex)
+	}
+
+	for indexName, aliasData := range readAliasData {
+		if _, exists := covered[indexName]; exists {
+			continue
+		}
+		readIndex, diags := indexFromAlias(indexName, aliasData)
+		if diags.HasError() {
+			return diags
+		}
+		readIndices = append(readIndices, readIndex)
+	}
+
+	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
+		AttrTypes: getReadIndexAttrTypes(ctx),
+	}, readIndices)
+	if diags.HasError() {
+		return diags
+	}
+	model.ReadIndices = readIndicesSet
+
+	return nil
+}
+
+func (model tfModel) isVirtualState(ctx context.Context) bool {
+	if !model.WriteIndex.IsNull() {
+		return false
+	}
+	if model.ReadIndices.IsNull() {
+		return true
+	}
+	if model.ReadIndices.IsUnknown() {
+		return false
+	}
+
+	var readIndices []readIndexModel
+	diags := model.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	if diags.HasError() {
+		return false
+	}
+	for _, readIndex := range readIndices {
+		if readIndex.ConcreteIndices.IsNull() || readIndex.ConcreteIndices.IsUnknown() {
+			return false
+		}
+		var concreteIndices []string
+		diags := readIndex.ConcreteIndices.ElementsAs(ctx, &concreteIndices, false)
+		if diags.HasError() || len(concreteIndices) > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (model *tfModel) markDesiredEmptyAfterWrite(ctx context.Context) diag.Diagnostics {
+	if model.ReadIndices.IsNull() {
+		model.desiredEmptyAfterWrite = true
+		return nil
+	}
+
+	var readIndices []readIndexModel
+	diags := model.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	if diags.HasError() {
+		return diags
+	}
+	for index := range readIndices {
+		readIndices[index].ConcreteIndices = types.SetValueMust(types.StringType, nil)
+	}
+
+	readIndicesSet, diags := types.SetValueFrom(ctx, types.ObjectType{
+		AttrTypes: getReadIndexAttrTypes(ctx),
+	}, readIndices)
+	if diags.HasError() {
+		return diags
+	}
+	model.ReadIndices = readIndicesSet
+	model.desiredEmptyAfterWrite = true
+
+	return nil
+}
+
+// indexFromAlias converts an esTypes.AliasDefinition to a readIndexModel
+func indexFromAlias(indexName string, aliasData esTypes.AliasDefinition) (readIndexModel, diag.Diagnostics) {
+	index := readIndexModel{
+		Name:            types.StringValue(indexName),
+		ConcreteIndices: types.SetValueMust(types.StringType, []attr.Value{types.StringValue(indexName)}),
+		IsHidden:        types.BoolValue(aliasData.IsHidden != nil && *aliasData.IsHidden),
+		IndexRouting:    typeutils.NonEmptyStringishPointerValue(aliasData.IndexRouting),
+		Routing:         typeutils.NonEmptyStringishPointerValue(aliasData.Routing),
+		SearchRouting:   typeutils.NonEmptyStringishPointerValue(aliasData.SearchRouting),
 	}
 
 	filter, diags := aliasutil.NormalizeAliasFilterFromAny(aliasData.Filter)
 	if diags.HasError() {
-		return indexModel{}, diags
+		return readIndexModel{}, diags
 	}
 	index.Filter = filter
 
 	return index, nil
 }
 
-func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.Diagnostics) {
-	var configs []IndexConfig
+type resolveIndexExpressionFunc func(context.Context, string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics)
 
-	// Handle write index
+func (model *tfModel) resolveAliasConfigs(ctx context.Context, resolveIndexExpression resolveIndexExpressionFunc) ([]IndexConfig, diag.Diagnostics) {
+	var configs []IndexConfig
+	var writeIndex *IndexConfig
+
 	if model.WriteIndex.IsUnknown() {
 		return nil, diag.Diagnostics{
 			diag.NewErrorDiagnostic(
@@ -230,12 +405,12 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.D
 		}
 	}
 	if !model.WriteIndex.IsNull() {
-		var writeIndex indexModel
-		diags := model.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})
+		var writeIndexModel indexModel
+		diags := model.WriteIndex.As(ctx, &writeIndexModel, basetypes.ObjectAsOptions{})
 		if diags.HasError() {
 			return nil, diags
 		}
-		if writeIndex.Name.IsUnknown() || writeIndex.Name.IsNull() || writeIndex.Name.ValueString() == "" {
+		if writeIndexModel.Name.IsUnknown() || writeIndexModel.Name.IsNull() || writeIndexModel.Name.ValueString() == "" {
 			return nil, diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"Invalid Configuration",
@@ -244,14 +419,17 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.D
 			}
 		}
 
-		config, configDiags := indexToConfig(writeIndex, true)
+		config, configDiags := indexToConfig(writeIndexModel, true)
 		if configDiags.HasError() {
 			return nil, configDiags
 		}
+		writeIndex = &config
 		configs = append(configs, config)
 	}
 
-	// Handle read indices
+	if model.ReadIndices.IsNull() {
+		return configs, nil
+	}
 	if model.ReadIndices.IsUnknown() {
 		return nil, diag.Diagnostics{
 			diag.NewErrorDiagnostic(
@@ -260,31 +438,79 @@ func (model *tfModel) toAliasConfigs(ctx context.Context) ([]IndexConfig, diag.D
 			),
 		}
 	}
-	if !model.ReadIndices.IsNull() {
-		var readIndices []indexModel
-		diags := model.ReadIndices.ElementsAs(ctx, &readIndices, false)
-		if diags.HasError() {
-			return nil, diags
+
+	var readIndices []readIndexModel
+	diags := model.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	for _, readIndex := range readIndices {
+		if readIndex.Name.IsUnknown() || readIndex.Name.IsNull() || readIndex.Name.ValueString() == "" {
+			return nil, diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid Configuration",
+					"Cannot build alias actions because one of the `read_indices` has an unknown or empty `name`. Ensure all read index names are fully known during apply.",
+				),
+			}
+		}
+	}
+
+	configByTarget := make(map[string]IndexConfig)
+	expressionByTarget := make(map[string]string)
+	for _, readIndex := range readIndices {
+		expression := readIndex.Name.ValueString()
+		targets, resolveDiags := resolveIndexExpression(ctx, expression)
+		if resolveDiags.HasError() {
+			return nil, resolveDiags
 		}
 
-		for _, readIndex := range readIndices {
-			if readIndex.Name.IsUnknown() || readIndex.Name.IsNull() || readIndex.Name.ValueString() == "" {
+		config, configDiags := readIndexToConfig(readIndex)
+		if configDiags.HasError() {
+			return nil, configDiags
+		}
+
+		for _, target := range targets.Names {
+			if writeIndex != nil && target == writeIndex.Name {
 				return nil, diag.Diagnostics{
 					diag.NewErrorDiagnostic(
 						"Invalid Configuration",
-						"Cannot build alias actions because one of the `read_indices` has an unknown or empty `name`. Ensure all read index names are fully known during apply.",
+						fmt.Sprintf("Read index expression %q resolves to write index %q", expression, target),
 					),
 				}
 			}
-			config, configDiags := indexToConfig(readIndex, false)
-			if configDiags.HasError() {
-				return nil, configDiags
+
+			config.Name = target
+			if existing, exists := configByTarget[target]; exists {
+				if !existing.Equals(config) {
+					return nil, diag.Diagnostics{
+						diag.NewErrorDiagnostic(
+							"Invalid Configuration",
+							fmt.Sprintf("Read index expressions %q and %q resolve to target %q with conflicting settings", expressionByTarget[target], expression, target),
+						),
+					}
+				}
+				continue
 			}
+
+			configByTarget[target] = config
+			expressionByTarget[target] = expression
 			configs = append(configs, config)
 		}
 	}
 
 	return configs, nil
+}
+
+func readIndexToConfig(index readIndexModel) (IndexConfig, diag.Diagnostics) {
+	return indexToConfig(indexModel{
+		Name:          index.Name,
+		Filter:        index.Filter,
+		IndexRouting:  index.IndexRouting,
+		IsHidden:      index.IsHidden,
+		Routing:       index.Routing,
+		SearchRouting: index.SearchRouting,
+	}, false)
 }
 
 // indexToConfig converts an indexModel to IndexConfig
@@ -311,4 +537,83 @@ func indexToConfig(index indexModel, isWriteIndex bool) (IndexConfig, diag.Diagn
 	}
 
 	return config, nil
+}
+
+func buildAliasActions(aliasName string, current map[string]IndexConfig, desired []IndexConfig) []elasticsearch.AliasAction {
+	desiredByName := make(map[string]IndexConfig, len(desired))
+	for _, config := range desired {
+		desiredByName[config.Name] = config
+	}
+
+	actions := make([]elasticsearch.AliasAction, 0, len(current)+len(desired))
+	for name := range current {
+		if _, exists := desiredByName[name]; !exists {
+			actions = append(actions, elasticsearch.AliasAction{
+				Type:  "remove",
+				Index: name,
+				Alias: aliasName,
+			})
+		}
+	}
+
+	for _, config := range desired {
+		if currentConfig, exists := current[config.Name]; exists && currentConfig.Equals(config) {
+			continue
+		}
+		actions = append(actions, elasticsearch.AliasAction{
+			Type:          "add",
+			Index:         config.Name,
+			Alias:         aliasName,
+			IsWriteIndex:  config.IsWriteIndex,
+			Filter:        config.Filter,
+			IndexRouting:  config.IndexRouting,
+			IsHidden:      config.IsHidden,
+			Routing:       config.Routing,
+			SearchRouting: config.SearchRouting,
+		})
+	}
+
+	return actions
+}
+
+func (model *tfModel) buildResolvedAliasActions(
+	ctx context.Context,
+	aliasName string,
+	current map[string]IndexConfig,
+	resolveIndexExpression resolveIndexExpressionFunc,
+) ([]elasticsearch.AliasAction, diag.Diagnostics) {
+	actions, _, diags := model.buildResolvedAliasActionsWithOutcome(ctx, aliasName, current, resolveIndexExpression)
+	return actions, diags
+}
+
+func (model *tfModel) buildResolvedAliasActionsWithOutcome(
+	ctx context.Context,
+	aliasName string,
+	current map[string]IndexConfig,
+	resolveIndexExpression resolveIndexExpressionFunc,
+) ([]elasticsearch.AliasAction, bool, diag.Diagnostics) {
+	desired, diags := model.resolveAliasConfigs(ctx, resolveIndexExpression)
+	if diags.HasError() {
+		return nil, false, diags
+	}
+
+	return buildAliasActions(aliasName, current, desired), len(desired) == 0, nil
+}
+
+func currentAliasConfigs(aliasName string, indices map[string]esTypes.IndexAliases) (map[string]IndexConfig, diag.Diagnostics) {
+	configs := make(map[string]IndexConfig)
+	for indexName, indexAliases := range indices {
+		aliasDefinition, exists := indexAliases.Aliases[aliasName]
+		if !exists {
+			continue
+		}
+
+		config, diags := aliasDefinitionToConfig(indexName, aliasDefinition)
+		if diags.HasError() {
+			return nil, diags
+		}
+		configs[indexName] = config
+	}
+
+	return configs, nil
 }

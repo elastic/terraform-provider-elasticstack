@@ -43,67 +43,30 @@ func updateAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	// Build current index map from API response
-	currentIndexMap := make(map[string]IndexConfig)
-	for indexName, indexAliases := range currentIndices {
-		if aliasDef, exists := indexAliases.Aliases[aliasName]; exists {
-			config, configDiags := aliasDefinitionToConfig(indexName, aliasDef)
-			diags.Append(configDiags...)
-			if diags.HasError() {
-				return entitycore.WriteResult[tfModel]{Model: plan}, diags
-			}
-			currentIndexMap[indexName] = config
-		}
-	}
-
-	// Get planned configuration
-	plannedConfigs, configDiags := plan.toAliasConfigs(ctx)
-	diags.Append(configDiags...)
+	currentConfigs, currentDiags := currentAliasConfigs(aliasName, currentIndices)
+	diags.Append(currentDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	plannedIndexMap := make(map[string]IndexConfig)
-	for _, config := range plannedConfigs {
-		plannedIndexMap[config.Name] = config
+	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression)
 	}
-
-	// Build atomic actions
-	var actions []elasticsearch.AliasAction
-
-	// Remove indices that are no longer in the plan
-	for indexName := range currentIndexMap {
-		if _, exists := plannedIndexMap[indexName]; !exists {
-			actions = append(actions, elasticsearch.AliasAction{
-				Type:  "remove",
-				Index: indexName,
-				Alias: aliasName,
-			})
-		}
-	}
-
-	// Add or update indices in the plan
-	for _, config := range plannedConfigs {
-		currentAlias, ok := currentIndexMap[config.Name]
-		if ok && currentAlias.Equals(config) {
-			continue
-		}
-
-		actions = append(actions, elasticsearch.AliasAction{
-			Type:          "add",
-			Index:         config.Name,
-			Alias:         aliasName,
-			IsWriteIndex:  config.IsWriteIndex,
-			Filter:        config.Filter,
-			IndexRouting:  config.IndexRouting,
-			IsHidden:      config.IsHidden,
-			Routing:       config.Routing,
-			SearchRouting: config.SearchRouting,
-		})
+	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, aliasName, currentConfigs, resolveIndexExpression)
+	diags.Append(actionDiags...)
+	if diags.HasError() {
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	if len(actions) > 0 {
 		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
+		if diags.HasError() {
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
+		}
+	}
+
+	if desiredEmpty {
+		diags.Append(plan.markDesiredEmptyAfterWrite(ctx)...)
 		if diags.HasError() {
 			return entitycore.WriteResult[tfModel]{Model: plan}, diags
 		}

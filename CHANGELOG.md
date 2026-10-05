@@ -2,6 +2,7 @@
 
 ### Changes
 
+- Allow Elasticsearch multi-target expressions in `elasticstack_elasticsearch_index_alias.read_indices.name` and expose their attached targets through the computed `concrete_indices` attribute.
 - `elasticstack_kibana_agentbuilder_tool` now correctly clears `tags` when set to an explicit empty collection (`tags = []`) on create/update, instead of silently leaving the previous tags unchanged server-side. ([#4954](https://github.com/elastic/terraform-provider-elasticstack/pull/4954))
 - Normalize Kibana 9.6 Lens dashboard read-back defaults so apply no longer reports inconsistent results. ([#4948](https://github.com/elastic/terraform-provider-elasticstack/pull/4948))
 - Add disable_chunked_encoding and always_sign_requests to the S3 snapshot repository ([#4885](https://github.com/elastic/terraform-provider-elasticstack/pull/4885))

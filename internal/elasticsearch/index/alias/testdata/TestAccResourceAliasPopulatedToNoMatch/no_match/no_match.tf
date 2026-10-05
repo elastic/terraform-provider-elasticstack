@@ -1,0 +1,29 @@
+variable "alias_name" {
+  type = string
+}
+variable "index_name" {
+  type = string
+}
+variable "read_indices_pattern" {
+  type = string
+}
+
+provider "elasticstack" {
+  elasticsearch {}
+}
+
+resource "elasticstack_elasticsearch_index" "target" {
+  name                = var.index_name
+  deletion_protection = false
+  lifecycle {
+    ignore_changes = [settings_raw]
+  }
+}
+
+resource "elasticstack_elasticsearch_index_alias" "test_alias" {
+  name = var.alias_name
+  read_indices = [{
+    name = "no-match-${var.read_indices_pattern}"
+  }]
+  depends_on = [elasticstack_elasticsearch_index.target]
+}
