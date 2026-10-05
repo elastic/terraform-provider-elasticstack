@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces
@@ -101,6 +102,30 @@ func (r *aliasResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 		return
 	}
 
+	deferReadIndexResolution := func() {
+		resp.Diagnostics.Append(plan.modifyPlanReadIndexMembership(ctx, state, nil)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
+	}
+
+	if plan.WriteIndex.IsUnknown() {
+		deferReadIndexResolution()
+		return
+	}
+	if !plan.WriteIndex.IsNull() {
+		var writeIndex indexModel
+		resp.Diagnostics.Append(plan.WriteIndex.As(ctx, &writeIndex, basetypes.ObjectAsOptions{})...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if writeIndex.Name.IsUnknown() {
+			deferReadIndexResolution()
+			return
+		}
+	}
+
 	var readIndices []readIndexModel
 	resp.Diagnostics.Append(plan.ReadIndices.ElementsAs(ctx, &readIndices, false)...)
 	if resp.Diagnostics.HasError() {
@@ -108,12 +133,8 @@ func (r *aliasResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 	}
 
 	for _, readIndex := range readIndices {
-		if readIndex.Name.IsUnknown() {
-			resp.Diagnostics.Append(plan.modifyPlanReadIndexMembership(ctx, state, nil)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-			resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
+		if readIndex.Name.IsUnknown() || readIndex.Filter.IsUnknown() {
+			deferReadIndexResolution()
 			return
 		}
 	}

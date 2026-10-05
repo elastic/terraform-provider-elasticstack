@@ -796,6 +796,33 @@ func TestTfModel_ModifyPlanReadIndexMembership_MarksUnknownNamesMembershipUnknow
 	require.True(t, readIndices[0].ConcreteIndices.IsUnknown())
 }
 
+func TestTfModel_ModifyPlanReadIndexMembership_NilResolverMarksMembershipUnknown(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	state := tfModel{
+		ReadIndices: mustReadIndexSet(ctx, t, readIndexModel{
+			Name:            types.StringValue("logs-*"),
+			ConcreteIndices: types.SetValueMust(types.StringType, []attr.Value{types.StringValue("logs-1")}),
+			Filter:          jsontypes.NewNormalizedNull(),
+			IndexRouting:    types.StringNull(),
+			IsHidden:        types.BoolValue(false),
+			Routing:         types.StringNull(),
+			SearchRouting:   types.StringNull(),
+		}),
+	}
+	plan := state
+
+	diags := plan.modifyPlanReadIndexMembership(ctx, state, nil)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	var readIndices []readIndexModel
+	diags = plan.ReadIndices.ElementsAs(ctx, &readIndices, false)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, readIndices, 1)
+	require.True(t, readIndices[0].ConcreteIndices.IsUnknown())
+}
+
 func TestTfModel_ModifyPlanReadIndexMembership_PreservesSetElementCorrelation(t *testing.T) {
 	t.Parallel()
 

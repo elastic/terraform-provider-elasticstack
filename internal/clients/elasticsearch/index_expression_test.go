@@ -43,6 +43,7 @@ func TestResolveIndexExpression(t *testing.T) {
 				require.Equal(t, "/_resolve/index/traces-apm*", r.URL.Path)
 				require.Equal(t, "all", r.URL.Query().Get("expand_wildcards"))
 				require.Equal(t, "true", r.URL.Query().Get("allow_no_indices"))
+				require.Equal(t, "true", r.URL.Query().Get("ignore_unavailable"))
 			},
 			response:  `{"indices":[{"name":"traces-apm-default"},{"name":"traces-apm.rum-default"}],"aliases":[],"data_streams":[]}`,
 			wantKind:  RegularIndexTarget,

@@ -39,7 +39,7 @@ func (model *tfModel) modifyPlanReadIndexMembership(
 		return diags
 	}
 
-	forceUnknown := !hasSameReadIndexConfigurations(ctx, readIndices, state)
+	forceUnknown := resolveIndexExpression == nil || !hasSameReadIndexConfigurations(ctx, readIndices, state)
 	updated := false
 	for i := range readIndices {
 		if forceUnknown || readIndices[i].Name.IsUnknown() {

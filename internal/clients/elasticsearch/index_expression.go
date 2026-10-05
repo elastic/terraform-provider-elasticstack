@@ -44,6 +44,7 @@ func ResolveIndexExpression(ctx context.Context, client *clients.ElasticsearchSc
 	response, err := client.GetESClient().Indices.ResolveIndex(expression).
 		ExpandWildcards(expandwildcard.All).
 		AllowNoIndices(true).
+		IgnoreUnavailable(true).
 		Do(ctx)
 	if err != nil {
 		return ResolvedIndexTargets{}, diagutil.FrameworkDiagFromError(err)
