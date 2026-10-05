@@ -211,6 +211,7 @@ When an alias is absent, the resource SHALL retain virtual state only when prior
 #### Scenario: Alias not found on read
 
 - GIVEN the Get Alias API returns an empty map or the alias name is missing
+- AND the resource does not qualify for virtual empty-alias state
 - WHEN read runs
 - THEN the resource SHALL be removed from state
 
