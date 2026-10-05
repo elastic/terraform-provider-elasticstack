@@ -293,8 +293,16 @@ func TestAccResourceMLCalendarEvent_forceReplaceOnChange(t *testing.T) {
 // TestAccResourceMLCalendarEvent_optionalSchedulingFieldsUnsupportedVersion asserts that
 // setting force_time_shift against an Elasticsearch cluster older than
 // mlCalendarEventOptionalSchedulingMinElasticsearch fails with the version-gate error raised
-// by createCalendarEvent. It runs only when the stack is actually older than that version.
+// by createCalendarEvent. It runs only on older stateful clusters.
 func TestAccResourceMLCalendarEvent_optionalSchedulingFieldsUnsupportedVersion(t *testing.T) {
+	isStateful, err := versionutils.CheckIfNotServerless()()
+	if err != nil {
+		t.Fatalf("failed to check whether stack is serverless: %v", err)
+	}
+	if !isStateful {
+		t.Skip("serverless supports optional scheduling fields; skipping version gate test")
+	}
+
 	unsupported, err := versionutils.CheckIfVersionIsUnsupported(mlCalendarEventOptionalSchedulingMinElasticsearch)()
 	if err != nil {
 		t.Fatalf("failed to check stack version: %v", err)
