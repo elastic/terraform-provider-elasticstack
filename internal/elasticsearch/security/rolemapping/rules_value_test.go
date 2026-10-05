@@ -119,3 +119,26 @@ func TestNormalizedRulesValue_StringSemanticEquals_nonRulesTypeFallback(t *testi
 	require.False(t, diags.HasError())
 	require.True(t, eq)
 }
+
+func TestNormalizeRuleNode_doesNotModifyInput(t *testing.T) {
+	t.Parallel()
+
+	input := map[string]any{
+		"field": map[string]any{
+			"groups": []any{"project1"},
+		},
+	}
+
+	normalized := normalizeRuleNode(input)
+
+	require.Equal(t, map[string]any{
+		"field": map[string]any{
+			"groups": []any{"project1"},
+		},
+	}, input)
+	require.Equal(t, map[string]any{
+		"field": map[string]any{
+			"groups": "project1",
+		},
+	}, normalized)
+}

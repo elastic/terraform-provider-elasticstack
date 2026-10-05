@@ -151,15 +151,20 @@ func normalizeRulesJSONString(raw string) (string, error) {
 // single-element arrays inside "field" objects to plain string values.
 func normalizeRuleNode(node any) any {
 	vis := typeutils.TreeVisitor{
-		Map: func(m map[string]any) (any, bool) {
-			if field, ok := m["field"].(map[string]any); ok {
-				for key, val := range field {
-					if arr, ok := val.([]any); ok && len(arr) == 1 {
-						field[key] = arr[0]
-					}
+		MapChild: func(key string, walked any) any {
+			if key != "field" {
+				return walked
+			}
+			field, ok := walked.(map[string]any)
+			if !ok {
+				return walked
+			}
+			for key, val := range field {
+				if arr, ok := val.([]any); ok && len(arr) == 1 {
+					field[key] = arr[0]
 				}
 			}
-			return nil, false
+			return field
 		},
 	}
 	return vis.Walk(node)
