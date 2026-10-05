@@ -500,25 +500,12 @@ var _ entitycore.WithVersionRequirements = Data{}
 func (data Data) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(data.Description) {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion: *MinSupportedDescriptionVersion,
-			ErrorMessage: fmt.Sprintf(
-				"'description' is supported only for Elasticsearch v%s and above",
-				MinSupportedDescriptionVersion.String(),
-			),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(data.Description),
+		MinSupportedDescriptionVersion, "'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String())
 
-	if typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0 {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion: *MinSupportedRemoteIndicesVersion,
-			ErrorMessage: fmt.Sprintf(
-				"'remote_indices' is supported only for Elasticsearch v%s and above",
-				MinSupportedRemoteIndicesVersion.String(),
-			),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0,
+		MinSupportedRemoteIndicesVersion, "'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String())
 
 	return reqs, nil
 }

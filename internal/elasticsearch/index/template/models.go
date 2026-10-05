@@ -19,7 +19,6 @@ package template
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
@@ -79,12 +78,9 @@ func (m Model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 	}
 	reqs = append(reqs, dsoReqs...)
 
-	if typeutils.IsKnown(m.IgnoreMissingComponentTemplates) && len(m.IgnoreMissingComponentTemplates.Elements()) > 0 {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *index.MinSupportedIgnoreMissingComponentTemplateVersion,
-			ErrorMessage: fmt.Sprintf("'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.IgnoreMissingComponentTemplates) && len(m.IgnoreMissingComponentTemplates.Elements()) > 0,
+		index.MinSupportedIgnoreMissingComponentTemplateVersion, "'ignore_missing_component_templates' is supported only for Elasticsearch v%s and above", index.MinSupportedIgnoreMissingComponentTemplateVersion.String())
 
 	return reqs, diags
 }
