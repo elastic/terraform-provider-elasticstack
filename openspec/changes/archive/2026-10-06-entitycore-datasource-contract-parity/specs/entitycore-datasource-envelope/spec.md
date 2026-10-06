@@ -1,3 +1,10 @@
+## RENAMED Requirements
+
+- FROM: `### Requirement: Kibana data source models embed KibanaConnectionField`
+- TO: `### Requirement: Kibana data source models embed KibanaConnectionField and expose identity accessors`
+- FROM: `### Requirement: Elasticsearch data source models embed ElasticsearchConnectionField`
+- TO: `### Requirement: Elasticsearch data source models embed ElasticsearchConnectionField and expose identity accessors`
+
 ## MODIFIED Requirements
 
 ### Requirement: Envelope constructor produces a valid DataSource
@@ -78,7 +85,7 @@ Elasticsearch-backed envelope data source models SHALL embed `entitycore.Elastic
 
 ### Requirement: Envelope resolves read identity centrally
 
-The system SHALL resolve the read identity from the decoded config model before invoking the concrete read function, using the same composite-ID-or-fallback rules as the resource envelope. For Elasticsearch the envelope SHALL resolve a `resourceID`; for Kibana the envelope SHALL resolve a `resourceID` and `spaceID`, honoring the `KibanaUnscopedSpace` opt-out for space validation.
+The system SHALL resolve the read identity from the decoded config model before invoking the concrete read function, using the same composite-ID-or-fallback rules as the resource envelope. For Elasticsearch the envelope SHALL resolve a `resourceID`; for Kibana the envelope SHALL resolve a `resourceID` and `spaceID`. Data sources never validate space, so an empty `spaceID` SHALL always be permitted (the `KibanaUnscopedSpace` opt-out is relevant only to the resource envelope).
 
 #### Scenario: Elasticsearch identity resolved from model
 
@@ -90,7 +97,25 @@ The system SHALL resolve the read identity from the decoded config model before 
 
 - **WHEN** `Read` decodes a config model with a composite `id` of the form `<space>/<resource>` or with `GetResourceID`/`GetSpaceID` values
 - **THEN** the envelope SHALL resolve both `resourceID` and `spaceID` and pass them to the read function
-- **AND** for a model that opts out of space scoping via `KibanaUnscopedSpace`, an empty `spaceID` SHALL be permitted
+- **AND** an empty `spaceID` SHALL be permitted and passed through to the read function
+
+For Kibana, a model's `GetResourceID()` value SHALL be parsed as a composite `<space>/<resource>` lookup key only when the model opts in by implementing `KibanaCompositeResourceID` (`UsesCompositeResourceID() bool`, returning `true`). Plain identifiers that may legitimately contain `/` (for example connector names or entity ids) MUST NOT be reinterpreted as composite keys. Data sources that expose a singleton or list-style read with no lookup key SHALL return a fixed, non-empty `GetResourceID()`.
+
+#### Scenario: Composite resource id parsed only on opt-in
+
+- **WHEN** a Kibana model's `id` is not a composite id and its `GetResourceID()` is `team/a`
+- **AND** the model does not implement `KibanaCompositeResourceID`
+- **THEN** the envelope SHALL pass `team/a` as the `resourceID` and the model's `GetSpaceID()` as the `spaceID`
+
+#### Scenario: Opted-in model resolves composite resource id
+
+- **WHEN** a Kibana model implements `KibanaCompositeResourceID` returning `true` and its `GetResourceID()` is `staging/skill-1`
+- **THEN** the envelope SHALL resolve `resourceID = skill-1`, using the explicit `GetSpaceID()` when non-empty and otherwise `staging`
+
+#### Scenario: Explicit space_id overrides composite id space for data sources
+
+- **WHEN** a Kibana data source model has a composite `id` or opted-in composite resource id embedding space `custom` and a non-empty configured `space_id` of `explicit`
+- **THEN** the envelope SHALL pass `spaceID = explicit` to the read function
 
 ### Requirement: Envelope applies a centralized not-found policy
 

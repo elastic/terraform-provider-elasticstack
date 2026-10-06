@@ -33,9 +33,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model agentModel) GetID() types.String         { return model.ID }
-func (model agentModel) GetResourceID() types.String { return model.AgentID }
-func (model agentModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model agentBaseModel) GetID() types.String         { return model.ID }
+func (model agentBaseModel) GetResourceID() types.String { return model.AgentID }
+func (model agentBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}
@@ -89,6 +89,10 @@ type agentDataSourceModel struct {
 	IncludeDependencies types.Bool  `tfsdk:"include_dependencies"`
 	Tools               []toolModel `tfsdk:"tools"`
 }
+
+// UsesCompositeResourceID opts the data source into parsing agent_id as a
+// composite "<space>/<agent>" lookup key.
+func (agentDataSourceModel) UsesCompositeResourceID() bool { return true }
 
 type toolModel struct {
 	ID                        types.String                    `tfsdk:"id"`

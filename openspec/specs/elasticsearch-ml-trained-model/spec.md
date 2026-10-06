@@ -9,7 +9,7 @@ The data source SHALL call `GET _ml/trained_models/<model_id>` via the typed Ela
 
 Required cluster privilege: `monitor_ml`.
 
-When the Elasticsearch API returns HTTP 404, or when the response `trained_model_configs` array is empty, the data source SHALL return no error diagnostics and set `id` to an empty string with all computed attributes null. In all other API error cases, the data source SHALL surface the error.
+When the Elasticsearch API returns HTTP 404, or when the response `trained_model_configs` array is empty, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set. In all other API error cases, the data source SHALL surface the error.
 
 #### Scenario: Read an existing trained model
 
@@ -23,15 +23,15 @@ When the Elasticsearch API returns HTTP 404, or when the response `trained_model
 
 - GIVEN no trained model with the specified `model_id` exists
 - WHEN the data source is read
-- THEN the data source returns no error diagnostics
-- AND `id` is set to an empty string and all computed attributes are null
+- THEN the envelope returns a not-found error diagnostic
+- AND Terraform state is not set
 
 #### Scenario: Empty results array
 
 - GIVEN the API returns an empty `trained_model_configs` array
 - WHEN the data source is read
-- THEN the data source returns no error diagnostics
-- AND `id` is set to an empty string and all computed attributes are null
+- THEN the envelope returns a not-found error diagnostic
+- AND Terraform state is not set
 
 ### Requirement: Identity (REQ-002)
 

@@ -44,6 +44,10 @@ type resolutionGroupModel struct {
 	ResolutionGroupJSON jsontypes.Normalized `tfsdk:"resolution_group_json"`
 }
 
+func (model resolutionGroupModel) GetID() types.String         { return model.ID }
+func (model resolutionGroupModel) GetResourceID() types.String { return model.EntityID }
+func (model resolutionGroupModel) GetSpaceID() types.String    { return model.SpaceID }
+
 func (model resolutionGroupModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(
 		*minKibanaEntityStoreResolutionVersion,

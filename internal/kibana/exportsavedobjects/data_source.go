@@ -27,7 +27,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[dataSourceModel](
 		entitycore.ComponentKibana,
 		"export_saved_objects",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.KibanaDataSourceOptions[dataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }

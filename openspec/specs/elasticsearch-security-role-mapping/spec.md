@@ -74,13 +74,13 @@ When Elasticsearch returns a non-success status for create, update, read, or del
 
 ### Requirement: Data source read API (REQ-005)
 
-The data source SHALL use the Elasticsearch Get Role Mapping API to read role mapping data ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role-mapping.html)). When Elasticsearch returns a non-success status (other than not found), the data source SHALL surface the API error to Terraform diagnostics. When the named role mapping is not found, the data source SHALL return an error diagnostic.
+The data source SHALL use the Elasticsearch Get Role Mapping API to read role mapping data ([docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-get-role-mapping.html)). When Elasticsearch returns a non-success status (other than not found), the data source SHALL surface the API error to Terraform diagnostics. When the named role mapping is not found, the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Data source role mapping not found
 
 - GIVEN a `name` that does not correspond to any role mapping in Elasticsearch
 - WHEN the data source reads
-- THEN diagnostics SHALL include a "Role mapping not found" error
+- THEN diagnostics SHALL include a standardized not-found error identifying the data source and resolved name
 
 ### Requirement: Identity (REQ-006–REQ-007)
 

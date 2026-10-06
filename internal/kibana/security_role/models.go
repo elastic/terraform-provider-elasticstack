@@ -101,3 +101,7 @@ type dataSourceModel struct {
 	Elasticsearch types.Object         `tfsdk:"elasticsearch"`
 	Kibana        types.Set            `tfsdk:"kibana"`
 }
+
+func (m dataSourceModel) GetID() types.String         { return types.StringNull() }
+func (m dataSourceModel) GetResourceID() types.String { return m.Name }
+func (m dataSourceModel) GetSpaceID() types.String    { return types.StringNull() }

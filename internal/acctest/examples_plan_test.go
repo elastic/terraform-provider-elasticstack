@@ -60,6 +60,8 @@ var planOnlySkippedEmbedPaths = []string{
 	"data-sources/elasticstack_fleet_enrollment_tokens/data-source.tf",
 	// Requires the osquery_manager integration's prebuilt saved queries; matrix stacks may expose the API but return 500 without the integration data.
 	"data-sources/elasticstack_kibana_osquery_saved_query/data-source.tf",
+	// The data source errors when the model is missing, and the example's model ID is not present on every matrix stack version.
+	"data-sources/elasticstack_elasticsearch_ml_trained_model/data-source.tf",
 }
 
 // planOnlyMinElasticsearchVersion lists example embed paths whose data sources read during

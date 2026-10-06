@@ -60,6 +60,14 @@ type engineComponentModel struct {
 	Health    types.String `tfsdk:"health"`
 }
 
+// entityStoreStatusResourceID is the fixed identity used by the singleton
+// status data source, which has no configurable lookup key and no id attribute.
+const entityStoreStatusResourceID = "entity_store_status"
+
+func (dsModel) GetID() types.String         { return types.StringNull() }
+func (dsModel) GetResourceID() types.String { return types.StringValue(entityStoreStatusResourceID) }
+func (m dsModel) GetSpaceID() types.String  { return m.SpaceID }
+
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 
 func (*dsModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

@@ -37,9 +37,11 @@ import (
 func readEntityStoreEntitiesDataSource(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
+	_ string,
+	spaceID string,
 	model dsModel,
-) (dsModel, diag.Diagnostics) {
-	spaceID := clients.EffectiveSpaceIDFromValue(model.SpaceID)
+) (dsModel, bool, diag.Diagnostics) {
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
 	var diags diag.Diagnostics
@@ -62,14 +64,14 @@ func readEntityStoreEntitiesDataSource(
 	if typeutils.IsKnown(model.Source) {
 		src := typeutils.ListTypeToSliceString(ctx, model.Source, path.Root("source"), &diags)
 		if diags.HasError() {
-			return model, diags
+			return model, false, diags
 		}
 		params.Source = &src
 	}
 	if typeutils.IsKnown(model.Fields) {
 		f := typeutils.ListTypeToSliceString(ctx, model.Fields, path.Root("fields"), &diags)
 		if diags.HasError() {
-			return model, diags
+			return model, false, diags
 		}
 		params.Fields = &f
 	}
@@ -99,19 +101,19 @@ func readEntityStoreEntitiesDataSource(
 	var resp *kbapi.GetSecurityEntityStoreEntitiesResponse
 	resp, diags = kibanaoapi.ListSecurityEntityStoreEntities(ctx, client.GetKibanaOapiClient(), spaceID, params)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	// Normalize JSON for results_json
 	var raw any
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return model, diag.Diagnostics{
+		return model, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Failed to parse response", err.Error()),
 		}
 	}
 	normalizedBytes, err := json.Marshal(raw)
 	if err != nil {
-		return model, diag.Diagnostics{
+		return model, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Failed to normalize response", err.Error()),
 		}
 	}
@@ -123,7 +125,7 @@ func readEntityStoreEntitiesDataSource(
 	// Build typed items list from the API response
 	rawMap, ok := raw.(map[string]any)
 	if !ok {
-		return model, diag.Diagnostics{
+		return model, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Failed to parse response", "expected object"),
 		}
 	}
@@ -134,7 +136,7 @@ func readEntityStoreEntitiesDataSource(
 		if doc, ok := e.(map[string]any); ok {
 			item := entity.APIBodyToItem(ctx, doc, &diags)
 			if diags.HasError() {
-				return model, diags
+				return model, false, diags
 			}
 			items = append(items, item)
 		}
@@ -143,7 +145,7 @@ func readEntityStoreEntitiesDataSource(
 	diags.Append(d...)
 	model.Items = itemsList
 
-	return model, nil
+	return model, true, nil
 }
 
 func expandEntityTypesSet(s types.Set) []kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes {

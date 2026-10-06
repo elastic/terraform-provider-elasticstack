@@ -500,7 +500,7 @@ func TestAccDataSourceKibanaAgentBuilderSkillNotFound(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"skill_id": config.StringVariable(skillID),
 				},
-				ExpectError: regexp.MustCompile("Skill not found"),
+				ExpectError: regexp.MustCompile("kibana_agentbuilder_skill not found"),
 			},
 		},
 	})

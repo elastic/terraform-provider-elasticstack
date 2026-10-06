@@ -40,7 +40,12 @@ This is intentionally identical to `elasticsearchReadFunc`/`kibanaReadFunc` so a
 *Alternative considered:* keep the config-in/config-out shape and only add `found`. Rejected — it leaves identity resolution duplicated in every data source.
 
 ### 3. Reuse resource identity-resolution helpers
-The envelope resolves identity from the decoded model using the existing `resolveElasticsearchReadResourceID` and `resolveKibanaResourceIdentity` helpers (composite-ID-or-fallback), including the `KibanaUnscopedSpace` opt-out. Data sources are read-only, so resolution runs against config rather than prior state, but the rules are the same.
+The envelope resolves identity from the decoded model using the existing `resolveElasticsearchReadResourceID` and `resolveKibanaResourceIdentity` helpers (composite-ID-or-fallback) (data sources never validate space, so an empty `spaceID` is always permitted; `KibanaUnscopedSpace` only matters to the resource envelope). Data sources are read-only, so resolution runs against config rather than prior state, but the rules are the same.
+
+Two data-source-specific rules apply on top of the shared helper:
+
+- **Explicit space precedence:** when a Kibana data source has a known, non-empty configured `space_id`, it wins over the space embedded in a composite `id` (matching the previous per-data-source `ResolveCompositeSpaceAndID` behavior). Resources keep the composite id's space as authoritative.
+- **Composite `GetResourceID` is opt-in:** a model's `GetResourceID()` is parsed as `<space>/<resource>` only when it implements `KibanaCompositeResourceID`. Parsing every slash-containing value misread plain identifiers (connector names, entity ids) as composite keys; only the Agent Builder agent and skill data sources, whose lookup attribute intentionally accepts composite keys, opt in.
 
 ### 4. Centralized not-found policy: standardized error
 When the read callback returns `found == false`, the envelope appends a single standardized "not found" error diagnostic (including component, name, and resolved identity) and does **not** set state. This replaces the current mix of warning-plus-partial-state, manual field-nulling, and ad-hoc errors. A failed data source read is an error because downstream configuration depends on the resolved values.
@@ -63,6 +68,7 @@ Introduce `ElasticsearchDataSourceOptions[T]{ Schema, Read, PostRead }` and `Kib
 
 - **Breaking envelope API** → All call sites are in-repo; migrate every concrete data source in the same change and rely on `make build` plus existing acceptance tests to catch regressions.
 - **Not-found behavior change for data sources that previously warned (e.g. snapshot repository) or returned partial empty state (e.g. security role)** → Audit each migrated data source; where a hard error materially changes documented behavior, capture it in the delta spec scenarios and the data source's own spec, and confirm acceptance tests still reflect intended behavior. If any data source genuinely requires soft semantics, the callback can return `found == true` with explicitly emptied fields rather than reintroducing envelope branching.
+- **Soft not-found semantics are still possible** → A callback may deliberately return `found == true` with explicit null/empty fields to preserve documented behavior; `internal/fleet/integrationds` does this (absent package yields a null `version`).
 - **Models must add identity accessors** → Mechanical addition of value-receiver methods; covered by the compile-time type constraint, so omissions fail the build rather than at runtime.
 - **Non-standard `id` derivation** → Because the read callback owns `id`, standard entities call `client.ID(...)` while non-standard entities set their own `id` directly in the callback with no envelope opt-out (`internal/elasticsearch/cluster/info` derives `id` from `cluster_uuid`; `internal/elasticsearch/index/indices` uses the target pattern). Verify each migrated data source still assigns `id` in its read function.
 

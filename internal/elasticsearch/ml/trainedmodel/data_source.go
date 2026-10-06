@@ -26,7 +26,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[trainedModelData](
 		entitycore.ComponentElasticsearch,
 		"ml_trained_model",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[trainedModelData]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }

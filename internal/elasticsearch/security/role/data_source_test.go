@@ -18,6 +18,7 @@
 package role_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -25,6 +26,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -86,6 +89,24 @@ func TestAccDataSourceSecurityRole(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "metadata", `{"version":1}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_security_role.test", "description", `Test data source`),
 				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceSecurityRoleNotFound(t *testing.T) {
+	roleName := "missing-role-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_found"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+				},
+				ExpectError: regexp.MustCompile("elasticsearch_security_role not found"),
 			},
 		},
 	})

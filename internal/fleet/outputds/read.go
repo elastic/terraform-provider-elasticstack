@@ -25,23 +25,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config outputModel) (outputModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, spaceID string, config outputModel) (outputModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	client := kbClient.GetFleetClient()
 
-	spaceID := config.SpaceID.ValueString()
 	outputs, oDiags := fleet.GetOutputs(ctx, client, spaceID)
 	diags.Append(oDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	pDiags := (&config).populateFromAPI(ctx, outputs)
 	diags.Append(pDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	return config, diags
+	return config, true, diags
 }
