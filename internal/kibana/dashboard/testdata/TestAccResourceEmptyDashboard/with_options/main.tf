@@ -16,8 +16,8 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 60000
   }
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
   options = {
     hide_panel_titles  = true

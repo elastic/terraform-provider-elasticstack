@@ -14,7 +14,7 @@ resource "elasticstack_kibana_dashboard" "with_field_stats_table_panels" {
   description      = "Typed field statistics table panels: by_dataview + by_esql"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [
     {

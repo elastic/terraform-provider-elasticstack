@@ -9,7 +9,7 @@ resource "elasticstack_kibana_dashboard" "with_discover_session_panels" {
   description      = "Typed Discover panels: by_value DSL tab + by_reference"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [
     {

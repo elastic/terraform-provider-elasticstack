@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -62,7 +61,7 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.pause", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.value", "90000"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.text", "http.response.status_code:200"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "http.response.status_code:200"),
 				),
 			},
 			{
@@ -441,30 +440,6 @@ func TestAccResourceDashboardPanels_panels_and_sections(t *testing.T) {
 	})
 }
 
-func TestAccResourceDashboardRootQueryJSON(t *testing.T) {
-	dashboardTitle := "Test Dashboard JSON Query " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
-				),
-			},
-		},
-	})
-}
-
 func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard Panel with JSON Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -551,26 +526,26 @@ func TestAccResourceDashboardQueryTransition(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_text"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.text", "http.response.status_code:200"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "http.response.status_code:200"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_json"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "lucene"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "status:500"),
 				),
 			},
 		},

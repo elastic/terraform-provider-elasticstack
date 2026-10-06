@@ -4,7 +4,7 @@ variable "dashboard_title" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Dashboard with JSON root query"
+  description = "Dashboard with expression root query"
 
   time_range = {
     from = "now-15m"
@@ -15,7 +15,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 0
   }
   query = {
-    language = "kql"
-    json     = jsonencode({ match_all = {} })
+    language   = "kql"
+    expression = "http.response.status_code:200"
   }
 }

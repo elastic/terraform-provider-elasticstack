@@ -39,7 +39,7 @@ resource "elasticstack_kibana_dashboard" "with_slo_alerts_panel" {
   description      = "Typed slo_alerts panel tied to elasticstack_kibana_slo"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "slo_alerts"
