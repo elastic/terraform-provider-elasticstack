@@ -493,6 +493,7 @@ func TestUpgradeState_RegistersUpgraders(t *testing.T) {
 	r := &Resource{}
 	upgraders := r.UpgradeState(context.Background())
 	require.Len(t, upgraders, 2)
+	require.Equal(t, int64(2), testResourceSchema(t).Version)
 	for _, version := range []int64{0, 1} {
 		up, ok := upgraders[version]
 		require.True(t, ok, "expected a registered v%d state upgrader", version)
@@ -528,6 +529,7 @@ func TestMigrateV1ToV2_Query(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		language       string
 		query          map[string]any
 		wantExpression any
 	}{
@@ -557,6 +559,22 @@ func TestMigrateV1ToV2_Query(t *testing.T) {
 			wantExpression: nil,
 		},
 		{
+			name:           "lucene language is preserved",
+			language:       "lucene",
+			query:          map[string]any{"text": "a:b", "json": nil},
+			wantExpression: "a:b",
+		},
+		{
+			name:           "text wins when both text and json are set",
+			query:          map[string]any{"language": "kql", "text": "a:b", "json": `{"match_all":{}}`},
+			wantExpression: "a:b",
+		},
+		{
+			name:           "preexisting expression is preserved when text and json are absent",
+			query:          map[string]any{"language": "kql", "expression": "kept"},
+			wantExpression: "kept",
+		},
+		{
 			name:           "already v2 shaped is idempotent",
 			query:          map[string]any{"language": "kql", "expression": "a:b"},
 			wantExpression: "a:b",
@@ -566,13 +584,18 @@ func TestMigrateV1ToV2_Query(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			wantLanguage := "kql"
+			if tc.language != "" {
+				wantLanguage = tc.language
+				tc.query["language"] = tc.language
+			}
 			got := runMigrateV1ToV2(t, map[string]any{"title": "t", "query": tc.query})
 
 			query, ok := got["query"].(map[string]any)
 			require.True(t, ok)
 			require.Contains(t, query, "expression")
 			require.Equal(t, tc.wantExpression, query["expression"])
-			require.Equal(t, "kql", query["language"])
+			require.Equal(t, wantLanguage, query["language"])
 			require.NotContains(t, query, "text")
 			require.NotContains(t, query, "json")
 		})
@@ -640,4 +663,15 @@ func TestMigrateV0ToV2_ComposesPanelRelocationAndQuery(t *testing.T) {
 	byField, ok := cfg["by_field"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "logs-view", byField["data_view_id"])
+}
+
+func TestMigrateV0ToV2_AbsentQuery(t *testing.T) {
+	t.Parallel()
+
+	resp := runMigrateV0ToV2Resp(t, map[string]any{"title": "t"})
+	requireUpgradedStateDecodes(t, resp)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	require.NotContains(t, got, "query")
 }

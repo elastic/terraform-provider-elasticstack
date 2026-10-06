@@ -98,6 +98,7 @@ func upgradeQueryV1ToV2(state map[string]any) {
 		return
 	}
 
+	// `text` takes precedence over `json` when both are set.
 	var expression any
 	if text, ok := query["text"].(string); ok {
 		expression = text
