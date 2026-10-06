@@ -3086,13 +3086,13 @@ The v0 → v1 transform SHALL be applied as the first step of the v0 upgrader, w
 
 - GIVEN a v0 state containing both `options_list_control` and `range_slider_control` panels with all optional attributes set (e.g. `sort`, `display_settings`, `value`, `step`)
 - WHEN the state upgrader runs
-- THEN all attribute values SHALL be present under the `by_field {}` sub-object in v1 state and no attributes SHALL be dropped
+- THEN all attribute values SHALL be present under the `by_field {}` sub-object in the upgraded v2 state and no attributes SHALL be dropped
 
 #### Scenario: Non-control panels are unaffected by the upgrader
 
 - GIVEN a v0 state containing a mix of `options_list_control`, `range_slider_control`, and `markdown` panels
 - WHEN the state upgrader runs
-- THEN the `markdown` panel entries SHALL be unchanged in v1 state
+- THEN the `markdown` panel entries SHALL be unchanged in the upgraded v2 state
 
 ### Requirement: `links_config` panel block (REQ-054)
 
