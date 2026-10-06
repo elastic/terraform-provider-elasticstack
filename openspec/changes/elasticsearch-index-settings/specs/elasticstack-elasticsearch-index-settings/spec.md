@@ -26,6 +26,7 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - `index` SHALL be required and SHALL force resource replacement when changed. It SHALL be treated as an already-resolved concrete index name; the resource SHALL NOT perform date-math resolution.
 - The dynamic-setting attributes SHALL be produced by `GetDynamicSettingAttributes()` (owned by `internal/elasticsearch/index/settings_keys.go`) and merged into this resource's schema map, so their names, types, and descriptions are identical to the equivalent attributes on `elasticstack_elasticsearch_index`.
 - `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a non-empty JSON object (`{}` is rejected at plan time, since it declares no settings). At plan time, any top-level key of `settings_json` that is a literal, exact match of an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error. Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
+- `settings_json` SHALL use flat dotted setting keys only (e.g. `"index.max_result_window"` or `"max_result_window"`), matching the flat form returned by `GetIndex`. Nested object values SHALL be rejected at plan time (e.g. `{"index": {"number_of_replicas": 2}}`), so each top-level key is a complete setting path shared by overlap validation, diffing and read. Explicit JSON `null` values SHALL be rejected at plan time; to reset a setting, the user omits it (REQ-003).
 - A key set via a typed dynamic-setting attribute SHALL NOT also appear in `settings_json`. At plan time, after canonicalizing key spellings (with or without the `index.` prefix), any overlapping key SHALL be rejected with a validation error.
 - `elasticsearch_connection` is injected by the provider scaffold and SHALL NOT be declared manually in the schema factory.
 - At least one of the typed dynamic-setting attributes or `settings_json` SHALL be set; a configuration that sets none of them SHALL be rejected at plan time.
@@ -41,6 +42,18 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - GIVEN `number_of_replicas = 1` and `settings_json = jsonencode({ "number_of_replicas" = 2 })`
 - WHEN `terraform validate` or `terraform plan` runs
 - THEN Terraform SHALL emit a validation error identifying the overlapping key
+
+#### Scenario: Schema validation — settings_json rejects nested objects
+
+- GIVEN `number_of_replicas = 1` and `settings_json = jsonencode({ index = { number_of_replicas = 2 } })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit a validation error stating `settings_json` must use flat dotted keys and not nested objects
+
+#### Scenario: Schema validation — settings_json rejects explicit null
+
+- GIVEN `settings_json = jsonencode({ refresh_interval = null, max_result_window = 20000 })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit a validation error stating that `null` is not allowed and that a setting is reset by omitting it
 
 #### Scenario: Schema validation — settings_json rejects an empty object
 
@@ -114,6 +127,8 @@ On update, the resource SHALL compute the union of declared typed dynamic-settin
 
 On read, the resource SHALL retrieve the index's settings via the existing `GetIndex` helper and populate only the typed dynamic-setting attributes and `settings_json` keys that are present in the previously stored state (the declared subset). Settings returned by Elasticsearch that are not part of the declared subset SHALL be silently ignored and SHALL NOT be written to state and SHALL NOT cause drift. Full hydration SHALL occur only on the first read after `terraform import`, signalled by an import-specific private-state key set by the resource's `ImportState` implementation (alongside `id` and `index`) and cleared by that read. An empty set of tracked settings SHALL NOT be treated as an import. On that import read, the resource SHALL populate the known `DynamicSettingsKeys`-derived typed attributes from the API response as the initial declared subset and SHALL leave `settings_json` unset, so that static and metadata settings (e.g. `index.number_of_shards`, `index.uuid`) are never adopted into state.
 
+When populating `settings_json` keys on read, the resource SHALL reconcile each API value (returned as a string because `GetIndex` requests flat settings) with the scalar type declared in state, converting numeric and boolean strings back to JSON numbers and booleans in the same way as the existing reader in `internal/elasticsearch/index/index/settings_read.go`, so that an unchanged `settings_json` does not produce false drift.
+
 Ownership of a setting is defined by its presence in state (a non-null typed attribute or a `settings_json` key). When Elasticsearch no longer reports a tracked setting (for example because it was reset outside Terraform), read SHALL set that typed attribute to null or drop that key from `settings_json`, so the drift is shown; configuration that still declares it SHALL cause the plan to set it again. Outside the import read, read SHALL NOT add any setting to state, even when no tracked settings remain.
 
 #### Scenario: Unrelated settings do not cause drift
@@ -147,6 +162,13 @@ Ownership of a setting is defined by its presence in state (a non-null typed att
 - AND the second refresh SHALL NOT adopt `mapping_total_fields_limit` or any other setting
 - AND `terraform apply` SHALL set `number_of_replicas = 2` again without sending `null` for any other setting
 
+#### Scenario: Scalar types round-trip without drift
+
+- GIVEN `settings_json = jsonencode({ "index.max_result_window" = 20000, "index.blocks.read_only" = false })` has been applied
+- AND Elasticsearch returns `"20000"` and `"false"` as strings in the flat settings response
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show no diff
+
 #### Scenario: Not found on read removes from state
 
 - GIVEN the target index is deleted outside Terraform
@@ -170,7 +192,7 @@ The resource description and documentation SHALL clearly state that `destroy` do
 
 ### Requirement: Identity, import, and scope to one concrete index (REQ-006)
 
-The resource `id` SHALL follow the format `<cluster_uuid>/<index_name>`, matching `elasticstack_elasticsearch_index_mappings`. The resource SHALL support `terraform import` using the same ID format via `resource.ImportStatePassthroughID`. Each resource instance SHALL target exactly one concrete, already-resolved index name; the resource SHALL NOT expand a wildcard pattern to manage settings across multiple indices within a single instance's state. Callers needing to manage settings across many concrete indices SHALL use Terraform's own `for_each` over index names resolved outside this resource (for example via the `elasticstack_elasticsearch_indices` data source).
+The resource `id` SHALL follow the format `<cluster_uuid>/<index_name>`, matching `elasticstack_elasticsearch_index_mappings`. The resource SHALL support `terraform import` using the same ID format via a custom `ImportState` that parses the composite ID, sets `id` and `index`, and sets the import private-state key used by REQ-004 (plain `resource.ImportStatePassthroughID` is not sufficient, as it sets only `id`). Each resource instance SHALL target exactly one concrete, already-resolved index name; the resource SHALL NOT expand a wildcard pattern to manage settings across multiple indices within a single instance's state. Callers needing to manage settings across many concrete indices SHALL use Terraform's own `for_each` over index names resolved outside this resource (for example via the `elasticstack_elasticsearch_indices` data source).
 
 #### Scenario: Import
 

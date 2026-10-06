@@ -38,7 +38,7 @@ Adopting the index into `elasticstack_elasticsearch_index` is not viable: it wou
 - `internal/elasticsearch/index/dynamicsettings/` (new package) — shared `Model` struct over `DynamicSettingsKeys`, embedded anonymously by both resources' `tfModel`s.
 - `internal/elasticsearch/index/reflectutil.go` — `GetFieldValueByTagValue`/`SetFieldValueByTagValue` extended to recurse into anonymous embedded struct fields.
 - `internal/elasticsearch/index/index/schema.go`, `models.go` — migrate dynamic-setting attributes to `GetDynamicSettingAttributes()` and embed `dynamicsettings.Model` in `tfModel`; existing attribute behavior must not change for current users.
-- `internal/elasticsearch/index/indexsettings/` (new package) — new resource following the `indexmappings` package's envelope pattern (`entitycore.NewElasticsearchResource`, `WriteRequest`/`WriteResult`, no-op `Delete`, `ImportStatePassthroughID`).
+- `internal/elasticsearch/index/indexsettings/` (new package) — new resource following the `indexmappings` package's envelope pattern (`entitycore.NewElasticsearchResource`, `WriteRequest`/`WriteResult`, no-op `Delete`, custom `ImportState` that sets `id`, `index` and the import private-state flag).
 - `internal/clients/elasticsearch/index.go` — reuses existing `GetIndex`/`UpdateIndexSettings`; no new client code expected.
 - `internal/elasticsearch/queryrulesets/validators.go` pattern reused for a new `settings_json` plan-time validator rejecting literal `StaticSettingsKeys` matches.
 - Provider registration, docs, and acceptance tests for the new resource.
