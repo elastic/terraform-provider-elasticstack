@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -44,40 +43,7 @@ func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	}
 	plan.ID = basetypes.NewStringValue(id.String())
 
-	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, aliasName)
-	diags.Append(readDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: plan}, diags
-	}
-
-	currentConfigs, currentDiags := currentAliasConfigs(aliasName, currentIndices)
-	diags.Append(currentDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: plan}, diags
-	}
-
-	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
-	}
-	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, aliasName, currentConfigs, resolveIndexExpression)
-	diags.Append(actionDiags...)
-	if diags.HasError() {
-		return entitycore.WriteResult[tfModel]{Model: plan}, diags
-	}
-
-	if len(actions) > 0 {
-		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
-		if diags.HasError() {
-			return entitycore.WriteResult[tfModel]{Model: plan}, diags
-		}
-	}
-
-	if desiredEmpty {
-		diags.Append(plan.markDesiredEmptyAfterWrite(ctx)...)
-		if diags.HasError() {
-			return entitycore.WriteResult[tfModel]{Model: plan}, diags
-		}
-	}
-
+	plan, applyDiags := applyResolvedAliasConfig(ctx, client, plan, aliasName)
+	diags.Append(applyDiags...)
 	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }
