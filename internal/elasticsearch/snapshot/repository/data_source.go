@@ -384,7 +384,8 @@ func readDataSource(
 		return config, false, diags
 	}
 	result, popDiags := populateRepositoryTypeBlocks(ctx, config, currentRepo)
-	return result, !popDiags.HasError(), popDiags
+	diags.Append(popDiags...)
+	return result, !diags.HasError(), diags
 }
 
 func initEmptyTypeBlocks(config snapshotRepositoryDataSourceModel) (snapshotRepositoryDataSourceModel, diag.Diagnostics) {
