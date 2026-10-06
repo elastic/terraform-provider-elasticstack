@@ -1520,6 +1520,22 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query.getEcsMappingElemType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query",
+      "attemptedAt": "2026-10-06T22:53:15.275276182Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo.NewGroupByUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/slo",
+      "attemptedAt": "2026-10-06T22:57:21.833957642Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
