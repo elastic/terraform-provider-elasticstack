@@ -96,9 +96,7 @@ func readToolDataSource(
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	tool, d := kibanaoapi.GetTool(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(d...)

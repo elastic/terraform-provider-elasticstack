@@ -77,9 +77,7 @@ func readAgentDataSource(
 
 	client := kbClient.GetKibanaOapiClient()
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	agent, agentDiags := kibanaoapi.GetAgent(ctx, client, spaceID, resourceID)
 	diags.Append(agentDiags...)

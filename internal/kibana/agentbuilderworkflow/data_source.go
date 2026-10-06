@@ -63,9 +63,7 @@ func readWorkflowDataSource(
 
 	oapiClient := client.GetKibanaOapiClient()
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	workflow, d := kibanaoapi.GetWorkflow(ctx, oapiClient, spaceID, resourceID)
 	diags.Append(d...)

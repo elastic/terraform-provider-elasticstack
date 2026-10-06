@@ -121,9 +121,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, resourceID, spaceID string, config skillDataSourceModel) (skillDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	skill, skillDiags := kibanaoapi.GetSkill(ctx, kbClient.GetKibanaOapiClient(), spaceID, resourceID)
 	diags.Append(skillDiags...)
