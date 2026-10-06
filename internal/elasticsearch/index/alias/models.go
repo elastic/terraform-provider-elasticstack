@@ -119,6 +119,18 @@ type readIndexModel struct {
 	SearchRouting   types.String         `tfsdk:"search_routing"`
 }
 
+// toIndexModel converts a readIndexModel to the shared indexModel field set, dropping ConcreteIndices.
+func (index readIndexModel) toIndexModel() indexModel {
+	return indexModel{
+		Name:          index.Name,
+		Filter:        index.Filter,
+		IndexRouting:  index.IndexRouting,
+		IsHidden:      index.IsHidden,
+		Routing:       index.Routing,
+		SearchRouting: index.SearchRouting,
+	}
+}
+
 // IndexConfig represents a single index configuration within an alias
 type IndexConfig struct {
 	Name          string
@@ -182,28 +194,15 @@ func (model *tfModel) populateFromAPI(ctx context.Context, aliasName string, ind
 		}
 
 		if aliasData.IsWriteIndex != nil && *aliasData.IsWriteIndex {
-			writeIndex = &indexModel{
-				Name:          index.Name,
-				Filter:        index.Filter,
-				IndexRouting:  index.IndexRouting,
-				IsHidden:      index.IsHidden,
-				Routing:       index.Routing,
-				SearchRouting: index.SearchRouting,
-			}
+			converted := index.toIndexModel()
+			writeIndex = &converted
 		} else {
 			readIndices = append(readIndices, index)
 		}
 	}
 
-	// Set write index
-	if writeIndex != nil {
-		writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), *writeIndex)
-		if diags.HasError() {
-			return diags
-		}
-		model.WriteIndex = writeIndexObj
-	} else {
-		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
+	if diags := setWriteIndexObject(ctx, model, writeIndex); diags.HasError() {
+		return diags
 	}
 
 	// Set read indices
@@ -236,14 +235,8 @@ func (model *tfModel) populateReadState(
 		}
 
 		if aliasData.IsWriteIndex != nil && *aliasData.IsWriteIndex {
-			writeIndex = &indexModel{
-				Name:          index.Name,
-				Filter:        index.Filter,
-				IndexRouting:  index.IndexRouting,
-				IsHidden:      index.IsHidden,
-				Routing:       index.Routing,
-				SearchRouting: index.SearchRouting,
-			}
+			converted := index.toIndexModel()
+			writeIndex = &converted
 			continue
 		}
 
@@ -251,14 +244,8 @@ func (model *tfModel) populateReadState(
 		readIndicesByName[indexName] = index
 	}
 
-	if writeIndex != nil {
-		writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), *writeIndex)
-		if diags.HasError() {
-			return diags
-		}
-		model.WriteIndex = writeIndexObj
-	} else {
-		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
+	if diags := setWriteIndexObject(ctx, model, writeIndex); diags.HasError() {
+		return diags
 	}
 
 	var priorReadIndices []readIndexModel
@@ -308,6 +295,21 @@ func (model *tfModel) populateReadState(
 	}
 	model.ReadIndices = readIndicesSet
 
+	return nil
+}
+
+// setWriteIndexObject sets model.WriteIndex from writeIndex, or to a null object if writeIndex is nil.
+func setWriteIndexObject(ctx context.Context, model *tfModel, writeIndex *indexModel) diag.Diagnostics {
+	if writeIndex == nil {
+		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
+		return nil
+	}
+
+	writeIndexObj, diags := types.ObjectValueFrom(ctx, getIndexAttrTypes(ctx), *writeIndex)
+	if diags.HasError() {
+		return diags
+	}
+	model.WriteIndex = writeIndexObj
 	return nil
 }
 
@@ -523,14 +525,7 @@ func (model *tfModel) resolveAliasConfigs(ctx context.Context, resolveIndexExpre
 }
 
 func readIndexToConfig(index readIndexModel) (IndexConfig, diag.Diagnostics) {
-	return indexToConfig(indexModel{
-		Name:          index.Name,
-		Filter:        index.Filter,
-		IndexRouting:  index.IndexRouting,
-		IsHidden:      index.IsHidden,
-		Routing:       index.Routing,
-		SearchRouting: index.SearchRouting,
-	}, false)
+	return indexToConfig(index.toIndexModel(), false)
 }
 
 // indexToConfig converts an indexModel to IndexConfig
