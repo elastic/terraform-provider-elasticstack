@@ -32,15 +32,15 @@ type ImportGraph struct {
 	Reverse map[string][]string
 }
 
-// BuildImportGraph runs go list to obtain the import graph (including test and
-// external-test imports, so packages whose _test.go files import a changed
-// helper are reachable) for all
-// packages under the enumerated roots (./internal/... ./provider/...). The
-// pattern must cover every root the selection enumerates, so reverse-dep
-// edges into provider/ exist and phase 1 can select the provider package's
-// live-stack suites. It returns both forward and reverse forms.
+// BuildImportGraph runs go list to obtain the production import graph for all
+// packages under the enumerated roots (./internal/... ./provider/...). Test
+// imports are intentionally excluded: shared test infrastructure imports the
+// provider registry, which would make every acceptance suite a reverse
+// dependency of every registered resource. Shared test helpers are instead
+// handled by the force-all prefix table. It returns both forward and reverse
+// forms.
 func BuildImportGraph() (*ImportGraph, error) {
-	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}} {{join .Imports \" \"}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", "./internal/...", "./provider/...")
+	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}} {{join .Imports \" \"}}", "./internal/...", "./provider/...")
 	out, err := cmd.Output()
 	if err != nil {
 		xerr := &exec.ExitError{}
