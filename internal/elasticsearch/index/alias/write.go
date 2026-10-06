@@ -22,55 +22,63 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// applyResolvedAliasConfig validates the plan, resolves it against the current
-// alias state, and atomically applies the resulting alias actions. It is shared
-// by createAlias and updateAlias, which differ only in how they obtain the
-// resource ID before delegating here.
-func applyResolvedAliasConfig(ctx context.Context, client *clients.ElasticsearchScopedClient, plan tfModel, aliasName string) (tfModel, diag.Diagnostics) {
+func writeAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
+	plan := req.Plan
 
 	diags.Append(plan.Validate(ctx)...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, aliasName)
+	if req.Prior == nil {
+		id, idDiags := client.ID(ctx, req.WriteID)
+		diags.Append(idDiags...)
+		if diags.HasError() {
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
+		}
+		plan.ID = basetypes.NewStringValue(id.String())
+	}
+
+	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, req.WriteID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	currentConfigs, currentDiags := currentAliasConfigs(aliasName, currentIndices)
+	currentConfigs, currentDiags := currentAliasConfigs(req.WriteID, currentIndices)
 	diags.Append(currentDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, req.WriteID)
 	}
-	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, aliasName, currentConfigs, resolveIndexExpression)
+	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, req.WriteID, currentConfigs, resolveIndexExpression)
 	diags.Append(actionDiags...)
 	if diags.HasError() {
-		return plan, diags
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	if len(actions) > 0 {
 		diags.Append(elasticsearch.UpdateAliasesAtomic(ctx, client, actions)...)
 		if diags.HasError() {
-			return plan, diags
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
 		}
 	}
 
 	if desiredEmpty {
 		diags.Append(plan.markDesiredEmptyAfterWrite(ctx)...)
 		if diags.HasError() {
-			return plan, diags
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
 		}
 	}
 
-	return plan, diags
+	return entitycore.WriteResult[tfModel]{Model: plan}, diags
 }

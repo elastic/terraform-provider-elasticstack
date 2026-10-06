@@ -32,8 +32,8 @@ import (
 )
 
 // newAliasTestServer sets up an httptest server that answers the GET
-// /_alias/<name> and POST /_aliases endpoints used by applyResolvedAliasConfig,
-// and optionally the cluster Info endpoint used by client.ID.
+// /_alias/<name> and POST /_aliases endpoints used by writeAlias, and
+// optionally the cluster Info endpoint used by client.ID.
 func newAliasTestServer(t *testing.T, aliasName string, currentMembers map[string]bool, includeInfoEndpoint bool) (*httptest.Server, *int, *int, *[]string) {
 	t.Helper()
 
@@ -99,7 +99,7 @@ func newAliasTestClient(t *testing.T, server *httptest.Server) *clients.Elastics
 	return clients.NewElasticsearchScopedClientForTest(typedClient, []string{server.URL})
 }
 
-func TestApplyResolvedAliasConfig_RemovesExistingMembersWhenDesiredEmpty(t *testing.T) {
+func TestWriteAlias_RemovesExistingMembersWhenDesiredEmpty(t *testing.T) {
 	t.Parallel()
 
 	const aliasName = "traces"
@@ -113,16 +113,21 @@ func TestApplyResolvedAliasConfig_RemovesExistingMembersWhenDesiredEmpty(t *test
 		ReadIndices: types.SetNull(types.ObjectType{AttrTypes: getReadIndexAttrTypes(context.Background())}),
 	}
 
-	result, diags := applyResolvedAliasConfig(context.Background(), client, plan, aliasName)
+	prior := tfModel{}
+	result, diags := writeAlias(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:    plan,
+		Prior:   &prior,
+		WriteID: aliasName,
+	})
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	require.Equal(t, 1, *getAliasCalls)
 	require.Equal(t, 1, *updateAliasCalls)
 	require.Equal(t, []string{"traces-apm-default"}, *removeIndices)
-	require.True(t, result.desiredEmptyAfterWrite)
+	require.True(t, result.Model.desiredEmptyAfterWrite)
 }
 
-func TestCreateAlias_GeneratesIDBeforeDelegatingToSharedApply(t *testing.T) {
+func TestWriteAlias_CreateGeneratesID(t *testing.T) {
 	t.Parallel()
 
 	const aliasName = "traces"
@@ -134,7 +139,7 @@ func TestCreateAlias_GeneratesIDBeforeDelegatingToSharedApply(t *testing.T) {
 		ReadIndices: types.SetNull(types.ObjectType{AttrTypes: getReadIndexAttrTypes(context.Background())}),
 	}
 
-	result, diags := createAlias(context.Background(), client, entitycore.WriteRequest[tfModel]{
+	result, diags := writeAlias(context.Background(), client, entitycore.WriteRequest[tfModel]{
 		Plan:    plan,
 		WriteID: aliasName,
 	})
@@ -145,7 +150,7 @@ func TestCreateAlias_GeneratesIDBeforeDelegatingToSharedApply(t *testing.T) {
 	require.Contains(t, result.Model.ID.ValueString(), aliasName)
 }
 
-func TestUpdateAlias_DelegatesToSharedApplyWithoutGeneratingID(t *testing.T) {
+func TestWriteAlias_UpdateDoesNotGenerateID(t *testing.T) {
 	t.Parallel()
 
 	const aliasName = "traces"
@@ -157,8 +162,10 @@ func TestUpdateAlias_DelegatesToSharedApplyWithoutGeneratingID(t *testing.T) {
 		ReadIndices: types.SetNull(types.ObjectType{AttrTypes: getReadIndexAttrTypes(context.Background())}),
 	}
 
-	result, diags := updateAlias(context.Background(), client, entitycore.WriteRequest[tfModel]{
+	prior := tfModel{}
+	result, diags := writeAlias(context.Background(), client, entitycore.WriteRequest[tfModel]{
 		Plan:    plan,
+		Prior:   &prior,
 		WriteID: aliasName,
 	})
 
