@@ -4165,7 +4165,7 @@ Optional:
 
 Required:
 
-- `expression` (String) Query expression in KQL or Lucene syntax.
+- `expression` (String) Query expression in KQL or Lucene syntax. The value is compared as an exact string, so Kibana-side normalization of the expression shows up as a diff.
 - `language` (String) Query language (`kql` or `lucene`).
 
 

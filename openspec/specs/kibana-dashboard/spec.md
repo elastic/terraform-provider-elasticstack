@@ -3080,7 +3080,7 @@ The v0 → v1 upgrader SHALL:
 3. For each entry whose `type` is `"range_slider_control"`: move all flat attributes from `range_slider_control_config` (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) into a nested `by_field {}` object within `range_slider_control_config`.
 4. Leave all other panel types unchanged.
 
-The v0 → v1 transform SHALL be applied as the first step of the v0 upgrader, which then continues through the v1 → v2 transform (REQ-055) and emits state at the current schema version. The resource schema version SHALL be 1 after this requirement's transform and is incremented further to 2 by REQ-055. No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
+The v0 → v1 transform SHALL be applied as the first step of the v0 upgrader, which then continues through the v1 → v2 transform (REQ-055) and emits state at the current schema version. The v0 → v1 step precedes the v1 → v2 step; the resulting schema version is 2 (see REQ-055). No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
 
 #### Scenario: State upgrade preserves all field-branch attributes
 

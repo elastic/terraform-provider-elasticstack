@@ -144,7 +144,7 @@ func getSchema() schema.Schema {
 						},
 					},
 					"expression": schema.StringAttribute{
-						MarkdownDescription: "Query expression in KQL or Lucene syntax.",
+						MarkdownDescription: "Query expression in KQL or Lucene syntax. The value is compared as an exact string, so Kibana-side normalization of the expression shows up as a diff.",
 						Required:            true,
 					},
 				},
