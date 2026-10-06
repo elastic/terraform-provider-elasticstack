@@ -4,7 +4,7 @@
 
 On create, the resource SHALL map each Terraform attribute to its corresponding Elasticsearch settings key (e.g. `mapping_total_fields_limit` → `mapping.total_fields.limit`) using dot-notation key conversion. Analysis settings (`analysis_analyzer`, `analysis_tokenizer`, `analysis_char_filter`, `analysis_filter`, `analysis_normalizer`) SHALL be parsed from JSON and nested under the `analysis` key in the create settings payload; these settings are applied only at index creation time and are not sent on update. When the deprecated `settings` block is also present, its `name`/`value` pairs SHALL be merged into the settings map; if any key conflicts with a dedicated attribute, the resource SHALL return an error diagnostic and SHALL not call the API.
 
-The dynamic-setting attributes among these (every entry in `internal/elasticsearch/index.DynamicSettingsKeys`) SHALL be defined by the shared `getDynamicSettingAttributes() map[string]schema.Attribute` function in `internal/elasticsearch/index/settings_keys.go`, merged into this resource's schema map, rather than hand-declared individually in `internal/elasticsearch/index/index/schema.go`. The resource's `tfModel` SHALL obtain the corresponding typed fields by anonymously embedding `internal/elasticsearch/index/dynamicsettings.Model`. This is an internal refactor: attribute names, types, descriptions, `Optional`/`Computed` flags, and plan-modifier/validator behavior for every dynamic-setting attribute SHALL remain unchanged from before the refactor (see REQ-UNCHANGED below). Static (creation-time-only) setting attributes are unaffected by this change and remain hand-declared in `schema.go`.
+The dynamic-setting attributes among these (every entry in `internal/elasticsearch/index.DynamicSettingsKeys`) SHALL be defined by the shared `GetDynamicSettingAttributes() map[string]schema.Attribute` function in `internal/elasticsearch/index/settings_keys.go`, merged into this resource's schema map, rather than hand-declared individually in `internal/elasticsearch/index/index/schema.go`. The resource's `tfModel` SHALL obtain the corresponding typed fields by anonymously embedding `internal/elasticsearch/index/dynamicsettings.Model`. This is an internal refactor: attribute names, types, descriptions, `Optional`/`Computed` flags, and plan-modifier/validator behavior for every dynamic-setting attribute SHALL remain unchanged from before the refactor (see REQ-UNCHANGED below). Static (creation-time-only) setting attributes are unaffected by this change and remain hand-declared in `schema.go`.
 
 #### Scenario: Duplicate setting detected
 
@@ -14,7 +14,7 @@ The dynamic-setting attributes among these (every entry in `internal/elasticsear
 
 #### Scenario: Dynamic setting attribute behavior is unchanged after the schema refactor (REQ-UNCHANGED)
 
-- GIVEN the dynamic-setting attributes are now sourced from `getDynamicSettingAttributes()` instead of being hand-declared
+- GIVEN the dynamic-setting attributes are now sourced from `GetDynamicSettingAttributes()` instead of being hand-declared
 - WHEN a configuration sets any `DynamicSettingsKeys`-derived attribute (e.g. `mapping_total_fields_limit`, `number_of_replicas`, `refresh_interval`)
 - THEN the attribute's type, optionality, description, and validation behavior SHALL be identical to its pre-refactor behavior
 - AND existing `elasticstack_elasticsearch_index` configurations SHALL plan with no unexpected diff solely due to this refactor

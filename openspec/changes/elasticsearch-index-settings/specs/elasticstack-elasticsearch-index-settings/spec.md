@@ -10,7 +10,7 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
   index = <required, string, forces replacement> # name of the target (already concrete) Elasticsearch index
 
   # One optional, individually-typed attribute per internal/elasticsearch/index.DynamicSettingsKeys
-  # entry, sourced from the shared getDynamicSettingAttributes() function, e.g.:
+  # entry, sourced from the shared GetDynamicSettingAttributes() function, e.g.:
   mapping_total_fields_limit = <optional, int64>
   number_of_replicas         = <optional, int64>
   refresh_interval           = <optional, string>
@@ -24,8 +24,9 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 
 - `id` SHALL be computed and unknown until create completes; it SHALL use `stringplanmodifier.UseStateForUnknown()`.
 - `index` SHALL be required and SHALL force resource replacement when changed. It SHALL be treated as an already-resolved concrete index name; the resource SHALL NOT perform date-math resolution.
-- The dynamic-setting attributes SHALL be produced by `getDynamicSettingAttributes()` (owned by `internal/elasticsearch/index/settings_keys.go`) and merged into this resource's schema map, so their names, types, and descriptions are identical to the equivalent attributes on `elasticstack_elasticsearch_index`.
+- The dynamic-setting attributes SHALL be produced by `GetDynamicSettingAttributes()` (owned by `internal/elasticsearch/index/settings_keys.go`) and merged into this resource's schema map, so their names, types, and descriptions are identical to the equivalent attributes on `elasticstack_elasticsearch_index`.
 - `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a JSON object. At plan time, any top-level key of `settings_json` that is a literal, exact match of an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error. Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
+- A key set via a typed dynamic-setting attribute SHALL NOT also appear in `settings_json`. At plan time, after canonicalizing key spellings (with or without the `index.` prefix), any overlapping key SHALL be rejected with a validation error.
 - `elasticsearch_connection` is injected by the provider scaffold and SHALL NOT be declared manually in the schema factory.
 - At least one of the typed dynamic-setting attributes or `settings_json` SHALL be set; a configuration that sets none of them SHALL be rejected at plan time.
 
@@ -34,6 +35,12 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - GIVEN a configuration that omits `index`
 - WHEN `terraform validate` runs
 - THEN Terraform SHALL emit a required-attribute error
+
+#### Scenario: Schema validation — typed attribute and settings_json overlap
+
+- GIVEN `number_of_replicas = 1` and `settings_json = jsonencode({ "number_of_replicas" = 2 })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit a validation error identifying the overlapping key
 
 #### Scenario: Schema validation — settings_json rejects a static key
 
@@ -99,7 +106,7 @@ On update, the resource SHALL compute the union of declared typed dynamic-settin
 
 ### Requirement: Read — declared subset only (REQ-004)
 
-On read, the resource SHALL retrieve the index's settings via the existing `GetIndex` helper and populate only the typed dynamic-setting attributes and `settings_json` keys that are present in the previously stored state (the declared subset). Settings returned by Elasticsearch that are not part of the declared subset SHALL be silently ignored and SHALL NOT be written to state and SHALL NOT cause drift. If the previously stored state is empty (e.g. immediately after `terraform import`), the resource SHALL populate all `DynamicSettingsKeys`-derived attributes and `settings_json` from the full API response as the initial declared subset.
+On read, the resource SHALL retrieve the index's settings via the existing `GetIndex` helper and populate only the typed dynamic-setting attributes and `settings_json` keys that are present in the previously stored state (the declared subset). Settings returned by Elasticsearch that are not part of the declared subset SHALL be silently ignored and SHALL NOT be written to state and SHALL NOT cause drift. If the previously stored state is empty (e.g. immediately after `terraform import`), the resource SHALL populate the known `DynamicSettingsKeys`-derived typed attributes from the API response as the initial declared subset and SHALL leave `settings_json` unset, so that static and metadata settings (e.g. `index.number_of_shards`, `index.uuid`) are never adopted into state.
 
 #### Scenario: Unrelated settings do not cause drift
 
@@ -145,9 +152,10 @@ The resource `id` SHALL follow the format `<cluster_uuid>/<index_name>`, matchin
 
 - GIVEN an existing index with a known `index.mapping.total_fields.limit` of `5000`
 - WHEN the user runs `terraform import elasticstack_elasticsearch_index_settings.example <cluster_uuid>/<index_name>`
-- THEN the resource SHALL be added to state with all `DynamicSettingsKeys`-derived attributes populated from the API response
-- AND a subsequent `terraform plan` with a narrowed config (declaring only `mapping_total_fields_limit`) SHALL show a diff proposing to unset the other imported attributes
-- AND `terraform apply` SHALL converge state to the declared subset
+- THEN the resource SHALL be added to state with the known `DynamicSettingsKeys`-derived typed attributes populated from the API response
+- AND `settings_json` SHALL be unset
+- AND a subsequent `terraform plan` with a narrowed config (declaring only `mapping_total_fields_limit`) SHALL show a diff proposing to unset the other imported typed attributes
+- AND `terraform apply` SHALL succeed, sending only dynamic settings as `null`, and converge state to the declared subset
 
 #### Scenario: for_each over multiple concrete indices
 
