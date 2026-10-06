@@ -25,7 +25,7 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - `id` SHALL be computed and unknown until create completes; it SHALL use `stringplanmodifier.UseStateForUnknown()`.
 - `index` SHALL be required and SHALL force resource replacement when changed. It SHALL be treated as an already-resolved concrete index name; the resource SHALL NOT perform date-math resolution.
 - The dynamic-setting attributes SHALL be produced by `GetDynamicSettingAttributes()` (owned by `internal/elasticsearch/index/settings_keys.go`) and merged into this resource's schema map, so their names, types, and descriptions are identical to the equivalent attributes on `elasticstack_elasticsearch_index`.
-- `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a JSON object. At plan time, any top-level key of `settings_json` that is a literal, exact match of an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error. Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
+- `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a non-empty JSON object (`{}` is rejected at plan time, since it declares no settings). At plan time, any top-level key of `settings_json` that is a literal, exact match of an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error. Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
 - A key set via a typed dynamic-setting attribute SHALL NOT also appear in `settings_json`. At plan time, after canonicalizing key spellings (with or without the `index.` prefix), any overlapping key SHALL be rejected with a validation error.
 - `elasticsearch_connection` is injected by the provider scaffold and SHALL NOT be declared manually in the schema factory.
 - At least one of the typed dynamic-setting attributes or `settings_json` SHALL be set; a configuration that sets none of them SHALL be rejected at plan time.
@@ -41,6 +41,12 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - GIVEN `number_of_replicas = 1` and `settings_json = jsonencode({ "number_of_replicas" = 2 })`
 - WHEN `terraform validate` or `terraform plan` runs
 - THEN Terraform SHALL emit a validation error identifying the overlapping key
+
+#### Scenario: Schema validation — settings_json rejects an empty object
+
+- GIVEN `settings_json = jsonencode({})`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit a validation error stating `settings_json` must declare at least one setting
 
 #### Scenario: Schema validation — settings_json rejects a static key
 
@@ -106,7 +112,9 @@ On update, the resource SHALL compute the union of declared typed dynamic-settin
 
 ### Requirement: Read — declared subset only (REQ-004)
 
-On read, the resource SHALL retrieve the index's settings via the existing `GetIndex` helper and populate only the typed dynamic-setting attributes and `settings_json` keys that are present in the previously stored state (the declared subset). Settings returned by Elasticsearch that are not part of the declared subset SHALL be silently ignored and SHALL NOT be written to state and SHALL NOT cause drift. If the previously stored state is empty (e.g. immediately after `terraform import`), the resource SHALL populate the known `DynamicSettingsKeys`-derived typed attributes from the API response as the initial declared subset and SHALL leave `settings_json` unset, so that static and metadata settings (e.g. `index.number_of_shards`, `index.uuid`) are never adopted into state.
+On read, the resource SHALL retrieve the index's settings via the existing `GetIndex` helper and populate only the typed dynamic-setting attributes and `settings_json` keys that are present in the previously stored state (the declared subset). Settings returned by Elasticsearch that are not part of the declared subset SHALL be silently ignored and SHALL NOT be written to state and SHALL NOT cause drift. Full hydration SHALL occur only on the first read after `terraform import`, signalled by an import-specific private-state key set by the resource's `ImportState` implementation (alongside `id` and `index`) and cleared by that read. An empty set of tracked settings SHALL NOT be treated as an import. On that import read, the resource SHALL populate the known `DynamicSettingsKeys`-derived typed attributes from the API response as the initial declared subset and SHALL leave `settings_json` unset, so that static and metadata settings (e.g. `index.number_of_shards`, `index.uuid`) are never adopted into state.
+
+Ownership of a setting is defined by its presence in state (a non-null typed attribute or a `settings_json` key). When Elasticsearch no longer reports a tracked setting (for example because it was reset outside Terraform), read SHALL set that typed attribute to null or drop that key from `settings_json`, so the drift is shown; configuration that still declares it SHALL cause the plan to set it again. Outside the import read, read SHALL NOT add any setting to state, even when no tracked settings remain.
 
 #### Scenario: Unrelated settings do not cause drift
 
@@ -122,6 +130,22 @@ On read, the resource SHALL retrieve the index's settings via the existing `GetI
 - AND the setting is changed to `2300` directly via the Elasticsearch API (outside Terraform)
 - WHEN `terraform plan` runs
 - THEN the plan SHALL show a diff proposing to change `mapping_total_fields_limit` back to `5000`
+
+#### Scenario: Import hydrates once via the private-state flag
+
+- GIVEN an existing index with several dynamic settings, imported via `terraform import`
+- WHEN the first read runs
+- THEN the known dynamic typed attributes SHALL be populated from the API response and `settings_json` SHALL be unset
+- AND the import flag SHALL be cleared, so later reads do not hydrate
+
+#### Scenario: Repeated refresh after external reset does not adopt settings
+
+- GIVEN a resource that declares only `number_of_replicas = 2`, and the index also has `mapping_total_fields_limit` set to a value never declared by this resource
+- AND `number_of_replicas` is reset outside Terraform so Elasticsearch no longer reports it
+- WHEN `terraform refresh` runs twice
+- THEN the first refresh SHALL set `number_of_replicas` to null in state, showing drift
+- AND the second refresh SHALL NOT adopt `mapping_total_fields_limit` or any other setting
+- AND `terraform apply` SHALL set `number_of_replicas = 2` again without sending `null` for any other setting
 
 #### Scenario: Not found on read removes from state
 
