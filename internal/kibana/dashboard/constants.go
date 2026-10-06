@@ -30,6 +30,8 @@ const (
 	attrPanels       = "panels"
 	attrPinnedPanels = "pinned_panels"
 	attrSections     = "sections"
+	attrQuery        = "query"
+	attrExpression   = "expression"
 
 	attrDashboardID = "dashboard_id"
 )

@@ -14,7 +14,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 90000
   }
   query = {
-    language = "kql"
-    text     = "http.response.status_code:200"
+    language   = "kql"
+    expression = "http.response.status_code:200"
   }
 }

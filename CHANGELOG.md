@@ -1,5 +1,23 @@
 ## [Unreleased]
 
+### Breaking changes
+
+`elasticstack_kibana_dashboard`: the root `query` block now uses `expression` instead of `text` / `json`, matching the Kibana Dashboard API and the `expression` attribute already used by Lens chart queries. The API exposes a single string field, `expression`; `text` and `json` both mapped onto it, and `json` was only ever a JSON document sent as a query string. Replace `text` (or `json`) with `expression`:
+
+    # Before
+    query = {
+      language = "kql"
+      text     = "http.response.status_code:200"
+    }
+
+    # After
+    query = {
+      language   = "kql"
+      expression = "http.response.status_code:200"
+    }
+
+A Plugin Framework state upgrader (schema v1 -> v2) automatically migrates existing state on the next `terraform apply`; no manual state surgery is required, but `.tf` files must be updated to use `expression`. Because `query.json` was always sent to Kibana as a string, its value is carried over to `expression` unchanged. ([#5081](https://github.com/elastic/terraform-provider-elasticstack/issues/5081))
+
 ### Changes
 
 - Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))

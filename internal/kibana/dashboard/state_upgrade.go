@@ -26,20 +26,35 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-// UpgradeState migrates dashboard resource state from schema version 0 to
-// version 1. Version 0 stored options_list_control_config and
-// range_slider_control_config as a flat set of attributes; version 1
-// restructures both blocks into a `by_field {}` / `by_esql {}` union so the
-// ES|QL control variant can be represented. See REQ-040.
+// UpgradeState migrates dashboard resource state to the current schema
+// version (2). Each upgrader is keyed by the stored schema version and must
+// emit state at the current version, so the v0 entry carries the full chain.
+//
+//   - v0 -> v1 restructures options_list_control / range_slider_control panels
+//     from a flat attribute set into a `by_field {}` / `by_esql {}` union so the
+//     ES|QL control variant can be represented. See REQ-040.
+//   - v1 -> v2 replaces the root `query.text` / `query.json` union with a single
+//     `query.expression` attribute. See REQ-055.
 func (r *Resource) UpgradeState(context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
-		0: {
-			StateUpgrader: migrateV0ToV1,
-		},
+		0: {StateUpgrader: migrateV0ToV2},
+		1: {StateUpgrader: migrateV1ToV2},
 	}
 }
 
-func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+func migrateV0ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	upgradeStateMap(req, resp, relocateControlPanelsV0ToV1, upgradeQueryV1ToV2)
+}
+
+func migrateV1ToV2(_ context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+	upgradeStateMap(req, resp, upgradeQueryV1ToV2)
+}
+
+// upgradeStateMap unmarshals the raw state once, applies the transforms in
+// order to the same map, and marshals once. Chaining separate upgraders
+// against one response would discard earlier output, because both
+// stateutil.SetDefaultState and stateutil.UnmarshalStateMap read req.RawState.
+func upgradeStateMap(req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse, transforms ...func(map[string]any)) {
 	stateutil.SetDefaultState(req, resp)
 
 	state := stateutil.UnmarshalStateMap(req, resp)
@@ -47,6 +62,14 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 		return
 	}
 
+	for _, transform := range transforms {
+		transform(state)
+	}
+
+	stateutil.MarshalStateMap(state, resp)
+}
+
+func relocateControlPanelsV0ToV1(state map[string]any) {
 	migratePanelList(state[attrPanels])
 	migratePanelList(state[attrPinnedPanels])
 
@@ -63,8 +86,31 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 			migratePanelList(section[attrPanels])
 		}
 	}
+}
 
-	stateutil.MarshalStateMap(state, resp)
+// upgradeQueryV1ToV2 folds the v1 root `query.text` / `query.json` attributes
+// into `query.expression`. A missing value becomes an explicit null rather than
+// "" because Terraform decodes every attribute of the v2 nested object, and ""
+// would assert an empty query the state never held.
+func upgradeQueryV1ToV2(state map[string]any) {
+	query, ok := state[attrQuery].(map[string]any)
+	if !ok {
+		return
+	}
+
+	// `text` takes precedence over `json` when both are set.
+	var expression any
+	if text, ok := query["text"].(string); ok {
+		expression = text
+	} else if jsonQuery, ok := query["json"].(string); ok {
+		expression = jsonQuery
+	} else if existing, ok := query[attrExpression]; ok {
+		expression = existing
+	}
+
+	query[attrExpression] = expression
+	delete(query, "text")
+	delete(query, "json")
 }
 
 // migratePanelList relocates the v0 flat control-config attributes for every

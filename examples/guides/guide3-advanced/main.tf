@@ -42,8 +42,8 @@ resource "elasticstack_kibana_dashboard" "advanced" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   tags = ["advanced", "production"]

@@ -93,19 +93,19 @@ The v0 → v1 upgrader SHALL:
 3. For each entry whose `type` is `"range_slider_control"`: move all flat attributes from `range_slider_control_config` (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) into a nested `by_field {}` object within `range_slider_control_config`.
 4. Leave all other panel types unchanged.
 
-The v0 → v1 transform SHALL be applied as the first step of the v0 upgrader, which then continues through the v1 → v2 transform (REQ-055) and emits state at the current schema version. The resource schema version SHALL be 1 after this requirement's transform and is incremented further to 2 by REQ-055. No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
+The v0 → v1 transform SHALL be applied as the first step of the v0 upgrader, which then continues through the v1 → v2 transform (REQ-055) and emits state at the current schema version. The v0 → v1 step precedes the v1 → v2 step; the resulting schema version is 2 (see REQ-055). No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
 
 #### Scenario: State upgrade preserves all field-branch attributes
 
 - GIVEN a v0 state containing both `options_list_control` and `range_slider_control` panels with all optional attributes set (e.g. `sort`, `display_settings`, `value`, `step`)
 - WHEN the state upgrader runs
-- THEN all attribute values SHALL be present under the `by_field {}` sub-object in v1 state and no attributes SHALL be dropped
+- THEN all attribute values SHALL be present under the `by_field {}` sub-object in the upgraded v2 state and no attributes SHALL be dropped
 
 #### Scenario: Non-control panels are unaffected by the upgrader
 
 - GIVEN a v0 state containing a mix of `options_list_control`, `range_slider_control`, and `markdown` panels
 - WHEN the state upgrader runs
-- THEN the `markdown` panel entries SHALL be unchanged in v1 state
+- THEN the `markdown` panel entries SHALL be unchanged in the upgraded v2 state
 
 ## ADDED Requirements
 
@@ -158,7 +158,7 @@ The `elasticstack_kibana_dashboard` resource SHALL implement a state upgrade fro
 The v1 → v2 upgrader SHALL:
 
 1. Leave a null or absent `query` block untouched.
-2. For a non-null `query` block, set `query.expression` from `query.text` when `text` is a non-null string; otherwise from `query.json` when `json` is a non-null string, copying the stored string value as-is without re-serialising it; otherwise set `query.expression` to an explicit null (the key SHALL be present so the v2 nested attribute decodes). The upgrader SHALL NOT substitute an empty string for a missing value.
+2. For a non-null `query` block, set `query.expression` from `query.text` when `text` is a non-null string; otherwise from `query.json` when `json` is a non-null string, copying the stored string value as-is without re-serialising it; otherwise retain an already-present non-null `expression` value (so the transform is idempotent on v2-shaped input); otherwise set `query.expression` to an explicit null (the key SHALL be present so the v2 nested attribute decodes). The upgrader SHALL NOT substitute an empty string for a missing value.
 3. Remove `query.text` and `query.json` from the upgraded state.
 
 The resource's existing v0 → v1 transform (REQ-040) SHALL be composed with this v1 → v2 transform so that state starting at schema version 0 upgrades directly to version 2 in a single `UpgradeState` call, without requiring two separate `terraform apply` runs. Both transforms SHALL operate on one in-memory raw state map that is read once and written once, so the v0 → v1 panel relocation is not discarded by the second transform. No data SHALL be lost during either upgrade path: the resulting `query.expression` value SHALL be functionally equivalent to the query expression Kibana was already receiving before the upgrade.

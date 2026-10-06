@@ -43,42 +43,8 @@ resource "elasticstack_kibana_dashboard" "my_dashboard" {
   }
 
   query = {
-    language = "kql"
-    text     = "status:success"
-  }
-
-  # Optional tags
-  tags = ["production", "monitoring"]
-}
-
-# Example with JSON query (mutually exclusive with query.text)
-resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
-  title       = "My Dashboard with JSON Query"
-  description = "A dashboard with a structured query"
-
-  time_range = {
-    from = "now-15m"
-    to   = "now"
-  }
-
-  refresh_interval = {
-    pause = false
-    value = 60000 # 60 seconds
-  }
-
-  query = {
-    language = "kql"
-    json = jsonencode({
-      bool = {
-        must = [
-          {
-            match = {
-              status = "success"
-            }
-          }
-        ]
-      }
-    })
+    language   = "kql"
+    expression = "status:success"
   }
 
   # Optional tags
@@ -91,7 +57,7 @@ resource "elasticstack_kibana_dashboard" "vis_typed_by_value" {
   description      = "Example: metric via vis_config.by_value.metric_chart_config"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "vis"
@@ -126,7 +92,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_value" {
   description      = "Example: markdown_config.by_value with settings"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "markdown"
@@ -151,7 +117,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
   description      = "Example: markdown_config.by_reference with a placeholder ref_id"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "markdown"
@@ -185,7 +151,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 - `pinned_panels` (Attributes List) Ordered dashboard-level pinned controls (Kibana’s control bar above the grid). Each element uses the same typed `*_control_config` shapes as `panels[]` for these control kinds, without a `grid` block.
 
 When omitted from configuration and Kibana returns an empty list, Terraform keeps this attribute unset (see dashboard resource unset-vs-empty semantics). When set, order is preserved for API requests and read back in API order. (see [below for nested schema](#nestedatt--pinned_panels))
-- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--query))
+- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus `expression`. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--query))
 - `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--refresh_interval))
 - `sections` (Attributes List) Sections organize panels into collapsible groups. This is a technical preview feature. (see [below for nested schema](#nestedatt--sections))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
@@ -4199,12 +4165,8 @@ Optional:
 
 Required:
 
+- `expression` (String) Query expression in KQL or Lucene syntax. The value is compared as an exact string, so Kibana-side normalization of the expression shows up as a diff.
 - `language` (String) Query language (`kql` or `lucene`).
-
-Optional:
-
-- `json` (String) Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.
-- `text` (String) Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.
 
 
 <a id="nestedatt--refresh_interval"></a>
