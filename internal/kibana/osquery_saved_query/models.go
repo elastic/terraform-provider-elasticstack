@@ -171,17 +171,13 @@ func (m *osquerySavedQueryBaseModel) populateSharedFields(
 func (m *osquerySavedQueryBaseModel) setCompositeIdentity(savedQueryID kbapi.SecurityOsqueryAPISavedQueryId) {
 	spaceID := clients.EffectiveSpaceIDFromValue(m.SpaceID)
 
-	compID := clients.CompositeID{
-		ClusterID:  spaceID,
-		ResourceID: savedQueryID,
-	}
-
-	m.ID = types.StringValue(compID.String())
+	id, space := clients.CompositeIdentityValues(spaceID, savedQueryID)
+	m.ID = id
 	m.SavedQueryID = types.StringValue(savedQueryID)
 
 	// Populate computed space_id when absent, but preserve unknown plan/state values.
 	if m.SpaceID.IsNull() || (typeutils.IsKnown(m.SpaceID) && m.SpaceID.ValueString() == "") {
-		m.SpaceID = types.StringValue(spaceID)
+		m.SpaceID = space
 	}
 }
 

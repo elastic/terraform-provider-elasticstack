@@ -62,9 +62,8 @@ func (m tagBaseModel) GetResourceID() types.String { return m.TagID }
 func (m tagBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *tagBaseModel) setCompositeIdentity(spaceID, tagID string) {
-	m.ID = clients.CompositeIDValue(spaceID, tagID)
+	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, tagID)
 	m.TagID = types.StringValue(tagID)
-	m.SpaceID = types.StringValue(spaceID)
 }
 
 func (tagBaseModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

@@ -58,6 +58,19 @@ func TestCompositeIDFromStr(t *testing.T) {
 	})
 }
 
+func TestCompositeIdentityValues(t *testing.T) {
+	t.Run("builds composite id and space id value", func(t *testing.T) {
+		id, space := CompositeIdentityValues("production", "my-resource")
+		assert.Equal(t, "production/my-resource", id.ValueString())
+		assert.Equal(t, "production", space.ValueString())
+	})
+
+	t.Run("matches CompositeIDValue output for the id", func(t *testing.T) {
+		id, _ := CompositeIdentityValues("default", "uuid-1")
+		assert.Equal(t, CompositeIDValue("default", "uuid-1"), id)
+	})
+}
+
 func TestResourceIDFromComposite(t *testing.T) {
 	t.Run("extracts resource segment from composite id", func(t *testing.T) {
 		got := ResourceIDFromComposite(types.StringValue("default/auto-gen-uuid"), types.StringValue("fallback"))
