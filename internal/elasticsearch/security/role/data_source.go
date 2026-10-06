@@ -249,11 +249,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	return model, true, diags
 }
 
-func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
+func (m *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Description
-	config.Description = typeutils.StringishPointerValue(role.Description)
+	m.Description = typeutils.StringishPointerValue(role.Description)
 
 	// Cluster
 	clusterSet, d := types.SetValueFrom(ctx, types.StringType, clusterPrivilegesToStrings(role.Cluster))
@@ -261,7 +261,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 	if diags.HasError() {
 		return diags
 	}
-	config.Cluster = clusterSet
+	m.Cluster = clusterSet
 
 	// RunAs
 	runAsSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(role.RunAs))
@@ -269,17 +269,17 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 	if diags.HasError() {
 		return diags
 	}
-	config.RunAs = runAsSet
+	m.RunAs = runAsSet
 
 	// Global
 	if len(role.Global) > 0 {
-		config.Global = jsontypes.NewNormalizedValue(string(role.Global))
+		m.Global = jsontypes.NewNormalizedValue(string(role.Global))
 	} else {
-		config.Global = jsontypes.NewNormalizedNull()
+		m.Global = jsontypes.NewNormalizedNull()
 	}
 
 	// Metadata
-	config.Metadata = typeutils.MarshalToNormalized(role.Metadata, path.Root("metadata"), &diags)
+	m.Metadata = typeutils.MarshalToNormalized(role.Metadata, path.Root("metadata"), &diags)
 
 	// Applications
 	appSet, appDiags := applicationsToSet(ctx, role.Applications)
@@ -287,7 +287,7 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 	if diags.HasError() {
 		return diags
 	}
-	config.Applications = appSet
+	m.Applications = appSet
 
 	// Indices
 	if len(role.Indices) > 0 {
@@ -339,9 +339,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 		if diags.HasError() {
 			return diags
 		}
-		config.Indices = indicesSet
+		m.Indices = indicesSet
 	} else {
-		config.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
+		m.Indices = types.SetNull(types.ObjectType{AttrTypes: getIndexPermsDSAttrTypes()})
 	}
 
 	// Remote Indices
@@ -406,9 +406,9 @@ func (config *roleDataSourceModel) fromAPIModel(ctx context.Context, role *elast
 		if diags.HasError() {
 			return diags
 		}
-		config.RemoteIndices = remoteIndicesSet
+		m.RemoteIndices = remoteIndicesSet
 	} else {
-		config.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
+		m.RemoteIndices = types.SetNull(types.ObjectType{AttrTypes: getRemoteIndexPermsDSAttrTypes()})
 	}
 
 	return diags

@@ -78,7 +78,12 @@ func NewQueryRulesetDataSource() datasource.DataSource {
 	)
 }
 
-func readQueryRulesetDataSource(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, config queryRulesetDataSourceModel) (queryRulesetDataSourceModel, bool, diag.Diagnostics) {
+func readQueryRulesetDataSource(
+	ctx context.Context,
+	client *clients.ElasticsearchScopedClient,
+	resourceID string,
+	config queryRulesetDataSourceModel,
+) (queryRulesetDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	data := config.toData()

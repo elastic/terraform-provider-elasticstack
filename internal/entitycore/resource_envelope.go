@@ -263,7 +263,6 @@ type elasticsearchIdentityModel interface {
 	GetResourceID() types.String
 }
 
-//nolint:unparam // diag.Diagnostics is always nil in current paths but is part of the public signature used by callers.
 func resolveElasticsearchReadResourceID(model elasticsearchIdentityModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
