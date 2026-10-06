@@ -2,9 +2,7 @@
 
 ### Changes
 
-<<<<<<< HEAD
 - **Breaking:** Entity data sources built on the shared envelope now return a standardized `<component>_<name> not found` error when the requested entity does not exist. Previously `elasticstack_elasticsearch_snapshot_repository`, `elasticstack_elasticsearch_ml_trained_model`, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, `elasticstack_elasticsearch_index_template` returned empty state or only a warning. `elasticstack_elasticsearch_query_ruleset` already errored when the ruleset was missing; only its diagnostic text is now standardized.
-=======
 - Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))
 - Support wildcard and multi-target expressions in index alias read indices. ([#5079](https://github.com/elastic/terraform-provider-elasticstack/pull/5079))
 - `elasticstack_fleet_elastic_defend_integration_policy` now creates the policy with the configured `policy_id` instead of ignoring it, and rejects an empty `policy_id` at plan time. ([#5041](https://github.com/elastic/terraform-provider-elasticstack/pull/5041))
