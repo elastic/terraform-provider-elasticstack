@@ -108,14 +108,7 @@ func TestAccResourceDashboardOptionalRootBlocks_addRemove(t *testing.T) {
 			optionalRootBlocksStep("title_only", title, allNull...),
 			optionalRootBlocksStep("query_only", title,
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.language", "lucene"),
-				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.text", "status:200"),
-				resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "query.json"),
-			),
-			optionalRootBlocksStep("title_only", title, allNull...),
-			optionalRootBlocksStep("query_json", title,
-				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.language", "kql"),
-				resource.TestCheckResourceAttrSet(optionalRootBlocksResource, "query.json"),
-				resource.TestCheckNoResourceAttr(optionalRootBlocksResource, "query.text"),
+				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.expression", "status:200"),
 			),
 			optionalRootBlocksStep("title_only", title, allNull...),
 			optionalRootBlocksStep("refresh_paused_zero", title,
@@ -141,7 +134,7 @@ func TestAccResourceDashboardOptionalRootBlocks_nonDefaultValues(t *testing.T) {
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "refresh_interval.pause", "false"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "refresh_interval.value", "45000"),
 				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.language", "lucene"),
-				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.text", "host.name:web-*"),
+				resource.TestCheckResourceAttr(optionalRootBlocksResource, "query.expression", "host.name:web-*"),
 			),
 			optionalRootBlocksImportStep("non_default", title, "time_range.mode"),
 		},
@@ -184,7 +177,7 @@ func TestAccResourceDashboardOptionalRootBlocks_partialRemoval(t *testing.T) {
 	}
 	query := []resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(r, "query.language", "lucene"),
-		resource.TestCheckResourceAttr(r, "query.text", "host.name:web-*"),
+		resource.TestCheckResourceAttr(r, "query.expression", "host.name:web-*"),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{

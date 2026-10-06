@@ -19,7 +19,6 @@ package models
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,9 +38,8 @@ type RefreshIntervalModel struct {
 }
 
 type DashboardQueryModel struct {
-	Language types.String         `tfsdk:"language"`
-	Text     types.String         `tfsdk:"text"`
-	JSON     jsontypes.Normalized `tfsdk:"json"`
+	Language   types.String `tfsdk:"language"`
+	Expression types.String `tfsdk:"expression"`
 }
 
 type OptionsModel struct {

@@ -98,6 +98,11 @@ engine:
   env:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    # Run threat detection on Claude Sonnet 5 instead of inheriting the main
+    # model. The detection job's AWF config keeps the AI-credits guard active
+    # (max-ai-credits: -1 only applies to the agent job), so detection needs a
+    # model with pricing configured below.
+    GH_AW_MODEL_DETECTION_CLAUDE: "anthropic/claude-sonnet-5"
 # Disable the per-run AI Credits budget guard. The OpenRouter model slug
 # "deepseek/deepseek-v4.1-flash" may be absent from the AWF api-proxy's built-in
 # pricing table and the models.dev catalog. gh-aw (v0.81.6) does not expose
@@ -111,12 +116,21 @@ models:
   providers:
     anthropic:
       models:
-        "llm-gateway/DeepSeek-V4-Flash": 
-          "cost": 
+        "llm-gateway/DeepSeek-V4-Flash":
+          "cost":
             "input": "1.4e-7"
             "output": "2.8e-7"
             "cache_read": "8e-08"
             "cache_write": "1e-06"
+        # Pricing for the threat-detection model (GH_AW_MODEL_DETECTION_CLAUDE
+        # above). The detection job's api-proxy enforces the AI-credits budget
+        # and rejects unpriced models with HTTP 400.
+        "anthropic/claude-sonnet-5":
+          "cost":
+            "input": "3e-06"
+            "output": "1.5e-05"
+            "cache_read": "3e-07"
+            "cache_write": "3.75e-06"
 permissions:
   contents: read
   issues: read

@@ -10,7 +10,7 @@ resource "elasticstack_kibana_dashboard" "vis_by_reference_example" {
   description      = "Example: vis_config.by_reference with structured drilldowns"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "vis"

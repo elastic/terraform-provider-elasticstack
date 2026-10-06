@@ -35,8 +35,8 @@ resource "elasticstack_kibana_dashboard" "operations" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   options = {

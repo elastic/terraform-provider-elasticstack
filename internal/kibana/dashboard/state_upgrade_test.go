@@ -45,7 +45,7 @@ func testResourceSchema(t *testing.T) rschema.Schema {
 	return resp.Schema
 }
 
-func runMigrateV0ToV1Resp(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
+func runMigrateV0ToV2Resp(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
 	t.Helper()
 
 	rawJSON, err := json.Marshal(raw)
@@ -53,14 +53,14 @@ func runMigrateV0ToV1Resp(t *testing.T, raw map[string]any) *resource.UpgradeSta
 
 	req := resource.UpgradeStateRequest{RawState: &tfprotov6.RawState{JSON: rawJSON}}
 	resp := &resource.UpgradeStateResponse{}
-	migrateV0ToV1(context.Background(), req, resp)
+	migrateV0ToV2(context.Background(), req, resp)
 	return resp
 }
 
-func runMigrateV0ToV1(t *testing.T, raw map[string]any) map[string]any {
+func runMigrateV0ToV2(t *testing.T, raw map[string]any) map[string]any {
 	t.Helper()
 
-	resp := runMigrateV0ToV1Resp(t, raw)
+	resp := runMigrateV0ToV2Resp(t, raw)
 	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
 
 	var got map[string]any
@@ -137,7 +137,7 @@ func TestMigrateV0ToV1_OptionsListControl(t *testing.T) {
 		},
 	}
 
-	got := runMigrateV0ToV1(t, raw)
+	got := runMigrateV0ToV2(t, raw)
 
 	panels, ok := got["panels"].([]any)
 	require.True(t, ok)
@@ -203,7 +203,7 @@ func TestMigrateV0ToV1_RangeSliderControl(t *testing.T) {
 		},
 	}
 
-	got := runMigrateV0ToV1(t, raw)
+	got := runMigrateV0ToV2(t, raw)
 
 	panels, ok := got["panels"].([]any)
 	require.True(t, ok)
@@ -265,7 +265,7 @@ func TestMigrateV0ToV1_NonControlPanelsUnaffected(t *testing.T) {
 		},
 	}
 
-	got := runMigrateV0ToV1(t, raw)
+	got := runMigrateV0ToV2(t, raw)
 
 	panels, ok := got["panels"].([]any)
 	require.True(t, ok)
@@ -329,7 +329,7 @@ func TestMigrateV0ToV1_PinnedPanelsAndSections(t *testing.T) {
 		},
 	}
 
-	got := runMigrateV0ToV1(t, raw)
+	got := runMigrateV0ToV2(t, raw)
 
 	pinned, ok := got["pinned_panels"].([]any)
 	require.True(t, ok)
@@ -458,7 +458,7 @@ func TestMigrateV0ToV1_UpgradedStateDecodesUnderV1Schema(t *testing.T) {
 		},
 	}
 
-	resp := runMigrateV0ToV1Resp(t, raw)
+	resp := runMigrateV0ToV2Resp(t, raw)
 	requireUpgradedStateDecodes(t, resp)
 
 	// Belt-and-braces: also confirm the decoded model actually carries the
@@ -487,12 +487,191 @@ func TestMigrateV0ToV1_UpgradedStateDecodesUnderV1Schema(t *testing.T) {
 	require.Equal(t, "orders-view", rsByField["data_view_id"])
 }
 
-func TestUpgradeState_RegistersV0Upgrader(t *testing.T) {
+func TestUpgradeState_RegistersUpgraders(t *testing.T) {
 	t.Parallel()
 
 	r := &Resource{}
 	upgraders := r.UpgradeState(context.Background())
-	up, ok := upgraders[0]
-	require.True(t, ok, "expected a registered v0 state upgrader")
-	require.NotNil(t, up.StateUpgrader)
+	require.Len(t, upgraders, 2)
+	require.Equal(t, int64(2), testResourceSchema(t).Version)
+	for _, version := range []int64{0, 1} {
+		up, ok := upgraders[version]
+		require.True(t, ok, "expected a registered v%d state upgrader", version)
+		require.NotNil(t, up.StateUpgrader)
+	}
+}
+
+func runMigrateV1ToV2Resp(t *testing.T, raw map[string]any) *resource.UpgradeStateResponse {
+	t.Helper()
+
+	rawJSON, err := json.Marshal(raw)
+	require.NoError(t, err)
+
+	req := resource.UpgradeStateRequest{RawState: &tfprotov6.RawState{JSON: rawJSON}}
+	resp := &resource.UpgradeStateResponse{}
+	migrateV1ToV2(context.Background(), req, resp)
+	return resp
+}
+
+func runMigrateV1ToV2(t *testing.T, raw map[string]any) map[string]any {
+	t.Helper()
+
+	resp := runMigrateV1ToV2Resp(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	return got
+}
+
+func TestMigrateV1ToV2_Query(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		language       string
+		query          map[string]any
+		wantExpression any
+	}{
+		{
+			name:           "text only",
+			query:          map[string]any{"language": "kql", "text": "status:200", "json": nil},
+			wantExpression: "status:200",
+		},
+		{
+			name:           "json only copies the stored normalized string",
+			query:          map[string]any{"language": "kql", "text": nil, "json": `{"match_all":{}}`},
+			wantExpression: `{"match_all":{}}`,
+		},
+		{
+			name:           "empty string text",
+			query:          map[string]any{"language": "kql", "text": "", "json": nil},
+			wantExpression: "",
+		},
+		{
+			name:           "text beginning with a brace is copied as is",
+			query:          map[string]any{"language": "kql", "text": `{not json`, "json": nil},
+			wantExpression: `{not json`,
+		},
+		{
+			name:           "neither text nor json becomes explicit null",
+			query:          map[string]any{"language": "kql", "text": nil, "json": nil},
+			wantExpression: nil,
+		},
+		{
+			name:           "lucene language is preserved",
+			language:       "lucene",
+			query:          map[string]any{"text": "a:b", "json": nil},
+			wantExpression: "a:b",
+		},
+		{
+			name:           "text wins when both text and json are set",
+			query:          map[string]any{"language": "kql", "text": "a:b", "json": `{"match_all":{}}`},
+			wantExpression: "a:b",
+		},
+		{
+			name:           "preexisting expression is preserved when text and json are absent",
+			query:          map[string]any{"language": "kql", "expression": "kept"},
+			wantExpression: "kept",
+		},
+		{
+			name:           "already v2 shaped is idempotent",
+			query:          map[string]any{"language": "kql", "expression": "a:b"},
+			wantExpression: "a:b",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			wantLanguage := "kql"
+			if tc.language != "" {
+				wantLanguage = tc.language
+				tc.query["language"] = tc.language
+			}
+			got := runMigrateV1ToV2(t, map[string]any{"title": "t", "query": tc.query})
+
+			query, ok := got["query"].(map[string]any)
+			require.True(t, ok)
+			require.Contains(t, query, "expression")
+			require.Equal(t, tc.wantExpression, query["expression"])
+			require.Equal(t, wantLanguage, query["language"])
+			require.NotContains(t, query, "text")
+			require.NotContains(t, query, "json")
+		})
+	}
+}
+
+func TestMigrateV1ToV2_QueryAbsentOrNullOrMalformed(t *testing.T) {
+	t.Parallel()
+
+	got := runMigrateV1ToV2(t, map[string]any{"title": "t", "query": nil})
+	require.Contains(t, got, "query")
+	require.Nil(t, got["query"])
+
+	got = runMigrateV1ToV2(t, map[string]any{"title": "t"})
+	require.NotContains(t, got, "query")
+
+	got = runMigrateV1ToV2(t, map[string]any{"title": "t", "query": "oops"})
+	require.Equal(t, "oops", got["query"])
+}
+
+func TestMigrateV1ToV2_UpgradedStateDecodesUnderV2Schema(t *testing.T) {
+	t.Parallel()
+
+	resp := runMigrateV1ToV2Resp(t, map[string]any{
+		"title": "t",
+		"query": map[string]any{"language": "kql", "text": "status:200", "json": nil},
+	})
+	requireUpgradedStateDecodes(t, resp)
+}
+
+func TestMigrateV0ToV2_ComposesPanelRelocationAndQuery(t *testing.T) {
+	t.Parallel()
+
+	resp := runMigrateV0ToV2Resp(t, map[string]any{
+		"title": "t",
+		"query": map[string]any{"language": "kql", "text": "status:200", "json": nil},
+		"panels": []any{
+			map[string]any{
+				"type": panelTypeOptionsListControl,
+				"id":   "ol-1",
+				"options_list_control_config": map[string]any{
+					"data_view_id": "logs-view",
+					"field_name":   "service.name",
+				},
+			},
+		},
+	})
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+
+	query, ok := got["query"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "status:200", query["expression"])
+	require.NotContains(t, query, "text")
+	require.NotContains(t, query, "json")
+
+	panels, ok := got["panels"].([]any)
+	require.True(t, ok)
+	panel, ok := panels[0].(map[string]any)
+	require.True(t, ok)
+	cfg, ok := panel["options_list_control_config"].(map[string]any)
+	require.True(t, ok)
+	byField, ok := cfg["by_field"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "logs-view", byField["data_view_id"])
+}
+
+func TestMigrateV0ToV2_AbsentQuery(t *testing.T) {
+	t.Parallel()
+
+	resp := runMigrateV0ToV2Resp(t, map[string]any{"title": "t"})
+	requireUpgradedStateDecodes(t, resp)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	require.NotContains(t, got, "query")
 }
