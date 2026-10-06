@@ -556,12 +556,16 @@ func TestAccResourceDashboardQueryTransition(t *testing.T) {
 //go:embed testdata/TestAccResourceDashboardQueryStateUpgrade/v1_text/main.tf
 var testAccDashboardQueryV1TextConfig string
 
+//go:embed testdata/TestAccResourceDashboardQueryStateUpgradeFromJSON/v1_json/main.tf
+var testAccDashboardQueryV1JSONConfig string
+
 func TestAccResourceDashboardQueryStateUpgrade(t *testing.T) {
 	dashboardTitle := "Test Dashboard Query Upgrade " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
 	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
 
-	resource.ParallelTest(t, resource.TestCase{
+	// Not parallel: concurrent external-provider downloads race on the shared plugin cache.
+	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
@@ -596,6 +600,85 @@ func TestAccResourceDashboardQueryStateUpgrade(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.text"),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.json"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardQueryStateUpgradeFromJSON(t *testing.T) {
+	dashboardTitle := "Test Dashboard Query JSON Upgrade " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	// Not parallel: concurrent external-provider downloads race on the shared plugin cache.
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Last release with schema v1, where the root query used `text` / `json`.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.16.5",
+					},
+				},
+				Config: testAccDashboardQueryV1JSONConfig,
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("expression_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", `{"match_all":{}}`),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.text"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.json"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardQueryEmptyExpression(t *testing.T) {
+	dashboardTitle := "Test Dashboard Empty Query " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 			},
 		},
 	})
