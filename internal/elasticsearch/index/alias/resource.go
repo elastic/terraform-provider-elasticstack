@@ -47,8 +47,8 @@ func newAliasResource() *aliasResource {
 			Schema: getSchemaFactory,
 			Read:   readAlias,
 			Delete: deleteAlias,
-			Create: createAlias,
-			Update: updateAlias,
+			Create: writeAlias,
+			Update: writeAlias,
 		}),
 	}
 }

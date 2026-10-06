@@ -27,39 +27,40 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-func createAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
+func writeAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, req entitycore.WriteRequest[tfModel]) (entitycore.WriteResult[tfModel], diag.Diagnostics) {
 	var diags diag.Diagnostics
 	plan := req.Plan
-	aliasName := req.WriteID
 
 	diags.Append(plan.Validate(ctx)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	id, idDiags := client.ID(ctx, aliasName)
-	if idDiags.HasError() {
+	if req.Prior == nil {
+		id, idDiags := client.ID(ctx, req.WriteID)
 		diags.Append(idDiags...)
-		return entitycore.WriteResult[tfModel]{Model: plan}, diags
+		if diags.HasError() {
+			return entitycore.WriteResult[tfModel]{Model: plan}, diags
+		}
+		plan.ID = basetypes.NewStringValue(id.String())
 	}
-	plan.ID = basetypes.NewStringValue(id.String())
 
-	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, aliasName)
+	currentIndices, readDiags := elasticsearch.GetAlias(ctx, client, req.WriteID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
-	currentConfigs, currentDiags := currentAliasConfigs(aliasName, currentIndices)
+	currentConfigs, currentDiags := currentAliasConfigs(req.WriteID, currentIndices)
 	diags.Append(currentDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
 	resolveIndexExpression := func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
-		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, req.WriteID)
 	}
-	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, aliasName, currentConfigs, resolveIndexExpression)
+	actions, desiredEmpty, actionDiags := plan.buildResolvedAliasActionsWithOutcome(ctx, req.WriteID, currentConfigs, resolveIndexExpression)
 	diags.Append(actionDiags...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
