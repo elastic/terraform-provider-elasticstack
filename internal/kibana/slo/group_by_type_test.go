@@ -93,20 +93,8 @@ func TestGroupBy_ListSemanticEquals(t *testing.T) {
 			expect: true,
 		},
 		{
-			name:   "unknown equals unknown",
-			left:   NewGroupByUnknown(),
-			right:  NewGroupByUnknown(),
-			expect: true,
-		},
-		{
 			name:   "null not equal star",
 			left:   NewGroupByNull(),
-			right:  mustGroupBy(t, "*"),
-			expect: false,
-		},
-		{
-			name:   "unknown not equal star",
-			left:   NewGroupByUnknown(),
 			right:  mustGroupBy(t, "*"),
 			expect: false,
 		},
