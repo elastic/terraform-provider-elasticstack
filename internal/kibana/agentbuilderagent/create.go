@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
@@ -41,14 +40,6 @@ func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 			return plan.toAPICreateModel(ctx, supportsSkillIDs)
 		},
 		kibanaoapi.CreateAgent,
-		(*agentModel).setWriteSpaceID,
+		agentbuilder.SetWriteSpaceID[*agentModel, models.Agent],
 	)(ctx, client, req)
-}
-
-// setWriteSpaceID sets SpaceID explicitly so the returned model carries the
-// resolved space for the envelope's read-after-write step. Shared by
-// createAgent and updateAgent.
-func (model *agentModel) setWriteSpaceID(_ context.Context, spaceID string, _ *models.Agent) diag.Diagnostics {
-	model.SpaceID = types.StringValue(spaceID)
-	return nil
 }

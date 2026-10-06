@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -36,14 +37,12 @@ var createWorkflow = entitycore.SimpleKibanaCreate[workflowModel, kbapi.PostWork
 	(*workflowModel).populateWrittenCreate,
 )
 
-// populateWrittenCreate sets SpaceID explicitly so the returned model
-// carries the resolved space for the envelope's read-after-write step, and
-// captures workflow_id: it is Computed+Optional, and when the caller omits
-// it, the API generates one and returns it on the POST response.
-func (model *workflowModel) populateWrittenCreate(_ context.Context, spaceID string, created *models.Workflow) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	model.SpaceID = types.StringValue(spaceID)
+// populateWrittenCreate delegates the write-time SpaceID assignment to
+// agentbuilder.SetWriteSpaceID and additionally captures workflow_id: it is
+// Computed+Optional, and when the caller omits it, the API generates one and
+// returns it on the POST response.
+func (model *workflowModel) populateWrittenCreate(ctx context.Context, spaceID string, created *models.Workflow) diag.Diagnostics {
+	diags := agentbuilder.SetWriteSpaceID[*workflowModel, models.Workflow](model, ctx, spaceID, created)
 
 	if created != nil {
 		model.WorkflowID = types.StringValue(created.ID)

@@ -40,6 +40,6 @@ func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 			return plan.toAPIUpdateModel(ctx, supportsSkillIDs)
 		},
 		kibanaoapi.UpdateAgent,
-		(*agentModel).setWriteSpaceID,
+		agentbuilder.SetWriteSpaceID[*agentModel, models.Agent],
 	)(ctx, client, req)
 }

@@ -64,9 +64,10 @@ type workflowModel struct {
 	Valid       types.Bool   `tfsdk:"valid"`
 }
 
-func (model workflowModel) GetID() types.String         { return model.ID }
-func (model workflowModel) GetResourceID() types.String { return model.WorkflowID }
-func (model workflowModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model workflowModel) GetID() types.String              { return model.ID }
+func (model workflowModel) GetResourceID() types.String      { return model.WorkflowID }
+func (model workflowModel) GetSpaceID() types.String         { return model.SpaceID }
+func (model *workflowModel) SetSpaceID(spaceID types.String) { model.SpaceID = spaceID }
 
 var _ entitycore.KibanaResourceModel = workflowModel{}
 var _ entitycore.WithVersionRequirements = workflowModel{}

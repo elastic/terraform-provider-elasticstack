@@ -60,9 +60,10 @@ func (toolBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.Ver
 	), nil
 }
 
-func (model toolBaseModel) GetID() types.String         { return model.ID }
-func (model toolBaseModel) GetResourceID() types.String { return model.ToolID }
-func (model toolBaseModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model toolBaseModel) GetID() types.String              { return model.ID }
+func (model toolBaseModel) GetResourceID() types.String      { return model.ToolID }
+func (model toolBaseModel) GetSpaceID() types.String         { return model.SpaceID }
+func (model *toolBaseModel) SetSpaceID(spaceID types.String) { model.SpaceID = spaceID }
 
 // toolModel is the model for the Agent Builder tool resource. It embeds the
 // shared base plus the timeouts attribute that only the resource exposes.

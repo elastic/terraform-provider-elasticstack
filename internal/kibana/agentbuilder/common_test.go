@@ -15,23 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package agentbuilderskill
+package agentbuilder_test
 
 import (
 	"context"
+	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
-	"github.com/elastic/terraform-provider-elasticstack/internal/models"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
 )
 
-var updateSkill = entitycore.SimpleKibanaUpdate[skillModel, kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody, models.Skill](
-	func(plan skillModel, ctx context.Context, _ string) (kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody, diag.Diagnostics) {
-		return plan.toAPIUpdateModel(ctx)
-	},
-	kibanaoapi.UpdateSkill,
-	agentbuilder.SetWriteSpaceID[*skillModel, models.Skill],
-)
+type fakeModel struct {
+	SpaceID types.String
+}
+
+func (m *fakeModel) SetSpaceID(spaceID types.String) { m.SpaceID = spaceID }
+
+func TestSetWriteSpaceID(t *testing.T) {
+	model := &fakeModel{}
+
+	diags := agentbuilder.SetWriteSpaceID[*fakeModel, struct{}](model, context.Background(), "default", nil)
+
+	require.False(t, diags.HasError())
+	require.Equal(t, types.StringValue("default"), model.SpaceID)
+}

@@ -50,9 +50,10 @@ type skillBaseModel struct {
 	ReferencedContent []skillReferencedContentItem `tfsdk:"referenced_content"`
 }
 
-func (model skillBaseModel) GetID() types.String         { return model.ID }
-func (model skillBaseModel) GetResourceID() types.String { return model.SkillID }
-func (model skillBaseModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model skillBaseModel) GetID() types.String              { return model.ID }
+func (model skillBaseModel) GetResourceID() types.String      { return model.SkillID }
+func (model skillBaseModel) GetSpaceID() types.String         { return model.SpaceID }
+func (model *skillBaseModel) SetSpaceID(spaceID types.String) { model.SpaceID = spaceID }
 
 func (skillBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

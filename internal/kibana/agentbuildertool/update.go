@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -32,5 +33,5 @@ var updateTool = entitycore.SimpleKibanaUpdate[toolModel, kbapi.PutAgentBuilderT
 		return plan.toAPIUpdateModel(ctx)
 	},
 	kibanaoapi.UpdateTool,
-	(*toolModel).setWriteSpaceID,
+	agentbuilder.SetWriteSpaceID[*toolModel, models.Tool],
 )

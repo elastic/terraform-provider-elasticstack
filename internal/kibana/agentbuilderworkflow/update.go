@@ -23,8 +23,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var updateWorkflow = entitycore.SimpleKibanaUpdate[workflowModel, kbapi.PutWorkflowsWorkflowIdJSONRequestBody, kibanaoapi.PartialWorkflow](
@@ -35,12 +35,11 @@ var updateWorkflow = entitycore.SimpleKibanaUpdate[workflowModel, kbapi.PutWorkf
 	(*workflowModel).populateWrittenUpdate,
 )
 
-// populateWrittenUpdate sets SpaceID explicitly so the returned model
-// carries the resolved space for the envelope's read-after-write step.
-func (model *workflowModel) populateWrittenUpdate(_ context.Context, spaceID string, updated *kibanaoapi.PartialWorkflow) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	model.SpaceID = types.StringValue(spaceID)
+// populateWrittenUpdate delegates the write-time SpaceID assignment to
+// agentbuilder.SetWriteSpaceID and additionally validates the updated
+// workflow's configuration.
+func (model *workflowModel) populateWrittenUpdate(ctx context.Context, spaceID string, updated *kibanaoapi.PartialWorkflow) diag.Diagnostics {
+	diags := agentbuilder.SetWriteSpaceID[*workflowModel, kibanaoapi.PartialWorkflow](model, ctx, spaceID, updated)
 
 	if updated != nil && !updated.Valid {
 		diags.AddError("Invalid workflow", "The workflow was updated but its configuration is invalid. Please check the YAML definition.")
