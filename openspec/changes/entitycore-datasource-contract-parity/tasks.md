@@ -14,6 +14,8 @@
 - [x] 2.5 Keep composite `id` assignment in each concrete read function (the envelope does not mutate `id`); standard entities set `id` via `client.ID(...)`, non-standard entities (`cluster/info` cluster UUID, `index/indices` target pattern) set their own `id` before returning `found == true`
 - [x] 2.6 Invoke `PostRead` (when non-nil) after state is set on a found read
 
+- [x] 2.7 Parse a Kibana model's `GetResourceID()` as a composite `<space>/<resource>` key only when the model opts in via `KibanaCompositeResourceID`; Agent Builder agent and skill data sources opt in
+
 ## 3. Envelope tests
 
 - [x] 3.1 Update `internal/entitycore/data_source_envelope_test.go` for the new constructor/options and read signatures
@@ -34,6 +36,9 @@
 - [x] 4.9 Migrate `internal/elasticsearch/index/indices`
 - [x] 4.10 Migrate `internal/elasticsearch/enrich`
 
+- [x] 4.11 Migrate `internal/elasticsearch/ml/trainedmodel` (data source added after the original proposal)
+- [x] 4.12 Migrate `internal/elasticsearch/connector/data_source` (data source added after the original proposal)
+
 ## 5. Migrate Kibana data sources
 
 - [x] 5.1 Migrate `internal/kibana/agentbuilderskill` (drop inline composite/space resolution)
@@ -44,6 +49,13 @@
 - [x] 5.6 Migrate `internal/kibana/spaces`
 - [x] 5.7 Migrate `internal/kibana/connectors`
 - [x] 5.8 Migrate `internal/kibana/exportsavedobjects`
+
+- [x] 5.9 Migrate `internal/kibana/security_entity_store` (status; singleton, fixed resource id)
+- [x] 5.10 Migrate `internal/kibana/security_entity_store/entities` (list-style; fixed resource id)
+- [x] 5.11 Migrate `internal/kibana/security_entity_store_resolution_group`
+- [x] 5.12 Migrate `internal/kibana/osquery_pack`
+- [x] 5.13 Migrate `internal/kibana/osquery_saved_query`
+- [x] 5.14 Migrate `internal/kibana/tag` (list-style; fixed resource id)
 
 ## 6. Migrate Fleet data sources
 
@@ -56,7 +68,7 @@
 The standardized not-found-is-an-error policy contradicts data source requirements in existing entity specs that document warning-only or partial-empty-state not-found behavior and/or "set `id` regardless of whether found". Update these so the archived requirements do not conflict with the new envelope contract.
 
 - [x] 7.1 Update `openspec/specs/elasticsearch-snapshot-repository/spec.md` (REQ-DS-002 "warning + empty type-block attributes" and REQ-DS-003 "`id` set regardless of whether the repository was found") to the standardized error-on-not-found policy and read-callback-owned `id`
-- [x] 7.2 Audit the remaining migrated data source specs for conflicting not-found/`id` requirements and update them (e.g. `elasticsearch-security-role`, `elasticsearch-security-user`, `elasticsearch-security-role-mapping`, `elasticsearch-info`, `elasticsearch-indices`, `elasticsearch-index-template`, `elasticsearch-synonym-sets`, `elasticsearch-query-rulesets`, `elasticsearch-enrich-policy`, the `kibana-agentbuilder-*-datasource`, `kibana-security-role`, `kibana-spaces`, `kibana-action-connector`, `kibana-export-saved-objects`, `fleet-output`, `fleet-integration`, `fleet-enrollment-tokens` specs)
+- [x] 7.2 Audit the remaining migrated data source specs for conflicting not-found/`id` requirements and update them (e.g. `elasticsearch-security-role`, `elasticsearch-security-user`, `elasticsearch-security-role-mapping`, `elasticsearch-info`, `elasticsearch-indices`, `elasticsearch-index-template`, `elasticsearch-synonym-sets`, `elasticsearch-query-rulesets`, `elasticsearch-enrich-policy`, the `elasticsearch-ml-trained-model`, the `kibana-agentbuilder-*-datasource`, `kibana-security-role`, `kibana-spaces`, `kibana-action-connector`, `kibana-export-saved-objects`, `fleet-output`, `fleet-integration`, `fleet-enrollment-tokens` specs)
 
 ## 8. Verify
 
