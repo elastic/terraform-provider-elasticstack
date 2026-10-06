@@ -51,11 +51,6 @@ func readAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 	return state, true, nil
 }
 
-// readAliasIntoModel populates the provided model from alias API response.
-func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]esTypes.IndexAliases, model *tfModel) diag.Diagnostics {
-	return readAliasIntoModelWithReadState(ctx, aliasName, indices, model, nil)
-}
-
 func readAliasIntoModelWithResolution(
 	ctx context.Context,
 	aliasName string,

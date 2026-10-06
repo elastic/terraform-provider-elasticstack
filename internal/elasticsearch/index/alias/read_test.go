@@ -30,34 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReadAliasIntoModel_NoResultsUsesReadIndexAttributeTypes(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	model := tfModel{}
-	diags := readAliasIntoModel(ctx, "logs", map[string]esTypes.IndexAliases{}, &model)
-
-	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
-	requireNullReadIndicesWithConcreteIndices(ctx, t, model)
-}
-
-func TestReadAliasIntoModel_AliasAbsentUsesReadIndexAttributeTypes(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	model := tfModel{}
-	diags := readAliasIntoModel(ctx, "logs", map[string]esTypes.IndexAliases{
-		"logs-1": {
-			Aliases: map[string]esTypes.AliasDefinition{
-				"other": {},
-			},
-		},
-	}, &model)
-
-	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
-	requireNullReadIndicesWithConcreteIndices(ctx, t, model)
-}
-
 func TestTfModel_PopulateReadState_RetainsConfiguredExpressionWithAllAttachedTargets(t *testing.T) {
 	t.Parallel()
 
@@ -357,15 +329,6 @@ func TestReadAliasIntoModelWithResolution_RemovesRealNotFoundDrift(t *testing.T)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	require.True(t, model.WriteIndex.IsNull())
 	require.True(t, model.ReadIndices.IsNull())
-}
-
-func requireNullReadIndicesWithConcreteIndices(ctx context.Context, t *testing.T, model tfModel) {
-	t.Helper()
-
-	require.True(t, model.ReadIndices.IsNull())
-	require.Equal(t, types.SetType{
-		ElemType: types.ObjectType{AttrTypes: getReadIndexAttrTypes(ctx)},
-	}, model.ReadIndices.Type(ctx))
 }
 
 func virtualReadIndexModel(name string) readIndexModel {
