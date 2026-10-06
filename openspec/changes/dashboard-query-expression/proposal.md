@@ -6,13 +6,33 @@ This is reported in issue #5081: a dashboard exported from Kibana as JSON has `q
 
 ## What Changes
 
-- Root `query` becomes `{ language (required), expression (required) }`. `text` and `json` are removed, along with their `ExactlyOneOf` validators and the "exactly one of `query.text` or `query.json`" diagnostic.
-- Write mapping (`dashboardQueryToAPI`) becomes a straight copy of `Expression` and `Language`; the JSON-object write branch is deleted.
-- Read mapping (`models.go`) sets `query.expression` directly from the API `Expression` string; the `{`-prefix JSON-sniffing heuristic is deleted.
+- Root `query` becomes `{ language (required), expression (required) }`; `text` and `json` are removed.
 - **Breaking configuration change.** Existing `.tf` files using `query.text` or `query.json` must be updated to `query.expression`. This is intentional: the dashboard resource is Kibana "Technical Preview" (9.4+).
-- **State migrates automatically.** The resource schema version moves from 1 to 2. A new `migrateV1ToV2` upgrader copies `query.text` (or, if `text` is absent, `query.json`) into `query.expression` unchanged, and removes `text`/`json` from the stored map. The existing v0 → v1 upgrader (`migrateV0ToV1`, REQ-040) is composed with the new transform so v0 state upgrades directly to v2 in one step. No manual `terraform state` surgery is required.
-- `openspec/specs/kibana-dashboard/spec.md` is updated: the REQ-036 query-union scenarios are replaced with an `expression` scenario (including empty-string expression, the exact case from the issue), REQ-007's query-mapping sentence is updated, and a new requirement describes the v1 → v2 (and composed v0 → v2) upgrade.
-- Tests, examples, docs, and the CHANGELOG are updated to match (see `tasks.md`).
+- **State migrates automatically.** The resource schema version moves from 1 to 2, and existing state (from v0 or v1) is upgraded in one step. No manual `terraform state` surgery is required.
+- The JSON-object sniffing heuristic on read is removed; read and write become a direct one-to-one mapping of `language` and `expression`.
+- Spec, tests, docs, examples and the CHANGELOG are updated to match. Implementation detail lives in `design.md`; the work breakdown in `tasks.md`.
+
+### Release note (CHANGELOG draft)
+
+```markdown
+### Breaking changes
+
+`elasticstack_kibana_dashboard`: the root `query` block now uses `expression` instead of `text` / `json`, matching the Kibana Dashboard API and the `expression` attribute already used by Lens chart queries. The API exposes a single string field, `expression`; `text` and `json` both mapped onto it, and `json` was only ever a JSON document sent as a query string. Replace `text` (or `json`) with `expression`:
+
+    # Before
+    query = {
+      language = "kql"
+      text     = "http.response.status_code:200"
+    }
+
+    # After
+    query = {
+      language   = "kql"
+      expression = "http.response.status_code:200"
+    }
+
+A Plugin Framework state upgrader (schema v1 -> v2) automatically migrates existing state on the next `terraform apply`; no manual state surgery is required, but `.tf` files must be updated to use `expression`. Because `query.json` was always sent to Kibana as a string, its value is carried over to `expression` unchanged. ([#5081](https://github.com/elastic/terraform-provider-elasticstack/issues/5081))
+```
 
 ## Capabilities
 
@@ -27,12 +47,12 @@ None.
 ## Impact
 
 - `internal/kibana/dashboard/schema.go` (query attribute definitions, schema `Version`).
-- `internal/kibana/dashboard/models.go` (`DashboardQueryModel`, `dashboardQueryToAPI`, read-side query mapping).
+- `internal/kibana/dashboard/models/dashboard.go` (`DashboardQueryModel`) and `internal/kibana/dashboard/models.go` (`dashboardQueryToAPI`, read-side query mapping).
 - `internal/kibana/dashboard/state_upgrade.go` (new `migrateV1ToV2`, updated `UpgradeState` map).
-- `openspec/specs/kibana-dashboard/spec.md` (REQ-036, REQ-007, new state-upgrade requirement).
+- `openspec/specs/kibana-dashboard/spec.md` (REQ-036, REQ-007, REQ-008, REQ-040, new REQ-055, plus the schema sketch and the "no schema version / upgrader" note).
 - Unit tests: `models_dashboard_root_test.go`, `models_optional_root_blocks_test.go`, `create_test.go`, `pinned_panels_mapping_test.go`, `state_upgrade_test.go`.
 - Acceptance tests: `TestAccResourceDashboardRootQueryJSON` deleted; `TestAccResourceDashboardQueryTransition` rewritten; new upgrade-path acceptance test; ~20 `testdata/**/main.tf` files with `text =` renamed to `expression =`.
-- `docs/resources/kibana_dashboard.md` (regenerated) and `examples/` using `query.text` or the JSON-query example.
+- `docs/resources/kibana_dashboard.md` (regenerated) and `examples/` and `templates/guides/` using `query.text` or the JSON-query example (`examples/resources/elasticstack_kibana_dashboard/resource.tf`).
 - `CHANGELOG` breaking-change entry referencing issue #5081.
 
 ## Out of scope
