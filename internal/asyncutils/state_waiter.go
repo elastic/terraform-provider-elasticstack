@@ -58,6 +58,10 @@ func WithPollInterval(d time.Duration) Option {
 // under one poll interval (for example a lookback-only ML datafeed that starts
 // and stops in well under two seconds) are observed. Subsequent checks use the
 // default poll interval of two seconds; pass [WithPollInterval] to customize it.
+//
+// It is a thin wrapper over [PollWithBackoff] with a flat delay (no
+// exponential growth, no jitter, no attempt/elapsed bound): the loop only
+// stops on success, checker error, or ctx cancellation.
 func WaitForStateTransition(ctx context.Context, resourceType, resourceID string, stateChecker StateChecker, opts ...Option) error {
 	cfg := waitConfig{pollInterval: defaultPollInterval}
 	for _, opt := range opts {
@@ -68,39 +72,23 @@ func WaitForStateTransition(ctx context.Context, resourceType, resourceID string
 		return err
 	}
 
-	check := func() (bool, error) {
+	fn := func(ctx context.Context, attempt int) (struct{}, bool, error) {
 		isInDesiredState, err := stateChecker(ctx)
 		if err != nil {
-			return false, fmt.Errorf("failed to check state during wait: %w", err)
+			return struct{}{}, true, fmt.Errorf("failed to check state during wait: %w", err)
 		}
-		return isInDesiredState, nil
-	}
+		if isInDesiredState {
+			return struct{}{}, true, nil
+		}
 
-	isInDesiredState, err := check()
-	if err != nil {
-		return err
-	}
-	if isInDesiredState {
-		return nil
-	}
-
-	ticker := time.NewTicker(cfg.pollInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			isInDesiredState, err := check()
-			if err != nil {
-				return err
-			}
-			if isInDesiredState {
-				return nil
-			}
-
+		// The first check runs immediately with no prior wait, so only log on
+		// the later, ticker-driven checks to match the original behavior.
+		if attempt > 1 {
 			tflog.Debug(ctx, fmt.Sprintf("Waiting for %s %s to reach desired state...", resourceType, resourceID))
 		}
+		return struct{}{}, false, nil
 	}
+
+	_, err := PollWithBackoff(ctx, BackoffConfig{Initial: cfg.pollInterval}, fn)
+	return err
 }
