@@ -46,10 +46,9 @@ func readDataSource(
 
 	(&config).populateFromAPI(resourceID, packages)
 
-	if config.Version.IsNull() {
-		return config, false, diags
-	}
-
+	// A package that is absent from the Fleet list (or has no version matching
+	// the prerelease filter) is documented, intentional behavior: report
+	// found == true with a null version rather than a not-found error.
 	hash, err := typeutils.StringToHash(resourceID)
 	if err != nil {
 		diags.AddError(err.Error(), "")
