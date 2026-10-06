@@ -81,8 +81,7 @@ func strVal(s *string) tftypes.Value {
 	return tftypes.NewValue(tftypes.String, *s)
 }
 
-func ptr(s string) *string { return &s }
-
+//go:fix inline
 // readKibanaPlain runs a Kibana data source read with the given config values
 // (nil means null; use unknownSpace for an unknown space_id).
 func readKibanaPlain(
@@ -119,14 +118,16 @@ func readKibanaPlain(
 	return resp
 }
 
-func kibanaPlainOpts(read func(ctx context.Context, c *clients.KibanaScopedClient, resourceID, spaceID string, m kibanaDSPlainModel) (kibanaDSPlainModel, bool, diag.Diagnostics)) KibanaDataSourceOptions[kibanaDSPlainModel] {
+type kibanaPlainReadFunc = func(context.Context, *clients.KibanaScopedClient, string, string, kibanaDSPlainModel) (kibanaDSPlainModel, bool, diag.Diagnostics)
+
+func kibanaPlainOpts(read kibanaPlainReadFunc) KibanaDataSourceOptions[kibanaDSPlainModel] {
 	return KibanaDataSourceOptions[kibanaDSPlainModel]{
 		Schema: func(_ context.Context) dsschema.Schema { return dsschema.Schema{Attributes: kibanaPlainAttrs()} },
 		Read:   read,
 	}
 }
 
-func recordingRead(gotResource, gotSpace *string, calls *int) func(context.Context, *clients.KibanaScopedClient, string, string, kibanaDSPlainModel) (kibanaDSPlainModel, bool, diag.Diagnostics) {
+func recordingRead(gotResource, gotSpace *string, calls *int) kibanaPlainReadFunc {
 	return func(_ context.Context, _ *clients.KibanaScopedClient, resourceID, spaceID string, m kibanaDSPlainModel) (kibanaDSPlainModel, bool, diag.Diagnostics) {
 		*gotResource, *gotSpace = resourceID, spaceID
 		*calls++
@@ -147,7 +148,7 @@ func TestKibanaDataSource_Read_postRead_invokedOnceOnFound(t *testing.T) {
 		postClient, postModel = c, m
 		return nil
 	}
-	resp := readKibanaPlain(t, opts, true, nil, ptr("x"), nil, false)
+	resp := readKibanaPlain(t, opts, true, nil, new("x"), nil, false)
 	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
 	require.Equal(t, 1, postCalls)
 	require.NotNil(t, postClient)
@@ -165,7 +166,7 @@ func TestKibanaDataSource_Read_postRead_errorSurfaces_stateStillSet(t *testing.T
 	opts.PostRead = func(context.Context, *clients.KibanaScopedClient, kibanaDSPlainModel) diag.Diagnostics {
 		return diag.Diagnostics{diag.NewErrorDiagnostic("post read failed", "boom")}
 	}
-	resp := readKibanaPlain(t, opts, true, nil, ptr("x"), nil, false)
+	resp := readKibanaPlain(t, opts, true, nil, new("x"), nil, false)
 	require.True(t, resp.Diagnostics.HasError())
 	require.Equal(t, "post read failed", resp.Diagnostics.Errors()[0].Summary())
 
@@ -210,10 +211,10 @@ func TestElasticsearchDataSource_Read_postRead_errorSurfaces_stateStillSet(t *te
 func TestKibanaDataSource_Read_noOptIn_slashResourceIDNotSplit(t *testing.T) {
 	var r, s string
 	var calls int
-	resp := readKibanaPlain(t, kibanaPlainOpts(recordingRead(&r, &s, &calls)), true, nil, ptr("a/b"), nil, false)
+	resp := readKibanaPlain(t, kibanaPlainOpts(recordingRead(&r, &s, &calls)), true, nil, new("a/b"), nil, false)
 	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
 	require.Equal(t, "a/b", r)
-	require.Equal(t, "", s)
+	require.Empty(t, s)
 }
 
 func TestKibanaDataSource_Read_compositeIDAndExplicitSpace(t *testing.T) {
@@ -226,18 +227,18 @@ func TestKibanaDataSource_Read_compositeIDAndExplicitSpace(t *testing.T) {
 		wantResource string
 		wantSpace    string
 	}{
-		{name: "explicit space wins", id: "custom/skill", space: ptr("explicit"), wantResource: "skill", wantSpace: "explicit"},
-		{name: "empty space falls through", id: "custom/skill", space: ptr(""), wantResource: "skill", wantSpace: "custom"},
+		{name: "explicit space wins", id: "custom/skill", space: new("explicit"), wantResource: "skill", wantSpace: "explicit"},
+		{name: "empty space falls through", id: "custom/skill", space: new(""), wantResource: "skill", wantSpace: "custom"},
 		{name: "unknown space falls through", id: "custom/skill", unknownSpace: true, wantResource: "skill", wantSpace: "custom"},
 		{name: "leading slash", id: "/skill", wantResource: "skill", wantSpace: ""},
-		{name: "trailing slash falls back to resource_id", id: "space/", resourceID: ptr("fallback"), wantResource: "fallback", wantSpace: ""},
+		{name: "trailing slash falls back to resource_id", id: "space/", resourceID: new("fallback"), wantResource: "fallback", wantSpace: ""},
 		{name: "multiple slashes", id: "a/b/c", wantResource: "b/c", wantSpace: "a"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var r, s string
 			var calls int
-			resp := readKibanaPlain(t, kibanaPlainOpts(recordingRead(&r, &s, &calls)), true, ptr(tt.id), tt.resourceID, tt.space, tt.unknownSpace)
+			resp := readKibanaPlain(t, kibanaPlainOpts(recordingRead(&r, &s, &calls)), true, new(tt.id), tt.resourceID, tt.space, tt.unknownSpace)
 			require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
 			require.Equal(t, 1, calls)
 			require.Equal(t, tt.wantResource, r)
@@ -249,7 +250,7 @@ func TestKibanaDataSource_Read_compositeIDAndExplicitSpace(t *testing.T) {
 func TestKibanaDataSource_Read_nilReadOption_diagnosticNoPanic(t *testing.T) {
 	opts := kibanaPlainOpts(nil)
 	var resp *datasource.ReadResponse
-	require.NotPanics(t, func() { resp = readKibanaPlain(t, opts, true, nil, ptr("x"), nil, false) })
+	require.NotPanics(t, func() { resp = readKibanaPlain(t, opts, true, nil, new("x"), nil, false) })
 	require.True(t, resp.Diagnostics.HasError())
 	require.Contains(t, resp.Diagnostics.Errors()[0].Summary(), "envelope configuration error")
 }
@@ -258,7 +259,7 @@ func TestKibanaDataSource_Read_clientFailure_readNotCalled(t *testing.T) {
 	var r, s string
 	var calls int
 	// Not configured: GetKibanaClient fails.
-	resp := readKibanaPlain(t, kibanaPlainOpts(recordingRead(&r, &s, &calls)), false, nil, ptr("x"), nil, false)
+	resp := readKibanaPlain(t, kibanaPlainOpts(recordingRead(&r, &s, &calls)), false, nil, new("x"), nil, false)
 	require.True(t, resp.Diagnostics.HasError())
 	require.Equal(t, 0, calls)
 }
