@@ -8,14 +8,14 @@
 ## 2. Shared identity and read orchestration
 
 - [x] 2.1 Resolve Elasticsearch read identity in `doDataSourceRead` via `resolveElasticsearchReadResourceID`, erroring with "Invalid resource identifier" when empty
-- [x] 2.2 Resolve Kibana read identity (`resourceID`, `spaceID`) via `resolveKibanaResourceIdentity`, honoring the `KibanaUnscopedSpace` opt-out
+- [x] 2.2 Resolve Kibana read identity (`resourceID`, `spaceID`) via `resolveKibanaResourceIdentity`; data sources never validate space, so an empty `spaceID` is always permitted (the `KibanaUnscopedSpace` opt-out is a resource-envelope concern only)
 - [x] 2.3 Invoke the concrete read function with the resolved identity and capture `(T, found, diags)`
 - [x] 2.4 Implement the centralized not-found policy: on `found == false`, append a standardized not-found error diagnostic (component, name, identity) and skip state set
 - [x] 2.5 Keep composite `id` assignment in each concrete read function (the envelope does not mutate `id`); standard entities set `id` via `client.ID(...)`, non-standard entities (`cluster/info` cluster UUID, `index/indices` target pattern) set their own `id` before returning `found == true`
 - [x] 2.6 Invoke `PostRead` (when non-nil) after state is set on a found read
 
-- [x] 2.8 For Kibana data sources, an explicitly configured `space_id` takes precedence over the space embedded in a composite id
 - [x] 2.7 Parse a Kibana model's `GetResourceID()` as a composite `<space>/<resource>` key only when the model opts in via `KibanaCompositeResourceID`; Agent Builder agent and skill data sources opt in
+- [x] 2.8 For Kibana data sources, an explicitly configured `space_id` takes precedence over the space embedded in a composite id
 
 ## 3. Envelope tests
 
@@ -70,10 +70,11 @@ The standardized not-found-is-an-error policy contradicts data source requiremen
 
 - [x] 7.1 Update `openspec/specs/elasticsearch-snapshot-repository/spec.md` (REQ-DS-002 "warning + empty type-block attributes" and REQ-DS-003 "`id` set regardless of whether the repository was found") to the standardized error-on-not-found policy and read-callback-owned `id`
 - [x] 7.2 Audit the remaining migrated data source specs for conflicting not-found/`id` requirements and update them (e.g. `elasticsearch-security-role`, `elasticsearch-security-user`, `elasticsearch-security-role-mapping`, `elasticsearch-info`, `elasticsearch-indices`, `elasticsearch-index-template`, `elasticsearch-synonym-sets`, `elasticsearch-query-rulesets`, `elasticsearch-enrich-policy`, the `elasticsearch-ml-trained-model`, the `kibana-agentbuilder-*-datasource`, `kibana-security-role`, `kibana-spaces`, `kibana-action-connector`, `kibana-export-saved-objects`, `fleet-output`, `fleet-integration`, `fleet-enrollment-tokens` specs)
+  - Audited with no change needed: `elasticsearch-info`, `elasticsearch-indices`, `kibana-spaces`, `kibana-export-saved-objects`, `fleet-output`, `fleet-enrollment-tokens`, `kibana-osquery-pack-datasource`, `kibana-osquery-saved-query-datasource`, `kibana-security-entity-store-*` data source specs, `kibana-tag`, `elasticsearch-content-connector`. `fleet-integration` is unchanged because that data source keeps soft not-found.
 
 ## 8. Verify
 
 - [x] 8.1 `make build` passes
 - [x] 8.2 Data source acceptance tests pass for migrated entities
 - [x] 8.3 `openspec validate entitycore-datasource-contract-parity --strict` passes
-- [x] 8.4 Update `openspec/specs/entitycore-datasource-envelope/spec.md` (handled at archive time) and confirm no concrete data source retains manual identity/not-found boilerplate
+- [x] 8.4 Confirm no concrete data source retains manual identity/not-found boilerplate (updating `openspec/specs/entitycore-datasource-envelope/spec.md` itself happens at archive time and is out of scope here)

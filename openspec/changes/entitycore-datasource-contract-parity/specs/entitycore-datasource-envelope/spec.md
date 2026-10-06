@@ -85,7 +85,7 @@ Elasticsearch-backed envelope data source models SHALL embed `entitycore.Elastic
 
 ### Requirement: Envelope resolves read identity centrally
 
-The system SHALL resolve the read identity from the decoded config model before invoking the concrete read function, using the same composite-ID-or-fallback rules as the resource envelope. For Elasticsearch the envelope SHALL resolve a `resourceID`; for Kibana the envelope SHALL resolve a `resourceID` and `spaceID`, honoring the `KibanaUnscopedSpace` opt-out for space validation.
+The system SHALL resolve the read identity from the decoded config model before invoking the concrete read function, using the same composite-ID-or-fallback rules as the resource envelope. For Elasticsearch the envelope SHALL resolve a `resourceID`; for Kibana the envelope SHALL resolve a `resourceID` and `spaceID`. Data sources never validate space, so an empty `spaceID` SHALL always be permitted (the `KibanaUnscopedSpace` opt-out is relevant only to the resource envelope).
 
 #### Scenario: Elasticsearch identity resolved from model
 
@@ -97,7 +97,7 @@ The system SHALL resolve the read identity from the decoded config model before 
 
 - **WHEN** `Read` decodes a config model with a composite `id` of the form `<space>/<resource>` or with `GetResourceID`/`GetSpaceID` values
 - **THEN** the envelope SHALL resolve both `resourceID` and `spaceID` and pass them to the read function
-- **AND** for a model that opts out of space scoping via `KibanaUnscopedSpace`, an empty `spaceID` SHALL be permitted
+- **AND** an empty `spaceID` SHALL be permitted and passed through to the read function
 
 For Kibana, a model's `GetResourceID()` value SHALL be parsed as a composite `<space>/<resource>` lookup key only when the model opts in by implementing `KibanaCompositeResourceID` (`UsesCompositeResourceID() bool`, returning `true`). Plain identifiers that may legitimately contain `/` (for example connector names or entity ids) MUST NOT be reinterpreted as composite keys. Data sources that expose a singleton or list-style read with no lookup key SHALL return a fixed, non-empty `GetResourceID()`.
 
