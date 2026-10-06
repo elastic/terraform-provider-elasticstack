@@ -77,7 +77,7 @@ The data source SHALL use the provider's configured Kibana OpenAPI client by def
 
 ### Requirement: Space and skill ID resolution (REQ-005)
 
-The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite ids in `id` or `skill_id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline. The read callback SHALL normalize `skill_id` in state to the bare resource id regardless of whether a composite was supplied.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite ids in `id` or `skill_id`, explicit `space_id` override). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline. The envelope SHALL pass an empty `spaceID` through when none is resolved, and the read callback SHALL default an empty `spaceID` to `default`. The read callback SHALL normalize `skill_id` in state to the bare resource id regardless of whether a composite was supplied.
 
 #### Scenario: Bare skill id defaults to default space
 

@@ -70,7 +70,7 @@ The data source SHALL set a computed `id` in the format `<space_id>/<tool_id>` a
 
 ### Requirement: Composite input id (REQ-005)
 
-The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite or bare `id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite or bare `id`, explicit `space_id` override). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline. The envelope SHALL pass an empty `spaceID` through when none is resolved, and the read callback SHALL default an empty `spaceID` to `default`.
 
 #### Scenario: Composite id as input
 
@@ -80,7 +80,7 @@ The entitycore Kibana data source envelope SHALL resolve read identity from conf
 
 ### Requirement: space_id default (REQ-006)
 
-When `space_id` is not configured and the input `id` is not a composite id, the envelope SHALL use `"default"` as the space when resolving identity.
+When `space_id` is not configured and the input `id` is not a composite id, the envelope SHALL pass an empty space through and the read callback SHALL use `"default"` as the space.
 
 #### Scenario: Plain tool ID with no space_id
 

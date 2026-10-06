@@ -53,7 +53,7 @@ When the data source cannot obtain the effective Kibana OpenAPI client, it SHALL
 
 ### Requirement: Input id forms and space resolution (REQ-003)
 
-The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (bare or composite `id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (bare or composite `id`, explicit `space_id` override). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline. The envelope SHALL pass an empty `spaceID` through when none is resolved, and the read callback SHALL default an empty `spaceID` to `default`.
 
 #### Scenario: Composite id supplies the space
 
@@ -69,7 +69,7 @@ The entitycore Kibana data source envelope SHALL resolve read identity from conf
 
 ### Requirement: Default space when none is provided (REQ-004)
 
-When configuration does not provide a known `space_id` and the required `id` is not a composite id, the envelope SHALL default the target space to `default` when resolving identity.
+When configuration does not provide a known `space_id` and the required `id` is not a composite id, the envelope SHALL pass an empty space through and the read callback SHALL default the target space to `default`.
 
 #### Scenario: Bare workflow id without space
 

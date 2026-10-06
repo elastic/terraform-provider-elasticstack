@@ -99,7 +99,7 @@ When `space_id` is not configured, the data source SHALL default to `"default"`.
 
 ### Requirement: Agent id parsing (REQ-006)
 
-The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite or bare `agent_id`/`id`, explicit `space_id` override, default space when unset). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline.
+The entitycore Kibana data source envelope SHALL resolve read identity from configuration via `resolveKibanaResourceIdentity` (composite or bare `agent_id`/`id`, explicit `space_id` override). The read callback SHALL receive the resolved `resourceID` and `spaceID` and SHALL NOT re-parse composite ids inline. The envelope SHALL pass an empty `spaceID` through when none is resolved, and the read callback SHALL default an empty `spaceID` to `default`.
 
 #### Scenario: Composite agent_id
 
