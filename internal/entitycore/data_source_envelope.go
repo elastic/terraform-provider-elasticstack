@@ -20,11 +20,11 @@ package entitycore
 import (
 	"context"
 	"fmt"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
