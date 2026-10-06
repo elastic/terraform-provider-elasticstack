@@ -65,11 +65,11 @@ func (w *ChangelogWorkflowPullRequests) CreatePullRequest(ctx context.Context, o
 	if w.Client == nil {
 		return nil, fmt.Errorf("github client required")
 	}
-	titleCopy, headCopy, baseCopy, bodyCopy := title, head, base, body
-	newPR := &github.NewPullRequest{
+	titleCopy, bodyCopy := title, body
+	newPR := github.CreatePullRequest{
 		Title: &titleCopy,
-		Head:  &headCopy,
-		Base:  &baseCopy,
+		Head:  head,
+		Base:  base,
 		Body:  &bodyCopy,
 	}
 	pr, _, err := w.Client.PullRequests.Create(ctx, owner, repo, newPR)

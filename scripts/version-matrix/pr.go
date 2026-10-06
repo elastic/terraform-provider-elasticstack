@@ -179,11 +179,11 @@ func (g *githubStandingREST) CreatePullRequest(ctx context.Context, owner, repo,
 	if err := g.requireClient(); err != nil {
 		return nil, err
 	}
-	titleCopy, headCopy, baseCopy, bodyCopy := title, head, base, body
-	pr, _, err := g.client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
+	titleCopy, bodyCopy := title, body
+	pr, _, err := g.client.PullRequests.Create(ctx, owner, repo, github.CreatePullRequest{
 		Title: &titleCopy,
-		Head:  &headCopy,
-		Base:  &baseCopy,
+		Head:  head,
+		Base:  base,
 		Body:  &bodyCopy,
 	})
 	if err != nil {
