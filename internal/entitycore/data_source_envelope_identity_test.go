@@ -83,8 +83,6 @@ func strVal(s *string) tftypes.Value {
 
 // readKibanaPlain runs a Kibana data source read with the given config values
 // (nil means null; use unknownSpace for an unknown space_id).
-//
-//go:fix inline
 func readKibanaPlain(
 	t *testing.T,
 	opts KibanaDataSourceOptions[kibanaDSPlainModel],
