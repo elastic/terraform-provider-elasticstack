@@ -28,16 +28,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, resourceID string, spaceID string, config enrollmentTokensModel) (enrollmentTokensModel, bool, diag.Diagnostics) {
+// policyFilter returns the optional policy filter taken from the configured
+// policy_id. The envelope's placeholder resource identity must not be used
+// here, since "_" is also a valid policy_id value.
+func policyFilter(config enrollmentTokensModel) string {
+	if config.PolicyID.IsNull() || config.PolicyID.IsUnknown() {
+		return ""
+	}
+	return config.PolicyID.ValueString()
+}
+
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, spaceID string, config enrollmentTokensModel) (enrollmentTokensModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	fleetClient := kbClient.GetFleetClient()
 
 	var tokens []kbapi.KibanaHTTPAPIsEnrollmentApiKey
-	policyID := resourceID
-	if policyID == "_" {
-		policyID = ""
-	}
+	policyID := policyFilter(config)
 
 	switch {
 	case policyID == "":
