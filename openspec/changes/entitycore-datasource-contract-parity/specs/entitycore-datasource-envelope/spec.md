@@ -112,6 +112,11 @@ For Kibana, a model's `GetResourceID()` value SHALL be parsed as a composite `<s
 - **WHEN** a Kibana model implements `KibanaCompositeResourceID` returning `true` and its `GetResourceID()` is `staging/skill-1`
 - **THEN** the envelope SHALL resolve `resourceID = skill-1`, using the explicit `GetSpaceID()` when non-empty and otherwise `staging`
 
+#### Scenario: Explicit space_id overrides composite id space for data sources
+
+- **WHEN** a Kibana data source model has a composite `id` or opted-in composite resource id embedding space `custom` and a non-empty configured `space_id` of `explicit`
+- **THEN** the envelope SHALL pass `spaceID = explicit` to the read function
+
 ### Requirement: Envelope applies a centralized not-found policy
 
 The system SHALL apply a single not-found policy when the concrete read function reports `found == false`: it SHALL append a standardized "not found" error diagnostic that identifies the component, data source name, and resolved identity, and it SHALL NOT set Terraform state.

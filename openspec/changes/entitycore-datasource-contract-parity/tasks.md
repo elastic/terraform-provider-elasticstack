@@ -14,6 +14,7 @@
 - [x] 2.5 Keep composite `id` assignment in each concrete read function (the envelope does not mutate `id`); standard entities set `id` via `client.ID(...)`, non-standard entities (`cluster/info` cluster UUID, `index/indices` target pattern) set their own `id` before returning `found == true`
 - [x] 2.6 Invoke `PostRead` (when non-nil) after state is set on a found read
 
+- [x] 2.8 For Kibana data sources, an explicitly configured `space_id` takes precedence over the space embedded in a composite id
 - [x] 2.7 Parse a Kibana model's `GetResourceID()` as a composite `<space>/<resource>` key only when the model opts in via `KibanaCompositeResourceID`; Agent Builder agent and skill data sources opt in
 
 ## 3. Envelope tests
@@ -60,7 +61,7 @@
 ## 6. Migrate Fleet data sources
 
 - [x] 6.1 Migrate `internal/fleet/outputds`
-- [x] 6.2 Migrate `internal/fleet/integrationds`
+- [x] 6.2 Migrate `internal/fleet/integrationds` (retains documented soft semantics: absent package yields `found == true` with null `version`)
 - [x] 6.3 Migrate `internal/fleet/enrollmenttokens`
 
 ## 7. Reconcile affected entity-specific specs
