@@ -65,7 +65,7 @@ func Test_dashboardToAPIRequests_omitNilRootBlocks(t *testing.T) {
 func Test_dashboardToAPIRequests_sendSetRootBlocks(t *testing.T) {
 	ctx := context.Background()
 	m := testDashboardPlanModel(types.StringNull())
-	m.Query.Text = types.StringValue("response:200")
+	m.Query.Expression = types.StringValue("response:200")
 	m.Options = &models.OptionsModel{HidePanelBorders: types.BoolValue(true)}
 
 	var diags diag.Diagnostics
@@ -202,11 +202,11 @@ func Test_resourceSchema_rootBlockNestedValidation(t *testing.T) {
 		errAttr  string
 		wantErr  bool
 	}{
-		{"query text and json both set", "query", map[string]string{"language": "kql", "text": "a:b", "json": `{"match_all":{}}`}, "query", "text", true},
-		{"query neither text nor json", "query", map[string]string{"language": "kql"}, "query", "text", true},
-		{"query invalid language", "query", map[string]string{"language": "sql", "text": "a"}, "query", "language", true},
-		{"query missing language", "query", map[string]string{"text": "a"}, "query", "language", true},
-		{"query text only valid", "query", map[string]string{"language": "kql", "text": "a"}, "", "", false},
+		{"query missing expression", "query", map[string]string{"language": "kql"}, "query", "expression", true},
+		{"query invalid language", "query", map[string]string{"language": "sql", "expression": "a"}, "query", "language", true},
+		{"query missing language", "query", map[string]string{"expression": "a"}, "query", "language", true},
+		{"query expression valid", "query", map[string]string{"language": "kql", "expression": "a"}, "", "", false},
+		{"query empty expression valid", "query", map[string]string{"language": "kql", "expression": ""}, "", "", false},
 		{"refresh_interval missing pause", "refresh_interval", map[string]string{"value": "1000"}, "refresh_interval", "pause", true},
 		{"refresh_interval missing value", "refresh_interval", map[string]string{"pause": "true"}, "refresh_interval", "value", true},
 		{"refresh_interval valid", "refresh_interval", map[string]string{"pause": "true", "value": "0"}, "", "", false},
@@ -221,10 +221,7 @@ func Test_resourceSchema_rootBlockNestedValidation(t *testing.T) {
 				tc.block: rootBlockValue(t, tc.block, tc.nested),
 			})
 			if tc.wantErr {
-				// ExactlyOneOf reports on the attribute it is attached to; accept either branch attribute.
-				found := hasErrorAt(diags, at(tc.errBlock, tc.errAttr)) ||
-					(tc.errAttr == "text" && hasErrorAt(diags, at(tc.errBlock, "json")))
-				require.True(t, found, "expected error at %s.%s, got %v", tc.errBlock, tc.errAttr, diags)
+				require.True(t, hasErrorAt(diags, at(tc.errBlock, tc.errAttr)), "expected error at %s.%s, got %v", tc.errBlock, tc.errAttr, diags)
 				return
 			}
 			requireNoErrors(t, diags)

@@ -18,52 +18,60 @@
 package dashboard
 
 import (
+	"context"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_dashboardModel_queryToAPI_neitherTextNorJSON(t *testing.T) {
-	m := &models.DashboardModel{
-		Query: &models.DashboardQueryModel{
-			Language: types.StringValue("kql"),
-			Text:     types.StringNull(),
-			JSON:     jsontypes.NewNormalizedNull(),
-		},
+func Test_dashboardModel_queryToAPI_expression(t *testing.T) {
+	for name, expression := range map[string]string{
+		"kql":           "response.code:200",
+		"empty":         "",
+		"leading brace": `{"match_all":{}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			m := &models.DashboardModel{
+				Query: &models.DashboardQueryModel{
+					Language:   types.StringValue("kql"),
+					Expression: types.StringValue(expression),
+				},
+			}
+			q := dashboardQueryToAPI(m)
+			require.NotNil(t, q)
+			assert.Equal(t, kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage("kql"), q.Language)
+			assert.Equal(t, expression, q.Expression)
+		})
 	}
-	_, diags := dashboardQueryToAPI(m)
-	require.True(t, diags.HasError())
-	assert.Contains(t, diags[0].Summary(), "Invalid dashboard query")
 }
 
-func Test_dashboardModel_queryToAPI_jsonBranch(t *testing.T) {
-	m := &models.DashboardModel{
-		Query: &models.DashboardQueryModel{
-			Language: types.StringValue("kql"),
-			Text:     types.StringNull(),
-			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
-		},
-	}
-	q, diags := dashboardQueryToAPI(m)
-	require.False(t, diags.HasError())
-	assert.Equal(t, kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage("kql"), q.Language)
-	assert.JSONEq(t, `{"match_all":{}}`, q.Expression)
+func Test_dashboardModel_queryToAPI_nil(t *testing.T) {
+	assert.Nil(t, dashboardQueryToAPI(&models.DashboardModel{}))
 }
 
-func Test_dashboardModel_queryToAPI_bothTextAndJSON(t *testing.T) {
-	m := &models.DashboardModel{
-		Query: &models.DashboardQueryModel{
-			Language: types.StringValue("kql"),
-			Text:     types.StringValue("response.code:200"),
-			JSON:     jsontypes.NewNormalizedValue(`{"match_all":{}}`),
-		},
+func Test_dashboardPopulateFromAPI_queryExpression(t *testing.T) {
+	for name, expression := range map[string]string{
+		"kql":           "response.code:200",
+		"empty":         "",
+		"leading brace": `{"match_all":{}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			resp := newDashboardAPIResponse(nil)
+			resp.JSON200.Data.Query = &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{
+				Language:   kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage("lucene"),
+				Expression: expression,
+			}
+			model := &models.DashboardModel{}
+
+			diags := dashboardPopulateFromAPI(context.Background(), model, resp, "dashboard-id", "default")
+			require.False(t, diags.HasError())
+			require.NotNil(t, model.Query)
+			assert.Equal(t, types.StringValue("lucene"), model.Query.Language)
+			assert.Equal(t, types.StringValue(expression), model.Query.Expression)
+		})
 	}
-	_, diags := dashboardQueryToAPI(m)
-	require.True(t, diags.HasError())
-	assert.Contains(t, diags[0].Summary(), "Invalid dashboard query")
 }

@@ -77,7 +77,7 @@ func getSchema() schema.Schema {
 		"(the dashboard update is a full replace) rather than resetting it to a default."
 
 	return schema.Schema{
-		Version: 1,
+		Version: 2,
 		MarkdownDescription: "Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). " +
 			"This functionality is in technical preview and may be changed or removed in a future release.\n\n" +
 			dashboardNotes,
@@ -132,7 +132,7 @@ func getSchema() schema.Schema {
 				},
 			},
 			"query": schema.SingleNestedAttribute{
-				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch)." +
+				MarkdownDescription: "Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus `expression`." +
 					" Optional; removing the block clears it in Kibana rather than resetting it to a default.",
 				Optional: true,
 				Attributes: map[string]schema.Attribute{
@@ -143,20 +143,9 @@ func getSchema() schema.Schema {
 							stringvalidator.OneOf("kql", "lucene"),
 						},
 					},
-					"text": schema.StringAttribute{
-						MarkdownDescription: "Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.",
-						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("json")),
-						},
-					},
-					"json": schema.StringAttribute{
-						MarkdownDescription: "Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.",
-						CustomType:          jsontypes.NormalizedType{},
-						Optional:            true,
-						Validators: []validator.String{
-							stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("text")),
-						},
+					"expression": schema.StringAttribute{
+						MarkdownDescription: "Query expression in KQL or Lucene syntax.",
+						Required:            true,
 					},
 				},
 			},

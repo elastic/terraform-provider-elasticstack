@@ -18,9 +18,7 @@
 package dashboard
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -94,22 +92,8 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	// Map query (KbnAsCodeQuery: language + expression string)
 	if data.Data.Query != nil {
 		q := &models.DashboardQueryModel{
-			Language: types.StringValue(string(data.Data.Query.Language)),
-		}
-		expr := data.Data.Query.Expression
-		trimmed := bytes.TrimSpace([]byte(expr))
-		if len(trimmed) > 0 && trimmed[0] == '{' {
-			var obj map[string]any
-			if err := json.Unmarshal(trimmed, &obj); err == nil {
-				q.Text = types.StringNull()
-				q.JSON = jsontypes.NewNormalizedValue(string(trimmed))
-			} else {
-				q.Text = types.StringValue(expr)
-				q.JSON = jsontypes.NewNormalizedNull()
-			}
-		} else {
-			q.Text = types.StringValue(expr)
-			q.JSON = jsontypes.NewNormalizedNull()
+			Language:   types.StringValue(string(data.Data.Query.Language)),
+			Expression: types.StringValue(data.Data.Query.Expression),
 		}
 		m.Query = q
 	} else {
@@ -188,10 +172,7 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 		req.Description = &desc
 	}
 
-	// Set query text - Query is a union type with json.RawMessage
-	queryModel, queryDiags := dashboardQueryToAPI(m)
-	diags.Append(queryDiags...)
-	req.Query = queryModel
+	req.Query = dashboardQueryToAPI(m)
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
@@ -235,10 +216,7 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 		req.Description = &desc
 	}
 
-	// Set query text - Query is a union type with json.RawMessage
-	queryModel, queryDiags := dashboardQueryToAPI(m)
-	diags.Append(queryDiags...)
-	req.Query = queryModel
+	req.Query = dashboardQueryToAPI(m)
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
@@ -270,32 +248,14 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	return req
 }
 
-func dashboardQueryToAPI(m *models.DashboardModel) (*kbapi.KibanaHTTPAPIsKbnAsCodeQuery, diag.Diagnostics) {
+func dashboardQueryToAPI(m *models.DashboardModel) *kbapi.KibanaHTTPAPIsKbnAsCodeQuery {
 	if m.Query == nil {
-		return nil, nil
+		return nil
 	}
-	query := &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{}
-	query.Language = kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage(m.Query.Language.ValueString())
-	textKnown := typeutils.IsKnown(m.Query.Text)
-	jsonKnown := typeutils.IsKnown(m.Query.JSON)
-
-	if textKnown == jsonKnown {
-		var diags diag.Diagnostics
-		diags.AddError(
-			"Invalid dashboard query",
-			"Exactly one of `query.text` or `query.json` must be set.",
-		)
-		return query, diags
+	return &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{
+		Language:   kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage(m.Query.Language.ValueString()),
+		Expression: m.Query.Expression.ValueString(),
 	}
-
-	switch {
-	case textKnown:
-		query.Expression = m.Query.Text.ValueString()
-	case jsonKnown:
-		query.Expression = m.Query.JSON.ValueString()
-	}
-
-	return query, nil
 }
 
 func dashboardRootSavedFiltersElementType() types.ObjectType {
