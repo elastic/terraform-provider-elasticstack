@@ -1510,6 +1510,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias.readAliasIntoModel",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/alias",
+      "attemptedAt": "2026-10-06T03:17:43.545324887Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
