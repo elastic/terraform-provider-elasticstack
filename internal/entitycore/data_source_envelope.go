@@ -20,6 +20,7 @@ package entitycore
 import (
 	"context"
 	"fmt"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -299,6 +300,11 @@ func doKibanaDataSourceRead[T KibanaDataSourceModel](
 	}
 
 	resourceID, spaceID := resolveKibanaResourceIdentity(model)
+	// Data source lookups let an explicitly configured space_id take
+	// precedence over the space embedded in a composite id.
+	if explicit := model.GetSpaceID(); typeutils.IsKnown(explicit) && explicit.ValueString() != "" {
+		spaceID = explicit.ValueString()
+	}
 	if resourceID == "" {
 		resp.Diagnostics.AddError(
 			"Invalid resource identifier",

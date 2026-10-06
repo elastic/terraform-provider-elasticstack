@@ -258,6 +258,71 @@ func TestKibanaDataSource_Read_compositeResourceID(t *testing.T) {
 	require.Equal(t, "custom", gotSpaceID)
 }
 
+func TestKibanaDataSource_Read_explicitSpaceOverridesCompositeSpace(t *testing.T) {
+	ctx := context.Background()
+
+	var gotResourceID, gotSpaceID string
+	ds := NewKibanaDataSource[kibanaDSIdentityModel](ComponentKibana, "test_entity", KibanaDataSourceOptions[kibanaDSIdentityModel]{
+		Schema: func(_ context.Context) dsschema.Schema {
+			return dsschema.Schema{Attributes: map[string]dsschema.Attribute{
+				"skill_id": dsschema.StringAttribute{Required: true},
+				"space_id": dsschema.StringAttribute{Optional: true, Computed: true},
+				"id":       dsschema.StringAttribute{Computed: true},
+				"result":   dsschema.StringAttribute{Computed: true},
+			}}
+		},
+		Read: func(_ context.Context, _ *clients.KibanaScopedClient, resourceID, spaceID string, model kibanaDSIdentityModel) (kibanaDSIdentityModel, bool, diag.Diagnostics) {
+			gotResourceID = resourceID
+			gotSpaceID = spaceID
+			model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
+			return model, true, nil
+		},
+	})
+
+	factory := newKibanaFactoryMinimal(t)
+	configureDataSource(t, ds, factory)
+
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{"kibana_connection": providerschema.GetKbFWConnectionBlock()},
+		Attributes: map[string]dsschema.Attribute{
+			"skill_id": dsschema.StringAttribute{Required: true},
+			"space_id": dsschema.StringAttribute{Optional: true, Computed: true},
+			"id":       dsschema.StringAttribute{Computed: true},
+			"result":   dsschema.StringAttribute{Computed: true},
+		},
+	}
+	connBlockType := kibanaConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"skill_id":          tftypes.String,
+			"space_id":          tftypes.String,
+			"id":                tftypes.String,
+			"result":            tftypes.String,
+			"kibana_connection": connBlockType,
+		},
+	}
+	req := datasource.ReadRequest{
+		Config: tfsdk.Config{
+			Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+				"skill_id":          tftypes.NewValue(tftypes.String, "custom/my-skill"),
+				"space_id":          tftypes.NewValue(tftypes.String, "explicit"),
+				"id":                tftypes.NewValue(tftypes.String, nil),
+				"result":            tftypes.NewValue(tftypes.String, nil),
+				"kibana_connection": tftypes.NewValue(connBlockType, nil),
+			}),
+			Schema: schema,
+		},
+	}
+
+	var resp datasource.ReadResponse
+	resp.State = tfsdk.State{Schema: schema}
+	ds.Read(ctx, req, &resp)
+
+	require.False(t, resp.Diagnostics.HasError(), "%v", resp.Diagnostics)
+	require.Equal(t, "my-skill", gotResourceID)
+	require.Equal(t, "explicit", gotSpaceID)
+}
+
 func TestKibanaDataSource_Read_notFound_skipsPostRead(t *testing.T) {
 	ctx := context.Background()
 
