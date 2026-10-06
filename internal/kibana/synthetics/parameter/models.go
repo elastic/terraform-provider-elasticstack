@@ -54,8 +54,7 @@ func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
 func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
 	spaceID = clients.EffectiveSpaceID(spaceID)
-	m.ID = clients.CompositeIDValue(spaceID, resourceID)
-	m.SpaceID = types.StringValue(spaceID)
+	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, resourceID)
 }
 
 func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {

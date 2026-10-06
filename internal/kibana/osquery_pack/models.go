@@ -75,9 +75,8 @@ func (m osqueryPackBaseModel) GetResourceID() types.String { return m.PackID }
 func (m osqueryPackBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *osqueryPackBaseModel) setCompositeIdentity(spaceID, packID string) {
-	m.ID = clients.CompositeIDValue(spaceID, packID)
+	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, packID)
 	m.PackID = types.StringValue(packID)
-	m.SpaceID = types.StringValue(spaceID)
 }
 
 func (osqueryPackBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
