@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v92/github"
 )
 
 var gaTagPattern = regexp.MustCompile(`^v(8|9)\.\d+\.\d+$`)
