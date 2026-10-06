@@ -89,7 +89,7 @@ endif
 # Cloud. The location manifest is a document seeded into Elasticsearch by the
 # kibana_settings compose service. Older Kibana versions reject these settings.
 SYNTHETICS_STUB_MANIFEST_INDEX := tf-stub-synthetics-manifest
-KIBANA_SYNTHETICS_STUB := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$${v\#*.}"; minor="$${rest%%.*}"; \
+KIBANA_SYNTHETICS_STUB := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$$(printf '%s\n' "$$v" | cut -d. -f2-)"; minor="$${rest%%.*}"; \
 	if [ "$$major" -gt 8 ] 2>/dev/null || { [ "$$major" -eq 8 ] && [ "$$minor" -ge 14 ]; } 2>/dev/null; then echo 1; fi)
 ifeq ($(KIBANA_SYNTHETICS_STUB),1)
 KIBANA_EXTRA_ARGS := --xpack.uptime.service.manifestUrl=http://elastic:$(ELASTICSEARCH_PASSWORD)@elasticsearch:9200/$(SYNTHETICS_STUB_MANIFEST_INDEX)/_source/manifest \
