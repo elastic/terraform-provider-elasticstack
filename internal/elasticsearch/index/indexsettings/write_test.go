@@ -1,0 +1,311 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package indexsettings
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	elasticsearchclient "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/require"
+)
+
+// newIndexSettingsTestServer runs an httptest Elasticsearch serving the
+// endpoints used by the index settings write callbacks: cluster info (GET /),
+// index lookup (GET /{index}) and settings updates (PUT /{index}/_settings).
+// indexExists controls the GET response; putFails makes settings updates
+// return 500. It returns the scoped client plus the captured PUT bodies.
+func writeJSON(w http.ResponseWriter, body any) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(body)
+}
+
+func writeJSONStatus(w http.ResponseWriter, status int, body any) {
+	w.WriteHeader(status)
+	_ = writeJSON(w, body)
+}
+
+func newIndexSettingsTestServer(t *testing.T, indexExists, putFails bool) (*clients.ElasticsearchScopedClient, *[]map[string]any) {
+	t.Helper()
+
+	var putBodies []map[string]any
+
+	const indexName = "my-index"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/":
+			_ = writeJSON(w, map[string]any{
+				"name":         "test-node",
+				"cluster_name": "test-cluster",
+				"cluster_uuid": "test-cluster-uuid",
+				"version": map[string]any{
+					"number": "8.15.0",
+				},
+				"tagline": "You Know, for Search",
+			})
+		case r.Method == http.MethodGet && r.URL.Path == "/"+indexName:
+			if !indexExists {
+				writeJSONStatus(w, http.StatusNotFound, map[string]any{
+					"error": map[string]any{
+						"type":   "index_not_found_exception",
+						"reason": "no such index [" + indexName + "]",
+					},
+					"status": 404,
+				})
+				return
+			}
+			_ = writeJSON(w, map[string]any{
+				indexName: map[string]any{
+					"aliases":  map[string]any{},
+					"mappings": map[string]any{},
+					"settings": map[string]any{
+						"index": map[string]any{
+							"number_of_shards": "1",
+							"uuid":             "index-uuid",
+						},
+					},
+				},
+			})
+		case r.Method == http.MethodPut && r.URL.Path == "/"+indexName+"/_settings":
+			var body map[string]any
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			putBodies = append(putBodies, body)
+			if putFails {
+				writeJSONStatus(w, http.StatusInternalServerError, map[string]any{
+					"error": map[string]any{
+						"type":   "illegal_argument_exception",
+						"reason": "closed index [" + indexName + "]",
+					},
+					"status": 500,
+				})
+				return
+			}
+			_ = writeJSON(w, map[string]any{"acknowledged": true})
+		default:
+			http.Error(w, "unexpected request: "+r.Method+" "+r.URL.Path, http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	typedClient, err := elasticsearchclient.NewTypedClient(elasticsearchclient.Config{
+		Addresses: []string{server.URL},
+	})
+	require.NoError(t, err)
+
+	return clients.NewElasticsearchScopedClientForTest(typedClient, []string{server.URL}), &putBodies
+}
+
+func TestCreateIndexSettings_IndexExistsSendsDeclaredSettings(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	plan := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(5000),
+	}
+
+	result, diags := createIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{Plan: plan})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Equal(t, "test-cluster-uuid/"+indexName, result.Model.ID.ValueString())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.mapping.total_fields.limit": float64(5000),
+	}, (*putBodies)[0])
+}
+
+func TestUpdateIndexSettings_ChangedSettingSendsUpdate(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	prior := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(2300),
+	}
+	plan := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(5000),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.mapping.total_fields.limit": float64(5000),
+	}, (*putBodies)[0])
+}
+
+func TestUpdateIndexSettings_UnchangedSkipsAPICall(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	model := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(2300),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  model,
+		Prior: &model,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Empty(t, *putBodies, "no PUT /_settings call may be issued when the declared settings are unchanged")
+}
+
+func TestUpdateIndexSettings_APIErrorSurfacesDiagnostics(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, true)
+
+	prior := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(2300),
+	}
+	plan := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(5000),
+	}
+
+	result, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.True(t, diags.HasError(), "expected an error diagnostic when PUT /_settings fails")
+	require.Len(t, *putBodies, 1)
+	require.Contains(t, diags.Errors()[0].Summary(), "closed index")
+	require.Equal(t, plan, result.Model)
+}
+
+func TestUpdateIndexSettings_RemovedSettingsJSONKeySendsNull(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	prior := tfModel{
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"index.refresh_interval": "5s"}`),
+	}
+	plan := tfModel{
+		Index:            types.StringValue(indexName),
+		NumberOfReplicas: types.Int64Value(2),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.number_of_replicas": float64(2),
+		"index.refresh_interval":   nil,
+	}, (*putBodies)[0])
+}
+
+func TestUpdateIndexSettings_RemovedSettingSendsNull(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	prior := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(5000),
+	}
+	plan := tfModel{
+		Index: types.StringValue(indexName),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.mapping.total_fields.limit": nil,
+	}, (*putBodies)[0])
+}
+
+func TestCreateIndexSettings_MergesSettingsJSONWithTypedAttributes(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	plan := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(5000),
+		SettingsJSON:            jsontypes.NewNormalizedValue(`{"index.refresh_interval": "5s", "index.search.slowlog.threshold.query.warn": "10s"}`),
+	}
+
+	_, diags := createIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{Plan: plan})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.mapping.total_fields.limit":          float64(5000),
+		"index.refresh_interval":                    "5s",
+		"index.search.slowlog.threshold.query.warn": "10s",
+	}, (*putBodies)[0])
+}
+
+func TestCreateIndexSettings_IndexNotFound(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, false, false)
+
+	plan := tfModel{
+		Index:                   types.StringValue(indexName),
+		MappingTotalFieldsLimit: types.Int64Value(5000),
+	}
+
+	_, diags := createIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{Plan: plan})
+
+	require.True(t, diags.HasError(), "expected an error diagnostic when the index does not exist")
+	require.Contains(t, diags.Errors()[0].Detail(), indexName)
+	require.Empty(t, *putBodies, "no PUT /_settings call may be issued when the index does not exist")
+}
