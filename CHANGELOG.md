@@ -2,25 +2,14 @@
 
 ### Breaking changes
 
-`elasticstack_kibana_dashboard`: the root `query` block now uses `expression` instead of `text` / `json`, matching the Kibana Dashboard API and the `expression` attribute already used by Lens chart queries. The API exposes a single string field, `expression`; `text` and `json` both mapped onto it, and `json` was only ever a JSON document sent as a query string. Replace `text` (or `json`) with `expression`:
+The following data sources previously returned empty state or only a warning when the entity was not found, and now return an error: snapshot repository, trained model, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, index template and query ruleset. Configurations that probed for existence this way must handle the error.
 
-    # Before
-    query = {
-      language = "kql"
-      text     = "http.response.status_code:200"
-    }
-
-    # After
-    query = {
-      language   = "kql"
-      expression = "http.response.status_code:200"
-    }
-
-A Plugin Framework state upgrader (schema v1 -> v2) automatically migrates existing state on the next `terraform apply`; no manual state surgery is required, but `.tf` files must be updated to use `expression`. Because `query.json` was always sent to Kibana as a string, its value is carried over to `expression` unchanged. ([#5081](https://github.com/elastic/terraform-provider-elasticstack/issues/5081))
+Replace `query.text` / `query.json` with `query.expression` in `.tf` files. State is migrated automatically by a schema v1 -> v2 state upgrader; the `json` value is carried over to `expression` unchanged.
 
 ### Changes
 
-- **Breaking:** Entity data sources built on the shared envelope now return a standardized `<component>_<name> not found` error when the requested entity does not exist. Previously `elasticstack_elasticsearch_snapshot_repository`, `elasticstack_elasticsearch_ml_trained_model`, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, `elasticstack_elasticsearch_index_template` returned empty state or only a warning. `elasticstack_elasticsearch_query_ruleset` already errored when the ruleset was missing; only its diagnostic text is now standardized.
+- Data sources now return a standardized error when the requested entity is not found. ([#5090](https://github.com/elastic/terraform-provider-elasticstack/pull/5090))
+- `elasticstack_kibana_dashboard` root `query` now uses `expression` instead of `text`/`json` (state schema v2 with automatic upgrader) ([#5094](https://github.com/elastic/terraform-provider-elasticstack/pull/5094))
 - Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))
 - Support wildcard and multi-target expressions in index alias read indices. ([#5079](https://github.com/elastic/terraform-provider-elasticstack/pull/5079))
 - `elasticstack_fleet_elastic_defend_integration_policy` now creates the policy with the configured `policy_id` instead of ignoring it, and rejects an empty `policy_id` at plan time. ([#5041](https://github.com/elastic/terraform-provider-elasticstack/pull/5041))
