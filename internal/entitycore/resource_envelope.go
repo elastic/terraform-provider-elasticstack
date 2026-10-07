@@ -296,26 +296,17 @@ func resolveElasticsearchReadResourceID(model elasticsearchIdentityModel, writeF
 // Create implements [resource.Resource]: decode plan, resolve client, invoke
 // the create callback, read-after-write, then persist state from readFunc.
 func (r *ElasticsearchResource[T]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.Append(r.runWrite(ctx, resourceWriteInvocation{
-		plan:         req.Plan,
-		config:       req.Config,
-		outState:     &resp.State,
-		privateState: resp.Private,
-		isUpdate:     false,
-	})...)
+	resp.Diagnostics.Append(r.runWrite(ctx, buildResourceWriteInvocation(
+		req.Plan, nil, req.Config, &resp.State, resp.Private, false,
+	))...)
 }
 
 // Update implements [resource.Resource] with the same prelude as Create,
 // additionally decoding prior state for the update callback.
 func (r *ElasticsearchResource[T]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.runWrite(ctx, resourceWriteInvocation{
-		plan:         req.Plan,
-		priorState:   &req.State,
-		config:       req.Config,
-		outState:     &resp.State,
-		privateState: resp.Private,
-		isUpdate:     true,
-	})...)
+	resp.Diagnostics.Append(r.runWrite(ctx, buildResourceWriteInvocation(
+		req.Plan, &req.State, req.Config, &resp.State, resp.Private, true,
+	))...)
 }
 
 func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {

@@ -37,6 +37,29 @@ type resourceWriteInvocation struct {
 	isUpdate     bool
 }
 
+// buildResourceWriteInvocation assembles the framework state bundle shared by
+// Create and Update across both envelope types (ElasticsearchResource.Create/
+// Update in resource_envelope.go and KibanaResource.Create/Update in
+// kibana_resource_envelope.go). priorState is nil for Create and non-nil for
+// Update.
+func buildResourceWriteInvocation(
+	plan tfsdk.Plan,
+	priorState *tfsdk.State,
+	config tfsdk.Config,
+	outState *tfsdk.State,
+	privateState PrivateStateStorage,
+	isUpdate bool,
+) resourceWriteInvocation {
+	return resourceWriteInvocation{
+		plan:         plan,
+		priorState:   priorState,
+		config:       config,
+		outState:     outState,
+		privateState: privateState,
+		isUpdate:     isUpdate,
+	}
+}
+
 // requireReadFuncDiag returns an error diagnostic when the read callback for an
 // envelope is nil. component ("elasticsearch", "kibana", …) is capitalized to
 // form the human-readable envelope name used in both the summary and detail.

@@ -284,27 +284,18 @@ func (r *KibanaResource[T]) validateSpaceID(plan T) diag.Diagnostics {
 // Create implements [resource.Resource]: decode plan and config, validate spaceID,
 // resolve client, invoke the create callback, read-after-write, then persist state.
 func (r *KibanaResource[T]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.Append(r.runKibanaWrite(ctx, resourceWriteInvocation{
-		plan:         req.Plan,
-		config:       req.Config,
-		outState:     &resp.State,
-		privateState: resp.Private,
-		isUpdate:     false,
-	})...)
+	resp.Diagnostics.Append(r.runKibanaWrite(ctx, buildResourceWriteInvocation(
+		req.Plan, nil, req.Config, &resp.State, resp.Private, false,
+	))...)
 }
 
 // Update implements [resource.Resource]: decode plan, prior state, and config,
 // validate identity and spaceID, resolve client, invoke the update callback,
 // read-after-write, then persist state.
 func (r *KibanaResource[T]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.Append(r.runKibanaWrite(ctx, resourceWriteInvocation{
-		plan:         req.Plan,
-		priorState:   &req.State,
-		config:       req.Config,
-		outState:     &resp.State,
-		privateState: resp.Private,
-		isUpdate:     true,
-	})...)
+	resp.Diagnostics.Append(r.runKibanaWrite(ctx, buildResourceWriteInvocation(
+		req.Plan, &req.State, req.Config, &resp.State, resp.Private, true,
+	))...)
 }
 
 func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWriteInvocation) diag.Diagnostics {
