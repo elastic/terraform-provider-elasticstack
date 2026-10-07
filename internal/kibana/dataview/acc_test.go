@@ -135,17 +135,35 @@ func TestAccResourceDataView(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "override", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.name", indexName),
+					// source_filters is omitted from this step's config; since it is
+					// Optional+Computed with UseStateForUnknown, the prior value from
+					// basic_updated is carried forward rather than cleared.
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.source_filters.0", "event_time"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.field_formats.event_time.id", "date_nanos"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value)"),
 					checkIDUnchanged,
 				),
 			},
-			// Re-apply the same omitted config for import-state verification.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic_omitted"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("runtime_updated"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.type", "keyword"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.dv", "data_view.runtime_field_map.runtime_shape_name.script_source", "emit(doc['shape_name'].value + '-updated')"),
+					checkIDUnchanged,
+				),
+			},
+			// Re-apply the same runtime_updated config for import-state verification.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minFullDataviewSupport),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("runtime_updated"),
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
@@ -621,6 +639,79 @@ func TestAccResourceDataViewStaticLookupFieldFormat(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"override"},
 				ResourceName:            "elasticstack_kibana_data_view.lookup_dv",
+			},
+		},
+	})
+}
+
+func TestAccResourceDataViewDateFieldFormat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "my-date-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.date_dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.date_dv", "data_view.field_formats.last_login.id", "date"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.date_dv", "data_view.field_formats.last_login.params.pattern", "MMM D, YYYY @ HH:mm:ss.SSS"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.date_dv", "data_view.field_formats.last_login.params.timezone", "America/New_York"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"override"},
+				ResourceName:            "elasticstack_kibana_data_view.date_dv",
+			},
+		},
+	})
+}
+
+func TestAccResourceDataViewStringFieldFormat(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minFullDataviewSupport, versionutils.FlavorAny)
+
+	indexName := "my-string-index-" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_data_view.string_dv", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.string_dv", "data_view.field_formats.host_name.id", "string"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.string_dv", "data_view.field_formats.host_name.params.transform", "upper"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.string_dv", "data_view.field_formats.message.id", "truncate"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_data_view.string_dv", "data_view.field_formats.message.params.field_length", "20"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"override"},
+				ResourceName:            "elasticstack_kibana_data_view.string_dv",
 			},
 		},
 	})
