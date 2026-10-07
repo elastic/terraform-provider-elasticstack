@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -36,6 +37,7 @@ const (
 	versionMatrixBranch   = "acceptance-test-version-matrix"
 	versionMatrixAuthor   = "github-actions[bot]"
 	versionMatrixFile     = ".github/versions/acceptance-test-matrix.json"
+	versionMatrixEnvFile  = ".env.template"
 )
 
 var allowedCopilotAuthorLogins = map[string]struct{}{
@@ -156,19 +158,19 @@ func evaluateVersionMatrixCategory(input EvaluationInput) []string {
 	if !allCommitsByLogin(input.Commits, versionMatrixAuthor) {
 		reasons = append(reasons, fmt.Sprintf("not all commits are authored by %s", versionMatrixAuthor))
 	}
-	if !allFilesMatch(input.Files, versionMatrixFile) {
-		reasons = append(reasons, fmt.Sprintf("pull request contains files other than %s", versionMatrixFile))
+	if !allFilesMatch(input.Files, versionMatrixFile, versionMatrixEnvFile) {
+		reasons = append(reasons, fmt.Sprintf("pull request contains files other than %s", strings.Join([]string{versionMatrixFile, versionMatrixEnvFile}, ", ")))
 	}
 	return reasons
 }
 
-func allFilesMatch(files []*github.CommitFile, allowed string) bool {
+func allFilesMatch(files []*github.CommitFile, allowed ...string) bool {
 	if len(files) == 0 {
 		return false
 	}
 
 	for _, file := range files {
-		if file == nil || file.GetFilename() != allowed {
+		if file == nil || !slices.Contains(allowed, file.GetFilename()) {
 			return false
 		}
 	}
