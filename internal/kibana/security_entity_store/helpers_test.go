@@ -112,6 +112,43 @@ func TestNormalizeStatusJSON_NonObjectEngineElementPassthrough(t *testing.T) {
 	assert.Equal(t, body, string(normalizeStatusJSON([]byte(body))))
 }
 
+func TestNormalizeStatusJSON_NonStringTypePassthrough(t *testing.T) {
+	t.Parallel()
+
+	for _, engine := range []string{
+		`{"type":42,"indexPattern":".entities-user-v1"}`,
+		`{"type":true}`,
+		`{"type":["user"]}`,
+		`{"type":{"name":"user"}}`,
+	} {
+		body := `{"status":"running","engines":[{"type":"generic"},` + engine + `]}`
+		assert.Equal(t, body, string(normalizeStatusJSON([]byte(body))), "engine with non-string type %s must be returned byte-for-byte", engine)
+	}
+}
+
+func TestNormalizeStatusJSON_NullTypeSortsLikeMissing(t *testing.T) {
+	t.Parallel()
+
+	// A JSON null "type" decodes into a string without error (encoding/json
+	// leaves it at the zero value), so it sorts first exactly like a missing
+	// "type" instead of triggering the passthrough fallback.
+	body := `{"status":"running","engines":[{"type":null,"marker":"nulled"},{"type":"user"}]}`
+	assert.JSONEq(t, body, string(normalizeStatusJSON([]byte(body))))
+
+	orderBefore := `{"engines":[{"type":"zeta"},{"type":null},{"type":"alpha"}]}`
+	normalized := normalizeStatusJSON([]byte(orderBefore))
+	var decoded struct {
+		Engines []struct {
+			Type *string `json:"type"`
+		} `json:"engines"`
+	}
+	require.NoError(t, json.Unmarshal(normalized, &decoded))
+	require.Len(t, decoded.Engines, 3)
+	require.Nil(t, decoded.Engines[0].Type)
+	assert.Equal(t, "alpha", *decoded.Engines[1].Type)
+	assert.Equal(t, "zeta", *decoded.Engines[2].Type)
+}
+
 func TestNormalizeStatusJSON_EngineOrderStable(t *testing.T) {
 	t.Parallel()
 

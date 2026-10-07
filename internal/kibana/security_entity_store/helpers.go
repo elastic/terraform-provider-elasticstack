@@ -398,12 +398,15 @@ func normalizeStatusJSON(rawBody []byte) []byte {
 			return rawBody
 		}
 		pairs[i] = keyedEngine{raw: e}
-		// A missing or non-string "type" sorts first (zero value) and keeps its
-		// original relative position via the stable sort below.
+		// A missing or JSON null "type" decodes without error into the zero
+		// value, so it sorts first and keeps its relative position via the
+		// stable sort below. A non-string "type" fails to decode, so the whole
+		// body is returned unchanged per the fail-soft contract.
 		var typeKey string
-		if err := json.Unmarshal(fields["type"], &typeKey); err == nil {
-			pairs[i].typeKey = typeKey
+		if err := json.Unmarshal(fields["type"], &typeKey); err != nil {
+			return rawBody
 		}
+		pairs[i].typeKey = typeKey
 	}
 	sort.SliceStable(pairs, func(i, j int) bool { return pairs[i].typeKey < pairs[j].typeKey })
 	sortedEngines := make([]json.RawMessage, len(pairs))
