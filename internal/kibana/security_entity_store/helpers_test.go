@@ -126,12 +126,15 @@ func TestNormalizeStatusJSON_NonStringTypePassthrough(t *testing.T) {
 	}
 }
 
-func TestNormalizeStatusJSON_NullTypeSortsLikeMissing(t *testing.T) {
+func TestNormalizeStatusJSON_NullTypeSortsFirst(t *testing.T) {
 	t.Parallel()
 
-	// A JSON null "type" decodes into a string without error (encoding/json
-	// leaves it at the zero value), so it sorts first exactly like a missing
-	// "type" instead of triggering the passthrough fallback.
+	// Only an explicit JSON null "type" decodes into a string without error
+	// (encoding/json leaves it at the zero value), so it sorts first and keeps
+	// its relative position via the stable sort. A missing or non-string
+	// "type" instead triggers the byte-exact passthrough fallback.
+	// TestNormalizeStatusJSON_NonStringTypePassthrough and the missingEngineType
+	// case in TestNormalizeStatusJSON pin those paths.
 	body := `{"status":"running","engines":[{"type":null,"marker":"nulled"},{"type":"user"}]}`
 	assert.JSONEq(t, body, string(normalizeStatusJSON([]byte(body))))
 
@@ -171,7 +174,7 @@ func TestNormalizeStatusJSON(t *testing.T) {
 	assert.Equal(t, notInstalled, string(normalizeStatusJSON([]byte(notInstalled))))
 	assert.JSONEq(t, enginesEmpty, string(normalizeStatusJSON([]byte(enginesEmpty))))
 	assert.Equal(t, malformed, normalizeStatusJSON(malformed))
-	assert.JSONEq(t, missingEngineType, string(normalizeStatusJSON([]byte(missingEngineType))))
+	assert.Equal(t, missingEngineType, string(normalizeStatusJSON([]byte(missingEngineType))))
 }
 
 func TestUninstallWaitDiagsFromError(t *testing.T) {
