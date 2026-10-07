@@ -26,10 +26,10 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - `index` SHALL be required and SHALL force resource replacement when changed. It SHALL be treated as an already-resolved concrete index name; the resource SHALL NOT perform date-math resolution.
 - The dynamic-setting attributes SHALL be produced by `GetDynamicSettingAttributes()` (owned by `internal/elasticsearch/index/settings_keys.go`) and merged into this resource's schema map, so their names, types, and descriptions are identical to the equivalent attributes on `elasticstack_elasticsearch_index`.
 - `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a non-empty JSON object (`{}` is rejected at plan time, since it declares no settings). At plan time, any top-level key of `settings_json` that is a literal, exact match of an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error. Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
-- `settings_json` SHALL use flat dotted setting keys only (e.g. `"index.max_result_window"` or `"max_result_window"`), matching the flat form returned by `GetIndex`. Nested object values SHALL be rejected at plan time (e.g. `{"index": {"number_of_replicas": 2}}`), so each top-level key is a complete setting path shared by overlap validation, diffing and read. Explicit JSON `null` values SHALL be rejected at plan time; to reset a setting, the user omits it (REQ-003).
-- A key set via a typed dynamic-setting attribute SHALL NOT also appear in `settings_json`. At plan time, after canonicalizing key spellings (with or without the `index.` prefix), any overlapping key SHALL be rejected with a validation error.
+- `settings_json` SHALL use flat dotted setting keys only (e.g. `"index.max_result_window"` or `"max_result_window"`), matching the flat form returned by `GetIndex`. Nested object values SHALL be rejected at plan time (e.g. `{"index": {"number_of_replicas": 2}}`), so each top-level key is a complete setting path shared by overlap validation, diffing and read. Explicit JSON `null` values SHALL be rejected at plan time; to reset a setting, the user omits it (REQ-003). A `settings_json` value SHALL be a scalar (string, number, or boolean) or an array of scalars — including an empty array; array elements that are objects or `null` SHALL be rejected at plan time, consistent with the flat non-null contract.
+- A key set via a typed dynamic-setting attribute SHALL NOT also appear in `settings_json`. At plan time, after canonicalizing key spellings (with or without the `index.` prefix), any overlapping key SHALL be rejected with a validation error. When a `settings_json` value (or a typed attribute's value) is unknown at plan time, the shape and overlap checks on that value SHALL be deferred (no validation error emitted) rather than failing on the unknown value.
 - `elasticsearch_connection` is injected by the provider scaffold and SHALL NOT be declared manually in the schema factory.
-- At least one of the typed dynamic-setting attributes or `settings_json` SHALL be set; a configuration that sets none of them SHALL be rejected at plan time.
+- An index-only configuration (`index` set, no typed dynamic-setting attribute and no `settings_json`) SHALL be valid; no minimum number of declared settings SHALL be required.
 
 #### Scenario: Schema validation — index is required
 
@@ -74,15 +74,33 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - WHEN `terraform validate` runs
 - THEN Terraform SHALL NOT emit a validation error for that key
 
-#### Scenario: Schema validation — at least one setting must be declared
+#### Scenario: Schema validation — index-only configuration is valid
 
 - GIVEN a configuration that sets `index` only, with no typed dynamic-setting attribute and no `settings_json`
 - WHEN `terraform validate` or `terraform plan` runs
-- THEN Terraform SHALL emit a validation error stating at least one setting must be declared
+- THEN Terraform SHALL NOT emit a validation error for the absence of declared settings
+
+#### Scenario: Schema validation — settings_json permits arrays of scalars
+
+- GIVEN `settings_json = jsonencode({ "index.query.default_field" = ["title", "body"], "some.future.array.setting" = [] })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL NOT emit a validation error for either array value, including the empty array
+
+#### Scenario: Schema validation — settings_json rejects null or object array elements
+
+- GIVEN `settings_json = jsonencode({ "index.query.default_field" = ["title", null] })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit a validation error stating that array elements must be scalars (string, number, or boolean)
+
+#### Scenario: Schema validation — overlap checks defer unknown values
+
+- GIVEN `settings_json` whose value is unknown at plan time (for example, computed from another managed resource)
+- WHEN `terraform plan` runs
+- THEN Terraform SHALL NOT emit a spurious empty-declaration or overlap validation error caused solely by the unknown value
 
 ### Requirement: Create — index must exist (REQ-002)
 
-On create, the resource SHALL verify that the target index exists (via the existing `GetIndex` helper) before issuing `PUT /{index}/_settings`. If the index does not exist, the resource SHALL return an error diagnostic and SHALL NOT create any Elasticsearch resource or compute an `id`.
+On create, the resource SHALL verify that the target index exists (via the existing `GetIndex` helper) before issuing `PUT /{index}/_settings`. If the index does not exist, the resource SHALL return an error diagnostic and SHALL NOT create any Elasticsearch resource or compute an `id`. When the configuration declares no settings (index-only), create SHALL still verify that the target index exists and SHALL record the resource in state with the computed `id`, but SHALL NOT issue any `PUT /{index}/_settings` call.
 
 #### Scenario: Create fails when index is absent
 
@@ -98,6 +116,14 @@ On create, the resource SHALL verify that the target index exists (via the exist
 - WHEN `terraform apply` runs the create operation
 - THEN `PUT /{index}/_settings` SHALL be called with `{"index": {"mapping": {"total_fields": {"limit": 5000}}}}` (or the flat-key equivalent) as the request body
 - AND the resource SHALL be added to state with `id = "<cluster_uuid>/<index_name>"`
+
+#### Scenario: Index-only create issues no settings call
+
+- GIVEN the target `index` exists in Elasticsearch
+- AND the configuration declares `index` only, with no typed dynamic-setting attribute and no `settings_json`
+- WHEN `terraform apply` runs the create operation
+- THEN the resource SHALL be added to state with `id = "<cluster_uuid>/<index_name>"`
+- AND no `PUT /{index}/_settings` call SHALL be issued
 
 ### Requirement: Update — declared settings diff, null resets (REQ-003)
 
@@ -123,11 +149,18 @@ On update, the resource SHALL compute the union of declared typed dynamic-settin
 - WHEN `terraform apply` runs
 - THEN no `PUT /{index}/_settings` call SHALL be issued
 
+#### Scenario: Removing the last declared setting empties the declared subset
+
+- GIVEN a managed resource whose only tracked setting is `mapping_total_fields_limit = 5000` in state
+- WHEN the user removes the `mapping_total_fields_limit` attribute from configuration entirely and runs `terraform apply`
+- THEN `PUT /{index}/_settings` SHALL be called with the previously tracked key sent as `null`, and no other key
+- AND the resource SHALL remain in state with an empty declared subset of settings
+
 ### Requirement: Read — declared subset only (REQ-004)
 
 On read, the resource SHALL retrieve the index's settings via the existing `GetIndex` helper and populate only the typed dynamic-setting attributes and `settings_json` keys that are present in the previously stored state (the declared subset). Settings returned by Elasticsearch that are not part of the declared subset SHALL be silently ignored and SHALL NOT be written to state and SHALL NOT cause drift. Full hydration SHALL occur only on the first read after `terraform import`, signalled by an import-specific private-state key set by the resource's `ImportState` implementation (alongside `id` and `index`) and cleared by that read. An empty set of tracked settings SHALL NOT be treated as an import. On that import read, the resource SHALL populate the known `DynamicSettingsKeys`-derived typed attributes from the API response as the initial declared subset and SHALL leave `settings_json` unset, so that static and metadata settings (e.g. `index.number_of_shards`, `index.uuid`) are never adopted into state.
 
-When populating `settings_json` keys on read, the resource SHALL reconcile each API value (returned as a string because `GetIndex` requests flat settings) with the scalar type declared in state, converting numeric and boolean strings back to JSON numbers and booleans in the same way as the existing reader in `internal/elasticsearch/index/index/settings_read.go`, so that an unchanged `settings_json` does not produce false drift.
+When populating `settings_json` keys on read, the resource SHALL reconcile each API value (returned as a string because `GetIndex` requests flat settings) with the scalar type declared in state, converting numeric and boolean strings back to JSON numbers and booleans in the same way as the existing reader in `internal/elasticsearch/index/index/settings_read.go`, so that an unchanged `settings_json` does not produce false drift. For array-valued settings, read SHALL reconcile API values that arrive either as real JSON arrays or as JSON-encoded array strings against the element types declared in state, preserving element order and drift, never silently dropping a valid tracked array, and never changing string elements to numbers (or numbers to strings) accidentally. The typed `query_default_field` attribute SHALL decode values that arrive as JSON-encoded string arrays using the existing `stringSliceFromAny` decoding precedent in the `index` resource, so a JSON-encoded `["title","body"]` API value hydrates the typed attribute without drift.
 
 Ownership of a setting is defined by its presence in state (a non-null typed attribute or a `settings_json` key). When Elasticsearch no longer reports a tracked setting (for example because it was reset outside Terraform), read SHALL set that typed attribute to null or drop that key from `settings_json`, so the drift is shown; configuration that still declares it SHALL cause the plan to set it again. Outside the import read, read SHALL NOT add any setting to state, even when no tracked settings remain.
 
@@ -168,6 +201,29 @@ Ownership of a setting is defined by its presence in state (a non-null typed att
 - AND Elasticsearch returns `"20000"` and `"false"` as strings in the flat settings response
 - WHEN `terraform plan` runs
 - THEN the plan SHALL show no diff
+
+#### Scenario: Array-valued settings_json keys round-trip without drift
+
+- GIVEN `settings_json = jsonencode({ "index.query.default_field" = ["title", "body"] })` has been applied
+- AND Elasticsearch returns `"[\"title\",\"body\"]"` as a JSON-encoded array string (or a real JSON array) in the flat settings response
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show no diff, with element order preserved
+- AND the tracked array SHALL NOT be silently dropped from state
+
+#### Scenario: Typed query_default_field decodes a JSON-encoded string array
+
+- GIVEN the index's `index.query.default_field` is `"[\"title\",\"body\"]"` (a JSON-encoded string array) in the API response
+- AND the resource's state declares `query_default_field = ["title", "body"]`
+- WHEN `terraform plan` runs
+- THEN the plan SHALL show no diff
+
+#### Scenario: Empty declared subset stays empty on refresh
+
+- GIVEN a resource in state with no tracked settings (an empty declared subset), after all declared settings were removed and applied
+- AND the index still has settings Elasticsearch would return
+- WHEN `terraform refresh` runs
+- THEN the resource SHALL NOT adopt any unrelated setting into state
+- AND the declared subset SHALL remain empty
 
 #### Scenario: Not found on read removes from state
 
