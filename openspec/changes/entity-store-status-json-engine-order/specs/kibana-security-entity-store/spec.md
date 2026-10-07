@@ -19,7 +19,7 @@ different order, produce byte-identical (and therefore semantically-equal) `stat
 - WHEN Terraform refreshes the resource
 - THEN the provider SHALL call `GET /api/security/entity_store/status`
 - AND `status_json` in state SHALL contain the normalized JSON of the full response body
-- AND the value SHALL differ from a previous read if the API response changed
+- AND the value SHALL differ from a previous read if the logical response content changed, excluding engine-array order and insignificant JSON formatting
 
 #### Scenario: status_json is stable across reads despite engine reordering
 
