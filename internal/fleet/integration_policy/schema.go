@@ -26,21 +26,17 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 //go:embed resource-description.md
@@ -152,87 +148,24 @@ func getSchemaV3() schema.Schema {
 		}}
 }
 
+// getInputsNestedObject and getInputStreamNestedObject delegate to the
+// shared policyshape package, which owns the canonical inputs/streams
+// schema-builder logic shared with internal/fleet/managedintegration (see
+// internal/fleet/policyshape/schema.go). They are kept here under their
+// original names for the same reason as getInputsElementType et al. below.
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		CustomType: NewInputType(getInputsAttributeTypes()),
-		Attributes: map[string]schema.Attribute{
-			attrEnabled: schema.BoolAttribute{
-				Description: "Enable the input.",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(true),
-			},
-			attrCondition: schema.StringAttribute{
-				Description: "Agent condition expression to evaluate whether to apply this input.",
-				Optional:    true,
-			},
-			attrVars: schema.StringAttribute{
-				Description: "Input-level variables as JSON.",
-				CustomType:  jsontypes.NormalizedType{},
-				Optional:    true,
-				Sensitive:   varsAreSensitive,
-			},
-			attrDefaults: schema.SingleNestedAttribute{
-				Description: "Input defaults.",
-				Computed:    true,
-				Default: objectdefault.StaticValue(basetypes.NewObjectNull(
-					getInputDefaultsAttrTypes(),
-				)),
-				Attributes: map[string]schema.Attribute{
-					attrVars: schema.StringAttribute{
-						Description: "Input-level variable defaults as JSON.",
-						CustomType:  jsontypes.NormalizedType{},
-						Computed:    true,
-					},
-					attrStreams: schema.MapNestedAttribute{
-						Description: "Stream-level defaults mapped by stream ID.",
-						Computed:    true,
-						NestedObject: schema.NestedAttributeObject{
-							Attributes: map[string]schema.Attribute{
-								attrEnabled: schema.BoolAttribute{
-									Description: "Default enabled state for the stream.",
-									Computed:    true,
-								},
-								attrVars: schema.StringAttribute{
-									Description: "Stream-level variable defaults as JSON.",
-									CustomType:  jsontypes.NormalizedType{},
-									Computed:    true,
-								},
-							},
-						},
-					},
-				},
-			},
-			attrStreams: schema.MapNestedAttribute{
-				Description:  "Input streams mapped by stream ID.",
-				Optional:     true,
-				NestedObject: getInputStreamNestedObject(varsAreSensitive),
-			},
+	return policyshape.InputsNestedObject(policyshape.InputsNestedObjectConfig{
+		CustomType:       NewInputType(getInputsAttributeTypes()),
+		VarsAreSensitive: varsAreSensitive,
+		IncludeDefaults:  true,
+		InputVars: policyshape.InputVarsOptions{
+			Description: "Input-level variables as JSON.",
 		},
-	}
+	})
 }
 
 func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			attrEnabled: schema.BoolAttribute{
-				Description: "Enable the stream.",
-				Computed:    true,
-				Optional:    true,
-				Default:     booldefault.StaticBool(true),
-			},
-			attrCondition: schema.StringAttribute{
-				Description: "Agent condition expression to evaluate whether to apply this stream.",
-				Optional:    true,
-			},
-			attrVars: schema.StringAttribute{
-				Description: "Stream-level variables as JSON.",
-				CustomType:  jsontypes.NormalizedType{},
-				Optional:    true,
-				Sensitive:   varsAreSensitive,
-			},
-		},
-	}
+	return policyshape.InputStreamNestedObject(varsAreSensitive, false)
 }
 
 // getInputsElementType, getInputsAttributeTypes, getInputStreamType, and
