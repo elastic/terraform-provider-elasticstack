@@ -155,6 +155,23 @@ func TestAccResourceIndexSettings_validationSettingsJSONArrayValues(t *testing.T
 	})
 }
 
+// REQ-001: when the settings_json value is unknown at plan time (computed
+// from another managed resource), the shape and overlap checks defer so no
+// spurious empty-declaration or overlap validation error is emitted.
+func TestAccResourceIndexSettings_validationUnknownSettingsJSONDefersChecks(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
+			},
+		},
+	})
+}
+
 // REQ-001: settings_json array elements must be scalars; null (or object)
 // elements are rejected at plan time.
 func TestAccResourceIndexSettings_validationSettingsJSONNullArrayElement(t *testing.T) {
