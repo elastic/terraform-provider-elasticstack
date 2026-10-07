@@ -30,7 +30,8 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - `id` SHALL be computed and unknown until create completes; it SHALL use `stringplanmodifier.UseStateForUnknown()`.
 - `index` SHALL be required and SHALL force resource replacement when changed. It SHALL be treated as an already-resolved concrete index name; the resource SHALL NOT perform date-math resolution.
 - The dynamic-setting attributes SHALL be produced by `GetDynamicSettingAttributes()` (owned by `internal/elasticsearch/index/settings_keys.go`) and merged into this resource's schema map, so their names, types, and descriptions are identical to the equivalent attributes on `elasticstack_elasticsearch_index`.
-- `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a non-empty JSON object (`{}` is rejected at plan time, since it declares no settings). At plan time, any top-level key of `settings_json` that is a literal, exact match of an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error. Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
+- `settings_json` SHALL be optional, typed `jsontypes.Normalized`, and validated as a non-empty JSON object (`{}` is rejected at plan time, since it declares no settings). At plan time, any top-level key of `settings_json` that, after canonicalizing its spelling by stripping the optional `index.` prefix, matches an entry in `internal/elasticsearch/index.StaticSettingsKeys` SHALL be rejected with a validation error (so `index.number_of_shards` is rejected exactly like `number_of_shards`). Keys that are not in `StaticSettingsKeys` — including keys not present in `AllSettingsKeys` at all — SHALL be permitted (permissive on unknown keys).
+- `settings_json` SHALL NOT declare two spellings that canonicalize to the same setting key (for example `number_of_replicas` and `index.number_of_replicas`). At plan time, any such duplicate canonical key within `settings_json` SHALL be rejected with a validation error, since Elasticsearch stores a single value per setting.
 - `settings_json` SHALL use flat dotted setting keys only (e.g. `"index.max_result_window"` or `"max_result_window"`), matching the flat form returned by `GetIndex`. Nested object values SHALL be rejected at plan time (e.g. `{"index": {"number_of_replicas": 2}}`), so each top-level key is a complete setting path shared by overlap validation, diffing and read. Explicit JSON `null` values SHALL be rejected at plan time; to reset a setting, the user omits it (REQ-003). A `settings_json` value SHALL be a scalar (string, number, or boolean) or an array of scalars — including an empty array; array elements that are objects or `null` SHALL be rejected at plan time, consistent with the flat non-null contract.
 - A key set via a typed dynamic-setting attribute SHALL NOT also appear in `settings_json`. At plan time, after canonicalizing key spellings (with or without the `index.` prefix), any overlapping key SHALL be rejected with a validation error. When a `settings_json` value (or a typed attribute's value) is unknown at plan time, the shape and overlap checks on that value SHALL be deferred (no validation error emitted) rather than failing on the unknown value.
 - `elasticsearch_connection` is injected by the provider scaffold and SHALL NOT be declared manually in the schema factory.
@@ -72,6 +73,19 @@ resource "elasticstack_elasticsearch_index_settings" "example" {
 - WHEN `terraform validate` or `terraform plan` runs
 - THEN Terraform SHALL emit an attribute validation error on `settings_json` stating that `number_of_shards` can only be set at index creation time
 - AND no API call SHALL be issued
+
+#### Scenario: Schema validation — settings_json rejects a static key spelled with the `index.` prefix
+
+- GIVEN `settings_json = jsonencode({ "index.number_of_shards" = 3 })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit an attribute validation error on `settings_json` stating that `index.number_of_shards` can only be set at index creation time
+- AND no API call SHALL be issued
+
+#### Scenario: Schema validation — settings_json rejects duplicate spellings of the same key
+
+- GIVEN `settings_json = jsonencode({ "number_of_replicas" = 2, "index.number_of_replicas" = 3 })`
+- WHEN `terraform validate` or `terraform plan` runs
+- THEN Terraform SHALL emit a validation error identifying the two spellings that canonicalize to the same setting key
 
 #### Scenario: Schema validation — settings_json permits an unmodeled dynamic key
 
