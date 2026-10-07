@@ -171,7 +171,9 @@ func closeAPIKey(ctx context.Context, client *clients.ElasticsearchScopedClient,
 	if !req.State.InvalidateOnClose || req.State.KeyID == "" {
 		return entitycore.CloseResponse{}, nil
 	}
-	return entitycore.CloseResponse{}, deleteAPIKeyFn(ctx, client, req.State.KeyID)
+	// Ephemeral API keys do not expose a `restrict_to_owned` attribute; they
+	// are always invalidated as owned by the calling user (owner: true).
+	return entitycore.CloseResponse{}, deleteAPIKeyFn(ctx, client, req.State.KeyID, true)
 }
 
 func effectiveAPIKeyType(apiKeyType types.String) types.String {
