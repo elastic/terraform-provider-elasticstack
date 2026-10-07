@@ -27,30 +27,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// InputVarsOptions configures the one attribute that intentionally differs
-// in shape between integration_policy and managedintegration: the
-// input-level "vars" attribute. managedintegration marks it Computed with
-// UseStateForUnknown because some packages (e.g. cloud_security_posture)
-// populate informational input-level vars that are always present in the API
-// response regardless of configuration; integration_policy's vars attribute
-// is purely user-supplied (Optional only). This is preserved deliberately
-// rather than unified away, so callers must say explicitly which behavior
-// they want.
+// InputVarsOptions configures the input-level "vars" attribute, the one
+// attribute that intentionally differs in shape between callers.
 type InputVarsOptions struct {
 	// Computed marks "vars" Computed and adds stringplanmodifier.UseStateForUnknown.
+	// managedintegration needs this because some packages (e.g.
+	// cloud_security_posture/CSPM) populate informational input-level vars
+	// (such as CloudFormation quick-create template URLs) that are always
+	// present in the API response regardless of configuration; Computed lets
+	// those flow through without requiring the user to declare them.
+	// integration_policy's vars attribute is purely user-supplied.
 	Computed bool
-	// Description is this resource's wording for the input-level "vars"
-	// attribute (the two callers' text differs: managedintegration's
-	// explains the Computed behavior above).
+	// Description is this caller's wording for the input-level "vars"
+	// attribute (the two callers' text differs).
 	Description string
 }
 
 // InputsNestedObjectConfig carries the resource-specific pieces that
-// InputsNestedObject needs in order to serve both integration_policy (which
-// includes a package-computed "defaults" sub-object and plain-text
-// Description fields) and managedintegration (which omits "defaults" and
-// uses MarkdownDescription fields throughout), without losing either
-// resource's existing, intentional behavior.
+// InputsNestedObject needs to serve both integration_policy and
+// managedintegration. All descriptions are set as MarkdownDescription.
 type InputsNestedObjectConfig struct {
 	// CustomType is the nested object's CustomType. Each caller wraps a
 	// different attribute-types map in its own InputType (integration_policy
@@ -60,25 +55,11 @@ type InputsNestedObjectConfig struct {
 	// VarsAreSensitive marks every "vars" attribute (input- and
 	// stream-level) Sensitive.
 	VarsAreSensitive bool
-	// UseMarkdownDescription selects MarkdownDescription over Description
-	// for every field this builder sets, matching the caller's existing
-	// per-resource convention (managedintegration uses Markdown throughout;
-	// integration_policy uses plain Description throughout).
-	UseMarkdownDescription bool
 	// IncludeDefaults adds the package-computed "defaults" sub-object nested
 	// under each input (integration_policy only).
 	IncludeDefaults bool
 	// InputVars configures the input-level "vars" attribute.
 	InputVars InputVarsOptions
-}
-
-// splitDescription routes description text to either the plain Description
-// or MarkdownDescription return slot, matching useMarkdown.
-func splitDescription(text string, useMarkdown bool) (description, markdownDescription string) {
-	if useMarkdown {
-		return "", text
-	}
-	return text, ""
 }
 
 // InputsNestedObject builds the "inputs" map's NestedAttributeObject shared
@@ -87,15 +68,8 @@ func splitDescription(text string, useMarkdown bool) (description, markdownDescr
 // InputsNestedObjectConfig for the pieces that intentionally differ between
 // those two callers.
 func InputsNestedObject(cfg InputsNestedObjectConfig) schema.NestedAttributeObject {
-	enabledDescription, enabledMarkdown := splitDescription("Enable the input.", cfg.UseMarkdownDescription)
-	conditionDescription, conditionMarkdown := splitDescription(
-		"Agent condition expression to evaluate whether to apply this input.", cfg.UseMarkdownDescription)
-	streamsDescription, streamsMarkdown := splitDescription("Input streams mapped by stream ID.", cfg.UseMarkdownDescription)
-	varsDescription, varsMarkdown := splitDescription(cfg.InputVars.Description, cfg.UseMarkdownDescription)
-
 	varsAttribute := schema.StringAttribute{
-		Description:         varsDescription,
-		MarkdownDescription: varsMarkdown,
+		MarkdownDescription: cfg.InputVars.Description,
 		CustomType:          jsontypes.NormalizedType{},
 		Optional:            true,
 		Sensitive:           cfg.VarsAreSensitive,
@@ -109,24 +83,20 @@ func InputsNestedObject(cfg InputsNestedObjectConfig) schema.NestedAttributeObje
 
 	attributes := map[string]schema.Attribute{
 		AttrEnabled: schema.BoolAttribute{
-			Description:         enabledDescription,
-			MarkdownDescription: enabledMarkdown,
+			MarkdownDescription: "Enable the input.",
 			Computed:            true,
 			Optional:            true,
 			Default:             booldefault.StaticBool(true),
 		},
 		AttrCondition: schema.StringAttribute{
-			Description:         conditionDescription,
-			MarkdownDescription: conditionMarkdown,
+			MarkdownDescription: "Agent condition expression to evaluate whether to apply this input.",
 			Optional:            true,
 		},
 		AttrVars: varsAttribute,
 		AttrStreams: schema.MapNestedAttribute{
-			Description:         streamsDescription,
-			MarkdownDescription: streamsMarkdown,
+			MarkdownDescription: "Input streams mapped by stream ID.",
 			Optional:            true,
-			NestedObject: InputStreamNestedObject(
-				cfg.VarsAreSensitive, cfg.UseMarkdownDescription),
+			NestedObject:        InputStreamNestedObject(cfg.VarsAreSensitive),
 		},
 	}
 
@@ -145,30 +115,30 @@ func InputsNestedObject(cfg InputsNestedObjectConfig) schema.NestedAttributeObje
 // InputDefaultsAttributeTypes for the matching attribute-types map).
 func inputDefaultsAttribute() schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
-		Description: "Input defaults.",
-		Computed:    true,
+		MarkdownDescription: "Input defaults.",
+		Computed:            true,
 		Default: objectdefault.StaticValue(basetypes.NewObjectNull(
 			InputDefaultsAttributeTypes(),
 		)),
 		Attributes: map[string]schema.Attribute{
 			AttrVars: schema.StringAttribute{
-				Description: "Input-level variable defaults as JSON.",
-				CustomType:  jsontypes.NormalizedType{},
-				Computed:    true,
+				MarkdownDescription: "Input-level variable defaults as JSON.",
+				CustomType:          jsontypes.NormalizedType{},
+				Computed:            true,
 			},
 			AttrStreams: schema.MapNestedAttribute{
-				Description: "Stream-level defaults mapped by stream ID.",
-				Computed:    true,
+				MarkdownDescription: "Stream-level defaults mapped by stream ID.",
+				Computed:            true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						AttrEnabled: schema.BoolAttribute{
-							Description: "Default enabled state for the stream.",
-							Computed:    true,
+							MarkdownDescription: "Default enabled state for the stream.",
+							Computed:            true,
 						},
 						AttrVars: schema.StringAttribute{
-							Description: "Stream-level variable defaults as JSON.",
-							CustomType:  jsontypes.NormalizedType{},
-							Computed:    true,
+							MarkdownDescription: "Stream-level variable defaults as JSON.",
+							CustomType:          jsontypes.NormalizedType{},
+							Computed:            true,
 						},
 					},
 				},
@@ -182,29 +152,21 @@ func inputDefaultsAttribute() schema.SingleNestedAttribute {
 // vars. Unlike the input-level vars attribute, stream-level vars has no
 // Computed/UseStateForUnknown variant between the two callers, so it takes
 // no InputVarsOptions.
-func InputStreamNestedObject(varsAreSensitive bool, useMarkdownDescription bool) schema.NestedAttributeObject {
-	enabledDescription, enabledMarkdown := splitDescription("Enable the stream.", useMarkdownDescription)
-	conditionDescription, conditionMarkdown := splitDescription(
-		"Agent condition expression to evaluate whether to apply this stream.", useMarkdownDescription)
-	varsDescription, varsMarkdown := splitDescription("Stream-level variables as JSON.", useMarkdownDescription)
-
+func InputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 	return schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			AttrEnabled: schema.BoolAttribute{
-				Description:         enabledDescription,
-				MarkdownDescription: enabledMarkdown,
+				MarkdownDescription: "Enable the stream.",
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(true),
 			},
 			AttrCondition: schema.StringAttribute{
-				Description:         conditionDescription,
-				MarkdownDescription: conditionMarkdown,
+				MarkdownDescription: "Agent condition expression to evaluate whether to apply this stream.",
 				Optional:            true,
 			},
 			AttrVars: schema.StringAttribute{
-				Description:         varsDescription,
-				MarkdownDescription: varsMarkdown,
+				MarkdownDescription: "Stream-level variables as JSON.",
 				CustomType:          jsontypes.NormalizedType{},
 				Optional:            true,
 				Sensitive:           varsAreSensitive,

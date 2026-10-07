@@ -148,11 +148,9 @@ func getSchemaV3() schema.Schema {
 		}}
 }
 
-// getInputsNestedObject and getInputStreamNestedObject delegate to the
-// shared policyshape package, which owns the canonical inputs/streams
-// schema-builder logic shared with internal/fleet/managedintegration (see
-// internal/fleet/policyshape/schema.go). They are kept here under their
-// original names for the same reason as getInputsElementType et al. below.
+// getInputsNestedObject delegates to the shared policyshape schema builder
+// (kept under its original name for the same reason as getInputsElementType
+// et al. below).
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 	return policyshape.InputsNestedObject(policyshape.InputsNestedObjectConfig{
 		CustomType:       NewInputType(getInputsAttributeTypes()),
@@ -162,10 +160,6 @@ func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 			Description: "Input-level variables as JSON.",
 		},
 	})
-}
-
-func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
-	return policyshape.InputStreamNestedObject(varsAreSensitive, false)
 }
 
 // getInputsElementType, getInputsAttributeTypes, getInputStreamType, and

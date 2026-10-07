@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -310,33 +309,21 @@ func managedIntegrationInputType() policyshape.InputType {
 }
 
 func managedIntegrationInputAttributeTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		policyshape.AttrEnabled:   types.BoolType,
-		policyshape.AttrCondition: types.StringType,
-		policyshape.AttrVars:      jsontypes.NormalizedType{},
-		policyshape.AttrStreams: types.MapType{
-			ElemType: policyshape.StreamType(),
-		},
+	attributeTypes := policyshape.StreamAttributeTypes()
+	attributeTypes[policyshape.AttrStreams] = types.MapType{
+		ElemType: policyshape.StreamType(),
 	}
+	return attributeTypes
 }
 
-// getInputsNestedObject and getInputStreamNestedObject delegate to the
-// shared policyshape package, which owns the canonical inputs/streams
-// schema-builder logic shared with internal/fleet/integration_policy (see
-// internal/fleet/policyshape/schema.go). Unlike integration_policy, this
-// resource omits the package-computed "defaults" sub-object (see
-// managedIntegrationInputAttributeTypes's doc comment) and marks the
-// input-level "vars" attribute Computed with UseStateForUnknown: some
-// packages (e.g. cloud_security_posture/CSPM) populate informational
-// input-level vars (such as CloudFormation quick-create template URLs) that
-// are always present in the API response regardless of configuration;
-// Computed with UseStateForUnknown lets those flow through without
-// requiring the user to declare them.
+// getInputsNestedObject delegates to the shared policyshape schema builder.
+// Unlike integration_policy, this resource omits the "defaults" sub-object
+// (see managedIntegrationInputType's doc comment) and marks the input-level
+// "vars" attribute Computed (see policyshape.InputVarsOptions.Computed).
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 	return policyshape.InputsNestedObject(policyshape.InputsNestedObjectConfig{
-		CustomType:             managedIntegrationInputType(),
-		VarsAreSensitive:       varsAreSensitive,
-		UseMarkdownDescription: true,
+		CustomType:       managedIntegrationInputType(),
+		VarsAreSensitive: varsAreSensitive,
 		InputVars: policyshape.InputVarsOptions{
 			Computed: true,
 			Description: "Input-level variables as JSON. Computed (not purely Optional): some packages " +
@@ -346,8 +333,4 @@ func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
 				"through without requiring the user to declare them.",
 		},
 	})
-}
-
-func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
-	return policyshape.InputStreamNestedObject(varsAreSensitive, true)
 }
