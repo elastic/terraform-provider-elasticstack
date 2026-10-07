@@ -53,9 +53,12 @@ and a latent source of real-user `terraform plan` noise since `status_json`'s on
   Approach A).** Decode the raw body generically (`map[string]json.RawMessage]`), pull `"engines"`
   as `[]json.RawMessage`, stable-sort (`sort.SliceStable`) by each element's `"type"` field, re-encode
   the sorted array back into the map, and re-marshal the whole map for the final string passed to
-  `jsontypes.NewNormalizedValue`. Operating on generically-decoded JSON (rather than re-marshaling
-  from the already-decoded `entityStoreStatus` struct) avoids dropping any response field not
-  modeled by `entityStoreEngine`.
+  `jsontypes.NewNormalizedValue`. All response fields, including unmodeled and nested fields, must be
+  preserved semantically. Re-marshaling may alter formatting, object key order, or other incidental
+  byte representation. Exact-byte equality is required only for otherwise-identical response bodies
+  with reversed `engines` arrays and for explicit passthrough paths that return the original body.
+  Operating on generically-decoded JSON (rather than re-marshaling from the already-decoded
+  `entityStoreStatus` struct) avoids dropping any response field not modeled by `entityStoreEngine`.
 - **Rejected: ignore `status_json` in `ImportStateVerify` (research comment's Approach B).** This
   is a pure test change that would leave the latent real-user plan-noise risk unaddressed and weaken
   this test's coverage of `status_json`. The issue's own "likely fix" note lists this only as a
@@ -77,8 +80,8 @@ and a latent source of real-user `terraform plan` noise since `status_json`'s on
 - **Error handling.** If the raw body cannot be decoded generically for normalization (should not
   happen, since `getEntityStoreStatus` already successfully `json.Unmarshal`s it into the typed
   `entityStoreStatus` struct beforehand), the helper returns the original, unnormalized body
-  unchanged rather than failing the Read — a cosmetic normalization step should not turn into a hard
-  Read failure.
+  unchanged byte-for-byte rather than failing the Read — a cosmetic normalization step should not
+  turn into a hard Read failure.
 
 ## Open questions
 
@@ -98,8 +101,7 @@ and a latent source of real-user `terraform plan` noise since `status_json`'s on
   `entity_types` precedent; revisit if the "duplicate engine type" open question above is ever
   confirmed to occur in practice.
 - [Risk] Generic JSON decode/re-encode of the full response body (rather than only touching
-  `engines`) could theoretically normalize numeric formatting or other incidental representation
-  details Kibana emits. → Mitigation: `jsontypes.Normalized` already round-trips the whole body
-  through `interface{}` for comparison, so this proposal introduces no new representation risk
-  beyond what `jsontypes.Normalized` already tolerates; only `engines` ordering is intentionally
-  changed by this helper, not value formatting.
+  `engines`) can change numeric formatting or other incidental representation details Kibana emits.
+  → Mitigation: preserve the semantic value of every field, including unmodeled and nested fields;
+  require exact-byte equality only for otherwise-identical bodies whose `engines` order differs and
+  for explicit passthrough paths that return the original body unchanged.

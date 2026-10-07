@@ -25,10 +25,13 @@ equivalent normalization.
 
 - Add a shared helper that normalizes the raw `GET /api/security/entity_store/status` response body
   before it is stored in `status_json`: decode the body generically, stable-sort the `engines`
-  array by each element's `type` field, and re-encode. All other fields and key order are left
-  untouched (object key order is already insignificant to `jsontypes.Normalized`, and the raw body
-  may contain fields not modeled by the provider's typed structs, so the normalization must operate
-  on generically-decoded JSON rather than re-marshaling from the typed `entityStoreStatus` struct).
+  array by each element's `type` field, and re-encode. All other fields, including unmodeled and
+  nested fields, must be preserved semantically. Re-encoding may change formatting, object key order,
+  or other incidental byte representation, so exact-byte equality is required only for otherwise
+  identical responses whose `engines` order differs and for explicit passthrough paths that return
+  the original body unchanged. The raw body may contain fields not modeled by the provider's typed
+  structs, so normalization must operate on generically-decoded JSON rather than re-marshaling from
+  the typed `entityStoreStatus` struct.
 - Apply this normalization in both places that currently do
   `model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))`:
   `readEntityStore` ([`internal/kibana/security_entity_store/read.go:55`](../../../internal/kibana/security_entity_store/read.go))
@@ -41,8 +44,8 @@ equivalent normalization.
 ### Modified Capabilities
 
 - `kibana-security-entity-store`: `status_json` (REQ-007) now normalizes `engines` array order
-  before the value is stored, so two reads of logically-identical status data produce an
-  identical `status_json` value regardless of the order Kibana returned `engines` in.
+  before the value is stored, so two otherwise-identical reads produce the same `status_json` value
+  regardless of the order Kibana returned `engines` in.
 - `kibana-security-entity-store-status`: the `_status` data source's `status_json` attribute
   (REQ-001) gets the same normalization, since it is built from the same raw response body via the
   same code pattern.

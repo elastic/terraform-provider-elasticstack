@@ -8,11 +8,11 @@
       map under `"engines"`, and `json.Marshal` the map. On any decode/marshal error, return the
       original `rawBody` unchanged (normalization is cosmetic; it must never turn into a hard Read
       failure).
-- [ ] 1.2 Unit tests for the helper: two engines reversed (`user`,`generic` vs `generic`,`user`)
-      normalize to the same byte output; a single-engine body is unchanged; a `not_installed` body
-      with no/empty `engines` is unchanged; a malformed body is returned unchanged rather than
-      panicking or erroring; all other top-level fields (e.g. `status`) and nested per-engine fields
-      are preserved byte-for-byte aside from array order.
+- [ ] 1.2 Unit tests for the helper: otherwise-identical bodies with two engines reversed
+      (`user`,`generic` vs `generic`,`user`) normalize to the same byte output; a single-engine body
+      and a `not_installed` body with no/empty `engines` preserve all fields semantically, including
+      unmodeled and nested fields; malformed bodies and other explicit passthrough cases are returned
+      byte-for-byte unchanged rather than panicking or erroring.
 
 ## 2. Wire the helper into both Read paths
 
