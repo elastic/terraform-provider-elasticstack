@@ -2,7 +2,9 @@
 
 Define the behavior of the `elasticstack_kibana_security_entity_store` Terraform resource,
 which manages the lifecycle of the Elastic Security Entity Store within a Kibana space.
+
 ## Requirements
+
 ### Requirement: Resource manages Entity Store lifecycle (REQ-001)
 
 The `elasticstack_kibana_security_entity_store` resource SHALL manage the full lifecycle of the
@@ -175,13 +177,32 @@ in `output` blocks or external tooling.
 
 The value SHALL be refreshed on every Read.
 
+Before the response body is stored as `status_json`, the provider SHALL normalize the order of the
+`engines` array within the response by stable-sorting its elements by each element's `type` field.
+This ensures that two reads returning the same logical engine set, but with `engines` in a
+different order, produce byte-identical (and therefore semantically-equal) `status_json` values.
+
 #### Scenario: status_json reflects current status on read
 
 - GIVEN an installed Entity Store resource in state
 - WHEN Terraform refreshes the resource
 - THEN the provider SHALL call `GET /api/security/entity_store/status`
 - AND `status_json` in state SHALL contain the normalized JSON of the full response body
-- AND the value SHALL differ from a previous read if the API response changed
+- AND the value SHALL differ from a previous read if the logical response content changed, excluding engine-array order and insignificant JSON formatting
+
+#### Scenario: status_json is stable across reads despite engine reordering
+
+- GIVEN an installed Entity Store with engines for entity types `generic` and `user`, both in
+  status `running`
+- AND an apply-time `GET /api/security/entity_store/status` response returns `engines` in the order
+  `[generic, user]`
+- AND a subsequent `GET /api/security/entity_store/status` response (e.g. during
+  `terraform import` or a later refresh) returns the same two engines but in the order
+  `[user, generic]`
+- WHEN the provider builds `status_json` from each response
+- THEN both resulting `status_json` values SHALL be equal
+- AND `terraform plan`/`ImportStateVerify` SHALL NOT report a `status_json` difference solely due to
+  the engine order change
 
 ### Requirement: Delete waits for uninstall completion (REQ-WAIT-001)
 
@@ -297,4 +318,3 @@ actual type-presence regressions.
 - WHEN the provider reads and returns `entity_types = ["generic", "host"]`
 - THEN a `TestCheckTypeSetElemAttr` assertion on `"host"` SHALL pass
 - AND an exact-count assertion on `entity_types.# == 1` SHALL be absent from the test
-

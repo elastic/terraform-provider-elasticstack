@@ -36,7 +36,7 @@
 - [x] 4.1 Run
       `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate entity-store-status-json-engine-order --type change`
       and resolve any reported issues.
-- [ ] 4.2 After implementation lands, sync the delta specs into
+- [x] 4.2 After implementation lands, sync the delta specs into
       `openspec/specs/kibana-security-entity-store/` and
       `openspec/specs/kibana-security-entity-store-status/` (or archive the change) per
       `openspec-sync-specs` / `openspec-archive-change`.

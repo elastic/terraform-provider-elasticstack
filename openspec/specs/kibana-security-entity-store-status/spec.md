@@ -14,6 +14,11 @@ The data source SHALL enforce `EnforceMinVersion("9.4.0")` before calling the AP
 
 The data source SHALL NOT modify any API state. It is read-only.
 
+Before the response body is stored as `status_json`, the provider SHALL normalize the order of the
+`engines` array within the response by stable-sorting its elements by each element's `type` field,
+so that two reads returning the same logical engine set, but with `engines` in a different order,
+produce byte-identical (and therefore semantically-equal) `status_json` values.
+
 #### Schema
 
 | Attribute | Type | Description |
@@ -23,7 +28,7 @@ The data source SHALL NOT modify any API state. It is read-only.
 | `installed` | Computed `bool` | `true` when `status != "not_installed"`. |
 | `overall_status` | Computed `string` | The `status` field from the API response. |
 | `engines` | Computed `list(object)` | Per-engine status details (see Engine object below). |
-| `status_json` | Computed `string` | Normalized JSON of the full status response body. |
+| `status_json` | Computed `string` | Normalized JSON of the full status response body, with the `engines` array order stable-sorted by `type` so order alone never causes a diff. |
 | `kibana_connection` | Optional block | Kibana connection configuration (injected by envelope). |
 
 #### Scenario: Data source reads installed status
@@ -50,6 +55,19 @@ The data source SHALL NOT modify any API state. It is read-only.
 - WHEN the data source is read
 - THEN the provider SHALL call `GET /api/security/entity_store/status?include_components=true`
 - AND `engines[].components` SHALL include component-level detail for each engine
+
+#### Scenario: status_json is stable across reads despite engine reordering
+
+- GIVEN an installed Entity Store with engines for entity types `generic` and `user`, both in
+  status `running`
+- AND one `GET /api/security/entity_store/status` response returns `engines` in the order
+  `[generic, user]`
+- AND a later response for the same logical state returns the same two engines in the order
+  `[user, generic]`
+- WHEN the data source builds `status_json` from each response
+- THEN both resulting `status_json` values SHALL be equal
+- AND `terraform plan` SHALL NOT report a `status_json` difference solely due to the engine order
+  change
 
 ### Requirement: Data source is space-scoped (REQ-002)
 
