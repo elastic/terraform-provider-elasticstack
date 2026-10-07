@@ -54,3 +54,17 @@ func TestGetDynamicSettingAttributes_matchesIndexResourceAttributeShapes(t *test
 
 	assert.Equal(t, types.SetType{ElemType: types.StringType}, attrs["query_default_field"].GetType())
 }
+
+func TestGetDynamicSettingAttributes_embeddedLongDescriptionsPreserved(t *testing.T) {
+	attrs := GetDynamicSettingAttributes()
+
+	assert.Equal(t, "Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. "+
+		"The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). "+
+		"The special pipeline name `_none` indicates no ingest pipeline will run.\n",
+		attrs["final_pipeline"].GetDescription())
+
+	assert.Equal(t, "Set the number of characters of the `_source` to include in the slowlog lines. "+
+		"`false` or `0` skips logging the source entirely; `true` logs the entire source regardless of size. "+
+		"The original `_source` is reformatted by default to make sure that it fits on a single log line.\n",
+		attrs["indexing_slowlog_source"].GetDescription())
+}

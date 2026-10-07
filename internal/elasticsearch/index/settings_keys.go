@@ -18,6 +18,8 @@
 package index
 
 import (
+	_ "embed"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -132,17 +134,15 @@ var AllSettingsKeys = func() []string {
 	return all
 }()
 
-// dynamicSettingsDescriptions mirrors the descriptions previously hand-declared
-// in the index resource schema; keys are the Terraform attribute names derived
-// from the Elasticsearch settings keys.
-const (
-	finalPipelineDescription = "Final ingest pipeline for the index. Indexing requests will fail if the final pipeline is set and the pipeline does not exist. " +
-		"The final pipeline always runs after the request pipeline (if specified) and the default pipeline (if it exists). " +
-		"The special pipeline name `_none` indicates no ingest pipeline will run.\n"
-	indexingSlowlogSourceDescription = "Set the number of characters of the `_source` to include in the slowlog lines. " +
-		"`false` or `0` skips logging the source entirely; `true` logs the entire source regardless of size. " +
-		"The original `_source` is reformatted by default to make sure that it fits on a single log line.\n"
-)
+// The long attribute descriptions are embedded from Markdown files in the
+// shared package's descriptions directory, preserving the exact content and
+// trailing newline of the pre-refactor hand-declared form.
+//
+//go:embed descriptions/final_pipeline.md
+var finalPipelineDescription string
+
+//go:embed descriptions/indexing_slowlog_source.md
+var indexingSlowlogSourceDescription string
 
 // GetDynamicSettingAttributes returns the shared schema attributes for every
 // DynamicSettingsKeys entry, keyed by the Terraform attribute name (dotted
