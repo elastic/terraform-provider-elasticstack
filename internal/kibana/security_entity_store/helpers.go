@@ -366,6 +366,62 @@ func flattenEngines(ctx context.Context, engines []entityStoreEngine) (types.Lis
 	return list, nil
 }
 
+// keyedEngine pairs a raw engine JSON payload with its decoded "type" field
+// so sorting permutes keys and payloads together.
+type keyedEngine struct {
+	typeKey string
+	raw     json.RawMessage
+}
+
+// normalizeStatusJSON returns rawBody with the "engines" array stable-sorted by
+// each engine's "type" field, so two responses differing only in engine order
+// normalize to identical bytes. Any body it cannot decode is returned unchanged;
+// normalization is cosmetic and must never fail the Read.
+func normalizeStatusJSON(rawBody []byte) []byte {
+	var body map[string]json.RawMessage
+	if err := json.Unmarshal(rawBody, &body); err != nil {
+		return rawBody
+	}
+	var engines []json.RawMessage
+	if err := json.Unmarshal(body["engines"], &engines); err != nil {
+		return rawBody
+	}
+	// A JSON null "engines" (nil slice) has no elements to sort; re-marshaling
+	// it would rewrite it as an empty array, so it is preserved as-is.
+	if engines == nil {
+		return rawBody
+	}
+	pairs := make([]keyedEngine, len(engines))
+	for i, e := range engines {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(e, &fields); err != nil {
+			return rawBody
+		}
+		pairs[i] = keyedEngine{raw: e}
+		// A missing or non-string "type" sorts first (zero value) and keeps its
+		// original relative position via the stable sort below.
+		var typeKey string
+		if err := json.Unmarshal(fields["type"], &typeKey); err == nil {
+			pairs[i].typeKey = typeKey
+		}
+	}
+	sort.SliceStable(pairs, func(i, j int) bool { return pairs[i].typeKey < pairs[j].typeKey })
+	sortedEngines := make([]json.RawMessage, len(pairs))
+	for i, p := range pairs {
+		sortedEngines[i] = p.raw
+	}
+	sortedBytes, err := json.Marshal(sortedEngines)
+	if err != nil {
+		return rawBody
+	}
+	body["engines"] = sortedBytes
+	normalized, err := json.Marshal(body)
+	if err != nil {
+		return rawBody
+	}
+	return normalized
+}
+
 func getEntityStoreStatus(ctx context.Context, client *clients.KibanaScopedClient, spaceID string, includeComponents bool) (*entityStoreStatus, []byte, diag.Diagnostics) {
 	resp, diags := kibanaoapi.GetSecurityEntityStoreStatus(ctx, client.GetKibanaOapiClient(), spaceID, includeComponents)
 	if diags.HasError() {

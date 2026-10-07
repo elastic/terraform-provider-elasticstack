@@ -19,8 +19,10 @@ package security_entity_store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -29,6 +31,111 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNormalizeStatusJSON_ThreeEnginePermutations(t *testing.T) {
+	t.Parallel()
+
+	engines := map[string]string{
+		"generic": `{"type":"generic","indexPattern":".entities-generic-v1","status":"running"}`,
+		"host":    `{"type":"host","indexPattern":".entities-host-v1","status":"running"}`,
+		"user":    `{"type":"user","indexPattern":".entities-user-v1","status":"running"}`,
+	}
+	canonicalTypes := []string{"generic", "host", "user"}
+
+	permutations := []string{
+		"generic host user", "generic user host", "host generic user",
+		"host user generic", "user generic host", "user host generic",
+	}
+
+	var canonical []byte
+	for _, perm := range permutations {
+		order := strings.Split(perm, " ")
+		rawEngines := make([]string, len(order))
+		for i, engineType := range order {
+			rawEngines[i] = engines[engineType]
+		}
+		body := `{"status":"running","engines":[` + strings.Join(rawEngines, ",") + `]}`
+		normalized := normalizeStatusJSON([]byte(body))
+		if canonical == nil {
+			canonical = normalized
+		} else {
+			assert.Equal(t, string(canonical), string(normalized), "permutation %q normalized to different bytes", perm)
+		}
+		var decoded struct {
+			Engines []struct {
+				Type string `json:"type"`
+			} `json:"engines"`
+		}
+		require.NoError(t, json.Unmarshal(normalized, &decoded))
+		var got []string
+		for _, e := range decoded.Engines {
+			got = append(got, e.Type)
+		}
+		assert.Equal(t, canonicalTypes, got, "permutation %q did not normalize to canonical ascending type order", perm)
+	}
+}
+
+func TestNormalizeStatusJSON_EscapedTypeDuplicateStable(t *testing.T) {
+	t.Parallel()
+
+	// The second engine's type is "user" spelled with a unicode escape; both
+	// decode to the same string, so the sort is a tie and the stable sort must
+	// preserve the original relative order.
+	body := `{"status":"running","engines":[` +
+		`{"type":"user","marker":"first"},` +
+		`{"type":"use\u0072","marker":"second"}` +
+		`]}`
+
+	normalized := normalizeStatusJSON([]byte(body))
+	assert.JSONEq(t, body, string(normalized))
+	var decoded struct {
+		Engines []struct {
+			Type   string `json:"type"`
+			Marker string `json:"marker"`
+		} `json:"engines"`
+	}
+	require.NoError(t, json.Unmarshal(normalized, &decoded))
+	assert.Equal(t, []string{"first", "second"}, []string{decoded.Engines[0].Marker, decoded.Engines[1].Marker})
+}
+
+func TestNormalizeStatusJSON_NullEnginesPreserved(t *testing.T) {
+	t.Parallel()
+
+	body := `{"status":"running","engines":null}`
+	assert.JSONEq(t, body, string(normalizeStatusJSON([]byte(body))))
+}
+
+func TestNormalizeStatusJSON_NonObjectEngineElementPassthrough(t *testing.T) {
+	t.Parallel()
+
+	body := `{"status":"running","engines":["not-an-object"]}`
+	assert.Equal(t, body, string(normalizeStatusJSON([]byte(body))))
+}
+
+func TestNormalizeStatusJSON_EngineOrderStable(t *testing.T) {
+	t.Parallel()
+
+	genericFirst := `{"status":"running","engines":[{"type":"generic","indexPattern":".entities-generic-v1","status":"running"},{"type":"user","indexPattern":".entities-user-v1","status":"running"}]}`
+	userFirst := `{"status":"running","engines":[{"type":"user","indexPattern":".entities-user-v1","status":"running"},{"type":"generic","indexPattern":".entities-generic-v1","status":"running"}]}`
+
+	assert.Equal(t, string(normalizeStatusJSON([]byte(genericFirst))), string(normalizeStatusJSON([]byte(userFirst))))
+}
+
+func TestNormalizeStatusJSON(t *testing.T) {
+	t.Parallel()
+
+	singleEngine := `{"status":"running","engines":[{"type":"user","indexPattern":".entities-user-v1","status":"running","unmodeled":{"nested":true}}]}`
+	notInstalled := `{"status":"not_installed"}`
+	enginesEmpty := `{"status":"running","engines":[]}`
+	malformed := []byte(`{"status":"running","engines":`)
+	missingEngineType := `{"status":"running","engines":[{"indexPattern":".entities-user-v1"}]}`
+
+	assert.JSONEq(t, singleEngine, string(normalizeStatusJSON([]byte(singleEngine))))
+	assert.Equal(t, notInstalled, string(normalizeStatusJSON([]byte(notInstalled))))
+	assert.JSONEq(t, enginesEmpty, string(normalizeStatusJSON([]byte(enginesEmpty))))
+	assert.Equal(t, malformed, normalizeStatusJSON(malformed))
+	assert.JSONEq(t, missingEngineType, string(normalizeStatusJSON([]byte(missingEngineType))))
+}
 
 func TestUninstallWaitDiagsFromError(t *testing.T) {
 	t.Parallel()

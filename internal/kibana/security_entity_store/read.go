@@ -52,6 +52,6 @@ func readEntityStore(
 	model.EntityTypes = entityTypes
 	model.Started = types.BoolValue(started)
 	model.LogExtraction = logExtraction
-	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
+	model.StatusJSON = jsontypes.NewNormalizedValue(string(normalizeStatusJSON(rawBody)))
 	return model, true, append(diags, flattenDiags...)
 }

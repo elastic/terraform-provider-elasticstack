@@ -45,6 +45,6 @@ func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScoped
 	}
 	model.Engines = engines
 
-	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
+	model.StatusJSON = jsontypes.NewNormalizedValue(string(normalizeStatusJSON(rawBody)))
 	return model, true, nil
 }
