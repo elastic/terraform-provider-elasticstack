@@ -93,8 +93,12 @@ func newIndexSettingsTestServer(t *testing.T, indexExists, putFails bool) (*clie
 				},
 			})
 		case r.Method == http.MethodPut && r.URL.Path == "/"+indexName+"/_settings":
+			// UseNumber keeps numeric tokens exact (json.Number), so tests can
+			// assert integers beyond float64 precision without rounding.
+			decoder := json.NewDecoder(r.Body)
+			decoder.UseNumber()
 			var body map[string]any
-			_ = json.NewDecoder(r.Body).Decode(&body)
+			_ = decoder.Decode(&body)
 			putBodies = append(putBodies, body)
 			if putFails {
 				writeJSONStatus(w, http.StatusInternalServerError, map[string]any{
@@ -138,7 +142,7 @@ func TestCreateIndexSettings_IndexExistsSendsDeclaredSettings(t *testing.T) {
 	require.Equal(t, "test-cluster-uuid/"+indexName, result.Model.ID.ValueString())
 	require.Len(t, *putBodies, 1)
 	require.Equal(t, map[string]any{
-		"index.mapping.total_fields.limit": float64(5000),
+		"index.mapping.total_fields.limit": json.Number("5000"),
 	}, (*putBodies)[0])
 }
 
@@ -160,6 +164,30 @@ func TestCreateIndexSettings_IndexOnlyIssuesNoSettingsPut(t *testing.T) {
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	require.Equal(t, "test-cluster-uuid/"+indexName, result.Model.ID.ValueString())
 	require.Empty(t, *putBodies, "index-only create must not issue a settings PUT")
+}
+
+// PR hardening: settings_json numeric values must reach the wire payload as
+// exact JSON tokens. Integers beyond float64 precision (2^53) must not be
+// rounded, so distinct large-integer plans send distinct payloads.
+func TestCreateIndexSettings_SettingsJSONNumbersSentWithExactTokens(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	plan := tfModel{
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"index.max_result_window": 9007199254740993, "index.max_terms_count": 1.5}`),
+	}
+
+	_, diags := createIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{Plan: plan})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.max_result_window": json.Number("9007199254740993"),
+		"index.max_terms_count":   json.Number("1.5"),
+	}, (*putBodies)[0], "numeric settings_json values must be sent with their exact JSON tokens")
 }
 
 // REQ-002: typed Set and settings_json array values serialize as real JSON
@@ -230,6 +258,36 @@ func TestUpdateIndexSettings_ArrayValuesSerializeAsJSONArrays(t *testing.T) {
 	}, (*putBodies)[0])
 }
 
+// PR hardening: the update diff compares exact numeric tokens after key
+// canonicalization, so integers differing beyond float64 precision (2^53)
+// trigger a settings update instead of comparing equal.
+func TestUpdateIndexSettings_DistinctLargeIntegersAreNotEqual(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	prior := tfModel{
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"index.max_result_window": 9007199254740993}`),
+	}
+	plan := tfModel{
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"max_result_window": 9007199254740994}`),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1, "distinct integers beyond 2^53 must not compare equal in the canonical diff")
+	require.Equal(t, map[string]any{
+		"max_result_window": json.Number("9007199254740994"),
+	}, (*putBodies)[0])
+}
+
 func TestUpdateIndexSettings_ChangedSettingSendsUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -253,8 +311,38 @@ func TestUpdateIndexSettings_ChangedSettingSendsUpdate(t *testing.T) {
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	require.Len(t, *putBodies, 1)
 	require.Equal(t, map[string]any{
-		"index.mapping.total_fields.limit": float64(5000),
+		"index.mapping.total_fields.limit": json.Number("5000"),
 	}, (*putBodies)[0])
+}
+
+// PR hardening: the canonical diff stays independent of `index.` prefix
+// spellings and of the numeric source (typed Int64 attribute vs settings_json
+// token, integers and decimals alike), so a semantically unchanged
+// declaration never issues a PUT.
+func TestUpdateIndexSettings_CanonicalEquivalenceSkipsAPICall(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	prior := tfModel{
+		Index:           types.StringValue(indexName),
+		MaxResultWindow: types.Int64Value(20000),
+		SettingsJSON:    jsontypes.NewNormalizedValue(`{"index.max_terms_count": 1.5, "some.setting": "x"}`),
+	}
+	plan := tfModel{
+		Index:           types.StringValue(indexName),
+		MaxResultWindow: types.Int64Value(20000),
+		SettingsJSON:    jsontypes.NewNormalizedValue(`{"max_terms_count": 1.5, "index.some.setting": "x"}`),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Empty(t, *putBodies, "prefix-spelling and numeric-source differences must not issue a PUT when the canonical values are unchanged")
 }
 
 func TestUpdateIndexSettings_UnchangedSkipsAPICall(t *testing.T) {
@@ -326,7 +414,7 @@ func TestUpdateIndexSettings_RemovedSettingsJSONKeySendsNull(t *testing.T) {
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	require.Len(t, *putBodies, 1)
 	require.Equal(t, map[string]any{
-		"index.number_of_replicas": float64(2),
+		"index.number_of_replicas": json.Number("2"),
 		"index.refresh_interval":   nil,
 	}, (*putBodies)[0])
 }
@@ -374,7 +462,7 @@ func TestCreateIndexSettings_MergesSettingsJSONWithTypedAttributes(t *testing.T)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
 	require.Len(t, *putBodies, 1)
 	require.Equal(t, map[string]any{
-		"index.mapping.total_fields.limit":          float64(5000),
+		"index.mapping.total_fields.limit":          json.Number("5000"),
 		"index.refresh_interval":                    "5s",
 		"index.search.slowlog.threshold.query.warn": "10s",
 	}, (*putBodies)[0])

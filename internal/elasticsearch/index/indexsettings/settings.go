@@ -19,7 +19,6 @@ package indexsettings
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -93,14 +92,11 @@ func declaredSettingsPayload(model tfModel) (map[string]any, diag.Diagnostics) {
 				diag.NewErrorDiagnostic("Invalid settings_json", "`settings_json` must be a valid JSON object string."),
 			}
 		}
+		// The raw value keeps the exact JSON token so integers beyond float64
+		// precision are neither rounded on the wire nor collapsed in the update
+		// diff, where json.Marshal re-encodes them verbatim.
 		for key, raw := range settings {
-			var value any
-			if err := json.Unmarshal(raw, &value); err != nil {
-				return nil, diag.Diagnostics{
-					diag.NewErrorDiagnostic("Invalid settings_json", fmt.Sprintf("invalid value for setting %q.", key)),
-				}
-			}
-			payload[key] = value
+			payload[key] = raw
 		}
 	}
 
