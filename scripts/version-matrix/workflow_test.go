@@ -76,7 +76,7 @@ func TestVersionMatrixWorkflow_gitAddMatchesDefaultArtifactPath(t *testing.T) {
 	t.Parallel()
 
 	push := workflowStepByID(t, "push")
-	assert.Contains(t, push.Run, "git add "+defaultArtifactPath)
+	assert.Contains(t, push.Run, "git add "+defaultArtifactPath+" "+defaultEnvTemplatePath)
 }
 
 func TestVersionMatrixWorkflow_stepGatesAndCheckoutRef(t *testing.T) {
@@ -100,8 +100,12 @@ func TestVersionMatrixWorkflow_stepGatesAndCheckoutRef(t *testing.T) {
 	assert.Empty(t, compute.If)
 	assert.Equal(t, "go run ./scripts/version-matrix compute", strings.TrimSpace(compute.Run))
 
+	syncEnv := workflowStepByID(t, "sync_env")
+	assert.Empty(t, syncEnv.If)
+	assert.Equal(t, "go run ./scripts/version-matrix sync-env", strings.TrimSpace(syncEnv.Run))
+
 	push := workflowStepByID(t, "push")
-	assert.Equal(t, "steps.compute.outputs.changed == 'true'", push.If)
+	assert.Equal(t, "steps.compute.outputs.changed == 'true' || steps.sync_env.outputs.changed == 'true'", push.If)
 
 	lookup := workflowStepByID(t, "lookup_pr")
 	assert.Equal(t, "steps.push.outputs.pushed == 'true'", lookup.If)
@@ -146,7 +150,7 @@ func TestVersionMatrixWorkflow_pushRunsOnlyWhenChanged(t *testing.T) {
 	t.Parallel()
 
 	push := workflowStepByID(t, "push")
-	assert.Equal(t, "steps.compute.outputs.changed == 'true'", push.If)
+	assert.Equal(t, "steps.compute.outputs.changed == 'true' || steps.sync_env.outputs.changed == 'true'", push.If)
 }
 
 func TestVersionMatrixWorkflow_hasDailyScheduleAndDispatch(t *testing.T) {
