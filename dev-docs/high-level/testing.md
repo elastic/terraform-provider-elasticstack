@@ -16,7 +16,7 @@ General workflow (all acceptance coverage, not only the examples harness):
 - Prefer targeted runs: `go test -v [-run 'filter'] <package>`
 - When instructed, run the full suite with `make testacc`
 - The Elastic stack may already be running; check before starting a new environment (`curl -u $ELASTICSEARCH_USERNAME:$ELASTICSEARCH_PASSWORD $ELASTICSEARCH_ENDPOINTS`)
-- To start local stack services if needed (set `STACK_VERSION` when a specific version is required): `make docker-fleet`
+- To start local stack services if needed (set `STACK_VERSION` when a specific version is required; the default in `.env.template` is bumped automatically to the latest GA by the version-matrix workflow): `make docker-fleet`
 
 ### Worktree stack isolation and ports
 

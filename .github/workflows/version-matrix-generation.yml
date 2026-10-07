@@ -31,15 +31,19 @@ jobs:
         id: compute
         run: go run ./scripts/version-matrix compute
 
+      - name: Sync STACK_VERSION in .env.template
+        id: sync_env
+        run: go run ./scripts/version-matrix sync-env
+
       - name: Push to acceptance-test-version-matrix branch
         id: push
-        if: steps.compute.outputs.changed == 'true'
+        if: steps.compute.outputs.changed == 'true' || steps.sync_env.outputs.changed == 'true'
         env:
           GH_AW_CI_TRIGGER_TOKEN: ${{ secrets.GH_AW_CI_TRIGGER_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/versions/acceptance-test-matrix.json
+          git add .github/versions/acceptance-test-matrix.json .env.template
           if git diff --cached --quiet; then
             echo "No changes to commit"
             echo "pushed=false" >> $GITHUB_OUTPUT
