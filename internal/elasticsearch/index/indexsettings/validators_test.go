@@ -98,6 +98,28 @@ func TestSettingsJSONValidator(t *testing.T) {
 			wantErr:    true,
 			wantDetail: "null",
 		},
+		{
+			name:    "scalar array is permitted",
+			raw:     `{"index.query.default_field": ["title", "body"]}`,
+			wantErr: false,
+		},
+		{
+			name:    "empty array is permitted",
+			raw:     `{"some.future.array.setting": []}`,
+			wantErr: false,
+		},
+		{
+			name:       "null array element is rejected",
+			raw:        `{"index.query.default_field": ["title", null]}`,
+			wantErr:    true,
+			wantDetail: "may only contain scalar elements",
+		},
+		{
+			name:       "object array element is rejected",
+			raw:        `{"index.query.default_field": [{"field": "title"}]}`,
+			wantErr:    true,
+			wantDetail: "may only contain scalar elements",
+		},
 	}
 
 	for _, tt := range tests {
@@ -136,33 +158,33 @@ func TestValidateDeclaredSettings(t *testing.T) {
 	tests := []struct {
 		name         string
 		replicas     types.Int64
-		settingsJSON string
+		settingsJSON jsontypes.Normalized
 		wantErr      bool
 		wantDetail   string
 	}{
 		{
 			name:         "typed attribute and settings_json key overlap",
 			replicas:     types.Int64Value(1),
-			settingsJSON: `{"number_of_replicas": 2}`,
+			settingsJSON: jsontypes.NewNormalizedValue(`{"number_of_replicas": 2}`),
 			wantErr:      true,
 			wantDetail:   "number_of_replicas",
 		},
 		{
 			name:         "overlap after index prefix canonicalization",
 			replicas:     types.Int64Value(1),
-			settingsJSON: `{"index.number_of_replicas": 2}`,
+			settingsJSON: jsontypes.NewNormalizedValue(`{"index.number_of_replicas": 2}`),
 			wantErr:      true,
 			wantDetail:   "number_of_replicas",
 		},
 		{
 			name:         "distinct keys do not overlap",
 			replicas:     types.Int64Value(1),
-			settingsJSON: `{"max_result_window": 20000}`,
+			settingsJSON: jsontypes.NewNormalizedValue(`{"max_result_window": 20000}`),
 			wantErr:      false,
 		},
 		{
 			name:         "settings_json only",
-			settingsJSON: `{"max_result_window": 20000}`,
+			settingsJSON: jsontypes.NewNormalizedValue(`{"max_result_window": 20000}`),
 			wantErr:      false,
 		},
 		{
@@ -171,18 +193,23 @@ func TestValidateDeclaredSettings(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:       "no setting declared",
-			wantErr:    true,
-			wantDetail: "at least one",
+			name:    "index-only configuration is valid",
+			wantErr: false,
+		},
+		{
+			name:         "unknown settings_json value defers the overlap check",
+			settingsJSON: jsontypes.NewNormalizedUnknown(),
+			wantErr:      false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			model := tfModel{NumberOfReplicas: tt.replicas}
-			if tt.settingsJSON != "" {
-				model.SettingsJSON = jsontypes.NewNormalizedValue(tt.settingsJSON)
-			} else {
+			switch {
+			case tt.settingsJSON.IsUnknown() || tt.settingsJSON.ValueString() != "":
+				model.SettingsJSON = tt.settingsJSON
+			default:
 				model.SettingsJSON = jsontypes.NewNormalizedNull()
 			}
 

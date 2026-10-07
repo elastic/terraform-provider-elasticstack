@@ -59,6 +59,12 @@ func createIndexSettings(ctx context.Context, client *clients.ElasticsearchScope
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags
 	}
 
+	// An index-only declaration declares no settings; it still verifies the
+	// index exists and records the resource in state, without issuing a PUT.
+	if len(settings) == 0 {
+		return entitycore.WriteResult[tfModel]{Model: plan}, diags
+	}
+
 	diags.Append(elasticsearch.UpdateIndexSettings(ctx, client, indexName, settings)...)
 	if diags.HasError() {
 		return entitycore.WriteResult[tfModel]{Model: plan}, diags

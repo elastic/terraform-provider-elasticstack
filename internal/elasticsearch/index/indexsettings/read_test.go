@@ -257,6 +257,90 @@ func TestReadIndexSettings_SettingsJSONScalarsRoundTrip(t *testing.T) {
 	require.Equal(t, stateSettings, readSettings, "reconciled settings_json keys must round-trip without false drift")
 }
 
+// REQ-004: array-valued settings_json keys round-trip without drift when
+// Elasticsearch returns the array as a JSON-encoded string in the flat
+// settings response; element order is preserved and a tracked array is
+// never silently dropped, even when it is empty.
+func TestReadIndexSettings_SettingsJSONEncodedArrayRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client := newIndexSettingsReadTestServer(t, true, map[string]any{
+		"index.query.default_field": `["title","body"]`,
+		"some.future.array.setting": `[]`,
+		"some.number.array":         `[1,2]`,
+		"some.bool.array":           `[true]`,
+	})
+
+	state := tfModel{
+		ID:           types.StringValue("test-cluster-uuid/" + indexName),
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"index.query.default_field":["title","body"],"some.future.array.setting":[],"some.number.array":[1,2],"some.bool.array":[true]}`),
+	}
+
+	read, found, diags := readIndexSettings(context.Background(), client, indexName, state)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.True(t, found)
+
+	var readSettings map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(read.SettingsJSON.ValueString()), &readSettings))
+	require.JSONEq(t, `["title","body"]`, string(readSettings["index.query.default_field"]), "tracked string array must round-trip with element order preserved")
+	require.JSONEq(t, `[]`, string(readSettings["some.future.array.setting"]), "tracked empty array must round-trip")
+	require.JSONEq(t, `[1,2]`, string(readSettings["some.number.array"]), "tracked number array must round-trip")
+	require.JSONEq(t, `[true]`, string(readSettings["some.bool.array"]), "tracked bool array must round-trip")
+}
+
+// REQ-004: array-valued settings_json keys arriving as real JSON arrays in
+// the API response reconcile against the declared element types; a changed
+// array surfaces as drift taken from the API, preserving element order.
+func TestReadIndexSettings_SettingsJSONRealArrayReconciles(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client := newIndexSettingsReadTestServer(t, true, map[string]any{
+		"index.query.default_field": []any{"body", "title"},
+	})
+
+	state := tfModel{
+		ID:           types.StringValue("test-cluster-uuid/" + indexName),
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"index.query.default_field":["title","body"]}`),
+	}
+
+	read, found, diags := readIndexSettings(context.Background(), client, indexName, state)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.True(t, found)
+
+	var readSettings map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(read.SettingsJSON.ValueString()), &readSettings))
+	require.JSONEq(t, `["body","title"]`, string(readSettings["index.query.default_field"]), "API array order must be preserved as drift")
+}
+
+// REQ-004: the typed query_default_field attribute decodes a JSON-encoded
+// string array from the flat API response, mirroring the index resource's
+// stringSliceFromAny decoding, so an unchanged typed set shows no drift.
+func TestReadIndexSettings_TypedQueryDefaultFieldDecodesEncodedArray(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client := newIndexSettingsReadTestServer(t, true, map[string]any{
+		"index.query.default_field": `["title","body"]`,
+	})
+
+	state := tfModel{
+		ID:    types.StringValue("test-cluster-uuid/" + indexName),
+		Index: types.StringValue(indexName),
+	}
+	stateSet, setDiags := types.SetValueFrom(context.Background(), types.StringType, []string{"title", "body"})
+	require.False(t, setDiags.HasError(), "unexpected diagnostics: %v", setDiags.Errors())
+	state.QueryDefaultField = stateSet
+
+	read, found, diags := readIndexSettings(context.Background(), client, indexName, state)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.True(t, found)
+	require.Equal(t, state.QueryDefaultField, read.QueryDefaultField, "encoded string array must hydrate the typed set without drift")
+}
+
 func TestReadIndexSettings_NotFoundReportsNotFound(t *testing.T) {
 	t.Parallel()
 

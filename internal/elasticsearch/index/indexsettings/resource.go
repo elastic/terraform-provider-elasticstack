@@ -52,9 +52,10 @@ func NewIndexSettingsResource() resource.Resource {
 	return newIndexSettingsResource()
 }
 
-// ValidateConfig runs the resource-level declared-settings validation: at
-// least one typed dynamic-setting attribute or settings_json key must be set,
-// and no settings_json key may overlap a configured typed attribute.
+// ValidateConfig runs the resource-level declared-settings validation: no
+// settings_json key may overlap a configured typed dynamic attribute. An
+// index-only configuration is valid; the empty settings_json object is
+// rejected by the attribute validator.
 func (r *indexSettingsResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
 	var config tfModel
 

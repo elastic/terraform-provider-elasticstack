@@ -56,9 +56,10 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 	attributes["settings_json"] = schema.StringAttribute{
 		Optional: true,
 		MarkdownDescription: "Flat JSON object of dynamic index settings not covered by the typed attributes " +
-			"(e.g. `{\"max_result_window\": 20000}`). Use flat dotted setting keys; creation-time-only " +
-			"(static) settings, nested objects and explicit `null` values are rejected. To reset a setting, " +
-			"omit it. Keys set here must not also be set via a typed attribute.",
+			"(e.g. `{\"max_result_window\": 20000}`). Use flat dotted setting keys; values are scalars or arrays of " +
+			"scalars (including empty arrays). Creation-time-only (static) settings, nested objects, explicit `null` " +
+			"values and object or null array elements are rejected. To reset a setting, omit it. Keys set here must " +
+			"not also be set via a typed attribute.",
 		CustomType: jsontypes.NormalizedType{},
 		Validators: []validator.String{
 			validators.StringIsJSONObject{

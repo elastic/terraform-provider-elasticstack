@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"strconv"
+	"strings"
 
 	esttypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -244,7 +245,7 @@ func reconcileSettingJSONValue(stateRaw, apiRaw json.RawMessage) (json.RawMessag
 		return nil, false
 	}
 
-	switch declared.(type) {
+	switch declared := declared.(type) {
 	case float64:
 		var s string
 		if err := json.Unmarshal(apiRaw, &s); err == nil {
@@ -281,9 +282,69 @@ func reconcileSettingJSONValue(stateRaw, apiRaw json.RawMessage) (json.RawMessag
 			return apiRaw, true
 		}
 		return nil, false
+	case []any:
+		return reconcileArraySettingJSONValue(declared, apiRaw)
 	default:
 		return nil, false
 	}
+}
+
+// reconcileArraySettingJSONValue reconciles an API flat-settings array value
+// (a real JSON array or a JSON-encoded array string) element-wise against the
+// element types declared in state, preserving element order. When the API
+// array length differs from the declared one the API array is returned as-is
+// so the drift shows instead of the tracked array being dropped.
+func reconcileArraySettingJSONValue(declared []any, apiRaw json.RawMessage) (json.RawMessage, bool) {
+	elements, ok := arrayElementsFromFlatRaw(apiRaw)
+	if !ok {
+		return nil, false
+	}
+
+	if len(elements) != len(declared) {
+		encoded, err := json.Marshal(elements)
+		if err != nil {
+			return nil, false
+		}
+		return encoded, true
+	}
+
+	reconciled := make([]json.RawMessage, len(elements))
+	for i, apiElement := range elements {
+		declaredRaw, err := json.Marshal(declared[i])
+		if err != nil {
+			return nil, false
+		}
+		value, ok := reconcileSettingJSONValue(declaredRaw, apiElement)
+		if !ok {
+			return nil, false
+		}
+		reconciled[i] = value
+	}
+
+	encoded, err := json.Marshal(reconciled)
+	if err != nil {
+		return nil, false
+	}
+	return encoded, true
+}
+
+// arrayElementsFromFlatRaw extracts the elements of a flat API settings array
+// value that arrives either as a real JSON array or as a JSON-encoded array
+// string. ok is false when the value is neither array form.
+func arrayElementsFromFlatRaw(raw json.RawMessage) ([]json.RawMessage, bool) {
+	var elements []json.RawMessage
+	if err := json.Unmarshal(raw, &elements); err == nil && elements != nil {
+		return elements, true
+	}
+
+	var encoded string
+	if err := json.Unmarshal(raw, &encoded); err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(encoded)), &elements); err != nil || elements == nil {
+		return nil, false
+	}
+	return elements, true
 }
 
 // flatSettingAsTypedValue converts a flat API settings value to the declared
@@ -344,6 +405,16 @@ func stringElemsFromFlatRaw(raw json.RawMessage) []string {
 
 	switch value := v.(type) {
 	case string:
+		// A string value may itself be a JSON-encoded string array (for
+		// example index.query.default_field), mirroring the index resource's
+		// stringSliceFromAny decoding.
+		trimmed := strings.TrimSpace(value)
+		if strings.HasPrefix(trimmed, "[") {
+			var arr []string
+			if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
+				return arr
+			}
+		}
 		return []string{value}
 	case []any:
 		elems := make([]string, 0, len(value))

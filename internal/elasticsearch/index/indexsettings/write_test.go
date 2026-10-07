@@ -142,6 +142,94 @@ func TestCreateIndexSettings_IndexExistsSendsDeclaredSettings(t *testing.T) {
 	}, (*putBodies)[0])
 }
 
+// REQ-002: an index-only create (no typed attribute, no settings_json) still
+// verifies the target index exists and records the resource in state with the
+// computed id, but issues no PUT /{index}/_settings call.
+func TestCreateIndexSettings_IndexOnlyIssuesNoSettingsPut(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	plan := tfModel{
+		Index: types.StringValue(indexName),
+	}
+
+	result, diags := createIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{Plan: plan})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Equal(t, "test-cluster-uuid/"+indexName, result.Model.ID.ValueString())
+	require.Empty(t, *putBodies, "index-only create must not issue a settings PUT")
+}
+
+// REQ-002: typed Set and settings_json array values serialize as real JSON
+// arrays (not JSON-encoded strings) in the PUT /{index}/_settings payload.
+func TestCreateIndexSettings_ArrayValuesSerializeAsJSONArrays(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	queryDefaultField, setDiags := types.SetValueFrom(context.Background(), types.StringType, []string{"title", "body"})
+	require.False(t, setDiags.HasError(), "unexpected diagnostics: %v", setDiags.Errors())
+
+	plan := tfModel{
+		Index:             types.StringValue(indexName),
+		QueryDefaultField: queryDefaultField,
+		SettingsJSON:      jsontypes.NewNormalizedValue(`{"some.future.array.setting":["a","b"]}`),
+	}
+
+	_, diags := createIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{Plan: plan})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.query.default_field": []any{"title", "body"},
+		"some.future.array.setting": []any{"a", "b"},
+	}, (*putBodies)[0])
+}
+
+// REQ-003: changed array values serialize as real JSON arrays in the update
+// payload, and a settings_json array key removed from the declaration is
+// sent as null so Elasticsearch resets it.
+func TestUpdateIndexSettings_ArrayValuesSerializeAsJSONArrays(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client, putBodies := newIndexSettingsTestServer(t, true, false)
+
+	priorQueryDefaultField, setDiags := types.SetValueFrom(context.Background(), types.StringType, []string{"title"})
+	require.False(t, setDiags.HasError(), "unexpected diagnostics: %v", setDiags.Errors())
+
+	prior := tfModel{
+		Index:             types.StringValue(indexName),
+		QueryDefaultField: priorQueryDefaultField,
+		SettingsJSON:      jsontypes.NewNormalizedValue(`{"some.future.array.setting":["a"]}`),
+	}
+
+	planQueryDefaultField, planSetDiags := types.SetValueFrom(context.Background(), types.StringType, []string{"title", "body"})
+	require.False(t, planSetDiags.HasError(), "unexpected diagnostics: %v", planSetDiags.Errors())
+
+	plan := tfModel{
+		Index:             types.StringValue(indexName),
+		QueryDefaultField: planQueryDefaultField,
+		SettingsJSON:      jsontypes.NewNormalizedValue(`{"other.future.array.setting":["x"]}`),
+	}
+
+	_, diags := updateIndexSettings(context.Background(), client, entitycore.WriteRequest[tfModel]{
+		Plan:  plan,
+		Prior: &prior,
+	})
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.Len(t, *putBodies, 1)
+	require.Equal(t, map[string]any{
+		"index.query.default_field":  []any{"title", "body"},
+		"other.future.array.setting": []any{"x"},
+		"some.future.array.setting":  nil,
+	}, (*putBodies)[0])
+}
+
 func TestUpdateIndexSettings_ChangedSettingSendsUpdate(t *testing.T) {
 	t.Parallel()
 

@@ -33,7 +33,8 @@ import (
 // settingsJSONValidator validates `settings_json` at plan time. The value must
 // be a non-empty flat JSON object whose top-level keys are complete settings
 // paths: creation-time-only (static) keys, nested object values, explicit null
-// values and the empty object are all rejected. Keys outside
+// values, the empty object and object or null array elements are all rejected.
+// Values are scalars or arrays of scalars (including empty arrays). Keys outside
 // indexparent.AllSettingsKeys are permitted so new Elasticsearch dynamic
 // settings work before they are modeled as typed attributes.
 type settingsJSONValidator struct{}
@@ -95,6 +96,17 @@ func validateSettingsJSONEntry(key string, raw json.RawMessage) *string {
 		return &detail
 	}
 
+	var array []json.RawMessage
+	if err := json.Unmarshal(raw, &array); err == nil && array != nil {
+		for _, element := range array {
+			if !scalarSettingsJSONValue(element) {
+				detail := "`settings_json` array values may only contain scalar elements (string, number, or boolean); " +
+					"object or null elements are not allowed. Invalid element in key: " + key + "."
+				return &detail
+			}
+		}
+	}
+
 	if settingKeyIsStatic(key) {
 		detail := "Setting key " + key + " can only be set at index creation time; " +
 			"this resource updates settings on an existing index and cannot change it."
@@ -104,10 +116,26 @@ func validateSettingsJSONEntry(key string, raw json.RawMessage) *string {
 	return nil
 }
 
-// validateDeclaredSettings returns plan-time diagnostics when the configured
-// model declares no setting at all, or when a settings_json key overlaps a
-// configured typed dynamic-setting attribute (after canonicalizing key
-// spellings with or without the `index.` prefix).
+// scalarSettingsJSONValue reports whether a raw settings_json value is a
+// scalar (string, number, or boolean); null values are not scalars.
+func scalarSettingsJSONValue(raw json.RawMessage) bool {
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return false
+	}
+	switch value.(type) {
+	case string, float64, bool:
+		return true
+	default:
+		return false
+	}
+}
+
+// validateDeclaredSettings returns plan-time diagnostics when a settings_json
+// key overlaps a configured typed dynamic-setting attribute (after canonicalizing
+// key spellings with or without the `index.` prefix). An index-only configuration
+// (no typed attribute, no settings_json) is valid, so no minimum number of declared
+// settings is enforced; values unknown at plan time defer their checks.
 func validateDeclaredSettings(model tfModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -131,14 +159,6 @@ func validateDeclaredSettings(model tfModel) diag.Diagnostics {
 		for key := range settings {
 			settingsJSONKeys[normalizeSettingsKey(key)] = true
 		}
-	}
-
-	if len(declaredTyped) == 0 && len(settingsJSONKeys) == 0 {
-		diags.AddError(
-			"Invalid index settings declaration",
-			"At least one dynamic setting must be declared: set at least one typed dynamic-setting attribute or `settings_json`.",
-		)
-		return diags
 	}
 
 	for key := range settingsJSONKeys {

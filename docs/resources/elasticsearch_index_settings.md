@@ -81,7 +81,7 @@ resource "elasticstack_elasticsearch_index_settings" "my_index_settings" {
 - `search_slowlog_threshold_query_info` (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `5s`
 - `search_slowlog_threshold_query_trace` (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `500ms`
 - `search_slowlog_threshold_query_warn` (String) Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `10s`
-- `settings_json` (String) Flat JSON object of dynamic index settings not covered by the typed attributes (e.g. `{"max_result_window": 20000}`). Use flat dotted setting keys; creation-time-only (static) settings, nested objects and explicit `null` values are rejected. To reset a setting, omit it. Keys set here must not also be set via a typed attribute.
+- `settings_json` (String) Flat JSON object of dynamic index settings not covered by the typed attributes (e.g. `{"max_result_window": 20000}`). Use flat dotted setting keys; values are scalars or arrays of scalars (including empty arrays). Creation-time-only (static) settings, nested objects, explicit `null` values and object or null array elements are rejected. To reset a setting, omit it. Keys set here must not also be set via a typed attribute.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 - `unassigned_node_left_delayed_timeout` (String) Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`
 
