@@ -200,6 +200,41 @@ func TestAccResourceIndexSettings_importHydratesOnce(t *testing.T) {
 	})
 }
 
+// REQ-004: numeric and boolean settings_json keys round-trip without drift:
+// Elasticsearch returns "20000"/"false" as strings in the flat settings
+// response and the read reconciles them back to the declared JSON types, so
+// the re-apply of the same configuration plans no changes.
+func TestAccResourceIndexSettings_settingsJSONScalarTypesRoundTrip(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexSettingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("scalars"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(indexSettingsResourceName, "settings_json", `{"index.blocks.read_only":false,"index.max_result_window":20000,"index.refresh_interval":"10s"}`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("scalars"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+		},
+	})
+}
+
 // REQ-005: destroy is a no-op; the settings remain on the index.
 func TestAccResourceIndexSettings_destroyIsNoop(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)

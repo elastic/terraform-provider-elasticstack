@@ -107,8 +107,7 @@ func TestAccResourceIndexSettings_validationSettingsJSONStaticKey(t *testing.T) 
 
 // Unmodeled dynamic keys are permitted: `terraform validate`/`plan` SHALL NOT
 // emit a validation error. A plan-only step exercises plan-time validation
-// without applying, so the not-yet-implemented Create callback is never
-// invoked and the config must validate cleanly.
+// without applying, so the config must validate cleanly.
 func TestAccResourceIndexSettings_validationSettingsJSONUnmodeledKey(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -123,14 +122,49 @@ func TestAccResourceIndexSettings_validationSettingsJSONUnmodeledKey(t *testing.
 	})
 }
 
-func TestAccResourceIndexSettings_validationAtLeastOneSettingRequired(t *testing.T) {
+// REQ-001: an index-only configuration (index set, no typed dynamic-setting
+// attribute and no settings_json) is valid; `terraform plan` SHALL NOT emit a
+// validation error for the absence of declared settings.
+func TestAccResourceIndexSettings_validationIndexOnlyConfigIsValid(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
-				ExpectError:              regexp.MustCompile(`(?i)at least one`),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
+			},
+		},
+	})
+}
+
+// REQ-001: settings_json values may be arrays of scalars, including empty
+// arrays; `terraform plan` SHALL NOT emit a validation error for either.
+func TestAccResourceIndexSettings_validationSettingsJSONArrayValues(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
+			},
+		},
+	})
+}
+
+// REQ-001: settings_json array elements must be scalars; null (or object)
+// elements are rejected at plan time.
+func TestAccResourceIndexSettings_validationSettingsJSONNullArrayElement(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ExpectError:              regexp.MustCompile(`(?i)may only contain scalar elements`),
 			},
 		},
 	})
