@@ -75,6 +75,12 @@ func TestSettingsJSONValidator(t *testing.T) {
 			wantDetail: "at least one setting",
 		},
 		{
+			name:       "canonical aliases of the same key are rejected",
+			raw:        `{"number_of_replicas": 2, "index.number_of_replicas": 3}`,
+			wantErr:    true,
+			wantDetail: "declare the same setting twice",
+		},
+		{
 			name:       "static key is rejected",
 			raw:        `{"number_of_shards": 3}`,
 			wantErr:    true,

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -71,12 +72,41 @@ func (settingsJSONValidator) ValidateString(_ context.Context, req validator.Str
 		return
 	}
 
+	if detail := duplicateCanonicalKeyDetail(settings); detail != "" {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid settings_json", detail)
+		return
+	}
+
 	for key, raw := range settings {
 		if err := validateSettingsJSONEntry(key, raw); err != nil {
 			resp.Diagnostics.AddAttributeError(req.Path, "Invalid settings_json", *err)
 			return
 		}
 	}
+}
+
+// duplicateCanonicalKeyDetail returns the deterministic error detail to report
+// when two settings_json keys canonicalize to the same setting (for example
+// `number_of_replicas` and `index.number_of_replicas`), or "" when every
+// canonical key is unique. Elasticsearch stores a single value per setting,
+// so two spellings of the same key could never converge.
+func duplicateCanonicalKeyDetail(settings map[string]json.RawMessage) string {
+	keys := make([]string, 0, len(settings))
+	for key := range settings {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	seen := map[string]string{}
+	for _, key := range keys {
+		canonical := normalizeSettingsKey(key)
+		if previous, ok := seen[canonical]; ok {
+			return "`settings_json` keys " + previous + " and " + key +
+				" declare the same setting twice with different spellings; a setting may be declared in only one place."
+		}
+		seen[canonical] = key
+	}
+	return ""
 }
 
 // validateSettingsJSONEntry validates a single settings_json top-level key and
