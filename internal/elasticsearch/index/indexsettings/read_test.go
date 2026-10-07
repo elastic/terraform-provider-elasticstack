@@ -369,6 +369,64 @@ func TestReadIndexSettings_TypedQueryDefaultFieldDecodesEncodedArray(t *testing.
 	require.Equal(t, state.QueryDefaultField, read.QueryDefaultField, "encoded string array must hydrate the typed set without drift")
 }
 
+// PR hardening: an empty typed query_default_field set is valid and must
+// round-trip as an empty set, never nulled, whether Elasticsearch reports it
+// as a JSON-encoded array string or as a real JSON array.
+func TestReadIndexSettings_TypedQueryDefaultFieldEmptyArrayStaysEmpty(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	for _, apiValue := range []any{`[]`, []any{}} {
+		client := newIndexSettingsReadTestServer(t, true, map[string]any{
+			"index.query.default_field": apiValue,
+		})
+
+		state := tfModel{
+			ID:    types.StringValue("test-cluster-uuid/" + indexName),
+			Index: types.StringValue(indexName),
+		}
+		emptySet, setDiags := types.SetValueFrom(context.Background(), types.StringType, []string{})
+		require.False(t, setDiags.HasError(), "unexpected diagnostics: %v", setDiags.Errors())
+		state.QueryDefaultField = emptySet
+
+		read, found, diags := readIndexSettings(context.Background(), client, indexName, state)
+		require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+		require.True(t, found)
+		require.Equal(t, emptySet, read.QueryDefaultField, "an empty tracked array must stay an empty set, not be nulled (%v)", apiValue)
+	}
+}
+
+// PR hardening: import hydration populates the typed query_default_field
+// from an empty JSON-encoded array as an empty set, not as null, so a narrowed
+// configuration declaring an empty tracked array converges without drift.
+func TestPostReadIndexSettings_ImportHydratesEmptyTypedArray(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client := newIndexSettingsReadTestServer(t, true, map[string]any{
+		"index.query.default_field": `[]`,
+	})
+
+	private := &fakeImportPrivateState{importFlag: []byte("true")}
+	state := tfModel{
+		ID:    types.StringValue("test-cluster-uuid/" + indexName),
+		Index: types.StringValue(indexName),
+	}
+	req := entitycore.ElasticsearchPostReadRequest[tfModel]{
+		Client:  client,
+		Prior:   state,
+		State:   state,
+		Private: private,
+	}
+
+	hydrated, diags := postReadIndexSettings(context.Background(), req)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+
+	emptySet, setDiags := types.SetValueFrom(context.Background(), types.StringType, []string{})
+	require.False(t, setDiags.HasError(), "unexpected diagnostics: %v", setDiags.Errors())
+	require.Equal(t, emptySet, hydrated.QueryDefaultField, "an empty encoded array must hydrate as an empty set, not stay null")
+}
+
 func TestReadIndexSettings_NotFoundReportsNotFound(t *testing.T) {
 	t.Parallel()
 
