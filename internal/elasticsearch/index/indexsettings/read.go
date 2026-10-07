@@ -18,6 +18,7 @@
 package indexsettings
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"reflect"
@@ -239,24 +240,26 @@ func readDeclaredSettingsJSON(_ context.Context, state *tfModel, flat map[string
 // reconcileSettingJSONValue converts an API flat-settings value (typically a
 // JSON string like "20000" or "false") to the JSON scalar type declared in
 // state, so an unchanged settings_json key does not produce false drift.
+// Numbers are handled as exact JSON tokens (json.Number), never parsed
+// through float64, so integers beyond its 2^53 precision round-trip verbatim.
 func reconcileSettingJSONValue(stateRaw, apiRaw json.RawMessage) (json.RawMessage, bool) {
-	var declared any
-	if err := json.Unmarshal(stateRaw, &declared); err != nil {
+	declared := decodeJSONValueWithExactNumbers(stateRaw)
+	if declared == nil {
 		return nil, false
 	}
 
 	switch declared := declared.(type) {
-	case float64:
+	case json.Number:
 		var s string
 		if err := json.Unmarshal(apiRaw, &s); err == nil {
-			if n, err := strconv.ParseFloat(s, 64); err == nil {
-				if encoded, err := json.Marshal(n); err == nil {
-					return encoded, true
-				}
+			// Echo the API string's numeric token verbatim when it is a valid
+			// JSON number, so no precision is lost re-encoding it.
+			if err := json.Unmarshal([]byte(s), new(json.Number)); err == nil {
+				return json.RawMessage(s), true
 			}
 			return nil, false
 		}
-		var n float64
+		var n json.Number
 		if err := json.Unmarshal(apiRaw, &n); err == nil {
 			return apiRaw, true
 		}
@@ -326,6 +329,18 @@ func reconcileArraySettingJSONValue(declared []any, apiRaw json.RawMessage) (jso
 		return nil, false
 	}
 	return encoded, true
+}
+
+// decodeJSONValueWithExactNumbers decodes a raw JSON value with json.Number
+// for numbers, so large integers keep their exact token; nil when invalid.
+func decodeJSONValueWithExactNumbers(raw json.RawMessage) any {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil
+	}
+	return value
 }
 
 // arrayElementsFromFlatRaw extracts the elements of a flat API settings array

@@ -290,6 +290,34 @@ func TestReadIndexSettings_SettingsJSONEncodedArrayRoundTrip(t *testing.T) {
 	require.JSONEq(t, `[true]`, string(readSettings["some.bool.array"]), "tracked bool array must round-trip")
 }
 
+// PR hardening: numeric settings_json values reconcile with their exact
+// JSON tokens, so integers beyond float64 precision (2^53) round-trip from
+// string API values without false drift, as scalars and inside arrays.
+func TestReadIndexSettings_SettingsJSONExactNumbersRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	const indexName = "my-index"
+	client := newIndexSettingsReadTestServer(t, true, map[string]any{
+		"index.max_result_window": "9007199254740993",
+		"some.number.array":       `[9007199254740993,2]`,
+	})
+
+	state := tfModel{
+		ID:           types.StringValue("test-cluster-uuid/" + indexName),
+		Index:        types.StringValue(indexName),
+		SettingsJSON: jsontypes.NewNormalizedValue(`{"index.max_result_window":9007199254740993,"some.number.array":[9007199254740993,2]}`),
+	}
+
+	read, found, diags := readIndexSettings(context.Background(), client, indexName, state)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags.Errors())
+	require.True(t, found)
+
+	var readSettings map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(read.SettingsJSON.ValueString()), &readSettings))
+	require.Equal(t, `9007199254740993`, string(readSettings["index.max_result_window"]), "exact integer token must be preserved, not rounded through float64")
+	require.Equal(t, `[9007199254740993,2]`, string(readSettings["some.number.array"]), "exact integer tokens inside arrays must be preserved, not rounded through float64")
+}
+
 // REQ-004: array-valued settings_json keys arriving as real JSON arrays in
 // the API response reconcile against the declared element types; a changed
 // array surfaces as drift taken from the API, preserving element order.
