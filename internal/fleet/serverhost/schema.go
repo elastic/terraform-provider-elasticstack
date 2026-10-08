@@ -72,6 +72,10 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
+			"proxy_id": schema.StringAttribute{
+				Description: "The ID of the Fleet proxy to use for this Fleet server host.",
+				Optional:    true,
+			},
 			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 	}

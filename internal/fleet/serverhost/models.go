@@ -37,6 +37,7 @@ type serverHostModel struct {
 	Name             types.String `tfsdk:"name"`
 	Hosts            types.List   `tfsdk:"hosts"`
 	Default          types.Bool   `tfsdk:"default"`
+	ProxyID          types.String `tfsdk:"proxy_id"`
 	SpaceIDs         types.Set    `tfsdk:"space_ids"` // > string
 }
 
@@ -60,6 +61,10 @@ func (m *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.Serve
 	m.Name = types.StringValue(data.Name)
 	m.Hosts = typeutils.SliceToListTypeString(ctx, data.HostUrls, path.Root("hosts"), &diags)
 	m.Default = types.BoolPointerValue(data.IsDefault)
+	m.ProxyID = types.StringNull()
+	if data.ProxyId != nil && *data.ProxyId != "" {
+		m.ProxyID = types.StringValue(*data.ProxyId)
+	}
 
 	// Note: SpaceIDs is not returned by the API for server hosts, so we preserve it from existing state.
 	// It's only used to determine which API endpoint to call.
@@ -76,15 +81,34 @@ func (m serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.PostF
 		Id:        typeutils.OptionalString(m.HostID),
 		IsDefault: m.Default.ValueBoolPointer(),
 		Name:      m.Name.ValueString(),
+		ProxyId:   m.ProxyID.ValueStringPointer(),
 	}
 	return
 }
 
-func (m serverHostModel) toAPIUpdateModel(ctx context.Context) (body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diags diag.Diagnostics) {
+func (m serverHostModel) toAPIUpdateModel(ctx context.Context, prior serverHostModel) (body kbapi.PutFleetFleetServerHostsItemidJSONRequestBody, diags diag.Diagnostics) {
 	body = kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
 		HostUrls:  typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, m.Hosts, path.Root("hosts"), &diags)),
 		IsDefault: m.Default.ValueBoolPointer(),
 		Name:      m.Name.ValueStringPointer(),
+		ProxyId:   proxyIDForUpdate(m.ProxyID, prior.ProxyID),
 	}
 	return
+}
+
+// proxyIDForUpdate returns a pointer suitable for the generated update body.
+// A known non-empty plan value is sent as-is. When the plan unsets a
+// previously set proxy_id, an empty string is sent rather than nil: the
+// generated `json:"proxy_id,omitempty"` tag drops nil, and Fleet treats an
+// omitted field as "leave unchanged". When proxy_id was already unset, nil is
+// returned so the field stays omitted.
+func proxyIDForUpdate(plan, prior types.String) *string {
+	if typeutils.IsKnown(plan) && plan.ValueString() != "" {
+		return plan.ValueStringPointer()
+	}
+	if typeutils.IsKnown(prior) && prior.ValueString() != "" {
+		empty := ""
+		return &empty
+	}
+	return nil
 }
