@@ -305,6 +305,7 @@ steps:
       name: research-factory-issue-context
       path: /tmp/gh-aw/agent/
   - name: Download Kibana OpenAPI spec
+    continue-on-error: true
     run: make -C generated/kbapi download
 model: "anthropic/claude-sonnet-5"
 engine:
@@ -457,6 +458,11 @@ generated from that spec, to see whether the endpoint is already exposed: Grep f
 `generated/kbapi/transform_schema.go`. `generated/kbapi/kibana.json` is only a dashboards overlay.
 Do not fetch Kibana source from the web, and do not assert server defaults or behaviour you cannot
 source from the spec or documentation; list them as open questions instead.
+
+If `generated/kbapi/oas.yaml` is missing (the download failed), treat the OpenAPI spec as an
+unavailable source. Ground claims through `generated/kbapi/kibana.gen.go` and the `elastic-docs` MCP
+server only, list anything you cannot source as an open question, and expect the critic to fail
+`grounded` for claims it cannot verify.
 
 ## Comparison requirement
 

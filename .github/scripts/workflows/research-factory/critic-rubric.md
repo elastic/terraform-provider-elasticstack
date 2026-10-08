@@ -47,6 +47,9 @@ Each item is `true` only when fully satisfied.
     the path to add to `transformFilterPaths` in `generated/kbapi/transform_schema.go`. Do not fail
     `grounded` for that alone. Do fail it when a field, default, or behaviour is asserted with no
     verifiable source.
+  - If `generated/kbapi/oas.yaml` is missing (the download failed), the OpenAPI spec is an
+    unavailable source. Verify only what `kibana.gen.go` and the `elastic-docs` tools support, fail
+    `grounded` for any claim you cannot verify, and never invent or assume verification.
   - `generated/kbapi/kibana.json` is only a two-path dashboards overlay. Do not use it to verify
     other endpoints.
   - Do not require or accept Kibana server source code fetched from the web. It is not an allowed

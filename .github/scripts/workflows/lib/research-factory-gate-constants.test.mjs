@@ -78,7 +78,9 @@ test('workflow source: timeout, budget, safe outputs, and stale-label step', () 
 
 test('workflow source downloads the pinned Kibana OAS before the agent runs', () => {
   const stepsBlock = workflow.slice(workflow.indexOf('\nsteps:\n'), workflow.indexOf('\nmodel:'));
-  assert.match(stepsBlock, /name: Download Kibana OpenAPI spec\n\s+run: make -C generated\/kbapi download/);
+  assert.match(stepsBlock, /name: Download Kibana OpenAPI spec\n\s+continue-on-error: true\n\s+run: make -C generated\/kbapi download/);
+  assert.match(workflow, /oas\.yaml` is missing[^]*unavailable/i);
+  assert.match(rubric, /oas\.yaml` is missing[^]*unavailable/i);
   assert.ok(stepsBlock.indexOf('Download issue context artifact') < stepsBlock.indexOf('Download Kibana OpenAPI spec'));
   assert.match(workflow, /generated\/kbapi\/oas\.yaml/);
   assert.match(rubric, /generated\/kbapi\/oas\.yaml/);
