@@ -1536,6 +1536,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.NewKibanaEphemeralResource",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-08T03:11:17.668776426Z",
+      "reason": "invalid_candidate_references",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
