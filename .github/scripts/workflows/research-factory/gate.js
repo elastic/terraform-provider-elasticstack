@@ -7,6 +7,10 @@ const NEEDS_HUMAN = 'research-needs-human';
 const CHECKLIST_ITEMS = ['grounded', 'mapped', 'compatible', 'versioned', 'testable', 'idiomatic'];
 const CRITIC_STATUSES = ['ok', 'unavailable', 'error'];
 
+const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CONFIDENCES = ['high', 'medium', 'low'];
+const SCOPES = ['small', 'medium', 'large', 'unknown'];
+const REFERENCE_TYPES = ['elastic-docs', 'repo-path', 'issue', 'pr', 'external'];
 const JSON_FENCE = /```json[^\S\n]*\n([\s\S]*?)\n[^\S\n]*```/g;
 const OUTCOME_LINE = /^\*\*Outcome:\*\* .*$/m;
 const QUALITY_GATE_HEADING = /^### Quality gate[^\S\n]*$/m;
@@ -32,6 +36,16 @@ function extractMetadata(body) {
   }
 }
 
+function isValidReference(ref) {
+  const location = isObject(ref) ? ref.url ?? ref.path : undefined;
+  return (
+    isObject(ref) &&
+    REFERENCE_TYPES.includes(ref.type) &&
+    typeof location === 'string' &&
+    location.trim() !== ''
+  );
+}
+
 function validateGate(meta) {
   if (!isObject(meta)) {
     return ['metadata is not a JSON object'];
@@ -40,12 +54,32 @@ function validateGate(meta) {
   if (meta.schema_version !== '1.1') {
     errors.push('schema_version must be "1.1"');
   }
+  const rec = meta.recommendation;
   if (
-    !isObject(meta.recommendation) ||
-    typeof meta.recommendation.spine !== 'string' ||
-    typeof meta.recommendation.approach_index !== 'number'
+    !isObject(rec) ||
+    typeof rec.spine !== 'string' ||
+    !KEBAB_CASE.test(rec.spine) ||
+    !Number.isInteger(rec.approach_index) ||
+    rec.approach_index < 0
   ) {
-    errors.push('recommendation must have a string spine and numeric approach_index');
+    errors.push('recommendation must have a kebab-case spine and a non-negative integer approach_index');
+  } else if (rec.confidence !== undefined && !CONFIDENCES.includes(rec.confidence)) {
+    errors.push(`recommendation.confidence must be one of ${CONFIDENCES.join(', ')}`);
+  }
+  if (meta.estimated_scope !== undefined && !SCOPES.includes(meta.estimated_scope)) {
+    errors.push(`estimated_scope must be one of ${SCOPES.join(', ')}`);
+  }
+  if (
+    meta.affected_capabilities !== undefined &&
+    !(
+      Array.isArray(meta.affected_capabilities) &&
+      meta.affected_capabilities.every((c) => typeof c === 'string' && KEBAB_CASE.test(c))
+    )
+  ) {
+    errors.push('affected_capabilities must be an array of kebab-case strings');
+  }
+  if (meta.references !== undefined && !(Array.isArray(meta.references) && meta.references.every(isValidReference))) {
+    errors.push(`references items must have a type of ${REFERENCE_TYPES.join(', ')} and a non-empty url or path`);
   }
   if (meta.open_questions !== undefined) {
     const valid =
@@ -180,7 +214,7 @@ function sectionOutcome(body) {
   const rest = body.slice(heading.index + heading[0].length);
   const next = /^#{1,3} /m.exec(rest);
   const section = next ? rest.slice(0, next.index) : rest;
-  return /^\*\*Outcome:\*\* `([^`\n]*)`/m.exec(section)?.[1];
+  return /^\*\*Outcome:\*\*[^\S\n]*`?([^`\s]*)`?/m.exec(section)?.[1];
 }
 
 function evaluateBody(body) {

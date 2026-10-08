@@ -316,3 +316,54 @@ test('validateGate accepts metadata without open_questions', () => {
   assert.deepEqual(gate.validateGate(meta), []);
   assert.equal(gate.deriveOutcome(meta).label, READY);
 });
+
+// ---------------------------------------------------------------------------
+// Full schema 1.1 validation and outcome-line forms
+// ---------------------------------------------------------------------------
+
+const moreInvalid = {
+  'spine not kebab-case': { recommendation: { spine: 'Not Kebab', approach_index: 0 } },
+  'approach_index negative': { recommendation: { spine: 'a', approach_index: -1 } },
+  'approach_index fractional': { recommendation: { spine: 'a', approach_index: 1.5 } },
+  'confidence bad enum': { recommendation: { spine: 'a', approach_index: 0, confidence: 'certain' } },
+  'estimated_scope bad enum': { estimated_scope: 'huge' },
+  'estimated_scope not string': { estimated_scope: 3 },
+  'affected_capabilities numeric entries': { affected_capabilities: [1, 2] },
+  'affected_capabilities not kebab': { affected_capabilities: ['Not Kebab'] },
+  'affected_capabilities not array': { affected_capabilities: 'x' },
+  'references not array': { references: 'x' },
+  'reference bad type': { references: [{ type: 'blog', url: 'u' }] },
+  'reference missing location': { references: [{ type: 'repo-path' }] },
+  'reference empty location': { references: [{ type: 'elastic-docs', url: '' }] },
+  'reference not an object': { references: ['x'] },
+};
+
+for (const [name, overrides] of Object.entries(moreInvalid)) {
+  test(`validateGate rejects: ${name}`, () => {
+    assert.ok(gate.validateGate(metadata(overrides)).length > 0);
+  });
+}
+
+test('validateGate accepts fully populated optional fields', () => {
+  const meta = metadata({
+    recommendation: { spine: 'new-resource-a1', approach_index: 2, confidence: 'high' },
+    estimated_scope: 'unknown',
+    affected_capabilities: ['kibana-foo', 'fleet-bar'],
+    references: [{ type: 'elastic-docs', url: 'https://x' }, { type: 'repo-path', path: 'a/b.go' }],
+  });
+  assert.deepEqual(gate.validateGate(meta), []);
+});
+
+test('an unbackticked outcome line is recognised and normalised to the backticked form', () => {
+  const body = commentBody(metadata()).replace(/\*\*Outcome:\*\* `[^`]*`/, '**Outcome:** research-needs-human');
+  const result = gate.evaluateBody(body);
+  assert.equal(result.overridden, true);
+  const corrected = gate.applyOverride(body, result);
+  assert.match(corrected, /\*\*Outcome:\*\* `ready-for-change-factory`/);
+  assert.doesNotMatch(corrected, /\*\*Outcome:\*\* research-needs-human/);
+});
+
+test('an unbackticked outcome line that matches the label is not an override', () => {
+  const body = commentBody(metadata()).replace(/\*\*Outcome:\*\* `([^`]*)`/, '**Outcome:** $1');
+  assert.equal(gate.evaluateBody(body).overridden, false);
+});
