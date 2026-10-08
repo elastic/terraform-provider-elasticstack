@@ -18,6 +18,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 	"testing"
@@ -95,122 +96,114 @@ func TestSelectPackages_ThresholdAtBoundary(t *testing.T) {
 	}
 }
 
-func TestApplyShard(t *testing.T) {
-	makePackages := func(n int) []string {
+func TestBuildShardPlan(t *testing.T) {
+	packages := func(n int) []string {
 		out := make([]string, n)
-		formatDigit := func(v int) string {
-			if v == 0 {
-				return "0"
-			}
-			s := ""
-			for v > 0 {
-				s = string(rune('0'+v%10)) + s
-				v /= 10
-			}
-			return s
-		}
 		for i := range n {
-			out[i] = "pkg" + string(rune('a'+i%26)) + formatDigit(i/26)
+			out[i] = fmt.Sprintf("example.com/mod/pkg%02d", i)
 		}
 		return out
 	}
 
 	cases := []struct {
-		name     string
-		packages []string
-		total    int
-		index    int
-		minShard int
-		want     []string
+		name          string
+		packages      []string
+		totalShards   int
+		minShardPkgs  int
+		wantHasPkg    bool
+		wantShardLens []int
 	}{
 		{
-			name:     "out of range shard",
-			packages: []string{"p0", "p1"},
-			total:    2,
-			index:    2,
-			minShard: 30,
-			want:     nil,
+			name:          "empty selection yields single empty shard",
+			packages:      nil,
+			totalShards:   2,
+			minShardPkgs:  30,
+			wantHasPkg:    false,
+			wantShardLens: []int{0},
 		},
 		{
-			name:     "small set shard index zero",
-			packages: []string{"p0", "p1", "p2", "p3", "p4"},
-			total:    2,
-			index:    0,
-			minShard: 30,
-			want:     []string{"p0", "p1", "p2", "p3", "p4"},
+			name:          "single shard keeps all packages",
+			packages:      packages(60),
+			totalShards:   1,
+			minShardPkgs:  30,
+			wantHasPkg:    true,
+			wantShardLens: []int{60},
 		},
 		{
-			name:     "small set shard index positive suppressed",
-			packages: []string{"p0", "p1", "p2", "p3", "p4"},
-			total:    2,
-			index:    1,
-			minShard: 30,
-			want:     nil,
+			name:          "small set uses one shard",
+			packages:      packages(8),
+			totalShards:   2,
+			minShardPkgs:  30,
+			wantHasPkg:    true,
+			wantShardLens: []int{8},
 		},
 		{
-			name:     "large set even positions",
-			packages: makePackages(60),
-			total:    2,
-			index:    0,
-			minShard: 30,
-			want: func() []string {
-				out := make([]string, 0, 30)
-				for i := 0; i < 60; i += 2 {
-					out = append(out, makePackages(60)[i])
+			name:          "large set splits round-robin",
+			packages:      packages(60),
+			totalShards:   2,
+			minShardPkgs:  30,
+			wantHasPkg:    true,
+			wantShardLens: []int{30, 30},
+		},
+		{
+			name:         "requested count capped to package count",
+			packages:     packages(30),
+			totalShards:  31,
+			minShardPkgs: 30,
+			wantHasPkg:   true,
+			wantShardLens: func() []int {
+				out := make([]int, 30)
+				for i := range out {
+					out[i] = 1
 				}
 				return out
 			}(),
-		},
-		{
-			name:     "large set odd positions",
-			packages: makePackages(60),
-			total:    2,
-			index:    1,
-			minShard: 30,
-			want: func() []string {
-				out := make([]string, 0, 30)
-				for i := 1; i < 60; i += 2 {
-					out = append(out, makePackages(60)[i])
-				}
-				return out
-			}(),
-		},
-		{
-			name:     "large set split four ways",
-			packages: makePackages(40),
-			total:    4,
-			index:    1,
-			minShard: 30,
-			want:     []string{"pkgb0", "pkgf0", "pkgj0", "pkgn0", "pkgr0", "pkgv0", "pkgz0", "pkgd1", "pkgh1", "pkgl1"},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ApplyShard(tc.packages, tc.total, tc.index, tc.minShard)
-			if !reflect.DeepEqual(got, tc.want) {
-				t.Errorf("ApplyShard = %v, want %v", got, tc.want)
+			plan := BuildShardPlan(tc.packages, tc.totalShards, tc.minShardPkgs)
+
+			if plan.HasPackages != tc.wantHasPkg {
+				t.Errorf("BuildShardPlan.HasPackages = %v, want %v", plan.HasPackages, tc.wantHasPkg)
+			}
+			if !reflect.DeepEqual(plan.SelectedPackages, stringsSorted(tc.packages)) {
+				t.Errorf("BuildShardPlan.SelectedPackages = %v, want %v", plan.SelectedPackages, stringsSorted(tc.packages))
+			}
+			if len(plan.Shards) != len(tc.wantShardLens) {
+				t.Fatalf("BuildShardPlan produced %d shards, want %d: %v", len(plan.Shards), len(tc.wantShardLens), plan.Shards)
+			}
+			for i, want := range tc.wantShardLens {
+				if len(plan.Shards[i]) != want {
+					t.Errorf("shard %d has %d packages, want %d", i, len(plan.Shards[i]), want)
+				}
+			}
+
+			// Every nonempty plan shard contains at least one package.
+			if plan.HasPackages {
+				for i, shard := range plan.Shards {
+					if len(shard) == 0 {
+						t.Errorf("nonempty plan shard %d is empty", i)
+					}
+				}
+			}
+
+			// Round-robin from the sorted list: shard k holds positions k, k+shardCount, ...
+			if plan.HasPackages && len(plan.Shards) > 1 {
+				shardCount := len(plan.Shards)
+				for k, shard := range plan.Shards {
+					for j, pkg := range shard {
+						if want := plan.SelectedPackages[j*shardCount+k]; pkg != want {
+							t.Errorf("shard %d position %d = %s, want %s", k, j, pkg, want)
+						}
+					}
+				}
+			}
+
+			if err := ValidateShardPlan(plan); err != nil {
+				t.Errorf("ValidateShardPlan rejected a plan BuildShardPlan produced: %v", err)
 			}
 		})
-	}
-}
-
-func TestApplyShard_TotalShardsOne(t *testing.T) {
-	packages := []string{"p0", "p1", "p2"}
-
-	got := ApplyShard(packages, 1, 0, 30)
-	if !reflect.DeepEqual(got, packages) {
-		t.Errorf("ApplyShard = %v, want %v", got, packages)
-	}
-}
-
-func TestApplyShard_DifferentMinShardPackages(t *testing.T) {
-	// Exactly at the threshold (count == minShardPackages) uses round-robin.
-	packages := []string{"p0", "p1", "p2"}
-
-	got := ApplyShard(packages, 2, 1, 3)
-	want := []string{"p1"}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("ApplyShard = %v, want %v", got, want)
 	}
 }
