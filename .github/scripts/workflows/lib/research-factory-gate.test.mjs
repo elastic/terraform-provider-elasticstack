@@ -23,7 +23,7 @@ function metadata(overrides = {}) {
       rounds: 2,
       outstanding_feedback: ['minor nit'],
       author_model: 'anthropic/claude-sonnet-5',
-      critic: { model: 'openai/gpt-5.5', status: 'ok' },
+      critic: { model: 'openai/gpt-6.1-sol', status: 'ok' },
     },
   };
   const { gate: gateOverrides, ...rest } = overrides;
@@ -67,7 +67,7 @@ test('validateGate accepts valid 1.1 metadata', () => {
 
 test('validateGate accepts the no-critique-round shape (rounds 0, score null)', () => {
   const meta = metadata({
-    gate: { score: null, scores: [], rounds: 0, converged: false, outstanding_feedback: [], critic: { model: 'openai/gpt-5.5', status: 'unavailable' } },
+    gate: { score: null, scores: [], rounds: 0, converged: false, outstanding_feedback: [], critic: { model: 'openai/gpt-6.1-sol', status: 'unavailable' } },
   });
   assert.deepEqual(gate.validateGate(meta), []);
 });

@@ -42,7 +42,7 @@ Workflow-helper tests are `node --test` files in `.github/scripts/workflows/lib/
    | 3. Task(research-critic, draft-N path) -------------------+  |
    |                                                            |  |
    |    research-critic subagent                                |  |
-   |    - model: openai/gpt-5.5 (different vendor)              |  |
+   |    - model: openai/gpt-6.1-sol (different vendor)              |  |
    |    - tools: Read, Grep, Glob, elastic-docs MCP (read-only) |  |
    |    - fresh context each round; sees draft + issue only     |  |
    |    - verifies citations, scores rubric                     |  |
@@ -72,11 +72,11 @@ The boundaries:
 
 | Mechanism | How | Assessment |
 |---|---|---|
-| **1. `--agents` JSON via `engine.args`** (chosen) | The workflow passes `--agents '{"research-critic": {description, prompt, tools, model: "openai/gpt-5.5"}}'` | CI-only, so it does not leak into local developer sessions. The definition sits in the workflow source next to the author config. The critic prompt is kept short and points at a versioned rubric file. |
+| **1. `--agents` JSON via `engine.args`** (chosen) | The workflow passes `--agents '{"research-critic": {description, prompt, tools, model: "openai/gpt-6.1-sol"}}'` | CI-only, so it does not leak into local developer sessions. The definition sits in the workflow source next to the author config. The critic prompt is kept short and points at a versioned rubric file. |
 | 2. Project agent file `.claude/agents/research-critic.md` | Claude Code loads it from the checkout | Not chosen: it would appear in every local Claude Code session, where an OpenRouter slug cannot be resolved. |
-| 3. Alias remap (fallback) | The critic uses `model: opus`; engine env sets `ANTHROPIC_DEFAULT_OPUS_MODEL=openai/gpt-5.5` | Use only if full model IDs are rejected for subagents. The author must never use that alias. |
+| 3. Alias remap (fallback) | The critic uses `model: opus`; engine env sets `ANTHROPIC_DEFAULT_OPUS_MODEL=openai/gpt-6.1-sol` | Use only if full model IDs are rejected for subagents. The author must never use that alias. |
 
-- **Critic model:** `openai/gpt-5.5`. It is from a different vendor than the author, so the two are less likely to share blind spots, and it is already used through this gateway by `kibana-spec-impact`. It is defined in exactly one place in the workflow. The spec requires only a *different model*; cross-vendor is the rationale for this choice, and `gate.critic.model` makes it auditable.
+- **Critic model:** `openai/gpt-6.1-sol`. It is from a different vendor than the author, so the two are less likely to share blind spots, and it is already used through this gateway by `kibana-spec-impact`. It is defined in exactly one place in the workflow. The spec requires only a *different model*; cross-vendor is the rationale for this choice, and `gate.critic.model` makes it auditable.
 - **Spike first:** one throwaway `workflow_dispatch` run must confirm all three of:
   1. Claude Code 2.1.273 accepts a full OpenRouter slug in `--agents`.
   2. The AWF api-proxy forwards a model other than the configured `model:`.
@@ -183,7 +183,7 @@ New tests live in `lib/` so the existing `make workflow-test` glob and CI job pi
 
 ```
  step 0  spike (throwaway branch, workflow_dispatch)
-         confirm --agents + full slug routes to openai/gpt-5.5 via AWF/OpenRouter
+         confirm --agents + full slug routes to openai/gpt-6.1-sol via AWF/OpenRouter
          fail -> switch to alias-remap mechanism, re-spike; both fail -> STOP,
                  revisit (spec requires critic on a different model)
            |
@@ -225,7 +225,7 @@ The gate uses three constants: the score threshold **T = 85**, the stability win
 - **Goodhart / teaching to the critic** -> the author satisfies the rubric's surface (citations present, test-outline heading present) without substance. *Mitigation:* the critic verifies citations against the actual sources rather than checking they are present; each round has fresh context; maintainers spot-check during observation; the rubric is a versioned file, so tightening it is a normal PR.
 - **Critic leniency or harshness drift** -> a pass rate near 100% is worthless and near 0% is noise. *Mitigation:* the pass rate is visible from the published `gate` metadata across issues, and the gate constants are designed to be tuned (see D8).
 - **Cost and duration** -> up to 3 critic calls and 2 revisions per run, roughly doubling run time (35 -> 60-minute cap). *Mitigation:* bounded by the round limit and the budget; the daily `max-daily-ai-credits` guard still applies, since the per-run cap is disabled for this workflow; the volume increase from the gap scanner is limited by that scanner's issue-slot cap.
-- **Model slug lifecycle** -> `openai/gpt-5.5` gets deprecated or renamed on OpenRouter and every critique fails. *Mitigation:* this fails safe (`critic.status: unavailable` -> `research-needs-human`); a run of `unavailable` statuses is an obvious signal; the slug is defined in one place.
+- **Model slug lifecycle** -> `openai/gpt-6.1-sol` gets deprecated or renamed on OpenRouter and every critique fails. *Mitigation:* this fails safe (`critic.status: unavailable` -> `research-needs-human`); a run of `unavailable` statuses is an obvious signal; the slug is defined in one place.
 - **Same vendor by accident** -> someone switches the critic to an Anthropic model, weakening independence. *Accepted:* the spec requires only a different model, cross-vendor is the recorded rationale, and `gate.critic.model` makes it auditable. It is not enforced in code.
 - **Security of the new label-write path** -> *Mitigation:* the same safe-output job and token as the existing comment write (`issues: write`); only two hard-coded label names, never agent-supplied strings; `add-labels` and `remove-labels` safe outputs stay disabled, so the agent cannot name labels.
 - **Longer runs hold the per-issue concurrency slot longer** -> *Accepted:* research is single-session per issue already; a 60-minute cap only delays a re-trigger on the same issue.

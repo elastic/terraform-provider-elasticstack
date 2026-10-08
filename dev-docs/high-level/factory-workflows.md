@@ -75,7 +75,7 @@ A single comment delimited by `<!-- gha-research-factory -->` containing problem
 
 ### Critique loop and done gate
 
-Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-5.5`) each round with fresh context. The critic is defined in the workflow's `--agents` argument and follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md).
+Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-6.1-sol`) each round with fresh context. The critic is defined in the workflow's `--agents` argument and follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md).
 
 The done gate has two parts:
 
