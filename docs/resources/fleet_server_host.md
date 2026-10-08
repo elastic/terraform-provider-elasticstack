@@ -16,12 +16,18 @@ provider "elasticstack" {
   kibana {}
 }
 
+resource "elasticstack_fleet_proxy" "example" {
+  name = "Example Proxy"
+  url  = "https://proxy.example.com:3128"
+}
+
 resource "elasticstack_fleet_server_host" "test_host" {
   name    = "Test Host"
   default = false
   hosts = [
     "https://fleet-server:8220"
   ]
+  proxy_id = elasticstack_fleet_proxy.example.proxy_id
 }
 ```
 
@@ -38,6 +44,7 @@ resource "elasticstack_fleet_server_host" "test_host" {
 - `default` (Boolean) Set as default.
 - `host_id` (String) Unique identifier of the Fleet server host. When omitted, Fleet auto-generates an ID. When set, the value must be 1-255 characters and must not contain path separators ("/"), traversal sequences (".."), or reserved keys ("__proto__", "constructor", "prototype"). Invalid explicit values fail at plan time.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
+- `proxy_id` (String) The ID of the Fleet proxy to use for this Fleet server host. Must not be empty; omit the attribute to use no proxy.
 - `space_ids` (Set of String) The Kibana space IDs where this server host is available. When set, the server host will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 

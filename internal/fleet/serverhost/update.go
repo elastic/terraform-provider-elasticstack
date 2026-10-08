@@ -31,7 +31,11 @@ func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, r
 	fleetClient := client.GetFleetClient()
 
 	hostID := req.Plan.HostID.ValueString()
-	body, d := req.Plan.toAPIUpdateModel(ctx)
+	var prior serverHostModel
+	if req.Prior != nil {
+		prior = *req.Prior
+	}
+	body, d := req.Plan.toAPIUpdateModel(ctx, prior)
 	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[serverHostModel]{}, diags

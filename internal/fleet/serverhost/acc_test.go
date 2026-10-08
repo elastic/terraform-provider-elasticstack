@@ -40,6 +40,7 @@ import (
 var (
 	minVersionFleetServerHost       = version.Must(version.NewVersion("8.6.0"))
 	minVersionFleetServerHostSpaces = version.Must(version.NewVersion("9.1.0"))
+	minVersionFleetServerHostProxy  = version.Must(version.NewVersion("8.7.1"))
 )
 
 //go:embed testdata/TestAccResourceFleetServerHostFromSDK/create/main.tf
@@ -435,6 +436,94 @@ func TestAccResourceFleetServerHost_spaceIDsUpdate(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceFleetServerHost_ProxyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostProxy, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	vars := config.Variables{"suffix": config.StringVariable(random)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_proxy"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test", "proxy_id", fmt.Sprintf("server-host-proxy-%s", random)),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_server_host.test", "proxy_id", "elasticstack_fleet_proxy.test", "proxy_id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_proxy"),
+				ConfigVariables:          vars,
+				ResourceName:             "elasticstack_fleet_server_host.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("other_proxy"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_server_host.test", "proxy_id", fmt.Sprintf("server-host-other-proxy-%s", random)),
+					resource.TestCheckResourceAttrPair("elasticstack_fleet_server_host.test", "proxy_id", "elasticstack_fleet_proxy.other", "proxy_id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_proxy"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_server_host.test", "proxy_id"),
+					checkServerHostProxyClearedOnServer("elasticstack_fleet_server_host.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetServerHost_emptyProxyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_proxy"),
+				ExpectError:              regexp.MustCompile(`(?s)proxy_id.*(at least 1|length)`),
+			},
+		},
+	})
+}
+
+func checkServerHostProxyClearedOnServer(name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", name)
+		}
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		host, diags := fleet.GetFleetServerHost(context.Background(), client.GetFleetClient(), rs.Primary.ID, rs.Primary.Attributes["space_ids.0"])
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+		if host == nil {
+			return fmt.Errorf("fleet server host id=%s not found", rs.Primary.ID)
+		}
+		if host.ProxyId != nil && *host.ProxyId != "" {
+			return fmt.Errorf("expected proxy_id to be cleared on the server, got %q", *host.ProxyId)
+		}
+		return nil
+	}
 }
 
 func checkResourceFleetServerHostDestroy(s *terraform.State) error {

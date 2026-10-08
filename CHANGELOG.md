@@ -28,6 +28,7 @@ query = {
 
 ### Changes
 
+- Add the `proxy_id` attribute to `elasticstack_fleet_server_host` to link a Fleet server host to a Fleet proxy. ([#5126](https://github.com/elastic/terraform-provider-elasticstack/issues/5126))
 - Data sources now return a standardized error when the requested entity is not found. ([#5090](https://github.com/elastic/terraform-provider-elasticstack/pull/5090))
 - `elasticstack_kibana_dashboard` root `query` now uses `expression` instead of `text`/`json` (state schema v2 with automatic upgrader) ([#5094](https://github.com/elastic/terraform-provider-elasticstack/pull/5094))
 - Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))
