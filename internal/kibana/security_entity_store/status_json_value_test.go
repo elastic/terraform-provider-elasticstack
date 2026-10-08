@@ -61,8 +61,6 @@ func TestStatusJSONValue_ValueFromString(t *testing.T) {
 func TestStatusJSONValue_RawConstructorUntouched(t *testing.T) {
 	t.Parallel()
 
-	// The raw API JSON is stored byte-identical, including unusual
-	// whitespace, key order, and escaped characters.
 	raw := `{"engines":[ {"type":"use\u0072"} ],  "status":"running"}`
 	assert.Equal(t, raw, NewStatusJSONValue(raw).ValueString())
 	assert.True(t, NewStatusJSONNull().IsNull())
@@ -182,6 +180,12 @@ func TestStatusJSONValue_JSONFormatEquivalence(t *testing.T) {
 		equal bool
 	}{
 		{
+			name:  "identical valid JSON",
+			a:     `{"engines":[{"type":"user"}],"status":"running"}`,
+			b:     `{"engines":[{"type":"user"}],"status":"running"}`,
+			equal: true,
+		},
+		{
 			name:  "whitespace and key order equivalent",
 			a:     `{"engines":[{"type":"user"}],"status":"running"}`,
 			b:     "{\n \"status\":\"running\",\n \"engines\":[{\"type\": \"user\"}]\n}",
@@ -200,10 +204,7 @@ func TestStatusJSONValue_JSONFormatEquivalence(t *testing.T) {
 			equal: false,
 		},
 		{
-			// The library decodes with encoding/json UseNumber, so 1e2 and
-			// 100 keep distinct literal representations and do NOT compare
-			// equal. Pins existing conservative behavior, no change made.
-			name:  "number literal representation remains significant (library UseNumber)",
+			name:  "number literal representation remains significant",
 			a:     `{"status":"running","engines":[{"type":"user"}],"n":1e2}`,
 			b:     `{"status":"running","engines":[{"type":"user"}],"n":100}`,
 			equal: false,
@@ -281,9 +282,6 @@ func TestStatusJSONValue_EnginesNullAndMalformed(t *testing.T) {
 		})
 	}
 
-	// Malformed JSON falls back to the raw string (no canonicalization), but the
-	// embedded jsontypes.Normalized comparison then reports a diagnostic for the
-	// unparsable payload rather than guessing equality.
 	malformed := `{"status":"running","engines":`
 	eq, diags := NewStatusJSONValue(malformed).StringSemanticEquals(ctx, NewStatusJSONValue(malformed))
 	assert.False(t, eq)
@@ -297,9 +295,6 @@ func TestStatusJSONValue_EnginesNullAndMalformed(t *testing.T) {
 func TestStatusJSONValue_EscapedTypeDuplicateStable(t *testing.T) {
 	t.Parallel()
 
-	// Two engines whose "type" values decode to the same string ("user",
-	// one spelled with a unicode escape) are sort ties: the stable sort
-	// must preserve their original relative order in the canonical copy.
 	body := `{"engines":[{"type":"user","marker":"first"},{"type":"use\u0072","marker":"second"}]}`
 	canonical := canonicalizeStatusJSONEngines(body)
 
@@ -316,9 +311,6 @@ func TestStatusJSONValue_EscapedTypeDuplicateStable(t *testing.T) {
 func TestStatusJSONValue_NullTypeSortsFirst(t *testing.T) {
 	t.Parallel()
 
-	// An explicit JSON null "type" decodes into the zero string without
-	// error, so it sorts first; a missing or non-string "type" errors and
-	// triggers the raw fallback.
 	body := `{"engines":[{"type":"zeta"},{"type":null,"marker":"nulled"},{"type":"alpha"}]}`
 	canonical := canonicalizeStatusJSONEngines(body)
 

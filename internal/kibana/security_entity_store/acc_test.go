@@ -146,14 +146,17 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resName, "id"),
 					func(s *terraform.State) error {
-						resource, ok := s.RootModule().Resources[resName]
-						if !ok {
+						rs, ok := s.RootModule().Resources[resName]
+						if !ok || rs == nil {
 							return fmt.Errorf("resource %s not found in state to capture pre-import status_json", resName)
 						}
-						if resource.Primary == nil {
+						if rs.Primary == nil {
 							return fmt.Errorf("resource %s has no primary instance state to capture pre-import status_json", resName)
 						}
-						preImportStatusJSON = resource.Primary.Attributes["status_json"]
+						preImportStatusJSON = rs.Primary.Attributes["status_json"]
+						if preImportStatusJSON == "" {
+							return fmt.Errorf("resource %s has no status_json to capture", resName)
+						}
 						return nil
 					},
 				),
@@ -181,7 +184,7 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 						return fmt.Errorf("imported state for %s has no status_json attribute to compare", resName)
 					}
 					equal, diags := securityentitystore.NewStatusJSONValue(preImportStatusJSON).
-						StringSemanticEquals(context.Background(), securityentitystore.NewStatusJSONValue(imported))
+						SemanticallyEqual(context.Background(), securityentitystore.NewStatusJSONValue(imported))
 					if diags.HasError() {
 						return fmt.Errorf("status_json semantic comparison failed: %v", diags)
 					}

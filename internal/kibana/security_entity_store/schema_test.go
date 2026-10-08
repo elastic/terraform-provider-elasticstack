@@ -21,17 +21,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	dsschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// The status_json attribute uses the StatusJSON custom type end to
-// end, so the framework runs its StringSemanticEquals on Read/Create/Update
-// (retaining the prior state value when the API only reorders engines) and the
-// models expose it as a StringValuableWithSemanticEquals.
 var (
 	_ basetypes.StringValuableWithSemanticEquals = tfModel{}.StatusJSON
 	_ basetypes.StringValuableWithSemanticEquals = dsModel{}.StatusJSON
@@ -43,21 +39,17 @@ func TestStatusJSONCustomTypeWiring(t *testing.T) {
 
 	resourceAttr, ok := getSchema(ctx).Attributes["status_json"]
 	require.True(t, ok, "resource schema must define status_json")
-	resourceStringAttr, ok := resourceAttr.(dsschema.StringAttribute)
+	resourceStringAttr, ok := resourceAttr.(rschema.StringAttribute)
 	require.True(t, ok, "resource status_json must be a StringAttribute")
 	assert.Equal(t, StatusJSONType{}, resourceStringAttr.CustomType)
 
 	dsAttr, ok := getDataSourceSchema(ctx).Attributes["status_json"]
 	require.True(t, ok, "data source schema must define status_json")
-	dsStringAttr, ok := dsAttr.(schema.StringAttribute)
+	dsStringAttr, ok := dsAttr.(dsschema.StringAttribute)
 	require.True(t, ok, "data source status_json must be a StringAttribute")
 	assert.Equal(t, StatusJSONType{}, dsStringAttr.CustomType)
 }
 
-// TestStatusJSONEngineOrderIgnoredAtResourceBoundary is the resource-level
-// regression for the engine-order bug: two raw API bodies differing only in
-// engine order must compare semantically equal through the model field's
-// custom type.
 func TestStatusJSONEngineOrderIgnoredAtResourceBoundary(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -74,7 +66,6 @@ func TestStatusJSONEngineOrderIgnoredAtResourceBoundary(t *testing.T) {
 	require.False(t, diags.HasError(), "%v", diags)
 	assert.True(t, eq)
 
-	// The stored string stays byte-identical to the API body; only comparison ignores order.
 	assert.Equal(t, userFirst, model.StatusJSON.ValueString())
 	assert.Equal(t, genericFirst, other.StatusJSON.ValueString())
 }
