@@ -19,11 +19,10 @@ package ingest
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -38,15 +37,17 @@ var (
 
 // ProcessorJSONType is a custom string type for ingest processor JSON.
 type ProcessorJSONType struct {
-	jsontypes.NormalizedType
+	customtypes.NormalizedJSONType
 }
 
 func (t ProcessorJSONType) String() string {
 	return "ingest.ProcessorJSONType"
 }
 
-func (t ProcessorJSONType) ValueType(_ context.Context) attr.Value {
-	return ProcessorJSONValue{}
+func (t ProcessorJSONType) ValueType(ctx context.Context) attr.Value {
+	return ProcessorJSONValue{
+		NormalizedJSONValue: t.NormalizedJSONType.ValueType(ctx).(customtypes.NormalizedJSONValue),
+	}
 }
 
 func (t ProcessorJSONType) Equal(o attr.Type) bool {
@@ -54,7 +55,7 @@ func (t ProcessorJSONType) Equal(o attr.Type) bool {
 	if !ok {
 		return false
 	}
-	return t.NormalizedType.Equal(other.NormalizedType)
+	return t.NormalizedJSONType.Equal(other.NormalizedJSONType)
 }
 
 func (t ProcessorJSONType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
@@ -68,19 +69,7 @@ func (t ProcessorJSONType) ValueFromString(_ context.Context, in basetypes.Strin
 }
 
 func (t ProcessorJSONType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.NormalizedType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	normalized, ok := attrValue.(jsontypes.Normalized)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	return ProcessorJSONValue{
-		Normalized: normalized,
-	}, nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }
 
 // ProcessorJSONValue is a custom string value for ingest processor JSON.
@@ -92,11 +81,13 @@ func (t ProcessorJSONType) ValueFromTerraform(ctx context.Context, in tftypes.Va
 // equality implementation normalizes single-element primitive arrays to scalars
 // before comparison so both forms are treated as equivalent.
 type ProcessorJSONValue struct {
-	jsontypes.Normalized
+	customtypes.NormalizedJSONValue
 }
 
-func (v ProcessorJSONValue) Type(_ context.Context) attr.Type {
-	return ProcessorJSONType{}
+func (v ProcessorJSONValue) Type(ctx context.Context) attr.Type {
+	return ProcessorJSONType{
+		NormalizedJSONType: v.NormalizedJSONValue.Type(ctx).(customtypes.NormalizedJSONType),
+	}
 }
 
 func (v ProcessorJSONValue) Equal(o attr.Value) bool {
@@ -104,7 +95,7 @@ func (v ProcessorJSONValue) Equal(o attr.Value) bool {
 	if !ok {
 		return false
 	}
-	return v.Normalized.Equal(other.Normalized)
+	return v.NormalizedJSONValue.Equal(other.NormalizedJSONValue)
 }
 
 // StringSemanticEquals returns true when two processor JSON values are
@@ -167,13 +158,13 @@ func normalizeProcessorJSON(v any) any {
 }
 
 func NewProcessorJSONNull() ProcessorJSONValue {
-	return ProcessorJSONValue{Normalized: jsontypes.NewNormalizedNull()}
+	return ProcessorJSONValue{NormalizedJSONValue: customtypes.NewNormalizedJSONNull()}
 }
 
 func NewProcessorJSONUnknown() ProcessorJSONValue {
-	return ProcessorJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
+	return ProcessorJSONValue{NormalizedJSONValue: customtypes.NewNormalizedJSONUnknown()}
 }
 
 func NewProcessorJSONValue(value string) ProcessorJSONValue {
-	return ProcessorJSONValue{Normalized: jsontypes.NewNormalizedValue(value)}
+	return ProcessorJSONValue{NormalizedJSONValue: customtypes.NewNormalizedJSONValue(value)}
 }

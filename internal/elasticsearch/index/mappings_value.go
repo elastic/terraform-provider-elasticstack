@@ -20,12 +20,11 @@ package index
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -47,7 +46,7 @@ var (
 // index, template, and component-template resources, which store the full
 // API mappings (template-injected extras in state).
 type MappingsType struct {
-	jsontypes.NormalizedType
+	customtypes.NormalizedJSONType
 	ExactDynamicTemplateNames bool
 }
 
@@ -57,8 +56,10 @@ func (t MappingsType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t MappingsType) ValueType(_ context.Context) attr.Value {
-	return MappingsValue{ExactDynamicTemplateNames: t.ExactDynamicTemplateNames}
+func (t MappingsType) ValueType(ctx context.Context) attr.Value {
+	return t.valueWithFlag(MappingsValue{
+		NormalizedJSONValue: t.NormalizedJSONType.ValueType(ctx).(customtypes.NormalizedJSONValue),
+	})
 }
 
 // Equal returns true if the given type is equivalent.
@@ -67,7 +68,7 @@ func (t MappingsType) Equal(o attr.Type) bool {
 	if !ok {
 		return false
 	}
-	return t.ExactDynamicTemplateNames == other.ExactDynamicTemplateNames && t.NormalizedType.Equal(other.NormalizedType)
+	return t.ExactDynamicTemplateNames == other.ExactDynamicTemplateNames && t.NormalizedJSONType.Equal(other.NormalizedJSONType)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
@@ -83,17 +84,7 @@ func (t MappingsType) ValueFromString(_ context.Context, in basetypes.StringValu
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
 func (t MappingsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.NormalizedType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	normalized, ok := attrValue.(jsontypes.Normalized)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	return t.valueWithFlag(MappingsValue{Normalized: normalized}), nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }
 
 func (t MappingsType) valueWithFlag(v MappingsValue) MappingsValue {
@@ -113,13 +104,16 @@ func (t MappingsType) valueWithFlag(v MappingsValue) MappingsValue {
 // private mappingsValue type. This allows template-injected extras (extra
 // properties, dynamic_templates, _meta, etc.) to not trigger plan changes.
 type MappingsValue struct {
-	jsontypes.Normalized
+	customtypes.NormalizedJSONValue
 	ExactDynamicTemplateNames bool
 }
 
 // Type returns an MappingsType.
-func (v MappingsValue) Type(_ context.Context) attr.Type {
-	return MappingsType{ExactDynamicTemplateNames: v.ExactDynamicTemplateNames}
+func (v MappingsValue) Type(ctx context.Context) attr.Type {
+	return MappingsType{
+		NormalizedJSONType:        v.NormalizedJSONValue.Type(ctx).(customtypes.NormalizedJSONType),
+		ExactDynamicTemplateNames: v.ExactDynamicTemplateNames,
+	}
 }
 
 // Equal returns true if the given value is equivalent.
@@ -128,7 +122,7 @@ func (v MappingsValue) Equal(o attr.Value) bool {
 	if !ok {
 		return false
 	}
-	return v.Normalized.Equal(other.Normalized)
+	return v.NormalizedJSONValue.Equal(other.NormalizedJSONValue)
 }
 
 // StringSemanticEquals returns true if the refreshed/API mappings are a
@@ -278,12 +272,12 @@ func normalizeMappings(v any) any {
 
 // NewMappingsNull creates an MappingsValue with a null value.
 func NewMappingsNull() MappingsValue {
-	return MappingsValue{Normalized: jsontypes.NewNormalizedNull()}
+	return MappingsValue{NormalizedJSONValue: customtypes.NewNormalizedJSONNull()}
 }
 
 // NewMappingsUnknown creates an MappingsValue with an unknown value.
 func NewMappingsUnknown() MappingsValue {
-	return MappingsValue{Normalized: jsontypes.NewNormalizedUnknown()}
+	return MappingsValue{NormalizedJSONValue: customtypes.NewNormalizedJSONUnknown()}
 }
 
 // NewMappingsValue creates an MappingsValue with the given JSON string,
@@ -297,7 +291,7 @@ func NewMappingsValue(value string) MappingsValue {
 			value = string(nb)
 		}
 	}
-	return MappingsValue{Normalized: jsontypes.NewNormalizedValue(value)}
+	return MappingsValue{NormalizedJSONValue: customtypes.NewNormalizedJSONValue(value)}
 }
 
 // WithExactDynamicTemplateNames returns a copy of v that uses exact

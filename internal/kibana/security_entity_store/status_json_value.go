@@ -20,9 +20,9 @@ package security_entity_store
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sort"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -39,15 +39,17 @@ var (
 
 // StatusJSONType preserves raw status JSON while ignoring engine order during comparison.
 type StatusJSONType struct {
-	jsontypes.NormalizedType
+	customtypes.NormalizedJSONType
 }
 
 func (t StatusJSONType) String() string {
 	return "security_entity_store.StatusJSONType"
 }
 
-func (t StatusJSONType) ValueType(_ context.Context) attr.Value {
-	return StatusJSONValue{}
+func (t StatusJSONType) ValueType(ctx context.Context) attr.Value {
+	return StatusJSONValue{
+		NormalizedJSONValue: t.NormalizedJSONType.ValueType(ctx).(customtypes.NormalizedJSONValue),
+	}
 }
 
 func (t StatusJSONType) Equal(o attr.Type) bool {
@@ -55,34 +57,32 @@ func (t StatusJSONType) Equal(o attr.Type) bool {
 	if !ok {
 		return false
 	}
-	return t.NormalizedType.Equal(other.NormalizedType)
+	return t.NormalizedJSONType.Equal(other.NormalizedJSONType)
 }
 
-func (t StatusJSONType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return StatusJSONValue{StringValue: in}, nil
+func (t StatusJSONType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	val, diags := t.NormalizedJSONType.ValueFromString(ctx, in)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return StatusJSONValue{
+		NormalizedJSONValue: val.(customtypes.NormalizedJSONValue),
+	}, nil
 }
 
 func (t StatusJSONType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.NormalizedType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	norm, ok := attrValue.(jsontypes.Normalized)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	return StatusJSONValue{Normalized: norm}, nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }
 
 // StatusJSONValue preserves the API response without canonicalizing its stored string.
 type StatusJSONValue struct {
-	jsontypes.Normalized
+	customtypes.NormalizedJSONValue
 }
 
-func (v StatusJSONValue) Type(_ context.Context) attr.Type {
-	return StatusJSONType{}
+func (v StatusJSONValue) Type(ctx context.Context) attr.Type {
+	return StatusJSONType{
+		NormalizedJSONType: v.NormalizedJSONValue.Type(ctx).(customtypes.NormalizedJSONType),
+	}
 }
 
 func (v StatusJSONValue) Equal(o attr.Value) bool {
@@ -90,7 +90,7 @@ func (v StatusJSONValue) Equal(o attr.Value) bool {
 	if !ok {
 		return false
 	}
-	return v.Normalized.Equal(other.Normalized)
+	return v.NormalizedJSONValue.Equal(other.NormalizedJSONValue)
 }
 
 // StringSemanticEquals ignores top-level engine order while retaining Normalized's
@@ -177,13 +177,13 @@ type statusJSONKeyedEngine struct {
 }
 
 func NewStatusJSONNull() StatusJSONValue {
-	return StatusJSONValue{Normalized: jsontypes.NewNormalizedNull()}
+	return StatusJSONValue{NormalizedJSONValue: customtypes.NewNormalizedJSONNull()}
 }
 
 func NewStatusJSONUnknown() StatusJSONValue {
-	return StatusJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
+	return StatusJSONValue{NormalizedJSONValue: customtypes.NewNormalizedJSONUnknown()}
 }
 
 func NewStatusJSONValue(value string) StatusJSONValue {
-	return StatusJSONValue{Normalized: jsontypes.NewNormalizedValue(value)}
+	return StatusJSONValue{NormalizedJSONValue: customtypes.NewNormalizedJSONValue(value)}
 }

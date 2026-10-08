@@ -20,8 +20,9 @@ package rolemapping
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -37,7 +38,7 @@ var (
 
 // NormalizedRulesType is the attr.Type companion for NormalizedRulesValue.
 type NormalizedRulesType struct {
-	jsontypes.NormalizedType
+	customtypes.NormalizedJSONType
 }
 
 // String returns a human readable string of the type name.
@@ -46,8 +47,10 @@ func (t NormalizedRulesType) String() string {
 }
 
 // ValueType returns the Value type.
-func (t NormalizedRulesType) ValueType(_ context.Context) attr.Value {
-	return NormalizedRulesValue{}
+func (t NormalizedRulesType) ValueType(ctx context.Context) attr.Value {
+	return NormalizedRulesValue{
+		NormalizedJSONValue: t.NormalizedJSONType.ValueType(ctx).(customtypes.NormalizedJSONValue),
+	}
 }
 
 // Equal returns true if the given type is equivalent.
@@ -56,39 +59,37 @@ func (t NormalizedRulesType) Equal(o attr.Type) bool {
 	if !ok {
 		return false
 	}
-	return t.NormalizedType.Equal(other.NormalizedType)
+	return t.NormalizedJSONType.Equal(other.NormalizedJSONType)
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t NormalizedRulesType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return NormalizedRulesValue{StringValue: in}, nil
+func (t NormalizedRulesType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	val, diags := t.NormalizedJSONType.ValueFromString(ctx, in)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return NormalizedRulesValue{
+		NormalizedJSONValue: val.(customtypes.NormalizedJSONValue),
+	}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
 func (t NormalizedRulesType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.NormalizedType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	norm, ok := attrValue.(jsontypes.Normalized)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	return NormalizedRulesValue{Normalized: norm}, nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }
 
 // NormalizedRulesValue is a jsontypes.Normalized subtype that treats
 // single-element arrays and plain strings as semantically equal inside
 // "field" rule objects to handle the ES normalization behavior.
 type NormalizedRulesValue struct {
-	jsontypes.Normalized
+	customtypes.NormalizedJSONValue
 }
 
 // Type returns a NormalizedRulesType.
-func (v NormalizedRulesValue) Type(_ context.Context) attr.Type {
-	return NormalizedRulesType{}
+func (v NormalizedRulesValue) Type(ctx context.Context) attr.Type {
+	return NormalizedRulesType{
+		NormalizedJSONType: v.NormalizedJSONValue.Type(ctx).(customtypes.NormalizedJSONType),
+	}
 }
 
 // Equal returns true if the given value is equivalent.
@@ -97,7 +98,7 @@ func (v NormalizedRulesValue) Equal(o attr.Value) bool {
 	if !ok {
 		return false
 	}
-	return v.Normalized.Equal(other.Normalized)
+	return v.NormalizedJSONValue.Equal(other.NormalizedJSONValue)
 }
 
 // StringSemanticEquals returns true when both JSON rule strings are logically
@@ -128,7 +129,7 @@ func (v NormalizedRulesValue) StringSemanticEquals(ctx context.Context, other ba
 
 // NewNormalizedRulesValue creates a NormalizedRulesValue with a known value.
 func NewNormalizedRulesValue(v string) NormalizedRulesValue {
-	return NormalizedRulesValue{Normalized: jsontypes.NewNormalizedValue(v)}
+	return NormalizedRulesValue{NormalizedJSONValue: customtypes.NewNormalizedJSONValue(v)}
 }
 
 // normalizeRulesJSONString parses a JSON string and collapses single-element
