@@ -6,7 +6,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   title = var.dashboard_title
 
   query = {
-    language = "lucene"
-    text     = "status:200"
+    language   = "lucene"
+    expression = "status:200"
   }
 }

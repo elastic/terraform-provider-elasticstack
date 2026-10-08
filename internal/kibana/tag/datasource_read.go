@@ -31,14 +31,13 @@ import (
 func readTagsDataSource(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
+	_ string,
+	spaceID string,
 	config tagsDataSourceModel,
-) (tagsDataSourceModel, diag.Diagnostics) {
+) (tagsDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	spaceID := clients.DefaultSpaceID
-	if typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != "" {
-		spaceID = config.SpaceID.ValueString()
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 	config.SpaceID = types.StringValue(spaceID)
 
 	oapiClient := client.GetKibanaOapiClient()
@@ -46,11 +45,11 @@ func readTagsDataSource(
 	tags, listDiags := listAllTags(ctx, oapiClient, spaceID, query, kibanaoapi.ListTags)
 	diags.Append(listDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	diags.Append(config.setTags(ctx, tags)...)
-	return config, diags
+	return config, !diags.HasError(), diags
 }
 
 type listTagsPageFunc func(context.Context, *kibanaoapi.Client, string, *kbapi.GetTagsParams) (*kibanaoapi.TagListResult, diag.Diagnostics)

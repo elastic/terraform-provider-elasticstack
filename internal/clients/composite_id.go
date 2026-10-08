@@ -71,6 +71,18 @@ func CompositeIDValue(clusterID, resourceID string) types.String {
 	return types.StringValue((&CompositeID{ClusterID: clusterID, ResourceID: resourceID}).String())
 }
 
+// CompositeIdentityValues builds the composite id and the resolved space id
+// as Terraform types.String values, ready for assignment onto a Kibana
+// resource model's id and space_id fields. It centralizes the
+// "setCompositeIdentity" assignment pattern duplicated across Kibana
+// resource model packages (for example tag, osquery_pack, and
+// synthetics/parameter); callers remain responsible for assigning any
+// additional resource-specific id field and for any space id normalization
+// semantics of their own.
+func CompositeIdentityValues(spaceID, resourceID string) (id, space types.String) {
+	return CompositeIDValue(spaceID, resourceID), types.StringValue(spaceID)
+}
+
 // ResourceIDFromComposite extracts the resource segment from a composite
 // "<cluster_uuid>/<resource_identifier>" ID (as produced by CompositeIDValue).
 // If id is null, unknown, or cannot be parsed as a composite ID, fallback is

@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -34,9 +33,8 @@ import (
 
 func testPinnedDashboardModelMinimalQuery() *models.DashboardQueryModel {
 	return &models.DashboardQueryModel{
-		Language: types.StringValue("kql"),
-		Text:     types.StringValue(""),
-		JSON:     jsontypes.NewNormalizedNull(),
+		Language:   types.StringValue("kql"),
+		Expression: types.StringValue(""),
 	}
 }
 

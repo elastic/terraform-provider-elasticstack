@@ -27,30 +27,34 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config integrationDataSourceModel) (integrationDataSourceModel, diag.Diagnostics) {
+func readDataSource(
+	ctx context.Context,
+	kbClient *clients.KibanaScopedClient,
+	resourceID, spaceID string,
+	config integrationDataSourceModel,
+) (integrationDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	client := kbClient.GetFleetClient()
 
-	name := config.Name.ValueString()
 	prerelease := config.Prerelease.ValueBool()
-	spaceID := config.SpaceID.ValueString()
 	packages, pDiags := fleet.GetPackages(ctx, client, prerelease, spaceID)
 	diags.Append(pDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	if config.ID.ValueString() == "" {
-		hash, err := typeutils.StringToHash(name)
-		if err != nil {
-			diags.AddError(err.Error(), "")
-			return config, diags
-		}
-		config.ID = types.StringPointerValue(hash)
+	(&config).populateFromAPI(resourceID, packages)
+
+	// A package that is absent from the Fleet list (or has no version matching
+	// the prerelease filter) is documented, intentional behavior: report
+	// found == true with a null version rather than a not-found error.
+	hash, err := typeutils.StringToHash(resourceID)
+	if err != nil {
+		diags.AddError(err.Error(), "")
+		return config, false, diags
 	}
-
-	(&config).populateFromAPI(name, packages)
-
-	return config, diags
+	config.ID = types.StringPointerValue(hash)
+	config.Name = types.StringValue(resourceID)
+	return config, true, diags
 }

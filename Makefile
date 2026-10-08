@@ -89,7 +89,7 @@ endif
 # Cloud. The location manifest is a document seeded into Elasticsearch by the
 # kibana_settings compose service. Older Kibana versions reject these settings.
 SYNTHETICS_STUB_MANIFEST_INDEX := tf-stub-synthetics-manifest
-KIBANA_SYNTHETICS_STUB := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$${v\#*.}"; minor="$${rest%%.*}"; \
+KIBANA_SYNTHETICS_STUB := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$$(printf '%s\n' "$$v" | cut -d. -f2-)"; minor="$${rest%%.*}"; \
 	if [ "$$major" -gt 8 ] 2>/dev/null || { [ "$$major" -eq 8 ] && [ "$$minor" -ge 14 ]; } 2>/dev/null; then echo 1; fi)
 ifeq ($(KIBANA_SYNTHETICS_STUB),1)
 KIBANA_EXTRA_ARGS := --xpack.uptime.service.manifestUrl=http://elastic:$(ELASTICSEARCH_PASSWORD)@elasticsearch:9200/$(SYNTHETICS_STUB_MANIFEST_INDEX)/_source/manifest \
@@ -97,6 +97,11 @@ KIBANA_EXTRA_ARGS := --xpack.uptime.service.manifestUrl=http://elastic:$(ELASTIC
 	--xpack.uptime.service.password=stub
 endif
 export KIBANA_SYNTHETICS_STUB KIBANA_EXTRA_ARGS SYNTHETICS_STUB_MANIFEST_INDEX
+
+# Kibana 9.4+ needs extra feature flags and settings (kibana-9.4.yml) that
+# earlier versions reject as unknown. Uses the same version parsing as above.
+KIBANA_9_4_PLUS := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$$(printf '%s\n' "$$v" | cut -d. -f2-)"; minor="$${rest%%.*}"; \
+	if [ "$$major" -gt 9 ] 2>/dev/null || { [ "$$major" -eq 9 ] && [ "$$minor" -ge 4 ]; } 2>/dev/null; then echo 1; fi)
 
 RERUN_FAILS ?= 5
 RERUN_FAILS_MAX_FAILURES ?= 20
@@ -184,7 +189,7 @@ docker-kibana: .env  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: .env ## Start Fleet node in docker container
-	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(KIBANA_9_4_PLUS)" = "1" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password

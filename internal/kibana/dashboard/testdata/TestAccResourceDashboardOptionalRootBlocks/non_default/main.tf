@@ -14,7 +14,7 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 45000
   }
   query = {
-    language = "lucene"
-    text     = "host.name:web-*"
+    language   = "lucene"
+    expression = "host.name:web-*"
   }
 }

@@ -32,10 +32,11 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v92/github"
 )
 
 func main() {
@@ -52,6 +53,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 	switch args[0] {
 	case "compute":
 		return cmdCompute(args[1:], stdout, stderr)
+	case "sync-env":
+		return cmdSyncEnv(args[1:], stdout, stderr)
 	case "manage-pr":
 		return cmdManagePR(args[1:], stdout, stderr)
 	case "load-matrix":
@@ -66,6 +69,7 @@ func usageError(w io.Writer) error {
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Subcommands:")
 	fmt.Fprintln(w, "  compute     Compute the desired version list and update the pinned artifact")
+	fmt.Fprintln(w, "  sync-env    Set STACK_VERSION in the env template to the latest GA version in the artifact")
 	fmt.Fprintln(w, "  manage-pr   Create or update the standing version-matrix pull request")
 	fmt.Fprintln(w, "  load-matrix Read the pinned artifact and emit matrix versions and flags")
 	return errors.New("unknown or missing subcommand")
@@ -162,6 +166,7 @@ func newGitHubClient(token, enterpriseURL string, extra ...github.ClientOptionsF
 
 const (
 	defaultArtifactPath      = ".github/versions/acceptance-test-matrix.json"
+	defaultEnvTemplatePath   = ".env.template"
 	defaultSnapshotURL       = "https://snapshots.elastic.co/latest/master.json"
 	defaultElasticRegistry   = "https://docker.elastic.co"
 	defaultDockerHubRegistry = "https://registry-1.docker.io"
@@ -229,6 +234,22 @@ func cmdCompute(args []string, stdout, stderr io.Writer) error {
 	}
 	fmt.Fprintln(stdout, "changed=true")
 	return writeGitHubOutput("changed", "true")
+}
+
+func cmdSyncEnv(args []string, stdout, stderr io.Writer) error {
+	fsFlag := flag.NewFlagSet("sync-env", flag.ContinueOnError)
+	fsFlag.SetOutput(stderr)
+	artifactPath := fsFlag.String("artifact", defaultArtifactPath, "path to the pinned versions artifact")
+	envPath := fsFlag.String("env-file", defaultEnvTemplatePath, "path to the env template to update")
+	if err := fsFlag.Parse(args); err != nil {
+		return err
+	}
+	version, changed, err := SyncEnvFile(*artifactPath, *envPath)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "stack_version=%s\nchanged=%t\n", version, changed)
+	return writeGitHubOutput("changed", strconv.FormatBool(changed))
 }
 
 func cmdLoadMatrix(args []string, _, stderr io.Writer) error {

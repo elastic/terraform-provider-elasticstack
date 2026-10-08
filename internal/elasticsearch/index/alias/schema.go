@@ -25,6 +25,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // attrName is the Terraform schema key for the alias / index name attribute,
@@ -58,8 +60,11 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					attrName: schema.StringAttribute{
-						Description: "Name of the write index.",
+						Description: "Name of the write index. Multi-target expressions are not supported.",
 						Required:    true,
+						Validators: []validator.String{
+							writeIndexNameValidator{},
+						},
 					},
 					"filter": schema.StringAttribute{
 						Description: "Query used to limit documents the alias can access.",
@@ -92,8 +97,13 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						attrName: schema.StringAttribute{
-							Description: "Name of the read index.",
+							Description: "Name or Elasticsearch multi-target expression for the read index or data stream targets.",
 							Required:    true,
+						},
+						"concrete_indices": schema.SetAttribute{
+							Description: "Concrete indices or data streams currently attached to the alias for this expression.",
+							Computed:    true,
+							ElementType: types.StringType,
 						},
 						"filter": schema.StringAttribute{
 							Description: "Query used to limit documents the alias can access.",
@@ -127,4 +137,9 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 
 func getIndexAttrTypes(ctx context.Context) map[string]attr.Type {
 	return getSchemaFactory(ctx).Attributes["write_index"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+}
+
+func getReadIndexAttrTypes(ctx context.Context) map[string]attr.Type {
+	readIndices := getSchemaFactory(ctx).Attributes["read_indices"].(schema.SetNestedAttribute)
+	return readIndices.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

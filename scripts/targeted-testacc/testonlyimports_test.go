@@ -55,11 +55,10 @@ func goList(t *testing.T, repoRoot, format, pattern string) string {
 	return string(out)
 }
 
-// TestImportGraphIncludesTestImports fails when BuildImportGraph drops any
-// TestImports/XTestImports edge. Phase 1 must see packages imported only from
-// test files (shared acceptance-test helpers and the like), otherwise a change
-// to such a package would silently skip the acceptance tests that import it.
-func TestImportGraphIncludesTestImports(t *testing.T) {
+// TestImportGraphExcludesTestOnlyImports keeps Phase 1 limited to production
+// dependencies. Shared acceptance-test helpers are handled by the force-all
+// prefix table rather than a transitive test-import graph.
+func TestImportGraphExcludesTestOnlyImports(t *testing.T) {
 	root := repoRoot(t)
 	modulePath, err := currentModulePath()
 	if err != nil {
@@ -73,21 +72,40 @@ func TestImportGraphIncludesTestImports(t *testing.T) {
 		t.Fatalf("BuildImportGraph: %v", err)
 	}
 
+	productionOut := goList(t, root, "{{.ImportPath}} {{join .Imports \" \"}}", "./internal/... ./provider/...")
+	productionImports := make(map[string]map[string]struct{})
+	for _, fields := range scanGoList(productionOut) {
+		imports := make(map[string]struct{}, len(fields)-1)
+		for _, imp := range fields[1:] {
+			imports[imp] = struct{}{}
+		}
+		productionImports[fields[0]] = imports
+	}
+
 	out := goList(t, root, "{{.ImportPath}} {{join .TestImports \" \"}} {{join .XTestImports \" \"}}", "./internal/... ./provider/...")
-	var missing []string
+	var leaked []string
 	for _, fields := range scanGoList(out) {
 		pkg := fields[0]
 		for _, imp := range fields[1:] {
 			if imp == pkg || !strings.HasPrefix(imp, modulePrefix) {
 				continue
 			}
-			if !slices.Contains(g.Forward[pkg], imp) {
-				missing = append(missing, pkg+" -> "+imp)
+			if _, productionImport := productionImports[pkg][imp]; productionImport {
+				continue
+			}
+			if slices.Contains(g.Forward[pkg], imp) {
+				leaked = append(leaked, pkg+" -> "+imp)
 			}
 		}
 	}
-	if len(missing) > 0 {
-		t.Errorf("import graph is missing test-import edges: %v", missing)
+	if len(leaked) > 0 {
+		t.Errorf("import graph includes test-only edges: %v", leaked)
+	}
+
+	aliasPackage := modulePath + "/internal/elasticsearch/index/alias"
+	acctestPackage := modulePath + "/internal/acctest"
+	if slices.Contains(g.Forward[aliasPackage], acctestPackage) {
+		t.Errorf("import graph includes the test-only edge %s -> %s", aliasPackage, acctestPackage)
 	}
 }
 

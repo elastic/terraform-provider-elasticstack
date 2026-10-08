@@ -55,6 +55,13 @@ func (workflowDataSourceModel) GetVersionRequirements(_ context.Context) ([]enti
 
 var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
 
+// GetID, GetResourceID and GetSpaceID expose the lookup identity. The required
+// `id` attribute is the lookup key (plain workflow id or composite
+// `<space>/<workflow>`); `workflow_id` is computed on the data source.
+func (m workflowDataSourceModel) GetID() types.String         { return m.ID }
+func (m workflowDataSourceModel) GetResourceID() types.String { return m.ID }
+func (m workflowDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
+
 type workflowModel struct {
 	entitycore.ResourceTimeoutsField
 	workflowDataSourceModel

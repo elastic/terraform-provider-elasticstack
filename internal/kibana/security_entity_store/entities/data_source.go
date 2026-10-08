@@ -38,8 +38,10 @@ func NewDataSource() datasource.DataSource {
 		DataSource: entitycore.NewKibanaDataSource[dsModel](
 			entitycore.ComponentKibana,
 			"security_entity_store_entities",
-			getDataSourceSchema,
-			readEntityStoreEntitiesDataSource,
+			entitycore.KibanaDataSourceOptions[dsModel]{
+				Schema: getDataSourceSchema,
+				Read:   readEntityStoreEntitiesDataSource,
+			},
 		),
 	}
 }

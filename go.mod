@@ -7,7 +7,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.19.7
 	github.com/elastic/terraform-provider-elasticstack/analysis/acctestconfigdirlintplugin v0.16.5
 	github.com/google/go-cmp v0.7.0
-	github.com/google/go-github/v89 v89.0.0
+	github.com/google/go-github/v92 v92.0.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-uuid v1.0.4
@@ -25,7 +25,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.57.0
 	golang.org/x/sync v0.23.0
-	golang.org/x/tools v0.50.0
+	golang.org/x/tools v0.51.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -122,7 +122,7 @@ require (
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260908163034-4bcc4b2ee518 // indirect
+	golang.org/x/telemetry v0.0.0-20260924152758-ed294f943157 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

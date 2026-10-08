@@ -51,7 +51,7 @@ resource "elasticstack_kibana_dashboard" "probe" {
   title = %q
   time_range = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query = { language = "kql", text = "" }
+  query = { language = "kql", expression = "" }
   panels = [{
     type = "vis"
     grid = { x = 0, y = 0, w = 24, h = 15 }

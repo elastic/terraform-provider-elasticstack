@@ -27,7 +27,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[dataSourceModel](
 		entitycore.ComponentKibana,
 		"security_role",
-		getDataSourceSchema,
-		readRoleDataSource,
+		entitycore.KibanaDataSourceOptions[dataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readRoleDataSource,
+		},
 	)
 }

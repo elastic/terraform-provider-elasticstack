@@ -22,7 +22,7 @@ permissions:
 ## Requirements
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
-The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`.
+The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`. The workflow SHALL also run on `merge_group` events so that merge-queue runs execute the authoritative full acceptance suite.
 
 #### Scenario: Push to main
 
@@ -35,6 +35,12 @@ The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to br
 - GIVEN a `push` to a branch matching `renovate/**`
 - WHEN the workflow is dispatched
 - THEN the workflow SHALL run so commit check runs exist for branch automerge
+
+#### Scenario: Merge queue event triggers workflow
+
+- GIVEN a `merge_group` event from the pull request merge queue
+- WHEN the workflow is triggered
+- THEN the workflow SHALL run and execute the full acceptance test suite for the merged result
 
 ### Requirement: Build and lint jobs (REQ-007–REQ-008, REQ-031)
 
@@ -55,18 +61,42 @@ The `build` job SHALL run on `ubuntu-latest`, set up Go from `go.mod`, set up No
 
 ### Requirement: Acceptance test job structure (REQ-009–REQ-014)
 
-The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The job's `strategy.matrix.version` list SHALL be loaded at run time from the pinned versions artifact `.github/versions/acceptance-test-matrix.json` (via `fromJson()` from a preceding job's output that reads the checked-out file) rather than hardcoded as a literal YAML list. The matrix acceptance test job SHALL run with a non-fail-fast matrix covering the loaded stack versions crossed with a static `shard: [0, 1]` axis. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
+The matrix acceptance test job SHALL depend on successful completion of the `build` job and the change-classification job. The acceptance test job SHALL run with a non-fail-fast matrix covering configured stack versions and included version-specific overrides. The configured stack versions SHALL NOT include Elastic Stack versions below `8.0.0`. The acceptance test job SHALL configure required environment variables for Elastic credentials and experimental provider behavior. The acceptance test job SHALL execute only when the change-classification job reports `provider_changes=true`.
 
-For each matrix entry, the job SHALL free disk space, set up Go and Terraform, run `make vendor`, start the stack via Docker Compose, and wait for Elasticsearch and Kibana readiness. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. Forced synthetics installation SHALL run only for configured version subsets, matched by numeric major.minor range per the "Per-version environment rules match version ranges, not exact patches" requirement. Acceptance tests SHALL run via `make testacc`, with snapshot versions allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
+For each matrix entry, the job SHALL free disk space, set up Go and Terraform, and run `make vendor`. It SHALL then run a `compute-packages` step to determine whether this shard has acceptance test packages to run. Fleet image pull, stack startup via Docker Compose, Elasticsearch and Kibana readiness waits, API key creation, and forced synthetics installation SHALL run only when `compute-packages` outputs `has_packages=true`; forced synthetics installation SHALL additionally remain limited to configured version subsets. Fleet Server host, agent policy, and package policy setup SHALL be provided by the Docker Compose stack start (`make docker-fleet`) and by the acceptance test PreCheck's default agent download source bootstrap, without any additional per-version-gated Fleet setup step. For PR events with packages, acceptance tests SHALL run via `make targeted-testacc`; for all other events (push, workflow_dispatch, merge_group), acceptance tests SHALL run via `make testacc`. Snapshot versions are allowed to fail (`continue-on-error`) while non-snapshot versions remain blocking.
 
 The stack-start step SHALL have a step-level timeout so that a hung container image pull fails fast instead of consuming the full job timeout.
 
-#### Scenario: Provider change runs stack and tests
+#### Scenario: Provider change on PR — targeted tests run on relevant shards
 
-- **GIVEN** a matrix version and runner
-- **AND** the change-classification job reports `provider_changes=true`
+- **GIVEN** a PR matrix entry for a version and shard
+- **AND** the targeted tool selects packages for this shard
 - **WHEN** the test job executes
-- **THEN** the stack SHALL be provisioned, readiness waits SHALL pass, and `make testacc` SHALL run with the documented policy for snapshots
+- **THEN** `compute-packages` sets `has_packages=true`
+- **AND** the stack SHALL be provisioned and readiness waits SHALL pass
+- **AND** `make targeted-testacc` SHALL run with the selected package list
+
+#### Scenario: Provider change on PR — empty shard skips stack
+
+- **GIVEN** a PR matrix entry where the tool selects no packages for this shard
+- **WHEN** the test job executes
+- **THEN** `compute-packages` sets `has_packages=false`
+- **AND** fleet pull, stack start, and the test step SHALL all be skipped
+- **AND** the job exits 0
+
+#### Scenario: Push to main always runs full suite
+
+- **GIVEN** a push event to the `main` branch
+- **WHEN** a matrix test job executes
+- **THEN** `compute-packages` sets `has_packages=true` unconditionally
+- **AND** `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=<shard>` runs
+
+#### Scenario: merge_group runs full suite
+
+- **GIVEN** a `merge_group` event (merge queue)
+- **WHEN** a matrix test job executes
+- **THEN** `compute-packages` sets `has_packages=true` unconditionally
+- **AND** `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=<shard>` runs
 
 #### Scenario: OpenSpec-only change skips matrix acceptance
 
@@ -84,7 +114,14 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 #### Scenario: Matrix excludes 7.x stack versions
 
 - **WHEN** the acceptance matrix is evaluated
-- **THEN** every configured stack version SHALL be `8.0.0` or higher, except snapshot labels that represent later unreleased stack versions
+- **THEN** every configured stack version SHALL be 8.0.0 or higher, except snapshot labels that represent later unreleased stack versions
+
+#### Scenario: Provider change runs stack and tests
+
+- **GIVEN** a matrix version and runner
+- **AND** the change-classification job reports `provider_changes=true`
+- **WHEN** the test job executes
+- **THEN** the stack SHALL be provisioned, readiness waits SHALL pass, and `make testacc` SHALL run with the documented policy for snapshots
 
 #### Scenario: Fleet bootstrap runs uniformly for every matrix entry
 
@@ -100,13 +137,111 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 - **WHEN** the acceptance test job's matrix is evaluated
 - **THEN** `strategy.matrix.version` SHALL equal exactly the JSON array in that file for that commit, independent of what a version-matrix computation would currently produce
 
+### Requirement: compute-packages step gates stack startup
+
+Each matrix test job SHALL include a `compute-packages` step that runs before the fleet image pull, stack startup, and all other expensive steps. The step SHALL set a `has_packages` output (`true` or `false`). All subsequent expensive steps — fleet image pull, stack start, stack readiness wait, API key creation, forced synthetics installation, and the acceptance test run — SHALL be conditioned on `steps.targeted.outputs.has_packages == 'true'`.
+
+The `compute-packages` step SHALL:
+
+- For non-PR events (`github.event_name != 'pull_request'`, including `push`, `workflow_dispatch`, and `merge_group`): set `has_packages=true` and `targeted_pkgs=` (empty string) unconditionally.
+- For PR events: fetch the PR base commit (`github.event.pull_request.base.sha`) into a local ref, then invoke `go run ./scripts/targeted-testacc/... --base="<local-ref>" --total-shards=2 --shard-index=${{ matrix.shard }}`. If the base-commit fetch fails, the step SHALL fall back to re-invoking the tool without `--base`, in which case the tool resolves the baseline itself (merge-base of `origin/main` and `HEAD`, or `HEAD~1` when `origin/main` is unavailable), possibly widening the diff rather than skipping tests. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
+
+#### Scenario: PR with targeted packages — stack starts and targeted tests run
+
+- **WHEN** a PR event triggers the workflow
+- **AND** the tool emits packages for this shard
+- **THEN** `has_packages=true` is set
+- **AND** all downstream steps including stack startup run normally
+- **AND** the test step runs `make targeted-testacc` with `TARGETED_PKGS` set to the tool output
+
+#### Scenario: PR with no packages for this shard — stack is skipped
+
+- **WHEN** a PR event triggers the workflow
+- **AND** the tool emits nothing for this shard (e.g. shard 1 of a small targeted run)
+- **THEN** `has_packages=false` is set
+- **AND** the fleet image pull step is skipped
+- **AND** the stack start step is skipped
+- **AND** the acceptance test step is skipped
+- **AND** the job exits 0
+
+#### Scenario: Base-commit fetch fails — tool falls back to self-resolved baseline
+
+- **WHEN** a PR event triggers the workflow
+- **AND** the `git fetch` of the PR base commit fails (e.g. pruned ref or shallow-history limitation)
+- **THEN** the tool SHALL be re-invoked without `--base`
+- **AND** the tool resolves the diff baseline as the merge-base of `origin/main` and `HEAD`, or `HEAD~1` when `origin/main` is unavailable
+- **AND** the job SHALL NOT silently skip the acceptance suite
+
+#### Scenario: Tool invocation fails — job fails rather than skipping the suite
+
+- **WHEN** a PR event triggers the workflow
+- **AND** the `go run ./scripts/targeted-testacc/...` invocation in the compute-packages step exits non-zero
+- **THEN** the step SHALL emit an error annotation and fail
+- **AND** `has_packages` SHALL NOT be set to a skipping value
+- **AND** the acceptance test suite SHALL NOT be silently skipped with a green job
+
+#### Scenario: Push to main — stack starts and full suite runs
+
+- **WHEN** a push to `main` triggers the workflow
+- **THEN** `has_packages=true` is set unconditionally by the compute-packages step
+- **AND** stack startup proceeds normally
+- **AND** the test step runs `make testacc` (full suite)
+
+#### Scenario: workflow_dispatch — full suite runs
+
+- **WHEN** a `workflow_dispatch` event triggers the workflow
+- **THEN** `has_packages=true` is set unconditionally
+- **AND** the test step runs `make testacc`
+
+#### Scenario: merge_group — full suite runs
+
+- **WHEN** a `merge_group` event triggers the workflow
+- **THEN** `has_packages=true` is set unconditionally by the compute-packages step
+- **AND** stack startup proceeds normally
+- **AND** the test step runs `make testacc` (full suite)
+
+### Requirement: Test step routes between targeted and full suite
+
+The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be conditioned on `has_packages == 'true'`. The step SHALL pass the `targeted_pkgs` output to the shell via an `env:` block variable (`TARGETED_PKGS`) and expand `"$TARGETED_PKGS"` in the run script, never by interpolating the output directly into shell text. When `targeted_pkgs` is non-empty (PR event with packages), the step SHALL run `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"` with no `ACCTEST_TOTAL_SHARDS`/`ACCTEST_SHARD_INDEX` re-sharding, because the tool already applied `--total-shards`/`--shard-index` during package selection and the per-shard package list is final. When `targeted_pkgs` is empty (non-PR event, including `push`, `workflow_dispatch`, and `merge_group`), the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` (existing full-suite behaviour, unchanged).
+
+#### Scenario: Non-PR test step is identical to pre-change behaviour
+
+- **WHEN** the workflow runs on a push to `main`
+- **THEN** the acceptance test step invocation is `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
+- **AND** `TARGETED_PKGS` is empty, so the step takes the full-suite branch
+- **AND** `make testacc` continues to execute unit-test-only tests inline, because it has no `-run`/`-skip` filter; the dedicated unit-test job is additive on non-PR events, not a replacement
+- **AND** on PR events, unit-test-only packages are covered by the dedicated unit-test job, since targeted selection covers only `func TestAcc` packages
+
+#### Scenario: PR test step uses targeted packages
+
+- **WHEN** the workflow runs on a PR and `targeted_pkgs` is non-empty
+- **THEN** the test step invocation is `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"`
+- **AND** `TARGETED_PKGS` is provided via the step's `env:` block, not interpolated into shell text
+- **AND** no `ACCTEST_TOTAL_SHARDS`/`ACCTEST_SHARD_INDEX` re-sharding is performed on the targeted invocation
+
+### Requirement: Unit tests run independently of acceptance targeting
+
+The workflow SHALL include a dedicated unit-test job (`go test ./... -skip '^TestAcc'`) that runs on every event where the change-classification job reports `provider_changes=true`. The `-skip '^TestAcc'` filter SHALL exclude acceptance tests, which run in the acceptance matrix with a live stack; several `*ExplicitConnection` acceptance tests assert endpoint environment variables before the framework's `TF_ACC` gate and therefore cannot run in a stackless unit-test job. The unit-test job SHALL NOT be gated on the compute-packages `has_packages` output, because the targeted-testacc selection only covers packages containing acceptance tests (`func TestAcc`), so unit-test-only packages (e.g. `internal/entitycore`, `generated/kbapi`, `internal/clients/*`, `internal/fleet/policyshape`, `internal/asyncutils`, `internal/diagutil`) would otherwise never run on PRs.
+
+#### Scenario: PR with docs-only acceptance shards still runs unit tests
+
+- **WHEN** a PR event triggers the workflow and the provider changes classification passes
+- **AND** the compute-packages step sets `has_packages=false` for one or more matrix shards
+- **THEN** the unit-test job still runs `go test ./...` and its result gates the PR
+
+#### Scenario: Unit-test job not gated on has_packages
+
+- **WHEN** the unit-test job executes
+- **THEN** the job has no `if` condition referencing `steps.targeted.outputs.has_packages`
+
 ### Requirement: Pre-pull fallback fleet image with retry
 
-Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries whose version falls within the Docker-Hub-fallback version range. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. This step SHALL be skipped for matrix entries outside that range, which use the default `docker.elastic.co` registry.
+Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries that use a Docker Hub fallback image. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. This step SHALL be skipped for matrix entries that use the default `docker.elastic.co` registry, and SHALL additionally be skipped when the `compute-packages` step outputs `has_packages=false` for the shard (alongside all other expensive steps).
 
 #### Scenario: Docker Hub fleet image is pre-pulled successfully
 
-- **GIVEN** a matrix entry whose version falls within the Docker-Hub-fallback version range
+- **GIVEN** a matrix entry with `fleetImage` set to a Docker Hub image
+- **AND** `has_packages=true`
 - **WHEN** the pre-pull step executes
 - **THEN** the image SHALL be pulled with a per-attempt timeout
 - **AND** failed attempts SHALL be retried up to three times
@@ -114,10 +249,17 @@ Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fl
 
 #### Scenario: Pre-pull is skipped for docker.elastic.co images
 
-- **GIVEN** a matrix entry whose version falls outside the Docker-Hub-fallback version range
+- **GIVEN** a matrix entry without a `fleetImage` override
 - **WHEN** the test job step list is evaluated
 - **THEN** the pre-pull step SHALL be skipped
 - **AND** the stack-start step SHALL proceed normally
+
+#### Scenario: Pre-pull is skipped when the shard has no packages
+
+- **GIVEN** a matrix entry whose `compute-packages` step outputs `has_packages=false`
+- **WHEN** the test job step list is evaluated
+- **THEN** the pre-pull step SHALL be skipped
+- **AND** the stack-start and acceptance test steps SHALL be skipped
 
 ### Requirement: Snapshot failure PR notice (REQ-015)
 
@@ -131,13 +273,19 @@ On snapshot acceptance failure in `pull_request` events, the workflow SHALL crea
 
 ### Requirement: Failure diagnostics and teardown (REQ-016–REQ-017)
 
-The workflow SHALL emit Docker Compose logs when the job fails or acceptance tests fail. The workflow SHALL always tear down the Docker Compose stack via `make docker-clean`, regardless of prior step outcomes.
+The workflow SHALL emit Docker Compose logs when the job fails or acceptance tests fail. The workflow SHALL always tear down the Docker Compose stack via `make docker-clean`, regardless of prior step outcomes. The teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL run even when `has_packages=false`; when the stack was never started, `make docker-clean` SHALL be a no-op and SHALL exit 0.
 
 #### Scenario: Always tear down
 
 - GIVEN any prior step outcome in the test job
 - WHEN the job finishes
 - THEN `make docker-clean` SHALL run in an `always()` step
+
+#### Scenario: Teardown is a no-op when stack was not started
+
+- **WHEN** `has_packages=false` and the stack start step was skipped
+- **THEN** `make docker-clean` runs
+- **AND** exits 0 without error
 
 ### Requirement: Auto-approve job (REQ-018–REQ-021)
 
@@ -177,7 +325,7 @@ The change-classification job SHALL request the minimum permissions required to 
 
 ### Requirement: Change classification gate (REQ-032–REQ-033)
 
-The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` and other than `.github/versions/acceptance-test-matrix.json`. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push` and `workflow_dispatch`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
+The workflow SHALL evaluate whether the `build`, `lint`, `golangci-lint`, `unit-test`, and matrix acceptance `test` jobs are required for the current change set via a dedicated change-classification job (`classify`) that runs unconditionally on every trigger. For `pull_request` events, the classifier SHALL set `provider_changes=false` only when every changed file is non-impacting: exactly `CHANGELOG.md`, or any path under `openspec/`, or any path under `.agents/`, or any path under `.github/` other than `.github/workflows/provider.yml` itself. Any change set containing at least one path outside that non-impacting set, or an empty changed-file list, SHALL set `provider_changes=true`. For non-`pull_request` events (including `push`, `workflow_dispatch`, and `merge_group`), the classifier SHALL skip file inspection entirely and unconditionally set `provider_changes=true`.
 
 When the change-classification job runs, it SHALL expose its result as a workflow output that downstream jobs can consume when deciding whether those jobs are required.
 
@@ -195,7 +343,7 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 
 #### Scenario: Non-pull_request event always classifies as provider-impacting
 
-- **GIVEN** a non-`pull_request` event triggering the workflow (including `push` or `workflow_dispatch`)
+- **GIVEN** a non-`pull_request` event triggering the workflow (including `push`, `workflow_dispatch`, or `merge_group`)
 - **WHEN** the change-classification job runs
 - **THEN** it SHALL report `provider_changes=true` without inspecting the changed-file list
 
@@ -207,26 +355,26 @@ When the change-classification job runs, it SHALL expose its result as a workflo
 
 ### Requirement: Provider gate job (REQ-034–REQ-036)
 
-The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, `load-matrix`, and matrix acceptance `test` job results.
+The workflow SHALL publish a `gate` job ("Provider Gate") that always reports a final required-check result for the workflow run, evaluating the change-classification result together with the `build`, `lint`, `golangci-lint`, matrix acceptance `test`, and `unit-test` job results.
 
 The `gate` job SHALL succeed when either of the following is true:
 
-* The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, `load-matrix`, and the matrix acceptance `test` job are all intentionally skipped
-* `build`, `lint`, `golangci-lint`, `load-matrix`, and the matrix acceptance `test` job all complete successfully (regardless of the classify result)
+- The change-classification job reports `provider_changes=false` and `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job are all intentionally skipped
+- `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job all complete successfully (regardless of the classify result)
 
 The `gate` job SHALL fail when any of the following is true:
 
-* Any of `build`, `lint`, `golangci-lint`, `load-matrix`, or the matrix acceptance `test` job reports `failure` or `cancelled`
-* The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, `load-matrix`, or the matrix acceptance `test` job reports an unexpected `skipped` result
-* Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
+- Any of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports `failure` or `cancelled`
+- The change-classification job reports `provider_changes=true` and at least one of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports an unexpected `skipped` result
+- Any other job-result combination, including an unrecognised classify result (not `true`/`false`) or an unrecognised job result value (not one of `success`, `skipped`, `failure`, `cancelled`)
 
-The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint` checks.
+The `gate` job SHALL provide a stable required-check target that can be used by GitHub branch protection or rulesets instead of the per-version matrix acceptance checks or the individual `build`/`lint`/`golangci-lint`/`unit-test` checks.
 
 #### Scenario: OpenSpec-only pull request
 
 - **GIVEN** a pull request whose changed files are all under `openspec/`
 - **WHEN** the workflow reaches the `gate` job
-- **THEN** `build`, `lint`, `golangci-lint`, `load-matrix`, and the matrix acceptance `test` job SHALL be treated as intentionally skipped
+- **THEN** `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, and the `unit-test` job SHALL be treated as intentionally skipped
 - **AND** the `gate` job SHALL succeed
 
 #### Scenario: Provider change with failing acceptance coverage
@@ -239,9 +387,17 @@ The `gate` job SHALL provide a stable required-check target that can be used by 
 #### Scenario: Provider change with an unexpected skip
 
 - **GIVEN** a workflow run with `provider_changes=true`
-- **AND** at least one of `build`, `lint`, `golangci-lint`, `load-matrix`, or the matrix acceptance `test` job reports `skipped`
+- **AND** at least one of `build`, `lint`, `golangci-lint`, the matrix acceptance `test` job, or the `unit-test` job reports `skipped`
 - **WHEN** the `gate` job evaluates the workflow state
 - **THEN** the `gate` job SHALL fail
+
+#### Scenario: Unit-test job failure gates the PR
+
+- **GIVEN** a workflow run with `provider_changes=true`
+- **AND** the `unit-test` job reports `failure` while `build`, `lint`, `golangci-lint`, and the matrix acceptance `test` job report `success`
+- **WHEN** the `gate` job evaluates the workflow state
+- **THEN** the `gate` job SHALL fail
+- **AND** auto-approval SHALL NOT fire
 
 ### Requirement: Snapshot-to-GA version promotion
 
@@ -297,4 +453,3 @@ The following numeric ranges SHALL apply:
 
 - **WHEN** the acceptance test job's `strategy` block is inspected
 - **THEN** it SHALL NOT contain a `matrix.include` list keyed to exact version strings for runner or fleet-image selection
-

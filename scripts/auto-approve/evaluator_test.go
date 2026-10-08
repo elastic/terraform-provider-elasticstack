@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v92/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -273,6 +273,18 @@ func TestEvaluateVersionMatrix(t *testing.T) {
 			wantReason:   "all gates passed",
 		},
 		{
+			name: "approves when the matrix and .env.template are both changed",
+			mutate: func(in *EvaluationInput) {
+				in.Files = []*github.CommitFile{
+					makeFile(".github/versions/acceptance-test-matrix.json"),
+					makeFile(".env.template"),
+				}
+			},
+			wantApprove:  true,
+			wantCategory: "version-matrix",
+			wantReason:   "all gates passed",
+		},
+		{
 			name: "rejects when a commit author is not github-actions[bot]",
 			mutate: func(in *EvaluationInput) {
 				in.Commits = []*github.RepositoryCommit{
@@ -294,7 +306,7 @@ func TestEvaluateVersionMatrix(t *testing.T) {
 			},
 			wantApprove:  false,
 			wantCategory: "version-matrix",
-			wantReason:   "pull request contains files other than .github/versions/acceptance-test-matrix.json",
+			wantReason:   "pull request contains files other than .github/versions/acceptance-test-matrix.json, .env.template",
 		},
 		{
 			name: "does not match version-matrix when head branch is different",
@@ -334,7 +346,7 @@ func TestEvaluateVersionMatrix(t *testing.T) {
 			},
 			wantApprove:  false,
 			wantCategory: "version-matrix",
-			wantReason:   "pull request contains files other than .github/versions/acceptance-test-matrix.json",
+			wantReason:   "pull request contains files other than .github/versions/acceptance-test-matrix.json, .env.template",
 		},
 	}
 

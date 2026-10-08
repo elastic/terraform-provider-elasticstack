@@ -73,7 +73,7 @@ When `space_id` is configured and the Kibana server version is at least 9.1.0, t
 
 - GIVEN a valid `name` and optional `prerelease` flag
 - WHEN read runs on the data source
-- THEN the data source SHALL set `version` to the version returned by the Fleet list packages API for the matching package name, or null if not found
+- THEN the read callback SHALL set `id` and set `version` to the version returned by the Fleet list packages API for the matching package name, or null if not found, and SHALL return `found == true` (this data source intentionally retains soft not-found semantics; the envelope's not-found error is not raised)
 
 #### Scenario: Data source with space_id
 

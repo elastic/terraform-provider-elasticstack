@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -310,72 +309,28 @@ func managedIntegrationInputType() policyshape.InputType {
 }
 
 func managedIntegrationInputAttributeTypes() map[string]attr.Type {
-	return map[string]attr.Type{
-		policyshape.AttrEnabled:   types.BoolType,
-		policyshape.AttrCondition: types.StringType,
-		policyshape.AttrVars:      jsontypes.NormalizedType{},
-		policyshape.AttrStreams: types.MapType{
-			ElemType: policyshape.StreamType(),
-		},
+	attributeTypes := policyshape.StreamAttributeTypes()
+	attributeTypes[policyshape.AttrStreams] = types.MapType{
+		ElemType: policyshape.StreamType(),
 	}
+	return attributeTypes
 }
 
+// getInputsNestedObject delegates to the shared policyshape schema builder.
+// Unlike integration_policy, this resource omits the "defaults" sub-object
+// (see managedIntegrationInputType's doc comment) and marks the input-level
+// "vars" attribute Computed (see policyshape.InputVarsOptions.Computed).
 func getInputsNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		CustomType: managedIntegrationInputType(),
-		Attributes: map[string]schema.Attribute{
-			policyshape.AttrEnabled: schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             booldefault.StaticBool(true),
-				MarkdownDescription: "Enable the input.",
-			},
-			policyshape.AttrCondition: schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Agent condition expression to evaluate whether to apply this input.",
-			},
-			policyshape.AttrVars: schema.StringAttribute{
-				Computed:   true,
-				Optional:   true,
-				CustomType: jsontypes.NormalizedType{},
-				Sensitive:  varsAreSensitive,
-				MarkdownDescription: "Input-level variables as JSON. Computed (not purely Optional): some packages " +
-					"(e.g. cloud_security_posture/CSPM) populate informational input-level vars " +
-					"(such as CloudFormation quick-create template URLs) that are always present in the API " +
-					"response regardless of configuration; Computed with UseStateForUnknown lets those flow " +
-					"through without requiring the user to declare them.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			policyshape.AttrStreams: schema.MapNestedAttribute{
-				Optional:            true,
-				MarkdownDescription: "Input streams mapped by stream ID.",
-				NestedObject:        getInputStreamNestedObject(varsAreSensitive),
-			},
+	return policyshape.InputsNestedObject(policyshape.InputsNestedObjectConfig{
+		CustomType:       managedIntegrationInputType(),
+		VarsAreSensitive: varsAreSensitive,
+		InputVars: policyshape.InputVarsOptions{
+			Computed: true,
+			Description: "Input-level variables as JSON. Computed (not purely Optional): some packages " +
+				"(e.g. cloud_security_posture/CSPM) populate informational input-level vars " +
+				"(such as CloudFormation quick-create template URLs) that are always present in the API " +
+				"response regardless of configuration; Computed with UseStateForUnknown lets those flow " +
+				"through without requiring the user to declare them.",
 		},
-	}
-}
-
-func getInputStreamNestedObject(varsAreSensitive bool) schema.NestedAttributeObject {
-	return schema.NestedAttributeObject{
-		Attributes: map[string]schema.Attribute{
-			policyshape.AttrEnabled: schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             booldefault.StaticBool(true),
-				MarkdownDescription: "Enable the stream.",
-			},
-			policyshape.AttrCondition: schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Agent condition expression to evaluate whether to apply this stream.",
-			},
-			policyshape.AttrVars: schema.StringAttribute{
-				Optional:            true,
-				CustomType:          jsontypes.NormalizedType{},
-				Sensitive:           varsAreSensitive,
-				MarkdownDescription: "Stream-level variables as JSON.",
-			},
-		},
-	}
+	})
 }

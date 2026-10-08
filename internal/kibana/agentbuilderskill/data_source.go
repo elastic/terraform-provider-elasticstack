@@ -19,13 +19,11 @@ package agentbuilderskill
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -46,13 +44,19 @@ type skillDataSourceModel struct {
 
 var _ entitycore.WithVersionRequirements = skillDataSourceModel{}
 
+// UsesCompositeResourceID opts the data source into parsing skill_id as a
+// composite "<space>/<skill>" lookup key.
+func (skillDataSourceModel) UsesCompositeResourceID() bool { return true }
+
 // NewDataSource is a helper function to simplify the provider implementation.
 func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[skillDataSourceModel](
 		entitycore.ComponentKibana,
 		"agentbuilder_skill",
-		getDataSourceSchema,
-		readSkillDataSource,
+		entitycore.KibanaDataSourceOptions[skillDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readSkillDataSource,
+		},
 	)
 }
 
@@ -114,41 +118,29 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 	}
 }
 
-// readSkillDataSource is the envelope read callback for the skill data source.
-// The envelope owns config decode, GetKibanaClient, static version enforcement
-// via GetVersionRequirements, and resp.State.Set. This function only contains
-// entity-specific logic.
-func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config skillDataSourceModel) (skillDataSourceModel, diag.Diagnostics) {
+func readSkillDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, resourceID, spaceID string, config skillDataSourceModel) (skillDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(config.SkillID) || config.SkillID.ValueString() == "" {
-		diags.AddError("Invalid configuration", "skill_id must be set.")
-		return config, diags
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	oapiClient := kbClient.GetKibanaOapiClient()
-
-	spaceID, skillID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.SkillID.ValueString())
-
-	skill, skillDiags := kibanaoapi.GetSkill(ctx, oapiClient, spaceID, skillID)
+	skill, skillDiags := kibanaoapi.GetSkill(ctx, kbClient.GetKibanaOapiClient(), spaceID, resourceID)
 	diags.Append(skillDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if skill == nil {
-		diags.AddError("Skill not found", fmt.Sprintf("Unable to fetch skill with ID %s", skillID))
-		return config, diags
+		return config, false, diags
 	}
 
 	populateDiags := (&config.skillBaseModel).populateFromAPI(ctx, spaceID, skill)
 	diags.Append(populateDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	// Ensure SkillID is normalized back to just the resource id (in case input
 	// was composite).
 	config.SkillID = types.StringValue(skill.ID)
 
-	return config, diags
+	return config, true, diags
 }

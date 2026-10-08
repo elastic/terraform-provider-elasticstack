@@ -159,6 +159,31 @@ func SkipIfUnsupportedConstraints(t *testing.T, constraints version.Constraints,
 	}
 }
 
+// SkipIfUnsupportedAnyConstraints skips the test unless the acceptance Elasticsearch version
+// satisfies at least one of the given constraint sets (an OR of AND-only go-version sets), or
+// the deployment flavor is incompatible. Serverless clusters bypass constraint checks.
+// Infrastructure failures call t.Fatal.
+func SkipIfUnsupportedAnyConstraints(t *testing.T, flavor Flavor, alternatives ...version.Constraints) {
+	t.Helper()
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
+	var lastReason string
+	for _, constraints := range alternatives {
+		skip, reason, err := checkSkip(skipContext(t), nil, constraints, flavor, fetchAcceptanceServerInfo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !skip {
+			return
+		}
+		lastReason = reason
+	}
+	if len(alternatives) > 0 {
+		t.Skip(lastReason)
+	}
+}
+
 func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (bool, error) {
 	return func() (b bool, err error) {
 		if os.Getenv("TF_ACC") == "" {

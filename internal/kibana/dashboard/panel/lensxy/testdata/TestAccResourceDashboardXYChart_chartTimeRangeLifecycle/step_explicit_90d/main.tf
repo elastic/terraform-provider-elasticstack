@@ -6,7 +6,7 @@ resource "elasticstack_kibana_dashboard" "test" {
   title            = var.dashboard_title
   time_range       = { from = "now-7d", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "vis"

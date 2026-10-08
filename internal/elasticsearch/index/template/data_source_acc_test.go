@@ -934,3 +934,21 @@ func testCheckDataSourceTemplateAliasBoolAttrFalseOrAbsent(resourceName, aliasNa
 		return nil
 	}
 }
+
+func TestAccIndexTemplateDataSourceNotFound(t *testing.T) {
+	templateName := "missing-template-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_found"),
+				ConfigVariables: config.Variables{
+					"template_name": config.StringVariable(templateName),
+				},
+				ExpectError: regexp.MustCompile("elasticsearch_index_template not found"),
+			},
+		},
+	})
+}

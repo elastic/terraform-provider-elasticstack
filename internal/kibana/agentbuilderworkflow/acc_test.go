@@ -365,7 +365,7 @@ func TestAccDataSourceKibanaAgentBuilderWorkflowNotFound(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"workflow_id": config.StringVariable(missingID),
 				},
-				ExpectError: regexp.MustCompile(`(?i)workflow not found`),
+				ExpectError: regexp.MustCompile(`kibana_agentbuilder_workflow not found`),
 			},
 		},
 	})

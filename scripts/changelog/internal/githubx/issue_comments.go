@@ -20,7 +20,7 @@ package githubx
 import (
 	"context"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v92/github"
 )
 
 const issueCommentsPageSize = 100
@@ -69,16 +69,14 @@ func ListIssueComments(ctx context.Context, client *github.Client, owner, repo s
 
 // CreateIssueComment adds a comment to issueNumber.
 func CreateIssueComment(ctx context.Context, client *github.Client, owner, repo string, issueNumber int, body string) error {
-	bodyCopy := body
-	in := &github.IssueComment{Body: &bodyCopy}
+	in := github.IssueCommentRequest{Body: body}
 	_, _, err := client.Issues.CreateComment(ctx, owner, repo, issueNumber, in)
 	return err
 }
 
 // UpdateIssueComment edits an existing issue comment's body.
 func UpdateIssueComment(ctx context.Context, client *github.Client, owner, repo string, commentID int64, body string) error {
-	bodyCopy := body
-	edit := &github.IssueComment{Body: &bodyCopy}
-	_, _, err := client.Issues.EditComment(ctx, owner, repo, commentID, edit)
+	edit := github.IssueCommentRequest{Body: body}
+	_, _, err := client.Issues.UpdateComment(ctx, owner, repo, commentID, edit)
 	return err
 }

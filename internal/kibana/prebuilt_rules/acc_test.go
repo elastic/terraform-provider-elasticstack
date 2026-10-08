@@ -39,10 +39,13 @@ import (
 
 var (
 	minVersionPrebuiltRules = version.Must(version.NewVersion("8.0.0"))
-	// 9.4.6 / 9.4.7 / 9.5.0 / 9.5.3 / 9.5.4 install-all in a new custom space 400s
-	// on a deprecated rule stub (elastic/kibana#285497). go-version constraints
-	// are AND-only, so each known-bad pin is excluded exactly.
-	prebuiltRulesInSpaceConstraints = version.MustConstraints(version.NewConstraint("!= 9.4.6, != 9.4.7, != 9.5.0, != 9.5.3, != 9.5.4"))
+	// 9.4.x and 9.5.x install-all in a new custom space 400s on a deprecated rule stub
+	// (elastic/kibana#285497). go-version constraints are AND-only, so the supported range
+	// is expressed as alternatives (OR): < 9.4.0 or >= 9.6.0 (including 9.6.0 prereleases).
+	prebuiltRulesInSpaceConstraints = []version.Constraints{
+		version.MustConstraints(version.NewConstraint("< 9.4.0")),
+		version.MustConstraints(version.NewConstraint(">= 9.6.0-0")),
+	}
 )
 
 func TestPrebuiltRulesInSpaceConstraints(t *testing.T) {
@@ -54,9 +57,13 @@ func TestPrebuiltRulesInSpaceConstraints(t *testing.T) {
 		allowed bool
 	}{
 		{name: "8.19.21", version: "8.19.21", allowed: true},
+		{name: "9.3.9", version: "9.3.9", allowed: true},
+		{name: "9.4.0", version: "9.4.0", allowed: false},
 		{name: "9.4.6", version: "9.4.6", allowed: false},
+		{name: "9.4.8", version: "9.4.8", allowed: false},
 		{name: "9.5.0", version: "9.5.0", allowed: false},
 		{name: "9.5.3", version: "9.5.3", allowed: false},
+		{name: "9.5.5", version: "9.5.5", allowed: false},
 		{name: "9.6.0-SNAPSHOT", version: "9.6.0-SNAPSHOT", allowed: true},
 	}
 
@@ -64,7 +71,11 @@ func TestPrebuiltRulesInSpaceConstraints(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			v := version.Must(version.NewVersion(tc.version))
-			require.Equal(t, tc.allowed, prebuiltRulesInSpaceConstraints.Check(v))
+			allowed := false
+			for _, c := range prebuiltRulesInSpaceConstraints {
+				allowed = allowed || c.Check(v)
+			}
+			require.Equal(t, tc.allowed, allowed)
 		})
 	}
 }
@@ -73,7 +84,7 @@ func TestAccResourcePrebuiltRules(t *testing.T) {
 	testCases := []struct {
 		name        string
 		spaceID     string
-		constraints version.Constraints
+		constraints []version.Constraints
 	}{
 		{
 			name:    "default",
@@ -89,7 +100,7 @@ func TestAccResourcePrebuiltRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if len(tc.constraints) > 0 {
-				versionutils.SkipIfUnsupportedConstraints(t, tc.constraints, versionutils.FlavorAny)
+				versionutils.SkipIfUnsupportedAnyConstraints(t, versionutils.FlavorAny, tc.constraints...)
 			}
 			testAccResourcePrebuiltRules(t, tc.spaceID)
 		})

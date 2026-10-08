@@ -376,3 +376,21 @@ func TestAccDataSourceKibanaSecurityRole(t *testing.T) {
 		},
 	})
 }
+
+func TestAccDataSourceKibanaSecurityRoleNotFound(t *testing.T) {
+	roleName := "missing-role-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_found"),
+				ConfigVariables: config.Variables{
+					"role_name": config.StringVariable(roleName),
+				},
+				ExpectError: regexp.MustCompile("kibana_security_role not found"),
+			},
+		},
+	})
+}

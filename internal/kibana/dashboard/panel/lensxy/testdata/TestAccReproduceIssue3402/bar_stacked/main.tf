@@ -20,8 +20,8 @@ resource "elasticstack_kibana_dashboard" "repro_3402" {
     value = 0
   }
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
   panels = [{
     type = "vis"

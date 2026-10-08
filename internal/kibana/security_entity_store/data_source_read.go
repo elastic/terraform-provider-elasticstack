@@ -27,12 +27,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScopedClient, model dsModel) (dsModel, diag.Diagnostics) {
-	spaceID := clients.EffectiveSpaceIDFromValue(model.SpaceID)
+func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScopedClient, _, spaceID string, model dsModel) (dsModel, bool, diag.Diagnostics) {
+	spaceID = clients.EffectiveSpaceID(spaceID)
 	includeComponents := typeutils.IsKnown(model.IncludeComponents) && model.IncludeComponents.ValueBool()
 	status, rawBody, diags := getEntityStoreStatus(ctx, client, spaceID, includeComponents)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	model.SpaceID = types.StringValue(spaceID)
@@ -41,10 +41,10 @@ func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScoped
 
 	engines, engineDiags := flattenEngines(ctx, status.Engines)
 	if engineDiags.HasError() {
-		return model, engineDiags
+		return model, false, engineDiags
 	}
 	model.Engines = engines
 
 	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
-	return model, nil
+	return model, true, nil
 }

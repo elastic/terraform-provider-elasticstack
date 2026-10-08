@@ -1,7 +1,19 @@
 ## [Unreleased]
 
+### Breaking changes
+
+The following data sources previously returned empty state or only a warning when the entity was not found, and now return an error: snapshot repository, trained model, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, index template and query ruleset. Configurations that probed for existence this way must handle the error.
+
+Replace `query.text` / `query.json` with `query.expression` in `.tf` files. State is migrated automatically by a schema v1 -> v2 state upgrader; the `json` value is carried over to `expression` unchanged.
+
 ### Changes
 
+- Data sources now return a standardized error when the requested entity is not found. ([#5090](https://github.com/elastic/terraform-provider-elasticstack/pull/5090))
+- `elasticstack_kibana_dashboard` root `query` now uses `expression` instead of `text`/`json` (state schema v2 with automatic upgrader) ([#5094](https://github.com/elastic/terraform-provider-elasticstack/pull/5094))
+- Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))
+- Support wildcard and multi-target expressions in index alias read indices. ([#5079](https://github.com/elastic/terraform-provider-elasticstack/pull/5079))
+- `elasticstack_fleet_elastic_defend_integration_policy` now creates the policy with the configured `policy_id` instead of ignoring it, and rejects an empty `policy_id` at plan time. ([#5041](https://github.com/elastic/terraform-provider-elasticstack/pull/5041))
+- Add the `preset` attribute to `elasticstack_fleet_output` for elasticsearch and remote_elasticsearch outputs. Requires Elastic Stack 8.12.0 or later. ([#5042](https://github.com/elastic/terraform-provider-elasticstack/pull/5042))
 - `elasticstack_elasticsearch_ingest_processor_date`: change default value for locale from 'ENGLISH' to 'en' ([#5064](https://github.com/elastic/terraform-provider-elasticstack/pull/5064))
 - Make the root `time_range`, `refresh_interval` and `query` blocks optional on `elasticstack_kibana_dashboard`. ([#5031](https://github.com/elastic/terraform-provider-elasticstack/pull/5031))
 - Add the `elasticstack_fleet_space_settings` resource to manage Fleet's per-space settings (`allowed_namespace_prefixes`). Requires Elastic Stack 9.1.0 or newer. ([#4988](https://github.com/elastic/terraform-provider-elasticstack/pull/4988))
