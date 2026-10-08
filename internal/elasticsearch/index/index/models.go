@@ -27,6 +27,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/dynamicsettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -58,78 +59,37 @@ var (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                                 types.String              `tfsdk:"id"`
-	ElasticsearchConnection            types.List                `tfsdk:"elasticsearch_connection"`
-	Name                               types.String              `tfsdk:"name"`
-	ConcreteName                       types.String              `tfsdk:"concrete_name"`
-	NumberOfShards                     types.Int64               `tfsdk:"number_of_shards"`
-	NumberOfRoutingShards              types.Int64               `tfsdk:"number_of_routing_shards"`
-	Codec                              types.String              `tfsdk:"codec"`
-	RoutingPartitionSize               types.Int64               `tfsdk:"routing_partition_size"`
-	LoadFixedBitsetFiltersEagerly      types.Bool                `tfsdk:"load_fixed_bitset_filters_eagerly"`
-	ShardCheckOnStartup                types.String              `tfsdk:"shard_check_on_startup"`
-	Sort                               types.List                `tfsdk:"sort"`
-	SortField                          types.Set                 `tfsdk:"sort_field"`
-	SortOrder                          types.List                `tfsdk:"sort_order"`
-	MappingCoerce                      types.Bool                `tfsdk:"mapping_coerce"`
-	MappingTotalFieldsLimit            types.Int64               `tfsdk:"mapping_total_fields_limit"`
-	NumberOfReplicas                   types.Int64               `tfsdk:"number_of_replicas"`
-	AutoExpandReplicas                 types.String              `tfsdk:"auto_expand_replicas"`
-	SearchIdleAfter                    types.String              `tfsdk:"search_idle_after"`
-	RefreshInterval                    types.String              `tfsdk:"refresh_interval"`
-	MaxResultWindow                    types.Int64               `tfsdk:"max_result_window"`
-	MaxInnerResultWindow               types.Int64               `tfsdk:"max_inner_result_window"`
-	MaxRescoreWindow                   types.Int64               `tfsdk:"max_rescore_window"`
-	MaxDocvalueFieldsSearch            types.Int64               `tfsdk:"max_docvalue_fields_search"`
-	MaxScriptFields                    types.Int64               `tfsdk:"max_script_fields"`
-	MaxNGramDiff                       types.Int64               `tfsdk:"max_ngram_diff"`
-	MaxShingleDiff                     types.Int64               `tfsdk:"max_shingle_diff"`
-	MaxRefreshListeners                types.Int64               `tfsdk:"max_refresh_listeners"`
-	AnalyzeMaxTokenCount               types.Int64               `tfsdk:"analyze_max_token_count"`
-	HighlightMaxAnalyzedOffset         types.Int64               `tfsdk:"highlight_max_analyzed_offset"`
-	MaxTermsCount                      types.Int64               `tfsdk:"max_terms_count"`
-	MaxRegexLength                     types.Int64               `tfsdk:"max_regex_length"`
-	QueryDefaultField                  types.Set                 `tfsdk:"query_default_field"`
-	RoutingAllocationEnable            types.String              `tfsdk:"routing_allocation_enable"`
-	RoutingRebalanceEnable             types.String              `tfsdk:"routing_rebalance_enable"`
-	GCDeletes                          types.String              `tfsdk:"gc_deletes"`
-	BlocksReadOnly                     types.Bool                `tfsdk:"blocks_read_only"`
-	BlocksReadOnlyAllowDelete          types.Bool                `tfsdk:"blocks_read_only_allow_delete"`
-	BlocksRead                         types.Bool                `tfsdk:"blocks_read"`
-	BlocksWrite                        types.Bool                `tfsdk:"blocks_write"`
-	BlocksMetadata                     types.Bool                `tfsdk:"blocks_metadata"`
-	DefaultPipeline                    types.String              `tfsdk:"default_pipeline"`
-	FinalPipeline                      types.String              `tfsdk:"final_pipeline"`
-	UnassignedNodeLeftDelayedTimeout   types.String              `tfsdk:"unassigned_node_left_delayed_timeout"`
-	SearchSlowlogThresholdQueryWarn    types.String              `tfsdk:"search_slowlog_threshold_query_warn"`
-	SearchSlowlogThresholdQueryInfo    types.String              `tfsdk:"search_slowlog_threshold_query_info"`
-	SearchSlowlogThresholdQueryDebug   types.String              `tfsdk:"search_slowlog_threshold_query_debug"`
-	SearchSlowlogThresholdQueryTrace   types.String              `tfsdk:"search_slowlog_threshold_query_trace"`
-	SearchSlowlogThresholdFetchWarn    types.String              `tfsdk:"search_slowlog_threshold_fetch_warn"`
-	SearchSlowlogThresholdFetchInfo    types.String              `tfsdk:"search_slowlog_threshold_fetch_info"`
-	SearchSlowlogThresholdFetchDebug   types.String              `tfsdk:"search_slowlog_threshold_fetch_debug"`
-	SearchSlowlogThresholdFetchTrace   types.String              `tfsdk:"search_slowlog_threshold_fetch_trace"`
-	SearchSlowlogLevel                 types.String              `tfsdk:"search_slowlog_level"`
-	IndexingSlowlogThresholdIndexWarn  types.String              `tfsdk:"indexing_slowlog_threshold_index_warn"`
-	IndexingSlowlogThresholdIndexInfo  types.String              `tfsdk:"indexing_slowlog_threshold_index_info"`
-	IndexingSlowlogThresholdIndexDebug types.String              `tfsdk:"indexing_slowlog_threshold_index_debug"`
-	IndexingSlowlogThresholdIndexTrace types.String              `tfsdk:"indexing_slowlog_threshold_index_trace"`
-	IndexingSlowlogLevel               types.String              `tfsdk:"indexing_slowlog_level"`
-	IndexingSlowlogSource              types.String              `tfsdk:"indexing_slowlog_source"`
-	AnalysisAnalyzer                   jsontypes.Normalized      `tfsdk:"analysis_analyzer"`
-	AnalysisTokenizer                  jsontypes.Normalized      `tfsdk:"analysis_tokenizer"`
-	AnalysisCharFilter                 jsontypes.Normalized      `tfsdk:"analysis_char_filter"`
-	AnalysisFilter                     jsontypes.Normalized      `tfsdk:"analysis_filter"`
-	AnalysisNormalizer                 jsontypes.Normalized      `tfsdk:"analysis_normalizer"`
-	Alias                              types.Set                 `tfsdk:"alias"`
-	Mappings                           indexparent.MappingsValue `tfsdk:"mappings"`
-	SettingsRaw                        jsontypes.Normalized      `tfsdk:"settings_raw"`
-	DeletionProtection                 types.Bool                `tfsdk:"deletion_protection"`
-	UseExisting                        types.Bool                `tfsdk:"use_existing"`
-	WaitForActiveShards                types.String              `tfsdk:"wait_for_active_shards"`
-	MasterTimeout                      customtypes.Duration      `tfsdk:"master_timeout"`
-	Timeout                            customtypes.Duration      `tfsdk:"timeout"`
-	Settings                           types.List                `tfsdk:"settings"`
+	ID                            types.String `tfsdk:"id"`
+	ElasticsearchConnection       types.List   `tfsdk:"elasticsearch_connection"`
+	Name                          types.String `tfsdk:"name"`
+	ConcreteName                  types.String `tfsdk:"concrete_name"`
+	NumberOfShards                types.Int64  `tfsdk:"number_of_shards"`
+	NumberOfRoutingShards         types.Int64  `tfsdk:"number_of_routing_shards"`
+	Codec                         types.String `tfsdk:"codec"`
+	RoutingPartitionSize          types.Int64  `tfsdk:"routing_partition_size"`
+	LoadFixedBitsetFiltersEagerly types.Bool   `tfsdk:"load_fixed_bitset_filters_eagerly"`
+	ShardCheckOnStartup           types.String `tfsdk:"shard_check_on_startup"`
+	Sort                          types.List   `tfsdk:"sort"`
+	SortField                     types.Set    `tfsdk:"sort_field"`
+	SortOrder                     types.List   `tfsdk:"sort_order"`
+	MappingCoerce                 types.Bool   `tfsdk:"mapping_coerce"`
+	// Dynamic-setting fields come from the shared, anonymously-embedded
+	// dynamicsettings.Model, matching indexparent.GetDynamicSettingAttributes().
+	dynamicsettings.Model
+	AnalysisAnalyzer    jsontypes.Normalized      `tfsdk:"analysis_analyzer"`
+	AnalysisTokenizer   jsontypes.Normalized      `tfsdk:"analysis_tokenizer"`
+	AnalysisCharFilter  jsontypes.Normalized      `tfsdk:"analysis_char_filter"`
+	AnalysisFilter      jsontypes.Normalized      `tfsdk:"analysis_filter"`
+	AnalysisNormalizer  jsontypes.Normalized      `tfsdk:"analysis_normalizer"`
+	Alias               types.Set                 `tfsdk:"alias"`
+	Mappings            indexparent.MappingsValue `tfsdk:"mappings"`
+	SettingsRaw         jsontypes.Normalized      `tfsdk:"settings_raw"`
+	DeletionProtection  types.Bool                `tfsdk:"deletion_protection"`
+	UseExisting         types.Bool                `tfsdk:"use_existing"`
+	WaitForActiveShards types.String              `tfsdk:"wait_for_active_shards"`
+	MasterTimeout       customtypes.Duration      `tfsdk:"master_timeout"`
+	Timeout             customtypes.Duration      `tfsdk:"timeout"`
+	Settings            types.List                `tfsdk:"settings"`
 }
 
 type settingsTfSet struct {

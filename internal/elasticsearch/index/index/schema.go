@@ -19,6 +19,7 @@ package index
 
 import (
 	"context"
+	"maps"
 
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -79,520 +80,341 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 		},
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Internal identifier of the resource in the format <cluster_uuid>/<concrete_index_name>.",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"concrete_name": schema.StringAttribute{
-				Description: "The concrete Elasticsearch index name managed by this resource. " +
-					"For static index names this equals `name`. " +
-					"For date math index names this is the resolved concrete index name returned by Elasticsearch after creation.",
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the index you wish to create.",
-				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 255),
-					stringvalidator.NoneOf(".", ".."),
-					stringvalidator.Any(
-						stringvalidator.All(indexname.NameValidators()...),
-						stringvalidator.RegexMatches(
-							esclient.DateMathIndexNameRe,
-							dateMathIndexNameMessage,
-						),
-					),
-				},
-			},
-			"alias": schema.SetNestedAttribute{
-				Description: "Aliases for the index.",
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Description: "Index alias name.",
-							Required:    true,
-						},
-						attrFilter: schema.StringAttribute{
-							Description: "Query used to limit documents the alias can access.",
-							Optional:    true,
-							CustomType:  jsontypes.NormalizedType{},
-						},
-						"index_routing": schema.StringAttribute{
-							Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
-							Optional:    true,
-							Computed:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-								planmodifiers.StringUseDefaultIfUnknown(""),
-							},
-						},
-						"is_hidden": schema.BoolAttribute{
-							Description: "If true, the alias is hidden.",
-							Optional:    true,
-							Computed:    true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
-								planmodifiers.BoolUseDefaultIfUnknown(false),
-							},
-						},
-						"is_write_index": schema.BoolAttribute{
-							Description: "If true, the index is the write index for the alias.",
-							Optional:    true,
-							Computed:    true,
-							PlanModifiers: []planmodifier.Bool{
-								boolplanmodifier.UseStateForUnknown(),
-								planmodifiers.BoolUseDefaultIfUnknown(false),
-							},
-						},
-						"routing": schema.StringAttribute{
-							Description: "Value used to route indexing and search operations to a specific shard.",
-							Optional:    true,
-							Computed:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-								planmodifiers.StringUseDefaultIfUnknown(""),
-							},
-						},
-						"search_routing": schema.StringAttribute{
-							Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
-							Optional:    true,
-							Computed:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-								planmodifiers.StringUseDefaultIfUnknown(""),
-							},
-						},
-					},
-				},
-			},
-			// Static settings that can only be set on creation
-			indexparent.SettingNumberOfShards: schema.Int64Attribute{
-				Description: "Number of shards for the index. This can be set only on creation.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
-			indexparent.SettingNumberOfRoutingShards: schema.Int64Attribute{
-				Description: "Value used with number_of_shards to route documents to a primary shard. This can be set only on creation.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
-			indexparent.SettingCodec: schema.StringAttribute{
-				Description: codecDescription,
-				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.OneOf("best_compression"),
-				},
-			},
-			indexparent.SettingRoutingPartitionSize: schema.Int64Attribute{
-				Description: "The number of shards a custom routing value can go to. This can be set only on creation.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
-			indexparent.SettingLoadFixedBitsetFiltersEagerly: schema.BoolAttribute{
-				Description: "Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-			},
-			"shard_check_on_startup": schema.StringAttribute{
-				Description: shardCheckOnStartupDescription,
-				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.String{
-					stringvalidator.OneOf("false", "true", "checksum"),
-				},
-			},
-			"sort": schema.ListNestedAttribute{
-				Description: "Sort configuration for documents within each shard segment. Replaces the deprecated sort_field and sort_order attributes.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.List{
-					sortMigrationPlanModifier{},
-				},
-				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.MatchRoot("sort_field"), path.MatchRoot("sort_order")),
-				},
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						attrField: schema.StringAttribute{
-							Description: "The index field to sort by.",
-							Required:    true,
-						},
-						attrOrder: schema.StringAttribute{
-							Description: "The sort direction. Valid values: asc, desc.",
-							Optional:    true,
-							Validators: []validator.String{
-								stringvalidator.OneOf(sortOrderAsc, sortOrderDesc),
-							},
-						},
-						attrMissing: schema.StringAttribute{
-							Description: "How to treat documents missing the sort field. Valid values: _last, _first.",
-							Optional:    true,
-							Validators: []validator.String{
-								stringvalidator.OneOf(sortMissingLast, "_first"),
-							},
-						},
-						attrMode: schema.StringAttribute{
-							Description: "Which value to use when the sort field has multiple values. Valid values: min, max.",
-							Optional:    true,
-							Validators: []validator.String{
-								stringvalidator.OneOf(sortModeMin, sortModeMax),
-							},
-						},
-					},
-				},
-			},
-			"sort_field": schema.SetAttribute{
-				ElementType:        types.StringType,
-				Description:        "Deprecated: The field to sort documents within each shard segment by.",
-				Optional:           true,
-				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_field' will be removed in a future major release.",
-				Validators: []validator.Set{
-					setvalidator.ConflictsWith(path.MatchRoot("sort")),
-				},
-				PlanModifiers: []planmodifier.Set{
-					legacySortFieldPlanModifier{},
-				},
-			},
-			// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
-			"sort_order": schema.ListAttribute{
-				ElementType:        types.StringType,
-				Description:        "Deprecated: The direction to sort documents within each shard segment. Accepts `asc`, `desc`.",
-				Optional:           true,
-				DeprecationMessage: "Use the 'sort' attribute instead. 'sort_order' will be removed in a future major release.",
-				Validators: []validator.List{
-					listvalidator.ConflictsWith(path.MatchRoot("sort")),
-				},
-				PlanModifiers: []planmodifier.List{
-					legacySortOrderPlanModifier{},
-				},
-			},
-			"mapping_coerce": schema.BoolAttribute{
-				Description: "Set index level coercion setting that is applied to all mapping types.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.RequiresReplace(),
-				},
-			},
-			// Dynamic settings that can be changed at runtime
-			"mapping_total_fields_limit": schema.Int64Attribute{
-				Description: "The maximum number of fields in an index. Field type parameters count towards this limit. The default value is 1000.",
-				Optional:    true,
-			},
-			indexparent.SettingNumberOfReplicas: schema.Int64Attribute{
-				Description: "Number of shard replicas.",
-				Optional:    true,
-			},
-			indexparent.SettingAutoExpandReplicas: schema.StringAttribute{
-				Description: "Set the number of replicas to the node count in the cluster. Set to a dash delimited lower and upper bound (e.g. 0-5) or use all for the upper bound (e.g. 0-all)",
-				Optional:    true,
-			},
-			"search_idle_after": schema.StringAttribute{
-				Description: "How long a shard can not receive a search or get request until it’s considered search idle.",
-				Optional:    true,
-			},
-			indexparent.SettingRefreshInterval: schema.StringAttribute{
-				Description: "How often to perform a refresh operation, which makes recent changes to the index visible to search. Can be set to `-1` to disable refresh.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxResultWindow: schema.Int64Attribute{
-				Description: "The maximum value of `from + size` for searches to this index.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxInnerResultWindow: schema.Int64Attribute{
-				Description: "The maximum value of `from + size` for inner hits definition and top hits aggregations to this index.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxRescoreWindow: schema.Int64Attribute{
-				Description: "The maximum value of `window_size` for `rescore` requests in searches of this index.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxDocvalueFieldsSearch: schema.Int64Attribute{
-				Description: "The maximum number of `docvalue_fields` that are allowed in a query.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxScriptFields: schema.Int64Attribute{
-				Description: "The maximum number of `script_fields` that are allowed in a query.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxNgramDiff: schema.Int64Attribute{
-				Description: "The maximum allowed difference between min_gram and max_gram for NGramTokenizer and NGramTokenFilter.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxShingleDiff: schema.Int64Attribute{
-				Description: "The maximum allowed difference between max_shingle_size and min_shingle_size for ShingleTokenFilter.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxRefreshListeners: schema.Int64Attribute{
-				Description: "Maximum number of refresh listeners available on each shard of the index.",
-				Optional:    true,
-			},
-			"analyze_max_token_count": schema.Int64Attribute{
-				Description: "The maximum number of tokens that can be produced using _analyze API.",
-				Optional:    true,
-			},
-			"highlight_max_analyzed_offset": schema.Int64Attribute{
-				Description: "The maximum number of characters that will be analyzed for a highlight request.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxTermsCount: schema.Int64Attribute{
-				Description: "The maximum number of terms that can be used in Terms Query.",
-				Optional:    true,
-			},
-			indexparent.SettingMaxRegexLength: schema.Int64Attribute{
-				Description: "The maximum length of regex that can be used in Regexp Query.",
-				Optional:    true,
-			},
-			"query_default_field": schema.SetAttribute{
-				ElementType: types.StringType,
-				Description: "Wildcard (*) patterns matching one or more fields. Defaults to '*', which matches all fields eligible for term-level queries, excluding metadata fields.",
-				Optional:    true,
-			},
-			"routing_allocation_enable": schema.StringAttribute{
-				Description: "Controls shard allocation for this index. It can be set to: `all` , `primaries` , `new_primaries` , `none`.",
-				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("all", "primaries", "new_primaries", "none"),
-				},
-			},
-			"routing_rebalance_enable": schema.StringAttribute{
-				Description: "Enables shard rebalancing for this index. It can be set to: `all`, `primaries` , `replicas` , `none`.",
-				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("all", "primaries", "replicas", "none"),
-				},
-			},
-			indexparent.SettingGCDeletes: schema.StringAttribute{
-				Description: "The length of time that a deleted document's version number remains available for further versioned operations.",
-				Optional:    true,
-			},
-			"blocks_read_only": schema.BoolAttribute{
-				Description: "Set to `true` to make the index and index metadata read only, `false` to allow writes and metadata changes.",
-				Optional:    true,
-			},
-			"blocks_read_only_allow_delete": schema.BoolAttribute{
-				Description: "Identical to `index.blocks.read_only` but allows deleting the index to free up resources.",
-				Optional:    true,
-			},
-			"blocks_read": schema.BoolAttribute{
-				Description: "Set to `true` to disable read operations against the index.",
-				Optional:    true,
-			},
-			"blocks_write": schema.BoolAttribute{
-				Description: "Set to `true` to disable data write operations against the index. This setting does not affect metadata.",
-				Optional:    true,
-			},
-			"blocks_metadata": schema.BoolAttribute{
-				Description: "Set to `true` to disable index metadata reads and writes.",
-				Optional:    true,
-			},
-			indexparent.SettingDefaultPipeline: schema.StringAttribute{
-				Description: "The default ingest node pipeline for this index. Index requests will fail if the default pipeline is set and the pipeline does not exist.",
-				Optional:    true,
-			},
-			indexparent.SettingFinalPipeline: schema.StringAttribute{
-				Description: finalPipelineDescription,
-				Optional:    true,
-			},
-			"unassigned_node_left_delayed_timeout": schema.StringAttribute{
-				Description: "Time to delay the allocation of replica shards which become unassigned because a node has left, in time units, e.g. `10s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_query_warn": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `10s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_query_info": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `5s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_query_debug": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `2s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_query_trace": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the query phase, in time units, e.g. `500ms`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_fetch_warn": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `10s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_fetch_info": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `5s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_fetch_debug": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `2s`",
-				Optional:    true,
-			},
-			"search_slowlog_threshold_fetch_trace": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches in the fetch phase, in time units, e.g. `500ms`",
-				Optional:    true,
-			},
-			"search_slowlog_level": schema.StringAttribute{
-				Description: "Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`",
-				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("warn", "info", "debug", "trace"),
-				},
-			},
-			"indexing_slowlog_threshold_index_warn": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `10s`",
-				Optional:    true,
-			},
-			"indexing_slowlog_threshold_index_info": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `5s`",
-				Optional:    true,
-			},
-			"indexing_slowlog_threshold_index_debug": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `2s`",
-				Optional:    true,
-			},
-			"indexing_slowlog_threshold_index_trace": schema.StringAttribute{
-				Description: "Set the cutoff for shard level slow search logging of slow searches for indexing queries, in time units, e.g. `500ms`",
-				Optional:    true,
-			},
-			"indexing_slowlog_level": schema.StringAttribute{
-				Description: "Set which logging level to use for the search slow log, can be: `warn`, `info`, `debug`, `trace`",
-				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("warn", "info", "debug", "trace"),
-				},
-			},
-			"indexing_slowlog_source": schema.StringAttribute{
-				Description: indexingSlowlogSourceDescription,
-				Optional:    true,
-			},
-			// To change analyzer setting, the index must be closed, updated, and then reopened but it can't be handled in terraform.
-			// We raise error when they are tried to be updated instead of setting ForceNew not to have unexpected deletion.
-			"analysis_analyzer": schema.StringAttribute{
-				Description: "A JSON string describing the analyzers applied to the index.",
-				Optional:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Validators: []validator.String{
-					validators.StringIsJSONObject{},
-				},
-			},
-			"analysis_tokenizer": schema.StringAttribute{
-				Description: "A JSON string describing the tokenizers applied to the index.",
-				Optional:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Validators: []validator.String{
-					validators.StringIsJSONObject{},
-				},
-			},
-			"analysis_char_filter": schema.StringAttribute{
-				Description: "A JSON string describing the char_filters applied to the index.",
-				Optional:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Validators: []validator.String{
-					validators.StringIsJSONObject{},
-				},
-			},
-			"analysis_filter": schema.StringAttribute{
-				Description: "A JSON string describing the filters applied to the index.",
-				Optional:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Validators: []validator.String{
-					validators.StringIsJSONObject{},
-				},
-			},
-			"analysis_normalizer": schema.StringAttribute{
-				Description: "A JSON string describing the normalizers applied to the index.",
-				Optional:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Validators: []validator.String{
-					validators.StringIsJSONObject{},
-				},
-			},
-			"mappings": schema.StringAttribute{
-				Description: mappingsDescription,
-				Optional:    true,
-				Computed:    true,
-				CustomType:  indexparent.MappingsType{},
-				Validators: []validator.String{
-					validators.StringIsJSONObject{},
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-					mappingsPlanModifier{},
-				},
-			},
-			"settings_raw": schema.StringAttribute{
-				Description: "All raw settings fetched from the cluster.",
-				Computed:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				// TODO: Plan modifier. Use state if no other settings have been modified
-			},
-			"deletion_protection": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: deletionProtectionDescription,
-				PlanModifiers: []planmodifier.Bool{
-					planmodifiers.BoolUseDefaultIfUnknown(true),
-				},
-			},
-			"use_existing": schema.BoolAttribute{
-				Description: useExistingDescription,
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"wait_for_active_shards": schema.StringAttribute{
-				Description: waitForActiveShardsDescription,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					planmodifiers.StringUseDefaultIfUnknown("1"),
-				},
-			},
-			"master_timeout": schema.StringAttribute{
-				Description: masterTimeoutDescription,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					planmodifiers.StringUseDefaultIfUnknown("30s"),
-				},
-				CustomType: customtypes.DurationType{},
-			},
-			"timeout": schema.StringAttribute{
-				Description: "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					planmodifiers.StringUseDefaultIfUnknown("30s"),
-				},
-				CustomType: customtypes.DurationType{},
+		Attributes: getAttributes(),
+	}
+}
+
+// getAttributes returns the index resource attribute map: the hand-declared
+// static (creation-time-only) and operational attributes merged with the
+// shared dynamic-setting attributes from indexparent.GetDynamicSettingAttributes().
+func getAttributes() map[string]schema.Attribute {
+	attributes := map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: "Internal identifier of the resource in the format <cluster_uuid>/<concrete_index_name>.",
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
+		"concrete_name": schema.StringAttribute{
+			Description: "The concrete Elasticsearch index name managed by this resource. " +
+				"For static index names this equals `name`. " +
+				"For date math index names this is the resolved concrete index name returned by Elasticsearch after creation.",
+			Computed: true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"name": schema.StringAttribute{
+			Description: "Name of the index you wish to create.",
+			Required:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+			Validators: []validator.String{
+				stringvalidator.LengthBetween(1, 255),
+				stringvalidator.NoneOf(".", ".."),
+				stringvalidator.Any(
+					stringvalidator.All(indexname.NameValidators()...),
+					stringvalidator.RegexMatches(
+						esclient.DateMathIndexNameRe,
+						dateMathIndexNameMessage,
+					),
+				),
+			},
+		},
+		"alias": schema.SetNestedAttribute{
+			Description: "Aliases for the index.",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{
+				setplanmodifier.UseStateForUnknown(),
+			},
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Description: "Index alias name.",
+						Required:    true,
+					},
+					attrFilter: schema.StringAttribute{
+						Description: "Query used to limit documents the alias can access.",
+						Optional:    true,
+						CustomType:  jsontypes.NormalizedType{},
+					},
+					"index_routing": schema.StringAttribute{
+						Description: "Value used to route indexing operations to a specific shard. If specified, this overwrites the `routing` value for indexing operations.",
+						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+							planmodifiers.StringUseDefaultIfUnknown(""),
+						},
+					},
+					"is_hidden": schema.BoolAttribute{
+						Description: "If true, the alias is hidden.",
+						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseStateForUnknown(),
+							planmodifiers.BoolUseDefaultIfUnknown(false),
+						},
+					},
+					"is_write_index": schema.BoolAttribute{
+						Description: "If true, the index is the write index for the alias.",
+						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.Bool{
+							boolplanmodifier.UseStateForUnknown(),
+							planmodifiers.BoolUseDefaultIfUnknown(false),
+						},
+					},
+					"routing": schema.StringAttribute{
+						Description: "Value used to route indexing and search operations to a specific shard.",
+						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+							planmodifiers.StringUseDefaultIfUnknown(""),
+						},
+					},
+					"search_routing": schema.StringAttribute{
+						Description: "Value used to route search operations to a specific shard. If specified, this overwrites the routing value for search operations.",
+						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseStateForUnknown(),
+							planmodifiers.StringUseDefaultIfUnknown(""),
+						},
+					},
+				},
+			},
+		},
+		// Static settings that can only be set on creation
+		indexparent.SettingNumberOfShards: schema.Int64Attribute{
+			Description: "Number of shards for the index. This can be set only on creation.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
+		},
+		indexparent.SettingNumberOfRoutingShards: schema.Int64Attribute{
+			Description: "Value used with number_of_shards to route documents to a primary shard. This can be set only on creation.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
+		},
+		indexparent.SettingCodec: schema.StringAttribute{
+			Description: codecDescription,
+			Optional:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+			Validators: []validator.String{
+				stringvalidator.OneOf("best_compression"),
+			},
+		},
+		indexparent.SettingRoutingPartitionSize: schema.Int64Attribute{
+			Description: "The number of shards a custom routing value can go to. This can be set only on creation.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.Int64{
+				int64planmodifier.RequiresReplace(),
+			},
+		},
+		indexparent.SettingLoadFixedBitsetFiltersEagerly: schema.BoolAttribute{
+			Description: "Indicates whether cached filters are pre-loaded for nested queries. This can be set only on creation.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.RequiresReplace(),
+			},
+		},
+		"shard_check_on_startup": schema.StringAttribute{
+			Description: shardCheckOnStartupDescription,
+			Optional:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+			Validators: []validator.String{
+				stringvalidator.OneOf("false", "true", "checksum"),
+			},
+		},
+		"sort": schema.ListNestedAttribute{
+			Description: "Sort configuration for documents within each shard segment. Replaces the deprecated sort_field and sort_order attributes.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.List{
+				sortMigrationPlanModifier{},
+			},
+			Validators: []validator.List{
+				listvalidator.ConflictsWith(path.MatchRoot("sort_field"), path.MatchRoot("sort_order")),
+			},
+			NestedObject: schema.NestedAttributeObject{
+				Attributes: map[string]schema.Attribute{
+					attrField: schema.StringAttribute{
+						Description: "The index field to sort by.",
+						Required:    true,
+					},
+					attrOrder: schema.StringAttribute{
+						Description: "The sort direction. Valid values: asc, desc.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf(sortOrderAsc, sortOrderDesc),
+						},
+					},
+					attrMissing: schema.StringAttribute{
+						Description: "How to treat documents missing the sort field. Valid values: _last, _first.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf(sortMissingLast, "_first"),
+						},
+					},
+					attrMode: schema.StringAttribute{
+						Description: "Which value to use when the sort field has multiple values. Valid values: min, max.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf(sortModeMin, sortModeMax),
+						},
+					},
+				},
+			},
+		},
+		"sort_field": schema.SetAttribute{
+			ElementType:        types.StringType,
+			Description:        "Deprecated: The field to sort documents within each shard segment by.",
+			Optional:           true,
+			DeprecationMessage: "Use the 'sort' attribute instead. 'sort_field' will be removed in a future major release.",
+			Validators: []validator.Set{
+				setvalidator.ConflictsWith(path.MatchRoot("sort")),
+			},
+			PlanModifiers: []planmodifier.Set{
+				legacySortFieldPlanModifier{},
+			},
+		},
+		// sort_order can't be set type since it can have dup strings like ["asc", "asc"]
+		"sort_order": schema.ListAttribute{
+			ElementType:        types.StringType,
+			Description:        "Deprecated: The direction to sort documents within each shard segment. Accepts `asc`, `desc`.",
+			Optional:           true,
+			DeprecationMessage: "Use the 'sort' attribute instead. 'sort_order' will be removed in a future major release.",
+			Validators: []validator.List{
+				listvalidator.ConflictsWith(path.MatchRoot("sort")),
+			},
+			PlanModifiers: []planmodifier.List{
+				legacySortOrderPlanModifier{},
+			},
+		},
+		"mapping_coerce": schema.BoolAttribute{
+			Description: "Set index level coercion setting that is applied to all mapping types.",
+			Optional:    true,
+			PlanModifiers: []planmodifier.Bool{
+				boolplanmodifier.RequiresReplace(),
+			},
+		},
+		// To change analyzer setting, the index must be closed, updated, and then reopened but it can't be handled in terraform.
+		// We raise error when they are tried to be updated instead of setting ForceNew not to have unexpected deletion.
+		"analysis_analyzer": schema.StringAttribute{
+			Description: "A JSON string describing the analyzers applied to the index.",
+			Optional:    true,
+			CustomType:  jsontypes.NormalizedType{},
+			Validators: []validator.String{
+				validators.StringIsJSONObject{},
+			},
+		},
+		"analysis_tokenizer": schema.StringAttribute{
+			Description: "A JSON string describing the tokenizers applied to the index.",
+			Optional:    true,
+			CustomType:  jsontypes.NormalizedType{},
+			Validators: []validator.String{
+				validators.StringIsJSONObject{},
+			},
+		},
+		"analysis_char_filter": schema.StringAttribute{
+			Description: "A JSON string describing the char_filters applied to the index.",
+			Optional:    true,
+			CustomType:  jsontypes.NormalizedType{},
+			Validators: []validator.String{
+				validators.StringIsJSONObject{},
+			},
+		},
+		"analysis_filter": schema.StringAttribute{
+			Description: "A JSON string describing the filters applied to the index.",
+			Optional:    true,
+			CustomType:  jsontypes.NormalizedType{},
+			Validators: []validator.String{
+				validators.StringIsJSONObject{},
+			},
+		},
+		"analysis_normalizer": schema.StringAttribute{
+			Description: "A JSON string describing the normalizers applied to the index.",
+			Optional:    true,
+			CustomType:  jsontypes.NormalizedType{},
+			Validators: []validator.String{
+				validators.StringIsJSONObject{},
+			},
+		},
+		"mappings": schema.StringAttribute{
+			Description: mappingsDescription,
+			Optional:    true,
+			Computed:    true,
+			CustomType:  indexparent.MappingsType{},
+			Validators: []validator.String{
+				validators.StringIsJSONObject{},
+			},
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+				mappingsPlanModifier{},
+			},
+		},
+		"settings_raw": schema.StringAttribute{
+			Description: "All raw settings fetched from the cluster.",
+			Computed:    true,
+			CustomType:  jsontypes.NormalizedType{},
+			// TODO: Plan modifier. Use state if no other settings have been modified
+		},
+		"deletion_protection": schema.BoolAttribute{
+			Optional:    true,
+			Computed:    true,
+			Description: deletionProtectionDescription,
+			PlanModifiers: []planmodifier.Bool{
+				planmodifiers.BoolUseDefaultIfUnknown(true),
+			},
+		},
+		"use_existing": schema.BoolAttribute{
+			Description: useExistingDescription,
+			Optional:    true,
+			Computed:    true,
+			Default:     booldefault.StaticBool(false),
+		},
+		"wait_for_active_shards": schema.StringAttribute{
+			Description: waitForActiveShardsDescription,
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				planmodifiers.StringUseDefaultIfUnknown("1"),
+			},
+		},
+		"master_timeout": schema.StringAttribute{
+			Description: masterTimeoutDescription,
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				planmodifiers.StringUseDefaultIfUnknown("30s"),
+			},
+			CustomType: customtypes.DurationType{},
+		},
+		"timeout": schema.StringAttribute{
+			Description: "Period to wait for a response. If no response is received before the timeout expires, the request fails and returns an error. Defaults to `30s`.",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				planmodifiers.StringUseDefaultIfUnknown("30s"),
+			},
+			CustomType: customtypes.DurationType{},
+		},
 	}
+
+	maps.Copy(attributes, indexparent.GetDynamicSettingAttributes())
+
+	return attributes
 }
 
 func aliasElementType(ctx context.Context) attr.Type {

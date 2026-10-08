@@ -277,20 +277,7 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 }
 
 func setTFModelField(model *tfModel, tfFieldKey string, value attr.Value) {
-	rv := reflect.ValueOf(model).Elem()
-	rt := rv.Type()
-	for i := range rt.NumField() {
-		field := rt.Field(i)
-		if field.Tag.Get("tfsdk") != tfFieldKey {
-			continue
-		}
-		fieldVal := rv.Field(i)
-		valReflect := reflect.ValueOf(value)
-		if valReflect.Type().AssignableTo(fieldVal.Type()) {
-			fieldVal.Set(valReflect)
-		}
-		return
-	}
+	indexparent.SetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), tfFieldKey, value)
 }
 
 // populateOperationalDefaults sets provider-side defaults when each field is null.
@@ -313,7 +300,6 @@ func populateOperationalDefaults(model *tfModel) {
 // are absent from configuration after import hydration.
 func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 	modelType := reflect.TypeFor[tfModel]()
-	planVal := reflect.ValueOf(plan).Elem()
 
 	for _, fieldKey := range importHydrationPrunableFieldKeys {
 		configField, ok := config.getFieldValueByTagValue(fieldKey, modelType)
@@ -321,21 +307,14 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 			continue
 		}
 
-		for i := range modelType.NumField() {
-			field := modelType.Field(i)
-			if field.Tag.Get("tfsdk") != fieldKey {
-				continue
-			}
-			planField := planVal.Field(i)
-			planAttr, ok := reflect.TypeAssert[attr.Value](planField)
-			if !ok {
-				break
-			}
-			nullVal := nullAttrValueForField(ctx, planAttr)
-			if nullVal != nil {
-				planField.Set(reflect.ValueOf(nullVal))
-			}
-			break
+		planField, found := plan.getFieldValueByTagValue(fieldKey, modelType)
+		if !found {
+			continue
+		}
+
+		nullVal := nullAttrValueForField(ctx, planField)
+		if nullVal != nil {
+			setTFModelField(plan, fieldKey, nullVal)
 		}
 	}
 }

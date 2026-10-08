@@ -33,8 +33,17 @@ func GetFieldValueByTagValue(v reflect.Value, t reflect.Type, tagName string) (a
 		if field.Tag.Get("tfsdk") == tagName {
 			return v.Field(i).Interface().(attr.Value), true
 		}
+		if isAnonymousStructField(field) {
+			if value, found := GetFieldValueByTagValue(v.Field(i), field.Type, tagName); found {
+				return value, true
+			}
+		}
 	}
 	return nil, false
+}
+
+func isAnonymousStructField(field reflect.StructField) bool {
+	return field.Anonymous && field.Type.Kind() == reflect.Struct && field.Tag.Get("tfsdk") == ""
 }
 
 // SetFieldValueByTagValue sets the tfsdk-tagged field with the given tagName on
@@ -45,8 +54,17 @@ func SetFieldValueByTagValue(ptr reflect.Value, t reflect.Type, tagName string, 
 	for i := range numField {
 		field := t.Field(i)
 		if field.Tag.Get("tfsdk") == tagName {
-			ptr.Elem().Field(i).Set(reflect.ValueOf(value))
+			fieldValue := ptr.Elem().Field(i)
+			if !reflect.TypeOf(value).AssignableTo(fieldValue.Type()) {
+				return false
+			}
+			fieldValue.Set(reflect.ValueOf(value))
 			return true
+		}
+		if isAnonymousStructField(field) {
+			if SetFieldValueByTagValue(ptr.Elem().Field(i).Addr(), field.Type, tagName, value) {
+				return true
+			}
 		}
 	}
 	return false

@@ -41,6 +41,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexmappings"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexsettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
@@ -284,6 +285,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
 		indexmappings.NewIndexMappingsResource,
+		indexsettings.NewIndexSettingsResource,
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,

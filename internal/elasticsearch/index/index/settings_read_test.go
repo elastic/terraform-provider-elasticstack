@@ -222,3 +222,14 @@ func Test_pruneImportHydratedPlanFields(t *testing.T) {
 		require.True(t, plan.AnalysisAnalyzer.IsNull())
 	})
 }
+
+func Test_setTFModelField_skipsNonAssignableValue(t *testing.T) {
+	t.Parallel()
+
+	model := &tfModel{}
+	model.NumberOfReplicas = types.Int64Value(2)
+
+	setTFModelField(model, "number_of_replicas", types.StringValue("not-an-int64"))
+
+	require.Equal(t, int64(2), model.NumberOfReplicas.ValueInt64())
+}
