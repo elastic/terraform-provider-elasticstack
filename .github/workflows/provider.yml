@@ -137,6 +137,10 @@ jobs:
     outputs:
       versions: ${{ steps.load.outputs.versions }}
       flags: ${{ steps.load.outputs.flags }}
+      has_packages: ${{ steps.targeted.outputs.has_packages }}
+      shards: ${{ steps.targeted.outputs.shards }}
+      packages_0: ${{ steps.targeted.outputs.packages_0 }}
+      packages_1: ${{ steps.targeted.outputs.packages_1 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -147,6 +151,15 @@ jobs:
           cache: true
       - id: load
         run: go run ./scripts/version-matrix load-matrix
+      # Preparation boundary: the targeted shard plan is computed once here,
+      # before the matrix jobs fan out, instead of per matrix job.
+      - id: targeted
+        name: compute-packages — prepare targeted acceptance plan
+        shell: bash
+        run: ./.github/scripts/targeted-testacc-compute.sh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
 
   test:
     name: Matrix Acceptance Test
@@ -169,40 +182,40 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJson(needs['load-matrix'].outputs.versions) }}
-        shard: [0, 1]
+        shard: ${{ fromJson(needs['load-matrix'].outputs.shards) }}
     steps:
+      # A zero-package pull-request plan keeps one no-op job per stack
+      # version (so provider changes never skip the test job) while every
+      # costly step below stays skipped; has_packages gates them all.
       - name: Free up disk space
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        if: needs['load-matrix'].outputs.has_packages == 'true'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         with:
           go-version-file: "go.mod"
           cache: true
       - name: Read pinned Terraform version
         id: terraform-version
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         with:
           terraform_version: ${{ steps.terraform-version.outputs.version }}
           terraform_wrapper: false
 
       - name: Get dependencies
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: make vendor
 
-      - id: targeted
-        name: compute-packages — compute targeted acceptance test packages
-        shell: bash
-        run: ./.github/scripts/targeted-testacc-compute.sh
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          SHARD: ${{ matrix.shard }}
-
       - name: Pre-pull fleet image
-        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet && steps.targeted.outputs.has_packages == 'true'"
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet && needs['load-matrix'].outputs.has_packages == 'true'"
         timeout-minutes: 5
         run: |
           for i in {1..3}; do
@@ -218,7 +231,7 @@ jobs:
           exit 1
 
       - name: Start stack with docker compose
-        if: steps.targeted.outputs.has_packages == 'true'
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         timeout-minutes: 10
         run: make docker-fleet
         env:
@@ -228,7 +241,7 @@ jobs:
           FLEET_IMAGE: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}
 
       - name: Wait for stack readiness
-        if: steps.targeted.outputs.has_packages == 'true'
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: |
           for i in {1..60}; do
             if curl -fsS -u "elastic:${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health > /dev/null; then
@@ -254,7 +267,7 @@ jobs:
 
       - id: get-api-key
         name: Get ES API key
-        if: steps.targeted.outputs.has_packages == 'true'
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
@@ -262,26 +275,29 @@ jobs:
 
       - id: force-install-synthetics
         name: Force install synthetics
-        if: "steps.targeted.outputs.has_packages == 'true' && fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
+        if: "needs['load-matrix'].outputs.has_packages == 'true' && fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
         id: tf-acceptance
-        if: steps.targeted.outputs.has_packages == 'true'
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         timeout-minutes: 45
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
         run: |
-          # No re-sharding on the targeted path: the tool already applied
-          # --total-shards/--shard-index during package selection, so the
-          # TARGETED_PKGS list is final for this shard.
-          if [[ -n "$TARGETED_PKGS" ]]; then
+          # The prepared plan assigned this shard its final package list;
+          # no re-sharding happens here. Pull requests run the targeted
+          # list, everything else runs the fixed full-suite shards.
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"
           else
-            make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+            make testacc ACCTEST_TOTAL_SHARDS=2 \
+              ACCTEST_SHARD_INDEX=${{ matrix.shard }}
           fi
         env:
-          TARGETED_PKGS: ${{ steps.targeted.outputs.targeted_pkgs }}
+          TARGETED_PKGS: >-
+            ${{ needs['load-matrix'].outputs[format('packages_{0}',
+            matrix.shard)] }}
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
@@ -334,13 +350,15 @@ jobs:
             }
 
       - name: Docker compose logs
-        if: failure() || steps.tf-acceptance.outcome == 'failure'
+        if: >-
+          (failure() || steps.tf-acceptance.outcome == 'failure')
+          && needs['load-matrix'].outputs.has_packages == 'true'
         run: docker compose logs --no-color
         env:
           STACK_VERSION: ${{ matrix.version }}
 
       - name: Tear down docker compose stack
-        if: always()
+        if: always() && needs['load-matrix'].outputs.has_packages == 'true'
         run: make docker-clean
         env:
           STACK_VERSION: ${{ matrix.version }}

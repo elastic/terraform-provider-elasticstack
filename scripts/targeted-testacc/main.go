@@ -18,6 +18,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -37,8 +38,6 @@ func run() error {
 	var (
 		base             string
 		totalShards      int
-		shardIndex       int
-		dryRun           bool
 		verbose          bool
 		runAllThreshold  float64
 		minShardPackages int
@@ -46,14 +45,13 @@ func run() error {
 
 	flag.StringVar(&base, "base", "", "git diff baseline (overrides TARGETED_TESTACC_BASE)")
 	flag.IntVar(&totalShards, "total-shards", 1, "total number of shards")
-	flag.IntVar(&shardIndex, "shard-index", 0, "index of this shard (0-based)")
-	flag.BoolVar(&dryRun, "dry-run", false, "print selection rationale instead of package list")
+	flag.Bool("dry-run", false, "accepted for compatibility; the JSON shard plan is always emitted without running tests")
 	flag.BoolVar(&verbose, "verbose", false, "print additional diagnostics")
 	flag.Float64Var(&runAllThreshold, "run-all-threshold", 70.0, "percentage of acc-test packages that triggers a full run")
 	flag.IntVar(&minShardPackages, "min-shard-packages", 30, "minimum selected packages before multi-shard splitting is used")
 	flag.Parse()
 
-	if err := validateFlags(totalShards, shardIndex, runAllThreshold, minShardPackages); err != nil {
+	if err := validateFlags(totalShards, runAllThreshold, minShardPackages); err != nil {
 		return err
 	}
 
@@ -73,38 +71,17 @@ func run() error {
 		changedFiles = nil
 	}
 
-	if dryRun {
-		fmt.Println("Changed files:")
-		if len(changedFiles) == 0 {
-			fmt.Println("  (none)")
-		} else {
-			for _, f := range changedFiles {
-				fmt.Printf("  %s\n", f)
-			}
-		}
-	}
+	rationale := selectionRationale(changedFiles)
 
-	classifier := NewClassifier(modulePath)
 	var classified *ClassifyResult
 	if len(changedFiles) == 0 {
 		classified = &ClassifyResult{ForceAll: true}
-		if dryRun {
-			fmt.Println("\nNo resolvable diff; selecting all acceptance test packages.")
-		}
 	} else {
-		classified = classifier.Classify(changedFiles)
-
+		classified = NewClassifier(modulePath).Classify(changedFiles)
 		if classified.ForceAll {
-			if dryRun {
-				fmt.Println("\nForce-all prefix matched; selecting all acceptance test packages.")
-			}
+			rationale = append(rationale, "force-all prefix matched; selecting all acceptance test packages")
 		} else if !classified.HasCode {
-			if dryRun {
-				fmt.Println("\nNo changed files map to a Go package; zero packages selected.")
-			}
-			// Fall through: phases are skipped via the HasCode guard below, and
-			// dry-run still prints the full block (empty package list plus shard
-			// assignment) via printDryRun.
+			rationale = append(rationale, "no changed files map to a Go package; zero packages selected")
 		}
 	}
 
@@ -202,40 +179,40 @@ func run() error {
 
 	selected := SelectPackages(classified.ForceAll, phase1Packages, phase2Packages, allAccPackages, runAllThreshold)
 	if verbose {
-		fmt.Fprintf(os.Stderr, "selected %d packages before sharding\n", len(selected))
+		fmt.Fprintf(os.Stderr, "selected %d packages\n", len(selected))
 	}
 
-	sharded := ApplyShard(selected, totalShards, shardIndex, minShardPackages)
-
-	// When the run-all threshold collapses the phase-1/2 union into the full
-	// set, emit an explicit rationale line so dry-run output distinguishes
-	// "threshold collapsed my N-package selection" from the force-all,
-	// empty-diff, and docs-only paths (each of which already prints its own
-	// rationale).
-	thresholdNote := ""
-	thresholdCount := RunAllThresholdCount(runAllThreshold, len(allAccPackages))
 	unionCount := len(stringsSorted(append(append([]string{}, phase1Packages...), phase2Packages...)))
+	thresholdCount := RunAllThresholdCount(runAllThreshold, len(allAccPackages))
 	if !classified.ForceAll && len(selected) == len(allAccPackages) && unionCount > thresholdCount {
-		thresholdNote = fmt.Sprintf("run-all threshold: union of %d packages exceeded %d (%.0f%% of %d); selecting the full suite", unionCount, thresholdCount, runAllThreshold, len(allAccPackages))
+		rationale = append(rationale, fmt.Sprintf(
+			"run-all threshold: union of %d packages exceeded %d (%.0f%% of %d); selecting the full suite",
+			unionCount, thresholdCount, runAllThreshold, len(allAccPackages)))
 	}
 
-	if dryRun {
-		printDryRun(selected, phaseReasons, sharded, totalShards, shardIndex, minShardPackages, thresholdNote)
-		return nil
+	plan := BuildShardPlan(selected, totalShards, minShardPackages)
+	if !classified.ForceAll && classified.HasCode {
+		for pkg := range phaseReasons {
+			plan.Rationale = append(plan.Rationale, packageRationale(pkg, phaseReasons[pkg]))
+		}
+		sort.Strings(plan.Rationale)
+	}
+	plan.Rationale = append(rationale, plan.Rationale...)
+
+	if err := ValidateShardPlan(plan); err != nil {
+		return fmt.Errorf("validate shard plan: %w", err)
 	}
 
-	for _, pkg := range sharded {
-		fmt.Println(pkg)
+	enc := json.NewEncoder(os.Stdout)
+	if err := enc.Encode(plan); err != nil {
+		return fmt.Errorf("encode shard plan: %w", err)
 	}
 	return nil
 }
 
-func validateFlags(totalShards, shardIndex int, runAllThreshold float64, minShardPackages int) error {
+func validateFlags(totalShards int, runAllThreshold float64, minShardPackages int) error {
 	if totalShards <= 0 {
 		return fmt.Errorf("--total-shards must be >= 1")
-	}
-	if shardIndex < 0 {
-		return fmt.Errorf("--shard-index must be >= 0")
 	}
 	if runAllThreshold < 0 || runAllThreshold > 100 {
 		return fmt.Errorf("--run-all-threshold must be between 0 and 100")
@@ -254,37 +231,15 @@ func currentModulePath() (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-func printDryRun(selected []string, reasons map[string][]string, sharded []string, totalShards, shardIndex, minShardPackages int, thresholdNote string) {
-	if thresholdNote != "" {
-		fmt.Printf("\n%s\n", thresholdNote)
+func selectionRationale(changedFiles []string) []string {
+	switch {
+	case len(changedFiles) == 0:
+		return []string{"no resolvable diff; selecting all acceptance test packages"}
+	default:
+		return []string{fmt.Sprintf("diff against the resolved baseline changed %d files", len(changedFiles))}
 	}
-	fmt.Printf("\nFull selected package set (%d packages):\n", len(selected))
-	for _, pkg := range selected {
-		fmt.Printf("  %s\n", pkg)
-		if rs := reasons[pkg]; len(rs) > 0 && len(selected) <= 200 {
-			for _, r := range rs {
-				fmt.Printf("    - %s\n", r)
-			}
-		}
-	}
-
-	fmt.Printf("\nShard assignment (total-shards=%d shard-index=%d min-shard-packages=%d):\n", totalShards, shardIndex, minShardPackages)
-	if len(sharded) == 0 {
-		fmt.Println("  (no packages for this shard)")
-	} else {
-		for _, pkg := range sharded {
-			fmt.Printf("  %s\n", pkg)
-		}
-	}
-	fmt.Printf("\n%s\n", dryRunSummary(len(selected), len(sharded)))
 }
 
-func dryRunSummary(selected, sharded int) string {
-	if selected == 0 {
-		return "Result: 0 packages selected."
-	}
-	if sharded == 0 {
-		return fmt.Sprintf("Result: %d packages selected, 0 emitted for this shard.", selected)
-	}
-	return fmt.Sprintf("Result: %d packages selected, %d emitted for this shard.", selected, sharded)
+func packageRationale(pkg string, reasons []string) string {
+	return fmt.Sprintf("%s: %s", pkg, strings.Join(reasons, "; "))
 }

@@ -19,7 +19,9 @@ on:
 permissions:
   contents: read
 ```
+
 ## Requirements
+
 ### Requirement: Workflow identity and triggers (REQ-001–REQ-006)
 
 The workflow name SHALL be `Provider CI`. The workflow SHALL run on `push` to branch `main` and to branches matching `renovate/**`. The workflow SHALL run on `pull_request` events of type `opened`, `synchronize`, and `reopened`. The workflow SHALL support manual execution via `workflow_dispatch`. The workflow SHALL also run on `merge_group` events so that merge-queue runs execute the authoritative full acceptance suite.
@@ -137,129 +139,70 @@ The stack-start step SHALL have a step-level timeout so that a hung container im
 - **WHEN** the acceptance test job's matrix is evaluated
 - **THEN** `strategy.matrix.version` SHALL equal exactly the JSON array in that file for that commit, independent of what a version-matrix computation would currently produce
 
-### Requirement: compute-packages step gates stack startup
-
-Each matrix test job SHALL include a `compute-packages` step that runs before the fleet image pull, stack startup, and all other expensive steps. The step SHALL set a `has_packages` output (`true` or `false`). All subsequent expensive steps — fleet image pull, stack start, stack readiness wait, API key creation, forced synthetics installation, and the acceptance test run — SHALL be conditioned on `steps.targeted.outputs.has_packages == 'true'`.
-
-The `compute-packages` step SHALL:
-
-- For non-PR events (`github.event_name != 'pull_request'`, including `push`, `workflow_dispatch`, and `merge_group`): set `has_packages=true` and `targeted_pkgs=` (empty string) unconditionally.
-- For PR events: fetch the PR base commit (`github.event.pull_request.base.sha`) into a local ref, then invoke `go run ./scripts/targeted-testacc/... --base="<local-ref>" --total-shards=2 --shard-index=${{ matrix.shard }}`. If the base-commit fetch fails, the step SHALL fall back to re-invoking the tool without `--base`, in which case the tool resolves the baseline itself (merge-base of `origin/main` and `HEAD`, or `HEAD~1` when `origin/main` is unavailable), possibly widening the diff rather than skipping tests. If the tool emits at least one package, set `has_packages=true` and `targeted_pkgs=<space-separated list>`. If the tool emits nothing, set `has_packages=false`.
-
-#### Scenario: PR with targeted packages — stack starts and targeted tests run
-
-- **WHEN** a PR event triggers the workflow
-- **AND** the tool emits packages for this shard
-- **THEN** `has_packages=true` is set
-- **AND** all downstream steps including stack startup run normally
-- **AND** the test step runs `make targeted-testacc` with `TARGETED_PKGS` set to the tool output
-
-#### Scenario: PR with no packages for this shard — stack is skipped
-
-- **WHEN** a PR event triggers the workflow
-- **AND** the tool emits nothing for this shard (e.g. shard 1 of a small targeted run)
-- **THEN** `has_packages=false` is set
-- **AND** the fleet image pull step is skipped
-- **AND** the stack start step is skipped
-- **AND** the acceptance test step is skipped
-- **AND** the job exits 0
-
-#### Scenario: Base-commit fetch fails — tool falls back to self-resolved baseline
-
-- **WHEN** a PR event triggers the workflow
-- **AND** the `git fetch` of the PR base commit fails (e.g. pruned ref or shallow-history limitation)
-- **THEN** the tool SHALL be re-invoked without `--base`
-- **AND** the tool resolves the diff baseline as the merge-base of `origin/main` and `HEAD`, or `HEAD~1` when `origin/main` is unavailable
-- **AND** the job SHALL NOT silently skip the acceptance suite
-
-#### Scenario: Tool invocation fails — job fails rather than skipping the suite
-
-- **WHEN** a PR event triggers the workflow
-- **AND** the `go run ./scripts/targeted-testacc/...` invocation in the compute-packages step exits non-zero
-- **THEN** the step SHALL emit an error annotation and fail
-- **AND** `has_packages` SHALL NOT be set to a skipping value
-- **AND** the acceptance test suite SHALL NOT be silently skipped with a green job
-
-#### Scenario: Push to main — stack starts and full suite runs
-
-- **WHEN** a push to `main` triggers the workflow
-- **THEN** `has_packages=true` is set unconditionally by the compute-packages step
-- **AND** stack startup proceeds normally
-- **AND** the test step runs `make testacc` (full suite)
-
-#### Scenario: workflow_dispatch — full suite runs
-
-- **WHEN** a `workflow_dispatch` event triggers the workflow
-- **THEN** `has_packages=true` is set unconditionally
-- **AND** the test step runs `make testacc`
-
-#### Scenario: merge_group — full suite runs
-
-- **WHEN** a `merge_group` event triggers the workflow
-- **THEN** `has_packages=true` is set unconditionally by the compute-packages step
-- **AND** stack startup proceeds normally
-- **AND** the test step runs `make testacc` (full suite)
-
 ### Requirement: Test step routes between targeted and full suite
 
-The acceptance test step (`make testacc` / `make targeted-testacc`) SHALL be conditioned on `has_packages == 'true'`. The step SHALL pass the `targeted_pkgs` output to the shell via an `env:` block variable (`TARGETED_PKGS`) and expand `"$TARGETED_PKGS"` in the run script, never by interpolating the output directly into shell text. When `targeted_pkgs` is non-empty (PR event with packages), the step SHALL run `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"` with no `ACCTEST_TOTAL_SHARDS`/`ACCTEST_SHARD_INDEX` re-sharding, because the tool already applied `--total-shards`/`--shard-index` during package selection and the per-shard package list is final. When `targeted_pkgs` is empty (non-PR event, including `push`, `workflow_dispatch`, and `merge_group`), the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}` (existing full-suite behaviour, unchanged).
-
-#### Scenario: Non-PR test step is identical to pre-change behaviour
-
-- **WHEN** the workflow runs on a push to `main`
-- **THEN** the acceptance test step invocation is `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
-- **AND** `TARGETED_PKGS` is empty, so the step takes the full-suite branch
-- **AND** `make testacc` continues to execute unit-test-only tests inline, because it has no `-run`/`-skip` filter; the dedicated unit-test job is additive on non-PR events, not a replacement
-- **AND** on PR events, unit-test-only packages are covered by the dedicated unit-test job, since targeted selection covers only `func TestAcc` packages
+For a pull request with packages, the acceptance test step SHALL pass its prepared package list to the shell via an environment variable named `TARGETED_PKGS` and expand `"$TARGETED_PKGS"` in the run script, never by interpolating the list directly into shell text. It SHALL run `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"` without further sharding. For push, workflow-dispatch, and merge-group events, the step SHALL run `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`.
 
 #### Scenario: PR test step uses targeted packages
 
-- **WHEN** the workflow runs on a PR and `targeted_pkgs` is non-empty
-- **THEN** the test step invocation is `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"`
-- **AND** `TARGETED_PKGS` is provided via the step's `env:` block, not interpolated into shell text
-- **AND** no `ACCTEST_TOTAL_SHARDS`/`ACCTEST_SHARD_INDEX` re-sharding is performed on the targeted invocation
+- **GIVEN** a pull-request test job has a prepared nonempty package list
+- **WHEN** its acceptance-test step runs
+- **THEN** it invokes `make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"`
+- **AND** it does not invoke the selector or apply further sharding
+
+#### Scenario: Non-PR test step is identical to pre-change behaviour
+
+- **GIVEN** the workflow runs for a non-pull-request event
+- **WHEN** an acceptance-test step runs
+- **THEN** it invokes `make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}`
 
 ### Requirement: Unit tests run independently of acceptance targeting
 
-The workflow SHALL include a dedicated unit-test job (`go test ./... -skip '^TestAcc'`) that runs on every event where the change-classification job reports `provider_changes=true`. The `-skip '^TestAcc'` filter SHALL exclude acceptance tests, which run in the acceptance matrix with a live stack; several `*ExplicitConnection` acceptance tests assert endpoint environment variables before the framework's `TF_ACC` gate and therefore cannot run in a stackless unit-test job. The unit-test job SHALL NOT be gated on the compute-packages `has_packages` output, because the targeted-testacc selection only covers packages containing acceptance tests (`func TestAcc`), so unit-test-only packages (e.g. `internal/entitycore`, `generated/kbapi`, `internal/clients/*`, `internal/fleet/policyshape`, `internal/asyncutils`, `internal/diagutil`) would otherwise never run on PRs.
+The workflow SHALL include a dedicated unit-test job (`go test ./... -skip '^TestAcc'`) that runs on every event where the change-classification job reports `provider_changes=true`. The `-skip '^TestAcc'` filter SHALL exclude acceptance tests, which run in the acceptance matrix with a live stack; several `*ExplicitConnection` acceptance tests assert endpoint environment variables before the framework's `TF_ACC` gate and therefore cannot run in a stackless unit-test job. The unit-test job SHALL NOT be gated on the centrally prepared acceptance-package plan, because targeted selection only covers packages containing acceptance tests (`func TestAcc`), so unit-test-only packages would otherwise never run on PRs.
 
 #### Scenario: PR with docs-only acceptance shards still runs unit tests
 
-- **WHEN** a PR event triggers the workflow and the provider changes classification passes
-- **AND** the compute-packages step sets `has_packages=false` for one or more matrix shards
-- **THEN** the unit-test job still runs `go test ./...` and its result gates the PR
+- **GIVEN** a pull request produces a zero-package acceptance plan and change classification passes
+- **WHEN** the unit-test job runs
+- **THEN** the unit-test job still runs `go test ./... -skip '^TestAcc'`
+- **AND** its result gates the PR
 
 #### Scenario: Unit-test job not gated on has_packages
 
+- **GIVEN** change classification reports provider changes
 - **WHEN** the unit-test job executes
-- **THEN** the job has no `if` condition referencing `steps.targeted.outputs.has_packages`
+- **THEN** its condition does not depend on the prepared acceptance-package plan
 
 ### Requirement: Pre-pull fallback fleet image with retry
 
-Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries that use a Docker Hub fallback image. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. This step SHALL be skipped for matrix entries that use the default `docker.elastic.co` registry, and SHALL additionally be skipped when the `compute-packages` step outputs `has_packages=false` for the shard (alongside all other expensive steps).
+Before starting the stack via Docker Compose, the workflow SHALL pre-pull the fleet image for matrix entries that use a Docker Hub fallback image. The pre-pull step SHALL use a timeout per attempt and SHALL retry up to three times with backoff. It SHALL be skipped for entries that use the default `docker.elastic.co` registry and for a no-op pull-request acceptance job.
 
 #### Scenario: Docker Hub fleet image is pre-pulled successfully
 
-- **GIVEN** a matrix entry with `fleetImage` set to a Docker Hub image
-- **AND** `has_packages=true`
+- **GIVEN** a matrix entry has a Docker Hub fleet image and a nonempty package assignment
 - **WHEN** the pre-pull step executes
-- **THEN** the image SHALL be pulled with a per-attempt timeout
-- **AND** failed attempts SHALL be retried up to three times
-- **AND** on success, the subsequent `docker compose up` SHALL use the already-pulled image
+- **THEN** the image is pulled with a per-attempt timeout
+- **AND** failed attempts are retried up to three times
+
+#### Scenario: Pre-pull is skipped for a no-op job
+
+- **GIVEN** a pull-request matrix job has an empty package assignment
+- **WHEN** the job step list is evaluated
+- **THEN** the pre-pull step is skipped
+- **AND** the stack-start and acceptance-test steps are skipped
 
 #### Scenario: Pre-pull is skipped for docker.elastic.co images
 
-- **GIVEN** a matrix entry without a `fleetImage` override
-- **WHEN** the test job step list is evaluated
-- **THEN** the pre-pull step SHALL be skipped
-- **AND** the stack-start step SHALL proceed normally
+- **GIVEN** a populated matrix entry uses the default Elastic registry
+- **WHEN** its steps are evaluated
+- **THEN** the pre-pull step is skipped
+- **AND** stack startup proceeds normally
 
 #### Scenario: Pre-pull is skipped when the shard has no packages
 
-- **GIVEN** a matrix entry whose `compute-packages` step outputs `has_packages=false`
-- **WHEN** the test job step list is evaluated
-- **THEN** the pre-pull step SHALL be skipped
-- **AND** the stack-start and acceptance test steps SHALL be skipped
+- **GIVEN** a pull-request job has an empty package assignment
+- **WHEN** its steps are evaluated
+- **THEN** pre-pull, stack startup, and acceptance testing are skipped
 
 ### Requirement: Snapshot failure PR notice (REQ-015)
 
@@ -273,19 +216,19 @@ On snapshot acceptance failure in `pull_request` events, the workflow SHALL crea
 
 ### Requirement: Failure diagnostics and teardown (REQ-016–REQ-017)
 
-The workflow SHALL emit Docker Compose logs when the job fails or acceptance tests fail. The workflow SHALL always tear down the Docker Compose stack via `make docker-clean`, regardless of prior step outcomes. The teardown step (`make docker-clean`) SHALL use `if: always()` and SHALL run even when `has_packages=false`; when the stack was never started, `make docker-clean` SHALL be a no-op and SHALL exit 0.
+The workflow SHALL emit Docker Compose logs when a job that starts a stack fails or its acceptance tests fail. The workflow SHALL tear down a stack that it started via `make docker-clean`, regardless of prior step outcomes. A no-op pull-request job that never checks out the repository or starts a stack SHALL skip diagnostics and teardown.
 
 #### Scenario: Always tear down
 
-- GIVEN any prior step outcome in the test job
-- WHEN the job finishes
-- THEN `make docker-clean` SHALL run in an `always()` step
+- **GIVEN** a test job has started a Docker Compose stack
+- **WHEN** the job finishes after any prior step outcome
+- **THEN** `make docker-clean` runs in an `always()` step
 
 #### Scenario: Teardown is a no-op when stack was not started
 
-- **WHEN** `has_packages=false` and the stack start step was skipped
-- **THEN** `make docker-clean` runs
-- **AND** exits 0 without error
+- **GIVEN** a pull-request job has an empty package assignment
+- **WHEN** the job finishes
+- **THEN** Docker Compose diagnostics and teardown are skipped
 
 ### Requirement: Auto-approve job (REQ-018–REQ-021)
 
@@ -453,3 +396,39 @@ The following numeric ranges SHALL apply:
 
 - **WHEN** the acceptance test job's `strategy` block is inspected
 - **THEN** it SHALL NOT contain a `matrix.include` list keyed to exact version strings for runner or fleet-image selection
+
+### Requirement: Acceptance-matrix preparation gates expensive work
+
+The workflow SHALL prepare the acceptance-test version matrix and targeted package plan before pull-request acceptance jobs fan out. For pull requests, preparation SHALL fetch the PR base commit and invoke the targeted selector once with `--base` and `--total-shards=2`. If fetching the base commit fails, preparation SHALL invoke the selector without `--base`, allowing the selector to use its conservative baseline fallback. If the selector fails, preparation SHALL fail rather than produce a plan that skips tests.
+
+Preparation SHALL expose the pinned version matrix and version flags, numeric shard indices, package arrays indexed by shard, and whether the plan contains packages. Matrix jobs SHALL use that result to skip disk cleanup, dependency installation, stack setup, and acceptance execution when the plan has no packages.
+
+For non-pull-request events, preparation SHALL expose the fixed shard indices `[0, 1]` and SHALL not use targeted selection to alter full-suite execution.
+
+#### Scenario: Pull request planning succeeds
+
+- **GIVEN** a pull request has provider changes
+- **WHEN** a pull-request acceptance plan is prepared
+- **THEN** the selector is invoked once before matrix jobs start
+- **AND** every emitted shard has a corresponding prepared package array
+
+#### Scenario: Base-commit fetch fails
+
+- **GIVEN** a pull request requires targeted selection
+- **WHEN** fetching the PR base commit fails
+- **THEN** preparation invokes the selector without an explicit base
+- **AND** the workflow does not silently skip the acceptance suite
+
+#### Scenario: Selector failure fails preparation
+
+- **GIVEN** a pull request requires targeted selection
+- **WHEN** the targeted selector exits non-zero during preparation
+- **THEN** acceptance-matrix preparation fails
+- **AND** no successful no-op plan is emitted
+
+#### Scenario: Non-pull-request preparation preserves full-suite shards
+
+- **GIVEN** the event is a push, workflow-dispatch, or merge-group event
+- **WHEN** preparation runs
+- **THEN** it exposes exactly shard indices 0 and 1
+- **AND** test jobs use the existing full-suite execution path

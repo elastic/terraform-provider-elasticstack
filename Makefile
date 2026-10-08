@@ -140,7 +140,8 @@ targeted-testacc: ## Run acceptance tests relevant to the current branch diff
 	@set -euo pipefail; \
 	targeted_pkgs="$(TARGETED_PKGS)"; \
 	if [ -z "$${targeted_pkgs}" ]; then \
-		targeted_pkgs=$$(TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --shard-index=$(ACCTEST_SHARD_INDEX) --verbose=$(TARGETED_TESTACC_VERBOSE) | tr '\n' ' '); \
+		plan=$$(TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --verbose=$(TARGETED_TESTACC_VERBOSE)); \
+		targeted_pkgs=$$(printf '%s' "$${plan}" | ACCTEST_SHARD_INDEX=$(ACCTEST_SHARD_INDEX) node -e 'const plan = JSON.parse(require("fs").readFileSync(0, "utf8")); const raw = process.env.ACCTEST_SHARD_INDEX ?? ""; const idx = Number(raw.trim()); if (raw.trim() === "" || !Number.isInteger(idx) || idx < 0) { console.error("invalid ACCTEST_SHARD_INDEX: " + JSON.stringify(raw) + " (expected a nonnegative integer)"); process.exit(1); } const shard = plan.shards[idx] || []; process.stdout.write(shard.join(" "))'); \
 	fi; \
 	if [ -z "$${targeted_pkgs}" ]; then \
 		echo "No acceptance test packages selected for this diff/shard; skipping."; \
@@ -149,8 +150,8 @@ targeted-testacc: ## Run acceptance tests relevant to the current branch diff
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$${targeted_pkgs}" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: targeted-testacc-dry-run
-targeted-testacc-dry-run: ## Print acceptance test packages selected for the current branch diff (does not run tests)
-	@TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --shard-index=$(ACCTEST_SHARD_INDEX) --verbose=$(TARGETED_TESTACC_VERBOSE) --dry-run
+targeted-testacc-dry-run: ## Print the JSON shard plan for the current branch diff (does not run tests)
+	@TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --verbose=$(TARGETED_TESTACC_VERBOSE) --dry-run
 
 .PHONY: hook-test
 hook-test: ## Run hook JavaScript unit tests
