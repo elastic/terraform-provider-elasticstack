@@ -82,24 +82,6 @@ func (m model) toAPIUpdateModel(_ context.Context, prior model) kbapi.PutFleetAg
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
-		ProxyId:   proxyIDForUpdate(m.ProxyID, prior.ProxyID),
+		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
 	}
-}
-
-// proxyIDForUpdate returns a pointer suitable for the generated update body.
-// A known non-empty plan value is sent as-is. When the plan unsets a
-// previously set proxy_id, an empty string is sent rather than nil: the
-// generated `json:"proxy_id,omitempty"` tag drops nil, and Fleet 9.x treats
-// an omitted field as "leave unchanged", which leaves the prior proxy_id in
-// place and produces "inconsistent result after apply". When proxy_id was
-// already unset, nil is returned so the field stays omitted.
-func proxyIDForUpdate(plan, prior types.String) *string {
-	if typeutils.IsKnown(plan) && plan.ValueString() != "" {
-		return plan.ValueStringPointer()
-	}
-	if typeutils.IsKnown(prior) && prior.ValueString() != "" {
-		empty := ""
-		return &empty
-	}
-	return nil
 }
