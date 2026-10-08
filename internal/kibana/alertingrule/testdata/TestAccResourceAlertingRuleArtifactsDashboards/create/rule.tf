@@ -37,10 +37,4 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     dashboards = [for id in var.dashboard_ids : { id = id }]
   }
 
-  lifecycle {
-    ignore_changes = [
-      last_execution_date,
-      last_execution_status,
-    ]
-  }
 }

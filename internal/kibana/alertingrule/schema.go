@@ -154,14 +154,6 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"last_execution_status": schema.StringAttribute{
-				Description: "Status of the last execution of this rule.",
-				Computed:    true,
-			},
-			"last_execution_date": schema.StringAttribute{
-				Description: "Date of the last execution of this rule.",
-				Computed:    true,
-			},
 			"alert_delay": schema.Int64Attribute{
 				Description: "A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.",
 				Computed:    true,
