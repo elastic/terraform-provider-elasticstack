@@ -22,19 +22,19 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type dsModel struct {
 	entitycore.KibanaConnectionField
-	SpaceID           types.String         `tfsdk:"space_id"`
-	IncludeComponents types.Bool           `tfsdk:"include_components"`
-	Installed         types.Bool           `tfsdk:"installed"`
-	OverallStatus     types.String         `tfsdk:"overall_status"`
-	Engines           types.List           `tfsdk:"engines"`
-	StatusJSON        jsontypes.Normalized `tfsdk:"status_json"`
+	SpaceID           types.String                           `tfsdk:"space_id"`
+	IncludeComponents types.Bool                             `tfsdk:"include_components"`
+	Installed         types.Bool                             `tfsdk:"installed"`
+	OverallStatus     types.String                           `tfsdk:"overall_status"`
+	Engines           types.List                             `tfsdk:"engines"`
+	StatusJSON        customtypes.EntityStoreStatusJSONValue `tfsdk:"status_json"`
 }
 
 type engineModel struct {

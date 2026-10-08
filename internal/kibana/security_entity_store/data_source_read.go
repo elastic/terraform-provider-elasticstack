@@ -21,8 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -45,6 +45,6 @@ func readEntityStoreDataSource(ctx context.Context, client *clients.KibanaScoped
 	}
 	model.Engines = engines
 
-	model.StatusJSON = jsontypes.NewNormalizedValue(string(normalizeStatusJSON(rawBody)))
+	model.StatusJSON = customtypes.NewEntityStoreStatusJSONValue(string(rawBody))
 	return model, true, nil
 }
