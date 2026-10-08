@@ -1,7 +1,7 @@
 ---
 imports: [shared/setup-dev.md]
 name: Research Factory Issue Intake
-timeout-minutes: 35
+timeout-minutes: 60
 description: >-
   Reacts to trusted qualifying `research-factory` issue events or internal workflow dispatch
   requests and delegates deep-research authoring to an agent that creates or updates a single
@@ -158,6 +158,27 @@ on:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const fn = require('${{ github.workspace }}/.github/scripts/workflows/phase-label/set.js');
+          await fn({ github, context, core });
+    - name: Remove stale outcome labels
+      id: remove_stale_outcome_labels
+      if: >-
+        (
+          steps.determine_intake_mode.outputs.intake_mode == 'issue-event' &&
+          steps.qualify_trigger.outputs.event_eligible == 'true'
+        ) || (
+          steps.determine_intake_mode.outputs.intake_mode == 'dispatch' &&
+          steps.validate_dispatch_inputs.outputs.event_eligible == 'true'
+        )
+      env:
+        INPUT_ISSUE_NUMBER: >-
+          ${{ steps.determine_intake_mode.outputs.intake_mode == 'issue-event'
+            && steps.capture_issue_context.outputs.issue_number
+            || steps.validate_dispatch_inputs.outputs.issue_number }}
+      uses: actions/github-script@v9.0.0
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fn = require('${{ github.workspace }}/.github/scripts/workflows/research-factory/remove-stale-outcome-labels.js');
           await fn({ github, context, core });
     - name: Normalize context
       id: normalize_context
@@ -402,8 +423,10 @@ cannot be safely embedded inline in a prompt.
 
 ## Time budget
 
-You have approximately 25 minutes of agentic work. Reserve the last ~3 minutes for emitting your
-`update_research_comment`. The job hard-kills at 35 minutes.
+You have approximately 50 minutes of agentic work, covering all research and critique rounds.
+Reserve the last ~5 minutes for emitting your `update_research_comment`. The job hard-kills at 60
+minutes. If the budget runs out before the critique loop finishes, stop iterating, emit your latest
+revision, and report the gate outcome `research-needs-human`.
 
 ## Partial output preference
 
@@ -424,6 +447,37 @@ do not block the run waiting for documentation.
 
 You SHALL compare at least two distinct candidate approaches under `### Approaches considered`. Each
 approach needs its own `####` H4 heading. Do not emit a comment with only one approach.
+
+## Critique loop
+
+Research iterates through draft -> critique -> revise before you emit the comment. The gate constants
+are: score threshold **85**, stability window **2** consecutive rounds, and a maximum of **3** rounds.
+
+1. If the prior research comment has a `### Quality gate` section, read its outstanding feedback and
+   address it in your first draft.
+2. Write each draft to `/tmp/gh-aw/agent/research/draft-N.md` (N is the round number). The draft is the
+   full comment body you intend to publish, including a provisional `### Quality gate` and metadata.
+3. Invoke the `research-critic` subagent with the `Task` tool on every round, passing the draft path and
+   the issue context paths (`/tmp/gh-aw/agent/issue_body.md`, `/tmp/gh-aw/agent/issue_comments.md`).
+   Do not pass prior verdicts or the prior research comment; each round gets a fresh critic. Do not
+   critique your own draft in the critic's place. Save each verdict to
+   `/tmp/gh-aw/agent/research/verdict-N.json`.
+4. The critic returns only a verdict JSON object (`checklist`, `score`, `feedback`,
+   `unverifiable_citations`) as defined in
+   `.github/scripts/workflows/research-factory/critic-rubric.md`. Append each round's `score` to
+   `gate.scores`.
+5. Stop when the research is converged and every checklist item passes: the final score is at least 85
+   and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback.
+   Otherwise revise against the critic's actionable feedback and run another round, up to 3 rounds.
+   A score plateau below 85 is not converged.
+6. If the critic call fails or returns invalid JSON, retry once (re-ask for only valid JSON per the
+   rubric). If it still fails, stop the loop, set `gate.critic.status` to `"unavailable"` or `"error"`,
+   set `gate.rounds` to the number of completed rounds, and publish the latest draft with the outcome
+   `research-needs-human`.
+7. After the final round, copy the checklist, the actionable feedback (as `outstanding_feedback`), and
+   the critic status into the metadata. Report `ready-for-change-factory` only if the gate is satisfied
+   and no open question is blocking; otherwise report `research-needs-human`. The workflow recomputes
+   the outcome from your metadata and corrects the comment if it disagrees, so report it honestly.
 
 ## Research comment format
 
@@ -448,14 +502,25 @@ rationale.
 recommendation or scope.
 6. `### Out of scope` — A (possibly empty) bullet list of items the recommendation explicitly
 excludes.
-7. `### References` — A list of consulted sources, including elastic-docs URLs and repository paths
+7. `### Quality gate` — The human-readable result of the done gate, with this exact structure:
+
+   - A first line in the fixed format `**Outcome:** `<outcome>` - <one-line reason>`, where
+     `<outcome>` is `ready-for-change-factory` or `research-needs-human`.
+   - A checklist table with a pass or fail row for each of Grounded, Mapped, Compatible, Versioned,
+     Testable, and Idiomatic.
+   - The final critic score against the threshold of 85, and the number of critique rounds used.
+   - When the outcome is `research-needs-human`, a bullet list of the critic's outstanding actionable
+     feedback.
+
+   This section is informational and is not part of the recommended scope.
+8. `### References` — A list of consulted sources, including elastic-docs URLs and repository paths
 inspected during research.
 
 After `### References`, include a `<details>` element with `<summary>🤖 Pipeline metadata</summary>`
 containing a fenced JSON block (language `json`) that conforms to the
 `ci-research-factory-comment-format` schema:
 
-- `schema_version` (string, required): e.g. `"1.0"`.
+- `schema_version` (string, required): always `"1.1"`.
 - `recommendation` (object, required):
   - `spine` (string, required): kebab-case identifier.
   - `confidence` (string, optional): `"high"`, `"medium"`, or `"low"`.
@@ -464,8 +529,20 @@ containing a fenced JSON block (language `json`) that conforms to the
 - `affected_capabilities` (array of strings, optional).
 - `estimated_scope` (string): `"small"`, `"medium"`, `"large"`, or `"unknown"`.
 - `references` (array, optional): each with `type` and `url` or `path`.
+- `gate` (object, required):
+  - `outcome` (string): `"ready-for-change-factory"` or `"research-needs-human"`.
+  - `checklist` (object): booleans `grounded`, `mapped`, `compatible`, `versioned`, `testable`,
+    `idiomatic`.
+  - `score` (number or null): the final critic score, 0-100; `null` when no round completed.
+  - `scores` (array of numbers): each completed round's score, in order; empty when none completed.
+  - `converged` (boolean): whether the convergence rule was satisfied.
+  - `rounds` (number): completed critique rounds, 0 to 3; equals the length of `scores`.
+  - `outstanding_feedback` (array of strings): the critic's remaining actionable feedback.
+  - `author_model` (string): `anthropic/claude-sonnet-5`.
+  - `critic` (object): `model` (string, `openai/gpt-5.5`) and `status` (`"ok"`, `"unavailable"`, or
+    `"error"`).
 
-Ensure the JSON metadata is internally consistent with the human-readable subsections above it.
+Ensure the JSON metadata, including `gate`, is internally consistent with the human-readable subsections above it.
 The `<details>` element SHALL be closed by default so that human readers do not see the JSON unless
 they expand it.
 

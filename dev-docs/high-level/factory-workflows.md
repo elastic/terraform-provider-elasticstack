@@ -45,6 +45,8 @@ After a factory runs, the issue carries exactly one `phase-*` label so the pipel
 
 Behavior is pinned by the [`ci-factory-pipeline-phase-labels`](../../openspec/specs/ci-factory-pipeline-phase-labels/spec.md) spec.
 
+`research-factory` additionally sets one **outcome label** (`ready-for-change-factory` or `research-needs-human`) from its quality gate; see [`research-factory` — feature research](#research-factory--feature-research). Outcome labels do not trigger any workflow.
+
 ## Shared mechanics
 
 Every factory uses the same deterministic pre-activation pattern, implemented under [`.github/scripts/workflows/lib/factory-runners/`](../../.github/scripts/workflows/lib/factory-runners/):
@@ -70,6 +72,32 @@ Adds a deep-research pass **before** `change-factory`. It compares at least two 
 ### Output: sticky comment
 
 A single comment delimited by `<!-- gha-research-factory -->` containing problem framing, two or more candidate approaches, a recommendation, open questions, and references. The exact section list and metadata JSON shape are pinned by [`ci-research-factory-comment-format`](../../openspec/specs/ci-research-factory-comment-format/spec.md); the agent prompt is in [`research-factory-issue.md`](../../.github/workflows/research-factory-issue.md).
+
+### Critique loop and done gate
+
+Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-5.5`) each round with fresh context. The critic is defined in the workflow's `--agents` argument and follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md).
+
+The done gate has two parts:
+
+- **Hard checklist** (all must pass): Grounded, Mapped, Compatible, Versioned, Testable, Idiomatic.
+- **Convergence**: the final critic score is at least 85, and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback. The loop runs at most 3 rounds, within a 50-minute self-budget (the job times out at 60 minutes).
+
+The comment includes a `### Quality gate` section (outcome line, checklist table, score, rounds, and outstanding feedback when human review is needed) and metadata schema `1.1` with a `gate` object. The section is informational; `change-factory` must not treat it as scope.
+
+### Outcome labels
+
+After the comment is posted, the `update-research-comment` script derives the outcome from the published metadata, independently of what the agent reported ([`gate.js`](../../.github/scripts/workflows/research-factory/gate.js)). It applies exactly one label and removes the other:
+
+| Label | Meaning |
+|-------|---------|
+| `ready-for-change-factory` | Checklist green, converged, critic ran, no blocking open questions |
+| `research-needs-human` | Anything else, including missing or invalid metadata |
+
+If the agent reported a different outcome, the comment is corrected with a visible override note so the comment and label never disagree. Pre-activation clears stale outcome labels at the start of every run. Neither label triggers a workflow, and the classifier's `needs-human` label is never touched.
+
+### Tuning the gate
+
+The gate constants (threshold 85, stability window 2, maximum 3 rounds) are defined in `gate.js` and restated in `critic-rubric.md` and the workflow prompt. A consistency test (`lib/research-factory-gate-constants.test.mjs`) fails if they drift, so change all three together with the spec.
 
 ### Social contract
 

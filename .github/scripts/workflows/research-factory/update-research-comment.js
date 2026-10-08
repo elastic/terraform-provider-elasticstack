@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { evaluateBody, applyOverride, READY, NEEDS_HUMAN } = require('./gate.js');
 
 module.exports = async function ({ github, context, core }) {
   const { owner, repo } = context.repo;
@@ -38,6 +39,9 @@ module.exports = async function ({ github, context, core }) {
     body = marker + '\n' + body;
   }
 
+  const result = evaluateBody(body);
+  body = applyOverride(body, result);
+
   // Find existing research comment by github-actions[bot]
   let existingComment = null;
   try {
@@ -59,8 +63,8 @@ module.exports = async function ({ github, context, core }) {
     return;
   }
 
-  if (existingComment) {
-    try {
+  try {
+    if (existingComment) {
       await github.rest.issues.updateComment({
         owner,
         repo,
@@ -68,11 +72,7 @@ module.exports = async function ({ github, context, core }) {
         body,
       });
       core.info(`Updated research comment ${existingComment.id} on issue #${issueNumber}`);
-    } catch (err) {
-      core.setFailed(`Failed to update research comment: ${err.message}`);
-    }
-  } else {
-    try {
+    } else {
       const { data: newComment } = await github.rest.issues.createComment({
         owner,
         repo,
@@ -80,8 +80,29 @@ module.exports = async function ({ github, context, core }) {
         body,
       });
       core.info(`Created research comment ${newComment.id} on issue #${issueNumber}`);
-    } catch (err) {
-      core.setFailed(`Failed to create research comment: ${err.message}`);
     }
+  } catch (err) {
+    core.setFailed(`Failed to write research comment: ${err.message}`);
+    return;
   }
+
+  const otherLabel = result.label === READY ? NEEDS_HUMAN : READY;
+  try {
+    await github.rest.issues.addLabels({ owner, repo, issue_number: issueNumber, labels: [result.label] });
+    try {
+      await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: otherLabel });
+    } catch (err) {
+      if (err.status !== 404) {
+        throw err;
+      }
+    }
+  } catch (err) {
+    core.setFailed(`Failed to set outcome label ${result.label}: ${err.message}`);
+  }
+
+  await core.summary
+    .addRaw(
+      `### Research gate outcome\n\n- Derived outcome: \`${result.label}\`\n- Reasons: ${result.reasons.join('; ')}\n- Reported outcome overridden: ${result.overridden ? 'yes' : 'no'}\n`,
+    )
+    .write();
 };
