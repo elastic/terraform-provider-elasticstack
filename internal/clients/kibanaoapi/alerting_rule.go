@@ -69,6 +69,83 @@ func CreateAlertingRule(ctx context.Context, client *Client, spaceID string, rul
 	}
 }
 
+const (
+	alertingRulesFindPerPage  float32 = 100
+	alertingRulesFindMaxTotal float32 = 10000
+)
+
+func FindAlertingRules(ctx context.Context, client *Client, spaceID string, filter *string) ([]models.AlertingRule, diag.Diagnostics) {
+	sortField := "name"
+	sortOrder := kbapi.GetAlertingRulesFindParamsSortOrderAsc
+	perPage := alertingRulesFindPerPage
+
+	var (
+		collected []models.AlertingRule
+		page      float32 = 1
+		total     float32
+	)
+
+	for {
+		params := &kbapi.GetAlertingRulesFindParams{
+			Page:      &page,
+			PerPage:   &perPage,
+			SortField: &sortField,
+			SortOrder: &sortOrder,
+			Filter:    filter,
+		}
+		resp, err := client.API.GetAlertingRulesFindWithResponse(
+			ctx,
+			params,
+			kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		)
+		if err != nil {
+			return nil, diagutil.ErrDiag("Unable to search alerting rules", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			if resp.StatusCode() == http.StatusInternalServerError && filter != nil && *filter != "" {
+				return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+					"Invalid alerting rule filter",
+					fmt.Sprintf("Kibana rejected filter. Response: %s", resp.Body),
+				)}
+			}
+			return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		}
+		if resp.JSON200 == nil {
+			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+				"Failed to parse response",
+				"API returned success status but response body was nil or not JSON",
+			)}
+		}
+		if page == 1 && resp.JSON200.Total > alertingRulesFindMaxTotal {
+			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+				"Too many alerting rules",
+				fmt.Sprintf("Kibana reported %.0f matching rules, which is more than 10000. Narrow filter so the search stays within Kibana's result window.", resp.JSON200.Total),
+			)}
+		}
+
+		if total == 0 {
+			total = resp.JSON200.Total
+		}
+		if len(resp.JSON200.Data) == 0 {
+			break
+		}
+
+		for i := range resp.JSON200.Data {
+			rule, diags := ConvertResponseToModel(spaceID, &resp.JSON200.Data[i])
+			if diags.HasError() {
+				return nil, diags
+			}
+			collected = append(collected, *rule)
+		}
+		if len(collected) >= int(total) {
+			break
+		}
+		page++
+	}
+
+	return collected, nil
+}
+
 func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) (*models.AlertingRule, diag.Diagnostics) {
 	resp, err := client.API.GetAlertingRuleIdWithResponse(
 		ctx,
