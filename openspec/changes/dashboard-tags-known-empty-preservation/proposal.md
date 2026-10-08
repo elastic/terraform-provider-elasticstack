@@ -12,13 +12,7 @@ known, empty list. The read-back mapping in `dashboardPopulateFromAPI`
 (`internal/kibana/dashboard/models.go:104-109`) collapses any nil-or-empty API `tags` value to
 `types.ListNull(types.StringType)`:
 
-```go
-if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
-    m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
-} else {
-    m.Tags = types.ListNull(types.StringType)
-}
-```
+The read-back currently normalizes nil or empty API tags to null, even when Terraform planned a known-empty list.
 
 This discards the practitioner's known-empty intent and reports a `[] -> null` inconsistency
 regardless of whether Kibana echoes back `"tags": []` or omits the key. The create/update request
@@ -31,12 +25,7 @@ and already handled correctly for `tags` on sibling resources that use `types.Se
 
 ## What Changes
 
-Make the dashboard `tags` read-back intent-preserving: when the API returns a nil or empty tags
-value, preserve the prior plan/state `tags` value (including a known-empty `[]`) instead of
-forcing `types.ListNull`. Only overwrite `tags` in state when the API returns a non-empty array.
-The fix is implemented inline in `dashboardPopulateFromAPI`, following the same pattern already
-used for `description` and `time_range.mode` in that function — no new shared helper is added in
-this change.
+Make the dashboard `tags` read-back intent-preserving: when the API returns a nil or empty tags value, preserve the prior plan/state `tags` value (including a known-empty `[]`) instead of forcing `types.ListNull`. Only overwrite `tags` in state when the API returns a non-empty array.
 
 No schema changes are needed. No migration is required.
 

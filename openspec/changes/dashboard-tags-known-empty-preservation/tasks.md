@@ -10,7 +10,8 @@
   - API returns `[]` (empty, non-nil), prior state/plan `tags = []` → state `[]`.
   - API returns nil, prior state/plan `tags` null (omitted in config) → state null.
   - API returns `["a", "b"]`, prior state/plan null or `[]` → state `["a", "b"]` (non-empty normal case).
-  - Prior `m.Tags` is `Unknown` (import) and API returns nil/empty → state null.
+  - API returns nil or `[]`, prior state/plan `tags = ["a"]` → state `["a"]` (known non-empty preservation).
+  - Prior `m.Tags` is `Unknown` and API returns nil/empty → state null.
 
 ## 3. Acceptance tests
 
@@ -18,9 +19,10 @@
   - Creates a dashboard with explicit `tags = []`.
   - Plans and applies — expects no diff on re-plan.
   - Confirms `tags` in state is `[]`, not null.
-- [ ] 3.2 Verify existing dashboard acceptance tests that omit `tags` entirely continue to pass unchanged (regression gate for the null-intent path).
-- [ ] 3.3 Run the dashboard package's acceptance tests against a running Elastic Stack (see `dev-docs/high-level/testing.md`) and confirm no "inconsistent result" error for the `tags = []` case.
+- [ ] 3.2 Import a dashboard whose API response has nil/empty tags and confirm imported state contains `tags = null`.
+- [ ] 3.3 Verify existing dashboard acceptance tests that omit `tags` entirely continue to pass unchanged (regression gate for the null-intent path).
+- [ ] 3.4 Run the dashboard package's acceptance tests against a running Elastic Stack (see `dev-docs/high-level/testing.md`) and confirm no "inconsistent result" error for the `tags = []` case.
 
 ## 4. Spec sync
 
-- [ ] 4.1 After implementation, run `make check-openspec` to confirm the delta spec is aligned with the main spec and no validation errors remain.
+- [ ] 4.1 After implementation, run `openspec validate --all` to validate the active delta with canonical specs; after syncing or archiving the change, run `make check-openspec` to validate the canonical spec tree.

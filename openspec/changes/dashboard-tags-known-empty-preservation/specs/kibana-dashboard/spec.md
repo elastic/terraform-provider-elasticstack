@@ -16,7 +16,7 @@ The resource models only the currently supported Terraform subset of dashboard f
 
 The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
 
-The provider SHALL apply the same intent-preserving treatment to the root-level `tags` attribute. When the Kibana API returns a nil or empty `tags` value and the prior Terraform plan/state had `tags` as a known value — including a known-empty list (`tags = []`) — the provider SHALL preserve that prior known value in state rather than forcing `null`. When the prior plan/state `tags` value is itself null (the practitioner did not set `tags`), the provider SHALL preserve `null`. When the API returns a non-empty `tags` array, the provider SHALL store that value from the API response, overwriting any prior value. When there is no prior plan/state value to consult (for example on `terraform import`, where `tags` is `Unknown`), the provider SHALL map a nil-or-empty API `tags` value to `null`. This fixes the error reported when a practitioner sets `tags = []`: without this normalization, the provider produces an unexpected new value, `.tags: was cty.ListValEmpty(cty.String), but now null`.
+The provider SHALL apply the same intent-preserving treatment to the root-level `tags` attribute. When the Kibana API returns a nil or empty `tags` value and the prior Terraform plan/state had `tags` as a known value — including a known-empty list (`tags = []`) — the provider SHALL preserve that prior known value in state rather than forcing `null`. When the prior plan/state `tags` value is itself null (the practitioner did not set `tags`), the provider SHALL preserve `null`. When the API returns a non-empty `tags` array, the provider SHALL store that value from the API response, overwriting any prior value. When the prior value is `Unknown`, the provider SHALL map a nil-or-empty API `tags` value to `null`. Imports also produce `null` for nil-or-empty API tags because imported state initializes non-identity optional attributes as null. This fixes the error reported when a practitioner sets `tags = []`: without this normalization, the provider produces an unexpected new value, `.tags: was cty.ListValEmpty(cty.String), but now null`.
 
 #### Scenario: Empty-string description treated as null for null-intent practitioners
 
@@ -55,6 +55,13 @@ The provider SHALL apply the same intent-preserving treatment to the root-level 
 - THEN state SHALL contain `tags = []`
 - AND a subsequent plan SHALL show no changes
 
+#### Scenario: Known non-empty tags retained when the API returns nil or empty
+
+- GIVEN prior Terraform plan/state contains `tags = ["a"]`
+- AND the Kibana API returns a nil or empty `tags` value
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `tags = ["a"]`
+
 #### Scenario: Omitted tags stays null on read
 
 - GIVEN a dashboard configured without `tags` (null in Terraform plan/state)
@@ -62,16 +69,16 @@ The provider SHALL apply the same intent-preserving treatment to the root-level 
 - WHEN the provider reads the dashboard
 - THEN state SHALL contain `tags = null`
 
-#### Scenario: Non-empty tags preserved unchanged
+#### Scenario: Non-empty API tags overwrite the prior Terraform value
 
-- GIVEN a dashboard configured with `tags = ["a", "b"]`
+- GIVEN prior Terraform plan/state contains `tags = []`
 - AND the Kibana API returns `tags: ["a", "b"]`
 - WHEN the provider reads the dashboard
 - THEN state SHALL contain `tags = ["a", "b"]`
 
-#### Scenario: Import with no prior tags intent maps nil/empty API tags to null
+#### Scenario: Import with no API tags records null
 
-- GIVEN a dashboard is imported via `terraform import` (no prior plan/state `tags` value; `tags` is Unknown)
+- GIVEN a dashboard is imported via `terraform import`, with non-identity optional attributes initialized as null
 - AND the Kibana API returns a nil or empty `tags` value
 - WHEN the provider reads the dashboard
 - THEN state SHALL contain `tags = null`

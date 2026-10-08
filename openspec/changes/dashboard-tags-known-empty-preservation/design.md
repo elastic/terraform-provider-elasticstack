@@ -57,25 +57,10 @@ as-is.
 inline, following the same shape as the existing `description` and `time_range.mode` handling in
 that same function:
 
-```go
-// Map tags: preserve prior known intent (including known-empty []) when the API
-// returns a nil or empty tags value, so a practitioner-set tags = [] does not
-// collapse to null on read-back (REQ-009).
-if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
-    m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
-} else if !m.Tags.IsUnknown() {
-    // Prior plan/state tags is already null or a known value (including known-empty
-    // []); keep it as-is instead of forcing null.
-} else {
-    m.Tags = types.ListNull(types.StringType)
-}
+Apply intent-preserving normalization in the dashboard read mapping. A non-empty API tags value replaces the prior Terraform value. A nil or empty API value retains any known prior value, including null and a known-empty list; an unknown prior value normalizes to null. Keep this behavior local to the dashboard mapping rather than introducing a shared list helper.
 ```
 
-`m.Tags` on entry to `dashboardPopulateFromAPI` already carries the prior plan (on post-create/
-post-update read-back) or prior state (on refresh) value, the same precondition the `description`
-and `time_range.mode` branches rely on. When `m.Tags` is `Unknown` (for example on import, where
-there is no prior plan/state value to preserve), the fix falls back to `types.ListNull`, matching
-today's behavior for that case.
+`m.Tags` on entry to `dashboardPopulateFromAPI` carries the prior plan on post-create/post-update read-back or prior state on refresh, matching the precondition used by `description` and `time_range.mode`. Imports initialize non-identity optional attributes as null, so a nil/empty API value remains null through known-value preservation. If an unknown prior value reaches this mapper on another path, normalize it to `types.ListNull`, matching today's fallback behavior.
 
 **Why not reuse `typeutils.SetFromAPIStringsPreserveKnownEmpty`?** That helper operates on
 `types.Set`; dashboard `tags` is `types.List`. Per human direction captured on this issue, the fix
@@ -84,6 +69,8 @@ stays inline rather than generalizing a new `types.List` variant of that helper 
 **Why not change the `tags` schema (e.g. add a default or `UseStateForUnknown`)?** The bug is
 isolated to the read-back mapping; the plan already carries the correct known-empty intent. A
 schema-level fix would be a larger, unnecessary change for a read-path bug.
+
+**Testing strategy**: Use table-driven unit tests for every prior-value/API-value normalization branch, and a targeted acceptance test against a running Elastic Stack for the explicit `tags = []` apply and no-diff re-plan path. Keep existing omitted-tags acceptance coverage as the null-intent regression gate.
 
 ## Risks / Trade-offs
 
