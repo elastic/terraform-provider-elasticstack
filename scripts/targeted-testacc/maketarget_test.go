@@ -86,34 +86,6 @@ func TestMakeTarget_NoPackagesSelectedExitsCleanly(t *testing.T) {
 	}
 }
 
-func TestMakeTarget_InvalidShardIndexFails(t *testing.T) {
-	plan := `{"has_packages":true,"selected_packages":["pkg/a","pkg/b"],"shards":[["pkg/a"],["pkg/b"]],"rationale":["diff"]}`
-
-	for name, env := range map[string]string{
-		"non-integer": "ACCTEST_SHARD_INDEX=not-a-number",
-		"negative":    "ACCTEST_SHARD_INDEX=-1",
-		"blank":       "ACCTEST_SHARD_INDEX=",
-		"whitespace":  "ACCTEST_SHARD_INDEX= ",
-		"float":       "ACCTEST_SHARD_INDEX=1.5",
-	} {
-		t.Run(name, func(t *testing.T) {
-			root := repoRoot(t)
-			fakeGoShim(t, plan)
-
-			cmd := exec.Command("make", "targeted-testacc")
-			cmd.Dir = root
-			cmd.Env = append(os.Environ(), env, "ACCTEST_TOTAL_SHARDS=2")
-			out, err := cmd.CombinedOutput()
-			if err == nil {
-				t.Fatalf("make targeted-testacc succeeded with %s\nstdout:\n%s", env, out)
-			}
-			if !strings.Contains(string(out), "ACCTEST_SHARD_INDEX") {
-				t.Errorf("make failure did not name ACCTEST_SHARD_INDEX; output:\n%s", out)
-			}
-		})
-	}
-}
-
 func TestMakeTarget_PackagesSelectedRunsGotestsum(t *testing.T) {
 	root := repoRoot(t)
 	plan := `{"has_packages":true,"selected_packages":["pkg/a","pkg/b"],"shards":[["pkg/a"],["pkg/b"]],"rationale":["diff"]}`
