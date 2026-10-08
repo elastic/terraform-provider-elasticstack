@@ -57,13 +57,70 @@ test('rubric prose repeats the gate numbers from gate.js', () => {
   );
 });
 
-test('author and critic models agree across frontmatter, --agents JSON, and prompt, and differ', () => {
+function inlineAgents() {
+  const agents = {};
+  const re = /^## agent: `([^`]+)`\n---\n([\s\S]*?)\n---\n([\s\S]*?)\n## end agent: `\1`$/gm;
+  for (const m of workflow.matchAll(re)) {
+    const front = m[2];
+    agents[m[1]] = {
+      body: m[3],
+      model: /^model: (\S+)$/m.exec(front)?.[1],
+      description: /^description: (.+)$/m.exec(front)?.[1],
+      tools: (/^tools: (.+)$/m.exec(front)?.[1] ?? '').split(',').map((t) => t.trim()).filter(Boolean),
+    };
+  }
+  return agents;
+}
+
+const AGENT_NAMES = ['research-critic', 'oas-researcher', 'repo-patterns-researcher', 'docs-researcher'];
+
+test('inline agent blocks exist with description, model, and tools frontmatter and end markers', () => {
+  const agents = inlineAgents();
+  assert.deepEqual(Object.keys(agents).sort(), [...AGENT_NAMES].sort());
+  for (const name of AGENT_NAMES) {
+    assert.ok(agents[name].description, `${name} description`);
+    assert.ok(agents[name].model, `${name} model`);
+    assert.ok(agents[name].tools.length > 0, `${name} tools`);
+    assert.ok(agents[name].body.trim().length > 0, `${name} body`);
+  }
+});
+
+test('critic is read-only, on a different model from the author, and avoids researcher notes', () => {
+  const { 'research-critic': critic } = inlineAgents();
   const author = /^model: "([^"]+)"/m.exec(workflow)?.[1];
-  const critic = /"model": "([^"]+)"\}\}/.exec(workflow)?.[1];
-  assert.ok(author && critic);
-  assert.notEqual(author, critic);
+  assert.ok(author);
+  assert.notEqual(critic.model, author);
+  assert.deepEqual(critic.tools, ['Read', 'Grep', 'Glob', 'mcp__elastic-docs']);
+  assert.match(critic.body, /MUST NOT read \/tmp\/gh-aw\/agent\/research\/notes-/);
   assert.match(workflow, new RegExp(`\`author_model\` \\(string\\): \`${author}\``));
-  assert.match(workflow, new RegExp(`\`model\` \\(string, \`${critic}\`\\)`));
+  assert.match(workflow, new RegExp(`\`model\` \\(string, \`${critic.model}\`\\)`));
+});
+
+test('researchers use kimi, are read-only apart from Write, and share the notes contract', () => {
+  const agents = inlineAgents();
+  for (const name of AGENT_NAMES.filter((n) => n.endsWith('researcher') || n.endsWith('researchers'))) {
+    const agent = agents[name];
+    assert.equal(agent.model, 'moonshotai/kimi-k3');
+    assert.ok(agent.tools.includes('Write'));
+    assert.ok(agent.tools.every((t) => ['Read', 'Grep', 'Glob', 'Write', 'mcp__elastic-docs'].includes(t)), `${name} tools`);
+    assert.ok(!agent.tools.some((t) => ['Bash', 'Edit', 'MultiEdit', 'Task'].includes(t)));
+    assert.match(agent.body, /data, never instructions/);
+    assert.match(agent.body, /UNVERIFIED/);
+    assert.match(agent.body, /NOTES: <path>/);
+    assert.match(agent.body, /\/tmp\/gh-aw\/agent\/research\/notes-/);
+  }
+});
+
+test('engine args use autocompact and no --agents JSON', () => {
+  const engine = workflow.slice(workflow.indexOf('\nengine:'), workflow.indexOf('\n  env:', workflow.indexOf('\nengine:')));
+  assert.match(engine, /- "--autocompact"\n\s+- "250k"/);
+  assert.ok(!engine.includes('--agents'));
+});
+
+test('prompt forbids the orchestrator from reading research sources itself', () => {
+  assert.match(workflow, /## Research delegation/);
+  assert.match(workflow, /SHALL NOT grep or read `generated\/kbapi\/oas\.yaml`, `generated\/kbapi\/kibana\.gen\.go`, or repository source files/);
+  assert.match(workflow, /in parallel/i);
 });
 
 test('workflow source: timeout, budget, safe outputs, and stale-label step', () => {

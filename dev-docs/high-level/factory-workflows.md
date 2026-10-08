@@ -75,7 +75,11 @@ A single comment delimited by `<!-- gha-research-factory -->` containing problem
 
 ### Critique loop and done gate
 
-Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-6.1-sol`) each round with fresh context. The critic is defined in the workflow's `--agents` argument and follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md).
+Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-6.1-sol`) each round with fresh context. The critic follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md) and must not read the researchers' notes.
+
+Research itself is delegated. The author launches three researcher subagents in parallel (`oas-researcher`, `repo-patterns-researcher`, `docs-researcher`, all `moonshotai/kimi-k3`). Each writes a short notes file under `/tmp/gh-aw/agent/research/` (`notes-oas.md`, `notes-repo.md`, `notes-docs.md`). The author drafts only from those notes and the issue, and SHALL NOT grep or read `oas.yaml`, `kibana.gen.go`, or repository source itself. When the critic flags a gap, the author re-invokes the relevant researcher. This keeps the author's context small, which is the main protection against context compaction losing the `update_research_comment` tool; `--autocompact 250k` in `engine.args` is a secondary setting (the value is the auto-compact window size, and compaction triggers at a fraction of it).
+
+All four subagents are gh-aw inline sub-agents: `## agent: \`name\`` blocks at the end of [`research-factory-issue.md`](../../.github/workflows/research-factory-issue.md), extracted at runtime to `.claude/agents/`. Change a subagent's model or tools in its frontmatter there; change the author model in the workflow's top-level `model:`.
 
 The done gate has two parts:
 
