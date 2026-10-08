@@ -25,7 +25,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -134,7 +133,7 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 	// ImportStateVerify compares the imported state against the pre-import
 	// state byte-for-byte, so the raw status_json (whose engine array order is
 	// arbitrary per API response) is excluded there and re-verified below with
-	// the EntityStoreStatusJSON custom type's semantic equality instead.
+	// the StatusJSON custom type's semantic equality instead.
 	var preImportStatusJSON string
 
 	resource.Test(t, resource.TestCase{
@@ -181,8 +180,8 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 					if imported == "" {
 						return fmt.Errorf("imported state for %s has no status_json attribute to compare", resName)
 					}
-					equal, diags := customtypes.NewEntityStoreStatusJSONValue(preImportStatusJSON).
-						StringSemanticEquals(context.Background(), customtypes.NewEntityStoreStatusJSONValue(imported))
+					equal, diags := securityentitystore.NewStatusJSONValue(preImportStatusJSON).
+						StringSemanticEquals(context.Background(), securityentitystore.NewStatusJSONValue(imported))
 					if diags.HasError() {
 						return fmt.Errorf("status_json semantic comparison failed: %v", diags)
 					}

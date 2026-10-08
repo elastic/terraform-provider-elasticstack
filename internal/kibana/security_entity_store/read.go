@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -52,6 +51,6 @@ func readEntityStore(
 	model.EntityTypes = entityTypes
 	model.Started = types.BoolValue(started)
 	model.LogExtraction = logExtraction
-	model.StatusJSON = customtypes.NewEntityStoreStatusJSONValue(string(rawBody))
+	model.StatusJSON = NewStatusJSONValue(string(rawBody))
 	return model, true, append(diags, flattenDiags...)
 }

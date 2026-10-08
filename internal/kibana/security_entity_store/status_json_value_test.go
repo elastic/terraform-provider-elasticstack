@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package customtypes
+package security_entity_store
 
 import (
 	"context"
@@ -30,62 +30,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEntityStoreStatusJSONType_ValueFromTerraform(t *testing.T) {
+func TestStatusJSONType_ValueFromTerraform(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	nullVal, err := EntityStoreStatusJSONType{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, nil))
+	nullVal, err := StatusJSONType{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, nil))
 	require.NoError(t, err)
-	assert.True(t, nullVal.IsNull(), "null input must produce a null EntityStoreStatusJSONValue, got %T", nullVal)
+	assert.True(t, nullVal.IsNull(), "null input must produce a null StatusJSONValue, got %T", nullVal)
 
-	unknownVal, err := EntityStoreStatusJSONType{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
+	unknownVal, err := StatusJSONType{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, tftypes.UnknownValue))
 	require.NoError(t, err)
-	assert.True(t, unknownVal.IsUnknown(), "unknown input must produce an unknown EntityStoreStatusJSONValue, got %T", unknownVal)
+	assert.True(t, unknownVal.IsUnknown(), "unknown input must produce an unknown StatusJSONValue, got %T", unknownVal)
 
-	knownVal, err := EntityStoreStatusJSONType{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, `{"status":"running"}`))
+	knownVal, err := StatusJSONType{}.ValueFromTerraform(ctx, tftypes.NewValue(tftypes.String, `{"status":"running"}`))
 	require.NoError(t, err)
-	assert.IsType(t, EntityStoreStatusJSONValue{}, knownVal)
+	assert.IsType(t, StatusJSONValue{}, knownVal)
 }
 
-func TestEntityStoreStatusJSONValue_ValueFromString(t *testing.T) {
+func TestStatusJSONValue_ValueFromString(t *testing.T) {
 	t.Parallel()
 
-	val, diags := EntityStoreStatusJSONType{}.ValueFromString(context.Background(), basetypes.NewStringValue(`{"status":"running"}`))
+	val, diags := StatusJSONType{}.ValueFromString(context.Background(), basetypes.NewStringValue(`{"status":"running"}`))
 	require.False(t, diags.HasError(), "%v", diags)
-	require.IsType(t, EntityStoreStatusJSONValue{}, val)
-	assert.JSONEq(t, `{"status":"running"}`, val.(EntityStoreStatusJSONValue).ValueString())
-	assert.False(t, val.(EntityStoreStatusJSONValue).IsNull())
-	assert.False(t, val.(EntityStoreStatusJSONValue).IsUnknown())
+	require.IsType(t, StatusJSONValue{}, val)
+	assert.JSONEq(t, `{"status":"running"}`, val.(StatusJSONValue).ValueString())
+	assert.False(t, val.(StatusJSONValue).IsNull())
+	assert.False(t, val.(StatusJSONValue).IsUnknown())
 }
 
-func TestEntityStoreStatusJSONValue_RawConstructorUntouched(t *testing.T) {
+func TestStatusJSONValue_RawConstructorUntouched(t *testing.T) {
 	t.Parallel()
 
 	// The raw API JSON is stored byte-identical, including unusual
 	// whitespace, key order, and escaped characters.
 	raw := `{"engines":[ {"type":"use\u0072"} ],  "status":"running"}`
-	assert.Equal(t, raw, NewEntityStoreStatusJSONValue(raw).ValueString())
-	assert.True(t, NewEntityStoreStatusJSONNull().IsNull())
-	assert.True(t, NewEntityStoreStatusJSONUnknown().IsUnknown())
+	assert.Equal(t, raw, NewStatusJSONValue(raw).ValueString())
+	assert.True(t, NewStatusJSONNull().IsNull())
+	assert.True(t, NewStatusJSONUnknown().IsUnknown())
 }
 
-func TestEntityStoreStatusJSONValue_NullUnknownSemantics(t *testing.T) {
+func TestStatusJSONValue_NullUnknownSemantics(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	known := NewEntityStoreStatusJSONValue(`{"status":"running"}`)
+	known := NewStatusJSONValue(`{"status":"running"}`)
 
 	tests := []struct {
 		name  string
-		a     EntityStoreStatusJSONValue
-		b     EntityStoreStatusJSONValue
+		a     StatusJSONValue
+		b     StatusJSONValue
 		equal bool
 	}{
-		{"null vs null", NewEntityStoreStatusJSONNull(), NewEntityStoreStatusJSONNull(), true},
-		{"null vs known", NewEntityStoreStatusJSONNull(), known, false},
-		{"known vs null", known, NewEntityStoreStatusJSONNull(), false},
-		{"unknown vs unknown", NewEntityStoreStatusJSONUnknown(), NewEntityStoreStatusJSONUnknown(), true},
-		{"unknown vs null", NewEntityStoreStatusJSONUnknown(), NewEntityStoreStatusJSONNull(), false},
-		{"known vs unknown", known, NewEntityStoreStatusJSONUnknown(), false},
+		{"null vs null", NewStatusJSONNull(), NewStatusJSONNull(), true},
+		{"null vs known", NewStatusJSONNull(), known, false},
+		{"known vs null", known, NewStatusJSONNull(), false},
+		{"unknown vs unknown", NewStatusJSONUnknown(), NewStatusJSONUnknown(), true},
+		{"unknown vs null", NewStatusJSONUnknown(), NewStatusJSONNull(), false},
+		{"known vs unknown", known, NewStatusJSONUnknown(), false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestEntityStoreStatusJSONValue_NullUnknownSemantics(t *testing.T) {
 	}
 }
 
-func TestEntityStoreStatusJSONValue_EngineOrderPermutations(t *testing.T) {
+func TestStatusJSONValue_EngineOrderPermutations(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -111,7 +111,7 @@ func TestEntityStoreStatusJSONValue_EngineOrderPermutations(t *testing.T) {
 		"host user generic", "user generic host", "user host generic",
 	}
 
-	first := NewEntityStoreStatusJSONNull()
+	first := NewStatusJSONNull()
 	for _, perm := range permutations {
 		order := strings.Split(perm, " ")
 		rawEngines := make([]string, len(order))
@@ -119,7 +119,7 @@ func TestEntityStoreStatusJSONValue_EngineOrderPermutations(t *testing.T) {
 			rawEngines[i] = engines[engineType]
 		}
 		body := `{"status":"running","engines":[` + strings.Join(rawEngines, ",") + `]}`
-		v := NewEntityStoreStatusJSONValue(body)
+		v := NewStatusJSONValue(body)
 		if first.IsNull() {
 			first = v
 			continue
@@ -130,7 +130,7 @@ func TestEntityStoreStatusJSONValue_EngineOrderPermutations(t *testing.T) {
 	}
 }
 
-func TestEntityStoreStatusJSONValue_LogicalDifferencesNotEqual(t *testing.T) {
+func TestStatusJSONValue_LogicalDifferencesNotEqual(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -160,18 +160,18 @@ func TestEntityStoreStatusJSONValue_LogicalDifferencesNotEqual(t *testing.T) {
 			body: `{"status":"running","engines":[{"type":"user","indexPattern":".entities-user-v1","status":"running"},{"type":"host","indexPattern":".entities-host-v1","status":"running"}]}`,
 		},
 	}
-	a := NewEntityStoreStatusJSONValue(base)
+	a := NewStatusJSONValue(base)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			eq, diags := a.StringSemanticEquals(ctx, NewEntityStoreStatusJSONValue(tc.body))
+			eq, diags := a.StringSemanticEquals(ctx, NewStatusJSONValue(tc.body))
 			require.False(t, diags.HasError(), "%v", diags)
 			assert.False(t, eq, "body %s must not be semantically equal to the base", tc.body)
 		})
 	}
 }
 
-func TestEntityStoreStatusJSONValue_JSONFormatEquivalence(t *testing.T) {
+func TestStatusJSONValue_JSONFormatEquivalence(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -218,14 +218,14 @@ func TestEntityStoreStatusJSONValue_JSONFormatEquivalence(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			eq, diags := NewEntityStoreStatusJSONValue(tc.a).StringSemanticEquals(ctx, NewEntityStoreStatusJSONValue(tc.b))
+			eq, diags := NewStatusJSONValue(tc.a).StringSemanticEquals(ctx, NewStatusJSONValue(tc.b))
 			require.False(t, diags.HasError(), "%v", diags)
 			assert.Equal(t, tc.equal, eq)
 		})
 	}
 }
 
-func TestEntityStoreStatusJSONValue_EnginesNullAndMalformed(t *testing.T) {
+func TestStatusJSONValue_EnginesNullAndMalformed(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -275,7 +275,7 @@ func TestEntityStoreStatusJSONValue_EnginesNullAndMalformed(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			eq, diags := NewEntityStoreStatusJSONValue(tc.a).StringSemanticEquals(ctx, NewEntityStoreStatusJSONValue(tc.b))
+			eq, diags := NewStatusJSONValue(tc.a).StringSemanticEquals(ctx, NewStatusJSONValue(tc.b))
 			require.False(t, diags.HasError(), "%v", diags)
 			assert.Equal(t, tc.equal, eq)
 		})
@@ -285,16 +285,16 @@ func TestEntityStoreStatusJSONValue_EnginesNullAndMalformed(t *testing.T) {
 	// embedded jsontypes.Normalized comparison then reports a diagnostic for the
 	// unparsable payload rather than guessing equality.
 	malformed := `{"status":"running","engines":`
-	eq, diags := NewEntityStoreStatusJSONValue(malformed).StringSemanticEquals(ctx, NewEntityStoreStatusJSONValue(malformed))
+	eq, diags := NewStatusJSONValue(malformed).StringSemanticEquals(ctx, NewStatusJSONValue(malformed))
 	assert.False(t, eq)
 	assert.True(t, diags.HasError(), "malformed JSON must surface the library semantic equality diagnostic")
 
-	eq, diags = NewEntityStoreStatusJSONValue(malformed).StringSemanticEquals(ctx, NewEntityStoreStatusJSONValue(`{"status":"running","engines":[]}`))
+	eq, diags = NewStatusJSONValue(malformed).StringSemanticEquals(ctx, NewStatusJSONValue(`{"status":"running","engines":[]}`))
 	assert.False(t, eq)
 	assert.True(t, diags.HasError(), "malformed JSON must surface the library semantic equality diagnostic")
 }
 
-func TestEntityStoreStatusJSONValue_EscapedTypeDuplicateStable(t *testing.T) {
+func TestStatusJSONValue_EscapedTypeDuplicateStable(t *testing.T) {
 	t.Parallel()
 
 	// Two engines whose "type" values decode to the same string ("user",
@@ -313,7 +313,7 @@ func TestEntityStoreStatusJSONValue_EscapedTypeDuplicateStable(t *testing.T) {
 	assert.Equal(t, []string{"first", "second"}, []string{decoded.Engines[0].Marker, decoded.Engines[1].Marker})
 }
 
-func TestEntityStoreStatusJSONValue_NullTypeSortsFirst(t *testing.T) {
+func TestStatusJSONValue_NullTypeSortsFirst(t *testing.T) {
 	t.Parallel()
 
 	// An explicit JSON null "type" decodes into the zero string without
@@ -335,11 +335,11 @@ func TestEntityStoreStatusJSONValue_NullTypeSortsFirst(t *testing.T) {
 	assert.Equal(t, "zeta", *decoded.Engines[2].Type)
 }
 
-func TestEntityStoreStatusJSONValue_WrongTypeDiagnostic(t *testing.T) {
+func TestStatusJSONValue_WrongTypeDiagnostic(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	eq, diags := NewEntityStoreStatusJSONValue(`{"status":"running"}`).StringSemanticEquals(ctx, jsontypes.NewNormalizedValue(`{"status":"running"}`))
+	eq, diags := NewStatusJSONValue(`{"status":"running"}`).StringSemanticEquals(ctx, jsontypes.NewNormalizedValue(`{"status":"running"}`))
 	assert.False(t, eq)
 	assert.True(t, diags.HasError(), "comparing against a jsontypes.Normalized value must raise the unexpected type diagnostic")
 }

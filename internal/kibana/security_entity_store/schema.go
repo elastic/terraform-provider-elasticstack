@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -162,7 +161,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"status_json": schema.StringAttribute{
 				Description: "Raw JSON of the most recent entity store status response. The order of the engines array is ignored when comparing this attribute for semantic equality.",
 				Computed:    true,
-				CustomType:  customtypes.EntityStoreStatusJSONType{},
+				CustomType:  StatusJSONType{},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package customtypes
+package security_entity_store
 
 import (
 	"context"
@@ -32,31 +32,31 @@ import (
 )
 
 var (
-	_ basetypes.StringTypable                    = EntityStoreStatusJSONType{}
-	_ basetypes.StringValuable                   = EntityStoreStatusJSONValue{}
-	_ basetypes.StringValuableWithSemanticEquals = (*EntityStoreStatusJSONValue)(nil)
+	_ basetypes.StringTypable                    = StatusJSONType{}
+	_ basetypes.StringValuable                   = StatusJSONValue{}
+	_ basetypes.StringValuableWithSemanticEquals = (*StatusJSONValue)(nil)
 )
 
-// EntityStoreStatusJSONType is a Terraform Plugin Framework string type for the raw JSON body
+// StatusJSONType is a Terraform Plugin Framework string type for the raw JSON body
 // of the Kibana entity store status endpoint (GET /api/security/entity_store/status), whose
 // top-level "engines" array may be returned in any order by the API.
-type EntityStoreStatusJSONType struct {
+type StatusJSONType struct {
 	jsontypes.NormalizedType
 }
 
 // String returns a human readable string of the type name.
-func (t EntityStoreStatusJSONType) String() string {
-	return "customtypes.EntityStoreStatusJSONType"
+func (t StatusJSONType) String() string {
+	return "security_entity_store.StatusJSONType"
 }
 
 // ValueType returns the Value type.
-func (t EntityStoreStatusJSONType) ValueType(_ context.Context) attr.Value {
-	return EntityStoreStatusJSONValue{}
+func (t StatusJSONType) ValueType(_ context.Context) attr.Value {
+	return StatusJSONValue{}
 }
 
 // Equal returns true if the given type is equivalent.
-func (t EntityStoreStatusJSONType) Equal(o attr.Type) bool {
-	other, ok := o.(EntityStoreStatusJSONType)
+func (t StatusJSONType) Equal(o attr.Type) bool {
+	other, ok := o.(StatusJSONType)
 	if !ok {
 		return false
 	}
@@ -64,12 +64,12 @@ func (t EntityStoreStatusJSONType) Equal(o attr.Type) bool {
 }
 
 // ValueFromString returns a StringValuable type given a StringValue.
-func (t EntityStoreStatusJSONType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return EntityStoreStatusJSONValue{StringValue: in}, nil
+func (t StatusJSONType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	return StatusJSONValue{StringValue: in}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
-func (t EntityStoreStatusJSONType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t StatusJSONType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	attrValue, err := t.NormalizedType.ValueFromTerraform(ctx, in)
 	if err != nil {
 		return nil, err
@@ -80,24 +80,24 @@ func (t EntityStoreStatusJSONType) ValueFromTerraform(ctx context.Context, in tf
 		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
 	}
 
-	return EntityStoreStatusJSONValue{Normalized: norm}, nil
+	return StatusJSONValue{Normalized: norm}, nil
 }
 
-// EntityStoreStatusJSONValue holds the raw JSON body of the Kibana entity store status
+// StatusJSONValue holds the raw JSON body of the Kibana entity store status
 // endpoint. The stored string is byte-identical to the API response; engine array ordering
 // is ignored only during StringSemanticEquals.
-type EntityStoreStatusJSONValue struct {
+type StatusJSONValue struct {
 	jsontypes.Normalized
 }
 
-// Type returns an EntityStoreStatusJSONType.
-func (v EntityStoreStatusJSONValue) Type(_ context.Context) attr.Type {
-	return EntityStoreStatusJSONType{}
+// Type returns an StatusJSONType.
+func (v StatusJSONValue) Type(_ context.Context) attr.Type {
+	return StatusJSONType{}
 }
 
 // Equal returns true if the given value is equivalent.
-func (v EntityStoreStatusJSONValue) Equal(o attr.Value) bool {
-	other, ok := o.(EntityStoreStatusJSONValue)
+func (v StatusJSONValue) Equal(o attr.Value) bool {
+	other, ok := o.(StatusJSONValue)
 	if !ok {
 		return false
 	}
@@ -111,7 +111,7 @@ func (v EntityStoreStatusJSONValue) Equal(o attr.Value) bool {
 // whitespace, key order, and string escape representation. JSON number literal representation
 // is significant (the library decodes with encoding/json's UseNumber, so 1e2 and 100 do NOT
 // compare equal) and array order other than the top-level "engines" key stays significant.
-func (v EntityStoreStatusJSONValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
+func (v StatusJSONValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
 		return false, diags
@@ -121,8 +121,8 @@ func (v EntityStoreStatusJSONValue) StringSemanticEquals(ctx context.Context, ne
 }
 
 // SemanticallyEqual is the same comparison as StringSemanticEquals for explicit
-// EntityStoreStatusJSONValue pairs (e.g. import-time semantic checks in acceptance tests).
-func (v EntityStoreStatusJSONValue) SemanticallyEqual(ctx context.Context, other EntityStoreStatusJSONValue) (bool, diag.Diagnostics) {
+// StatusJSONValue pairs (e.g. import-time semantic checks in acceptance tests).
+func (v StatusJSONValue) SemanticallyEqual(ctx context.Context, other StatusJSONValue) (bool, diag.Diagnostics) {
 	if v.IsNull() {
 		return other.IsNull(), nil
 	}
@@ -133,8 +133,8 @@ func (v EntityStoreStatusJSONValue) SemanticallyEqual(ctx context.Context, other
 		return false, nil
 	}
 
-	vCopy := EntityStoreStatusJSONValue{Normalized: jsontypes.NewNormalizedValue(canonicalizeStatusJSONEngines(v.ValueString()))}
-	otherCopy := EntityStoreStatusJSONValue{Normalized: jsontypes.NewNormalizedValue(canonicalizeStatusJSONEngines(other.ValueString()))}
+	vCopy := StatusJSONValue{Normalized: jsontypes.NewNormalizedValue(canonicalizeStatusJSONEngines(v.ValueString()))}
+	otherCopy := StatusJSONValue{Normalized: jsontypes.NewNormalizedValue(canonicalizeStatusJSONEngines(other.ValueString()))}
 	return vCopy.Normalized.StringSemanticEquals(ctx, otherCopy.Normalized)
 }
 
@@ -200,18 +200,18 @@ type statusJSONKeyedEngine struct {
 	raw     json.RawMessage
 }
 
-// NewEntityStoreStatusJSONNull creates an EntityStoreStatusJSONValue with a null value.
-func NewEntityStoreStatusJSONNull() EntityStoreStatusJSONValue {
-	return EntityStoreStatusJSONValue{Normalized: jsontypes.NewNormalizedNull()}
+// NewStatusJSONNull creates an StatusJSONValue with a null value.
+func NewStatusJSONNull() StatusJSONValue {
+	return StatusJSONValue{Normalized: jsontypes.NewNormalizedNull()}
 }
 
-// NewEntityStoreStatusJSONUnknown creates an EntityStoreStatusJSONValue with an unknown value.
-func NewEntityStoreStatusJSONUnknown() EntityStoreStatusJSONValue {
-	return EntityStoreStatusJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
+// NewStatusJSONUnknown creates an StatusJSONValue with an unknown value.
+func NewStatusJSONUnknown() StatusJSONValue {
+	return StatusJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
 }
 
-// NewEntityStoreStatusJSONValue creates an EntityStoreStatusJSONValue with a known value,
+// NewStatusJSONValue creates an StatusJSONValue with a known value,
 // stored byte-identically to the given raw JSON body (no normalization or re-marshaling).
-func NewEntityStoreStatusJSONValue(value string) EntityStoreStatusJSONValue {
-	return EntityStoreStatusJSONValue{Normalized: jsontypes.NewNormalizedValue(value)}
+func NewStatusJSONValue(value string) StatusJSONValue {
+	return StatusJSONValue{Normalized: jsontypes.NewNormalizedValue(value)}
 }

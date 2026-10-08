@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 )
 
@@ -125,7 +124,7 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 			"status_json": schema.StringAttribute{
 				Description: "Raw JSON of the full status response. The order of the engines array is ignored when comparing this attribute for semantic equality.",
 				Computed:    true,
-				CustomType:  customtypes.EntityStoreStatusJSONType{},
+				CustomType:  StatusJSONType{},
 			},
 		},
 	}

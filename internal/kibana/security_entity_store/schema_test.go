@@ -21,7 +21,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -29,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The status_json attribute uses the EntityStoreStatusJSON custom type end to
+// The status_json attribute uses the StatusJSON custom type end to
 // end, so the framework runs its StringSemanticEquals on Read/Create/Update
 // (retaining the prior state value when the API only reorders engines) and the
 // models expose it as a StringValuableWithSemanticEquals.
@@ -46,13 +45,13 @@ func TestStatusJSONCustomTypeWiring(t *testing.T) {
 	require.True(t, ok, "resource schema must define status_json")
 	resourceStringAttr, ok := resourceAttr.(dsschema.StringAttribute)
 	require.True(t, ok, "resource status_json must be a StringAttribute")
-	assert.Equal(t, customtypes.EntityStoreStatusJSONType{}, resourceStringAttr.CustomType)
+	assert.Equal(t, StatusJSONType{}, resourceStringAttr.CustomType)
 
 	dsAttr, ok := getDataSourceSchema(ctx).Attributes["status_json"]
 	require.True(t, ok, "data source schema must define status_json")
 	dsStringAttr, ok := dsAttr.(schema.StringAttribute)
 	require.True(t, ok, "data source status_json must be a StringAttribute")
-	assert.Equal(t, customtypes.EntityStoreStatusJSONType{}, dsStringAttr.CustomType)
+	assert.Equal(t, StatusJSONType{}, dsStringAttr.CustomType)
 }
 
 // TestStatusJSONEngineOrderIgnoredAtResourceBoundary is the resource-level
@@ -67,9 +66,9 @@ func TestStatusJSONEngineOrderIgnoredAtResourceBoundary(t *testing.T) {
 	genericFirst := `{"status":"running","engines":[{"type":"generic","indexPattern":".entities-generic-v1"},{"type":"user","indexPattern":".entities-user-v1"}]}`
 
 	model := tfModel{}
-	model.StatusJSON = customtypes.NewEntityStoreStatusJSONValue(userFirst)
+	model.StatusJSON = NewStatusJSONValue(userFirst)
 	other := tfModel{}
-	other.StatusJSON = customtypes.NewEntityStoreStatusJSONValue(genericFirst)
+	other.StatusJSON = NewStatusJSONValue(genericFirst)
 
 	eq, diags := model.StatusJSON.StringSemanticEquals(ctx, other.StatusJSON)
 	require.False(t, diags.HasError(), "%v", diags)
