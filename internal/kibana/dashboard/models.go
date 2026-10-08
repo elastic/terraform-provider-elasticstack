@@ -106,7 +106,7 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
 		m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
 	} else if m.Tags.IsUnknown() {
-		// No prior plan/state intent to preserve (e.g. import): normalize to null.
+		// No prior plan/state intent to preserve: normalize to null.
 		m.Tags = types.ListNull(types.StringType)
 	}
 
