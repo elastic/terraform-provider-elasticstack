@@ -2,7 +2,9 @@
 
 Define the behavior of the `elasticstack_kibana_security_entity_store` Terraform resource,
 which manages the lifecycle of the Elastic Security Entity Store within a Kibana space.
+
 ## Requirements
+
 ### Requirement: Resource manages Entity Store lifecycle (REQ-001)
 
 The `elasticstack_kibana_security_entity_store` resource SHALL manage the full lifecycle of the
@@ -169,19 +171,45 @@ populate all remaining fields, and leave `allow_entity_type_shrink` at `false` a
 
 ### Requirement: status_json computed field (REQ-007)
 
-The resource SHALL expose a `status_json` Computed `string` attribute containing the normalized
-JSON representation of the most recent `GET /api/security/entity_store/status` response, for use
-in `output` blocks or external tooling.
+The resource SHALL expose a `status_json` Computed `string` attribute containing the full
+`GET /api/security/entity_store/status` response, for use in `output` blocks or external tooling.
 
-The value SHALL be refreshed on every Read.
+On every Read, the provider SHALL populate the attribute from the raw response body without
+reordering engines or discarding unmodeled or nested fields. On resource refresh, when a new
+response is semantically equal to the prior state, the prior state value SHALL be retained.
+
+Semantic comparison SHALL ignore changes solely to the order of top-level `engines` entries with
+distinct entity types. JSON object key order, whitespace, and equivalent string escapes SHALL
+also be insignificant. Genuine content changes, number literal representation changes, and
+changes to other array orders SHALL remain significant. Engines with equal decoded `type` values
+SHALL retain their relative order for comparison.
+
+Independent reads, including import, MAY produce different raw strings that compare semantically
+equal. Import acceptance coverage SHALL compare `status_json` semantically rather than requiring
+byte-identical strings; standard import verification SHALL remain enabled for other attributes.
 
 #### Scenario: status_json reflects current status on read
 
 - GIVEN an installed Entity Store resource in state
 - WHEN Terraform refreshes the resource
 - THEN the provider SHALL call `GET /api/security/entity_store/status`
-- AND `status_json` in state SHALL contain the normalized JSON of the full response body
-- AND the value SHALL differ from a previous read if the API response changed
+- AND `status_json` SHALL preserve the full response content, including unmodeled and nested fields
+- AND the value SHALL compare unequal to a previous read if significant response content changed
+
+#### Scenario: status_json is stable across reads despite engine reordering
+
+- GIVEN an installed Entity Store with engines for entity types `generic` and `user`, both in
+  status `running`
+- AND an apply-time `GET /api/security/entity_store/status` response returns `engines` in the order
+  `[generic, user]`
+- AND a subsequent `GET /api/security/entity_store/status` response (e.g. during
+  `terraform import` or a later refresh) returns the same two engines but in the order
+  `[user, generic]`
+- WHEN the provider compares `status_json` values from these responses
+- THEN both values SHALL be semantically equal even if their raw strings differ
+- AND resource refresh SHALL retain the prior `status_json` value when only engine order changes
+- AND `terraform plan` SHALL NOT report a resource `status_json` difference solely due to the engine order change
+- AND import acceptance coverage SHALL verify `status_json` using semantic comparison
 
 ### Requirement: Delete waits for uninstall completion (REQ-WAIT-001)
 
@@ -297,4 +325,3 @@ actual type-presence regressions.
 - WHEN the provider reads and returns `entity_types = ["generic", "host"]`
 - THEN a `TestCheckTypeSetElemAttr` assertion on `"host"` SHALL pass
 - AND an exact-count assertion on `entity_types.# == 1` SHALL be absent from the test
-

@@ -28,7 +28,7 @@ Manages the Elastic Security Entity Store lifecycle within a Kibana space.
 ### Read-Only
 
 - `id` (String) Computed resource identifier in the format <space_id>/entity_store.
-- `status_json` (String) Normalized JSON representation of the most recent entity store status response.
+- `status_json` (String) Raw JSON of the most recent entity store status response. The order of the engines array is ignored when comparing this attribute for semantic equality.
 
 <a id="nestedatt--history_snapshot"></a>
 ### Nested Schema for `history_snapshot`

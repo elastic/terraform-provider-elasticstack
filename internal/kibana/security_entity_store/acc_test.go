@@ -18,6 +18,8 @@
 package security_entity_store_test
 
 import (
+	"context"
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -27,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
@@ -125,6 +128,14 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
 	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
 
+	const resName = "elasticstack_kibana_security_entity_store.test"
+
+	// ImportStateVerify compares the imported state against the pre-import
+	// state byte-for-byte, so the raw status_json (whose engine array order is
+	// arbitrary per API response) is excluded there and re-verified below with
+	// the StatusJSON custom type's semantic equality instead.
+	var preImportStatusJSON string
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -132,15 +143,56 @@ func TestAccResourceKibanaSecurityEntityStore_import(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resName, "id"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resName]
+						if !ok || rs == nil {
+							return fmt.Errorf("resource %s not found in state to capture pre-import status_json", resName)
+						}
+						if rs.Primary == nil {
+							return fmt.Errorf("resource %s has no primary instance state to capture pre-import status_json", resName)
+						}
+						preImportStatusJSON = rs.Primary.Attributes["status_json"]
+						if preImportStatusJSON == "" {
+							return fmt.Errorf("resource %s has no status_json to capture", resName)
+						}
+						return nil
+					},
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          vars,
-				ResourceName:             "elasticstack_kibana_security_entity_store.test",
+				ResourceName:             resName,
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"allow_entity_type_shrink", "history_snapshot"},
+				// allow_entity_type_shrink and history_snapshot are Terraform-only
+				// inputs the API never echoes back; status_json is excluded from the
+				// byte comparison and verified semantically in ImportStateCheck.
+				ImportStateVerifyIgnore: []string{"allow_entity_type_shrink", "history_snapshot", "status_json"},
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected exactly 1 imported instance state, got %d", len(is))
+					}
+					if is[0] == nil {
+						return fmt.Errorf("imported instance state for %s is nil; no state to read status_json from", resName)
+					}
+					imported := is[0].Attributes["status_json"]
+					if imported == "" {
+						return fmt.Errorf("imported state for %s has no status_json attribute to compare", resName)
+					}
+					equal, diags := securityentitystore.NewStatusJSONValue(preImportStatusJSON).
+						SemanticallyEqual(context.Background(), securityentitystore.NewStatusJSONValue(imported))
+					if diags.HasError() {
+						return fmt.Errorf("status_json semantic comparison failed: %v", diags)
+					}
+					if !equal {
+						return fmt.Errorf("imported status_json %s is not semantically equal to pre-import status_json %s", imported, preImportStatusJSON)
+					}
+					return nil
+				},
 			},
 		},
 	})

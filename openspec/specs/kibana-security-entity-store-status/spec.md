@@ -14,6 +14,16 @@ The data source SHALL enforce `EnforceMinVersion("9.4.0")` before calling the AP
 
 The data source SHALL NOT modify any API state. It is read-only.
 
+The data source SHALL populate `status_json` from the raw response body without reordering
+engines or discarding unmodeled or nested fields.
+
+Semantic comparison of `status_json` SHALL ignore changes solely to the order of top-level
+`engines` entries with distinct entity types. JSON object key order, whitespace, and equivalent
+string escapes SHALL also be insignificant. Genuine content changes, number literal representation
+changes, and changes to other array orders SHALL remain significant. Engines with equal decoded
+`type` values SHALL retain their relative order for comparison. Independent data source reads
+MAY return different raw strings that compare semantically equal.
+
 #### Schema
 
 | Attribute | Type | Description |
@@ -23,7 +33,7 @@ The data source SHALL NOT modify any API state. It is read-only.
 | `installed` | Computed `bool` | `true` when `status != "not_installed"`. |
 | `overall_status` | Computed `string` | The `status` field from the API response. |
 | `engines` | Computed `list(object)` | Per-engine status details (see Engine object below). |
-| `status_json` | Computed `string` | Normalized JSON of the full status response body. |
+| `status_json` | Computed `string` | Raw JSON of the full status response body; top-level engine order is ignored during semantic comparison. |
 | `kibana_connection` | Optional block | Kibana connection configuration (injected by envelope). |
 
 #### Scenario: Data source reads installed status
@@ -33,7 +43,7 @@ The data source SHALL NOT modify any API state. It is read-only.
 - THEN `installed` SHALL be `true`
 - AND `overall_status` SHALL be `"running"` (or the equivalent API string)
 - AND `engines` SHALL contain two engine objects with `type`, `status`, and `index_pattern`
-- AND `status_json` SHALL contain the full status response as normalized JSON
+- AND `status_json` SHALL contain the raw full status response, including unmodeled and nested fields
 
 #### Scenario: Data source reads not-installed status
 
@@ -50,6 +60,18 @@ The data source SHALL NOT modify any API state. It is read-only.
 - WHEN the data source is read
 - THEN the provider SHALL call `GET /api/security/entity_store/status?include_components=true`
 - AND `engines[].components` SHALL include component-level detail for each engine
+
+#### Scenario: status_json is stable across reads despite engine reordering
+
+- GIVEN an installed Entity Store with engines for entity types `generic` and `user`, both in
+  status `running`
+- AND one `GET /api/security/entity_store/status` response returns `engines` in the order
+  `[generic, user]`
+- AND a later response for the same logical state returns the same two engines in the order
+  `[user, generic]`
+- WHEN the provider compares the data source's `status_json` values from these responses
+- THEN both values SHALL be semantically equal even if their raw strings differ
+- AND each newly read value SHALL preserve the API response's engine order
 
 ### Requirement: Data source is space-scoped (REQ-002)
 

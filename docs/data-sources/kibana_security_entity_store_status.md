@@ -26,7 +26,7 @@ Reads Elastic Security Entity Store status for a Kibana space.
 - `engines` (Attributes List) Per-engine status details. (see [below for nested schema](#nestedatt--engines))
 - `installed` (Boolean) True when the Entity Store is installed.
 - `overall_status` (String) The overall operational status of the Entity Store.
-- `status_json` (String) Normalized JSON of the full status response.
+- `status_json` (String) Raw JSON of the full status response. The order of the engines array is ignored when comparing this attribute for semantic equality.
 
 <a id="nestedblock--kibana_connection"></a>
 ### Nested Schema for `kibana_connection`
