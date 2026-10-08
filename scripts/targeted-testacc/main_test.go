@@ -21,48 +21,20 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// runToolFromModuleRoot executes `go run ./scripts/targeted-testacc/...` with
-// the given arguments from the module root, as the Make target and workflow
-// scripts do.
 func runToolFromModuleRoot(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 
-	root, err := moduleRoot(t)
-	if err != nil {
-		return "", err
-	}
 	cmd := exec.Command("go", append([]string{"run", "./scripts/targeted-testacc/..."}, args...)...)
-	cmd.Dir = root
+	cmd.Dir = repoRoot(t)
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	return string(out), err
 }
 
-func moduleRoot(t *testing.T) (string, error) {
-	t.Helper()
-
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	for {
-		if _, err := os.Stat(filepath.Join(wd, "go.mod")); err == nil {
-			return wd, nil
-		}
-		parent := filepath.Dir(wd)
-		if parent == wd {
-			return "", os.ErrNotExist
-		}
-		wd = parent
-	}
-}
-
-// decodePlan asserts stdout holds exactly one valid JSON shard plan.
 func decodePlan(t *testing.T, stdout string) {
 	t.Helper()
 

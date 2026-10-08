@@ -25,11 +25,7 @@ import (
 	"testing"
 )
 
-// fakeGoShim intercepts `go run ./scripts/targeted-testacc/...` with a canned
-// JSON shard plan and records `go tool gotestsum` invocations, so the
-// targeted-testacc Make target's plan parsing, shard selection, empty-shard
-// notice, and TARGETED_PKGS bypass can be exercised without Go toolchain
-// builds or live tests.
+// fakeGoShim exercises the Make target without toolchain builds or live tests.
 func fakeGoShim(t *testing.T, plan string) (logPath string) {
 	t.Helper()
 
@@ -56,17 +52,6 @@ func fakeGoShim(t *testing.T, plan string) (logPath string) {
 	return logPath
 }
 
-func makeTargetedTestacc(t *testing.T, extraEnv ...string) string {
-	t.Helper()
-
-	root, err := moduleRoot(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return runMakeTargetedTestacc(t, root, extraEnv...)
-}
-
 func runMakeTargetedTestacc(t *testing.T, dir string, extraEnv ...string) string {
 	t.Helper()
 
@@ -81,10 +66,11 @@ func runMakeTargetedTestacc(t *testing.T, dir string, extraEnv ...string) string
 }
 
 func TestMakeTarget_NoPackagesSelectedExitsCleanly(t *testing.T) {
+	root := repoRoot(t)
 	plan := `{"has_packages":false,"selected_packages":[],"shards":[[]],"rationale":["no resolvable diff"]}`
 	shimLog := fakeGoShim(t, plan)
 
-	stdout := makeTargetedTestacc(t, "ACCTEST_SHARD_INDEX=0", "ACCTEST_TOTAL_SHARDS=1")
+	stdout := runMakeTargetedTestacc(t, root, "ACCTEST_SHARD_INDEX=0", "ACCTEST_TOTAL_SHARDS=1")
 	if !strings.Contains(stdout, "No acceptance test packages selected") {
 		t.Errorf("make printed no empty-selection notice; stdout:\n%s", stdout)
 	}
@@ -111,12 +97,8 @@ func TestMakeTarget_InvalidShardIndexFails(t *testing.T) {
 		"float":       "ACCTEST_SHARD_INDEX=1.5",
 	} {
 		t.Run(name, func(t *testing.T) {
+			root := repoRoot(t)
 			fakeGoShim(t, plan)
-
-			root, err := moduleRoot(t)
-			if err != nil {
-				t.Fatal(err)
-			}
 
 			cmd := exec.Command("make", "targeted-testacc")
 			cmd.Dir = root
@@ -133,10 +115,11 @@ func TestMakeTarget_InvalidShardIndexFails(t *testing.T) {
 }
 
 func TestMakeTarget_PackagesSelectedRunsGotestsum(t *testing.T) {
+	root := repoRoot(t)
 	plan := `{"has_packages":true,"selected_packages":["pkg/a","pkg/b"],"shards":[["pkg/a"],["pkg/b"]],"rationale":["diff"]}`
 	shimLog := fakeGoShim(t, plan)
 
-	stdout := makeTargetedTestacc(t, "ACCTEST_SHARD_INDEX=1", "ACCTEST_TOTAL_SHARDS=2")
+	stdout := runMakeTargetedTestacc(t, root, "ACCTEST_SHARD_INDEX=1", "ACCTEST_TOTAL_SHARDS=2")
 	if strings.Contains(stdout, "No acceptance test packages selected") {
 		t.Errorf("make skipped a populated shard; stdout:\n%s", stdout)
 	}
@@ -154,10 +137,11 @@ func TestMakeTarget_PackagesSelectedRunsGotestsum(t *testing.T) {
 }
 
 func TestMakeTarget_TargetedPkgsBypassesSelectionTool(t *testing.T) {
+	root := repoRoot(t)
 	shimLog := fakeGoShim(t, `{}`)
 
 	pkgs := "github.com/example/mod/internal/a github.com/example/mod/internal/b"
-	makeTargetedTestacc(t, "TARGETED_PKGS="+pkgs)
+	runMakeTargetedTestacc(t, root, "TARGETED_PKGS="+pkgs)
 
 	logBytes, err := os.ReadFile(shimLog)
 	if err != nil {

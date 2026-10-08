@@ -38,7 +38,6 @@ func run() error {
 	var (
 		base             string
 		totalShards      int
-		dryRun           bool
 		verbose          bool
 		runAllThreshold  float64
 		minShardPackages int
@@ -46,7 +45,7 @@ func run() error {
 
 	flag.StringVar(&base, "base", "", "git diff baseline (overrides TARGETED_TESTACC_BASE)")
 	flag.IntVar(&totalShards, "total-shards", 1, "total number of shards")
-	flag.BoolVar(&dryRun, "dry-run", false, "emit the JSON shard plan without running tests (the plan is always emitted)")
+	flag.Bool("dry-run", false, "accepted for compatibility; the JSON shard plan is always emitted without running tests")
 	flag.BoolVar(&verbose, "verbose", false, "print additional diagnostics")
 	flag.Float64Var(&runAllThreshold, "run-all-threshold", 70.0, "percentage of acc-test packages that triggers a full run")
 	flag.IntVar(&minShardPackages, "min-shard-packages", 30, "minimum selected packages before multi-shard splitting is used")
@@ -183,16 +182,12 @@ func run() error {
 		fmt.Fprintf(os.Stderr, "selected %d packages\n", len(selected))
 	}
 
-	// When the run-all threshold collapses the phase-1/2 union into the full
-	// set, emit an explicit rationale line so the plan distinguishes
-	// "threshold collapsed my N-package selection" from the force-all,
-	// empty-diff, and docs-only paths (each of which already adds its own
-	// rationale).
 	unionCount := len(stringsSorted(append(append([]string{}, phase1Packages...), phase2Packages...)))
-	if !classified.ForceAll && len(selected) == len(allAccPackages) && unionCount > RunAllThresholdCount(runAllThreshold, len(allAccPackages)) {
+	thresholdCount := RunAllThresholdCount(runAllThreshold, len(allAccPackages))
+	if !classified.ForceAll && len(selected) == len(allAccPackages) && unionCount > thresholdCount {
 		rationale = append(rationale, fmt.Sprintf(
 			"run-all threshold: union of %d packages exceeded %d (%.0f%% of %d); selecting the full suite",
-			unionCount, RunAllThresholdCount(runAllThreshold, len(allAccPackages)), runAllThreshold, len(allAccPackages)))
+			unionCount, thresholdCount, runAllThreshold, len(allAccPackages)))
 	}
 
 	plan := BuildShardPlan(selected, totalShards, minShardPackages)
@@ -236,8 +231,6 @@ func currentModulePath() (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// selectionRationale explains how the diff itself shaped the selection before
-// per-package analysis applies.
 func selectionRationale(changedFiles []string) []string {
 	switch {
 	case len(changedFiles) == 0:
@@ -247,7 +240,6 @@ func selectionRationale(changedFiles []string) []string {
 	}
 }
 
-// packageRationale explains why one selected package was chosen.
 func packageRationale(pkg string, reasons []string) string {
 	return fmt.Sprintf("%s: %s", pkg, strings.Join(reasons, "; "))
 }

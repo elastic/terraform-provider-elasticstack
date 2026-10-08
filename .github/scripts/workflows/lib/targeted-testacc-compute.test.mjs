@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import {
   chmodSync,
   mkdtempSync,
@@ -22,9 +22,6 @@ const scriptPath = path.resolve(
   "targeted-testacc-compute.sh",
 );
 
-// Creates a temp dir containing fake `git` and `go` executables that log their
-// argv to <dir>/git.log / <dir>/go.log and whose behavior is controlled by the
-// returned knobs. Returns { stubDir, logDir, controls } and a cleanup fn.
 function makeStubs({ gitFetchOk = true, goExit = 0, goOutput = "" } = {}) {
   const root = mkdtempSync(path.join(tmpdir(), "targeted-testacc-compute-"));
   const stubDir = path.join(root, "bin");
@@ -223,33 +220,16 @@ test("PR event, plan with more than two shards → rejected fail-closed (output 
 test("PR event, selector failure → exit non-zero, ::error:: on stderr, no outputs (fail-closed)", () => {
   const stubs = makeStubs({ goExit: 1, goOutput: "" });
   try {
-    const ghOutput = path.join(stubs.root, "github-output.txt");
-    writeFileSync(ghOutput, "");
-    let threw;
-    let stderr = "";
-    try {
-      execFileSync(scriptPath, {
-        env: {
-          ...process.env,
-          PATH: `${stubs.stubDir}${path.delimiter}${process.env.PATH}`,
-          GITHUB_OUTPUT: ghOutput,
-          EVENT_NAME: "pull_request",
-          PR_BASE_SHA: "deadbeef",
-        },
-        encoding: "utf8",
-      });
-      threw = false;
-    } catch (err) {
-      threw = true;
-      stderr = err.stderr;
-    }
-    assert.equal(threw, true, "script must exit non-zero when the selector fails");
+    const { status, stderr, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
     assert.match(
       stderr,
       /::error::targeted-testacc failed; refusing to skip tests/,
     );
-    // has_packages must not be set to a skipping value.
-    assert.equal(readFileSync(ghOutput, "utf8"), "");
+    assert.deepEqual(outputs, {});
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }
@@ -281,32 +261,16 @@ test("PR event, zero-package plan → has_packages=false, one no-op shard", () =
 test("PR event, selector emits malformed JSON → exit non-zero, no outputs (fail-closed)", () => {
   const stubs = makeStubs({ goOutput: "not json at all" });
   try {
-    const ghOutput = path.join(stubs.root, "github-output.txt");
-    writeFileSync(ghOutput, "");
-    let threw;
-    let stderr = "";
-    try {
-      execFileSync(scriptPath, {
-        env: {
-          ...process.env,
-          PATH: `${stubs.stubDir}${path.delimiter}${process.env.PATH}`,
-          GITHUB_OUTPUT: ghOutput,
-          EVENT_NAME: "pull_request",
-          PR_BASE_SHA: "deadbeef",
-        },
-        encoding: "utf8",
-      });
-      threw = false;
-    } catch (err) {
-      threw = true;
-      stderr = err.stderr;
-    }
-    assert.equal(threw, true, "script must exit non-zero on malformed plan JSON");
+    const { status, stderr, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
     assert.match(
       stderr,
       /invalid targeted-testacc shard plan; refusing to skip tests/,
     );
-    assert.equal(readFileSync(ghOutput, "utf8"), "");
+    assert.deepEqual(outputs, {});
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }
@@ -322,26 +286,13 @@ test("PR event, has_packages=false with populated selection → exit non-zero (f
     }),
   });
   try {
-    const ghOutput = path.join(stubs.root, "github-output.txt");
-    writeFileSync(ghOutput, "");
-    let threw;
-    try {
-      execFileSync(scriptPath, {
-        env: {
-          ...process.env,
-          PATH: `${stubs.stubDir}${path.delimiter}${process.env.PATH}`,
-          GITHUB_OUTPUT: ghOutput,
-          EVENT_NAME: "pull_request",
-          PR_BASE_SHA: "deadbeef",
-        },
-        encoding: "utf8",
-      });
-      threw = false;
-    } catch {
-      threw = true;
-    }
-    assert.equal(threw, true, "plan must be rejected when has_packages disagrees with the selection");
-    assert.equal(readFileSync(ghOutput, "utf8"), "");
+    const { status, stderr, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
+    assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
+    assert.deepEqual(outputs, {});
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }
@@ -357,26 +308,13 @@ test("PR event, selected package missing from shards → exit non-zero (fail-clo
     }),
   });
   try {
-    const ghOutput = path.join(stubs.root, "github-output.txt");
-    writeFileSync(ghOutput, "");
-    let threw;
-    try {
-      execFileSync(scriptPath, {
-        env: {
-          ...process.env,
-          PATH: `${stubs.stubDir}${path.delimiter}${process.env.PATH}`,
-          GITHUB_OUTPUT: ghOutput,
-          EVENT_NAME: "pull_request",
-          PR_BASE_SHA: "deadbeef",
-        },
-        encoding: "utf8",
-      });
-      threw = false;
-    } catch {
-      threw = true;
-    }
-    assert.equal(threw, true, "plan must be rejected when a selected package is not assigned to any shard");
-    assert.equal(readFileSync(ghOutput, "utf8"), "");
+    const { status, stderr, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
+    assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
+    assert.deepEqual(outputs, {});
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }
@@ -392,26 +330,13 @@ test("PR event, package duplicated across shards → exit non-zero (fail-closed)
     }),
   });
   try {
-    const ghOutput = path.join(stubs.root, "github-output.txt");
-    writeFileSync(ghOutput, "");
-    let threw;
-    try {
-      execFileSync(scriptPath, {
-        env: {
-          ...process.env,
-          PATH: `${stubs.stubDir}${path.delimiter}${process.env.PATH}`,
-          GITHUB_OUTPUT: ghOutput,
-          EVENT_NAME: "pull_request",
-          PR_BASE_SHA: "deadbeef",
-        },
-        encoding: "utf8",
-      });
-      threw = false;
-    } catch {
-      threw = true;
-    }
-    assert.equal(threw, true, "plan must be rejected when a package is assigned to more than one shard");
-    assert.equal(readFileSync(ghOutput, "utf8"), "");
+    const { status, stderr, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
+    assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
+    assert.deepEqual(outputs, {});
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }
@@ -427,26 +352,13 @@ test("PR event, empty shard in nonempty plan → exit non-zero (fail-closed)", (
     }),
   });
   try {
-    const ghOutput = path.join(stubs.root, "github-output.txt");
-    writeFileSync(ghOutput, "");
-    let threw;
-    try {
-      execFileSync(scriptPath, {
-        env: {
-          ...process.env,
-          PATH: `${stubs.stubDir}${path.delimiter}${process.env.PATH}`,
-          GITHUB_OUTPUT: ghOutput,
-          EVENT_NAME: "pull_request",
-          PR_BASE_SHA: "deadbeef",
-        },
-        encoding: "utf8",
-      });
-      threw = false;
-    } catch {
-      threw = true;
-    }
-    assert.equal(threw, true, "plan must be rejected when a nonempty plan contains an empty shard");
-    assert.equal(readFileSync(ghOutput, "utf8"), "");
+    const { status, stderr, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
+    assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
+    assert.deepEqual(outputs, {});
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }
