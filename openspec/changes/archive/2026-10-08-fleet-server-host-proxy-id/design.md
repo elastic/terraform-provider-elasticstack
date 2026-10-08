@@ -23,7 +23,9 @@ This design adopts the recommendation from the issue's implementation-research c
 
 ### Decision 1: Schema shape mirrors `agentdownloadsource`'s `proxy_id`
 
-Add `proxy_id` as an optional string attribute with no computed behavior or plan modifiers. Its description will identify it as the Fleet proxy used by the server host, matching the sibling agent download source resource.
+Add `proxy_id` as an optional string attribute with no computed behavior or plan modifiers.
+
+**Deliberate divergence (implementation):** unlike the sibling's plain Optional string, the implementation adds `stringvalidator.LengthAtLeast(1)` to `proxy_id`. An explicit `""` would be mapped to null on read (empty-to-null normalization), producing an "inconsistent result after apply" error, so empty values are rejected at validation time. Its description will identify it as the Fleet proxy used by the server host, matching the sibling agent download source resource.
 
 **Why:** Consistency with the only other resource in the provider that already models this exact Fleet API field. No reason to diverge.
 
@@ -54,11 +56,11 @@ Rather than duplicating the three-way branch, extract `agentdownloadsource`'s `p
 - `PUT /api/fleet/fleet_server_hosts/{id}` with `proxy_id` omitted **clears** the proxy (response `proxy_id: null`); it does NOT leave the value unchanged, unlike the behavior documented for `agent_download_sources`.
 - `PUT` with `"proxy_id": ""` also clears the proxy; the response echoes `proxy_id: ""`, which the resource maps to null in state.
 - Consequence: Decision 4's explicit `""` on unset is retained (it is correct and explicit, and safe on stacks where omission may leave the value unchanged), but on 9.5.5 it is not strictly required. The never-set case still sends nothing.
-- Only 9.5.5 was available locally; older stack versions were not verified.
+- Only 9.5.5 was available locally for the live check. CI later ran the `proxy_id` acceptance test green from 8.15.5 through 9.6.0-SNAPSHOT; only 8.7.1-8.15.4 remains unverified.
 
 ### Decision 5: No new minimum-version gate
 
-`fleet_server_host` has no production minimum-version requirement; `minVersionFleetServerHost` (8.6.0) exists only in `acc_test.go`. Per human direction on the issue, whether `proxy_id` needs its own, later minimum-version gate was left open for implementation. Outcome: only 9.5.5 could be verified; no production gate was added (support on stacks older than 8.7.1, where Fleet proxies were introduced, is unverified and treated as unsupported for `proxy_id`), and the acceptance test is gated at 8.7.1 (the Fleet proxy minimum). If a run against an older stack shows `proxy_id` requires a newer version, a dedicated `entitycore.VersionRequirement` should be added at that point; this design does not pre-emptively add one.
+`fleet_server_host` has no production minimum-version requirement; `minVersionFleetServerHost` (8.6.0) exists only in `acc_test.go`. Per human direction on the issue, whether `proxy_id` needs its own, later minimum-version gate was left open for implementation. Outcome: 9.5.5 was verified live, and CI later passed from 8.15.5 through 9.6.0-SNAPSHOT; no production gate was added (support on stacks older than 8.7.1, where Fleet proxies were introduced, is not expected to work; 8.7.1-8.15.4 is unverified), and the acceptance test is gated at 8.7.1 (the Fleet proxy minimum). If a run against an older stack shows `proxy_id` requires a newer version, a dedicated `entitycore.VersionRequirement` should be added at that point; this design does not pre-emptively add one.
 
 ## Open Questions
 
