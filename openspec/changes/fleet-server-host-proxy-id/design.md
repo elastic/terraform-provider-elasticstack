@@ -40,7 +40,7 @@ In `toAPICreateModel`, set `body.ProxyId = m.ProxyID.ValueStringPointer()`. On c
 `serverHostModel.toAPIUpdateModel` currently takes no `prior` parameter (unlike `agentdownloadsource.model.toAPIUpdateModel(ctx, prior model)`). Grow its signature to `toAPIUpdateModel(ctx context.Context, prior serverHostModel)` and compute `body.ProxyId` with the same three-way rule `agentdownloadsource.proxyIDForUpdate` already implements:
 
 - Plan value known and non-empty → send as-is.
-- Plan value unset/empty AND prior value was known and non-empty (i.e. the user is clearing a previously-set `proxy_id`) → send an explicit empty string `""`, not `nil`. The generated `json:"proxy_id,omitempty"` tag drops `nil` from the request body, and Fleet's PUT handler treats an omitted field as "leave unchanged" (per the behavior already confirmed for `agent_download_sources`); sending `""` is required to actually clear it.
+- Plan value unset/empty AND prior value was known and non-empty (i.e. the user is clearing a previously-set `proxy_id`) → send an explicit empty string `""`, not `nil`. The generated `json:"proxy_id,omitempty"` tag drops `nil` from the request body, and Fleet's PUT handler treats an omitted field as "leave unchanged" (per the behavior already confirmed for `agent_download_sources`); sending `""` is the safe way to clear it (live check on 9.5.5 showed omission also clears on this endpoint; see Live verification).
 - Plan value unset AND prior value was never set → send `nil` (field stays omitted, which is correct — there's nothing to clear).
 
 Rather than duplicating the three-way branch, extract `agentdownloadsource`'s `proxyIDForUpdate(plan, prior types.String) *string` into a shared location (e.g. `internal/fleet` or `internal/utils/typeutils`) and call it from both resources, OR duplicate the small helper locally in `serverhost` with the same doc comment explaining the `omitempty` interaction. Either is acceptable; prefer extraction if it can be done without changing `agentdownloadsource`'s existing call sites or tests. This decision is left to implementation — see Open Questions.
@@ -48,6 +48,13 @@ Rather than duplicating the three-way branch, extract `agentdownloadsource`'s `p
 `update.go`'s `updateServerHost` already loads `req.Prior` for space-ID resolution; pass `*req.Prior` (or the zero-value `serverHostModel{}` when `req.Prior` is nil, which cannot occur on a real Terraform update but mirrors defensive handling elsewhere) through to `toAPIUpdateModel`.
 
 **Why:** Re-deriving the naive pass-through-only version would very likely reproduce the exact bug `agentdownloadsource` already hit and documented — unsetting `proxy_id` would silently fail to clear it server-side, causing state/reality drift or an "inconsistent result after apply" error. The fix is already written and tested; copying it is strictly lower-risk than re-deriving it.
+
+### Live verification (Kibana 9.5.5)
+
+- `PUT /api/fleet/fleet_server_hosts/{id}` with `proxy_id` omitted **clears** the proxy (response `proxy_id: null`); it does NOT leave the value unchanged, unlike the behavior documented for `agent_download_sources`.
+- `PUT` with `"proxy_id": ""` also clears the proxy; the response echoes `proxy_id: ""`, which the resource maps to null in state.
+- Consequence: Decision 4's explicit `""` on unset is retained (it is correct and explicit, and safe on stacks where omission may leave the value unchanged), but on 9.5.5 it is not strictly required. The never-set case still sends nothing.
+- Only 9.5.5 was available locally; older stack versions were not verified.
 
 ### Decision 5: No new minimum-version gate
 

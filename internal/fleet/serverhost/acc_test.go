@@ -40,6 +40,7 @@ import (
 var (
 	minVersionFleetServerHost       = version.Must(version.NewVersion("8.6.0"))
 	minVersionFleetServerHostSpaces = version.Must(version.NewVersion("9.1.0"))
+	minVersionFleetServerHostProxy  = version.Must(version.NewVersion("8.7.1"))
 )
 
 //go:embed testdata/TestAccResourceFleetServerHostFromSDK/create/main.tf
@@ -438,7 +439,7 @@ func TestAccResourceFleetServerHost_spaceIDsUpdate(t *testing.T) {
 }
 
 func TestAccResourceFleetServerHost_ProxyID(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostProxy, versionutils.FlavorAny)
 
 	random := sdkacctest.RandString(8)
 	vars := config.Variables{"suffix": config.StringVariable(random)}

@@ -120,9 +120,11 @@ The `proxy_id` value sent on update SHALL be computed from both the plan value a
 
 ### Requirement: proxy_id unset-to-empty-string update semantics (REQ-017)
 
-Because the generated Fleet client tags the update request body's `proxy_id` field as `json:"proxy_id,omitempty"`, a `nil` pointer value is dropped from the serialized request body entirely, causing the field to be omitted. Omitting `proxy_id` on `PUT /fleet/fleet_server_hosts/{itemId}` SHALL be treated by the resource as equivalent to Fleet's own "leave unchanged" semantics for omitted fields — the same behavior already documented and relied upon for `PUT /fleet/agent_download_sources/{sourceId}` on the sibling `elasticstack_fleet_agent_download_source` resource.
+Because the generated Fleet client tags the update request body's `proxy_id` field as `json:"proxy_id,omitempty"`, a `nil` pointer value is dropped from the serialized request body entirely. Fleet's behavior for an omitted `proxy_id` on `PUT /fleet/fleet_server_hosts/{itemId}` was verified live against Kibana 9.5.5: omission clears the proxy assignment, and an explicit empty string `""` also clears it (the response echoes `""`, which the resource maps to null). The behavior on older stack versions was not verified, and the sibling `agent_download_sources` endpoint is documented to leave omitted fields unchanged.
 
-Consequently, the resource SHALL distinguish "practitioner never configured `proxy_id`" (send nothing — field omitted, prior value if any is left unchanged by Fleet) from "practitioner explicitly cleared a previously-set `proxy_id`" (send an explicit empty string `""`, which Fleet SHALL interpret as clearing the proxy assignment) on every update request. The resource SHALL make this determination by comparing the plan's `proxy_id` against the prior state's `proxy_id`, not from the plan value alone.
+Consequently, to be robust across stack versions, the resource SHALL distinguish "practitioner never configured `proxy_id`" (send nothing — field omitted) from "practitioner explicitly cleared a previously-set `proxy_id`" (send an explicit empty string `""`, which Fleet SHALL interpret as clearing the proxy assignment) on every update request. The resource SHALL make this determination by comparing the plan's `proxy_id` against the prior state's `proxy_id`, not from the plan value alone.
+
+The `proxy_id` attribute SHALL NOT introduce a resource-level minimum stack version beyond the resource's existing floor. The Fleet proxy resource (required to obtain a real `proxy_id`) requires 8.7.1, so the acceptance test is gated at 8.7.1.
 
 #### Scenario: Clearing proxy_id produces an empty string, not an omitted field
 
