@@ -17,8 +17,13 @@ module.exports = async function ({ github, context, core }) {
     return;
   }
 
-  const fileContent = fs.readFileSync(outputFile, 'utf8');
-  const agentOutput = JSON.parse(fileContent);
+  let agentOutput;
+  try {
+    agentOutput = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
+  } catch (err) {
+    core.setFailed(`update-research-comment: could not read agent output: ${err.message}`);
+    return;
+  }
   const items = (agentOutput.items || []).filter((i) => i.type === 'update_research_comment');
 
   if (items.length === 0) {

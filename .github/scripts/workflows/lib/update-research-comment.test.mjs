@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,6 +7,21 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const updateResearchComment = require('../research-factory/update-research-comment.js');
+
+const originalEnv = {
+  GH_AW_AGENT_OUTPUT: process.env.GH_AW_AGENT_OUTPUT,
+  RESEARCH_FACTORY_ISSUE_NUMBER: process.env.RESEARCH_FACTORY_ISSUE_NUMBER,
+};
+
+afterEach(() => {
+  for (const [key, value] of Object.entries(originalEnv)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+});
 
 const READY = 'ready-for-change-factory';
 const HUMAN = 'research-needs-human';
@@ -165,5 +180,103 @@ test('does not touch labels when the comment write fails', async () => {
   env.github.rest.issues.createComment = async () => { throw new Error('boom'); };
   await updateResearchComment(env);
   assert.deepEqual(names(env.calls), []);
+  assert.equal(env.core.failures.length, 1);
+});
+
+const MARKER = '<!-- gha-research-factory -->';
+
+function writeOutput(content) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'urc-'));
+  const file = path.join(dir, 'out.json');
+  fs.writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content));
+  process.env.GH_AW_AGENT_OUTPUT = file;
+}
+
+test('fails when GH_AW_AGENT_OUTPUT is unset', async () => {
+  const env = setup({ meta: readyMetadata() });
+  delete process.env.GH_AW_AGENT_OUTPUT;
+  await updateResearchComment(env);
+  assert.equal(env.core.failures.length, 1);
+  assert.deepEqual(names(env.calls), []);
+});
+
+for (const bad of ['abc', '0', '-3', '']) {
+  test(`fails on invalid issue number "${bad}"`, async () => {
+    const env = setup({ meta: readyMetadata() });
+    process.env.RESEARCH_FACTORY_ISSUE_NUMBER = bad;
+    await updateResearchComment(env);
+    assert.equal(env.core.failures.length, 1);
+    assert.deepEqual(names(env.calls), []);
+  });
+}
+
+test('does nothing when there are no update_research_comment items', async () => {
+  const env = setup({ meta: readyMetadata() });
+  writeOutput({ items: [{ type: 'noop', body: 'x' }] });
+  await updateResearchComment(env);
+  assert.deepEqual(names(env.calls), []);
+  assert.equal(env.core.failures.length, 0);
+});
+
+test('uses the first update_research_comment item when several are present', async () => {
+  const env = setup({ meta: readyMetadata() });
+  writeOutput({
+    items: [
+      { type: 'update_research_comment', body: body(readyMetadata()).replace('Implementation research', 'FIRST') },
+      { type: 'update_research_comment', body: 'SECOND' },
+    ],
+  });
+  await updateResearchComment(env);
+  assert.match(env.calls[0][1].body, /FIRST/);
+  assert.equal(names(env.calls).filter((n) => n === 'createComment').length, 1);
+});
+
+test('fails via setFailed on malformed agent output JSON', async () => {
+  const env = setup({ meta: readyMetadata() });
+  writeOutput('{ not json');
+  await updateResearchComment(env);
+  assert.equal(env.core.failures.length, 1);
+  assert.deepEqual(names(env.calls), []);
+});
+
+for (const [name, prefix] of [['already first with newline', `${MARKER}\n`], ['CRLF after marker', `${MARKER}\r\n`], ['marker without newline', MARKER], ['absent', '']]) {
+  test(`marker normalisation: ${name}`, async () => {
+    const env = setup({ meta: readyMetadata() });
+    writeOutput({ items: [{ type: 'update_research_comment', body: prefix + body(readyMetadata()) }] });
+    await updateResearchComment(env);
+    const posted = env.calls[0][1].body;
+    assert.ok(posted.startsWith(MARKER), 'posted body starts with the marker');
+    assert.equal(posted.split(MARKER).length, 2, 'marker appears once');
+  });
+}
+
+test('sticky lookup ignores non-bot and marker-less comments and updates the last match', async () => {
+  const env = setup({
+    meta: readyMetadata(),
+    existingComments: [
+      { id: 1, user: { login: 'github-actions[bot]' }, body: `${MARKER}\nfirst` },
+      { id: 2, user: { login: 'github-actions[bot]' }, body: `${MARKER}\nlast bot match` },
+      { id: 3, user: { login: 'someone' }, body: `${MARKER}\nhuman` },
+      { id: 4, user: { login: 'github-actions[bot]' }, body: 'no marker' },
+    ],
+  });
+  await updateResearchComment(env);
+  assert.equal(env.calls[0][0], 'updateComment');
+  assert.equal(env.calls[0][1].comment_id, 2);
+});
+
+test('a listComments failure fails the job and writes nothing', async () => {
+  const env = setup({ meta: readyMetadata() });
+  env.github.paginate = async () => { throw new Error('list boom'); };
+  await updateResearchComment(env);
+  assert.equal(env.core.failures.length, 1);
+  assert.deepEqual(names(env.calls), []);
+});
+
+test('a removeLabel 500 after addLabels still writes the summary', async () => {
+  const env = setup({ meta: readyMetadata(), failLabel: 'remove' });
+  await updateResearchComment(env);
+  assert.deepEqual(names(env.calls), ['createComment', 'addLabels', 'removeLabel']);
+  assert.equal(env.summary.length, 1);
   assert.equal(env.core.failures.length, 1);
 });

@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const removeStaleOutcomeLabels = require('../research-factory/remove-stale-outcome-labels.js');
+
+const originalInput = process.env.INPUT_ISSUE_NUMBER;
+afterEach(() => {
+  if (originalInput === undefined) {
+    delete process.env.INPUT_ISSUE_NUMBER;
+  } else {
+    process.env.INPUT_ISSUE_NUMBER = originalInput;
+  }
+});
 
 function setup({ inputIssueNumber, payloadIssueNumber, absent = [], failing = [] } = {}) {
   if (inputIssueNumber === undefined) {
@@ -74,4 +83,24 @@ test('skips with a reason when no issue number is available', async () => {
   await removeStaleOutcomeLabels(env);
   assert.equal(env.removed.length, 0);
   assert.equal(env.outputs.stale_outcome_labels_removed, 'false');
+});
+
+test('the input issue number takes precedence over the event payload', async () => {
+  const env = setup({ inputIssueNumber: '9', payloadIssueNumber: 7 });
+  await removeStaleOutcomeLabels(env);
+  assert.ok(env.removed.every((r) => r.issue_number === 9));
+});
+
+test('a non-numeric input falls back to the event payload', async () => {
+  const env = setup({ inputIssueNumber: 'abc', payloadIssueNumber: 7 });
+  await removeStaleOutcomeLabels(env);
+  assert.ok(env.removed.length === 2 && env.removed.every((r) => r.issue_number === 7));
+});
+
+test('mixed 404 and 500 results report failure and mention both outcomes', async () => {
+  const env = setup({ payloadIssueNumber: 7, absent: ['ready-for-change-factory'], failing: ['research-needs-human'] });
+  await removeStaleOutcomeLabels(env);
+  assert.equal(env.outputs.stale_outcome_labels_removed, 'false');
+  assert.match(env.outputs.stale_outcome_labels_removed_reason, /was not present/);
+  assert.match(env.outputs.stale_outcome_labels_removed_reason, /Failed to remove/);
 });
