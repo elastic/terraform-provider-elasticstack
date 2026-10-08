@@ -40,3 +40,39 @@ for (const [file, { text, threshold, window, rounds }] of Object.entries(sources
     assert.match(text, rounds);
   });
 }
+
+test('workflow prompt prose repeats the gate numbers from gate.js', () => {
+  assert.match(
+    workflow,
+    new RegExp(`the final score is at least ${SCORE_THRESHOLD}\\s+and either the last ${STABILITY_WINDOW} rounds both scored at least ${SCORE_THRESHOLD}`),
+  );
+  assert.match(workflow, new RegExp(`run another round, up to ${MAX_ROUNDS} rounds`));
+  assert.match(workflow, new RegExp(`plateau below ${SCORE_THRESHOLD} is not converged`));
+});
+
+test('rubric prose repeats the gate numbers from gate.js', () => {
+  assert.match(
+    rubric,
+    new RegExp(`final score is at least ${SCORE_THRESHOLD} and either the last ${STABILITY_WINDOW} rounds both scored at\\s+least ${SCORE_THRESHOLD}`),
+  );
+  assert.match(rubric, new RegExp(`cannot score above ${SCORE_THRESHOLD - 1}`));
+});
+
+test('author and critic models agree across frontmatter, --agents JSON, and prompt, and differ', () => {
+  const author = /^model: "([^"]+)"/m.exec(workflow)?.[1];
+  const critic = /"model": "([^"]+)"\}\}/.exec(workflow)?.[1];
+  assert.ok(author && critic);
+  assert.notEqual(author, critic);
+  assert.match(workflow, new RegExp(`\`author_model\` \\(string\\): \`${author}\``));
+  assert.match(workflow, new RegExp(`\`model\` \\(string, \`${critic}\`\\)`));
+});
+
+test('workflow source: timeout, budget, safe outputs, and stale-label step', () => {
+  assert.match(workflow, /^timeout-minutes: 60$/m);
+  assert.match(workflow, /approximately 50 minutes of agentic work/);
+  const safeOutputs = workflow.slice(workflow.indexOf('\nsafe-outputs:'), workflow.indexOf('\n---', workflow.indexOf('\nsafe-outputs:')));
+  for (const forbidden of ['add-labels', 'remove-labels', 'add-comment', 'create-issue', 'update-issue', 'create-pull-request']) {
+    assert.ok(!safeOutputs.includes(forbidden), `safe-outputs must not enable ${forbidden}`);
+  }
+  assert.match(workflow, /name: Remove stale outcome labels[\s\S]*?research-factory\/remove-stale-outcome-labels\.js/);
+});

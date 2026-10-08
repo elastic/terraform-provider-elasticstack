@@ -95,6 +95,8 @@ After the comment is posted, the `update-research-comment` script derives the ou
 
 If the agent reported a different outcome, the comment is corrected with a visible override note so the comment and label never disagree. Pre-activation clears stale outcome labels at the start of every run. Neither label triggers a workflow, and the classifier's `needs-human` label is never touched.
 
+The gate is a consistency guard, not a trust boundary: critic verdicts pass through the author agent, so the label gates human attention and does not replace review.
+
 ### Tuning the gate
 
 The gate constants (threshold 85, stability window 2, maximum 3 rounds) are defined in `gate.js` and restated in `critic-rubric.md` and the workflow prompt. A consistency test (`lib/research-factory-gate-constants.test.mjs`) fails if they drift, so change all three together with the spec.
