@@ -55,7 +55,6 @@ test('rubric prose repeats the gate numbers from gate.js', () => {
     rubric,
     new RegExp(`final score is at least ${SCORE_THRESHOLD} and either the last ${STABILITY_WINDOW} rounds both scored at\\s+least ${SCORE_THRESHOLD}`),
   );
-  assert.match(rubric, new RegExp(`cannot score above ${SCORE_THRESHOLD - 1}`));
 });
 
 test('author and critic models agree across frontmatter, --agents JSON, and prompt, and differ', () => {

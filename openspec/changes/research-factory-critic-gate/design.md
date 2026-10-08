@@ -42,7 +42,7 @@ Workflow-helper tests are `node --test` files in `.github/scripts/workflows/lib/
    | 3. Task(research-critic, draft-N path) -------------------+  |
    |                                                            |  |
    |    research-critic subagent                                |  |
-   |    - model: openai/gpt-6.1-sol (different vendor)              |  |
+   |    - model: openai/gpt-6.1-sol (different vendor)          |  |
    |    - tools: Read, Grep, Glob, elastic-docs MCP (read-only) |  |
    |    - fresh context each round; sees draft + issue only     |  |
    |    - verifies citations, scores rubric                     |  |
@@ -76,7 +76,7 @@ The boundaries:
 | 2. Project agent file `.claude/agents/research-critic.md` | Claude Code loads it from the checkout | Not chosen: it would appear in every local Claude Code session, where an OpenRouter slug cannot be resolved. |
 | 3. Alias remap (fallback) | The critic uses `model: opus`; engine env sets `ANTHROPIC_DEFAULT_OPUS_MODEL=openai/gpt-6.1-sol` | Use only if full model IDs are rejected for subagents. The author must never use that alias. |
 
-- **Critic model:** `openai/gpt-6.1-sol`. It is from a different vendor than the author, so the two are less likely to share blind spots, and it is already used through this gateway by `kibana-spec-impact`. It is defined in exactly one place in the workflow. The spec requires only a *different model*; cross-vendor is the rationale for this choice, and `gate.critic.model` makes it auditable.
+- **Critic model:** `openai/gpt-6.1-sol`. It is from a different vendor than the author, so the two are less likely to share blind spots, and the spike confirmed it is routable through this gateway (OpenRouter via the AWF api-proxy). It is defined in exactly one place in the workflow. The spec requires only a *different model*; cross-vendor is the rationale for this choice, and `gate.critic.model` makes it auditable.
 - **Spike first:** one throwaway `workflow_dispatch` run must confirm all three of:
   1. Claude Code 2.1.273 accepts a full OpenRouter slug in `--agents`.
   2. The AWF api-proxy forwards a model other than the configured `model:`.

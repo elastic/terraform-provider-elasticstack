@@ -53,14 +53,14 @@ Score the draft on these dimensions and sum them.
 
 | Dimension | Points |
 |---|---|
-| Grounding: claims are verified against real sources | 25 |
-| Terraform schema mapping: complete and sound | 20 |
-| Compatibility and versioning: correct and explicit | 15 |
-| Test outline: covers configuration, unset/empty, and update cases | 15 |
-| Fit with repository patterns | 15 |
-| Clarity, honesty about unknowns, and scope discipline | 10 |
+| Completeness: claims are grounded and verified; each new capability has a full Terraform schema mapping | 30 |
+| Feasibility: the approach is implementable as described, with honest unknowns and scope discipline | 20 |
+| Compatibility: additive vs breaking is assessed, with version gating and migration notes | 15 |
+| Test coverage: the outline covers configuration, unset/empty, and update cases | 20 |
+| Idiomaticness: fit with existing repository patterns | 15 |
 
-A draft that fails any checklist item cannot score above 84.
+A failed checklist item is not a score cap: reflect it in the relevant dimension and report it in
+`checklist`. The gate blocks `ready-for-change-factory` on any failed item regardless of score.
 
 ## Actionable feedback
 
