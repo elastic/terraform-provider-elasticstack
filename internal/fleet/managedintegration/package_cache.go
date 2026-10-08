@@ -18,9 +18,7 @@
 package managedintegration
 
 import (
-	"sync"
-
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 )
 
 // knownPackages caches Fleet package registry metadata keyed by
@@ -34,18 +32,8 @@ import (
 // result via knownPackages.Store, mirroring
 // internal/fleet/integration_policy/resource.go's getPackageInfo -- is Task
 // 5's responsibility (create.go/read.go).
-var knownPackages sync.Map
+var knownPackages policyshape.PackageInfoCache
 
 // lookupCachedPackageInfo adapts knownPackages to
 // policyshape.PackageInfoLookupFunc.
-func lookupCachedPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	value, ok := knownPackages.Load(cacheKey)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	return pkg, true
-}
+var lookupCachedPackageInfo = knownPackages.Lookup

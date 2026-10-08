@@ -20,7 +20,6 @@ package integrationpolicy
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -87,7 +86,7 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 	}
 }
 
-var knownPackages sync.Map
+var knownPackages policyshape.PackageInfoCache
 
 func getPackageCacheKey(name, version string) string {
 	return policyshape.PackageCacheKey(name, version)
@@ -99,17 +98,7 @@ func getPackageCacheKey(name, version string) string {
 // resource's package-info cache without policyshape owning any cache state
 // itself. cacheKey is already a policyshape.PackageCacheKey (i.e. the
 // "<name>-<version>" string produced by getPackageCacheKey).
-func lookupCachedPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	value, ok := knownPackages.Load(cacheKey)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	return pkg, true
-}
+var lookupCachedPackageInfo = knownPackages.Lookup
 
 func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.KibanaHTTPAPIsGetPackageInfo, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -150,13 +139,5 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, sp
 }
 
 func getCachedPackageInfo(name, version string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	value, ok := knownPackages.Load(getPackageCacheKey(name, version))
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	return pkg, true
+	return knownPackages.Lookup(getPackageCacheKey(name, version))
 }
