@@ -61,10 +61,7 @@ func (m *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.Serve
 	m.Name = types.StringValue(data.Name)
 	m.Hosts = typeutils.SliceToListTypeString(ctx, data.HostUrls, path.Root("hosts"), &diags)
 	m.Default = types.BoolPointerValue(data.IsDefault)
-	m.ProxyID = types.StringNull()
-	if data.ProxyId != nil && *data.ProxyId != "" {
-		m.ProxyID = types.StringValue(*data.ProxyId)
-	}
+	m.ProxyID = typeutils.NonEmptyStringishPointerValue(data.ProxyId)
 
 	// Note: SpaceIDs is not returned by the API for server hosts, so we preserve it from existing state.
 	// It's only used to determine which API endpoint to call.
