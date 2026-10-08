@@ -20,7 +20,6 @@ package datafeed
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -57,34 +56,22 @@ var terminalDatafeedStates = map[State]struct{}{
 	StateStarted: {},
 }
 
-var errDatafeedInUndesiredState = errors.New("datafeed stuck in undesired state")
-
-// WaitForDatafeedState waits for a datafeed to reach the desired state
+// WaitForDatafeedState waits for a datafeed to reach the desired state. A
+// datafeed that settles into a terminal state other than desiredState (for
+// example a lookback-only datafeed that starts and then immediately stops on
+// its own) is reported as not-reached rather than as an error, since callers
+// distinguish that case from a real failure by comparing stats before/after.
 func WaitForDatafeedState(ctx context.Context, client *clients.ElasticsearchScopedClient, datafeedID string, desiredState State) (bool, diag.Diagnostics) {
-	stateChecker := func(ctx context.Context) (bool, error) {
+	getState := func(ctx context.Context) (*State, error) {
 		currentState, diags := GetDatafeedState(ctx, client, datafeedID)
 		if diags.HasError() {
-			return false, diagutil.FwDiagsAsError(diags)
+			return nil, diagutil.FwDiagsAsError(diags)
 		}
-
-		if currentState == nil {
-			return false, fmt.Errorf("datafeed %s not found", datafeedID)
-		}
-
-		if *currentState == desiredState {
-			return true, nil
-		}
-
-		_, isInTerminalState := terminalDatafeedStates[*currentState]
-		if isInTerminalState {
-			return false, fmt.Errorf("%w: datafeed is in state [%s] but desired state is [%s]", errDatafeedInUndesiredState, *currentState, desiredState)
-		}
-
-		return false, nil
+		return currentState, nil
 	}
 
-	err := asyncutils.WaitForStateTransition(ctx, "datafeed", datafeedID, stateChecker)
-	if errors.Is(err, errDatafeedInUndesiredState) {
+	err := asyncutils.WaitForTerminalOrDesiredState(ctx, "datafeed", datafeedID, desiredState, terminalDatafeedStates, getState)
+	if errors.Is(err, asyncutils.ErrTerminalState) {
 		return false, nil
 	}
 

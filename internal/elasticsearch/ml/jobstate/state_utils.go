@@ -19,7 +19,6 @@ package jobstate
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/asyncutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -28,7 +27,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var errJobNotFound = fmt.Errorf("ML job not found")
+// terminalJobStates are the ML job states that do not transition on their
+// own. If a job settles into one of these while desiredState is something
+// else, continued polling would just wait out the context deadline instead of
+// surfacing the mismatch, so waitForJobState fails fast instead.
+var terminalJobStates = map[string]struct{}{
+	"opened": {},
+	"closed": {},
+	"failed": {},
+}
 
 func getJobState(ctx context.Context, client *clients.ElasticsearchScopedClient, _ MLJobStateData, jobID string) (*string, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -48,19 +55,14 @@ func getJobState(ctx context.Context, client *clients.ElasticsearchScopedClient,
 }
 
 func waitForJobState(ctx context.Context, client *clients.ElasticsearchScopedClient, data MLJobStateData, jobID, desiredState string) diag.Diagnostics {
-	stateChecker := func(ctx context.Context) (bool, error) {
+	getState := func(ctx context.Context) (*string, error) {
 		currentState, diags := getJobState(ctx, client, data, jobID)
 		if diags.HasError() {
-			return false, diagutil.FwDiagsAsError(diags)
+			return nil, diagutil.FwDiagsAsError(diags)
 		}
-
-		if currentState == nil {
-			return false, errJobNotFound
-		}
-
-		return *currentState == desiredState, nil
+		return currentState, nil
 	}
 
-	err := asyncutils.WaitForStateTransition(ctx, "ml_job", jobID, stateChecker)
+	err := asyncutils.WaitForTerminalOrDesiredState(ctx, "ml_job", jobID, desiredState, terminalJobStates, getState)
 	return diagutil.FrameworkDiagFromError(err)
 }
