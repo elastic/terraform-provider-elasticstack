@@ -6,7 +6,7 @@
 
 ## 2. Create/update body mapping
 
-- [x] 2.1 Set `body.ProxyId = m.ProxyID.ValueStringPointer()` in `toAPICreateModel`
+- [x] 2.1 Set `body.ProxyId = typeutils.OptionalString(m.ProxyID)` in `toAPICreateModel` (omits null or unknown values, per REQ-013)
 - [x] 2.2 Extract or duplicate `agentdownloadsource.proxyIDForUpdate(plan, prior types.String) *string` (with its doc comment on the `omitempty` interaction) for use by `serverhost`; prefer extracting to a shared location (e.g. `internal/fleet`) over duplicating if it does not disturb `agentdownloadsource`'s existing call sites or tests
 - [x] 2.3 Grow `serverHostModel.toAPIUpdateModel`'s signature to `toAPIUpdateModel(ctx context.Context, prior serverHostModel)` and set `body.ProxyId` via the helper from 2.2, called with `(m.ProxyID, prior.ProxyID)`
 - [x] 2.4 Update `updateServerHost` in `internal/fleet/serverhost/update.go` to pass `req.Prior` through to `req.Plan.toAPIUpdateModel(ctx, ...)`

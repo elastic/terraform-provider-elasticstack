@@ -130,7 +130,7 @@ Because the generated Fleet client tags the update request body's `proxy_id` fie
 
 Consequently, to be robust across stack versions, the resource SHALL distinguish "practitioner never configured `proxy_id`" (send nothing — field omitted) from "practitioner explicitly cleared a previously-set `proxy_id`" (send an explicit empty string `""`, which Fleet SHALL interpret as clearing the proxy assignment) on every update request. The resource SHALL make this determination by comparing the plan's `proxy_id` against the prior state's `proxy_id`, not from the plan value alone.
 
-The `proxy_id` attribute SHALL NOT introduce a resource-level minimum stack version beyond the resource's existing floor. The Fleet proxy resource (required to obtain a real `proxy_id`) requires 8.7.1, so the acceptance test is gated at 8.7.1.
+The `proxy_id` attribute SHALL NOT introduce a resource-level minimum stack version beyond the resource's existing behavior (the resource has no production version requirement; the 8.6.0 floor exists only in acceptance tests). Support on stacks older than 8.7.1 was not verified. The Fleet proxy resource (required to obtain a real `proxy_id`) requires 8.7.1, so the acceptance test is gated at 8.7.1.
 
 #### Scenario: Clearing proxy_id produces an empty string, not an omitted field
 

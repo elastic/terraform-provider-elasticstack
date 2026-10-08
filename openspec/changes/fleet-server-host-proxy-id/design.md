@@ -29,11 +29,11 @@ Add `proxy_id` as an optional string attribute with no computed behavior or plan
 
 ### Decision 2: Model field and `populateFromAPI`
 
-Add `ProxyID types.String \`tfsdk:"proxy_id"\`` to `serverHostModel` in `internal/fleet/serverhost/models.go`. In `populateFromAPI`, add `m.ProxyID = types.StringPointerValue(data.ProxyId)` alongside the existing field assignments.
+Add `ProxyID types.String \`tfsdk:"proxy_id"\`` to `serverHostModel` in `internal/fleet/serverhost/models.go`. In `populateFromAPI`, map `data.ProxyId` so a non-empty value is preserved and both nil and empty-string API values become Terraform null (empty-to-null normalization, per REQ-012).
 
 ### Decision 3: Create body — direct pass-through
 
-In `toAPICreateModel`, set `body.ProxyId = m.ProxyID.ValueStringPointer()`. On create there is no "prior" value to reconcile against, so a direct pointer conversion is correct and matches `agentdownloadsource.toAPICreateModel`.
+In `toAPICreateModel`, set `body.ProxyId = typeutils.OptionalString(m.ProxyID)`. On create there is no "prior" value to reconcile against, so a direct conversion that omits null/unknown values is correct and matches `agentdownloadsource.toAPICreateModel`.
 
 ### Decision 4: Update body — `prior`-aware unset handling, reusing `proxyIDForUpdate`'s logic
 
@@ -58,7 +58,7 @@ Rather than duplicating the three-way branch, extract `agentdownloadsource`'s `p
 
 ### Decision 5: No new minimum-version gate
 
-`fleet_server_host` already gates on `8.6.0` (`minVersionFleetServerHost` in `acc_test.go`). Per human direction on the issue, whether `proxy_id` needs its own, later minimum-version gate was left open for implementation. Outcome: only 9.5.5 could be verified; no gate was added, and the acceptance test is gated at 8.7.1 (the Fleet proxy minimum). If a run against an older stack shows `proxy_id` requires a newer version, a dedicated `entitycore.VersionRequirement` should be added at that point; this design does not pre-emptively add one.
+`fleet_server_host` has no production minimum-version requirement; `minVersionFleetServerHost` (8.6.0) exists only in `acc_test.go`. Per human direction on the issue, whether `proxy_id` needs its own, later minimum-version gate was left open for implementation. Outcome: only 9.5.5 could be verified; no production gate was added (support on stacks older than 8.7.1, where Fleet proxies were introduced, is unverified and treated as unsupported for `proxy_id`), and the acceptance test is gated at 8.7.1 (the Fleet proxy minimum). If a run against an older stack shows `proxy_id` requires a newer version, a dedicated `entitycore.VersionRequirement` should be added at that point; this design does not pre-emptively add one.
 
 ## Open Questions
 
