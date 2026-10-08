@@ -4,7 +4,27 @@
 
 The following data sources previously returned empty state or only a warning when the entity was not found, and now return an error: snapshot repository, trained model, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, index template and query ruleset. Configurations that probed for existence this way must handle the error.
 
-Replace `query.text` / `query.json` with `query.expression` in `.tf` files. State is migrated automatically by a schema v1 -> v2 state upgrader; the `json` value is carried over to `expression` unchanged.
+
+#### `elasticstack_kibana_dashboard` renamed `query.text` and `query.json` to `query.expression`
+This renaming matches the Kibana Dashboard API and the `expression` attribute already used by Lens chart queries. The API exposes a single string field, `expression`; `text` and `json` both mapped onto it, and `json` was only ever a JSON document sent as a query string. Replace `text` (or `json`) with `expression`:
+
+```
+query = {
+  language = "kql"
+  text     = "http.response.status_code:200"
+}
+```
+
+becomes 
+
+```
+query = {
+  language   = "kql"
+  expression = "http.response.status_code:200"
+}
+```
+
+([#5081](https://github.com/elastic/terraform-provider-elasticstack/issues/5081))
 
 ### Changes
 
