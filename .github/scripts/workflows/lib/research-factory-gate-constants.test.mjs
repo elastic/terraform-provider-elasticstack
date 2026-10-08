@@ -58,23 +58,18 @@ test('rubric prose repeats the gate numbers from gate.js', () => {
 });
 
 function inlineAgents() {
-  const agents = {};
-  const re = /^## agent: `([^`]+)`\n---\n([\s\S]*?)\n---\n([\s\S]*?)\n## end agent: `\1`$/gm;
-  for (const m of workflow.matchAll(re)) {
-    const front = m[2];
-    agents[m[1]] = {
-      body: m[3],
-      model: /^model: (\S+)$/m.exec(front)?.[1],
-      description: /^description: (.+)$/m.exec(front)?.[1],
-      tools: (/^tools: (.+)$/m.exec(front)?.[1] ?? '').split(',').map((t) => t.trim()).filter(Boolean),
-    };
-  }
-  return agents;
+  const engine = workflow.slice(workflow.indexOf('\nengine:'), workflow.indexOf('\n  env:', workflow.indexOf('\nengine:')));
+  const match = /- "--agents"\n\s+- >-\n([\s\S]*?)(?=\n\s+# |\n\s+- "--|$)/.exec(engine);
+  assert.ok(match, '--agents argument present');
+  const parsed = JSON.parse(match[1].replace(/\n\s*/g, ' ').trim());
+  return Object.fromEntries(
+    Object.entries(parsed).map(([name, def]) => [name, { body: def.prompt, model: def.model, description: def.description, tools: def.tools }]),
+  );
 }
 
 const AGENT_NAMES = ['research-critic', 'oas-researcher', 'repo-patterns-researcher', 'docs-researcher'];
 
-test('inline agent blocks exist with description, model, and tools frontmatter and end markers', () => {
+test('--agents JSON defines the four agents with description, model, tools, and prompt', () => {
   const agents = inlineAgents();
   assert.deepEqual(Object.keys(agents).sort(), [...AGENT_NAMES].sort());
   for (const name of AGENT_NAMES) {
@@ -111,10 +106,15 @@ test('researchers use kimi, are read-only apart from Write, and share the notes 
   }
 });
 
-test('engine args use autocompact and no --agents JSON', () => {
+test('engine args use autocompact and --agents, and the workflow has no inline agent blocks', () => {
   const engine = workflow.slice(workflow.indexOf('\nengine:'), workflow.indexOf('\n  env:', workflow.indexOf('\nengine:')));
   assert.match(engine, /- "--autocompact"\n\s+- "250k"/);
-  assert.ok(!engine.includes('--agents'));
+  assert.match(engine, /- "--agents"/);
+  assert.ok(!/^## (end )?agent:/m.test(workflow));
+});
+
+test('docs-researcher has exactly the docs MCP, Read, and Write tools', () => {
+  assert.deepEqual([...inlineAgents()['docs-researcher'].tools].sort(), ['Read', 'Write', 'mcp__elastic-docs']);
 });
 
 test('prompt forbids the orchestrator from reading research sources itself', () => {
