@@ -101,10 +101,12 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	}
 	dashboardMapDashboardFiltersFromAPI(ctx, m, &data.Data, &diags)
 
-	// Map tags
+	// Map tags: preserve any known prior plan/state value (including a known-empty
+	// list and null) when the API returns a nil or empty tags value (REQ-009).
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
 		m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
-	} else {
+	} else if m.Tags.IsUnknown() {
+		// No prior plan/state intent to preserve (e.g. import): normalize to null.
 		m.Tags = types.ListNull(types.StringType)
 	}
 
