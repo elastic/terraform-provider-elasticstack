@@ -999,9 +999,15 @@ func TestAccResourceDashboardTagsNormalization(t *testing.T) {
 				},
 				ResourceName: "elasticstack_kibana_dashboard.test",
 				ImportState:  true,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "tags"),
-				),
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(is))
+					}
+					if v, ok := is[0].Attributes["tags.#"]; ok {
+						return fmt.Errorf("expected imported tags to be null, got tags.# = %s", v)
+					}
+					return nil
+				},
 			},
 			{
 				// Omitted tags: must stay null in state (null intent preserved).
