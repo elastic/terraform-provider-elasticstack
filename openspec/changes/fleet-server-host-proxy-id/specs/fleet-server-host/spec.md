@@ -73,7 +73,7 @@ On create, the resource SHALL submit `host_urls` (from `hosts`), `name`, `is_def
 
 ### Requirement: Update API body (REQ-014)
 
-On update, the resource SHALL submit `host_urls`, `name`, `is_default`, and `proxy_id` in the update request body, using `host_id` from the plan as the resource identifier.
+On update, the resource SHALL submit `host_urls`, `name`, and `is_default`, and SHALL conditionally submit `proxy_id` according to the rules below, using `host_id` from the plan as the resource identifier.
 
 The `proxy_id` value sent on update SHALL be computed from both the plan value and the prior state value, per the following rule (see REQ-017 for the full rationale):
 

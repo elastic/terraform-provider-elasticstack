@@ -23,16 +23,7 @@ This design adopts the recommendation from the issue's implementation-research c
 
 ### Decision 1: Schema shape mirrors `agentdownloadsource`'s `proxy_id`
 
-Add to `internal/fleet/serverhost/schema.go`:
-
-```go
-"proxy_id": schema.StringAttribute{
-    Description: "The ID of the proxy to use for this Fleet server host.",
-    Optional:    true,
-},
-```
-
-No `Computed`, no plan modifiers — matching `agentdownloadsource/schema.go`'s `proxy_id` attribute exactly. `proxy_id` is not returned as auto-assigned by the API, so there is no need for `UseStateForUnknown()`.
+Add `proxy_id` as an optional string attribute with no computed behavior or plan modifiers. Its description will identify it as the Fleet proxy used by the server host, matching the sibling agent download source resource.
 
 **Why:** Consistency with the only other resource in the provider that already models this exact Fleet API field. No reason to diverge.
 
@@ -84,5 +75,5 @@ The issue author (`@tobio`) answered these open questions directly on the issue,
 
 | Risk | Mitigation |
 |---|---|
-| Fleet's `PUT /fleet/fleet_server_hosts/{itemId}` does not actually exhibit the same omitted-field "leave unchanged" behavior confirmed for `agent_download_sources` (unverified assumption carried over from the research comment) | Acceptance test explicitly exercises the unset path against a real stack before this ships; if the live behavior differs, `proxyIDForUpdate`'s empty-string branch is a no-op superset of correct behavior (sending `""` to clear is valid either way) so the implementation is safe even if the "leave unchanged" theory turns out to be wrong for this endpoint. |
+| Fleet's `PUT /fleet/fleet_server_hosts/{itemId}` omitted-field or empty-string behavior differs from `agent_download_sources` | Treat live acceptance verification as a release gate. If omission does not leave the value unchanged or `""` does not clear it successfully, revise Decision 4 and REQ-014/REQ-017 before implementing the verified endpoint-specific behavior. |
 | Changing `toAPIUpdateModel`'s signature to take `prior` touches the only call site in `update.go` | Single call site, mechanical change, directly mirrors the already-existing `agentdownloadsource` pattern. |

@@ -2,7 +2,7 @@
 
 - [ ] 1.1 Add `proxy_id` (`schema.StringAttribute{Optional: true}`, no Computed/plan-modifiers) to `internal/fleet/serverhost/schema.go`, matching `agentdownloadsource/schema.go`'s `proxy_id` attribute and description style
 - [ ] 1.2 Add `ProxyID types.String \`tfsdk:"proxy_id"\`` to `serverHostModel` in `internal/fleet/serverhost/models.go`
-- [ ] 1.3 Populate `m.ProxyID = types.StringPointerValue(data.ProxyId)` in `populateFromAPI`
+- [ ] 1.3 Map API `proxy_id` into state so a non-empty value is preserved and both nil and empty API values become Terraform null, matching REQ-012 and the sibling resource's hydration behavior
 
 ## 2. Create/update body mapping
 
@@ -23,8 +23,8 @@
 - [ ] 4.1 Add `TestAccResourceFleetServerHost_ProxyID` to `internal/fleet/serverhost/acc_test.go`, mirroring `TestAccResourceFleetAgentDownloadSource_ProxyID`: a `with_proxy` step asserting `proxy_id` is set and matches the wired `elasticstack_fleet_proxy.test.proxy_id`, followed by a `without_proxy` step asserting `proxy_id` is unset (`TestCheckNoResourceAttr`)
 - [ ] 4.2 Add an additional step (or extend 4.1) that updates `proxy_id` from one real proxy to a second real proxy, to exercise the set→different-value update path
 - [ ] 4.3 Add `testdata/TestAccResourceFleetServerHost_ProxyID/with_proxy/main.tf` and `.../without_proxy/main.tf` fixtures, following the layout of `internal/fleet/agentdownloadsource/testdata/TestAccResourceFleetAgentDownloadSource_ProxyID/`
-- [ ] 4.4 During implementation, run this test against the stack version matrix available in CI/local dev to resolve the open question on whether `PUT /fleet/fleet_server_hosts/{itemId}` treats an omitted `proxy_id` as "leave unchanged" the same way `agent_download_sources` does; adjust Decision 4 in design.md if the live behavior differs
-- [ ] 4.5 During implementation, confirm whether `proxy_id` requires a minimum stack version newer than the resource's existing `8.6.0` floor; add a dedicated `entitycore.VersionRequirement` gate only if the acceptance run against the minimum-supported stack shows it's needed
+- [ ] 4.4 During implementation, run this test against the stack version matrix available in CI/local dev to resolve the open question on `PUT /fleet/fleet_server_hosts/{itemId}` omitted and empty-string `proxy_id` semantics; update Decision 4 and REQ-014/REQ-017 if live behavior differs
+- [ ] 4.5 During implementation, confirm whether `proxy_id` requires a minimum stack version newer than the resource's existing `8.6.0` floor; if so, document the compatibility requirement in the delta spec and add the corresponding `entitycore.VersionRequirement` gate
 
 ## 5. Validation and cleanup
 
