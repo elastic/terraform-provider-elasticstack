@@ -443,6 +443,17 @@ grounding step helps produce accurate comparisons and avoids speculative assumpt
 If the MCP tools are unavailable or return no useful results, proceed from the issue content alone —
 do not block the run waiting for documentation.
 
+## Kibana API grounding
+
+For Kibana resources, ground every claimed field, type, requiredness, and default in the generated
+client `generated/kbapi/kibana.gen.go` (generated from the Kibana OpenAPI spec): Grep for the
+operation (`<OperationId>WithResponse`), its `*Params` and `*JSONRequestBody` types, and the path
+string, and cite the Go identifier. `generated/kbapi/kibana.json` is only a dashboards overlay, and
+the full `oas.yaml` is not available. If the endpoint is not in `kibana.gen.go`, say so, name the
+path to add to `transformFilterPaths` in `generated/kbapi/transform_schema.go`, and ground the API
+shape in `elastic-docs`. Do not fetch Kibana source from the web, and do not assert server defaults
+or behaviour you cannot source; list them as open questions instead.
+
 ## Comparison requirement
 
 You SHALL compare at least two distinct candidate approaches under `### Approaches considered`. Each

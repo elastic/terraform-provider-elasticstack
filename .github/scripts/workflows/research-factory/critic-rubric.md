@@ -35,9 +35,22 @@ Each item is `true` only when fully satisfied.
 
 ## Verifying citations
 
-- **Kibana API specification nodes:** search `generated/kbapi/kibana.json` (the Kibana OpenAPI
-  document) and `generated/kbapi/kibana.gen.go` (the generated Go client) with Grep for the cited
-  path, operation, or schema, and confirm the claimed fields exist.
+- **Kibana API claims:** the generated Kibana client is the source of truth, because it is generated
+  from the Kibana OpenAPI (OAS) spec.
+  - Grep `generated/kbapi/kibana.gen.go` for the cited operation (`<OperationId>WithResponse`), its
+    `*Params` and `*JSONRequestBody` types, and the request path string. Confirm each claimed field,
+    its type, and whether it is a pointer (optional) or not (required) against those Go types and
+    their doc comments.
+  - `generated/kbapi/kibana.json` is only a two-path dashboards overlay, not the Kibana spec. Do not
+    use it to verify non-dashboard endpoints. The full `oas.yaml` is not checked in and is not
+    available in this run.
+  - If the endpoint is **absent** from `kibana.gen.go`, the draft must say so explicitly, name the
+    path to add to the allow list in `generated/kbapi/transform_schema.go` (`transformFilterPaths`),
+    and cite Elastic documentation (the `elastic-docs` MCP tools) for the API shape. Accept that as
+    grounded. Do not fail `grounded` solely because the generated client lacks the endpoint, but do
+    fail it when a field, default, or behaviour is asserted with no verifiable source.
+  - Do not require or accept Kibana server source code fetched from the web. It is not an allowed
+    source and cannot be verified in this run.
 - **Elasticsearch (non-Kibana) API claims:** confirm them with the `elastic-docs` MCP tools and
   against the `go-elasticsearch` client, either vendored in the repository or in the Go module
   cache, rather than the Kibana files.
