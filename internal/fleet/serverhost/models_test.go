@@ -18,9 +18,9 @@
 package serverhost
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
