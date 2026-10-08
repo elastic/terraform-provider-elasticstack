@@ -241,7 +241,7 @@ func TestAccResourceFleetSpaceSettings_validation_tooManyPrefixes(t *testing.T) 
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid"),
 				ConfigVariables:          variables,
 				PlanOnly:                 true,
-				ExpectError:              regexp.MustCompile(`(?i)at most 10 elements, got: 11`),
+				ExpectError:              regexp.MustCompile(`(?is)at most 10 elements,\s+got: 11`),
 			},
 		},
 	})
