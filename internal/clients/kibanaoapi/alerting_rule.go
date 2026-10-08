@@ -102,7 +102,7 @@ func FindAlertingRules(ctx context.Context, client *Client, spaceID string, filt
 			return nil, diagutil.ErrDiag("Unable to search alerting rules", err)
 		}
 		if resp.StatusCode() != http.StatusOK {
-			if resp.StatusCode() == http.StatusInternalServerError && filter != nil && *filter != "" {
+			if page == 1 && resp.StatusCode() == http.StatusInternalServerError && filter != nil && *filter != "" {
 				return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
 					"Invalid alerting rule filter",
 					fmt.Sprintf("Kibana rejected filter. Response: %s", resp.Body),
@@ -110,30 +110,28 @@ func FindAlertingRules(ctx context.Context, client *Client, spaceID string, filt
 			}
 			return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 		}
-		if resp.JSON200 == nil {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Failed to parse response",
-				"API returned success status but response body was nil or not JSON",
-			)}
+		parsed, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rules")
+		if diags.HasError() {
+			return nil, diags
 		}
-		if page == 1 && resp.JSON200.Total > alertingRulesFindMaxTotal {
-			return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-				"Too many alerting rules",
-				fmt.Sprintf("Kibana reported %.0f matching rules, which is more than 10000. Narrow filter so the search stays within Kibana's result window.", resp.JSON200.Total),
-			)}
+		if page == 1 {
+			if parsed.Total > alertingRulesFindMaxTotal {
+				return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+					"Too many alerting rules",
+					fmt.Sprintf("Kibana reported %.0f matching rules, which is more than 10000. Narrow filter so the search stays within Kibana's result window.", parsed.Total),
+				)}
+			}
+			total = parsed.Total
 		}
 
-		if total == 0 {
-			total = resp.JSON200.Total
-		}
-		if len(resp.JSON200.Data) == 0 {
+		if len(parsed.Data) == 0 {
 			break
 		}
 
-		for i := range resp.JSON200.Data {
-			rule, diags := ConvertResponseToModel(spaceID, &resp.JSON200.Data[i])
-			if diags.HasError() {
-				return nil, diags
+		for i := range parsed.Data {
+			rule, convertDiags := ConvertResponseToModel(spaceID, &parsed.Data[i])
+			if convertDiags.HasError() {
+				return nil, convertDiags
 			}
 			collected = append(collected, *rule)
 		}

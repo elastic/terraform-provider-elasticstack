@@ -22,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-// NewDataSource returns the elasticstack_kibana_alerting_rules data source.
 func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[alertingRulesDataSourceModel](
 		entitycore.ComponentKibana,

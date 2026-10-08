@@ -28,8 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const lastExecutionDateLayout = "2006-01-02T15:04:05.000Z"
-
 // alertingRulesSearchResourceID is the envelope identity used when the data
 // source searches rather than looking up one rule. The read path must never
 // send this value to the single-rule fetch.
@@ -88,7 +86,7 @@ func ruleElementFromAPI(rule models.AlertingRule) ruleElementModel {
 		LastExecutionDate:   types.StringNull(),
 	}
 	if rule.ExecutionStatus.LastExecutionDate != nil {
-		element.LastExecutionDate = types.StringValue(rule.ExecutionStatus.LastExecutionDate.UTC().Format(lastExecutionDateLayout))
+		element.LastExecutionDate = typeutils.TimeToStringValue(rule.ExecutionStatus.LastExecutionDate.UTC())
 	}
 	return element
 }
@@ -108,15 +106,11 @@ func ruleElementAttrTypes() map[string]attr.Type {
 }
 
 func (m *alertingRulesDataSourceModel) setRules(ctx context.Context, rules []models.AlertingRule) diag.Diagnostics {
-	elems := make([]attr.Value, 0, len(rules))
-	for _, rule := range rules {
-		obj, diags := types.ObjectValueFrom(ctx, ruleElementAttrTypes(), ruleElementFromAPI(rule))
-		if diags.HasError() {
-			return diags
-		}
-		elems = append(elems, obj)
+	elements := make([]ruleElementModel, len(rules))
+	for i, rule := range rules {
+		elements[i] = ruleElementFromAPI(rule)
 	}
-	list, diags := types.ListValue(types.ObjectType{AttrTypes: ruleElementAttrTypes()}, elems)
+	list, diags := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: ruleElementAttrTypes()}, elements)
 	if diags.HasError() {
 		return diags
 	}

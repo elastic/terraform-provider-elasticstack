@@ -67,7 +67,7 @@ func readRules(
 		if diags.HasError() || rule == nil {
 			return config, false, diags
 		}
-		config.ID = types.StringValue(spaceID + "/" + config.RuleID.ValueString())
+		config.ID = clients.CompositeIDValue(spaceID, config.RuleID.ValueString())
 		diags = config.setRules(ctx, []models.AlertingRule{*rule})
 		return config, !diags.HasError(), diags
 	}
