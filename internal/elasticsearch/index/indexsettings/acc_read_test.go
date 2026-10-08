@@ -369,28 +369,35 @@ func deleteIndexOutOfBand(t *testing.T, indexName string) {
 	}
 }
 
+func flatIndexSettings(indexName string) (map[string]any, error) {
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return nil, err
+	}
+
+	indexState, diags := esclient.GetIndex(context.Background(), client, indexName)
+	if diags.HasError() {
+		return nil, fmt.Errorf("failed to get index %q: %v", indexName, diags)
+	}
+	if indexState == nil {
+		return nil, fmt.Errorf("index %q not found", indexName)
+	}
+
+	settingsBytes, err := json.Marshal(indexState.Settings)
+	if err != nil {
+		return nil, err
+	}
+	var flat map[string]any
+	if err := json.Unmarshal(settingsBytes, &flat); err != nil {
+		return nil, err
+	}
+	return flat, nil
+}
+
 func checkIndexSettingValue(indexName, settingKey, expected string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		flat, err := flatIndexSettings(indexName)
 		if err != nil {
-			return err
-		}
-
-		indexState, diags := esclient.GetIndex(context.Background(), client, indexName)
-		if diags.HasError() {
-			return fmt.Errorf("failed to get index %q: %v", indexName, diags)
-		}
-		if indexState == nil {
-			return fmt.Errorf("index %q not found", indexName)
-		}
-
-		settingsBytes, err := json.Marshal(indexState.Settings)
-		if err != nil {
-			return err
-		}
-
-		var flat map[string]any
-		if err := json.Unmarshal(settingsBytes, &flat); err != nil {
 			return err
 		}
 		if fmt.Sprint(flat[settingKey]) != expected {

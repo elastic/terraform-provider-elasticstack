@@ -19,15 +19,9 @@ package indexsettings
 
 import (
 	"context"
-	"io"
-	"maps"
-	"net/http"
-	"net/http/httptest"
-	"strings"
+	"encoding/json"
 	"testing"
 
-	"encoding/json"
-	elasticsearchclient "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
@@ -39,59 +33,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newIndexSettingsReadTestServer runs an httptest Elasticsearch whose index
-// lookup (GET /{index}) reports flatSettings as the index settings. All other
-// endpoints used by the read path mirror [newIndexSettingsTestServer].
 func newIndexSettingsReadTestServer(t *testing.T, indexExists bool, flatSettings map[string]any) *clients.ElasticsearchScopedClient {
 	t.Helper()
 
-	const indexName = "my-index"
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Elastic-Product", "Elasticsearch")
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/":
-			_ = writeJSON(w, map[string]any{
-				"name":         "test-node",
-				"cluster_name": "test-cluster",
-				"cluster_uuid": "test-cluster-uuid",
-				"version": map[string]any{
-					"number": "8.15.0",
-				},
-				"tagline": "You Know, for Search",
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/"+indexName:
-			if !indexExists {
-				writeJSONStatus(w, http.StatusNotFound, map[string]any{
-					"error": map[string]any{
-						"type":   "index_not_found_exception",
-						"reason": "no such index [" + indexName + "]",
-					},
-					"status": 404,
-				})
-				return
-			}
-			_ = writeJSON(w, map[string]any{
-				indexName: map[string]any{
-					"aliases":  map[string]any{},
-					"mappings": map[string]any{},
-					"settings": flatSettings,
-				},
-			})
-		default:
-			http.Error(w, "unexpected request: "+r.Method+" "+r.URL.Path, http.StatusNotFound)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	typedClient, err := elasticsearchclient.NewTypedClient(elasticsearchclient.Config{
-		Addresses: []string{server.URL},
-	})
-	require.NoError(t, err)
-
-	return clients.NewElasticsearchScopedClientForTest(typedClient, []string{server.URL})
+	indices := map[string]map[string]any{}
+	if indexExists {
+		indices["my-index"] = flatSettings
+	}
+	client, _ := newIndexSettingsServer(t, indices, false)
+	return client
 }
 
 func TestReadIndexSettings_UnrelatedSettingsIgnored(t *testing.T) {
@@ -290,8 +240,7 @@ func TestReadIndexSettings_SettingsJSONEncodedArrayRoundTrip(t *testing.T) {
 	require.JSONEq(t, `[true]`, string(readSettings["some.bool.array"]), "tracked bool array must round-trip")
 }
 
-// PR hardening: numeric settings_json values reconcile with their exact
-// JSON tokens, so integers beyond float64 precision (2^53) round-trip from
+// Numeric settings_json values reconcile with their exact JSON tokens, so integers beyond float64 precision (2^53) round-trip from
 // string API values without false drift, as scalars and inside arrays.
 func TestReadIndexSettings_SettingsJSONExactNumbersRoundTrip(t *testing.T) {
 	t.Parallel()
@@ -369,7 +318,7 @@ func TestReadIndexSettings_TypedQueryDefaultFieldDecodesEncodedArray(t *testing.
 	require.Equal(t, state.QueryDefaultField, read.QueryDefaultField, "encoded string array must hydrate the typed set without drift")
 }
 
-// PR hardening: an empty typed query_default_field set is valid and must
+// An empty typed query_default_field set is valid and must
 // round-trip as an empty set, never nulled, whether Elasticsearch reports it
 // as a JSON-encoded array string or as a real JSON array.
 func TestReadIndexSettings_TypedQueryDefaultFieldEmptyArrayStaysEmpty(t *testing.T) {
@@ -396,7 +345,7 @@ func TestReadIndexSettings_TypedQueryDefaultFieldEmptyArrayStaysEmpty(t *testing
 	}
 }
 
-// PR hardening: import hydration populates the typed query_default_field
+// Import hydration populates the typed query_default_field
 // from an empty JSON-encoded array as an empty set, not as null, so a narrowed
 // configuration declaring an empty tracked array converges without drift.
 func TestPostReadIndexSettings_ImportHydratesEmptyTypedArray(t *testing.T) {
@@ -477,86 +426,11 @@ func TestImportState_RejectsNonCompositeID(t *testing.T) {
 	require.True(t, imported.Diagnostics.HasError(), "a non-composite import ID must be rejected")
 }
 
-// readBody reads the full request body as a string.
-func readBody(r *http.Request) string {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return ""
-	}
-	return string(body)
-}
-
-// newIndexSettingsMultiIndexReadTestServer runs an httptest Elasticsearch
-// serving multiple named indices, each with its own flat settings, so tests
-// can exercise several index_settings instances (for_each over concrete
-// index names) against one provider scope.
 func newIndexSettingsMultiIndexReadTestServer(t *testing.T, indices map[string]map[string]any) *clients.ElasticsearchScopedClient {
 	t.Helper()
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Elastic-Product", "Elasticsearch")
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/":
-			_ = writeJSON(w, map[string]any{
-				"name":         "test-node",
-				"cluster_name": "test-cluster",
-				"cluster_uuid": "test-cluster-uuid",
-				"version":      map[string]any{"number": "8.15.0"},
-				"tagline":      "You Know, for Search",
-			})
-		case r.Method == http.MethodPut && strings.HasSuffix(r.URL.Path, "/_settings"):
-			indexName := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"), "/_settings")
-			if _, ok := indices[indexName]; !ok {
-				writeJSONStatus(w, http.StatusNotFound, map[string]any{
-					"error": map[string]any{
-						"type":   "index_not_found_exception",
-						"reason": "no such index [" + indexName + "]",
-					},
-					"status": 404,
-				})
-				return
-			}
-			var payload map[string]any
-			if err := json.Unmarshal([]byte(readBody(r)), &payload); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			maps.Copy(indices[indexName], payload)
-			_ = writeJSON(w, map[string]any{"acknowledged": true})
-		case r.Method == http.MethodGet && r.URL.Path != "/":
-			indexName := strings.TrimPrefix(r.URL.Path, "/")
-			settings, ok := indices[indexName]
-			if !ok {
-				writeJSONStatus(w, http.StatusNotFound, map[string]any{
-					"error": map[string]any{
-						"type":   "index_not_found_exception",
-						"reason": "no such index [" + indexName + "]",
-					},
-					"status": 404,
-				})
-				return
-			}
-			_ = writeJSON(w, map[string]any{
-				indexName: map[string]any{
-					"aliases":  map[string]any{},
-					"mappings": map[string]any{},
-					"settings": settings,
-				},
-			})
-		default:
-			http.Error(w, "unexpected request: "+r.Method+" "+r.URL.Path, http.StatusNotFound)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	typedClient, err := elasticsearchclient.NewTypedClient(elasticsearchclient.Config{
-		Addresses: []string{server.URL},
-	})
-	require.NoError(t, err)
-
-	return clients.NewElasticsearchScopedClientForTest(typedClient, []string{server.URL})
+	client, _ := newIndexSettingsServer(t, indices, false)
+	return client
 }
 
 // REQ-006 for_each over multiple concrete indices: each instance manages its

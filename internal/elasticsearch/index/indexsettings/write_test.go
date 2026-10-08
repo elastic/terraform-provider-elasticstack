@@ -20,11 +20,8 @@ package indexsettings
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	elasticsearchclient "github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -32,97 +29,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newIndexSettingsTestServer runs an httptest Elasticsearch serving the
-// endpoints used by the index settings write callbacks: cluster info (GET /),
-// index lookup (GET /{index}) and settings updates (PUT /{index}/_settings).
-// indexExists controls the GET response; putFails makes settings updates
-// return 500. It returns the scoped client plus the captured PUT bodies.
-func writeJSON(w http.ResponseWriter, body any) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(body)
-}
-
-func writeJSONStatus(w http.ResponseWriter, status int, body any) {
-	w.WriteHeader(status)
-	_ = writeJSON(w, body)
-}
-
 func newIndexSettingsTestServer(t *testing.T, indexExists, putFails bool) (*clients.ElasticsearchScopedClient, *[]map[string]any) {
 	t.Helper()
 
-	var putBodies []map[string]any
-
-	const indexName = "my-index"
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Elastic-Product", "Elasticsearch")
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/":
-			_ = writeJSON(w, map[string]any{
-				"name":         "test-node",
-				"cluster_name": "test-cluster",
-				"cluster_uuid": "test-cluster-uuid",
-				"version": map[string]any{
-					"number": "8.15.0",
-				},
-				"tagline": "You Know, for Search",
-			})
-		case r.Method == http.MethodGet && r.URL.Path == "/"+indexName:
-			if !indexExists {
-				writeJSONStatus(w, http.StatusNotFound, map[string]any{
-					"error": map[string]any{
-						"type":   "index_not_found_exception",
-						"reason": "no such index [" + indexName + "]",
-					},
-					"status": 404,
-				})
-				return
-			}
-			_ = writeJSON(w, map[string]any{
-				indexName: map[string]any{
-					"aliases":  map[string]any{},
-					"mappings": map[string]any{},
-					"settings": map[string]any{
-						"index": map[string]any{
-							"number_of_shards": "1",
-							"uuid":             "index-uuid",
-						},
-					},
-				},
-			})
-		case r.Method == http.MethodPut && r.URL.Path == "/"+indexName+"/_settings":
-			// UseNumber keeps numeric tokens exact (json.Number), so tests can
-			// assert integers beyond float64 precision without rounding.
-			decoder := json.NewDecoder(r.Body)
-			decoder.UseNumber()
-			var body map[string]any
-			_ = decoder.Decode(&body)
-			putBodies = append(putBodies, body)
-			if putFails {
-				writeJSONStatus(w, http.StatusInternalServerError, map[string]any{
-					"error": map[string]any{
-						"type":   "illegal_argument_exception",
-						"reason": "closed index [" + indexName + "]",
-					},
-					"status": 500,
-				})
-				return
-			}
-			_ = writeJSON(w, map[string]any{"acknowledged": true})
-		default:
-			http.Error(w, "unexpected request: "+r.Method+" "+r.URL.Path, http.StatusNotFound)
+	indices := map[string]map[string]any{}
+	if indexExists {
+		indices["my-index"] = map[string]any{
+			"index.number_of_shards": "1",
+			"index.uuid":             "index-uuid",
 		}
-	}))
-	t.Cleanup(server.Close)
-
-	typedClient, err := elasticsearchclient.NewTypedClient(elasticsearchclient.Config{
-		Addresses: []string{server.URL},
-	})
-	require.NoError(t, err)
-
-	return clients.NewElasticsearchScopedClientForTest(typedClient, []string{server.URL}), &putBodies
+	}
+	return newIndexSettingsServer(t, indices, putFails)
 }
 
 func TestCreateIndexSettings_IndexExistsSendsDeclaredSettings(t *testing.T) {
@@ -166,7 +83,7 @@ func TestCreateIndexSettings_IndexOnlyIssuesNoSettingsPut(t *testing.T) {
 	require.Empty(t, *putBodies, "index-only create must not issue a settings PUT")
 }
 
-// PR hardening: settings_json numeric values must reach the wire payload as
+// Settings_json numeric values must reach the wire payload as
 // exact JSON tokens. Integers beyond float64 precision (2^53) must not be
 // rounded, so distinct large-integer plans send distinct payloads.
 func TestCreateIndexSettings_SettingsJSONNumbersSentWithExactTokens(t *testing.T) {
@@ -258,7 +175,7 @@ func TestUpdateIndexSettings_ArrayValuesSerializeAsJSONArrays(t *testing.T) {
 	}, (*putBodies)[0])
 }
 
-// PR hardening: the update diff compares exact numeric tokens after key
+// The update diff compares exact numeric tokens after key
 // canonicalization, so integers differing beyond float64 precision (2^53)
 // trigger a settings update instead of comparing equal.
 func TestUpdateIndexSettings_DistinctLargeIntegersAreNotEqual(t *testing.T) {
@@ -315,7 +232,7 @@ func TestUpdateIndexSettings_ChangedSettingSendsUpdate(t *testing.T) {
 	}, (*putBodies)[0])
 }
 
-// PR hardening: the canonical diff stays independent of `index.` prefix
+// The canonical diff stays independent of `index.` prefix
 // spellings and of the numeric source (typed Int64 attribute vs settings_json
 // token, integers and decimals alike), so a semantically unchanged
 // declaration never issues a PUT.

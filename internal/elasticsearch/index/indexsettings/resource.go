@@ -72,13 +72,7 @@ func (r *indexSettingsResource) ValidateConfig(ctx context.Context, req resource
 // hydrates the known dynamic typed attributes (settings_json stays unset).
 // resource.ImportStatePassthroughID is insufficient here: it sets only id.
 func (r *indexSettingsResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	compID, ok := entitycore.ParseCompositeID(req, resp)
-	if !ok {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("index"), compID.ResourceID)...)
+	entitycore.NewCompositeIDImporter(path.Root("id"), path.Root("index")).ImportState(ctx, req, resp)
 	if resp.Diagnostics.HasError() {
 		return
 	}

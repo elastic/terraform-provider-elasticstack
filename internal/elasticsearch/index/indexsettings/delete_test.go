@@ -29,15 +29,13 @@ func TestDeleteIndexSettings_IsNoopWithoutAPICall(t *testing.T) {
 	t.Parallel()
 
 	const indexName = "my-index"
-	client, _ := newIndexSettingsTestServer(t, true, false)
-
 	state := tfModel{
 		ID:                      types.StringValue("test-cluster-uuid/" + indexName),
 		Index:                   types.StringValue(indexName),
 		MappingTotalFieldsLimit: types.Int64Value(5000),
 	}
 
-	diags := deleteIndexSettings(context.Background(), client, indexName, state)
+	diags := deleteIndexSettings(context.Background(), nil, indexName, state)
 
 	require.False(t, diags.HasError(), "delete must be a no-op: %v", diags.Errors())
 }

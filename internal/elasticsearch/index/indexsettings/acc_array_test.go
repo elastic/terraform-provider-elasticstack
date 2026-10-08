@@ -18,15 +18,11 @@
 package indexsettings_test
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -37,67 +33,26 @@ import (
 	tfjsonpath "github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
-// checkIndexSettingAbsent asserts Elasticsearch no longer reports the given
-// setting key for the index (a reset setting is dropped from persisted
-// settings).
 func checkIndexSettingAbsent(indexName, settingKey string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		flat, err := flatIndexSettings(indexName)
 		if err != nil {
 			return err
 		}
-
-		indexState, diags := esclient.GetIndex(context.Background(), client, indexName)
-		if diags.HasError() {
-			return fmt.Errorf("failed to get index %q: %v", indexName, diags)
-		}
-		if indexState == nil {
-			return fmt.Errorf("index %q not found", indexName)
-		}
-
-		if indexState.Settings != nil {
-			settingsBytes, err := indexState.Settings.MarshalJSON()
-			if err != nil {
-				return err
-			}
-			var flat map[string]any
-			if err := json.Unmarshal(settingsBytes, &flat); err != nil {
-				return err
-			}
-			if value, ok := flat[settingKey]; ok {
-				return fmt.Errorf("index %q setting %q = %v, want unset", indexName, settingKey, value)
-			}
+		if value, ok := flat[settingKey]; ok {
+			return fmt.Errorf("index %q setting %q = %v, want unset", indexName, settingKey, value)
 		}
 		return nil
 	}
 }
 
-// checkIndexSettingJSONArray asserts the Elasticsearch setting value is a JSON
-// array with the expected elements, independent of element order (Elasticsearch
-// list settings are not guaranteed to preserve element order).
+// Elasticsearch list settings do not guarantee element order.
 func checkIndexSettingJSONArray(indexName string, expected []any) resource.TestCheckFunc {
 	const settingKey = "index.query.default_field"
 
 	return func(_ *terraform.State) error {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		flat, err := flatIndexSettings(indexName)
 		if err != nil {
-			return err
-		}
-
-		indexState, diags := esclient.GetIndex(context.Background(), client, indexName)
-		if diags.HasError() {
-			return fmt.Errorf("failed to get index %q: %v", indexName, diags)
-		}
-		if indexState == nil {
-			return fmt.Errorf("index %q not found", indexName)
-		}
-
-		settingsBytes, err := indexState.Settings.MarshalJSON()
-		if err != nil {
-			return err
-		}
-		var flat map[string]any
-		if err := json.Unmarshal(settingsBytes, &flat); err != nil {
 			return err
 		}
 

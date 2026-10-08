@@ -69,7 +69,7 @@ func readIndexSettings(
 	}
 
 	readDeclaredTypedSettings(ctx, &state, flat)
-	diags.Append(readDeclaredSettingsJSON(ctx, &state, flat)...)
+	diags.Append(readDeclaredSettingsJSON(&state, flat)...)
 	if diags.HasError() {
 		return state, false, diags
 	}
@@ -200,16 +200,14 @@ func hydrateDynamicTypedSettings(ctx context.Context, state *tfModel, flat map[s
 // scalar type declared in state (GetIndex returns string values because it
 // requests flat settings), and keys the API no longer reports are dropped so
 // the drift shows.
-func readDeclaredSettingsJSON(_ context.Context, state *tfModel, flat map[string]json.RawMessage) diag.Diagnostics {
+func readDeclaredSettingsJSON(state *tfModel, flat map[string]json.RawMessage) diag.Diagnostics {
 	if !typeutils.IsKnown(state.SettingsJSON) {
 		return nil
 	}
 
-	var stateSettings map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(state.SettingsJSON.ValueString()), &stateSettings); err != nil {
-		return diag.Diagnostics{
-			diag.NewErrorDiagnostic("failed to unmarshal settings_json from state", err.Error()),
-		}
+	stateSettings, diags := typeutils.UnmarshalJSONDiag[map[string]json.RawMessage](state.SettingsJSON.ValueString(), "failed to unmarshal settings_json from state")
+	if diags.HasError() {
+		return diags
 	}
 
 	reconciled := make(map[string]json.RawMessage, len(stateSettings))
