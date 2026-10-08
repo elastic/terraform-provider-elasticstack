@@ -214,3 +214,105 @@ test('applyOverride also corrects a reported needs-human that the gate rule sati
   assert.match(corrected, /\*\*Outcome:\*\* `ready-for-change-factory`/);
   assert.equal(gate.extractMetadata(corrected).metadata.gate.outcome, READY);
 });
+
+// ---------------------------------------------------------------------------
+// Review-round additions
+// ---------------------------------------------------------------------------
+
+for (const [name, json] of [['null', 'null'], ['an array', '[]'], ['a string', '"x"']]) {
+  test(`evaluateBody fails safe when the metadata JSON is ${name}`, () => {
+    const result = gate.evaluateBody(commentBody(json));
+    assert.equal(result.label, HUMAN);
+    assert.ok(result.reasons.length > 0);
+  });
+}
+
+test('evaluateBody fails safe when gate is null', () => {
+  const meta = metadata();
+  meta.gate = null;
+  assert.equal(gate.evaluateBody(commentBody(meta)).label, HUMAN);
+});
+
+test('applyOverride inserts replacement text literally (no $ pattern expansion)', () => {
+  const meta = metadata({ open_questions: [{ id: "oq-$&-$1", text: 't', blocking: true }] });
+  const body = commentBody(meta);
+  const corrected = gate.applyOverride(body, gate.evaluateBody(body));
+  const outcomeLine = corrected.split('\n').find((l) => l.startsWith('**Outcome:**'));
+  assert.doesNotMatch(outcomeLine, /\$|### Quality gate/);
+  assert.equal(corrected.match(/\*\*Outcome:\*\*/g).length, 1);
+});
+
+test('reasons are sanitised: no newlines or backticks, bounded length, safe ids', () => {
+  const meta = metadata({ open_questions: [{ id: 'oq`\n# Injected `x`', text: 't', blocking: true }] });
+  const result = gate.deriveOutcome(meta);
+  const joined = result.reasons.join('|');
+  assert.doesNotMatch(joined, /[`\n\r]/);
+  assert.doesNotMatch(joined, /#\s*Injected/);
+  const long = gate.deriveOutcome(undefined, { error: 'x'.repeat(1000) });
+  assert.ok(long.reasons[0].length <= 200);
+});
+
+test('a Quality gate outcome line that disagrees with the label is corrected even when gate.outcome matches', () => {
+  const body = commentBody(metadata()).replace(
+    /\*\*Outcome:\*\* `[^`]*`/,
+    '**Outcome:** `research-needs-human`',
+  );
+  const result = gate.evaluateBody(body);
+  assert.equal(result.label, READY);
+  assert.equal(result.overridden, true);
+  const corrected = gate.applyOverride(body, result);
+  assert.match(corrected, /\*\*Outcome:\*\* `ready-for-change-factory`/);
+  assert.equal(gate.evaluateBody(corrected).overridden, false);
+});
+
+test('a matching Quality gate outcome line is not an override', () => {
+  assert.equal(gate.evaluateBody(commentBody(metadata())).overridden, false);
+});
+
+test('applyOverride adds an outcome line when the Quality gate section has none', () => {
+  const meta = metadata({ gate: { critic: { model: 'm', status: 'error' } } });
+  const body = commentBody(meta).replace(/\*\*Outcome:\*\* .*\n/, '');
+  const corrected = gate.applyOverride(body, gate.evaluateBody(body));
+  assert.match(corrected, /### Quality gate\s+\*\*Outcome:\*\* `research-needs-human`/);
+});
+
+test('applyOverride appends a section at the end when there is no References heading', () => {
+  const body = '## Implementation research\n\nplain';
+  const corrected = gate.applyOverride(body, gate.evaluateBody(body));
+  assert.ok(corrected.trimEnd().endsWith('.') || corrected.includes('### Quality gate'));
+  assert.ok(corrected.indexOf('### Quality gate') > corrected.indexOf('plain'));
+});
+
+test('applyOverride is idempotent', () => {
+  const meta = metadata({ gate: { checklist: { grounded: false, mapped: true, compatible: true, versioned: true, testable: true, idiomatic: true } } });
+  const body = commentBody(meta);
+  const once = gate.applyOverride(body, gate.evaluateBody(body));
+  const twice = gate.applyOverride(once, gate.evaluateBody(once));
+  assert.equal(twice, once);
+});
+
+test('isConverged: [70, 90] with feedback does not converge', () => {
+  assert.equal(gate.isConverged([70, 90], ['x']), false);
+});
+
+test('isConverged: [90, 90] with feedback converges', () => {
+  assert.equal(gate.isConverged([90, 90], ['x']), true);
+});
+
+test('isConverged: 84 fails and 85 passes the threshold', () => {
+  assert.equal(gate.isConverged([84], []), false);
+  assert.equal(gate.isConverged([85], []), true);
+});
+
+test('extractMetadata takes the last JSON fence', () => {
+  const meta = metadata();
+  const body = `intro\n\n\`\`\`json\n{"a": 1}\n\`\`\`\n\n${commentBody(meta)}`;
+  assert.deepEqual(gate.extractMetadata(body), { metadata: meta });
+});
+
+test('validateGate accepts metadata without open_questions', () => {
+  const meta = metadata();
+  delete meta.open_questions;
+  assert.deepEqual(gate.validateGate(meta), []);
+  assert.equal(gate.deriveOutcome(meta).label, READY);
+});

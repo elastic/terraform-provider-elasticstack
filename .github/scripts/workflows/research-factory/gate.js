@@ -113,13 +113,26 @@ function isConverged(scores, outstandingFeedback) {
   return (window.length === STABILITY_WINDOW && window.every(atThreshold)) || outstandingFeedback.length === 0;
 }
 
+function safeText(value, max = 200) {
+  return String(value).replace(/[\r\n`]+/g, ' ').trim().slice(0, max);
+}
+
+function safeId(value) {
+  return String(value).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+}
+
 function deriveOutcome(meta, extraction = {}) {
+  const result = deriveRawOutcome(meta, extraction);
+  return { ...result, reasons: result.reasons.map((r) => safeText(r)) };
+}
+
+function deriveRawOutcome(meta, extraction) {
   if (meta === undefined) {
     return { label: NEEDS_HUMAN, reasons: [extraction.error || 'metadata missing'], overridden: true };
   }
   const errors = validateGate(meta);
   if (errors.length > 0) {
-    const reported = isObject(meta.gate) ? meta.gate.outcome : undefined;
+    const reported = isObject(meta) && isObject(meta.gate) ? meta.gate.outcome : undefined;
     return {
       label: NEEDS_HUMAN,
       reasons: errors.map((e) => `invalid metadata: ${e}`),
@@ -147,7 +160,7 @@ function deriveOutcome(meta, extraction = {}) {
   }
   const blocking = (meta.open_questions || []).filter((q) => q.blocking);
   if (blocking.length > 0) {
-    reasons.push(`blocking open question(s): ${blocking.map((q) => q.id).join(', ')}`);
+    reasons.push(`blocking open question(s): ${blocking.map((q) => safeId(q.id)).join(', ')}`);
   }
 
   const label = reasons.length === 0 ? READY : NEEDS_HUMAN;
@@ -159,9 +172,25 @@ function deriveOutcome(meta, extraction = {}) {
   };
 }
 
+function sectionOutcome(body) {
+  const heading = QUALITY_GATE_HEADING.exec(body);
+  if (!heading) {
+    return undefined;
+  }
+  const rest = body.slice(heading.index + heading[0].length);
+  const next = /^#{1,3} /m.exec(rest);
+  const section = next ? rest.slice(0, next.index) : rest;
+  return /^\*\*Outcome:\*\* `([^`\n]*)`/m.exec(section)?.[1];
+}
+
 function evaluateBody(body) {
   const extraction = extractMetadata(body);
-  return deriveOutcome(extraction.metadata, extraction);
+  const result = deriveOutcome(extraction.metadata, extraction);
+  const shown = sectionOutcome(String(body ?? ''));
+  if (shown !== undefined && shown !== result.label && !result.overridden) {
+    return { ...result, overridden: true, reported: safeText(shown, 60) };
+  }
+  return result;
 }
 
 function outcomeLine(result) {
@@ -191,7 +220,7 @@ function correctSection(body, result) {
   const sectionEnd = nextHeading ? sectionStart + nextHeading.index : body.length;
   let section = body.slice(sectionStart, sectionEnd);
   if (OUTCOME_LINE.test(section)) {
-    section = section.replace(OUTCOME_LINE, `${outcomeLine(result)}\n\n${overrideNote(result)}`);
+    section = section.replace(OUTCOME_LINE, () => `${outcomeLine(result)}\n\n${overrideNote(result)}`);
   } else {
     section = `\n\n${lines}${section.startsWith('\n') ? section : `\n\n${section}`}`;
   }

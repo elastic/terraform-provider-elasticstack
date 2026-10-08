@@ -35,8 +35,12 @@ Each item is `true` only when fully satisfied.
 
 ## Verifying citations
 
-- **API specification nodes:** search `generated/kbapi/oas.yaml` (Grep or Read) for the cited path,
-  operation, or schema, and confirm the claimed fields exist.
+- **Kibana API specification nodes:** search `generated/kbapi/kibana.json` (the Kibana OpenAPI
+  document) and `generated/kbapi/kibana.gen.go` (the generated Go client) with Grep for the cited
+  path, operation, or schema, and confirm the claimed fields exist.
+- **Elasticsearch (non-Kibana) API claims:** confirm them with the `elastic-docs` MCP tools and
+  against the `go-elasticsearch` client, either vendored in the repository or in the Go module
+  cache, rather than the Kibana files.
 - **Elastic documentation:** use the `elastic-docs` MCP tools (`search_docs`, `get_document_by_url`)
   to confirm the cited page exists and supports the claim.
 - **Repository paths:** Read the cited file and confirm it contains the pattern or code described.
