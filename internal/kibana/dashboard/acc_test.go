@@ -1028,6 +1028,31 @@ func TestAccResourceDashboardTagsNormalization(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.0", "test"),
 				),
 			},
+			{
+				// Transition from non-empty tags back to tags = []: the
+				// known-empty intent must replace the API value in state.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "0"),
+				),
+			},
+			{
+				// Same tags = [] config after the update, plan only — must show
+				// no changes.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
 		},
 	})
 }

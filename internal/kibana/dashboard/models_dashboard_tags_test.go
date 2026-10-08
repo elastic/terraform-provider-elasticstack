@@ -45,11 +45,10 @@ func newDashboardAPIResponseWithTags(tags *[]string) *kbapi.GetDashboardsIdRespo
 // unknown prior value normalizes to null.
 func TestDashboardModel_populateFromAPI_tagsNormalization(t *testing.T) {
 	tests := []struct {
-		name     string
-		apiTags  *[]string
-		prior    types.List
-		want     types.List
-		wantDiag bool
+		name    string
+		apiTags *[]string
+		prior   types.List
+		want    types.List
 	}{
 		{
 			name:    "API nil, prior known-empty -> known-empty (inconsistent-result bug)",
@@ -105,6 +104,24 @@ func TestDashboardModel_populateFromAPI_tagsNormalization(t *testing.T) {
 			prior:   types.ListUnknown(types.StringType),
 			want:    types.ListNull(types.StringType),
 		},
+		{
+			name:    "API empty list, prior null -> null",
+			apiTags: &[]string{},
+			prior:   types.ListNull(types.StringType),
+			want:    types.ListNull(types.StringType),
+		},
+		{
+			name:    "API non-empty, prior unknown -> API value",
+			apiTags: &[]string{"a"},
+			prior:   types.ListUnknown(types.StringType),
+			want:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+		},
+		{
+			name:    "API non-empty, prior known non-empty -> API value",
+			apiTags: &[]string{"a", "b"},
+			prior:   types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			want:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a"), types.StringValue("b")}),
+		},
 	}
 
 	for _, tc := range tests {
@@ -120,17 +137,21 @@ func TestDashboardModel_populateFromAPI_tagsNormalization(t *testing.T) {
 	}
 }
 
-// TestDashboardModel_toAPICreateRequest_emptyTagsSentAsEmptyArray confirms the
-// write path sends a known-empty tags list as an empty (non-nil) array rather
-// than dropping the attribute, so `tags = []` clears remote tags.
-func TestDashboardModel_toAPICreateRequest_emptyTagsSentAsEmptyArray(t *testing.T) {
+// TestDashboardModel_toAPIRequests_emptyTagsSentAsEmptyArray confirms the
+// create and update write paths both send a known-empty tags list as an empty
+// (non-nil) array rather than dropping the attribute, so `tags = []` clears
+// remote tags.
+func TestDashboardModel_toAPIRequests_emptyTagsSentAsEmptyArray(t *testing.T) {
 	model := &models.DashboardModel{
 		Title: types.StringValue("test dashboard"),
 		Tags:  types.ListValueMust(types.StringType, nil),
 	}
 
-	req := dashboardToAPICreateRequest(context.Background(), model, &diag.Diagnostics{})
+	create := dashboardToAPICreateRequest(context.Background(), model, &diag.Diagnostics{})
+	require.NotNil(t, create.Tags)
+	assert.Empty(t, *create.Tags)
 
-	require.NotNil(t, req.Tags)
-	assert.Empty(t, *req.Tags)
+	update := dashboardToAPIUpdateRequest(context.Background(), model, &diag.Diagnostics{})
+	require.NotNil(t, update.Tags)
+	assert.Empty(t, *update.Tags)
 }
