@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -73,8 +74,11 @@ func getSchema(_ context.Context) schema.Schema {
 				Default:     booldefault.StaticBool(false),
 			},
 			"proxy_id": schema.StringAttribute{
-				Description: "The ID of the Fleet proxy to use for this Fleet server host.",
+				Description: "The ID of the Fleet proxy to use for this Fleet server host. Must not be empty; omit the attribute to use no proxy.",
 				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
+				},
 			},
 			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},

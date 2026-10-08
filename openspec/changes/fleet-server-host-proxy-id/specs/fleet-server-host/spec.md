@@ -14,7 +14,7 @@ resource "elasticstack_fleet_server_host" "example" {
   name      = <required, string>
   hosts     = <required, list(string)>    # at least one entry
   default   = <optional+computed, bool>  # defaults to false when omitted
-  proxy_id  = <optional, string>          # references a Fleet proxy by ID
+  proxy_id  = <optional, string>          # references a Fleet proxy by ID; empty string rejected at validation
   space_ids = <optional+computed, set(string)>
 }
 ```
@@ -23,7 +23,7 @@ resource "elasticstack_fleet_server_host" "example" {
 
 ### Requirement: State mapping (REQ-012)
 
-On read, the resource SHALL map `id`, `host_id`, `name`, `hosts`, `default`, and `proxy_id` from the API response. The `default` attribute SHALL always carry a known boolean value in state — when the user omits it from configuration, it SHALL default to `false` so plan and post-apply state agree. `proxy_id` SHALL be mapped from the API response's `proxy_id` field as-is: present and non-empty when the server host has a proxy assigned, and null when it does not. `space_ids` is not returned by the Fleet API; if `space_ids` is unknown in state after the API call, the resource SHALL set it to explicit null. If `space_ids` has a configured value, the resource SHALL preserve it.
+On read, the resource SHALL map `id`, `host_id`, `name`, `hosts`, `default`, and `proxy_id` from the API response. The `default` attribute SHALL always carry a known boolean value in state — when the user omits it from configuration, it SHALL default to `false` so plan and post-apply state agree. `proxy_id` SHALL be mapped from the API response's `proxy_id` field as-is: present and non-empty when the server host has a proxy assigned, and null when it does not. An empty-string `proxy_id` in the API response SHALL also be mapped to null. `space_ids` is not returned by the Fleet API; if `space_ids` is unknown in state after the API call, the resource SHALL set it to explicit null. If `space_ids` has a configured value, the resource SHALL preserve it.
 
 #### Scenario: default omitted from config
 
@@ -78,8 +78,8 @@ On update, the resource SHALL submit `host_urls`, `name`, and `is_default`, and 
 The `proxy_id` value sent on update SHALL be computed from both the plan value and the prior state value, per the following rule (see REQ-017 for the full rationale):
 
 1. When the plan's `proxy_id` is known and non-empty, the resource SHALL send that value.
-2. When the plan's `proxy_id` is null, unknown, or empty, AND the prior state's `proxy_id` was known and non-empty (i.e. the practitioner is clearing a previously-set `proxy_id`), the resource SHALL send an explicit empty string `""`.
-3. When the plan's `proxy_id` is null, unknown, or empty, AND the prior state's `proxy_id` was also null, unknown, or empty (i.e. `proxy_id` was never set), the resource SHALL send `nil` (omit the field from the request body).
+2. When the plan's `proxy_id` is null or unknown (an empty configured value is rejected at validation), AND the prior state's `proxy_id` was known and non-empty (i.e. the practitioner is clearing a previously-set `proxy_id`), the resource SHALL send an explicit empty string `""`.
+3. When the plan's `proxy_id` is null or unknown, AND the prior state's `proxy_id` was also null, unknown, or empty (i.e. `proxy_id` was never set), the resource SHALL send `nil` (omit the field from the request body).
 
 #### Scenario: Update name
 
@@ -104,10 +104,16 @@ The `proxy_id` value sent on update SHALL be computed from both the plan value a
 #### Scenario: Update clears a previously-set proxy_id
 
 - GIVEN a server host with `proxy_id = "my-proxy"` in prior state
-- AND the plan omits `proxy_id` (or sets it to an empty value)
+- AND the plan omits `proxy_id`
 - WHEN update runs
 - THEN the Fleet update API request body SHALL include `"proxy_id": ""`
 - AND the resource SHALL NOT omit the `proxy_id` field from the request body
+
+#### Scenario: Configured empty proxy_id is rejected
+
+- GIVEN configuration sets `proxy_id = ""`
+- WHEN the configuration is validated
+- THEN validation SHALL fail because `proxy_id` must be at least 1 character long, and no API call SHALL be made
 
 #### Scenario: Update with proxy_id never set
 

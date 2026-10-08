@@ -18,6 +18,7 @@
 package serverhost
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -77,6 +78,7 @@ func TestToAPICreateModel_ProxyID(t *testing.T) {
 		wantProxy *string
 	}{
 		{name: "null proxy_id", value: types.StringNull()},
+		{name: "unknown proxy_id", value: types.StringUnknown()},
 		{name: "explicit proxy_id", value: types.StringValue("my-proxy"), wantProxy: new("my-proxy")},
 	}
 
@@ -113,6 +115,8 @@ func TestToAPIUpdateModel_ProxyID(t *testing.T) {
 		{name: "set to null clears with empty string", plan: types.StringNull(), prior: types.StringValue("proxy-a"), wantProxy: new("")},
 		{name: "set to empty clears with empty string", plan: types.StringValue(""), prior: types.StringValue("proxy-a"), wantProxy: new("")},
 		{name: "never set stays omitted", plan: types.StringNull(), prior: types.StringNull()},
+		{name: "unknown plan with prior set clears with empty string", plan: types.StringUnknown(), prior: types.StringValue("proxy-a"), wantProxy: new("")},
+		{name: "unknown plan with prior null stays omitted", plan: types.StringUnknown(), prior: types.StringNull()},
 	}
 
 	for _, tc := range tests {
@@ -130,6 +134,23 @@ func TestToAPIUpdateModel_ProxyID(t *testing.T) {
 			assert.Equal(t, tc.wantProxy, body.ProxyId)
 		})
 	}
+}
+
+func TestToAPIUpdateModel_ProxyIDJSON(t *testing.T) {
+	t.Parallel()
+
+	hosts := types.ListValueMust(types.StringType, []attr.Value{types.StringValue("https://fleet-server:8220")})
+	marshal := func(prior types.String) string {
+		body, diags := serverHostModel{Name: types.StringValue("h"), Hosts: hosts, ProxyID: types.StringNull()}.
+			toAPIUpdateModel(t.Context(), serverHostModel{ProxyID: prior})
+		require.False(t, diags.HasError())
+		raw, err := json.Marshal(body)
+		require.NoError(t, err)
+		return string(raw)
+	}
+
+	assert.Contains(t, marshal(types.StringValue("proxy-a")), `"proxy_id":""`)
+	assert.NotContains(t, marshal(types.StringNull()), "proxy_id")
 }
 
 func TestPopulateFromAPI_ProxyID(t *testing.T) {

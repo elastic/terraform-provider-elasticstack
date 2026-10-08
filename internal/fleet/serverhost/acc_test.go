@@ -459,6 +459,14 @@ func TestAccResourceFleetServerHost_ProxyID(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_proxy"),
+				ConfigVariables:          vars,
+				ResourceName:             "elasticstack_fleet_server_host.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("other_proxy"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
@@ -472,10 +480,50 @@ func TestAccResourceFleetServerHost_ProxyID(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_server_host.test", "proxy_id"),
+					checkServerHostProxyClearedOnServer("elasticstack_fleet_server_host.test"),
 				),
 			},
 		},
 	})
+}
+
+func TestAccResourceFleetServerHost_emptyProxyID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_proxy"),
+				ExpectError:              regexp.MustCompile(`(?s)proxy_id.*(at least 1|length)`),
+			},
+		},
+	})
+}
+
+func checkServerHostProxyClearedOnServer(name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", name)
+		}
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		host, diags := fleet.GetFleetServerHost(context.Background(), client.GetFleetClient(), rs.Primary.ID, rs.Primary.Attributes["space_ids.0"])
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+		if host == nil {
+			return fmt.Errorf("fleet server host id=%s not found", rs.Primary.ID)
+		}
+		if host.ProxyId != nil && *host.ProxyId != "" {
+			return fmt.Errorf("expected proxy_id to be cleared on the server, got %q", *host.ProxyId)
+		}
+		return nil
+	}
 }
 
 func checkResourceFleetServerHostDestroy(s *terraform.State) error {

@@ -81,7 +81,7 @@ func (m serverHostModel) toAPICreateModel(ctx context.Context) (body kbapi.PostF
 		Id:        typeutils.OptionalString(m.HostID),
 		IsDefault: m.Default.ValueBoolPointer(),
 		Name:      m.Name.ValueString(),
-		ProxyId:   m.ProxyID.ValueStringPointer(),
+		ProxyId:   typeutils.OptionalString(m.ProxyID),
 	}
 	return
 }
@@ -98,10 +98,11 @@ func (m serverHostModel) toAPIUpdateModel(ctx context.Context, prior serverHostM
 
 // proxyIDForUpdate returns a pointer suitable for the generated update body.
 // A known non-empty plan value is sent as-is. When the plan unsets a
-// previously set proxy_id, an empty string is sent rather than nil: the
-// generated `json:"proxy_id,omitempty"` tag drops nil, and Fleet treats an
-// omitted field as "leave unchanged". When proxy_id was already unset, nil is
-// returned so the field stays omitted.
+// previously set proxy_id, an empty string is sent rather than nil. The
+// generated `json:"proxy_id,omitempty"` tag drops nil; on Kibana 9.5.5 omission
+// also clears the proxy, but sending "" is defensive for stacks where an
+// omitted field leaves the value unchanged. When proxy_id was already unset,
+// nil is returned so the field stays omitted.
 func proxyIDForUpdate(plan, prior types.String) *string {
 	if typeutils.IsKnown(plan) && plan.ValueString() != "" {
 		return plan.ValueStringPointer()
