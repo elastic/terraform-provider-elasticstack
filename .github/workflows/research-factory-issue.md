@@ -304,6 +304,8 @@ steps:
     with:
       name: research-factory-issue-context
       path: /tmp/gh-aw/agent/
+  - name: Download Kibana OpenAPI spec
+    run: make -C generated/kbapi download
 model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
@@ -445,14 +447,16 @@ do not block the run waiting for documentation.
 
 ## Kibana API grounding
 
-For Kibana resources, ground every claimed field, type, requiredness, and default in the generated
-client `generated/kbapi/kibana.gen.go` (generated from the Kibana OpenAPI spec): Grep for the
-operation (`<OperationId>WithResponse`), its `*Params` and `*JSONRequestBody` types, and the path
-string, and cite the Go identifier. `generated/kbapi/kibana.json` is only a dashboards overlay, and
-the full `oas.yaml` is not available. If the endpoint is not in `kibana.gen.go`, say so, name the
-path to add to `transformFilterPaths` in `generated/kbapi/transform_schema.go`, and ground the API
-shape in `elastic-docs`. Do not fetch Kibana source from the web, and do not assert server defaults
-or behaviour you cannot source; list them as open questions instead.
+For Kibana resources, ground every claimed field, type, requiredness, and default in the Kibana
+OpenAPI spec. A deterministic pre-agent step has downloaded the upstream spec, at the ref pinned in
+`generated/kbapi/Makefile`, to `generated/kbapi/oas.yaml` (not checked in). Grep it for the path and
+operation, and cite the path and schema name. Then check `generated/kbapi/kibana.gen.go`, the client
+generated from that spec, to see whether the endpoint is already exposed: Grep for
+`<OperationId>WithResponse` and the `*Params` and `*JSONRequestBody` types. If the endpoint is in
+`oas.yaml` but not in `kibana.gen.go`, say so and name the path to add to `transformFilterPaths` in
+`generated/kbapi/transform_schema.go`. `generated/kbapi/kibana.json` is only a dashboards overlay.
+Do not fetch Kibana source from the web, and do not assert server defaults or behaviour you cannot
+source from the spec or documentation; list them as open questions instead.
 
 ## Comparison requirement
 

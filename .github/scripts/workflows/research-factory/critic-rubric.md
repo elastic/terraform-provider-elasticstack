@@ -35,20 +35,20 @@ Each item is `true` only when fully satisfied.
 
 ## Verifying citations
 
-- **Kibana API claims:** the generated Kibana client is the source of truth, because it is generated
-  from the Kibana OpenAPI (OAS) spec.
-  - Grep `generated/kbapi/kibana.gen.go` for the cited operation (`<OperationId>WithResponse`), its
-    `*Params` and `*JSONRequestBody` types, and the request path string. Confirm each claimed field,
-    its type, and whether it is a pointer (optional) or not (required) against those Go types and
-    their doc comments.
-  - `generated/kbapi/kibana.json` is only a two-path dashboards overlay, not the Kibana spec. Do not
-    use it to verify non-dashboard endpoints. The full `oas.yaml` is not checked in and is not
-    available in this run.
-  - If the endpoint is **absent** from `kibana.gen.go`, the draft must say so explicitly, name the
-    path to add to the allow list in `generated/kbapi/transform_schema.go` (`transformFilterPaths`),
-    and cite Elastic documentation (the `elastic-docs` MCP tools) for the API shape. Accept that as
-    grounded. Do not fail `grounded` solely because the generated client lacks the endpoint, but do
-    fail it when a field, default, or behaviour is asserted with no verifiable source.
+- **Kibana API claims:** the Kibana OpenAPI (OAS) spec is the source of truth. A deterministic
+  pre-agent step downloads the upstream spec, at the ref pinned in `generated/kbapi/Makefile`, to
+  `generated/kbapi/oas.yaml` (not checked in).
+  - Grep `generated/kbapi/oas.yaml` for the cited path and operation, and confirm each claimed field,
+    its type, whether it is required, and any claimed default against the schema.
+  - Use `generated/kbapi/kibana.gen.go` (the client generated from that spec) to check whether the
+    endpoint is already exposed: Grep for `<OperationId>WithResponse` and its `*Params` and
+    `*JSONRequestBody` types.
+  - If the endpoint is in `oas.yaml` but absent from `kibana.gen.go`, the draft must say so and name
+    the path to add to `transformFilterPaths` in `generated/kbapi/transform_schema.go`. Do not fail
+    `grounded` for that alone. Do fail it when a field, default, or behaviour is asserted with no
+    verifiable source.
+  - `generated/kbapi/kibana.json` is only a two-path dashboards overlay. Do not use it to verify
+    other endpoints.
   - Do not require or accept Kibana server source code fetched from the web. It is not an allowed
     source and cannot be verified in this run.
 - **Elasticsearch (non-Kibana) API claims:** confirm them with the `elastic-docs` MCP tools and

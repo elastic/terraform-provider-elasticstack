@@ -75,3 +75,11 @@ test('workflow source: timeout, budget, safe outputs, and stale-label step', () 
   }
   assert.match(workflow, /name: Remove stale outcome labels[\s\S]*?research-factory\/remove-stale-outcome-labels\.js/);
 });
+
+test('workflow source downloads the pinned Kibana OAS before the agent runs', () => {
+  const stepsBlock = workflow.slice(workflow.indexOf('\nsteps:\n'), workflow.indexOf('\nmodel:'));
+  assert.match(stepsBlock, /name: Download Kibana OpenAPI spec\n\s+run: make -C generated\/kbapi download/);
+  assert.ok(stepsBlock.indexOf('Download issue context artifact') < stepsBlock.indexOf('Download Kibana OpenAPI spec'));
+  assert.match(workflow, /generated\/kbapi\/oas\.yaml/);
+  assert.match(rubric, /generated\/kbapi\/oas\.yaml/);
+});
