@@ -207,3 +207,35 @@ func TestBuildShardPlan(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateShardPlan_RejectsExtraAndDuplicateEntries(t *testing.T) {
+	cases := []struct {
+		name string
+		plan *ShardPlan
+	}{
+		{
+			name: "shard contains unselected package",
+			plan: &ShardPlan{
+				HasPackages:      true,
+				SelectedPackages: []string{"pkg/a"},
+				Shards:           [][]string{{"pkg/a", "pkg/b"}},
+			},
+		},
+		{
+			name: "selected package duplicated in selected list",
+			plan: &ShardPlan{
+				HasPackages:      true,
+				SelectedPackages: []string{"pkg/a", "pkg/a"},
+				Shards:           [][]string{{"pkg/a", "pkg/a"}},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := ValidateShardPlan(tc.plan); err == nil {
+				t.Errorf("ValidateShardPlan accepted a plan violating exact coverage: %+v", tc.plan)
+			}
+		})
+	}
+}

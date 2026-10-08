@@ -64,8 +64,14 @@ func makeTargetedTestacc(t *testing.T, extraEnv ...string) string {
 		t.Fatal(err)
 	}
 
+	return runMakeTargetedTestacc(t, root, extraEnv...)
+}
+
+func runMakeTargetedTestacc(t *testing.T, dir string, extraEnv ...string) string {
+	t.Helper()
+
 	cmd := exec.Command("make", "targeted-testacc")
-	cmd.Dir = root
+	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), extraEnv...)
 	out, err := cmd.Output()
 	if err != nil {
@@ -91,6 +97,38 @@ func TestMakeTarget_NoPackagesSelectedExitsCleanly(t *testing.T) {
 		if strings.Contains(line, "gotestsum") {
 			t.Errorf("gotestsum invoked for an empty shard: %s", line)
 		}
+	}
+}
+
+func TestMakeTarget_InvalidShardIndexFails(t *testing.T) {
+	plan := `{"has_packages":true,"selected_packages":["pkg/a","pkg/b"],"shards":[["pkg/a"],["pkg/b"]],"rationale":["diff"]}`
+
+	for name, env := range map[string]string{
+		"non-integer": "ACCTEST_SHARD_INDEX=not-a-number",
+		"negative":    "ACCTEST_SHARD_INDEX=-1",
+		"blank":       "ACCTEST_SHARD_INDEX=",
+		"whitespace":  "ACCTEST_SHARD_INDEX= ",
+		"float":       "ACCTEST_SHARD_INDEX=1.5",
+	} {
+		t.Run(name, func(t *testing.T) {
+			fakeGoShim(t, plan)
+
+			root, err := moduleRoot(t)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			cmd := exec.Command("make", "targeted-testacc")
+			cmd.Dir = root
+			cmd.Env = append(os.Environ(), env, "ACCTEST_TOTAL_SHARDS=2")
+			out, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Fatalf("make targeted-testacc succeeded with %s\nstdout:\n%s", env, out)
+			}
+			if !strings.Contains(string(out), "ACCTEST_SHARD_INDEX") {
+				t.Errorf("make failure did not name ACCTEST_SHARD_INDEX; output:\n%s", out)
+			}
+		})
 	}
 }
 

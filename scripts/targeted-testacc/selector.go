@@ -136,12 +136,23 @@ func ValidateShardPlan(plan *ShardPlan) error {
 		return fmt.Errorf("nonempty plan must set has_packages=true")
 	}
 
+	selected := make(map[string]bool, len(plan.SelectedPackages))
+	for _, pkg := range plan.SelectedPackages {
+		if selected[pkg] {
+			return fmt.Errorf("package %s is duplicated in selected_packages", pkg)
+		}
+		selected[pkg] = true
+	}
+
 	seen := make(map[string]int, len(plan.SelectedPackages))
 	for shardIdx, shard := range plan.Shards {
 		if len(shard) == 0 {
 			return fmt.Errorf("nonempty plan shard %d is empty", shardIdx)
 		}
 		for _, pkg := range shard {
+			if !selected[pkg] {
+				return fmt.Errorf("shard %d contains package %s that is not in selected_packages", shardIdx, pkg)
+			}
 			if prev, dup := seen[pkg]; dup {
 				return fmt.Errorf("package %s appears in shards %d and %d", pkg, prev, shardIdx)
 			}
