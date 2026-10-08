@@ -271,11 +271,12 @@ func TestProviderWorkflow_testJobSkipsCostlyStepsWithoutPackages(t *testing.T) {
 	}
 
 	// Checkout and toolchain setup are skipped for a no-op job too.
-	raw := readWorkflowFile(t, providerWorkflowPath)
-	checkouts := strings.Count(raw, "actions/checkout@")
-	gates := strings.Count(raw, gated)
-	assert.GreaterOrEqual(t, gates, checkouts,
-		"every checkout-bearing job step must gate on the prepared plan")
+	for _, step := range test.Steps {
+		if strings.Contains(step.Uses, "actions/checkout@") {
+			assert.Contains(t, step.If, gated,
+				"test-job checkout step %q must gate on the prepared plan", step.Name)
+		}
+	}
 }
 
 func TestProviderWorkflow_unitTestIndependentOfPreparedPlan(t *testing.T) {

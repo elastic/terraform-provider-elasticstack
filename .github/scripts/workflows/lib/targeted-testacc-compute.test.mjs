@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   chmodSync,
   mkdtempSync,
@@ -70,7 +70,7 @@ cat '${path.join(exitCodeDir, "go-output")}'
 function runScript({ root, stubDir, env }) {
   const ghOutput = path.join(root, "github-output.txt");
   writeFileSync(ghOutput, "");
-  const stdout = execFileSync(scriptPath, {
+  const res = spawnSync(scriptPath, {
     env: {
       ...process.env,
       PATH: `${stubDir}${path.delimiter}${process.env.PATH}`,
@@ -86,7 +86,7 @@ function runScript({ root, stubDir, env }) {
     const eq = line.indexOf("=");
     outputs[line.slice(0, eq)] = line.slice(eq + 1);
   }
-  return { stdout, outputs };
+  return { stdout: res.stdout, stderr: res.stderr, status: res.status, outputs };
 }
 
 test("non-PR event → fixed shards [0,1], has_packages=true, no selector invoked", () => {
@@ -171,10 +171,14 @@ test("PR event with failed base fetch → selector invoked WITHOUT --base", () =
     }),
   });
   try {
-    const { outputs } = runScript({
+    const { stderr, outputs } = runScript({
       ...stubs,
       env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
     });
+    assert.match(
+      stderr,
+      /^::warning::PR base commit fetch failed/m,
+    );
     const goArgs = readFileSync(
       path.join(stubs.root, "log", "go.log"),
       "utf8",
@@ -189,6 +193,28 @@ test("PR event with failed base fetch → selector invoked WITHOUT --base", () =
     assert.equal(outputs.has_packages, "true");
     assert.equal(outputs.shards, "[0]");
     assert.equal(outputs.packages_0, "./pkg/a");
+  } finally {
+    rmSync(stubs.root, { recursive: true, force: true });
+  }
+});
+
+test("PR event, plan with more than two shards → rejected fail-closed (output contract)", () => {
+  const stubs = makeStubs({
+    goOutput: JSON.stringify({
+      has_packages: true,
+      selected_packages: ["./pkg/a"],
+      shards: [["./pkg/a"], [], []],
+      rationale: [],
+    }),
+  });
+  try {
+    const { stderr, status, outputs } = runScript({
+      ...stubs,
+      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+    });
+    assert.notEqual(status, 0);
+    assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
+    assert.deepEqual(Object.keys(outputs), []);
   } finally {
     rmSync(stubs.root, { recursive: true, force: true });
   }

@@ -52,13 +52,17 @@ else
   # Base-commit fetch failed (e.g. shallow history / pruned ref);
   # fall back to re-invoking the tool without --base, which resolves
   # the baseline from merge-base origin/main HEAD, or HEAD~1 when no
-  # origin/main is available.
+  # origin/main is available. Surface the degraded (full-suite) path so
+  # it is visible in the run summary instead of silently skipping the
+  # targeted selection.
+  echo "::warning::PR base commit fetch failed; running the selector without --base, which may fall back to the full suite" >&2
   plan=$(selector_output --total-shards=2)
 fi
 
 if ! jq -e '
   (.has_packages == ((.selected_packages | length) > 0)) and
   (.shards | length >= 1) and
+  (.shards | length <= 2) and
   all(.shards[]; type == "array") and
   (if (.selected_packages | length) == 0
    then (.shards | length == 1) and (.shards[0] | length == 0)
