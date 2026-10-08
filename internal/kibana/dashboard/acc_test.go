@@ -945,3 +945,89 @@ func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 		},
 	})
 }
+
+// TestAccResourceDashboardTagsNormalization verifies the intent-preserving
+// nil/empty-list normalization for the root-level tags attribute (REQ-009).
+// Without it, a `tags = []` dashboard read back from Kibana with nil-or-empty
+// tags collapses the known-empty list to null and Terraform flags an
+// inconsistent result after apply. This test asserts:
+//   - `tags = []` round-trips as a known-empty list in state with no drift,
+//   - importing a nil-or-empty-tags dashboard records tags as null,
+//   - omitted tags stay null, and
+//   - non-empty tags round-trip from the API.
+func TestAccResourceDashboardTagsNormalization(t *testing.T) {
+	dashboardTitle := "Test Dashboard Tags Normalization " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Explicit tags = []: must round-trip as a known-empty list
+				// (tags.# = 0), not null, even when the API returns nil or [].
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "0"),
+				),
+			},
+			{
+				// Same tags = [] config, plan only — must show no changes.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				// Import the empty-tags dashboard: import has no prior plan
+				// intent (optional attributes initialize as null), so a
+				// nil-or-empty API tags value must be recorded as null.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName: "elasticstack_kibana_dashboard.test",
+				ImportState:  true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "tags"),
+				),
+			},
+			{
+				// Omitted tags: must stay null in state (null intent preserved).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "tags"),
+				),
+			},
+			{
+				// Non-empty tags: the API value must be stored in state.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.0", "test"),
+				),
+			},
+		},
+	})
+}
