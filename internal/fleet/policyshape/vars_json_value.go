@@ -43,10 +43,8 @@ type VarsJSONValue struct {
 }
 
 // PackageInfoLookupFunc resolves cached Fleet package metadata by cache key
-// (see PackageCacheKey). Each resource that uses VarsJSONType owns its own
-// package-info cache (e.g. a sync.Map keyed by "<name>-<version>", populated
-// from a Fleet API call) and passes a lookup adapter into this package,
-// rather than this package owning shared cache state across resources.
+// (see PackageCacheKey). LookupPackageInfo is the production implementation;
+// tests may pass a map-backed lookup instead.
 type PackageInfoLookupFunc func(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool)
 
 // Type returns a VarsJSONType.

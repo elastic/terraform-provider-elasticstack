@@ -129,7 +129,7 @@ func getSchemaV2() schema.Schema {
 			attrIntegrationVersion: schema.StringAttribute{Required: true},
 			attrOutputID:           schema.StringAttribute{Optional: true},
 			attrVarsJSON: schema.StringAttribute{
-				CustomType: policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				CustomType: policyshape.NewVarsJSONType(policyshape.LookupPackageInfo),
 				Computed:   true,
 				Optional:   true,
 				Sensitive:  varsAreSensitive,

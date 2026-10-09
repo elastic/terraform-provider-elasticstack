@@ -86,24 +86,10 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 	}
 }
 
-var knownPackages policyshape.PackageInfoCache
-
-func getPackageCacheKey(name, version string) string {
-	return policyshape.PackageCacheKey(name, version)
-}
-
-// lookupCachedPackageInfo adapts the knownPackages cache to
-// policyshape.PackageInfoLookupFunc, so VarsJSONType's default-population
-// logic (owned by the shared policyshape package) can read from this
-// resource's package-info cache without policyshape owning any cache state
-// itself. cacheKey is already a policyshape.PackageCacheKey (i.e. the
-// "<name>-<version>" string produced by getPackageCacheKey).
-var lookupCachedPackageInfo = knownPackages.Lookup
-
 func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.KibanaHTTPAPIsGetPackageInfo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if pkg, ok := getCachedPackageInfo(name, version); ok {
+	if pkg, ok := policyshape.LookupPackageInfo(policyshape.PackageCacheKey(name, version)); ok {
 		return &pkg, diags
 	}
 
@@ -134,10 +120,6 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, sp
 		)
 		return nil, diags
 	}
-	knownPackages.Store(getPackageCacheKey(name, version), *pkg)
+	policyshape.StorePackageInfo(policyshape.PackageCacheKey(name, version), *pkg)
 	return pkg, diags
-}
-
-func getCachedPackageInfo(name, version string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	return knownPackages.Lookup(getPackageCacheKey(name, version))
 }

@@ -23,21 +23,16 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 )
 
-// PackageInfoCache is a sync.Map-backed cache of Fleet package registry
-// metadata keyed by PackageCacheKey ("<name>-<version>"). Its Lookup method
-// satisfies PackageInfoLookupFunc as a method value.
-//
-// Each resource that uses VarsJSONType owns its own PackageInfoCache
-// instance rather than this package owning shared cache state across
-// resources (see PackageInfoLookupFunc's doc comment). The zero value is
-// ready to use; the cache must not be copied after first use.
-type PackageInfoCache struct {
-	m sync.Map
-}
+// knownPackages is a process-wide cache of Fleet package registry metadata
+// keyed by PackageCacheKey ("<name>-<version>"). It is shared by every
+// resource that uses VarsJSONType, since the package info is identical
+// regardless of which resource fetched it.
+var knownPackages sync.Map
 
-// Lookup adapts the cache to PackageInfoLookupFunc.
-func (c *PackageInfoCache) Lookup(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	value, ok := c.m.Load(cacheKey)
+// LookupPackageInfo returns the cached package info for cacheKey. It satisfies
+// PackageInfoLookupFunc.
+func LookupPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
+	value, ok := knownPackages.Load(cacheKey)
 	if !ok {
 		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
 	}
@@ -48,12 +43,12 @@ func (c *PackageInfoCache) Lookup(cacheKey string) (kbapi.KibanaHTTPAPIsGetPacka
 	return pkg, true
 }
 
-// Store records pkg under cacheKey for future Lookup calls.
-func (c *PackageInfoCache) Store(cacheKey string, pkg kbapi.KibanaHTTPAPIsGetPackageInfo) {
-	c.m.Store(cacheKey, pkg)
+// StorePackageInfo records pkg under cacheKey for future LookupPackageInfo calls.
+func StorePackageInfo(cacheKey string, pkg kbapi.KibanaHTTPAPIsGetPackageInfo) {
+	knownPackages.Store(cacheKey, pkg)
 }
 
-// Delete removes any cached entry for cacheKey.
-func (c *PackageInfoCache) Delete(cacheKey string) {
-	c.m.Delete(cacheKey)
+// DeletePackageInfo removes any cached entry for cacheKey.
+func DeletePackageInfo(cacheKey string) {
+	knownPackages.Delete(cacheKey)
 }
