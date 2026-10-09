@@ -27,18 +27,8 @@ func convertExistsEntryToAPI(
 	field kbapi.SecurityExceptionsAPINonEmptyString,
 	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
 ) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     entryTypeExists,
-		Field:    field,
-		Operator: operator,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryExists(apiEntry); err != nil {
-		diags.AddError("Failed to create exists entry", err.Error())
-	}
-
+	diags := fillExistsEntry(&result, field, operator, "Failed to create exists entry")
 	return result, diags
 }
 
@@ -47,17 +37,7 @@ func convertNestedExistsEntryToAPI(
 	field kbapi.SecurityExceptionsAPINonEmptyString,
 	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
 ) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     "exists",
-		Field:    field,
-		Operator: operator,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryExists(apiEntry); err != nil {
-		diags.AddError("Failed to create nested exists entry", err.Error())
-	}
-
+	diags := fillExistsEntry(&result, field, operator, "Failed to create nested exists entry")
 	return result, diags
 }

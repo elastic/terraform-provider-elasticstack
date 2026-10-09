@@ -260,9 +260,9 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 
 	switch entryType {
 	case entryTypeMatch, entryTypeWildcard:
-		convertMatchOrWildcardEntryFromAPI(entryMap, &entry)
+		convertSingleValueEntryFromAPI(entryMap, &entry)
 	case entryTypeMatchAny:
-		d := convertMatchAnyEntryFromAPI(ctx, entryMap, &entry)
+		d := convertMultiValueEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case entryTypeList:
 		d := convertListEntryFromAPI(ctx, entryMap, &entry)
