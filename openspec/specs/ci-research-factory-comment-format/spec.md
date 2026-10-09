@@ -177,11 +177,22 @@ The hard checklist SHALL consist of these items, each of which passes or fails:
 - **Grounded**: every claimed capability cites a verifiable source: an Elastic Stack API specification node, Elastic documentation, or existing client or provider code.
 - **Mapped**: each new capability has a proposed Terraform schema mapping: attribute name, type, whether it is required, optional, or computed, and its nesting.
 - **Compatible**: the change is assessed as additive or breaking; if breaking, a migration or state-upgrade note is present.
-- **Versioned**: the minimum Elastic Stack version is stated and a version-gating strategy is named.
+- **Versioned**: either a minimum Elastic Stack version is stated with a source and a version-gating strategy is named, or no source states the minimum and the research says so explicitly (as an open question), names a conservative gating strategy, and includes a test or probe to confirm it. A disclosed, unsourced version is not a failure. Inaccurate statements about how existing repository code enforces version requirements fail **Grounded**, not **Versioned**.
 - **Testable**: an acceptance-test outline is present, covering configuration, assertions, unset or empty values, and update cases.
 - **Idiomatic**: the design references existing repository patterns rather than inventing new ones.
 
 With a score threshold of 85, research SHALL be considered **converged** when the final critic score is at least 85 and either the critic scores at least 85 on two consecutive rounds, or the critic reports no actionable feedback. A plateau below 85 SHALL NOT count as converged.
+
+#### Scenario: Disclosed unsourced minimum version passes Versioned
+- **GIVEN** research in which no source states a minimum Elastic Stack version
+- **AND** the research lists that gap as an open question, names a conservative gating strategy, and includes a probe to confirm the version
+- **WHEN** the `Versioned` item is evaluated
+- **THEN** `Versioned` SHALL pass
+
+#### Scenario: Silent missing version fails Versioned
+- **GIVEN** research that states neither a sourced minimum version nor an explicit disclosure that none is documented
+- **WHEN** the `Versioned` item is evaluated
+- **THEN** `Versioned` SHALL fail
 
 #### Scenario: High score with no feedback converges in one round
 - **GIVEN** a single critique round with score 90 and no actionable feedback

@@ -29,9 +29,22 @@ Each item is `true` only when fully satisfied.
 | `grounded` | Every claimed capability cites a verifiable source: an Elastic Stack API specification node, Elastic documentation, or existing client or provider code. |
 | `mapped` | Each new capability has a proposed Terraform schema mapping: attribute name, type, required/optional/computed, and nesting. |
 | `compatible` | The change is assessed as additive or breaking; a breaking change includes a migration or state-upgrade note. |
-| `versioned` | The minimum Elastic Stack version is stated and a version-gating strategy is named. |
+| `versioned` | Either a minimum Elastic Stack version is stated with a source and a version-gating strategy is named, or no source states the minimum and the draft says so explicitly (as an open question), names a conservative gating strategy, and includes a test or probe to confirm it. |
 | `testable` | An acceptance-test outline covers configuration, assertions, unset or empty values, and update cases. |
 | `idiomatic` | The design references existing repository patterns rather than inventing new ones. |
+
+## Judging `versioned`
+
+`versioned` passes when either:
+
+- (a) a minimum Elastic Stack version is stated with a source and a version-gating strategy is named; or
+- (b) no source states the minimum and the draft says so explicitly (as an open question), names a
+  conservative gating strategy (for example gate at the lowest version where the capability is
+  documented, use the provider baseline with a runtime or acceptance check, or apply no gate until
+  verified), and includes a test or probe to confirm it.
+
+A disclosed, unsourced version is NOT a failure. Inaccurate statements about how existing repository
+code enforces version requirements fail `grounded`, not `versioned`.
 
 ## Verifying citations
 

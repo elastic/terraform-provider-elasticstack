@@ -326,6 +326,11 @@ engine:
   env:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    # Experimental: tell the CLI the real window for these non-first-party slugs and cap the
+    # compaction window. Verify via compact_boundary pre_tokens in the run log (it should be
+    # about 212k or higher, not about 170k). Remove both if they cause API errors.
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1000000"
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: "250000"
 # Disable the per-run AI Credits budget guard. The OpenRouter model slug
 # "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
 # pricing table. gh-aw's models.providers frontmatter override does not

@@ -197,3 +197,18 @@ test('prompt enforces re-research each round and drafting from issue and notes',
   assert.match(workflow, /corrected factual claim[^.]*sourced from the refreshed notes/);
   assert.match(workflow, /start the first draft from the issue and the researchers' notes, not from the prior research comment's text/i);
 });
+
+test('rubric defines versioned as sourced-or-disclosed with a probe, and keeps repo-behaviour errors in grounded', () => {
+  assert.match(rubric, /\| `versioned` \|[^\n]*no source states the minimum[^\n]*\|/);
+  assert.match(rubric, /A disclosed, unsourced version is NOT a failure/);
+  assert.match(rubric, /inaccurate\s+statements\s+about\s+how\s+existing\s+repository\s+code\s+enforces\s+version\s+requirements\s+fail\s+`grounded`/i);
+  assert.match(rubric, /conservative gating strategy/);
+  assert.match(rubric, /test or probe/);
+});
+
+test('engine env sets the context window variables', () => {
+  const env = workflow.slice(workflow.indexOf('\n  env:\n    ANTHROPIC_BASE_URL'), workflow.indexOf('\n# Disable the per-run'));
+  assert.match(env, /CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1000000"/);
+  assert.match(env, /CLAUDE_CODE_AUTO_COMPACT_WINDOW: "250000"/);
+  assert.match(workflow, /compact_boundary/);
+});
