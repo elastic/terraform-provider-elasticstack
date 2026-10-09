@@ -327,3 +327,24 @@ test('gate derivation runs on the joined body', async () => {
   await updateResearchComment(env);
   assert.deepEqual(env.calls[1][1].labels, [READY]);
 });
+
+test('end to end: emit, platform trim, comment script, gate parses metadata and derives the outcome', async () => {
+  const { splitBody } = require('../research-factory/emit-research-comment.js');
+  const meta = readyMetadata();
+  const filler = Array.from({ length: 400 }, (_, i) => `- bullet ${i}: ${'text '.repeat(12)}`).join('\n');
+  const full = `## Implementation research\n\n### Open questions\n\n${filler}\n\n### Quality gate\n\n**Outcome:** \`${READY}\` - ok\n\n### References\n\n- a\n\n<details>\n<summary>🤖 Pipeline metadata</summary>\n\n\`\`\`json\n${JSON.stringify(meta, null, 2)}\n\`\`\`\n\n</details>\n`;
+  const parts = splitBody(full);
+  assert.ok(Object.keys(parts).length > 1);
+  const trimmedParts = Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, v.trim()]));
+  const env = setup({ meta });
+  writeItem(trimmedParts);
+  await updateResearchComment(env);
+
+  const posted = env.calls[0][1].body;
+  assert.ok(posted.startsWith(MARKER));
+  assert.ok(posted.includes(JSON.stringify(meta, null, 2)));
+  assert.doesNotMatch(posted, /RF_PART/);
+  assert.doesNotMatch(posted, /overridden by the gate rule/);
+  assert.deepEqual(env.calls[1][1].labels, [READY]);
+  assert.equal(env.core.failures.length, 0);
+});

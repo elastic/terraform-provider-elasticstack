@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { joinParts } = require('./emit-research-comment.js');
 const { evaluateBody, applyOverride, READY, NEEDS_HUMAN } = require('./gate.js');
 
 module.exports = async function ({ github, context, core }) {
@@ -32,8 +33,7 @@ module.exports = async function ({ github, context, core }) {
   }
 
   const item = items[0];
-  const bodyKeys = ['body', ...Array.from({ length: 6 }, (_, i) => `body_${i + 2}`)];
-  let body = bodyKeys.map((key) => (typeof item[key] === 'string' ? item[key] : '')).join('');
+  let body = joinParts(item);
 
   // Prepend the marker automatically; the agent does not need to supply it.
   if (body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n')) {
