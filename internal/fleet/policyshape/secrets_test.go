@@ -344,3 +344,78 @@ func TestHandleReqRespSecrets(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSecretRefMap(t *testing.T) {
+	t.Parallel()
+
+	require.True(t, policyshape.IsSecretRefMap(Map{"isSecretRef": true, "id": "x"}))
+	require.False(t, policyshape.IsSecretRefMap(Map{"isSecretRef": false, "id": "x"}))
+	require.False(t, policyshape.IsSecretRefMap(Map{"id": "x"}))
+	require.False(t, policyshape.IsSecretRefMap(Map{}))
+}
+
+func TestWalkSecretRefVars(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unwraps plain value", func(t *testing.T) {
+		t.Parallel()
+		vars := Map{"k": Map{"type": "string", "value": "v"}}
+		var calls int
+		policyshape.WalkSecretRefVars(vars, true, func(string, map[string]any) { calls++ })
+		require.Equal(t, Map{"k": "v"}, vars)
+		require.Equal(t, 0, calls)
+	})
+
+	t.Run("invokes handleRef exactly once for a bare secret ref", func(t *testing.T) {
+		t.Parallel()
+		ref := Map{"isSecretRef": true, "id": "known-secret"}
+		vars := Map{"k": ref}
+		var calls int
+		var gotKey string
+		var gotRef map[string]any
+		policyshape.WalkSecretRefVars(vars, true, func(key string, r map[string]any) {
+			calls++
+			gotKey = key
+			gotRef = r
+		})
+		require.Equal(t, 1, calls)
+		require.Equal(t, "k", gotKey)
+		require.Equal(t, ref, gotRef)
+		// handleRef owns mutating vars[key]; leaving it untouched here should
+		// keep the original ref in place.
+		require.Equal(t, Map{"k": ref}, vars)
+	})
+
+	t.Run("invokes handleRef exactly once for a wrapped secret ref", func(t *testing.T) {
+		t.Parallel()
+		ref := Map{"isSecretRef": true, "id": "known-secret"}
+		vars := Map{"k": Map{"type": "password", "value": ref}}
+		var calls int
+		policyshape.WalkSecretRefVars(vars, true, func(string, map[string]any) { calls++ })
+		require.Equal(t, 1, calls)
+		require.Equal(t, Map{"k": ref}, vars)
+	})
+
+	t.Run("dropUnset deletes map-shaped non-ref non-wrapped entries", func(t *testing.T) {
+		t.Parallel()
+		vars := Map{"k": Map{"type": "string"}}
+		policyshape.WalkSecretRefVars(vars, true, func(string, map[string]any) {})
+		require.Equal(t, Map{}, vars)
+	})
+
+	t.Run("dropUnset=false preserves map-shaped non-ref non-wrapped entries", func(t *testing.T) {
+		t.Parallel()
+		vars := Map{"k": Map{"nested": "object"}}
+		policyshape.WalkSecretRefVars(vars, false, func(string, map[string]any) {})
+		require.Equal(t, Map{"k": Map{"nested": "object"}}, vars)
+	})
+
+	t.Run("leaves non-map values untouched", func(t *testing.T) {
+		t.Parallel()
+		vars := Map{"k": "plain"}
+		var calls int
+		policyshape.WalkSecretRefVars(vars, true, func(string, map[string]any) { calls++ })
+		require.Equal(t, Map{"k": "plain"}, vars)
+		require.Equal(t, 0, calls)
+	})
+}
