@@ -188,3 +188,12 @@ test('prompt has the context rules for polling, drafts, and invocation prompts',
   assert.match(workflow, /targeted `Edit` calls/);
   assert.match(workflow, /at most about 10 lines/);
 });
+
+test('prompt enforces re-research each round and drafting from issue and notes', () => {
+  assert.match(workflow, /SHALL, before revising, re-invoke the relevant researcher\(s\) with the specific gap questions/);
+  assert.match(workflow, /in round 2 and every later round/);
+  assert.match(workflow, /grounded`, `mapped`, `versioned`, `testable`, or `idiomatic`/);
+  assert.match(workflow, /do not revise those areas from memory/i);
+  assert.match(workflow, /corrected factual claim[^.]*sourced from the refreshed notes/);
+  assert.match(workflow, /start the first draft from the issue and the researchers' notes, not from the prior research comment's text/i);
+});

@@ -534,8 +534,8 @@ approach needs its own `####` H4 heading. Do not emit a comment with only one ap
 Research iterates through draft -> critique -> revise before you emit the comment. The gate constants
 are: score threshold **85**, stability window **2** consecutive rounds, and a maximum of **5** rounds.
 
-1. If the prior research comment has a `### Quality gate` section, read its outstanding feedback and
-   address it in your first draft.
+1. If the prior research comment has a `### Quality gate` section, read its outstanding feedback only as
+   a list of gaps to research. Start the first draft from the issue and the researchers' notes, not from the prior research comment's text.
 2. Write each draft to `/tmp/gh-aw/agent/research/draft-N.md` (N is the round number). The draft is the
    full comment body you intend to publish, including a provisional `### Quality gate` and metadata.
 3. Invoke the `research-critic` subagent with the `Task` tool on every round, passing the draft path and
@@ -547,6 +547,11 @@ are: score threshold **85**, stability window **2** consecutive rounds, and a ma
    `unverifiable_citations`) as defined in
    `.github/scripts/workflows/research-factory/critic-rubric.md`. Append each round's `score` to
    `gate.scores`.
+   After every round whose critique has actionable feedback on `grounded`, `mapped`, `versioned`, `testable`, or `idiomatic`, you
+   SHALL, before revising, re-invoke the relevant researcher(s) with the specific gap questions
+   (they append to their notes). Do this in round 2 and every later round, and
+   do not revise those areas from memory. Any corrected factual claim (for example wire payloads, enforcement behaviour,
+   or versions) must be sourced from the refreshed notes, not asserted.
 5. Stop when the research is converged and every checklist item passes: the final score is at least 85
    and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback.
    Otherwise revise against the critic's actionable feedback and run another round, up to 5 rounds.
