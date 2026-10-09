@@ -1546,6 +1546,72 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.assertCloseStatePanic",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885451Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.decodeKibanaConnection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885591Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.encodeKibanaConnection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885672Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.kibanaConnectionFromSnapshot",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885742Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.kibanaConnectionListFromSnapshot",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885812Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.kibanaConnectionSnapshotFromList",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885882Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore.snapshotFromKibanaConnection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/entitycore",
+      "attemptedAt": "2026-10-09T03:11:15.942885952Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape.DeletePackageInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape",
+      "attemptedAt": "2026-10-09T03:11:15.942886022Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.ClearConfig",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-10-09T03:11:15.942886092Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.EnsureMutableTypedConfig",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-10-09T03:11:15.942886163Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store.NewStatusJSONNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store",
+      "attemptedAt": "2026-10-09T03:17:40.997462307Z",
+      "reason": "build_failed"
     }
   ]
 }
