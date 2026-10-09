@@ -23,6 +23,7 @@ import (
 	"os"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
@@ -318,6 +319,175 @@ func TestAccDataSourceKibanaAlertingRules_invalidFilter(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ExpectError:              regexp.MustCompile(`(?i)filter`),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAlertingRules_conflictingFilters(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ExpectError:              regexp.MustCompile(`(?i)cannot be specified when`),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAlertingRules_emptyRuleID(t *testing.T) {
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ExpectError:              regexp.MustCompile(`(?i)string length must be at least`),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAlertingRules_tags(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	taggedID := uuid.New().String()
+	untaggedID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"name":             config.StringVariable(name),
+					"tagged_rule_id":   config.StringVariable(taggedID),
+					"untagged_rule_id": config.StringVariable(untaggedID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_alerting_rules.tagged", "rules.0.tags.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_alerting_rules.tagged", "rules.0.tags.*", "tag-one"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_kibana_alerting_rules.tagged", "rules.0.tags.*", "tag-two"),
+					resource.TestCheckResourceAttr("data.elasticstack_kibana_alerting_rules.untagged", "rules.0.tags.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceKibanaAlertingRules_scheduledTaskID(t *testing.T) {
+	ruleID := uuid.New().String()
+	name := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(name),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(alertingRulesDataSourceAddr, "rules.0.scheduled_task_id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaAlertingRules_executionStatus confirms last_execution_status and
+// last_execution_date surface once Kibana has actually run the rule; immediately after
+// creation both are null (see the resource-level equivalent in alertingrule/acc_test.go).
+func TestAccDataSourceKibanaAlertingRules_executionStatus(t *testing.T) {
+	ruleID := uuid.New().String()
+	name := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	configVars := config.Variables{
+		"name":    config.StringVariable(name),
+		"rule_id": config.StringVariable(ruleID),
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          configVars,
+			},
+			{
+				PreConfig: func() {
+					waitForAlertingRuleFirstExecution(t, clients.DefaultSpaceID, ruleID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(alertingRulesDataSourceAddr, "rules.0.last_execution_status"),
+					resource.TestCheckResourceAttrSet(alertingRulesDataSourceAddr, "rules.0.last_execution_date"),
+				),
+			},
+		},
+	})
+}
+
+func waitForAlertingRuleFirstExecution(t *testing.T, spaceID, ruleID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("kibana client: %v", err)
+	}
+	oapi := client.GetKibanaOapiClient()
+	ctx := context.Background()
+
+	deadline := time.Now().Add(3 * time.Minute)
+	for time.Now().Before(deadline) {
+		rule, diags := kibanaoapi.GetAlertingRule(ctx, oapi, spaceID, ruleID)
+		if diags.HasError() || rule == nil {
+			t.Fatalf("get rule: %v", diags)
+		}
+		if rule.ExecutionStatus.LastExecutionDate != nil {
+			return
+		}
+		time.Sleep(2 * time.Second)
+	}
+	t.Fatal("Kibana did not execute the rule in time")
+}
+
+// TestAccDataSourceKibanaAlertingRules_ruleIDWithSlash confirms rule_id is always fetched
+// literally rather than parsed as a "<space>/<rule_id>" composite: a rule whose actual ID
+// contains a slash is still found via a plain rule_id lookup in its own space. See
+// TestRead_compositeRuleIDIsFetchedLiterally in datasource_read_test.go for the unit-level
+// equivalent, and TestAccDataSourceKibanaAlertingRules_compositeRuleID for the not-found case.
+func TestAccDataSourceKibanaAlertingRules_ruleIDWithSlash(t *testing.T) {
+	ruleID := "sub/" + uuid.New().String()
+	name := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(name),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(alertingRulesDataSourceAddr, "rules.#", "1"),
+					resource.TestCheckResourceAttr(alertingRulesDataSourceAddr, "rules.0.id", ruleID),
+					resource.TestCheckResourceAttr(alertingRulesDataSourceAddr, "rules.0.name", name),
+				),
 			},
 		},
 	})
