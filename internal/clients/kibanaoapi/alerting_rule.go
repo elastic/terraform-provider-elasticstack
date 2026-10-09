@@ -79,13 +79,7 @@ func FindAlertingRules(ctx context.Context, client *Client, spaceID string, filt
 	sortOrder := kbapi.GetAlertingRulesFindParamsSortOrderAsc
 	perPage := alertingRulesFindPerPage
 
-	var (
-		collected []models.AlertingRule
-		page      float32 = 1
-		total     float32
-	)
-
-	for {
+	fetchPage := func(page float32) ([]models.AlertingRule, float32, diag.Diagnostics) {
 		params := &kbapi.GetAlertingRulesFindParams{
 			Page:      &page,
 			PerPage:   &perPage,
@@ -99,49 +93,41 @@ func FindAlertingRules(ctx context.Context, client *Client, spaceID string, filt
 			kibanautil.SpaceAwarePathRequestEditor(spaceID),
 		)
 		if err != nil {
-			return nil, diagutil.ErrDiag("Unable to search alerting rules", err)
+			return nil, 0, diagutil.ErrDiag("Unable to search alerting rules", err)
 		}
 		if resp.StatusCode() != http.StatusOK {
 			if page == 1 && resp.StatusCode() == http.StatusInternalServerError && filter != nil && *filter != "" {
-				return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+				return nil, 0, diag.Diagnostics{diag.NewErrorDiagnostic(
 					"Invalid alerting rule filter",
 					fmt.Sprintf("Kibana rejected filter. Response: %s", resp.Body),
 				)}
 			}
-			return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+			return nil, 0, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 		}
 		parsed, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting rules")
 		if diags.HasError() {
-			return nil, diags
+			return nil, 0, diags
 		}
-		if page == 1 {
-			if parsed.Total > alertingRulesFindMaxTotal {
-				return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
-					"Too many alerting rules",
-					fmt.Sprintf("Kibana reported %.0f matching rules, which is more than 10000. Narrow filter so the search stays within Kibana's result window.", parsed.Total),
-				)}
-			}
-			total = parsed.Total
+		if page == 1 && parsed.Total > alertingRulesFindMaxTotal {
+			return nil, 0, diag.Diagnostics{diag.NewErrorDiagnostic(
+				"Too many alerting rules",
+				fmt.Sprintf("Kibana reported %.0f matching rules, which is more than 10000. Narrow filter so the search stays within Kibana's result window.", parsed.Total),
+			)}
 		}
 
-		if len(parsed.Data) == 0 {
-			break
-		}
-
+		converted := make([]models.AlertingRule, 0, len(parsed.Data))
 		for i := range parsed.Data {
 			rule, convertDiags := ConvertResponseToModel(spaceID, &parsed.Data[i])
 			if convertDiags.HasError() {
-				return nil, convertDiags
+				return nil, 0, convertDiags
 			}
-			collected = append(collected, *rule)
+			converted = append(converted, *rule)
 		}
-		if len(collected) >= int(total) {
-			break
-		}
-		page++
+
+		return converted, parsed.Total, nil
 	}
 
-	return collected, nil
+	return CollectAllPages(fetchPage)
 }
 
 func GetAlertingRule(ctx context.Context, client *Client, spaceID string, ruleID string) (*models.AlertingRule, diag.Diagnostics) {
