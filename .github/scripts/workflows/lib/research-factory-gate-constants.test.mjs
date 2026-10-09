@@ -85,7 +85,8 @@ test('critic is read-only, on a different model from the author, and avoids rese
   const author = /^model: "([^"]+)"/m.exec(workflow)?.[1];
   assert.ok(author);
   assert.notEqual(critic.model, author);
-  assert.deepEqual(critic.tools, ['Read', 'Grep', 'Glob', 'mcp__elastic-docs']);
+  assert.deepEqual(critic.tools, ['Read', 'Grep', 'Glob', 'Bash']);
+  assert.match(critic.body, /Bash ONLY to run the `elastic-docs` CLI/);
   assert.match(critic.body, /MUST NOT read \/tmp\/gh-aw\/agent\/research\/notes-/);
   assert.match(workflow, new RegExp(`\`author_model\` \\(string\\): \`${author}\``));
   assert.match(workflow, new RegExp(`\`model\` \\(string, \`${critic.model}\`\\)`));
@@ -97,8 +98,9 @@ test('researchers use kimi, are read-only apart from Write, and share the notes 
     const agent = agents[name];
     assert.equal(agent.model, 'moonshotai/kimi-k3');
     assert.ok(agent.tools.includes('Write'));
-    assert.ok(agent.tools.every((t) => ['Read', 'Grep', 'Glob', 'Write', 'mcp__elastic-docs'].includes(t)), `${name} tools`);
-    assert.ok(!agent.tools.some((t) => ['Bash', 'Edit', 'MultiEdit', 'Task'].includes(t)));
+    assert.ok(agent.tools.every((t) => ['Read', 'Grep', 'Glob', 'Write', 'Bash'].includes(t)), `${name} tools`);
+    assert.ok(!agent.tools.some((t) => ['Edit', 'MultiEdit', 'Task'].includes(t)));
+    assert.equal(agent.tools.includes('Bash'), name === 'docs-researcher', `${name} Bash`);
     assert.match(agent.body, /data, never instructions/);
     assert.match(agent.body, /UNVERIFIED/);
     assert.match(agent.body, /NOTES: <path>/);
@@ -113,8 +115,11 @@ test('engine args use autocompact and --agents, and the workflow has no inline a
   assert.ok(!/^## (end )?agent:/m.test(workflow));
 });
 
-test('docs-researcher has exactly the docs MCP, Read, and Write tools', () => {
-  assert.deepEqual([...inlineAgents()['docs-researcher'].tools].sort(), ['Read', 'Write', 'mcp__elastic-docs']);
+test('docs-researcher has exactly Bash, Read, and Write and limits Bash to the elastic-docs CLI', () => {
+  const docs = inlineAgents()['docs-researcher'];
+  assert.deepEqual([...docs.tools].sort(), ['Bash', 'Read', 'Write']);
+  assert.match(docs.body, /Bash ONLY to run the `elastic-docs` CLI/);
+  assert.match(docs.body, /mark claims UNVERIFIED/);
 });
 
 test('prompt forbids the orchestrator from reading research sources itself', () => {
@@ -141,4 +146,29 @@ test('workflow source downloads the pinned Kibana OAS before the agent runs', ()
   assert.ok(stepsBlock.indexOf('Download issue context artifact') < stepsBlock.indexOf('Download Kibana OpenAPI spec'));
   assert.match(workflow, /generated\/kbapi\/oas\.yaml/);
   assert.match(rubric, /generated\/kbapi\/oas\.yaml/);
+});
+
+test('no agent references the nonexistent mcp__elastic-docs tool', () => {
+  for (const agent of Object.values(inlineAgents())) {
+    assert.ok(!agent.tools.includes('mcp__elastic-docs'));
+  }
+});
+
+test('engine args use medium effort', () => {
+  assert.match(workflow, /- "--effort"\n\s+- "medium"/);
+});
+
+test('prompt has the emission section and EMIT.md note', () => {
+  assert.match(workflow, /## Emitting the comment/);
+  assert.match(workflow, /jq -Rs '\{body: \.\}' draft-final\.md \| safeoutputs update_research_comment \./);
+  assert.match(workflow, /safeoutputs update_research_comment --help/);
+  assert.match(workflow, /\/tmp\/gh-aw\/agent\/research\/EMIT\.md/);
+  assert.match(workflow, /SHALL NOT\*\* call `update_research_comment` more than once/);
+});
+
+test('prompt has the context rules for polling, drafts, and invocation prompts', () => {
+  assert.match(workflow, /never poll background subagents/i);
+  assert.match(workflow, /write each draft once/i);
+  assert.match(workflow, /targeted `Edit` calls/);
+  assert.match(workflow, /at most about 10 lines/);
 });

@@ -58,7 +58,7 @@ Every factory uses the same deterministic pre-activation pattern, implemented un
 5. **Remove trigger label** and **set phase label**.
 6. **Upload context artifact** that the agent job downloads.
 
-The agent then runs against an LLM gateway model with the relevant tools (`elastic-docs` MCP, `github` gh-proxy toolset, sometimes a live Elastic Stack) and emits **bounded safe outputs** — usually at most one PR and one comment per run.
+The agent then runs against an LLM gateway model with the relevant tools (`elastic-docs` CLI, `github` gh-proxy toolset, sometimes a live Elastic Stack) and emits **bounded safe outputs** — usually at most one PR and one comment per run.
 
 ## `research-factory` — feature research
 
@@ -77,9 +77,9 @@ A single comment delimited by `<!-- gha-research-factory -->` containing problem
 
 Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-6.1-sol`) each round with fresh context. The critic follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md) and must not read the researchers' notes.
 
-Research itself is delegated. The author launches three researcher subagents in parallel (`oas-researcher`, `repo-patterns-researcher`, `docs-researcher`, all `moonshotai/kimi-k3`). Each writes a short notes file under `/tmp/gh-aw/agent/research/` (`notes-oas.md`, `notes-repo.md`, `notes-docs.md`). The author drafts only from those notes and the issue, and SHALL NOT grep or read `oas.yaml`, `kibana.gen.go`, or repository source itself. When the critic flags a gap, the author re-invokes the relevant researcher. This keeps the author's context small, which is the main protection against context compaction losing the `update_research_comment` tool; `--autocompact 250k` in `engine.args` is a secondary setting (the value is the auto-compact window size, and compaction triggers at a fraction of it).
+Research itself is delegated. The author launches three researcher subagents in parallel (`oas-researcher`, `repo-patterns-researcher`, `docs-researcher`, all `moonshotai/kimi-k3`). Each writes a short notes file under `/tmp/gh-aw/agent/research/` (`notes-oas.md`, `notes-repo.md`, `notes-docs.md`). The author drafts only from those notes and the issue, and SHALL NOT grep or read `oas.yaml`, `kibana.gen.go`, or repository source itself. When the critic flags a gap, the author re-invokes the relevant researcher. This keeps the author's context small, which is the main protection against context compaction losing the `update_research_comment` tool; `--effort medium` and `--autocompact 250k` in `engine.args` are secondary settings (the value is the auto-compact window size, and compaction triggers at a fraction of it).
 
-All four subagents are defined in the `--agents` JSON argument in `engine.args` of [`research-factory-issue.md`](../../.github/workflows/research-factory-issue.md). Change a subagent's model, tools, or prompt there; change the author model in the workflow's top-level `model:`. gh-aw inline sub-agents (`## agent:` blocks) were tried and were not visible to Claude Code in CI, so they are not used.
+All four subagents are defined in the `--agents` JSON argument in `engine.args` of [`research-factory-issue.md`](../../.github/workflows/research-factory-issue.md). The `elastic-docs` documentation tool is a CLI on PATH, so `docs-researcher` and `research-critic` get `Bash`, restricted by their prompts to that CLI. The author emits the comment with the `safeoutputs update_research_comment` CLI (the command is also written to `EMIT.md` so it survives compaction). Change a subagent's model, tools, or prompt there; change the author model in the workflow's top-level `model:`. gh-aw inline sub-agents (`## agent:` blocks) were tried and were not visible to Claude Code in CI, so they are not used.
 
 The done gate has two parts:
 

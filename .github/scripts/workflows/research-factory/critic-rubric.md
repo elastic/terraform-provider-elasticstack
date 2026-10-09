@@ -48,17 +48,19 @@ Each item is `true` only when fully satisfied.
     `grounded` for that alone. Do fail it when a field, default, or behaviour is asserted with no
     verifiable source.
   - If `generated/kbapi/oas.yaml` is missing (the download failed), the OpenAPI spec is an
-    unavailable source. Verify only what `kibana.gen.go` and the `elastic-docs` tools support, fail
+    unavailable source. Verify only what `kibana.gen.go` and the `elastic-docs` CLI support, fail
     `grounded` for any claim you cannot verify, and never invent or assume verification.
   - `generated/kbapi/kibana.json` is only a two-path dashboards overlay. Do not use it to verify
     other endpoints.
   - Do not require or accept Kibana server source code fetched from the web. It is not an allowed
     source and cannot be verified in this run.
-- **Elasticsearch (non-Kibana) API claims:** confirm them with the `elastic-docs` MCP tools and
+- **Elasticsearch (non-Kibana) API claims:** confirm them with the `elastic-docs` CLI and
   against the `go-elasticsearch` client, either vendored in the repository or in the Go module
   cache, rather than the Kibana files.
-- **Elastic documentation:** use the `elastic-docs` MCP tools (`search_docs`, `get_document_by_url`)
-  to confirm the cited page exists and supports the claim.
+- **Elastic documentation:** use the `elastic-docs` CLI (`search_docs`, `get_document_by_url`)
+  to confirm the cited page exists and supports the claim. It is a CLI on PATH, run through Bash
+  (`elastic-docs --help`); use Bash only for that CLI and never for anything else. If the CLI fails, treat the
+  claim as unverifiable.
 - **Repository paths:** Read the cited file and confirm it contains the pattern or code described.
 - List every citation you could not verify in `unverifiable_citations`. Any unverifiable citation
   that supports a claimed capability fails `grounded`.
