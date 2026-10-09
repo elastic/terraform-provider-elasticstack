@@ -138,9 +138,9 @@ func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]any) (Ne
 	entryType := entry.Type.ValueString()
 	switch entryType {
 	case entryTypeMatch:
-		convertNestedMatchFromMap(entryMap, &entry)
+		convertSingleValueEntryFromAPI(entryMap, &entry)
 	case entryTypeMatchAny:
-		d := convertNestedMatchAnyFromMap(ctx, entryMap, &entry)
+		d := convertMultiValueEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case entryTypeExists:
 		resetNestedEntryModelFields(&entry, "")

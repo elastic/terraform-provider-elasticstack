@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // convertMatchEntryToAPI converts a match entry to API format
@@ -30,25 +29,11 @@ func convertMatchEntryToAPI(
 	field kbapi.SecurityExceptionsAPINonEmptyString,
 	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
 ) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'match'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     entryTypeMatch,
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
-		diags.AddError("Failed to create match entry", err.Error())
-	}
-
+	diags := fillMatchEntry(&result, entry.Value, field, operator,
+		"Attribute 'value' is required when type is 'match'",
+		"Failed to create match entry",
+	)
 	return result, diags
 }
 
@@ -86,44 +71,10 @@ func convertNestedMatchEntryToAPI(
 	field kbapi.SecurityExceptionsAPINonEmptyString,
 	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
 ) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
 	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required for nested entry when type is 'match'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     entryTypeMatch,
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
-		diags.AddError("Failed to create nested match entry", err.Error())
-	}
-
+	diags := fillMatchEntry(&result, entry.Value, field, operator,
+		"Attribute 'value' is required for nested entry when type is 'match'",
+		"Failed to create nested match entry",
+	)
 	return result, diags
-}
-
-// convertMatchOrWildcardEntryFromAPI converts match or wildcard entries from API format
-func convertMatchOrWildcardEntryFromAPI(entryMap map[string]any, entry *EntryModel) {
-	resetEntryModelFields(entry, attrValue)
-	if value, ok := entryMap["value"].(string); ok {
-		entry.Value = types.StringValue(value)
-	} else {
-		entry.Value = types.StringNull()
-	}
-}
-
-// convertNestedMatchFromMap converts nested match entries from map format
-func convertNestedMatchFromMap(entryMap map[string]any, entry *NestedEntryModel) {
-	resetNestedEntryModelFields(entry, attrValue)
-	if value, ok := entryMap["value"].(string); ok {
-		entry.Value = types.StringValue(value)
-	} else {
-		entry.Value = types.StringNull()
-	}
 }
