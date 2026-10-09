@@ -15,7 +15,7 @@ and return a single verdict JSON object. You do not write, fix, or rewrite the r
 
 - Score threshold: **85**
 - Stability window: **2** consecutive rounds at or above the threshold
-- Maximum rounds: **3**
+- Maximum rounds: **5**
 
 Research is converged when the final score is at least 85 and either the last 2 rounds both scored at
 least 85, or you have no actionable feedback. A plateau below 85 is not converged.

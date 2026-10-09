@@ -502,7 +502,7 @@ approach needs its own `####` H4 heading. Do not emit a comment with only one ap
 ## Critique loop
 
 Research iterates through draft -> critique -> revise before you emit the comment. The gate constants
-are: score threshold **85**, stability window **2** consecutive rounds, and a maximum of **3** rounds.
+are: score threshold **85**, stability window **2** consecutive rounds, and a maximum of **5** rounds.
 
 1. If the prior research comment has a `### Quality gate` section, read its outstanding feedback and
    address it in your first draft.
@@ -519,8 +519,9 @@ are: score threshold **85**, stability window **2** consecutive rounds, and a ma
    `gate.scores`.
 5. Stop when the research is converged and every checklist item passes: the final score is at least 85
    and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback.
-   Otherwise revise against the critic's actionable feedback and run another round, up to 3 rounds.
-   A score plateau below 85 is not converged.
+   Otherwise revise against the critic's actionable feedback and run another round, up to 5 rounds.
+   A score plateau below 85 is not converged. If the time budget is nearly spent (fewer than about
+   10 of the 50 minutes left), stop iterating and publish as `research-needs-human`.
 6. If the critic call fails or returns invalid JSON, retry once (re-ask for only valid JSON per the
    rubric). If it still fails, stop the loop, set `gate.critic.status` to `"unavailable"` or `"error"`,
    set `gate.rounds` to the number of completed rounds, and publish the latest draft with the outcome
@@ -587,7 +588,7 @@ containing a fenced JSON block (language `json`) that conforms to the
   - `score` (number or null): the final critic score, 0-100; `null` when no round completed.
   - `scores` (array of numbers): each completed round's score, in order; empty when none completed.
   - `converged` (boolean): whether the convergence rule was satisfied.
-  - `rounds` (number): completed critique rounds, 0 to 3; equals the length of `scores`.
+  - `rounds` (number): completed critique rounds, 0 to 5; equals the length of `scores`.
   - `outstanding_feedback` (array of strings): the critic's remaining actionable feedback.
   - `author_model` (string): `anthropic/claude-sonnet-5`.
   - `critic` (object): `model` (string, `openai/gpt-6.1-sol`) and `status` (`"ok"`, `"unavailable"`, or

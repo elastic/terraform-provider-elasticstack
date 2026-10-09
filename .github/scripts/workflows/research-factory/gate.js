@@ -1,6 +1,6 @@
 const SCORE_THRESHOLD = 85;
 const STABILITY_WINDOW = 2;
-const MAX_ROUNDS = 3;
+const MAX_ROUNDS = 5;
 
 const READY = 'ready-for-change-factory';
 const NEEDS_HUMAN = 'research-needs-human';

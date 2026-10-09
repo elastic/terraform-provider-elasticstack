@@ -102,7 +102,7 @@ After the `### References` section, the comment SHALL contain an HTML `<details>
   - `score` (number or null, required): the final critic score, 0 to 100; `null` when no critique round completed.
   - `scores` (array of numbers, required): the critic score for each completed round, in order; empty when no critique round completed.
   - `converged` (boolean, required): whether the convergence rule was satisfied.
-  - `rounds` (number, required): the number of completed critique rounds, 0 to 3. It SHALL equal the length of `scores`.
+  - `rounds` (number, required): the number of completed critique rounds, 0 to 5. It SHALL equal the length of `scores`.
   - `outstanding_feedback` (array of strings, required): the critic's remaining actionable feedback after the final round; empty when the critic has none.
   - `author_model` (string, required): the identifier of the model that authored the research.
   - `critic` (object, required):
@@ -203,7 +203,7 @@ The gate-outcome label applied to the issue SHALL be derived deterministically f
 
 - every `gate.checklist` value is `true`;
 - the convergence rule holds when recomputed from the metadata: the last value in `gate.scores` is at least 85, and either the last two values in `gate.scores` are both at least 85 or `gate.outstanding_feedback` is empty;
-- `gate.rounds` is between 1 and 3 and equals the length of `gate.scores`;
+- `gate.rounds` is between 1 and 5 and equals the length of `gate.scores`;
 - `gate.critic.status` is `ok`;
 - no `open_questions` item has `blocking: true`.
 

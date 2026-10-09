@@ -41,7 +41,7 @@ function commentBody(meta, { section = true } = {}) {
 test('exports the gate constants', () => {
   assert.equal(gate.SCORE_THRESHOLD, 85);
   assert.equal(gate.STABILITY_WINDOW, 2);
-  assert.equal(gate.MAX_ROUNDS, 3);
+  assert.equal(gate.MAX_ROUNDS, 5);
 });
 
 test('extractMetadata parses the JSON block from the details element', () => {
@@ -80,7 +80,7 @@ const invalidCases = {
   'checklist non-boolean': metadata({ gate: { checklist: { grounded: 'yes', mapped: true, compatible: true, versioned: true, testable: true, idiomatic: true } } }),
   'score out of range': metadata({ gate: { score: 120 } }),
   'scores not array': metadata({ gate: { scores: 'x' } }),
-  'rounds above max': metadata({ gate: { rounds: 4, scores: [90, 90, 90, 90] } }),
+  'rounds above max': metadata({ gate: { rounds: 6, scores: [90, 90, 90, 90, 90, 90] } }),
   'rounds not equal to scores length': metadata({ gate: { rounds: 1 } }),
   'converged not boolean': metadata({ gate: { converged: 'true' } }),
   'feedback not array': metadata({ gate: { outstanding_feedback: 'x' } }),
@@ -152,8 +152,8 @@ test('deriveOutcome fails safe for schema-invalid metadata and lists the validat
   assert.match(result.reasons.join(' '), /schema_version/);
 });
 
-test('deriveOutcome with exactly three rounds is allowed', () => {
-  const meta = metadata({ gate: { scores: [70, 86, 90], score: 90, rounds: 3 } });
+test('deriveOutcome with exactly five rounds is allowed', () => {
+  const meta = metadata({ gate: { scores: [70, 72, 80, 86, 90], score: 90, rounds: 5 } });
   assert.equal(gate.deriveOutcome(meta).label, READY);
 });
 

@@ -84,7 +84,7 @@ All four subagents are defined in the `--agents` JSON argument in `engine.args` 
 The done gate has two parts:
 
 - **Hard checklist** (all must pass): Grounded, Mapped, Compatible, Versioned, Testable, Idiomatic.
-- **Convergence**: the final critic score is at least 85, and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback. The loop runs at most 3 rounds, within a 50-minute self-budget (the job times out at 60 minutes).
+- **Convergence**: the final critic score is at least 85, and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback. The loop runs at most 5 rounds, within a 50-minute self-budget (the job times out at 60 minutes). More rounds raise cost and run time; `--autocompact 250k` is the context margin.
 
 The comment includes a `### Quality gate` section (outcome line, checklist table, score, rounds, and outstanding feedback when human review is needed) and metadata schema `1.1` with a `gate` object. The section is informational; `change-factory` must not treat it as scope.
 
@@ -103,7 +103,7 @@ The gate is a consistency guard, not a trust boundary: critic verdicts pass thro
 
 ### Tuning the gate
 
-The gate constants (threshold 85, stability window 2, maximum 3 rounds) are defined in `gate.js` and restated in `critic-rubric.md` and the workflow prompt. A consistency test (`lib/research-factory-gate-constants.test.mjs`) fails if they drift, so change all three together with the spec.
+The gate constants (threshold 85, stability window 2, maximum 5 rounds) are defined in `gate.js` and restated in `critic-rubric.md` and the workflow prompt. A consistency test (`lib/research-factory-gate-constants.test.mjs`) fails if they drift, so change all three together with the spec.
 
 ### Social contract
 

@@ -273,7 +273,7 @@ The `research-factory` workflow SHALL NOT apply the `change-factory`, `code-fact
 - **AND** no downstream factory workflow SHALL be started by the run
 
 ### Requirement: Research is refined through a bounded, independent critique loop
-Every research run, whether triggered by label or by `workflow_dispatch`, SHALL refine its research through a loop of draft -> critique -> revise before emitting the research comment. Each critique SHALL be produced by a critic role that is separate from the research author and runs on a different model from the author. The critic SHALL evaluate the current draft against the hard checklist defined by the `ci-research-factory-comment-format` capability, SHALL score it from 0 to 100 across completeness, feasibility, compatibility, test coverage, and idiomaticness, and SHALL list any actionable feedback. The loop SHALL run at most 3 rounds, where one round is one critique of one draft. The loop SHALL stop early once the research is converged and every hard-checklist item passes. If the research is converged but a checklist item fails, the loop SHALL continue, with the critic's feedback targeting the failing items, until the round bound is reached. The critique loop SHALL NOT span multiple workflow runs.
+Every research run, whether triggered by label or by `workflow_dispatch`, SHALL refine its research through a loop of draft -> critique -> revise before emitting the research comment. Each critique SHALL be produced by a critic role that is separate from the research author and runs on a different model from the author. The critic SHALL evaluate the current draft against the hard checklist defined by the `ci-research-factory-comment-format` capability, SHALL score it from 0 to 100 across completeness, feasibility, compatibility, test coverage, and idiomaticness, and SHALL list any actionable feedback. The loop SHALL run at most 5 rounds, where one round is one critique of one draft. The loop SHALL stop early once the research is converged and every hard-checklist item passes. If the research is converged but a checklist item fails, the loop SHALL continue, with the critic's feedback targeting the failing items, until the round bound is reached. The critique loop SHALL NOT span multiple workflow runs.
 
 #### Scenario: Strong first draft finishes in one round
 - **GIVEN** a first research draft that the critic scores at 85 or higher
@@ -299,7 +299,7 @@ Every research run, whether triggered by label or by `workflow_dispatch`, SHALL 
 
 #### Scenario: Round bound reached without convergence
 - **GIVEN** a research draft that has not satisfied the convergence rule
-- **WHEN** the third critique round completes
+- **WHEN** the fifth critique round completes
 - **THEN** the agent SHALL stop iterating
 - **AND** the gate outcome SHALL be `research-needs-human`
 
