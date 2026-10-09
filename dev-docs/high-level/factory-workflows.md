@@ -45,6 +45,8 @@ After a factory runs, the issue carries exactly one `phase-*` label so the pipel
 
 Behavior is pinned by the [`ci-factory-pipeline-phase-labels`](../../openspec/specs/ci-factory-pipeline-phase-labels/spec.md) spec.
 
+`research-factory` additionally sets one **outcome label** (`ready-for-change-factory` or `research-needs-human`) from its quality gate; see [`research-factory` — feature research](#research-factory--feature-research). Outcome labels do not trigger any workflow.
+
 ## Shared mechanics
 
 Every factory uses the same deterministic pre-activation pattern, implemented under [`.github/scripts/workflows/lib/factory-runners/`](../../.github/scripts/workflows/lib/factory-runners/):
@@ -56,7 +58,7 @@ Every factory uses the same deterministic pre-activation pattern, implemented un
 5. **Remove trigger label** and **set phase label**.
 6. **Upload context artifact** that the agent job downloads.
 
-The agent then runs against an LLM gateway model with the relevant tools (`elastic-docs` MCP, `github` gh-proxy toolset, sometimes a live Elastic Stack) and emits **bounded safe outputs** — usually at most one PR and one comment per run.
+The agent then runs against an LLM gateway model with the relevant tools (`elastic-docs` CLI, `github` gh-proxy toolset, sometimes a live Elastic Stack) and emits **bounded safe outputs** — usually at most one PR and one comment per run.
 
 ## `research-factory` — feature research
 
@@ -70,6 +72,38 @@ Adds a deep-research pass **before** `change-factory`. It compares at least two 
 ### Output: sticky comment
 
 A single comment delimited by `<!-- gha-research-factory -->` containing problem framing, two or more candidate approaches, a recommendation, open questions, and references. The exact section list and metadata JSON shape are pinned by [`ci-research-factory-comment-format`](../../openspec/specs/ci-research-factory-comment-format/spec.md); the agent prompt is in [`research-factory-issue.md`](../../.github/workflows/research-factory-issue.md).
+
+### Critique loop and done gate
+
+Research is not a single pass. The author agent iterates draft -> critique -> revise, calling an independent `research-critic` subagent (a different model, `openai/gpt-6.1-sol`) each round with fresh context. The critic follows the rubric in [`critic-rubric.md`](../../.github/scripts/workflows/research-factory/critic-rubric.md) and must not read the researchers' notes.
+
+Research itself is delegated. The author launches three researcher subagents in parallel (`oas-researcher`, `repo-patterns-researcher`, `docs-researcher`, all `moonshotai/kimi-k3`). Each writes a short notes file under `/tmp/gh-aw/agent/research/` (`notes-oas.md`, `notes-repo.md`, `notes-docs.md`). The author drafts only from those notes and the issue, and SHALL NOT grep or read `oas.yaml`, `kibana.gen.go`, or repository source itself. When the critic flags a gap, the author re-invokes the relevant researcher. This keeps the author's context small, which is the main protection against context compaction losing the `update_research_comment` tool; `--effort medium` and `--autocompact 250k` in `engine.args` and the experimental `CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000` and `CLAUDE_CODE_AUTO_COMPACT_WINDOW=250000` in `engine.env` (these slugs are not first-party, so the CLI may assume a 200k window; verify via `compact_boundary` `pre_tokens` in the run log, which should now be about 212k or higher, and remove the variables if they cause API errors) are secondary settings (the value is the auto-compact window size, and compaction triggers at a fraction of it).
+
+All four subagents are defined in the `--agents` JSON argument in `engine.args` of [`research-factory-issue.md`](../../.github/workflows/research-factory-issue.md). The `elastic-docs` documentation tool is a CLI on PATH, so `docs-researcher` and `research-critic` get `Bash`, restricted by their prompts to that CLI. The author emits the comment with the `safeoutputs update_research_comment` CLI, piping the draft through [`emit-research-comment.js`](../../.github/scripts/workflows/research-factory/emit-research-comment.js) (the command is also written to `EMIT.md` so it survives compaction). Each safe-output string input is capped at 10 KiB, so the helper splits the body into `body`, `body_2`, ..., `body_7` and `update-research-comment.js` joins them. The platform trims every string input and strips HTML comments, so the parts are delimited with plain `%%RF_PART_START%%` / `%%RF_PART_END%%` sentinels that the join removes; the published body is therefore limited to 60,000 characters, and every draft the critic reviews must respect that. This is a workaround: once gh-aw releases the custom-job `artifacts:` option (absent in v0.89.21), the comment should be published from a file instead (TODO in the workflow source). Change a subagent's model, tools, or prompt there; change the author model in the workflow's top-level `model:`. gh-aw inline sub-agents (`## agent:` blocks) were tried and were not visible to Claude Code in CI, so they are not used.
+
+The done gate has two parts:
+
+- **Hard checklist** (all must pass): Grounded, Mapped, Compatible, Versioned, Testable, Idiomatic. `Versioned` passes with a sourced minimum version and a named gating strategy, or with an explicitly disclosed unsourced version plus a conservative gating strategy and a confirming probe; inaccurate claims about repository enforcement fail Grounded instead.
+- **Convergence**: the final critic score is at least 85, and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback. The loop runs at most 5 rounds, within a 50-minute self-budget (the job times out at 60 minutes). More rounds raise cost and run time; `--autocompact 250k` is the context margin.
+
+The comment includes a `### Quality gate` section (outcome line, checklist table, score, rounds, and outstanding feedback when human review is needed) and metadata schema `1.1` with a `gate` object. The section is informational; `change-factory` must not treat it as scope.
+
+### Outcome labels
+
+After the comment is posted, the `update-research-comment` script derives the outcome from the published metadata, independently of what the agent reported ([`gate.js`](../../.github/scripts/workflows/research-factory/gate.js)). It applies exactly one label and removes the other:
+
+| Label | Meaning |
+|-------|---------|
+| `ready-for-change-factory` | Checklist green, converged, critic ran, no blocking open questions |
+| `research-needs-human` | Anything else, including missing or invalid metadata |
+
+If the agent reported a different outcome, the comment is corrected with a visible override note so the comment and label never disagree. Pre-activation clears stale outcome labels at the start of every run. Neither label triggers a workflow, and the classifier's `needs-human` label is never touched.
+
+The gate is a consistency guard, not a trust boundary: critic verdicts pass through the author agent, so the label gates human attention and does not replace review.
+
+### Tuning the gate
+
+The gate constants (threshold 85, stability window 2, maximum 5 rounds) are defined in `gate.js` and restated in `critic-rubric.md` and the workflow prompt. A consistency test (`lib/research-factory-gate-constants.test.mjs`) fails if they drift, so change all three together with the spec.
 
 ### Social contract
 

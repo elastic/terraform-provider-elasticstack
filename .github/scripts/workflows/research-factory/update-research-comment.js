@@ -1,4 +1,6 @@
 const fs = require('fs');
+const { joinParts } = require('./emit-research-comment.js');
+const { evaluateBody, applyOverride, READY, NEEDS_HUMAN } = require('./gate.js');
 
 module.exports = async function ({ github, context, core }) {
   const { owner, repo } = context.repo;
@@ -16,8 +18,13 @@ module.exports = async function ({ github, context, core }) {
     return;
   }
 
-  const fileContent = fs.readFileSync(outputFile, 'utf8');
-  const agentOutput = JSON.parse(fileContent);
+  let agentOutput;
+  try {
+    agentOutput = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
+  } catch (err) {
+    core.setFailed(`update-research-comment: could not read agent output: ${err.message}`);
+    return;
+  }
   const items = (agentOutput.items || []).filter((i) => i.type === 'update_research_comment');
 
   if (items.length === 0) {
@@ -26,7 +33,13 @@ module.exports = async function ({ github, context, core }) {
   }
 
   const item = items[0];
-  let body = item.body || '';
+  let body;
+  try {
+    body = joinParts(item);
+  } catch (err) {
+    core.setFailed(`update-research-comment: ${err.message}`);
+    return;
+  }
 
   // Prepend the marker automatically; the agent does not need to supply it.
   if (body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n')) {
@@ -37,6 +50,9 @@ module.exports = async function ({ github, context, core }) {
   } else {
     body = marker + '\n' + body;
   }
+
+  const result = evaluateBody(body);
+  body = applyOverride(body, result);
 
   // Find existing research comment by github-actions[bot]
   let existingComment = null;
@@ -59,8 +75,8 @@ module.exports = async function ({ github, context, core }) {
     return;
   }
 
-  if (existingComment) {
-    try {
+  try {
+    if (existingComment) {
       await github.rest.issues.updateComment({
         owner,
         repo,
@@ -68,11 +84,7 @@ module.exports = async function ({ github, context, core }) {
         body,
       });
       core.info(`Updated research comment ${existingComment.id} on issue #${issueNumber}`);
-    } catch (err) {
-      core.setFailed(`Failed to update research comment: ${err.message}`);
-    }
-  } else {
-    try {
+    } else {
       const { data: newComment } = await github.rest.issues.createComment({
         owner,
         repo,
@@ -80,8 +92,29 @@ module.exports = async function ({ github, context, core }) {
         body,
       });
       core.info(`Created research comment ${newComment.id} on issue #${issueNumber}`);
-    } catch (err) {
-      core.setFailed(`Failed to create research comment: ${err.message}`);
     }
+  } catch (err) {
+    core.setFailed(`Failed to write research comment: ${err.message}`);
+    return;
   }
+
+  const otherLabel = result.label === READY ? NEEDS_HUMAN : READY;
+  try {
+    await github.rest.issues.addLabels({ owner, repo, issue_number: issueNumber, labels: [result.label] });
+    try {
+      await github.rest.issues.removeLabel({ owner, repo, issue_number: issueNumber, name: otherLabel });
+    } catch (err) {
+      if (err.status !== 404) {
+        throw err;
+      }
+    }
+  } catch (err) {
+    core.setFailed(`Failed to set outcome label ${result.label}: ${err.message}`);
+  }
+
+  await core.summary
+    .addRaw(
+      `### Research gate outcome\n\n- Derived outcome: \`${result.label}\`\n- Reasons: ${result.reasons.join('; ')}\n- Reported outcome overridden: ${result.overridden ? 'yes' : 'no'}\n`,
+    )
+    .write();
 };
