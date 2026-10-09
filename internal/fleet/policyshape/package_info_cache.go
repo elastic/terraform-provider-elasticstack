@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package managedintegration
+package policyshape
 
 import (
 	"sync"
@@ -23,22 +23,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 )
 
-// knownPackages caches Fleet package registry metadata keyed by
-// policyshape.PackageCacheKey ("<name>-<version>"). It backs the `vars_json`
-// attribute's policyshape.VarsJSONType default-population logic wired in
-// getSchema (schema.go).
-//
-// Task 4 (schema) only needs the read-side adapter below so the shared
-// policyshape.VarsJSONType can be constructed at schema-definition time.
-// Populating the cache -- calling the Fleet package-info API and storing the
-// result via knownPackages.Store, mirroring
-// internal/fleet/integration_policy/resource.go's getPackageInfo -- is Task
-// 5's responsibility (create.go/read.go).
+// knownPackages is a process-wide cache of Fleet package registry metadata
+// keyed by PackageCacheKey ("<name>-<version>"). It is shared by every
+// resource that uses VarsJSONType, since the package info is identical
+// regardless of which resource fetched it.
 var knownPackages sync.Map
 
-// lookupCachedPackageInfo adapts knownPackages to
-// policyshape.PackageInfoLookupFunc.
-func lookupCachedPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
+// LookupPackageInfo returns the cached package info for cacheKey. It satisfies
+// PackageInfoLookupFunc.
+func LookupPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
 	value, ok := knownPackages.Load(cacheKey)
 	if !ok {
 		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
@@ -48,4 +41,14 @@ func lookupCachedPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInf
 		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
 	}
 	return pkg, true
+}
+
+// StorePackageInfo records pkg under cacheKey for future LookupPackageInfo calls.
+func StorePackageInfo(cacheKey string, pkg kbapi.KibanaHTTPAPIsGetPackageInfo) {
+	knownPackages.Store(cacheKey, pkg)
+}
+
+// DeletePackageInfo removes any cached entry for cacheKey.
+func DeletePackageInfo(cacheKey string) {
+	knownPackages.Delete(cacheKey)
 }

@@ -27,6 +27,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,7 +48,7 @@ func newTestFleetClient(t *testing.T, handler http.Handler) *fleet.Client {
 }
 
 func TestGetPackageInfo_PackageNotFound(t *testing.T) {
-	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.10"))
+	policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.10"))
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -65,8 +66,8 @@ func TestGetPackageInfo_PackageNotFound(t *testing.T) {
 }
 
 func TestGetPackageInfo_Success(t *testing.T) {
-	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11"))
-	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
+	policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.11"))
+	t.Cleanup(func() { policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.11")) })
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := struct {
@@ -91,8 +92,8 @@ func TestGetPackageInfo_Success(t *testing.T) {
 
 func TestGetPackageInfo_CacheHit(t *testing.T) {
 	cached := kbapi.KibanaHTTPAPIsGetPackageInfo{Name: "tcp", Version: "3.1.11"}
-	knownPackages.Store(getPackageCacheKey("tcp", "3.1.11"), cached)
-	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
+	policyshape.StorePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.11"), cached)
+	t.Cleanup(func() { policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.11")) })
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("HTTP request should not be made when cache is hit")
@@ -106,8 +107,8 @@ func TestGetPackageInfo_CacheHit(t *testing.T) {
 }
 
 func TestGetPackageInfo_SpaceAware(t *testing.T) {
-	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11"))
-	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.11")) })
+	policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.11"))
+	t.Cleanup(func() { policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.11")) })
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify the request path includes the space prefix
@@ -133,8 +134,8 @@ func TestGetPackageInfo_SpaceAware(t *testing.T) {
 }
 
 func TestGetPackageInfo_FallbackToInstalled(t *testing.T) {
-	knownPackages.Delete(getPackageCacheKey("tcp", "3.1.10"))
-	t.Cleanup(func() { knownPackages.Delete(getPackageCacheKey("tcp", "3.1.10")) })
+	policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.10"))
+	t.Cleanup(func() { policyshape.DeletePackageInfo(policyshape.PackageCacheKey("tcp", "3.1.10")) })
 
 	// Exact version 3.1.10 returns 404; versionless call returns the installed version.
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

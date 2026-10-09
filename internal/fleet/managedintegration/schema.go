@@ -170,7 +170,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Computed:   true,
 				Optional:   true,
 				Sensitive:  varsAreSensitive,
-				CustomType: policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				CustomType: policyshape.NewVarsJSONType(policyshape.LookupPackageInfo),
 				MarkdownDescription: customtypes.DescriptionWithContextWarning(
 					"Integration-level variables as JSON. Variables vary depending on the integration package. Updatable in-place.",
 				),
