@@ -68,6 +68,11 @@ func migrateV0ToV1(_ context.Context, req resource.UpgradeStateRequest, resp *re
 
 	stateutil.NullifyEmptyString(stateMap, attrNotifyWhen, attrThrottle, attrParams)
 
+	// Upgrader JSON is decoded strictly against the current schema. These
+	// attributes are no longer defined, so prior SDK state must not retain them.
+	delete(stateMap, "last_execution_status")
+	delete(stateMap, "last_execution_date")
+
 	// Handle actions: convert frequency, alerts_filter, and timeframe from lists to objects
 	if actions, ok := stateMap["actions"].([]any); ok {
 		for _, actionAny := range actions {

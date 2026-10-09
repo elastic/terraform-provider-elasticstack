@@ -92,6 +92,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrules"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
@@ -333,6 +334,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
+		alertingrules.NewDataSource,
 		security_role.NewDataSource,
 		securityentitystoreresolutiongroup.NewDataSource,
 		securityentitystore.NewDataSource,
