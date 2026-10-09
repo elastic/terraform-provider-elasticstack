@@ -382,6 +382,30 @@ safe-outputs:
           description: Markdown body of the research comment (without the gha-research-factory marker)
           required: true
           type: string
+        body_2:
+          description: Continuation of the comment body; concatenated in order
+          required: false
+          type: string
+        body_3:
+          description: Continuation of the comment body; concatenated in order
+          required: false
+          type: string
+        body_4:
+          description: Continuation of the comment body; concatenated in order
+          required: false
+          type: string
+        body_5:
+          description: Continuation of the comment body; concatenated in order
+          required: false
+          type: string
+        body_6:
+          description: Continuation of the comment body; concatenated in order
+          required: false
+          type: string
+        body_7:
+          description: Continuation of the comment body; concatenated in order
+          required: false
+          type: string
       steps:
         - name: Checkout repository
           uses: actions/checkout@v7.0.1
@@ -485,14 +509,20 @@ and re-read that file before you emit; it survives context compaction.
 
 The only exit path is the CLI `safeoutputs update_research_comment`, which is on PATH. It is not a
 native tool, so never conclude it is missing, and never inspect `mcp-servers.json`, `tools.json`, or
-the safe-outputs mount. Working command (after writing the final body to `draft-final.md`):
+the safe-outputs mount. Write the final body to `/tmp/gh-aw/agent/research/draft-final.md`, then run
+this from the repository root:
 
 ```bash
-cd /tmp/gh-aw/agent/research && jq -Rs '{body: .}' draft-final.md | safeoutputs update_research_comment .
+node .github/scripts/workflows/research-factory/emit-research-comment.js /tmp/gh-aw/agent/research/draft-final.md | safeoutputs update_research_comment .
 ```
 
-Run `safeoutputs update_research_comment --help` to see the syntax if unsure. If you are unsure of
-anything, re-read `EMIT.md`. You **SHALL NOT** call it more than once.
+The helper splits the body at line boundaries into `body`, `body_2`, ... because each safe-output
+input is limited to 10 KiB. Run `safeoutputs update_research_comment --help` to see the syntax if
+unsure. If you are unsure of anything, re-read `EMIT.md`. You **SHALL NOT** call it more than once.
+
+SIZE RULE: the comment body, which is every `draft-N.md` the critic reviews, must be at most
+60,000 characters (check with `wc -m`). The critic must score exactly the text that gets published, so never
+trim after the critique; keep every draft within the limit from the start.
 
 ## Comparison requirement
 

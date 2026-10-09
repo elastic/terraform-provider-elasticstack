@@ -32,7 +32,8 @@ module.exports = async function ({ github, context, core }) {
   }
 
   const item = items[0];
-  let body = item.body || '';
+  const bodyKeys = ['body', ...Array.from({ length: 6 }, (_, i) => `body_${i + 2}`)];
+  let body = bodyKeys.map((key) => (typeof item[key] === 'string' ? item[key] : '')).join('');
 
   // Prepend the marker automatically; the agent does not need to supply it.
   if (body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n')) {

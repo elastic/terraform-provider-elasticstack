@@ -158,12 +158,28 @@ test('engine args use medium effort', () => {
   assert.match(workflow, /- "--effort"\n\s+- "medium"/);
 });
 
-test('prompt has the emission section and EMIT.md note', () => {
+test('prompt has the emission section, helper pipeline, EMIT.md note, and size rule', () => {
   assert.match(workflow, /## Emitting the comment/);
-  assert.match(workflow, /jq -Rs '\{body: \.\}' draft-final\.md \| safeoutputs update_research_comment \./);
+  assert.match(
+    workflow,
+    /node \.github\/scripts\/workflows\/research-factory\/emit-research-comment\.js \/tmp\/gh-aw\/agent\/research\/draft-final\.md \| safeoutputs update_research_comment \./,
+  );
+  assert.ok(!/jq -Rs/.test(workflow));
   assert.match(workflow, /safeoutputs update_research_comment --help/);
   assert.match(workflow, /\/tmp\/gh-aw\/agent\/research\/EMIT\.md/);
-  assert.match(workflow, /SHALL NOT\*\* call `update_research_comment` more than once/);
+  assert.match(workflow, /SHALL NOT\*\* call it more than once/);
+  assert.match(workflow, /SIZE RULE/);
+  assert.match(workflow, /60,000 characters/);
+  assert.match(workflow, /wc -m/);
+});
+
+test('custom safe-output job declares body and continuation inputs body_2..body_7', () => {
+  const job = workflow.slice(workflow.indexOf('    update-research-comment:'), workflow.indexOf('      steps:', workflow.indexOf('    update-research-comment:')));
+  assert.match(job, /\n        body:\n[\s\S]*?required: true/);
+  for (let i = 2; i <= 7; i++) {
+    assert.match(job, new RegExp(`\\n        body_${i}:\\n[\\s\\S]*?required: false`));
+  }
+  assert.ok(!job.includes('body_8'));
 });
 
 test('prompt has the context rules for polling, drafts, and invocation prompts', () => {

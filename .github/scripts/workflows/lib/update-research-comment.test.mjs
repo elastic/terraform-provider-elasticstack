@@ -280,3 +280,50 @@ test('a removeLabel 500 after addLabels still writes the summary', async () => {
   assert.equal(env.summary.length, 1);
   assert.equal(env.core.failures.length, 1);
 });
+
+function writeItem(item) {
+  writeOutput({ items: [{ type: 'update_research_comment', ...item }] });
+}
+
+test('joins body continuation parts in order before posting', async () => {
+  const meta = readyMetadata();
+  const full = body(meta);
+  const a = full.slice(0, 40);
+  const b = full.slice(40, 120);
+  const c = full.slice(120);
+  const env = setup({ meta });
+  writeItem({ body: a, body_2: b, body_3: c });
+  await updateResearchComment(env);
+  assert.equal(env.calls[0][1].body, `${MARKER}\n${full}`);
+  assert.deepEqual(env.calls[1][1].labels, [READY]);
+});
+
+test('a missing middle part is ignored and the rest stay ordered', async () => {
+  const env = setup({ meta: readyMetadata() });
+  writeItem({ body: 'A\n', body_3: 'C\n', body_2: '', body_5: 'E\n' });
+  await updateResearchComment(env);
+  assert.ok(env.calls[0][1].body.startsWith(`${MARKER}\nA\nC\nE\n`));
+});
+
+test('unicode parts are joined without alteration', async () => {
+  const env = setup({ meta: readyMetadata() });
+  writeItem({ body: 'é日本😀\n', body_2: '😀日本é\n' });
+  await updateResearchComment(env);
+  assert.ok(env.calls[0][1].body.startsWith(`${MARKER}\né日本😀\n😀日本é\n`));
+});
+
+test('a single body behaves as before', async () => {
+  const env = setup({ meta: readyMetadata() });
+  writeItem({ body: 'only\n' });
+  await updateResearchComment(env);
+  assert.ok(env.calls[0][1].body.startsWith(`${MARKER}\nonly\n`));
+});
+
+test('gate derivation runs on the joined body', async () => {
+  const meta = readyMetadata();
+  const full = body(meta);
+  const env = setup({ meta });
+  writeItem({ body: full.slice(0, 200), body_2: full.slice(200) });
+  await updateResearchComment(env);
+  assert.deepEqual(env.calls[1][1].labels, [READY]);
+});
