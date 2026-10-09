@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { sanitizers, sanitizeParts } from './research-factory-sanitizer-helper.mjs';
 
 const require = createRequire(import.meta.url);
 const updateResearchComment = require('../research-factory/update-research-comment.js');
@@ -348,3 +349,21 @@ test('end to end: emit, platform trim, comment script, gate parses metadata and 
   assert.deepEqual(env.calls[1][1].labels, [READY]);
   assert.equal(env.core.failures.length, 0);
 });
+
+for (const [name, fn] of sanitizers) {
+  test(`${name}: end to end through update-research-comment and the gate`, async () => {
+    const meta = readyMetadata();
+    const filler = Array.from({ length: 330 }, (_, i) => `- bullet ${i}: ${'text '.repeat(12)}`).join('\n');
+    const full = `## Implementation research\n\n### Open questions\n\n${filler}\n\n### Quality gate\n\n**Outcome:** \`${READY}\` - ok\n\n### References\n\n- a\n\n<details>\n<summary>Pipeline metadata</summary>\n\n\`\`\`json\n${JSON.stringify(meta, null, 2)}\n\`\`\`\n\n</details>\n`;
+    const parts = sanitizeParts(require('../research-factory/emit-research-comment.js').splitBody(full), fn);
+    assert.ok(Object.keys(parts).length > 1);
+    const env = setup({ meta });
+    writeItem(parts);
+    await updateResearchComment(env);
+    const posted = env.calls[0][1].body;
+    assert.doesNotMatch(posted, /RF_PART/);
+    assert.doesNotMatch(posted, /overridden by the gate rule/);
+    assert.deepEqual(env.calls[1][1].labels, [READY]);
+    assert.equal(env.core.failures.length, 0);
+  });
+}

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { sanitizers, sanitizeParts } from './research-factory-sanitizer-helper.mjs';
 
 const require = createRequire(import.meta.url);
 const { splitBody, joinParts, PART_START, PART_END, MAX_PART_BYTES, MAX_PARTS, MAX_CHARS } = require('../research-factory/emit-research-comment.js');
@@ -13,10 +14,9 @@ const { splitBody, joinParts, PART_START, PART_END, MAX_PART_BYTES, MAX_PARTS, M
 const script = path.join(path.dirname(fileURLToPath(import.meta.url)), '../research-factory/emit-research-comment.js');
 const bytes = (s) => Buffer.byteLength(s, 'utf8');
 
-// The safe-output platform trims every string input; simulate it. Only the whole
-// body's own leading/trailing whitespace is lost, which is irrelevant for markdown.
-const trimParts = (parts) => Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, v.trim()]));
-const roundTrip = (text) => joinParts(trimParts(splitBody(text)));
+const trimParts = (parts) => sanitizeParts(parts, (v) => v.trim());
+const roundTrip = (text, fn = (v) => v.trim()) => joinParts(sanitizeParts(splitBody(text), fn));
+const normalise = (t) => t.replace(/\r\n/g, '\n').trim();
 
 test('constants match the per-input limit and part count', () => {
   assert.equal(MAX_PART_BYTES, 10000);
@@ -96,13 +96,6 @@ function syntheticDraft() {
   return `## Implementation research\n\n### Problem framing\n\n${filler(120)}\n\n### Open questions\n\n- **OQ-1** question\n\n### Out of scope\n\n${filler(80)}\n\n### References\n\n${filler(60)}\n\n<details>\n<summary>🤖 Pipeline metadata</summary>\n\n\`\`\`json\n${meta}\n\`\`\`\n\n</details>\n`;
 }
 
-test('a code fence split across chunks is preserved', () => {
-  const body = Array.from({ length: 900 }, (_, i) => `    "key_${i}": "value ${i}"`).join(',\n');
-  const text = `intro\n\n\`\`\`json\n{\n${body}\n}\n\`\`\`\n\noutro\n`;
-  assert.ok(Object.keys(splitBody(text)).length > 1);
-  assert.equal(roundTrip(text), text.trim());
-});
-
 test('a realistic draft with headings and a metadata fence at a boundary survives', () => {
   const text = syntheticDraft();
   assert.ok(text.length > 10000);
@@ -156,4 +149,62 @@ test('the CLI errors when no file is given', () => {
   const result = spawnSync('node', [script], { encoding: 'utf8' });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /usage/i);
+});
+
+// ---------------------------------------------------------------------------
+// Fence-aware splitting and sanitizer round trips
+// ---------------------------------------------------------------------------
+
+function fencedDoc({ fence = '```', leadBytes }) {
+  const meta = JSON.stringify({ schema_version: '1.1', gate: { outcome: 'research-needs-human', note: 'x'.repeat(300) } }, null, 2);
+  const lead = `${'filler line to push the fence to the boundary\n'.repeat(Math.ceil(leadBytes / 46))}`;
+  return `${lead}\n### Open questions\n\n- **OQ-1** q\n\n<details>\n<summary>Pipeline metadata</summary>\n\n${fence}json\n${meta}\n${fence}\n\n</details>\n`;
+}
+
+for (const [name, fn] of sanitizers) {
+  test(`${name}: a metadata fence landing at every possible boundary round-trips`, () => {
+    for (let leadBytes = 9800; leadBytes <= 10100; leadBytes += 7) {
+      const text = fencedDoc({ leadBytes }) + 'tail\n'.repeat(5);
+      assert.equal(roundTrip(text, fn), normalise(text), `leadBytes=${leadBytes}`);
+    }
+  });
+
+  test(`${name}: tilde fences, multiple fences and a long fenced block round-trip`, () => {
+    const block = (f, n) => `${f}text\n${Array.from({ length: n }, (_, i) => `code ${i}`).join('\n')}\n${f}\n\n`;
+    const text = `${'prose line\n'.repeat(700)}\n${block('~~~', 300)}${'more prose\n'.repeat(500)}\n${block('```', 400)}${block('````', 50)}end\n`;
+    assert.ok(Object.keys(splitBody(text)).length > 1);
+    assert.equal(roundTrip(text, fn), normalise(text));
+  });
+
+  test(`${name}: no part ends inside a fenced block`, () => {
+    const text = fencedDoc({ leadBytes: 9900 });
+    for (const part of Object.values(splitBody(text))) {
+      const opens = (part.match(/^```/gm) || []).length;
+      assert.equal(opens % 2, 0, 'balanced fences in every part');
+    }
+  });
+}
+
+test('a fenced block larger than a part is rejected with a clear message', () => {
+  const text = `intro\n\n\`\`\`json\n${'x'.repeat(11000)}\n\`\`\`\n`;
+  assert.throws(() => splitBody(text), /fenced code block[\s\S]*shorten/i);
+});
+
+test('the CLI reports an oversize fenced block and emits nothing', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'emit-'));
+  const file = path.join(dir, 'draft.md');
+  fs.writeFileSync(file, `intro\n\n\`\`\`json\n${'x'.repeat(11000)}\n\`\`\`\n`);
+  const result = spawnSync('node', [script, file], { encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /shorten/i);
+  assert.equal(result.stdout, '');
+});
+
+test('joinParts tolerates a sanitizer-appended closing fence after the end sentinel', () => {
+  assert.equal(joinParts({ body: `a\n${PART_END}\n\`\`\``, body_2: `${PART_START}\nb` }), 'a\nb');
+  assert.equal(joinParts({ body: `a\n${PART_END}  `, body_2: `${PART_START}\nb` }), 'a\nb');
+});
+
+test('joinParts throws when a sentinel survives in the joined body', () => {
+  assert.throws(() => joinParts({ body: `a ${PART_END} mid`, body_2: 'b' }), /sentinel/i);
 });

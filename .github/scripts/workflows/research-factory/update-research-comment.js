@@ -33,7 +33,13 @@ module.exports = async function ({ github, context, core }) {
   }
 
   const item = items[0];
-  let body = joinParts(item);
+  let body;
+  try {
+    body = joinParts(item);
+  } catch (err) {
+    core.setFailed(`update-research-comment: ${err.message}`);
+    return;
+  }
 
   // Prepend the marker automatically; the agent does not need to supply it.
   if (body.startsWith(marker + '\n') || body.startsWith(marker + '\r\n')) {

@@ -534,6 +534,9 @@ SIZE RULE: the comment body, which is every `draft-N.md` the critic reviews, mus
 60,000 characters (check with `wc -m`). The critic must score exactly the text that gets published, so never
 trim after the critique; keep every draft within the limit from the start.
 
+The helper never cuts inside a fenced code block, so each fenced code block must be under about 9,000 bytes;
+it fails with a clear message otherwise, and you must then shorten that block.
+
 ## Comparison requirement
 
 You SHALL compare at least two distinct candidate approaches under `### Approaches considered`. Each

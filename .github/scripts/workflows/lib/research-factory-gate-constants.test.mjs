@@ -169,6 +169,7 @@ test('prompt has the emission section, helper pipeline, EMIT.md note, and size r
   assert.match(workflow, /\/tmp\/gh-aw\/agent\/research\/EMIT\.md/);
   assert.match(workflow, /SHALL NOT\*\* call it more than once/);
   assert.match(workflow, /SIZE RULE/);
+  assert.match(workflow, /fenced code block must be under about 9,000 bytes/);
   assert.match(workflow, /60,000 characters/);
   assert.match(workflow, /wc -m/);
 });

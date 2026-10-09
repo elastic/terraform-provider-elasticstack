@@ -367,3 +367,10 @@ test('an unbackticked outcome line that matches the label is not an override', (
   const body = commentBody(metadata()).replace(/\*\*Outcome:\*\* `([^`]*)`/, '**Outcome:** $1');
   assert.equal(gate.evaluateBody(body).overridden, false);
 });
+
+test('a body with a leaked part sentinel inside the metadata fence fails safe to research-needs-human', () => {
+  const leaked = `## Implementation research\n\n### References\n\n- a\n\n<details>\n<summary>🤖 Pipeline metadata</summary>\n\n\`\`\`json\n%%RF_PART_END%%\n\`\`\`${JSON.stringify(metadata())}\n\`\`\`\n</details>\n`;
+  const result = gate.evaluateBody(leaked);
+  assert.equal(result.label, HUMAN);
+  assert.match(result.reasons.join(' '), /parse/i);
+});

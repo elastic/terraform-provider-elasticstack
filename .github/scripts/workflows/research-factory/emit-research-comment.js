@@ -24,21 +24,64 @@ function splitLongLine(line, budget) {
   return pieces;
 }
 
+const FENCE_LINE = /^( {0,3})(`{3,}|~{3,})([^`~\s]*)?(.*)$/;
+
+function fenceOf(line) {
+  const m = FENCE_LINE.exec(line.replace(/\r?\n$/, ''));
+  if (!m) {
+    return null;
+  }
+  const info = `${m[3] || ''}${m[4] || ''}`;
+  if (m[2][0] === '`' && info.includes('`')) {
+    return null;
+  }
+  return { char: m[2][0], length: m[2].length, info: info.trim() };
+}
+
+// Groups lines into atoms: a fenced block (opener through closer) is one atom, so a cut never lands inside it.
+function toAtoms(text) {
+  const atoms = [];
+  let fenced = null;
+  let open = null;
+  for (const line of text.match(/[^\n]*\n|[^\n]+/g) || ['']) {
+    const fence = fenceOf(line);
+    if (open) {
+      open.text += line;
+      if (fence && fence.char === open.char && fence.length >= open.length && fence.info === '') {
+        atoms.push({ text: open.text, fenced: true });
+        open = null;
+      }
+    } else if (fence) {
+      open = { text: line, char: fence.char, length: fence.length };
+    } else {
+      atoms.push({ text: line, fenced: false });
+    }
+  }
+  if (open) {
+    atoms.push({ text: open.text, fenced: true });
+  }
+  return atoms;
+}
+
 function splitBody(text) {
   const chars = Array.from(text).length;
   if (chars > MAX_CHARS) {
     throw new Error(`comment body is ${chars} characters, above the ${MAX_CHARS} character limit`);
   }
-
   if (byteLength(text) <= MAX_PART_BYTES) {
     return { body: text };
   }
 
-  const budget = MAX_PART_BYTES - byteLength(PART_START) - byteLength(PART_END);
+  const budget = MAX_PART_BYTES - byteLength(PART_START) - 1 - byteLength(PART_END);
   const chunks = [];
   let current = '';
-  for (const line of text.match(/[^\n]*\n|[^\n]+/g) || ['']) {
-    for (const piece of byteLength(line) > budget ? splitLongLine(line, budget) : [line]) {
+  for (const atom of toAtoms(text)) {
+    if (atom.fenced && byteLength(atom.text) > budget) {
+      throw new Error(
+        `a fenced code block of ${byteLength(atom.text)} bytes exceeds the ${budget} byte part budget; shorten that block`,
+      );
+    }
+    for (const piece of byteLength(atom.text) > budget ? splitLongLine(atom.text, budget) : [atom.text]) {
       if (current !== '' && byteLength(current) + byteLength(piece) > budget) {
         chunks.push(current);
         current = '';
@@ -53,17 +96,26 @@ function splitBody(text) {
   }
   const last = chunks.length - 1;
   return Object.fromEntries(
-    chunks.map((chunk, i) => [i === 0 ? 'body' : `body_${i + 1}`, `${i > 0 ? PART_START : ''}${chunk}${i < last ? PART_END : ''}`]),
+    chunks.map((chunk, i) => [
+      i === 0 ? 'body' : `body_${i + 1}`,
+      `${i > 0 ? `${PART_START}\n` : ''}${chunk}${i < last ? PART_END : ''}`,
+    ]),
   );
 }
 
+const TRAILING_END = new RegExp(`${PART_END}\\s*(?:(?:\`{3,}|~{3,})\\s*)?$`);
+
 function joinParts(item) {
   const keys = ['body', ...Array.from({ length: MAX_PARTS - 1 }, (_, i) => `body_${i + 2}`)];
-  return keys
+  const joined = keys
     .map((key) => (typeof item[key] === 'string' ? item[key] : ''))
-    .map((part) => (part.startsWith(PART_START) ? part.slice(PART_START.length) : part))
-    .map((part) => (part.endsWith(PART_END) ? part.slice(0, -PART_END.length) : part))
+    .map((part) => (part.startsWith(`${PART_START}\n`) ? part.slice(PART_START.length + 1) : part.startsWith(PART_START) ? part.slice(PART_START.length) : part))
+    .map((part) => part.replace(TRAILING_END, ''))
     .join('');
+  if (joined.includes('%%RF_PART_')) {
+    throw new Error('a part sentinel survived in the joined comment body; refusing to publish a corrupt comment');
+  }
+  return joined;
 }
 
 if (typeof module !== 'undefined') {
