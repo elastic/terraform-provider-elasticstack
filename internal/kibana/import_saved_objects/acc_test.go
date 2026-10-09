@@ -18,6 +18,7 @@
 package importsavedobjects_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -30,6 +31,8 @@ import (
 
 var minVersionCompatibilityMode = version.Must(version.NewVersion("8.8.0"))
 
+const resourceName = "elasticstack_kibana_import_saved_objects.settings"
+
 func TestAccResourceImportSavedObjects(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -38,6 +41,8 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "space_id", "default"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_count", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.#", "1"),
@@ -46,6 +51,8 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "file_contents"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.0.destination_id", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.0.meta.title", "Advanced Settings [7.14.0]"),
 				),
 			},
 			{
@@ -75,8 +82,16 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.type"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.error.type"),
+					// Kibana's missing_references error does not populate the top-level
+					// "title" field (only errors.0.meta.title is set for this error type).
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.title", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.meta.icon", "visualizeApp"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.meta.title", "healthchecks"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.0.destination_id", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.0.meta.icon", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.0.meta.title", "Advanced Settings [7.14.0]"),
 				),
 			},
 			{
@@ -114,6 +129,9 @@ func TestAccResourceImportSavedObjects_CreateNewCopies(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
+					// create_new_copies regenerates the object ID, so Kibana always
+					// reports the newly assigned destination_id for the copy.
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.destination_id"),
 				),
 			},
 		},
@@ -170,6 +188,94 @@ func TestAccResourceImportSavedObjects_SpaceID(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.#", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceImportSavedObjects_ConfigValidators exercises the negative path of the
+// resource's two ConfigValidators at the acceptance-test level: create_new_copies cannot be
+// combined with overwrite, nor with compatibility_mode, when both are explicitly true.
+func TestAccResourceImportSavedObjects_ConfigValidators(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_new_copies_and_overwrite"),
+				ExpectError:              regexp.MustCompile(`create_new_copies and overwrite cannot both be set to true`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_new_copies_and_compatibility_mode"),
+				ExpectError:              regexp.MustCompile(`create_new_copies and compatibility_mode cannot both be set to true`),
+			},
+		},
+	})
+}
+
+// TestAccResourceImportSavedObjects_BoolDefaults covers the unset (null, since none of these
+// Optional-only attributes has a schema default) state of every optional boolean flag, then
+// sets "overwrite" to true in a second step to exercise update coverage for a boolean attribute.
+func TestAccResourceImportSavedObjects_BoolDefaults(t *testing.T) {
+	objectID := "tf-iso-" + sdkacctest.RandStringFromCharSet(8, "abcdefghijklmnopqrstuvwxyz0123456789")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("defaults"),
+				ConfigVariables: config.Variables{
+					"object_id": config.StringVariable(objectID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "ignore_import_errors"),
+					resource.TestCheckNoResourceAttr(resourceName, "create_new_copies"),
+					resource.TestCheckNoResourceAttr(resourceName, "overwrite"),
+					resource.TestCheckNoResourceAttr(resourceName, "compatibility_mode"),
+					resource.TestCheckResourceAttr(resourceName, "success", "true"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("overwrite_true"),
+				ConfigVariables: config.Variables{
+					"object_id": config.StringVariable(objectID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "overwrite", "true"),
+					resource.TestCheckNoResourceAttr(resourceName, "ignore_import_errors"),
+					resource.TestCheckNoResourceAttr(resourceName, "create_new_copies"),
+					resource.TestCheckNoResourceAttr(resourceName, "compatibility_mode"),
+					resource.TestCheckResourceAttr(resourceName, "success", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceImportSavedObjects_KibanaConnection exercises the per-resource
+// kibana_connection block, which overrides the provider-level Kibana connection.
+func TestAccResourceImportSavedObjects_KibanaConnection(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					append([]resource.TestCheckFunc{
+						resource.TestCheckResourceAttr(resourceName, "success", "true"),
+						resource.TestCheckResourceAttr(resourceName, "kibana_connection.#", "1"),
+						resource.TestCheckResourceAttrSet(resourceName, "kibana_connection.0.endpoints.0"),
+						resource.TestCheckResourceAttr(resourceName, "kibana_connection.0.insecure", "false"),
+					}, acctest.KibanaConnectionAuthChecks(resourceName)...)...,
 				),
 			},
 		},
