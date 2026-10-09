@@ -377,6 +377,11 @@ safe-outputs:
         issues: write
       runs-on: ubuntu-latest
       output: "Research comment created or updated successfully."
+      # TODO: body..body_7 work around the gateway's 10 KiB per-string-input cap (gh-aw cannot set
+      # maxLength on custom job inputs). Once gh-aw releases the documented custom-job `artifacts:`
+      # option (not in v0.89.21), replace them with a single body_path input and publish the file
+      # /tmp/gh-aw/agent/research/draft-final.md instead (see custom-safe-outputs docs, "Depending
+      # on agent-job files"), and delete emit-research-comment.js.
       inputs:
         body:
           description: Markdown body of the research comment (without the gha-research-factory marker)
