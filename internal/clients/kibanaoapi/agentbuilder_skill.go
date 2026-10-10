@@ -19,40 +19,44 @@ package kibanaoapi
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // GetSkill reads a specific skill from the API.
 func GetSkill(ctx context.Context, client *Client, spaceID, skillID string) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.GetAgentBuilderSkillsSkillidWithResponse(ctx, skillID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return HandleGetRawResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return crudGet[models.Skill](func() (int, []byte, error) {
+		resp, err := client.API.GetAgentBuilderSkillsSkillidWithResponse(ctx, skillID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // CreateSkill creates a new skill.
 func CreateSkill(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderSkillsJSONRequestBody) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.PostAgentBuilderSkillsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return HandleMutateRawResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return crudMutate[models.Skill](func() (int, []byte, error) {
+		resp, err := client.API.PostAgentBuilderSkillsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // UpdateSkill updates an existing skill.
 func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, req kbapi.PutAgentBuilderSkillsSkillidJSONRequestBody) (*models.Skill, diag.Diagnostics) {
-	resp, err := client.API.PutAgentBuilderSkillsSkillidWithResponse(ctx, skillID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return HandleMutateRawResponse[models.Skill](resp.StatusCode(), resp.Body)
+	return crudMutate[models.Skill](func() (int, []byte, error) {
+		resp, err := client.API.PutAgentBuilderSkillsSkillidWithResponse(ctx, skillID, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
 
 // DeleteSkill deletes an existing skill. The API also accepts a force=true
@@ -60,9 +64,11 @@ func UpdateSkill(ctx context.Context, client *Client, spaceID, skillID string, r
 // resource does not expose this in v1 so we always send an empty params
 // struct and let 409 Conflict flow through as a normal error diagnostic.
 func DeleteSkill(ctx context.Context, client *Client, spaceID, skillID string) diag.Diagnostics {
-	resp, err := client.API.DeleteAgentBuilderSkillsSkillidWithResponse(ctx, skillID, &kbapi.DeleteAgentBuilderSkillsSkillidParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound)
+	return crudDelete(func() (int, []byte, error) {
+		resp, err := client.API.DeleteAgentBuilderSkillsSkillidWithResponse(ctx, skillID, &kbapi.DeleteAgentBuilderSkillsSkillidParams{}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return 0, nil, err
+		}
+		return resp.StatusCode(), resp.Body, nil
+	})
 }
