@@ -2,6 +2,8 @@
 
 ### Breaking changes
 
+`elasticstack_kibana_alerting_rule` no longer exposes `last_execution_status` or `last_execution_date`. Those values change on every rule execution and caused a perpetual plan diff. Read them from the `elasticstack_kibana_alerting_rules` data source instead. Remove any configuration that references those attributes on the resource, including `lifecycle.ignore_changes`. Existing state that still contains the attributes is read without error and the values are dropped.
+
 The following data sources previously returned empty state or only a warning when the entity was not found, and now return an error: snapshot repository, trained model, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, index template and query ruleset. Configurations that probed for existence this way must handle the error.
 
 
@@ -28,7 +30,12 @@ query = {
 
 ### Changes
 
-- Add the `proxy_id` attribute to `elasticstack_fleet_server_host` to link a Fleet server host to a Fleet proxy. ([#5126](https://github.com/elastic/terraform-provider-elasticstack/issues/5126))
+- Preserve known-empty tags list on elasticstack_kibana_dashboard read-back so `tags = []` no longer errors with "was cty.ListValEmpty(cty.String), but now null". ([#5146](https://github.com/elastic/terraform-provider-elasticstack/pull/5146))
+- Read Kibana alerting rule execution status from a data source. ([#5145](https://github.com/elastic/terraform-provider-elasticstack/pull/5145))
+- The ML job state resource now fails fast with a clear error when a job settles into a terminal state ("opened", "closed", or "failed") other than the one requested, instead of waiting out the full operation timeout. ([#5156](https://github.com/elastic/terraform-provider-elasticstack/pull/5156))
+- Add the `proxy_id` attribute to `elasticstack_fleet_server_host` to link a Fleet server host to a Fleet proxy. ([#5138](https://github.com/elastic/terraform-provider-elasticstack/pull/5138))
+- Use a custom JSON type for Entity Store status semantic equality, preventing order-only engine changes from producing spurious resource diffs while preserving raw response JSON. ([#5125](https://github.com/elastic/terraform-provider-elasticstack/pull/5125))
+- Add new `elasticstack_elasticsearch_index_settings` resource for managing Elasticsearch index settings. ([#5116](https://github.com/elastic/terraform-provider-elasticstack/pull/5116))
 - Data sources now return a standardized error when the requested entity is not found. ([#5090](https://github.com/elastic/terraform-provider-elasticstack/pull/5090))
 - `elasticstack_kibana_dashboard` root `query` now uses `expression` instead of `text`/`json` (state schema v2 with automatic upgrader) ([#5094](https://github.com/elastic/terraform-provider-elasticstack/pull/5094))
 - Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))
