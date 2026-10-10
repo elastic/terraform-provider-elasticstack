@@ -18,6 +18,10 @@
 package panelkit
 
 import (
+	"fmt"
+	"reflect"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -72,4 +76,21 @@ func GridToAPI(g models.PanelGridModel) struct {
 // IDFromAPI maps an optional API panel id into Terraform state.
 func IDFromAPI(id *string) types.String {
 	return types.StringPointerValue(id)
+}
+
+// GridIDFields extracts the Grid and Id fields shared by every generated "simple" dashboard
+// panel struct, via reflection. Every such struct has an identical Grid
+// (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid) and Id (*string) field, so panel packages can
+// pass this directly as the gridID argument to SimpleFromAPI instead of hand-writing an
+// identical field-accessor closure per panel type.
+func GridIDFields[T any](p T) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
+	v := reflect.ValueOf(p)
+	gridField := v.FieldByName("Grid")
+	idField := v.FieldByName("Id")
+	if !gridField.IsValid() || !idField.IsValid() {
+		panic(fmt.Sprintf("panelkit: GridIDFields: %T has no Grid/Id fields", p))
+	}
+	grid, _ := gridField.Interface().(kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid)
+	id, _ := idField.Interface().(*string)
+	return grid, id
 }

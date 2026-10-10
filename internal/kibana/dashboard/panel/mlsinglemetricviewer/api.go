@@ -40,9 +40,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer) diag.Diagnostics {
 			return PopulateFromAPI(ctx, pm, prior, p.Config)
 		},
@@ -59,9 +57,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer{Grid: grid, Id: id, Type: kbapi.MlSingleMetricViewer}
 			return panel, BuildConfig(context.Background(), pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewer,
 		"Failed to create ML single metric viewer panel",
 	)
 }

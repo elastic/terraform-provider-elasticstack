@@ -45,9 +45,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		populateFieldStatsTableFromAPI,
 	)
 }
@@ -65,9 +63,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 			}
 			return panel, buildFieldStatsTableConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeFieldStatsTable,
 		"Failed to create field_stats_table panel",
 	)
 }

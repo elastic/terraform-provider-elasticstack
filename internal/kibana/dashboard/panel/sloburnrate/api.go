@@ -45,9 +45,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) diag.Diagnostics {
 			return PopulateFromAPI(pm, prior, p.Config)
 		},
@@ -65,9 +63,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{Grid: grid, Id: id, Type: kbapi.SloBurnRate}
 			return panel, BuildConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate,
 		"Failed to create SLO burn rate panel",
 	)
 }

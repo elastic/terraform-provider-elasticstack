@@ -40,9 +40,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts) diag.Diagnostics {
 			return PopulateFromAPI(pm, prior, p.Config)
 		},
@@ -59,9 +57,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts{Grid: grid, Id: id, Type: kbapi.MlAnomalyCharts}
 			return panel, BuildConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts,
 		"Failed to create ML anomaly charts panel",
 	)
 }

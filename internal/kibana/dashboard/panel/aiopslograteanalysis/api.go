@@ -40,9 +40,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis) diag.Diagnostics {
 			return PopulateFromAPI(pm, prior, p.Config)
 		},
@@ -59,9 +57,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis{Grid: grid, Id: id, Type: kbapi.AiopsLogRateAnalysis}
 			return panel, BuildConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeAiopsLogRateAnalysis,
 		"Failed to create AIOps log rate analysis panel",
 	)
 }
