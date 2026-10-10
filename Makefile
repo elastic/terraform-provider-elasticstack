@@ -272,7 +272,7 @@ install: build ## Install built provider into the local terraform cache
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
 GOLANGCI_LINT_VERSION := v2.14.0
-GORELEASER_VERSION := v2.18.2
+GORELEASER_VERSION := v2.18.3
 
 $(GOBIN)/golangci-lint: Makefile | $(GOBIN)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
