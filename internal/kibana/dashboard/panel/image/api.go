@@ -46,9 +46,7 @@ func (Handler) AlignStateFromPlan(_ context.Context, plan, state *models.PanelMo
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeImage,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage) diag.Diagnostics {
 			PopulateFromAPI(pm, prior, p)
 			return nil

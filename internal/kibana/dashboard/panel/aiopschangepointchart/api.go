@@ -40,9 +40,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart) diag.Diagnostics {
 			return PopulateFromAPI(pm, prior, p.Config)
 		},
@@ -59,9 +57,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart{Grid: grid, Id: id, Type: kbapi.AiopsChangePointChart}
 			return panel, BuildConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeAiopsChangePointChart,
 		"Failed to create AIOps change point chart panel",
 	)
 }

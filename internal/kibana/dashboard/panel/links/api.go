@@ -55,9 +55,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeLinks,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		populateLinksPanelFromAPI,
 	)
 }
@@ -89,9 +87,7 @@ func (Handler) ToAPI(pm models.PanelModel, _ *models.DashboardModel) (kbapi.Dash
 				Type:   kbapi.Links,
 			}, d
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeLinks) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeLinks(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeLinks,
 		"Failed to create links panel",
 	)
 }

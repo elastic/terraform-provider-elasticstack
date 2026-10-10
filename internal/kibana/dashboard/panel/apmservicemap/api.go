@@ -40,9 +40,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		PopulateFromAPI,
 	)
 }
@@ -54,9 +52,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap{Grid: grid, Id: id, Type: kbapi.ApmServiceMap}
 			return panel, BuildConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeApmServiceMap,
 		"Failed to create APM service map panel",
 	)
 }

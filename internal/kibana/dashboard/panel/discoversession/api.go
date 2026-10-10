@@ -51,9 +51,7 @@ func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Valu
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession) diag.Diagnostics {
 			return populateDiscoverSessionPanelFromAPI(ctx, pm, prior, p)
 		},

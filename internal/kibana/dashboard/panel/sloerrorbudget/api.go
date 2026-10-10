@@ -43,9 +43,7 @@ func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) diag.Diagnostics {
 			return PopulateFromAPI(pm, prior, p.Config)
 		},
@@ -60,9 +58,7 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 			panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget{Grid: grid, Id: id, Type: kbapi.SloErrorBudget}
 			return panel, BuildConfig(pm, &panel)
 		},
-		func(item *kbapi.DashboardPanelItem, panel kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget) error {
-			return item.FromKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget(panel)
-		},
+		(*kbapi.DashboardPanelItem).FromKibanaHTTPAPIsKbnDashboardPanelTypeSloErrorBudget,
 		"Failed to create SLO error budget panel",
 	)
 }

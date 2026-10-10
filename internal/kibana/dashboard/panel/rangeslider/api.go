@@ -43,9 +43,7 @@ func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {
 	return panelkit.SimpleFromAPI(ctx, pm, prior,
 		item.AsKibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl,
-		func(p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) (kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid, *string) {
-			return p.Grid, p.Id
-		},
+		panelkit.GridIDFields,
 		func(pm *models.PanelModel, prior *models.PanelModel, p kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl) diag.Diagnostics {
 			return PopulateFromAPI(ctx, pm, prior, &p)
 		},
