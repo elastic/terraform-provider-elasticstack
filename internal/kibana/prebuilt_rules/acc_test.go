@@ -19,6 +19,7 @@ package prebuiltrules_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -110,6 +111,11 @@ func TestAccResourcePrebuiltRules(t *testing.T) {
 func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 	versionutils.SkipIfUnsupported(t, minVersionPrebuiltRules, versionutils.FlavorAny)
 
+	// Captured from the initial create step so the post-reinstall step can
+	// assert the dataset returned to its original, deterministic shape
+	// instead of only checking that the counters are set.
+	var initialRulesInstalled, initialTimelinesInstalled string
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -120,6 +126,7 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "space_id", spaceID),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_installed"),
@@ -127,6 +134,14 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_installed"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_installed"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_updated"),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed", func(value string) error {
+						initialRulesInstalled = value
+						return nil
+					}),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_install_prebuilt_rules.test", "timelines_installed", func(value string) error {
+						initialTimelinesInstalled = value
+						return nil
+					}),
 				),
 			},
 			{
@@ -155,13 +170,24 @@ func testAccResourcePrebuiltRules(t *testing.T, spaceID string) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "space_id", spaceID),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_installed", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_updated"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_installed"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_installed", "0"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_updated"),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed", func(value string) error {
+						if value != initialRulesInstalled {
+							return fmt.Errorf("expected rules_installed to return to its pre-delete value %q after reinstall, got %q", initialRulesInstalled, value)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttrWith("elasticstack_kibana_install_prebuilt_rules.test", "timelines_installed", func(value string) error {
+						if value != initialTimelinesInstalled {
+							return fmt.Errorf("expected timelines_installed to remain unchanged at %q after reinstall, got %q", initialTimelinesInstalled, value)
+						}
+						return nil
+					}),
 				),
 			},
 		},
@@ -178,12 +204,108 @@ func TestAccResourcePrebuiltRulesDefaultSpaceID(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_install_prebuilt_rules.test", "space_id", "default"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_installed"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_installed"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "rules_not_updated"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_installed"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_installed"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_install_prebuilt_rules.test", "timelines_not_updated"),
 				),
 			},
 		},
 	})
+}
+
+// TestAccResourcePrebuiltRulesSpaceIDForcesReplace verifies that changing
+// space_id on an existing prebuilt rules resource actually triggers the
+// RequiresReplace plan modifier, not just that the resource defaults to and
+// reflects a given space_id.
+func TestAccResourcePrebuiltRulesSpaceIDForcesReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionPrebuiltRules, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupportedAnyConstraints(t, versionutils.FlavorAny, prebuiltRulesInSpaceConstraints...)
+
+	spaceAID := "security_rules_a_" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	spaceBID := "security_rules_b_" + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+	resourceID := "elasticstack_kibana_install_prebuilt_rules.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_replace"),
+				ConfigVariables: config.Variables{
+					"space_a_id":      config.StringVariable(spaceAID),
+					"space_b_id":      config.StringVariable(spaceBID),
+					"active_space_id": config.StringVariable(spaceAID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceAID),
+					resource.TestCheckResourceAttrSet(resourceID, "rules_installed"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("force_replace"),
+				ConfigVariables: config.Variables{
+					"space_a_id":      config.StringVariable(spaceAID),
+					"space_b_id":      config.StringVariable(spaceBID),
+					"active_space_id": config.StringVariable(spaceBID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceID, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceID, "id"),
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceBID),
+					resource.TestCheckResourceAttrSet(resourceID, "rules_installed"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourcePrebuiltRulesKibanaConnection exercises the kibana_connection
+// override block, which is injected by the shared Kibana resource envelope but
+// had no dedicated fixture for this resource.
+func TestAccResourcePrebuiltRulesKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionPrebuiltRules, versionutils.FlavorAny)
+
+	resourceID := "elasticstack_kibana_install_prebuilt_rules.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kibana_connection"),
+				ConfigVariables:          acctest.KibanaConnectionVariables(),
+				Check:                    prebuiltRulesKibanaConnectionChecks(resourceID),
+			},
+		},
+	})
+}
+
+func prebuiltRulesKibanaConnectionChecks(resourceID string) resource.TestCheckFunc {
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttrSet(resourceID, "id"),
+		resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
+		resource.TestCheckResourceAttrSet(resourceID, "rules_installed"),
+		resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+		resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.endpoints.0", acctest.KibanaConnectionEndpoint()),
+		resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.insecure", "false"),
+	}
+	checks = append(checks, acctest.KibanaConnectionAuthChecks(resourceID)...)
+
+	return resource.ComposeAggregateTestCheckFunc(checks...)
 }
 
 func deleteSingleDetectionRule(t *testing.T, spaceID string) {
