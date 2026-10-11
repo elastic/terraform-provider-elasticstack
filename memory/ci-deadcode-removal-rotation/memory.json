@@ -1626,6 +1626,17 @@
         ],
         "buildExitCode": 2
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/models.StringSliceOrCSV.UnmarshalJSON",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/models",
+      "attemptedAt": "2026-10-11T03:15:18.439623511Z",
+      "reason": "tests_failed",
+      "context": {
+        "testFailedPackages": [
+          "./internal/models"
+        ]
+      }
     }
   ]
 }
