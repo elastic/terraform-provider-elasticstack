@@ -78,6 +78,45 @@ func (s secretStore) Save(ctx context.Context, private privateData) (diags diag.
 	return private.SetKey(ctx, "secrets", bytes)
 }
 
+// IsSecretRefMap reports whether m is shaped like a Fleet secret reference
+// ({"isSecretRef": true, ...}).
+func IsSecretRefMap(m map[string]any) bool {
+	return m["isSecretRef"] == true
+}
+
+// WalkSecretRefVars unwraps Fleet's {"type": ..., "value": ...} response
+// envelope from each entry of vars, committing the unwrapped value back to
+// vars, and invokes handleRef for every entry that resolves (after
+// unwrapping) to a secret-ref shape (see IsSecretRefMap).
+//
+// When dropUnset is true, entries that are map-shaped but neither wrapped
+// nor a secret ref are deleted, mirroring Fleet's representation of an unset
+// var in the GET response envelope. Callers reconciling against
+// already-decoded JSON that never carries that envelope (e.g. prior
+// config/state) should pass false so unrelated object-typed vars are left
+// alone.
+func WalkSecretRefVars(vars map[string]any, dropUnset bool, handleRef func(key string, ref map[string]any)) {
+	for key, val := range vars {
+		mval, ok := val.(map[string]any)
+		if !ok {
+			continue
+		}
+		if wrapped, ok := mval["value"]; ok {
+			vars[key] = wrapped
+			val = wrapped
+		} else if !IsSecretRefMap(mval) {
+			if dropUnset {
+				delete(vars, key)
+			}
+			continue
+		}
+
+		if mval, ok := val.(map[string]any); ok && IsSecretRefMap(mval) {
+			handleRef(key, mval)
+		}
+	}
+}
+
 // HandleRespSecrets extracts the wrapped value from each response var, then
 // replaces any secret refs with the original value from secrets if available.
 func HandleRespSecrets(ctx context.Context, resp *kbapi.PackagePolicy, private privateData) (diags diag.Diagnostics) {
@@ -181,56 +220,37 @@ func HandleReqRespSecrets(ctx context.Context, reqMapped kbapi.PackagePolicyRequ
 	}
 
 	handleVar := func(key string, mval map[string]any, reqVars map[string]any, respVars map[string]any) {
-		if v, ok := mval["isSecretRef"]; ok && v == true {
-			original := reqVars[key]
-			respVars[key] = original
+		original := reqVars[key]
+		respVars[key] = original
 
-			// Is the original also a secret ref?
-			// This should only show up during importing and pre 0.11.7 migration.
-			if moriginal, ok := original.(map[string]any); ok {
-				if v, ok := moriginal["isSecretRef"]; ok && v == true {
-					return
-				}
+		// Is the original also a secret ref?
+		// This should only show up during importing and pre 0.11.7 migration.
+		if moriginal, ok := original.(map[string]any); ok && IsSecretRefMap(moriginal) {
+			return
+		}
+
+		if refID, ok := mval["id"]; ok {
+			secrets[refID.(string)] = original
+		} else if ids, ok := mval["ids"]; ok {
+			originals, ok := original.([]any)
+			if !ok || len(originals) != len(ids.([]any)) {
+				diags.AddError("mismatched secret ref ids and original values", "the number of secret ref ids does not match the number of original values")
+				return
 			}
 
-			if refID, ok := mval["id"]; ok {
-				secrets[refID.(string)] = original
-			} else if ids, ok := mval["ids"]; ok {
-				originals, ok := original.([]any)
-				if !ok || len(originals) != len(ids.([]any)) {
-					diags.AddError("mismatched secret ref ids and original values", "the number of secret ref ids does not match the number of original values")
-					return
-				}
-
-				// Map each id to the corresponding original value by position.
-				// The API does not return the original value with the id,
-				// so we have to assume the order is preserved.
-				for i, id := range ids.([]any) {
-					secrets[id.(string)] = originals[i]
-				}
+			// Map each id to the corresponding original value by position.
+			// The API does not return the original value with the id,
+			// so we have to assume the order is preserved.
+			for i, id := range ids.([]any) {
+				secrets[id.(string)] = originals[i]
 			}
 		}
 	}
 
 	handleVars := func(reqVars map[string]any, respVars map[string]any) {
-		for key, val := range respVars {
-			if mval, ok := val.(map[string]any); ok {
-				if wrapped, ok := mval["value"]; ok {
-					respVars[key] = wrapped
-					val = wrapped
-				} else if v, ok := mval["isSecretRef"]; ok && v == true {
-					handleVar(key, mval, reqVars, respVars)
-				} else {
-					// Don't keep null (missing) values
-					delete(respVars, key)
-					continue
-				}
-
-				if mval, ok := val.(map[string]any); ok {
-					handleVar(key, mval, reqVars, respVars)
-				}
-			}
-		}
+		WalkSecretRefVars(respVars, true, func(key string, mval map[string]any) {
+			handleVar(key, mval, reqVars, respVars)
+		})
 	}
 
 	// Extract mapped inputs from the response union for secrets handling.
