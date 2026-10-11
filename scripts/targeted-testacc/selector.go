@@ -89,6 +89,11 @@ type ShardPlan struct {
 //     from the sorted package list.
 func BuildShardPlan(packages []string, totalShards, minShardPackages int) *ShardPlan {
 	sorted := stringsSorted(packages)
+	if sorted == nil {
+		// Marshal an empty selection as [] rather than null so downstream jq
+		// validation can sort it.
+		sorted = []string{}
+	}
 
 	plan := &ShardPlan{SelectedPackages: sorted}
 	if len(sorted) == 0 {

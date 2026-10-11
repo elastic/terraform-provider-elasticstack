@@ -83,10 +83,10 @@ var (
 )
 
 // NewVarsJSONWithIntegration creates a VarsJSONValue with a known value and
-// an integration context, using this resource's package-info cache
-// (knownPackages, populated by getPackageInfo) to resolve defaults.
+// an integration context, using the shared package-info cache
+// (populated by getPackageInfo) to resolve defaults.
 func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONValue, diag.Diagnostics) {
-	return policyshape.NewVarsJSONWithIntegration(value, name, version, lookupCachedPackageInfo)
+	return policyshape.NewVarsJSONWithIntegration(value, name, version, policyshape.LookupPackageInfo)
 }
 
 // varsMapToTypedMap is generic, so it can't be aliased via a package-level

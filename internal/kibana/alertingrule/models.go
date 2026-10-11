@@ -40,26 +40,24 @@ import (
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                  types.String                       `tfsdk:"id"`
-	KibanaConnection    types.List                         `tfsdk:"kibana_connection"`
-	RuleID              types.String                       `tfsdk:"rule_id"`
-	SpaceID             types.String                       `tfsdk:"space_id"`
-	Name                types.String                       `tfsdk:"name"`
-	Consumer            types.String                       `tfsdk:"consumer"`
-	NotifyWhen          types.String                       `tfsdk:"notify_when"`
-	Params              jsontypes.Normalized               `tfsdk:"params"`
-	RuleTypeID          types.String                       `tfsdk:"rule_type_id"`
-	Interval            kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
-	Enabled             types.Bool                         `tfsdk:"enabled"`
-	Tags                types.Set                          `tfsdk:"tags"`
-	Throttle            kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
-	ScheduledTaskID     types.String                       `tfsdk:"scheduled_task_id"`
-	LastExecutionStatus types.String                       `tfsdk:"last_execution_status"`
-	LastExecutionDate   types.String                       `tfsdk:"last_execution_date"`
-	AlertDelay          types.Int64                        `tfsdk:"alert_delay"`
-	Flapping            types.Object                       `tfsdk:"flapping"`
-	Artifacts           types.Object                       `tfsdk:"artifacts"`
-	Actions             types.List                         `tfsdk:"actions"`
+	ID               types.String                       `tfsdk:"id"`
+	KibanaConnection types.List                         `tfsdk:"kibana_connection"`
+	RuleID           types.String                       `tfsdk:"rule_id"`
+	SpaceID          types.String                       `tfsdk:"space_id"`
+	Name             types.String                       `tfsdk:"name"`
+	Consumer         types.String                       `tfsdk:"consumer"`
+	NotifyWhen       types.String                       `tfsdk:"notify_when"`
+	Params           jsontypes.Normalized               `tfsdk:"params"`
+	RuleTypeID       types.String                       `tfsdk:"rule_type_id"`
+	Interval         kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
+	Enabled          types.Bool                         `tfsdk:"enabled"`
+	Tags             types.Set                          `tfsdk:"tags"`
+	Throttle         kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
+	ScheduledTaskID  types.String                       `tfsdk:"scheduled_task_id"`
+	AlertDelay       types.Int64                        `tfsdk:"alert_delay"`
+	Flapping         types.Object                       `tfsdk:"flapping"`
+	Artifacts        types.Object                       `tfsdk:"artifacts"`
+	Actions          types.List                         `tfsdk:"actions"`
 }
 
 // artifactsModel is the Terraform model for the rule's linked artifacts.
@@ -186,15 +184,6 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.ScheduledTaskID = types.StringValue(*rule.ScheduledTaskID)
 	} else if m.ScheduledTaskID.IsUnknown() {
 		m.ScheduledTaskID = types.StringNull()
-	}
-
-	// Execution status
-	m.LastExecutionStatus = types.StringPointerValue(rule.ExecutionStatus.Status)
-
-	if rule.ExecutionStatus.LastExecutionDate != nil {
-		m.LastExecutionDate = types.StringValue(rule.ExecutionStatus.LastExecutionDate.Format("2006-01-02 15:04:05.999 -0700 MST"))
-	} else {
-		m.LastExecutionDate = types.StringNull()
 	}
 
 	// Alert delay - update if API returns a value, or resolve unknown to null

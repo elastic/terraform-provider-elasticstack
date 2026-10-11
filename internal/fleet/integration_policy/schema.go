@@ -122,7 +122,7 @@ func getSchemaV3() schema.Schema {
 			},
 			attrVarsJSON: schema.StringAttribute{
 				Description: customtypes.DescriptionWithContextWarning("Integration-level variables as JSON. Variables vary depending on the integration package."),
-				CustomType:  policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				CustomType:  policyshape.NewVarsJSONType(policyshape.LookupPackageInfo),
 				Computed:    true,
 				Optional:    true,
 				Sensitive:   varsAreSensitive,

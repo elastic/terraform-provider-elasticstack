@@ -163,7 +163,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 // varsJSONFromAny builds a policyshape.VarsJSONValue from any mapped-format
 // vars value (a bare-value union map from either the create response or the
 // Format=Simplified package-policy response), integration-scoped via
-// lookupCachedPackageInfo so unset package-declared defaults are filled in on
+// policyshape.LookupPackageInfo so unset package-declared defaults are filled in on
 // read, matching internal/fleet/integration_policy/models.go's populateFromAPI.
 func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Diagnostics) policyshape.VarsJSONValue {
 	varsMap := policyshape.VarsAnyToMap(raw)
@@ -177,7 +177,7 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 		return policyshape.NewVarsJSONNull()
 	}
 
-	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, lookupCachedPackageInfo)
+	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, policyshape.LookupPackageInfo)
 	diags.Append(d...)
 	return v
 }

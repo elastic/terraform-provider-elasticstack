@@ -171,6 +171,82 @@ func TestWaitForStateTransition_ExpiredContextDoesNotCheck(t *testing.T) {
 	require.Equal(t, 0, callCount)
 }
 
+func TestWaitForTerminalOrDesiredState_ReachesDesiredState(t *testing.T) {
+	t.Parallel()
+
+	states := []string{"opening", "opening", "opened"}
+	callCount := 0
+	getState := func(_ context.Context) (*string, error) {
+		state := states[callCount]
+		callCount++
+		return &state, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	terminalStates := map[string]struct{}{"opened": {}, "closed": {}, "failed": {}}
+	err := WaitForTerminalOrDesiredState(ctx, "ml_job", "job-1", "opened", terminalStates, getState, WithPollInterval(10*time.Millisecond))
+	require.NoError(t, err)
+	require.Equal(t, 3, callCount)
+}
+
+func TestWaitForTerminalOrDesiredState_FailsFastOnMismatchedTerminalState(t *testing.T) {
+	t.Parallel()
+
+	callCount := 0
+	getState := func(_ context.Context) (*string, error) {
+		callCount++
+		state := "failed"
+		return &state, nil
+	}
+
+	// A long context timeout would mask a fast-fail bug by letting the test
+	// still pass via context cancellation instead of the terminal-state error.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	terminalStates := map[string]struct{}{"opened": {}, "closed": {}, "failed": {}}
+	start := time.Now()
+	err := WaitForTerminalOrDesiredState(ctx, "ml_job", "job-1", "opened", terminalStates, getState)
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrTerminalState)
+	require.Equal(t, 1, callCount)
+	require.Less(t, time.Since(start), 1*time.Second, "must fail fast instead of polling to the context deadline")
+}
+
+func TestWaitForTerminalOrDesiredState_NotFound(t *testing.T) {
+	t.Parallel()
+
+	getState := func(_ context.Context) (*string, error) {
+		return nil, nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	terminalStates := map[string]struct{}{"opened": {}}
+	err := WaitForTerminalOrDesiredState(ctx, "ml_job", "job-1", "opened", terminalStates, getState)
+	require.Error(t, err)
+	require.NotErrorIs(t, err, ErrTerminalState)
+	require.Contains(t, err.Error(), "ml_job job-1 not found")
+}
+
+func TestWaitForTerminalOrDesiredState_GetStateError(t *testing.T) {
+	t.Parallel()
+
+	getState := func(_ context.Context) (*string, error) {
+		return nil, assert.AnError
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	terminalStates := map[string]struct{}{"opened": {}}
+	err := WaitForTerminalOrDesiredState(ctx, "ml_job", "job-1", "opened", terminalStates, getState)
+	require.ErrorIs(t, err, assert.AnError)
+}
+
 func TestWithPollInterval_IgnoresNonPositive(t *testing.T) {
 	t.Parallel()
 

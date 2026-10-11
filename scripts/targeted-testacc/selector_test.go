@@ -18,6 +18,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -168,8 +169,9 @@ func TestBuildShardPlan(t *testing.T) {
 			if plan.HasPackages != tc.wantHasPkg {
 				t.Errorf("BuildShardPlan.HasPackages = %v, want %v", plan.HasPackages, tc.wantHasPkg)
 			}
-			if !reflect.DeepEqual(plan.SelectedPackages, stringsSorted(tc.packages)) {
-				t.Errorf("BuildShardPlan.SelectedPackages = %v, want %v", plan.SelectedPackages, stringsSorted(tc.packages))
+			wantSelected := append([]string{}, stringsSorted(tc.packages)...)
+			if !reflect.DeepEqual(plan.SelectedPackages, wantSelected) {
+				t.Errorf("BuildShardPlan.SelectedPackages = %v, want %v", plan.SelectedPackages, wantSelected)
 			}
 			if len(plan.Shards) != len(tc.wantShardLens) {
 				t.Fatalf("BuildShardPlan produced %d shards, want %d: %v", len(plan.Shards), len(tc.wantShardLens), plan.Shards)
@@ -237,5 +239,23 @@ func TestValidateShardPlan_RejectsExtraAndDuplicateEntries(t *testing.T) {
 				t.Errorf("ValidateShardPlan accepted a plan violating exact coverage: %+v", tc.plan)
 			}
 		})
+	}
+}
+
+func TestBuildShardPlan_EmptySelectionMarshalsEmptyArray(t *testing.T) {
+	plan := BuildShardPlan(nil, 2, 2)
+	b, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]json.RawMessage
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if string(got["selected_packages"]) != "[]" {
+		t.Errorf("selected_packages = %s, want []", got["selected_packages"])
+	}
+	if string(got["shards"]) != "[[]]" {
+		t.Errorf("shards = %s, want [[]]", got["shards"])
 	}
 }

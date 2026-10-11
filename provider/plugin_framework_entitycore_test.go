@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPluginFrameworkResourcesEmbedEntityCoreResourceBase(t *testing.T) {
@@ -46,6 +48,21 @@ func TestPluginFrameworkResourcesEmbedEntityCoreResourceBase(t *testing.T) {
 			t.Fatalf("resource %T has nil or missing *entitycore.ResourceBase on the constructed value", r)
 		}
 	}
+}
+
+func TestPluginFrameworkDataSourcesIncludeAlertingRules(t *testing.T) {
+	t.Parallel()
+
+	p := &Provider{version: AccTestVersion}
+	var found bool
+	for _, newDS := range p.DataSources(context.Background()) {
+		resp := &datasource.MetadataResponse{}
+		newDS().Metadata(context.Background(), datasource.MetadataRequest{ProviderTypeName: "elasticstack"}, resp)
+		if resp.TypeName == "elasticstack_kibana_alerting_rules" {
+			found = true
+		}
+	}
+	require.True(t, found, "elasticstack_kibana_alerting_rules must be registered with the provider")
 }
 
 func resourceConstructedWithNonNilResourceBase(r resource.Resource, resourceBasePtrType reflect.Type) bool {

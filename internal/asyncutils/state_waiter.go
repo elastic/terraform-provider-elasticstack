@@ -19,6 +19,7 @@ package asyncutils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -91,4 +92,54 @@ func WaitForStateTransition(ctx context.Context, resourceType, resourceID string
 
 	_, err := PollWithBackoff(ctx, BackoffConfig{Initial: cfg.pollInterval}, fn)
 	return err
+}
+
+// ErrTerminalState is wrapped into the error [WaitForTerminalOrDesiredState]
+// returns when the resource settles into a terminal state other than the
+// desired one. Callers can check for it with [errors.Is] to distinguish a
+// fast-fail terminal mismatch from a context cancellation or a state-lookup
+// failure.
+var ErrTerminalState = errors.New("resource settled into a terminal state other than the desired one")
+
+// WaitForTerminalOrDesiredState polls getState, via [WaitForStateTransition],
+// until it reports desiredState, a state in terminalStates other than
+// desiredState, or ctx is done.
+//
+// Resources such as ML jobs and datafeeds only transition between states on
+// their own up to a point: once they land in a terminal state (e.g. "opened",
+// "closed", "failed" for a job) they stay there until something external acts
+// on them again. Polling past that point would just wait out the context
+// deadline instead of surfacing the mismatch, so callers that know a
+// resource's terminal states can pass them here to fail fast with an error
+// wrapping [ErrTerminalState].
+func WaitForTerminalOrDesiredState[T comparable](
+	ctx context.Context,
+	resourceType, resourceID string,
+	desiredState T,
+	terminalStates map[T]struct{},
+	getState func(ctx context.Context) (*T, error),
+	opts ...Option,
+) error {
+	stateChecker := func(ctx context.Context) (bool, error) {
+		currentState, err := getState(ctx)
+		if err != nil {
+			return false, err
+		}
+
+		if currentState == nil {
+			return false, fmt.Errorf("%s %s not found", resourceType, resourceID)
+		}
+
+		if *currentState == desiredState {
+			return true, nil
+		}
+
+		if _, isTerminal := terminalStates[*currentState]; isTerminal {
+			return false, fmt.Errorf("%w: %s %s is in state [%v] but desired state is [%v]", ErrTerminalState, resourceType, resourceID, *currentState, desiredState)
+		}
+
+		return false, nil
+	}
+
+	return WaitForStateTransition(ctx, resourceType, resourceID, stateChecker, opts...)
 }

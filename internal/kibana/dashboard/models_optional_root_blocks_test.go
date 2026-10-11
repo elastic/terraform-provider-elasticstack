@@ -56,7 +56,7 @@ func Test_dashboardToAPIRequests_omitNilRootBlocks(t *testing.T) {
 		var got map[string]any
 		require.NoError(t, json.Unmarshal(body, &got), name)
 		require.Equal(t, "title only", got["title"], name)
-		for _, key := range []string{"time_range", "refresh_interval", "query", "options"} {
+		for _, key := range []string{"time_range", "refresh_interval", "query", "options", "tags"} {
 			require.NotContains(t, got, key, "%s request must omit %s", name, key)
 		}
 	}

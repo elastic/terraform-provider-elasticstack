@@ -127,7 +127,7 @@ func varsJSONFromMap(_ context.Context, vars map[string]any, packageName, packag
 	if useNull {
 		return policyshape.NewVarsJSONNull()
 	}
-	v, d := policyshape.NewVarsJSONWithIntegration(raw, packageName, packageVersion, lookupCachedPackageInfo)
+	v, d := policyshape.NewVarsJSONWithIntegration(raw, packageName, packageVersion, policyshape.LookupPackageInfo)
 	diags.Append(d...)
 	return v
 }
