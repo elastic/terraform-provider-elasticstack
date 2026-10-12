@@ -1788,69 +1788,105 @@ func (e KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode) Valid() bool {
 	}
 }
 
-// Defines values for KibanaHTTPAPIsAlertingActionPolicyGroupingMode.
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode.
 const (
-	KibanaHTTPAPIsAlertingActionPolicyGroupingModeAll        KibanaHTTPAPIsAlertingActionPolicyGroupingMode = "all"
-	KibanaHTTPAPIsAlertingActionPolicyGroupingModePerEpisode KibanaHTTPAPIsAlertingActionPolicyGroupingMode = "per_episode"
-	KibanaHTTPAPIsAlertingActionPolicyGroupingModePerField   KibanaHTTPAPIsAlertingActionPolicyGroupingMode = "per_field"
+	KibanaHTTPAPIsAlertingActionPolicyGroupingAllModeAll KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode = "all"
 )
 
-// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyGroupingMode enum.
-func (e KibanaHTTPAPIsAlertingActionPolicyGroupingMode) Valid() bool {
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsAlertingActionPolicyGroupingModeAll:
-		return true
-	case KibanaHTTPAPIsAlertingActionPolicyGroupingModePerEpisode:
-		return true
-	case KibanaHTTPAPIsAlertingActionPolicyGroupingModePerField:
+	case KibanaHTTPAPIsAlertingActionPolicyGroupingAllModeAll:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy.
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode.
 const (
-	KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyEveryTime         KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy = "every_time"
-	KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyOnStatusChange    KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy = "on_status_change"
-	KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyPerStatusInterval KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy = "per_status_interval"
-	KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyTimeInterval      KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy = "time_interval"
+	PerAlert KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode = "per_alert"
 )
 
-// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy enum.
-func (e KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy) Valid() bool {
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyEveryTime:
-		return true
-	case KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyOnStatusChange:
-		return true
-	case KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyPerStatusInterval:
-		return true
-	case KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategyTimeInterval:
+	case PerAlert:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy.
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode.
 const (
-	KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyEveryTime         KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy = "every_time"
-	KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyOnStatusChange    KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy = "on_status_change"
-	KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyPerStatusInterval KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy = "per_status_interval"
-	KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyTimeInterval      KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy = "time_interval"
+	PerField KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode = "per_field"
 )
 
-// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy enum.
-func (e KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy) Valid() bool {
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyEveryTime:
+	case PerField:
 		return true
-	case KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyOnStatusChange:
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy.
+const (
+	EveryTime KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy = "every_time"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy) Valid() bool {
+	switch e {
+	case EveryTime:
 		return true
-	case KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyPerStatusInterval:
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy.
+const (
+	OnStatusChange KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy = "on_status_change"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy) Valid() bool {
+	switch e {
+	case OnStatusChange:
 		return true
-	case KibanaHTTPAPIsAlertingActionPolicyThrottleStrategyTimeInterval:
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy.
+const (
+	PerStatusInterval KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy = "per_status_interval"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy) Valid() bool {
+	switch e {
+	case PerStatusInterval:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy.
+const (
+	TimeInterval KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy = "time_interval"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy) Valid() bool {
+	switch e {
+	case TimeInterval:
 		return true
 	default:
 		return false
@@ -2130,6 +2166,24 @@ func (e KibanaHTTPAPIsAlertingRuleStateTransitionPendingOperator) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator.
+const (
+	KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperatorAnd KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator = "and"
+	KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperatorOr  KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator = "or"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator enum.
+func (e KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperatorAnd:
+		return true
+	case KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperatorOr:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperator.
 const (
 	KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperatorAnd KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperator = "and"
@@ -2142,6 +2196,24 @@ func (e KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperator) Valid() boo
 	case KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperatorAnd:
 		return true
 	case KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperatorOr:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator.
+const (
+	KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperatorAnd KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator = "and"
+	KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperatorOr  KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator = "or"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator enum.
+func (e KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperatorAnd:
+		return true
+	case KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperatorOr:
 		return true
 	default:
 		return false
@@ -13578,10 +13650,39 @@ func (e KibanaHTTPAPIsVisTermsRankByCustomCountOperationType) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation.
+const (
+	KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperationLastValue KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation = "last_value"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation enum.
+func (e KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperationLastValue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType.
+const (
+	KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationTypeCustom KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType = "custom"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType enum.
+func (e KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationTypeCustom:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsVisTermsRankByCustomOperationOperation.
 const (
 	KibanaHTTPAPIsVisTermsRankByCustomOperationOperationAverage           KibanaHTTPAPIsVisTermsRankByCustomOperationOperation = "average"
-	KibanaHTTPAPIsVisTermsRankByCustomOperationOperationLastValue         KibanaHTTPAPIsVisTermsRankByCustomOperationOperation = "last_value"
 	KibanaHTTPAPIsVisTermsRankByCustomOperationOperationMax               KibanaHTTPAPIsVisTermsRankByCustomOperationOperation = "max"
 	KibanaHTTPAPIsVisTermsRankByCustomOperationOperationMedian            KibanaHTTPAPIsVisTermsRankByCustomOperationOperation = "median"
 	KibanaHTTPAPIsVisTermsRankByCustomOperationOperationMin               KibanaHTTPAPIsVisTermsRankByCustomOperationOperation = "min"
@@ -13594,8 +13695,6 @@ const (
 func (e KibanaHTTPAPIsVisTermsRankByCustomOperationOperation) Valid() bool {
 	switch e {
 	case KibanaHTTPAPIsVisTermsRankByCustomOperationOperationAverage:
-		return true
-	case KibanaHTTPAPIsVisTermsRankByCustomOperationOperationLastValue:
 		return true
 	case KibanaHTTPAPIsVisTermsRankByCustomOperationOperationMax:
 		return true
@@ -13691,13 +13790,13 @@ func (e KibanaHTTPAPIsVisTermsRankByPercentileRankOperationOperation) Valid() bo
 
 // Defines values for KibanaHTTPAPIsVisTermsRankByPercentileRankOperationType.
 const (
-	KibanaHTTPAPIsVisTermsRankByPercentileRankOperationTypeCustom KibanaHTTPAPIsVisTermsRankByPercentileRankOperationType = "custom"
+	Custom KibanaHTTPAPIsVisTermsRankByPercentileRankOperationType = "custom"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsVisTermsRankByPercentileRankOperationType enum.
 func (e KibanaHTTPAPIsVisTermsRankByPercentileRankOperationType) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsVisTermsRankByPercentileRankOperationTypeCustom:
+	case Custom:
 		return true
 	default:
 		return false
@@ -23322,6 +23421,21 @@ func (e SecurityTimelineAPITimelineType) Valid() bool {
 	}
 }
 
+// Defines values for SyntheticsApiMonitorFieldsType.
+const (
+	Api SyntheticsApiMonitorFieldsType = "api"
+)
+
+// Valid indicates whether the value is a known member of the SyntheticsApiMonitorFieldsType enum.
+func (e SyntheticsApiMonitorFieldsType) Valid() bool {
+	switch e {
+	case Api:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SyntheticsBrowserMonitorFieldsScreenshots.
 const (
 	SyntheticsBrowserMonitorFieldsScreenshotsOff           SyntheticsBrowserMonitorFieldsScreenshots = "off"
@@ -25158,6 +25272,45 @@ func (e PostAlertingRulesBackfillFindParamsSortOrder) Valid() bool {
 	case PostAlertingRulesBackfillFindParamsSortOrderAsc:
 		return true
 	case PostAlertingRulesBackfillFindParamsSortOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetAlertingV2ActionPoliciesParamsSortField.
+const (
+	GetAlertingV2ActionPoliciesParamsSortFieldCreatedAt GetAlertingV2ActionPoliciesParamsSortField = "created_at"
+	GetAlertingV2ActionPoliciesParamsSortFieldName      GetAlertingV2ActionPoliciesParamsSortField = "name"
+	GetAlertingV2ActionPoliciesParamsSortFieldUpdatedAt GetAlertingV2ActionPoliciesParamsSortField = "updated_at"
+)
+
+// Valid indicates whether the value is a known member of the GetAlertingV2ActionPoliciesParamsSortField enum.
+func (e GetAlertingV2ActionPoliciesParamsSortField) Valid() bool {
+	switch e {
+	case GetAlertingV2ActionPoliciesParamsSortFieldCreatedAt:
+		return true
+	case GetAlertingV2ActionPoliciesParamsSortFieldName:
+		return true
+	case GetAlertingV2ActionPoliciesParamsSortFieldUpdatedAt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetAlertingV2ActionPoliciesParamsSortOrder.
+const (
+	GetAlertingV2ActionPoliciesParamsSortOrderAsc  GetAlertingV2ActionPoliciesParamsSortOrder = "asc"
+	GetAlertingV2ActionPoliciesParamsSortOrderDesc GetAlertingV2ActionPoliciesParamsSortOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the GetAlertingV2ActionPoliciesParamsSortOrder enum.
+func (e GetAlertingV2ActionPoliciesParamsSortOrder) Valid() bool {
+	switch e {
+	case GetAlertingV2ActionPoliciesParamsSortOrderAsc:
+		return true
+	case GetAlertingV2ActionPoliciesParamsSortOrderDesc:
 		return true
 	default:
 		return false
@@ -31466,25 +31619,25 @@ func (e PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRelationshipsReso
 
 // Defines values for PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel.
 const (
-	Critical PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Critical"
-	High     PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "High"
-	Low      PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Low"
-	Moderate PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Moderate"
-	Unknown  PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Unknown"
+	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelCritical PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Critical"
+	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelHigh     PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "High"
+	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelLow      PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Low"
+	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelModerate PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Moderate"
+	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelUnknown  PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Unknown"
 )
 
 // Valid indicates whether the value is a known member of the PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel enum.
 func (e PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel) Valid() bool {
 	switch e {
-	case Critical:
+	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelCritical:
 		return true
-	case High:
+	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelHigh:
 		return true
-	case Low:
+	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelLow:
 		return true
-	case Moderate:
+	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelModerate:
 		return true
-	case Unknown:
+	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelUnknown:
 		return true
 	default:
 		return false
@@ -31745,16 +31898,16 @@ func (e PutStreamsNameIngestJSONBodyIngest0SettingsIndexRefreshIntervalValue1) V
 
 // Defines values for PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus.
 const (
-	PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatusDisabled PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus = "disabled"
-	PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatusEnabled  PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus = "enabled"
+	Disabled PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus = "disabled"
+	Enabled  PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus = "enabled"
 )
 
 // Valid indicates whether the value is a known member of the PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus enum.
 func (e PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatus) Valid() bool {
 	switch e {
-	case PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatusDisabled:
+	case Disabled:
 		return true
-	case PutStreamsNameIngestJSONBodyIngest0WiredRoutingStatusEnabled:
+	case Enabled:
 		return true
 	default:
 		return false
@@ -32486,16 +32639,16 @@ func (e FindSlosOpParamsSortBy) Valid() bool {
 
 // Defines values for FindSlosOpParamsSortDirection.
 const (
-	FindSlosOpParamsSortDirectionAsc  FindSlosOpParamsSortDirection = "asc"
-	FindSlosOpParamsSortDirectionDesc FindSlosOpParamsSortDirection = "desc"
+	Asc  FindSlosOpParamsSortDirection = "asc"
+	Desc FindSlosOpParamsSortDirection = "desc"
 )
 
 // Valid indicates whether the value is a known member of the FindSlosOpParamsSortDirection enum.
 func (e FindSlosOpParamsSortDirection) Valid() bool {
 	switch e {
-	case FindSlosOpParamsSortDirectionAsc:
+	case Asc:
 		return true
-	case FindSlosOpParamsSortDirectionDesc:
+	case Desc:
 		return true
 	default:
 		return false
@@ -34368,6 +34521,9 @@ type CasesSetCaseConfigurationRequest struct {
 	// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
 	Owner     CasesOwner      `json:"owner"`
 	Templates *CasesTemplates `json:"templates,omitempty"`
+
+	// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+	WorkflowTags *[]string `json:"workflowTags,omitempty"`
 }
 
 // CasesSetCaseConfigurationRequestCustomFieldsDefaultValue0 defines model for .
@@ -34649,6 +34805,9 @@ type CasesUpdateCaseConfigurationRequest struct {
 
 	// Version The version of the connector. To retrieve the version value, use the get configuration API.
 	Version string `json:"version"`
+
+	// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+	WorkflowTags *[]string `json:"workflowTags,omitempty"`
 }
 
 // CasesUpdateCaseConfigurationRequestCustomFieldsDefaultValue0 defines model for .
@@ -36588,20 +36747,20 @@ type KibanaHTTPAPIsWiredStreamUpsertRequestStreamIngestWiredRoutingStatus string
 // KibanaHTTPAPIsWiredStreamUpsertRequestStreamType defines model for KibanaHTTPAPIsWiredStreamUpsertRequest.Stream.Type.
 type KibanaHTTPAPIsWiredStreamUpsertRequestStreamType string
 
-// KibanaHTTPAPIsZodV453Schema0 defines model for Kibana_HTTP_APIs__zod_v4_53___schema0.
-type KibanaHTTPAPIsZodV453Schema0 struct {
+// KibanaHTTPAPIsZodV454Schema0 defines model for Kibana_HTTP_APIs__zod_v4_54___schema0.
+type KibanaHTTPAPIsZodV454Schema0 struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsZodV453Schema00 defines model for .
-type KibanaHTTPAPIsZodV453Schema00 struct {
+// KibanaHTTPAPIsZodV454Schema00 defines model for .
+type KibanaHTTPAPIsZodV454Schema00 struct {
 	Objects struct {
 		All map[string]interface{} `json:"all"`
 	} `json:"objects"`
 }
 
-// KibanaHTTPAPIsZodV453Schema01 defines model for .
-type KibanaHTTPAPIsZodV453Schema01 struct {
+// KibanaHTTPAPIsZodV454Schema01 defines model for .
+type KibanaHTTPAPIsZodV454Schema01 struct {
 	Objects struct {
 		Mappings bool `json:"mappings"`
 		Routing  []struct {
@@ -36872,8 +37031,51 @@ type KibanaHTTPAPIsAlertingActionPolicyDestination struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsAlertingActionPolicyGroupingMode The grouping mode: per_episode groups by episode lifecycle, all sends a single notification for all alerts, per_field groups by the specified fields.
-type KibanaHTTPAPIsAlertingActionPolicyGroupingMode string
+// KibanaHTTPAPIsAlertingActionPolicyGrouping defines model for Kibana_HTTP_APIs_alerting_action_policy_grouping.
+type KibanaHTTPAPIsAlertingActionPolicyGrouping struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyGroupingAll a single notification for all matching alerts.
+type KibanaHTTPAPIsAlertingActionPolicyGroupingAll struct {
+	Mode KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode `json:"mode"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode defines model for KibanaHTTPAPIsAlertingActionPolicyGroupingAll.Mode.
+type KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode string
+
+// KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert one notification per alert lifecycle (default).
+type KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert struct {
+	Mode KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode `json:"mode"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode defines model for KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert.Mode.
+type KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlertMode string
+
+// KibanaHTTPAPIsAlertingActionPolicyGroupingPerField group by the specified `fields`.
+type KibanaHTTPAPIsAlertingActionPolicyGroupingPerField struct {
+	// Fields The fields alerts are grouped by. At least one is required, and no other mode accepts them.
+	Fields []string                                               `json:"fields"`
+	Mode   KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode `json:"mode"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode defines model for KibanaHTTPAPIsAlertingActionPolicyGroupingPerField.Mode.
+type KibanaHTTPAPIsAlertingActionPolicyGroupingPerFieldMode string
+
+// KibanaHTTPAPIsAlertingActionPolicyListResponse Paginated list of action policies.
+type KibanaHTTPAPIsAlertingActionPolicyListResponse struct {
+	// Items The list of action policies.
+	Items []KibanaHTTPAPIsAlertingActionPolicyResponse `json:"items"`
+
+	// Page The current page number.
+	Page float32 `json:"page"`
+
+	// PerPage The number of action policies per page.
+	PerPage float32 `json:"per_page"`
+
+	// Total The number of action policies matching the query. This count is an estimate: results above 10,000 may be reported as 10,000.
+	Total float32 `json:"total"`
+}
 
 // KibanaHTTPAPIsAlertingActionPolicyResponse defines model for Kibana_HTTP_APIs_alerting_action_policy_response.
 type KibanaHTTPAPIsAlertingActionPolicyResponse struct {
@@ -36883,47 +37085,34 @@ type KibanaHTTPAPIsAlertingActionPolicyResponse struct {
 	// CreatedBy The actor who created the action policy.
 	CreatedBy *KibanaHTTPAPIsAlertingActor `json:"created_by,omitempty"`
 
-	// Description A description of the action policy.
-	Description string `json:"description"`
+	// Description A description of the action policy. Omitted when the policy has none.
+	Description *string `json:"description,omitempty"`
 
 	// Destinations The list of destinations.
 	Destinations []KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations"`
 
 	// Enabled Whether the action policy is enabled.
-	Enabled bool `json:"enabled"`
-
-	// GroupBy The fields used to group alerts, or null for no grouping.
-	GroupBy *[]string `json:"group_by,omitempty"`
-
-	// GroupingMode The grouping mode for alert notifications.
-	GroupingMode *KibanaHTTPAPIsAlertingActionPolicyGroupingMode `json:"grouping_mode,omitempty"`
+	Enabled  bool                                        `json:"enabled"`
+	Grouping *KibanaHTTPAPIsAlertingActionPolicyGrouping `json:"grouping,omitempty"`
 
 	// Id The unique identifier for the action policy.
 	Id string `json:"id"`
 
-	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. When `matcher` is `null`, or when both `tags` and `expression` are empty, the policy applies to all alerts.
+	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those routing tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. At least one of `tags` and `expression` must be set, so an empty `matcher` is rejected. Omit `matcher` entirely for a catch-all policy that applies to all alerts.
 	Matcher *struct {
-		// Expression A KQL query that's evaluated against each alert. Supported fields are: `episode_id`, `episode_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` or set it to `null` to match on `tags` alone.
+		// Expression A KQL query that's evaluated against each alert. Supported fields are: `alert_id`, `alert_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` to match on `tags` alone.
 		Expression *string `json:"expression,omitempty"`
 
-		// Tags Rule tags this policy should match. The policy applies to alerts from any rule that has at least one of these tags. Omit `matcher.tags` or set it to `null` to match on `matcher.expression` alone.
+		// Tags Routing tags this policy should match. The policy applies to alerts from any rule whose `metadata.routing_tags` include at least one of these tags. An empty array is not accepted. Omit `matcher.tags` to match on `matcher.expression` alone.
 		Tags *[]string `json:"tags,omitempty"`
 	} `json:"matcher,omitempty"`
 
 	// Name The name of the action policy.
 	Name string `json:"name"`
 
-	// SnoozedUntil The ISO datetime until which the policy is snoozed, or null if not snoozed.
-	SnoozedUntil *string `json:"snoozed_until,omitempty"`
-
-	// Throttle The throttle configuration for notifications.
-	Throttle *struct {
-		// Interval The throttle interval duration (e.g. 5m, 1h), or null when the strategy is intervalless.
-		Interval *string `json:"interval,omitempty"`
-
-		// Strategy The throttle strategy.
-		Strategy *KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy `json:"strategy,omitempty"`
-	} `json:"throttle,omitempty"`
+	// SnoozedUntil The ISO datetime until which the policy is snoozed. Omitted when the policy is not snoozed.
+	SnoozedUntil *string                                     `json:"snoozed_until,omitempty"`
+	Throttle     *KibanaHTTPAPIsAlertingActionPolicyThrottle `json:"throttle,omitempty"`
 
 	// UpdatedAt The ISO datetime when the action policy was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -36932,20 +37121,46 @@ type KibanaHTTPAPIsAlertingActionPolicyResponse struct {
 	UpdatedBy *KibanaHTTPAPIsAlertingActor `json:"updated_by,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy The throttle strategy.
-type KibanaHTTPAPIsAlertingActionPolicyResponseThrottleStrategy string
-
 // KibanaHTTPAPIsAlertingActionPolicyThrottle defines model for Kibana_HTTP_APIs_alerting_action_policy_throttle.
 type KibanaHTTPAPIsAlertingActionPolicyThrottle struct {
-	// Interval The throttle interval duration (e.g. 5m, 1h), or null when the strategy is intervalless.
-	Interval *string `json:"interval,omitempty"`
-
-	// Strategy The throttle strategy.
-	Strategy *KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy `json:"strategy,omitempty"`
+	union json.RawMessage
 }
 
-// KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy The throttle strategy.
-type KibanaHTTPAPIsAlertingActionPolicyThrottleStrategy string
+// KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime notify on every evaluation cycle (high volume).
+type KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime struct {
+	Strategy KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy `json:"strategy"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy defines model for KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime.Strategy.
+type KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTimeStrategy string
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange notify only on alert status transitions (default for `per_alert`).
+type KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange struct {
+	Strategy KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy `json:"strategy"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy defines model for KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange.Strategy.
+type KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChangeStrategy string
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval notify on transitions and at regular intervals.
+type KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval struct {
+	// Interval The throttle interval duration (e.g. 5m, 1h) that sets the notification cadence.
+	Interval string                                                              `json:"interval"`
+	Strategy KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy `json:"strategy"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy defines model for KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval.Strategy.
+type KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusIntervalStrategy string
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval notify at regular intervals regardless of status (default for `all`/`per_field`).
+type KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval struct {
+	// Interval The throttle interval duration (e.g. 5m, 1h) that sets the notification cadence.
+	Interval string                                                         `json:"interval"`
+	Strategy KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy `json:"strategy"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy defines model for KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval.Strategy.
+type KibanaHTTPAPIsAlertingActionPolicyThrottleTimeIntervalStrategy string
 
 // KibanaHTTPAPIsAlertingActor Identity that performed the write.
 type KibanaHTTPAPIsAlertingActor struct {
@@ -36953,20 +37168,20 @@ type KibanaHTTPAPIsAlertingActor struct {
 	ProfileUid *string `json:"profile_uid,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingBulkAckEpisodesItem defines model for Kibana_HTTP_APIs_alerting_bulk_ack_episodes_item.
-type KibanaHTTPAPIsAlertingBulkAckEpisodesItem struct {
+// KibanaHTTPAPIsAlertingBulkAckAlertsItem defines model for Kibana_HTTP_APIs_alerting_bulk_ack_alerts_item.
+type KibanaHTTPAPIsAlertingBulkAckAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 }
 
-// KibanaHTTPAPIsAlertingBulkAckEpisodesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_ack_episodes_request.
-type KibanaHTTPAPIsAlertingBulkAckEpisodesRequest struct {
-	// Items List of 1 to 100 ack actions to create.
-	Items []KibanaHTTPAPIsAlertingBulkAckEpisodesItem `json:"items"`
+// KibanaHTTPAPIsAlertingBulkAckAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_ack_alerts_request.
+type KibanaHTTPAPIsAlertingBulkAckAlertsRequest struct {
+	// Items List of 1 to 100 ack actions to create, each for a different `alert_id`.
+	Items []KibanaHTTPAPIsAlertingBulkAckAlertsItem `json:"items"`
 }
 
-// KibanaHTTPAPIsAlertingBulkActivateEpisodesItem defines model for Kibana_HTTP_APIs_alerting_bulk_activate_episodes_item.
-type KibanaHTTPAPIsAlertingBulkActivateEpisodesItem struct {
+// KibanaHTTPAPIsAlertingBulkActivateAlertsItem defines model for Kibana_HTTP_APIs_alerting_bulk_activate_alerts_item.
+type KibanaHTTPAPIsAlertingBulkActivateAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 
@@ -36974,25 +37189,25 @@ type KibanaHTTPAPIsAlertingBulkActivateEpisodesItem struct {
 	Reason string `json:"reason"`
 }
 
-// KibanaHTTPAPIsAlertingBulkActivateEpisodesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_activate_episodes_request.
-type KibanaHTTPAPIsAlertingBulkActivateEpisodesRequest struct {
-	// Items List of 1 to 100 activate actions to create.
-	Items []KibanaHTTPAPIsAlertingBulkActivateEpisodesItem `json:"items"`
+// KibanaHTTPAPIsAlertingBulkActivateAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_activate_alerts_request.
+type KibanaHTTPAPIsAlertingBulkActivateAlertsRequest struct {
+	// Items List of 1 to 100 activate actions to create, each for a different `alert_id`.
+	Items []KibanaHTTPAPIsAlertingBulkActivateAlertsItem `json:"items"`
 }
 
-// KibanaHTTPAPIsAlertingBulkAssignEpisodesItem defines model for Kibana_HTTP_APIs_alerting_bulk_assign_episodes_item.
-type KibanaHTTPAPIsAlertingBulkAssignEpisodesItem struct {
+// KibanaHTTPAPIsAlertingBulkAssignAlertsItem defines model for Kibana_HTTP_APIs_alerting_bulk_assign_alerts_item.
+type KibanaHTTPAPIsAlertingBulkAssignAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 
-	// AssigneeUid User profile UID of the assignee, or null to remove the assignee from the episode.
+	// AssigneeUid User profile UID of the assignee, or null to remove the assignee from the alert.
 	AssigneeUid *string `json:"assignee_uid,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingBulkAssignEpisodesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_assign_episodes_request.
-type KibanaHTTPAPIsAlertingBulkAssignEpisodesRequest struct {
-	// Items List of 1 to 100 assign actions to create.
-	Items []KibanaHTTPAPIsAlertingBulkAssignEpisodesItem `json:"items"`
+// KibanaHTTPAPIsAlertingBulkAssignAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_assign_alerts_request.
+type KibanaHTTPAPIsAlertingBulkAssignAlertsRequest struct {
+	// Items List of 1 to 100 assign actions to create, each for a different `alert_id`.
+	Items []KibanaHTTPAPIsAlertingBulkAssignAlertsItem `json:"items"`
 }
 
 // KibanaHTTPAPIsAlertingBulkByIdsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_by_ids_request.
@@ -37021,7 +37236,7 @@ type KibanaHTTPAPIsAlertingBulkByQueryRequestMatchAll bool
 
 // KibanaHTTPAPIsAlertingBulkCreateRuleItem defines model for Kibana_HTTP_APIs_alerting_bulk_create_rule_item.
 type KibanaHTTPAPIsAlertingBulkCreateRuleItem struct {
-	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present.
+	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present. An empty array is rejected: omit `artifacts` on create, or send `null` on PATCH to clear.
 	Artifacts *[]KibanaHTTPAPIsAlertingRuleArtifact `json:"artifacts,omitempty"`
 
 	// Enabled If `true` (default), the rule runs on its schedule after creation. If `false`, the rule is saved but does not run until you enable it.
@@ -37045,11 +37260,13 @@ type KibanaHTTPAPIsAlertingBulkCreateRuleItem struct {
 	// Query ES|QL query the rule evaluates. `base` is required. `breach` is an optional clause appended to it.
 	Query KibanaHTTPAPIsAlertingRuleQuery `json:"query"`
 
-	// Recovery When an alert episode recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
+	// Recovery When an alert recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
 	Recovery *KibanaHTTPAPIsAlertingRuleRecovery `json:"recovery,omitempty"`
 
 	// Schedule Execution schedule configuration.
-	Schedule        KibanaHTTPAPIsAlertingRuleSchedule         `json:"schedule"`
+	Schedule KibanaHTTPAPIsAlertingRuleSchedule `json:"schedule"`
+
+	// StateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
 	StateTransition *KibanaHTTPAPIsAlertingRuleStateTransition `json:"state_transition,omitempty"`
 
 	// TimeField Document field Kibana uses with `schedule.lookback` to time-filter `query.base`.
@@ -37061,8 +37278,8 @@ type KibanaHTTPAPIsAlertingBulkCreateRuleItemKind string
 
 // KibanaHTTPAPIsAlertingBulkCreateRulesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_create_rules_request.
 type KibanaHTTPAPIsAlertingBulkCreateRulesRequest struct {
-	// Rules The rules to create. Must contain between 1 and 100 rules.
-	Rules []KibanaHTTPAPIsAlertingBulkCreateRuleItem `json:"rules"`
+	// Items The rules to create. Must contain between 1 and 100 rules.
+	Items []KibanaHTTPAPIsAlertingBulkCreateRuleItem `json:"items"`
 }
 
 // KibanaHTTPAPIsAlertingBulkCreateRulesResponse defines model for Kibana_HTTP_APIs_alerting_bulk_create_rules_response.
@@ -37088,8 +37305,8 @@ type KibanaHTTPAPIsAlertingBulkCreateRulesResponse struct {
 	Items []KibanaHTTPAPIsAlertingRuleResponse `json:"items"`
 }
 
-// KibanaHTTPAPIsAlertingBulkDeactivateEpisodesItem defines model for Kibana_HTTP_APIs_alerting_bulk_deactivate_episodes_item.
-type KibanaHTTPAPIsAlertingBulkDeactivateEpisodesItem struct {
+// KibanaHTTPAPIsAlertingBulkDeactivateAlertsItem defines model for Kibana_HTTP_APIs_alerting_bulk_deactivate_alerts_item.
+type KibanaHTTPAPIsAlertingBulkDeactivateAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 
@@ -37097,10 +37314,10 @@ type KibanaHTTPAPIsAlertingBulkDeactivateEpisodesItem struct {
 	Reason string `json:"reason"`
 }
 
-// KibanaHTTPAPIsAlertingBulkDeactivateEpisodesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_deactivate_episodes_request.
-type KibanaHTTPAPIsAlertingBulkDeactivateEpisodesRequest struct {
-	// Items List of 1 to 100 deactivate actions to create.
-	Items []KibanaHTTPAPIsAlertingBulkDeactivateEpisodesItem `json:"items"`
+// KibanaHTTPAPIsAlertingBulkDeactivateAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_deactivate_alerts_request.
+type KibanaHTTPAPIsAlertingBulkDeactivateAlertsRequest struct {
+	// Items List of 1 to 100 deactivate actions to create, each for a different `alert_id`.
+	Items []KibanaHTTPAPIsAlertingBulkDeactivateAlertsItem `json:"items"`
 }
 
 // KibanaHTTPAPIsAlertingBulkDryRunResponse Dry-run preview returned by a by-query bulk endpoint when `force` is false.
@@ -37150,31 +37367,31 @@ type KibanaHTTPAPIsAlertingBulkSnoozeActionPoliciesRequest struct {
 	SnoozedUntil time.Time `json:"snoozed_until"`
 }
 
-// KibanaHTTPAPIsAlertingBulkTagEpisodesItem defines model for Kibana_HTTP_APIs_alerting_bulk_tag_episodes_item.
-type KibanaHTTPAPIsAlertingBulkTagEpisodesItem struct {
+// KibanaHTTPAPIsAlertingBulkTagAlertsItem defines model for Kibana_HTTP_APIs_alerting_bulk_tag_alerts_item.
+type KibanaHTTPAPIsAlertingBulkTagAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 
-	// Tags Replaces the episode's tags. Send `[]` to clear.
+	// Tags Replaces the alert's tags. Send `[]` to clear.
 	Tags []string `json:"tags"`
 }
 
-// KibanaHTTPAPIsAlertingBulkTagEpisodesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_tag_episodes_request.
-type KibanaHTTPAPIsAlertingBulkTagEpisodesRequest struct {
-	// Items List of 1 to 100 tag actions to create.
-	Items []KibanaHTTPAPIsAlertingBulkTagEpisodesItem `json:"items"`
+// KibanaHTTPAPIsAlertingBulkTagAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_tag_alerts_request.
+type KibanaHTTPAPIsAlertingBulkTagAlertsRequest struct {
+	// Items List of 1 to 100 tag actions to create, each for a different `alert_id`.
+	Items []KibanaHTTPAPIsAlertingBulkTagAlertsItem `json:"items"`
 }
 
-// KibanaHTTPAPIsAlertingBulkUnackEpisodesItem defines model for Kibana_HTTP_APIs_alerting_bulk_unack_episodes_item.
-type KibanaHTTPAPIsAlertingBulkUnackEpisodesItem struct {
+// KibanaHTTPAPIsAlertingBulkUnackAlertsItem defines model for Kibana_HTTP_APIs_alerting_bulk_unack_alerts_item.
+type KibanaHTTPAPIsAlertingBulkUnackAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 }
 
-// KibanaHTTPAPIsAlertingBulkUnackEpisodesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_unack_episodes_request.
-type KibanaHTTPAPIsAlertingBulkUnackEpisodesRequest struct {
-	// Items List of 1 to 100 unack actions to create.
-	Items []KibanaHTTPAPIsAlertingBulkUnackEpisodesItem `json:"items"`
+// KibanaHTTPAPIsAlertingBulkUnackAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_unack_alerts_request.
+type KibanaHTTPAPIsAlertingBulkUnackAlertsRequest struct {
+	// Items List of 1 to 100 unack actions to create, each for a different `alert_id`.
+	Items []KibanaHTTPAPIsAlertingBulkUnackAlertsItem `json:"items"`
 }
 
 // KibanaHTTPAPIsAlertingErrorResponse defines model for Kibana_HTTP_APIs_alerting_error_response.
@@ -37192,29 +37409,24 @@ type KibanaHTTPAPIsAlertingErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// KibanaHTTPAPIsAlertingNewAckEpisodeAction defines model for Kibana_HTTP_APIs_alerting_new_ack_episode_action.
-type KibanaHTTPAPIsAlertingNewAckEpisodeAction = map[string]interface{}
+// KibanaHTTPAPIsAlertingNewAckAlertAction defines model for Kibana_HTTP_APIs_alerting_new_ack_alert_action.
+type KibanaHTTPAPIsAlertingNewAckAlertAction = map[string]interface{}
 
 // KibanaHTTPAPIsAlertingNewActionPolicy defines model for Kibana_HTTP_APIs_alerting_new_action_policy.
 type KibanaHTTPAPIsAlertingNewActionPolicy struct {
-	// Description A description of the action policy.
-	Description string `json:"description"`
+	// Description A description of the action policy. Absent when the policy has none; send `null` on PATCH to clear it.
+	Description *string `json:"description,omitempty"`
 
 	// Destinations The list of destinations. At least one is required.
 	Destinations []KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations"`
+	Grouping     *KibanaHTTPAPIsAlertingActionPolicyGrouping     `json:"grouping,omitempty"`
 
-	// GroupBy The fields used to group alerts.
-	GroupBy *[]string `json:"group_by,omitempty"`
-
-	// GroupingMode The grouping mode: per_episode groups by episode lifecycle, all sends a single notification for all alerts, per_field groups by the specified fields.
-	GroupingMode *KibanaHTTPAPIsAlertingActionPolicyGroupingMode `json:"grouping_mode,omitempty"`
-
-	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. When `matcher` is `null`, or when both `tags` and `expression` are empty, the policy applies to all alerts.
+	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those routing tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. At least one of `tags` and `expression` must be set, so an empty `matcher` is rejected. Omit `matcher` entirely for a catch-all policy that applies to all alerts.
 	Matcher *struct {
-		// Expression A KQL query that's evaluated against each alert. Supported fields are: `episode_id`, `episode_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` or set it to `null` to match on `tags` alone.
+		// Expression A KQL query that's evaluated against each alert. Supported fields are: `alert_id`, `alert_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` to match on `tags` alone.
 		Expression *string `json:"expression,omitempty"`
 
-		// Tags Rule tags this policy should match. The policy applies to alerts from any rule that has at least one of these tags. Omit `matcher.tags` or set it to `null` to match on `matcher.expression` alone.
+		// Tags Routing tags this policy should match. The policy applies to alerts from any rule whose `metadata.routing_tags` include at least one of these tags. An empty array is not accepted. Omit `matcher.tags` to match on `matcher.expression` alone.
 		Tags *[]string `json:"tags,omitempty"`
 	} `json:"matcher,omitempty"`
 
@@ -37223,27 +37435,27 @@ type KibanaHTTPAPIsAlertingNewActionPolicy struct {
 	Throttle *KibanaHTTPAPIsAlertingActionPolicyThrottle `json:"throttle,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingNewActivateEpisodeAction defines model for Kibana_HTTP_APIs_alerting_new_activate_episode_action.
-type KibanaHTTPAPIsAlertingNewActivateEpisodeAction struct {
+// KibanaHTTPAPIsAlertingNewActivateAlertAction defines model for Kibana_HTTP_APIs_alerting_new_activate_alert_action.
+type KibanaHTTPAPIsAlertingNewActivateAlertAction struct {
 	// Reason Reason for activating the alert.
 	Reason string `json:"reason"`
 }
 
-// KibanaHTTPAPIsAlertingNewAssignEpisodeAction defines model for Kibana_HTTP_APIs_alerting_new_assign_episode_action.
-type KibanaHTTPAPIsAlertingNewAssignEpisodeAction struct {
-	// AssigneeUid User profile UID of the assignee, or null to remove the assignee from the episode.
+// KibanaHTTPAPIsAlertingNewAssignAlertAction defines model for Kibana_HTTP_APIs_alerting_new_assign_alert_action.
+type KibanaHTTPAPIsAlertingNewAssignAlertAction struct {
+	// AssigneeUid User profile UID of the assignee, or null to remove the assignee from the alert.
 	AssigneeUid *string `json:"assignee_uid,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingNewDeactivateEpisodeAction defines model for Kibana_HTTP_APIs_alerting_new_deactivate_episode_action.
-type KibanaHTTPAPIsAlertingNewDeactivateEpisodeAction struct {
+// KibanaHTTPAPIsAlertingNewDeactivateAlertAction defines model for Kibana_HTTP_APIs_alerting_new_deactivate_alert_action.
+type KibanaHTTPAPIsAlertingNewDeactivateAlertAction struct {
 	// Reason Reason for deactivating the alert.
 	Reason string `json:"reason"`
 }
 
 // KibanaHTTPAPIsAlertingNewRule defines model for Kibana_HTTP_APIs_alerting_new_rule.
 type KibanaHTTPAPIsAlertingNewRule struct {
-	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present.
+	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present. An empty array is rejected: omit `artifacts` on create, or send `null` on PATCH to clear.
 	Artifacts *[]KibanaHTTPAPIsAlertingRuleArtifact `json:"artifacts,omitempty"`
 
 	// Grouping Grouping configuration.
@@ -37261,11 +37473,13 @@ type KibanaHTTPAPIsAlertingNewRule struct {
 	// Query ES|QL query the rule evaluates. `base` is required. `breach` is an optional clause appended to it.
 	Query KibanaHTTPAPIsAlertingRuleQuery `json:"query"`
 
-	// Recovery When an alert episode recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
+	// Recovery When an alert recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
 	Recovery *KibanaHTTPAPIsAlertingRuleRecovery `json:"recovery,omitempty"`
 
 	// Schedule Execution schedule configuration.
-	Schedule        KibanaHTTPAPIsAlertingRuleSchedule         `json:"schedule"`
+	Schedule KibanaHTTPAPIsAlertingRuleSchedule `json:"schedule"`
+
+	// StateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
 	StateTransition *KibanaHTTPAPIsAlertingRuleStateTransition `json:"state_transition,omitempty"`
 
 	// TimeField Document field Kibana uses with `schedule.lookback` to time-filter `query.base`.
@@ -37275,46 +37489,56 @@ type KibanaHTTPAPIsAlertingNewRule struct {
 // KibanaHTTPAPIsAlertingNewRuleKind Whether the rule creates alerts (`alert`) or only stores matching events (`signal`).
 type KibanaHTTPAPIsAlertingNewRuleKind string
 
-// KibanaHTTPAPIsAlertingNewTagEpisodeAction defines model for Kibana_HTTP_APIs_alerting_new_tag_episode_action.
-type KibanaHTTPAPIsAlertingNewTagEpisodeAction struct {
-	// Tags Replaces the episode's tags. Send `[]` to clear.
+// KibanaHTTPAPIsAlertingNewTagAlertAction defines model for Kibana_HTTP_APIs_alerting_new_tag_alert_action.
+type KibanaHTTPAPIsAlertingNewTagAlertAction struct {
+	// Tags Replaces the alert's tags. Send `[]` to clear.
 	Tags []string `json:"tags"`
 }
 
-// KibanaHTTPAPIsAlertingNewUnackEpisodeAction defines model for Kibana_HTTP_APIs_alerting_new_unack_episode_action.
-type KibanaHTTPAPIsAlertingNewUnackEpisodeAction = map[string]interface{}
+// KibanaHTTPAPIsAlertingNewUnackAlertAction defines model for Kibana_HTTP_APIs_alerting_new_unack_alert_action.
+type KibanaHTTPAPIsAlertingNewUnackAlertAction = map[string]interface{}
 
 // KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem defines model for Kibana_HTTP_APIs_alerting_policy_execution_history_item.
 type KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem struct {
 	ActionGroupCount float32 `json:"action_group_count"`
 	AlertCount       float32 `json:"alert_count"`
 
-	// Alerts Alert ids referenced by this event, bounded to MAX_EMBEDDED_EPISODES_PER_ITEM. Use `alert_count` for the true total.
-	Alerts *[]struct {
+	// Alerts Alert IDs referenced by this event, bounded to 50. Empty when the event references no alerts. Use `alert_count` for the true total.
+	Alerts []struct {
 		Id string `json:"id"`
-	} `json:"alerts,omitempty"`
+	} `json:"alerts"`
 	DispatchedAt time.Time `json:"dispatched_at"`
-	Error        *struct {
-		Message    string  `json:"message"`
+
+	// Error Failure details. Omitted when the dispatch did not fail.
+	Error *struct {
+		Message string `json:"message"`
+
+		// StackTrace Omitted when the source recorded no trace.
 		StackTrace *string `json:"stack_trace,omitempty"`
 	} `json:"error,omitempty"`
 	FailureReason *KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason `json:"failure_reason,omitempty"`
 	Outcome       KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome        `json:"outcome"`
 	Policy        struct {
-		Id   string  `json:"id"`
+		Id string `json:"id"`
+
+		// Name Omitted when the referenced resource could not be resolved.
 		Name *string `json:"name,omitempty"`
 	} `json:"policy"`
 
-	// Rules Rules referenced by this event, bounded to MAX_EMBEDDED_RULES_PER_ITEM. When a search or rule filter narrows the match, this array is intersected with the matched subset server-side. Use `total_rule_count` for the full count.
+	// RuleCount Number of rules referenced by this event after search or rule-filter narrowing. Unlike `total` on a list response, this is an exact count and it can exceed `rules.length` when the embedded array is truncated to the cap.
+	RuleCount float32 `json:"rule_count"`
+
+	// Rules Rules referenced by this event, bounded to 20. When a search or rule filter narrows the match, this array is intersected with the matched subset server-side. Use `rule_count` for the full count.
 	Rules []struct {
-		Id   string  `json:"id"`
+		Id string `json:"id"`
+
+		// Name Omitted when the referenced resource could not be resolved.
 		Name *string `json:"name,omitempty"`
 	} `json:"rules"`
+	Workflows []struct {
+		Id string `json:"id"`
 
-	// TotalRuleCount Total number of rules referenced by this event after search / rule-filter narrowing. May exceed `rules.length` when the embedded array is truncated to the cap.
-	TotalRuleCount float32 `json:"total_rule_count"`
-	Workflows      []struct {
-		Id   string  `json:"id"`
+		// Name Omitted when the referenced resource could not be resolved.
 		Name *string `json:"name,omitempty"`
 	} `json:"workflows"`
 }
@@ -37331,7 +37555,7 @@ type KibanaHTTPAPIsAlertingPolicyExecutionHistoryResponse struct {
 	Page    int                                                `json:"page"`
 	PerPage int                                                `json:"per_page"`
 
-	// SearchMatches Per-type match counts for the active search. Null when no search was provided. When is_truncated is true the server ID filter was capped and the result may be truncated.
+	// SearchMatches Per-type match counts for the active search. Omitted when no search was provided. When is_truncated is true the server ID filter was capped and the result may be truncated.
 	SearchMatches *struct {
 		// IsTruncated True when the server filter cap was reached and results may be truncated.
 		IsTruncated bool `json:"is_truncated"`
@@ -37349,27 +37573,19 @@ type KibanaHTTPAPIsAlertingPolicyExecutionHistoryResponse struct {
 
 // KibanaHTTPAPIsAlertingPutActionPolicy defines model for Kibana_HTTP_APIs_alerting_put_action_policy.
 type KibanaHTTPAPIsAlertingPutActionPolicy struct {
-	// Description A description of the action policy.
-	Description string `json:"description"`
+	// Description A description of the action policy. Absent when the policy has none; send `null` on PATCH to clear it.
+	Description *string `json:"description,omitempty"`
 
 	// Destinations The list of destinations. At least one is required.
 	Destinations []KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations"`
+	Grouping     *KibanaHTTPAPIsAlertingActionPolicyGrouping     `json:"grouping,omitempty"`
 
-	// Enabled Whether the action policy is enabled. On create, defaults to `true` when omitted. On replace, omitting this field preserves the existing enabled state; otherwise it becomes the new stored value.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// GroupBy The fields used to group alerts.
-	GroupBy *[]string `json:"group_by,omitempty"`
-
-	// GroupingMode The grouping mode: per_episode groups by episode lifecycle, all sends a single notification for all alerts, per_field groups by the specified fields.
-	GroupingMode *KibanaHTTPAPIsAlertingActionPolicyGroupingMode `json:"grouping_mode,omitempty"`
-
-	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. When `matcher` is `null`, or when both `tags` and `expression` are empty, the policy applies to all alerts.
+	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those routing tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. At least one of `tags` and `expression` must be set, so an empty `matcher` is rejected. Omit `matcher` entirely for a catch-all policy that applies to all alerts.
 	Matcher *struct {
-		// Expression A KQL query that's evaluated against each alert. Supported fields are: `episode_id`, `episode_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` or set it to `null` to match on `tags` alone.
+		// Expression A KQL query that's evaluated against each alert. Supported fields are: `alert_id`, `alert_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` to match on `tags` alone.
 		Expression *string `json:"expression,omitempty"`
 
-		// Tags Rule tags this policy should match. The policy applies to alerts from any rule that has at least one of these tags. Omit `matcher.tags` or set it to `null` to match on `matcher.expression` alone.
+		// Tags Routing tags this policy should match. The policy applies to alerts from any rule whose `metadata.routing_tags` include at least one of these tags. An empty array is not accepted. Omit `matcher.tags` to match on `matcher.expression` alone.
 		Tags *[]string `json:"tags,omitempty"`
 	} `json:"matcher,omitempty"`
 
@@ -37396,19 +37612,33 @@ type KibanaHTTPAPIsAlertingRuleBreach struct {
 	Segment string `json:"segment"`
 }
 
+// KibanaHTTPAPIsAlertingRuleBreachPatch Optional ES|QL clause appended to `query.base`. If omitted, every row from `query.base` is a match, and a `no_data` strategy other than `ignore` then requires `no_data.query`.
+type KibanaHTTPAPIsAlertingRuleBreachPatch struct {
+	// Segment ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Don't include a `FROM` clause.
+	Segment *string `json:"segment,omitempty"`
+}
+
 // KibanaHTTPAPIsAlertingRuleExecution defines model for Kibana_HTTP_APIs_alerting_rule_execution.
 type KibanaHTTPAPIsAlertingRuleExecution struct {
 	EndedAt time.Time `json:"ended_at"`
-	Error   *struct {
-		Message    string  `json:"message"`
+
+	// Error Failure details. Omitted on a successful run, or when the failure was unclassified.
+	Error *struct {
+		Message string `json:"message"`
+
+		// StackTrace Omitted when the source recorded no trace.
 		StackTrace *string `json:"stack_trace,omitempty"`
 	} `json:"error,omitempty"`
 	Id      string                                     `json:"id"`
 	Outcome KibanaHTTPAPIsAlertingRuleExecutionOutcome `json:"outcome"`
-	Reason  *string                                    `json:"reason,omitempty"`
-	Rule    struct {
-		Id      string `json:"id"`
-		Version *int   `json:"version,omitempty"`
+
+	// Reason Why the run ended the way it did. Omitted when the source recorded no reason.
+	Reason *string `json:"reason,omitempty"`
+	Rule   struct {
+		Id string `json:"id"`
+
+		// Version The rule version this run executed. Omitted until the rule executor emits its own event; the `task-run` event does not carry one.
+		Version *int `json:"version,omitempty"`
 	} `json:"rule"`
 	SpaceId   string    `json:"space_id"`
 	StartedAt time.Time `json:"started_at"`
@@ -37440,6 +37670,12 @@ type KibanaHTTPAPIsAlertingRuleGrouping struct {
 	Fields []string `json:"fields"`
 }
 
+// KibanaHTTPAPIsAlertingRuleGroupingPatch Grouping configuration.
+type KibanaHTTPAPIsAlertingRuleGroupingPatch struct {
+	// Fields Fields to group alerts by, e.g. ["host.name", "service.name"]. Should match ES|QL GROUP BY fields.
+	Fields *[]string `json:"fields,omitempty"`
+}
+
 // KibanaHTTPAPIsAlertingRuleListResponse Paginated list of rules.
 type KibanaHTTPAPIsAlertingRuleListResponse struct {
 	// Items The list of rules.
@@ -37457,14 +37693,41 @@ type KibanaHTTPAPIsAlertingRuleListResponse struct {
 
 // KibanaHTTPAPIsAlertingRuleMetadata Rule metadata.
 type KibanaHTTPAPIsAlertingRuleMetadata struct {
-	// BuilderType Identifies the rule builder that authored this rule (e.g. "threshold"). Absent for rules authored directly in ES|QL.
-	BuilderType *string `json:"builder_type,omitempty"`
+	// Builder Identifies the rule builder that authored this rule (e.g. "threshold"). Absent for rules authored directly in ES|QL; send `null` on PATCH to clear it.
+	Builder *struct {
+		// Type Rule builder type.
+		Type string `json:"type"`
+	} `json:"builder,omitempty"`
 
-	// Description Human-readable description of the rule.
+	// Description Human-readable description of the rule. Omit to leave it unset; send `null` on PATCH to clear it. An empty string is rejected.
 	Description *string `json:"description,omitempty"`
 
 	// Name Rule name (must be unique within the space).
 	Name string `json:"name"`
+
+	// RoutingTags Routing tags that link alerts from this rule to action policies. An action policy applies when its `matcher.tags` contains at least one of these tags. Only allowed when kind is "alert".
+	RoutingTags *[]string `json:"routing_tags,omitempty"`
+
+	// Tags Tags for categorization, e.g. ["production", "infra"].
+	Tags *[]string `json:"tags,omitempty"`
+}
+
+// KibanaHTTPAPIsAlertingRuleMetadataPatch Rule metadata.
+type KibanaHTTPAPIsAlertingRuleMetadataPatch struct {
+	// Builder Identifies the rule builder that authored this rule (e.g. "threshold"). Absent for rules authored directly in ES|QL; send `null` on PATCH to clear it.
+	Builder *struct {
+		// Type Rule builder type.
+		Type string `json:"type"`
+	} `json:"builder,omitempty"`
+
+	// Description Human-readable description of the rule. Omit to leave it unset; send `null` on PATCH to clear it. An empty string is rejected.
+	Description *string `json:"description,omitempty"`
+
+	// Name Rule name (must be unique within the space).
+	Name *string `json:"name,omitempty"`
+
+	// RoutingTags Routing tags that link alerts from this rule to action policies. An action policy applies when its `matcher.tags` contains at least one of these tags. Only allowed when kind is "alert".
+	RoutingTags *[]string `json:"routing_tags,omitempty"`
 
 	// Tags Tags for categorization, e.g. ["production", "infra"].
 	Tags *[]string `json:"tags,omitempty"`
@@ -37475,7 +37738,7 @@ type KibanaHTTPAPIsAlertingRuleNoData struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsAlertingRuleNoDataAlert Marks an existing alert episode `active` when the rule finds no data. It never opens an episode for a group that has not breached. Not accepted when creating or updating rules.
+// KibanaHTTPAPIsAlertingRuleNoDataAlert Marks an existing alert `active` when the rule finds no data. It never opens an alert for a group that has not breached. Not accepted when creating or updating rules.
 type KibanaHTTPAPIsAlertingRuleNoDataAlert struct {
 	// Query Optional ES|QL query that checks whether a group has data. If omitted, `query.base` is used, which then has to be a presence query in its own right — so `query.breach` is required.
 	Query    *string                                       `json:"query,omitempty"`
@@ -37493,7 +37756,7 @@ type KibanaHTTPAPIsAlertingRuleNoDataIgnore struct {
 // KibanaHTTPAPIsAlertingRuleNoDataIgnoreStrategy defines model for KibanaHTTPAPIsAlertingRuleNoDataIgnore.Strategy.
 type KibanaHTTPAPIsAlertingRuleNoDataIgnoreStrategy string
 
-// KibanaHTTPAPIsAlertingRuleNoDataKeepLast Holds the alert episode's current status when the rule finds no data.
+// KibanaHTTPAPIsAlertingRuleNoDataKeepLast Holds the alert's current status when the rule finds no data.
 type KibanaHTTPAPIsAlertingRuleNoDataKeepLast struct {
 	// Query Optional ES|QL query that checks whether a group has data. If omitted, `query.base` is used, which then has to be a presence query in its own right — so `query.breach` is required.
 	Query    *string                                          `json:"query,omitempty"`
@@ -37503,7 +37766,7 @@ type KibanaHTTPAPIsAlertingRuleNoDataKeepLast struct {
 // KibanaHTTPAPIsAlertingRuleNoDataKeepLastStrategy defines model for KibanaHTTPAPIsAlertingRuleNoDataKeepLast.Strategy.
 type KibanaHTTPAPIsAlertingRuleNoDataKeepLastStrategy string
 
-// KibanaHTTPAPIsAlertingRuleNoDataResolve Closes the alert episode the first time the rule finds no data for a group.
+// KibanaHTTPAPIsAlertingRuleNoDataResolve Closes the alert the first time the rule finds no data for a group.
 type KibanaHTTPAPIsAlertingRuleNoDataResolve struct {
 	// Query Optional ES|QL query that checks whether a group has data. If omitted, `query.base` is used, which then has to be a presence query in its own right — so `query.breach` is required.
 	Query    *string                                         `json:"query,omitempty"`
@@ -37522,12 +37785,21 @@ type KibanaHTTPAPIsAlertingRuleQuery struct {
 	Breach *KibanaHTTPAPIsAlertingRuleBreach `json:"breach,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingRuleRecovery When an alert episode recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
+// KibanaHTTPAPIsAlertingRuleQueryPatch ES|QL query the rule evaluates. `base` is required. `breach` is an optional clause appended to it.
+type KibanaHTTPAPIsAlertingRuleQueryPatch struct {
+	// Base ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`.
+	Base *string `json:"base,omitempty"`
+
+	// Breach Optional ES|QL clause appended to `query.base`. If omitted, every row from `query.base` is a match, and a `no_data` strategy other than `ignore` then requires `no_data.query`.
+	Breach *KibanaHTTPAPIsAlertingRuleBreachPatch `json:"breach,omitempty"`
+}
+
+// KibanaHTTPAPIsAlertingRuleRecovery When an alert recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
 type KibanaHTTPAPIsAlertingRuleRecovery struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsAlertingRuleRecoveryCondition Recovers the alert episode when `query.base` plus `segment` returns the group. Requires `query.breach`.
+// KibanaHTTPAPIsAlertingRuleRecoveryCondition Recovers the alert when `query.base` plus `segment` returns the group. Requires `query.breach`.
 type KibanaHTTPAPIsAlertingRuleRecoveryCondition struct {
 	// Segment ES|QL clause appended to `query.base`, for example `WHERE avg_cpu < 0.60`. Don't include a `FROM` clause.
 	Segment  string                                              `json:"segment"`
@@ -37537,7 +37809,7 @@ type KibanaHTTPAPIsAlertingRuleRecoveryCondition struct {
 // KibanaHTTPAPIsAlertingRuleRecoveryConditionStrategy defines model for KibanaHTTPAPIsAlertingRuleRecoveryCondition.Strategy.
 type KibanaHTTPAPIsAlertingRuleRecoveryConditionStrategy string
 
-// KibanaHTTPAPIsAlertingRuleRecoveryManual Does not recover automatically. Close the alert episode with a user action. `state_transition.recovering` has no effect.
+// KibanaHTTPAPIsAlertingRuleRecoveryManual Does not recover automatically. Close the alert with a user action. `state_transition.recovering` has no effect.
 type KibanaHTTPAPIsAlertingRuleRecoveryManual struct {
 	Strategy KibanaHTTPAPIsAlertingRuleRecoveryManualStrategy `json:"strategy"`
 }
@@ -37545,7 +37817,7 @@ type KibanaHTTPAPIsAlertingRuleRecoveryManual struct {
 // KibanaHTTPAPIsAlertingRuleRecoveryManualStrategy defines model for KibanaHTTPAPIsAlertingRuleRecoveryManual.Strategy.
 type KibanaHTTPAPIsAlertingRuleRecoveryManualStrategy string
 
-// KibanaHTTPAPIsAlertingRuleRecoveryNoBreach Recovers the alert episode when its group no longer appears in the breach results.
+// KibanaHTTPAPIsAlertingRuleRecoveryNoBreach Recovers the alert when its group no longer appears in the breach results.
 type KibanaHTTPAPIsAlertingRuleRecoveryNoBreach struct {
 	Strategy KibanaHTTPAPIsAlertingRuleRecoveryNoBreachStrategy `json:"strategy"`
 }
@@ -37553,9 +37825,9 @@ type KibanaHTTPAPIsAlertingRuleRecoveryNoBreach struct {
 // KibanaHTTPAPIsAlertingRuleRecoveryNoBreachStrategy defines model for KibanaHTTPAPIsAlertingRuleRecoveryNoBreach.Strategy.
 type KibanaHTTPAPIsAlertingRuleRecoveryNoBreachStrategy string
 
-// KibanaHTTPAPIsAlertingRuleRecoveryQuery Recovers the alert episode when this separate query returns the group.
+// KibanaHTTPAPIsAlertingRuleRecoveryQuery Recovers the alert when this separate query returns the group.
 type KibanaHTTPAPIsAlertingRuleRecoveryQuery struct {
-	// Query Independent ES|QL query, including its own `FROM` clause. A matching group recovers the alert episode.
+	// Query Independent ES|QL query, including its own `FROM` clause. A matching group recovers the alert.
 	Query    string                                          `json:"query"`
 	Strategy KibanaHTTPAPIsAlertingRuleRecoveryQueryStrategy `json:"strategy"`
 }
@@ -37565,7 +37837,7 @@ type KibanaHTTPAPIsAlertingRuleRecoveryQueryStrategy string
 
 // KibanaHTTPAPIsAlertingRuleResponse defines model for Kibana_HTTP_APIs_alerting_rule_response.
 type KibanaHTTPAPIsAlertingRuleResponse struct {
-	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present.
+	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present. An empty array is rejected: omit `artifacts` on create, or send `null` on PATCH to clear.
 	Artifacts *[]KibanaHTTPAPIsAlertingRuleArtifact `json:"artifacts,omitempty"`
 
 	// CreatedAt ISO timestamp when the rule was created.
@@ -37587,7 +37859,31 @@ type KibanaHTTPAPIsAlertingRuleResponse struct {
 	Kind KibanaHTTPAPIsAlertingRuleResponseKind `json:"kind"`
 
 	// Metadata Rule metadata.
-	Metadata KibanaHTTPAPIsAlertingRuleMetadata `json:"metadata"`
+	Metadata struct {
+		// Builder Identifies the rule builder that authored this rule (e.g. "threshold"). Absent for rules authored directly in ES|QL; send `null` on PATCH to clear it.
+		Builder *struct {
+			// Type Rule builder type.
+			Type string `json:"type"`
+		} `json:"builder,omitempty"`
+
+		// Description Human-readable description of the rule. Omit to leave it unset; send `null` on PATCH to clear it. An empty string is rejected.
+		Description *string `json:"description,omitempty"`
+
+		// Name Rule name (must be unique within the space).
+		Name string `json:"name"`
+
+		// RoutingTags Routing tags that link alerts from this rule to action policies. An action policy applies when its `matcher.tags` contains at least one of these tags. Only allowed when kind is "alert".
+		RoutingTags *[]string `json:"routing_tags,omitempty"`
+
+		// Tags Tags for categorization, e.g. ["production", "infra"].
+		Tags *[]string `json:"tags,omitempty"`
+
+		// Template The rule template this rule was created from.
+		Template *struct {
+			// Id Id of the rule template.
+			Id string `json:"id"`
+		} `json:"template,omitempty"`
+	} `json:"metadata"`
 
 	// NoData What the rule does when a group has no data. Required when `kind` is `alert`. Not allowed when `kind` is `signal`. Any strategy other than `ignore` requires either `query.breach` or `no_data.query`, so that a group with no data can be told apart from one that stopped breaching.
 	NoData *KibanaHTTPAPIsAlertingRuleNoData `json:"no_data,omitempty"`
@@ -37595,13 +37891,13 @@ type KibanaHTTPAPIsAlertingRuleResponse struct {
 	// Query ES|QL query the rule evaluates. `base` is required. `breach` is an optional clause appended to it.
 	Query KibanaHTTPAPIsAlertingRuleQuery `json:"query"`
 
-	// Recovery When an alert episode recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
+	// Recovery When an alert recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
 	Recovery *KibanaHTTPAPIsAlertingRuleRecovery `json:"recovery,omitempty"`
 
 	// Schedule Execution schedule configuration.
 	Schedule KibanaHTTPAPIsAlertingRuleSchedule `json:"schedule"`
 
-	// StateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert episode becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
+	// StateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
 	StateTransition *KibanaHTTPAPIsAlertingRuleStateTransition `json:"state_transition,omitempty"`
 
 	// TimeField Document field Kibana uses with `schedule.lookback` to time-filter `query.base`.
@@ -37629,15 +37925,33 @@ type KibanaHTTPAPIsAlertingRuleSchedule struct {
 	Lookback *string `json:"lookback,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingRuleStateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert episode becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
+// KibanaHTTPAPIsAlertingRuleSchedulePatch Execution schedule configuration.
+type KibanaHTTPAPIsAlertingRuleSchedulePatch struct {
+	// Every Execution interval, e.g. 1m, 5m, 1h.
+	Every *string `json:"every,omitempty"`
+
+	// Lookback Lookback window for the query, e.g. 5m, 1h. Can also be expressed in ES|QL.
+	Lookback *string `json:"lookback,omitempty"`
+}
+
+// KibanaHTTPAPIsAlertingRuleStateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
 type KibanaHTTPAPIsAlertingRuleStateTransition struct {
 	Pending    *KibanaHTTPAPIsAlertingRuleStateTransitionPending    `json:"pending,omitempty"`
 	Recovering *KibanaHTTPAPIsAlertingRuleStateTransitionRecovering `json:"recovering,omitempty"`
 }
 
+// KibanaHTTPAPIsAlertingRuleStateTransitionPatch Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
+type KibanaHTTPAPIsAlertingRuleStateTransitionPatch struct {
+	// Pending Delay before a match opens an alert.
+	Pending *KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatch `json:"pending,omitempty"`
+
+	// Recovering Delay before a recovered match closes the alert. Has no effect when `recovery.strategy` is `manual`.
+	Recovering *KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatch `json:"recovering,omitempty"`
+}
+
 // KibanaHTTPAPIsAlertingRuleStateTransitionPending defines model for Kibana_HTTP_APIs_alerting_rule_state_transition_pending.
 type KibanaHTTPAPIsAlertingRuleStateTransitionPending struct {
-	// Count Consecutive matches the alert episode spends in `pending` before it becomes `active` on the next match. For example, `2` opens it on the third consecutive match. Set to `0` to open it on the first match.
+	// Count Consecutive matches the alert spends in `pending` before it becomes `active` on the next match. For example, `2` opens it on the third consecutive match. Set to `0` to open it on the first match.
 	Count *int `json:"count,omitempty"`
 
 	// Operator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
@@ -37650,9 +37964,24 @@ type KibanaHTTPAPIsAlertingRuleStateTransitionPending struct {
 // KibanaHTTPAPIsAlertingRuleStateTransitionPendingOperator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
 type KibanaHTTPAPIsAlertingRuleStateTransitionPendingOperator string
 
+// KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatch defines model for Kibana_HTTP_APIs_alerting_rule_state_transition_pending_patch.
+type KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatch struct {
+	// Count Consecutive matches the alert spends in `pending` before it becomes `active` on the next match. For example, `2` opens it on the third consecutive match. Set to `0` to open it on the first match.
+	Count *int `json:"count,omitempty"`
+
+	// Operator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
+	Operator *KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator `json:"operator,omitempty"`
+
+	// Timeframe Duration the condition must hold, for example `5m`. Combine with `count` using `operator`.
+	Timeframe *string `json:"timeframe,omitempty"`
+}
+
+// KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
+type KibanaHTTPAPIsAlertingRuleStateTransitionPendingPatchOperator string
+
 // KibanaHTTPAPIsAlertingRuleStateTransitionRecovering defines model for Kibana_HTTP_APIs_alerting_rule_state_transition_recovering.
 type KibanaHTTPAPIsAlertingRuleStateTransitionRecovering struct {
-	// Count Consecutive recoveries the alert episode spends in `recovering` before it becomes `inactive` on the next recovery. For example, `2` closes it on the third consecutive recovery. Set to `0` to close it on the first recovery.
+	// Count Consecutive recoveries the alert spends in `recovering` before it becomes `inactive` on the next recovery. For example, `2` closes it on the third consecutive recovery. Set to `0` to close it on the first recovery.
 	Count *int `json:"count,omitempty"`
 
 	// Operator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
@@ -37665,6 +37994,21 @@ type KibanaHTTPAPIsAlertingRuleStateTransitionRecovering struct {
 // KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
 type KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringOperator string
 
+// KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatch defines model for Kibana_HTTP_APIs_alerting_rule_state_transition_recovering_patch.
+type KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatch struct {
+	// Count Consecutive recoveries the alert spends in `recovering` before it becomes `inactive` on the next recovery. For example, `2` closes it on the third consecutive recovery. Set to `0` to close it on the first recovery.
+	Count *int `json:"count,omitempty"`
+
+	// Operator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
+	Operator *KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator `json:"operator,omitempty"`
+
+	// Timeframe Duration the condition must hold, for example `5m`. Combine with `count` using `operator`.
+	Timeframe *string `json:"timeframe,omitempty"`
+}
+
+// KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator When both `count` and `timeframe` are set, `and` requires both and `or` requires either. Allowed only when both fields are present.
+type KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator string
+
 // KibanaHTTPAPIsAlertingSnoozeActionPolicyRequest defines model for Kibana_HTTP_APIs_alerting_snooze_action_policy_request.
 type KibanaHTTPAPIsAlertingSnoozeActionPolicyRequest struct {
 	// SnoozedUntil The ISO datetime until which the action policy should be snoozed.
@@ -37673,68 +38017,58 @@ type KibanaHTTPAPIsAlertingSnoozeActionPolicyRequest struct {
 
 // KibanaHTTPAPIsAlertingUpdateActionPolicy defines model for Kibana_HTTP_APIs_alerting_update_action_policy.
 type KibanaHTTPAPIsAlertingUpdateActionPolicy struct {
-	// Description A description of the action policy.
+	// Description A description of the action policy. Absent when the policy has none; send `null` on PATCH to clear it.
 	Description *string `json:"description,omitempty"`
 
 	// Destinations The list of destinations. At least one is required.
 	Destinations *[]KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations,omitempty"`
 
-	// GroupBy The fields used to group alerts.
-	GroupBy *[]string `json:"group_by,omitempty"`
+	// Grouping How matched alerts are batched into notifications. Absent falls back to `per_alert`; send `null` on PATCH to clear it. The mode decides the rest of the block, so a PATCH replaces it whole: send the complete mode variant rather than a single field.
+	Grouping *KibanaHTTPAPIsAlertingActionPolicyGrouping `json:"grouping,omitempty"`
 
-	// GroupingMode The grouping mode for alert notifications.
-	GroupingMode *KibanaHTTPAPIsAlertingActionPolicyGroupingMode `json:"grouping_mode,omitempty"`
-
-	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. When `matcher` is `null`, or when both `tags` and `expression` are empty, the policy applies to all alerts. <br/><br/> Updating `matcher` replaces it entirely: to change `tags` without dropping `expression`, resend the current `expression` value.
+	// Matcher Selects the alerts this policy applies to. Set `tags` to match alerts from rules with those routing tags. Set `expression` to a KQL query, which will be evaluated against each alert. <br/><br/> If you set both `tags` and `expression`, an alert must match the tags and the expression for the policy to apply. Omit `matcher` to keep the stored matcher, or set it to `null` for a catch-all policy that applies to all alerts. An empty `matcher` names no leaf and so changes nothing; clearing the last of `tags` and `expression` clears the matcher itself, which is also a catch-all.
 	Matcher *struct {
-		// Expression A KQL query that's evaluated against each alert. Supported fields are: `episode_id`, `episode_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` or set it to `null` to match on `tags` alone.
+		// Expression A KQL query that's evaluated against each alert. Supported fields are: `alert_id`, `alert_status`, `group_hash`, `last_event_timestamp`, `severity`, and your rule's query output columns under `data.*` (for example, `data.host.name`). Referencing other fields won't work. Omit `matcher.expression` to keep the stored expression, or set it to `null` to clear it and match on `tags` alone.
 		Expression *string `json:"expression,omitempty"`
 
-		// Tags Rule tags this policy should match. The policy applies to alerts from any rule that has at least one of these tags. Omit `matcher.tags` or set it to `null` to match on `matcher.expression` alone.
+		// Tags Routing tags this policy should match. The policy applies to alerts from any rule whose `metadata.routing_tags` include at least one of these tags. An empty array is not accepted. Omit `matcher.tags` to keep the stored tags, or set it to `null` to clear them and match on `matcher.expression` alone.
 		Tags *[]string `json:"tags,omitempty"`
 	} `json:"matcher,omitempty"`
 
 	// Name The name of the action policy.
 	Name *string `json:"name,omitempty"`
 
-	// Throttle The throttle configuration for notifications.
+	// Throttle The throttle configuration for notifications. Absent when notifications are not throttled; send `null` on PATCH to clear it. The strategy decides the rest of the block, so a PATCH replaces it whole: send the complete strategy variant rather than a single field.
 	Throttle *KibanaHTTPAPIsAlertingActionPolicyThrottle `json:"throttle,omitempty"`
 }
 
 // KibanaHTTPAPIsAlertingUpdateRule defines model for Kibana_HTTP_APIs_alerting_update_rule.
 type KibanaHTTPAPIsAlertingUpdateRule struct {
-	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present.
+	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present. An empty array is rejected: omit `artifacts` on create, or send `null` on PATCH to clear.
 	Artifacts *[]KibanaHTTPAPIsAlertingRuleArtifact `json:"artifacts,omitempty"`
-	Grouping  *KibanaHTTPAPIsAlertingRuleGrouping   `json:"grouping,omitempty"`
-	Metadata  *struct {
-		BuilderType *string `json:"builder_type,omitempty"`
 
-		// Description Human-readable description of the rule.
-		Description *string `json:"description,omitempty"`
+	// Grouping Grouping configuration.
+	Grouping *KibanaHTTPAPIsAlertingRuleGroupingPatch `json:"grouping,omitempty"`
 
-		// Name Rule name (must be unique within the space).
-		Name *string   `json:"name,omitempty"`
-		Tags *[]string `json:"tags,omitempty"`
-	} `json:"metadata,omitempty"`
+	// Metadata Rule metadata.
+	Metadata *KibanaHTTPAPIsAlertingRuleMetadataPatch `json:"metadata,omitempty"`
 
 	// NoData What the rule does when a group has no data. Required when `kind` is `alert`. Not allowed when `kind` is `signal`. Any strategy other than `ignore` requires either `query.breach` or `no_data.query`, so that a group with no data can be told apart from one that stopped breaching.
 	NoData *KibanaHTTPAPIsAlertingRuleNoData `json:"no_data,omitempty"`
 
 	// Query ES|QL query the rule evaluates. `base` is required. `breach` is an optional clause appended to it.
-	Query *KibanaHTTPAPIsAlertingRuleQuery `json:"query,omitempty"`
+	Query *KibanaHTTPAPIsAlertingRuleQueryPatch `json:"query,omitempty"`
 
-	// Recovery When an alert episode recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
+	// Recovery When an alert recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
 	Recovery *KibanaHTTPAPIsAlertingRuleRecovery `json:"recovery,omitempty"`
-	Schedule *struct {
-		// Every Execution interval, e.g. 1m, 5m, 1h.
-		Every *string `json:"every,omitempty"`
 
-		// Lookback Lookback window for the query, e.g. 5m, 1h. Can also be expressed in ES|QL.
-		Lookback *string `json:"lookback,omitempty"`
-	} `json:"schedule,omitempty"`
-	StateTransition *KibanaHTTPAPIsAlertingRuleStateTransition `json:"state_transition,omitempty"`
+	// Schedule Execution schedule configuration.
+	Schedule *KibanaHTTPAPIsAlertingRuleSchedulePatch `json:"schedule,omitempty"`
 
-	// TimeField Document field Kibana uses with `schedule.lookback` to time-filter `query.base`. If omitted, the existing value is kept.
+	// StateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
+	StateTransition *KibanaHTTPAPIsAlertingRuleStateTransitionPatch `json:"state_transition,omitempty"`
+
+	// TimeField Document field Kibana uses with `schedule.lookback` to time-filter `query.base`.
 	TimeField *string `json:"time_field,omitempty"`
 }
 
@@ -41986,7 +42320,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
 	// RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage".
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage". Has no effect on ES|QL tabs since Kibana 8.16.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
 	// SampleSize Discover display option: controls how many documents to sample for the data table. If omitted, defaults to the advanced setting "discover:sampleSize".
@@ -42085,7 +42419,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
 	// RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage".
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage". Has no effect on ES|QL tabs since Kibana 8.16.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
 	// SampleSize Discover display option: controls how many documents to sample for the data table. If omitted, defaults to the advanced setting "discover:sampleSize".
@@ -42185,7 +42519,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage".
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage". Has no effect on ES|QL tabs since Kibana 8.16.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
 	// SampleSize Discover display option: controls how many documents to sample for the data table. If omitted, defaults to the advanced setting "discover:sampleSize".
@@ -43965,12 +44299,12 @@ type KibanaHTTPAPIsMaintenanceWindowScope struct {
 		} `json:"query"`
 	} `json:"alerting"`
 
-	// AlertingV2 Settings that control how this maintenance window affects Alerting V2 alerting episodes, including an optional KQL filter. If you omit `alerting_v2`, the maintenance window doesn't affect Alerting V2 alert episodes.
+	// AlertingV2 Settings that control how this maintenance window affects Alerting V2 alerts, including an optional KQL filter. If you omit `alerting_v2`, the maintenance window doesn't affect Alerting V2 alerts.
 	AlertingV2 *struct {
-		// Enabled Whether the maintenance window applies to Alerting V2 alert episodes. If omitted, is treated as `true`.
+		// Enabled Whether the maintenance window applies to Alerting V2 alerts. If omitted, is treated as `true`.
 		Enabled *bool `json:"enabled,omitempty"`
 		Query   *struct {
-			// Kql A KQL filter that limits which Alerting V2 alert episodes this maintenance window affects. Matching alert episodes don't send notifications while the window is active. If query isn't returned, the window affects all Alerting V2 alert episodes.
+			// Kql A KQL filter that limits which Alerting V2 alerts this maintenance window affects. It can filter on `alert_id`, `alert_status`, `group_hash`, `last_event_timestamp`, `severity`, and `data.*`. Matching alerts don't send notifications while the window is active. If query isn't returned, the window affects all Alerting V2 alerts.
 			Kql string `json:"kql"`
 		} `json:"query,omitempty"`
 	} `json:"alerting_v2,omitempty"`
@@ -43988,12 +44322,12 @@ type KibanaHTTPAPIsMaintenanceWindowScopeRequest struct {
 		} `json:"query,omitempty"`
 	} `json:"alerting,omitempty"`
 
-	// AlertingV2 Settings that control how this maintenance window affects Alerting V2 alerting episodes, including an optional KQL filter. If you omit `alerting_v2`, the maintenance window doesn't affect Alerting V2 alert episodes.
+	// AlertingV2 Settings that control how this maintenance window affects Alerting V2 alerts, including an optional KQL filter. If you omit `alerting_v2`, the maintenance window doesn't affect Alerting V2 alerts.
 	AlertingV2 *struct {
-		// Enabled Whether this maintenance window affects Alerting V2 alert episodes. Defaults to `true`.
+		// Enabled Whether this maintenance window affects Alerting V2 alerts. Defaults to `true`.
 		Enabled *bool `json:"enabled,omitempty"`
 		Query   *struct {
-			// Kql A KQL filter that limits which Alerting V2 alert episodes this maintenance window affects. You can filter on `episode_id`, `episode_status`, `group_hash`, `last_event_timestamp`, `severity`, and `data.*`. Matching episodes don't send notifications while the window is active. If you omit query, the window affects all Alerting V2 alert episodes.
+			// Kql A KQL filter that limits which Alerting V2 alerts this maintenance window affects. You can filter on `alert_id`, `alert_status`, `group_hash`, `last_event_timestamp`, `severity`, and `data.*`. Matching alerts don't send notifications while the window is active. If you omit query, the window affects all Alerting V2 alerts.
 			Kql string `json:"kql"`
 		} `json:"query,omitempty"`
 	} `json:"alerting_v2,omitempty"`
@@ -53653,6 +53987,26 @@ type KibanaHTTPAPIsVisTermsRankByCustomCountOperationOperation string
 // KibanaHTTPAPIsVisTermsRankByCustomCountOperationType defines model for KibanaHTTPAPIsVisTermsRankByCustomCountOperation.Type.
 type KibanaHTTPAPIsVisTermsRankByCustomCountOperationType string
 
+// KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation Terms ranked by the last value of a field.
+type KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation struct {
+	// Direction Direction
+	Direction KibanaHTTPAPIsVisApiDirection `json:"direction"`
+
+	// Field Numeric field to be used for the custom operation.
+	Field     string                                                        `json:"field"`
+	Operation KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation `json:"operation"`
+
+	// TimeField Time field used to determine document recency for the last-value ranking.
+	TimeField *string                                                  `json:"time_field,omitempty"`
+	Type      KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType `json:"type"`
+}
+
+// KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation defines model for KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation.Operation.
+type KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationOperation string
+
+// KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType defines model for KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation.Type.
+type KibanaHTTPAPIsVisTermsRankByCustomLastValueOperationType string
+
 // KibanaHTTPAPIsVisTermsRankByCustomOperation Terms ranked by custom operation.
 type KibanaHTTPAPIsVisTermsRankByCustomOperation struct {
 	// Direction Direction
@@ -55259,7 +55613,7 @@ type KibanaHTTPAPIsVisXyStyling struct {
 	// Fitting Missing data interpolation configuration for line and area series
 	Fitting *KibanaHTTPAPIsVisXyFitting `json:"fitting,omitempty"`
 
-	// Interpolation Curve interpolation method for line and area series
+	// Interpolation Curve interpolation method for line and area series. Defaults to linear.
 	Interpolation *KibanaHTTPAPIsVisXyStylingInterpolation `json:"interpolation,omitempty"`
 
 	// Overlays Visual overlays drawn on top of the chart canvas
@@ -55269,7 +55623,7 @@ type KibanaHTTPAPIsVisXyStyling struct {
 	Points *KibanaHTTPAPIsVisXyStylingPoints `json:"points,omitempty"`
 }
 
-// KibanaHTTPAPIsVisXyStylingInterpolation Curve interpolation method for line and area series
+// KibanaHTTPAPIsVisXyStylingInterpolation Curve interpolation method for line and area series. Defaults to linear.
 type KibanaHTTPAPIsVisXyStylingInterpolation string
 
 // KibanaHTTPAPIsVisXyStylingAreas Area-specific rendering settings
@@ -73016,7 +73370,7 @@ type SecurityOsqueryAPICopyPacksResponse struct {
 		// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 		Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-		// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
+		// MinOsqueryVersion Minimum osquery version required to run this pack or query, e.g. `"5.10.0"`.
 		MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
 
 		// Name The pack name.
@@ -73257,8 +73611,8 @@ type SecurityOsqueryAPICreatePacksRequestBody struct {
 	// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 	Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-	// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
-	MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
+	// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a numeric version string, e.g. `"5.10.0"`. Non-numeric values (e.g. `"latest"`) are rejected.
+	MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersionInput `json:"min_osquery_version,omitempty"`
 
 	// Name The pack name.
 	Name *SecurityOsqueryAPIPackName `json:"name,omitempty"`
@@ -73270,7 +73624,7 @@ type SecurityOsqueryAPICreatePacksRequestBody struct {
 	PolicyIds *SecurityOsqueryAPIPolicyIds `json:"policy_ids,omitempty"`
 
 	// Queries An object of queries.
-	Queries *SecurityOsqueryAPIObjectQueries `json:"queries,omitempty"`
+	Queries *SecurityOsqueryAPIObjectQueriesInput `json:"queries,omitempty"`
 
 	// ResultType Controls the result document type emitted by osquerybeat for this pack or query.
 	// - `snapshot`: Full table snapshot on every scheduled run (default).
@@ -73315,7 +73669,7 @@ type SecurityOsqueryAPICreatePacksResponse struct {
 		// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 		Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-		// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
+		// MinOsqueryVersion Minimum osquery version required to run this pack or query, e.g. `"5.10.0"`.
 		MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
 
 		// Name The pack name.
@@ -73672,7 +74026,7 @@ type SecurityOsqueryAPIFindPackResponse struct {
 		// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 		Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-		// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
+		// MinOsqueryVersion Minimum osquery version required to run this pack or query, e.g. `"5.10.0"`.
 		MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
 
 		// Name The pack name.
@@ -73745,7 +74099,7 @@ type SecurityOsqueryAPIFindPacksResponse struct {
 		// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 		Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-		// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
+		// MinOsqueryVersion Minimum osquery version required to run this pack or query, e.g. `"5.10.0"`.
 		MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
 
 		// Name The pack name.
@@ -74122,11 +74476,17 @@ type SecurityOsqueryAPILiveHistoryRowSource string
 // SecurityOsqueryAPILiveHistoryRowSourceType Identifies this as a live query history row.
 type SecurityOsqueryAPILiveHistoryRowSourceType string
 
-// SecurityOsqueryAPIMinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
+// SecurityOsqueryAPIMinOsqueryVersion Minimum osquery version required to run this pack or query, e.g. `"5.10.0"`.
 type SecurityOsqueryAPIMinOsqueryVersion = string
+
+// SecurityOsqueryAPIMinOsqueryVersionInput Minimum osquery version required to run this pack or query. Formatted as a numeric version string, e.g. `"5.10.0"`. Non-numeric values (e.g. `"latest"`) are rejected.
+type SecurityOsqueryAPIMinOsqueryVersionInput = string
 
 // SecurityOsqueryAPIObjectQueries An object of queries.
 type SecurityOsqueryAPIObjectQueries map[string]SecurityOsqueryAPIObjectQueriesItem
+
+// SecurityOsqueryAPIObjectQueriesInput An object of queries.
+type SecurityOsqueryAPIObjectQueriesInput map[string]SecurityOsqueryAPIObjectQueriesItemInput
 
 // SecurityOsqueryAPIObjectQueriesItem defines model for Security_Osquery_API_ObjectQueriesItem.
 type SecurityOsqueryAPIObjectQueriesItem struct {
@@ -74179,6 +74539,57 @@ type SecurityOsqueryAPIObjectQueriesItem struct {
 	Version *SecurityOsqueryAPIVersion `json:"version,omitempty"`
 }
 
+// SecurityOsqueryAPIObjectQueriesItemInput defines model for Security_Osquery_API_ObjectQueriesItemInput.
+type SecurityOsqueryAPIObjectQueriesItemInput struct {
+	// EcsMapping Map osquery results columns or static values to Elastic Common Schema (ECS) fields
+	EcsMapping *SecurityOsqueryAPIECSMapping `json:"ecs_mapping,omitempty"`
+
+	// Enabled Whether this query is enabled. When false, the query is omitted from the Fleet policy. Default is true.
+	Enabled *SecurityOsqueryAPIQueryEnabled `json:"enabled,omitempty"`
+
+	// Id The ID of the query.
+	Id *SecurityOsqueryAPIQueryId `json:"id,omitempty"`
+
+	// Interval Interval for this query, in seconds. Overrides the pack's `interval` when this query also has `schedule_type: interval`. If you send `interval` without `schedule_type: interval`, Kibana removes it when saving, and the query uses the pack's `interval` instead. Ignored when the pack's `schedule_type` is `rrule`.
+	Interval *int `json:"interval,omitempty"`
+
+	// Platform Restricts the query to a specified platform. The default is all platforms. To specify multiple platforms, use commas. For example, `linux,darwin`.
+	Platform *SecurityOsqueryAPIPlatform `json:"platform,omitempty"`
+
+	// Query The SQL query you want to run.
+	Query *SecurityOsqueryAPIQuery `json:"query,omitempty"`
+
+	// Removed Indicates whether the query is removed.
+	Removed *SecurityOsqueryAPIRemoved `json:"removed,omitempty"`
+
+	// ResultType Controls the result document type emitted by osquerybeat for this pack or query.
+	// - `snapshot`: Full table snapshot on every scheduled run (default).
+	// - `differential`: Rows added or removed since the previous run.
+	// - `differential_added_only`: Only rows added since the previous run (no removals).
+	ResultType *SecurityOsqueryAPIResultType `json:"result_type,omitempty"`
+
+	// RruleSchedule RRULE schedule configuration consumed by osquerybeat. Loose date
+	// forms like `"2024-01-01"` are rejected with 400. DTSTART is NOT
+	// embedded in `rrule`; the separate `start_date` field is the
+	// schedule anchor.
+	RruleSchedule *SecurityOsqueryAPIRRuleScheduleConfig `json:"rrule_schedule,omitempty"`
+
+	// SavedQueryId The ID of a saved query.
+	SavedQueryId *SecurityOsqueryAPISavedQueryId `json:"saved_query_id,omitempty"`
+
+	// ScheduleType Discriminator for the pack's schedule mode. `interval` uses native
+	// osqueryd interval scheduling (seconds). `rrule` uses osquerybeat's
+	// RRULE-based recurrence scheduling. Per-query overrides MUST use the
+	// same mode as the pack — cross-mode overrides are rejected with 400.
+	ScheduleType *SecurityOsqueryAPIScheduleType `json:"schedule_type,omitempty"`
+
+	// Snapshot Indicates whether the query is a snapshot.
+	Snapshot *SecurityOsqueryAPISnapshot `json:"snapshot,omitempty"`
+
+	// Version Uses the Osquery versions greater than or equal to the specified version string. Formatted as a numeric version string, e.g. `"5.10.0"`, or an empty string to inherit the pack's `min_osquery_version` (no constraint if the pack has none). Non-numeric values (e.g. `"latest"`) are rejected.
+	Version *SecurityOsqueryAPIPackQueryVersionInput `json:"version,omitempty"`
+}
+
 // SecurityOsqueryAPIPackDescription The pack description.
 type SecurityOsqueryAPIPackDescription = string
 
@@ -74193,6 +74604,9 @@ type SecurityOsqueryAPIPackName = string
 
 // SecurityOsqueryAPIPackPlatform Pack-level platform restriction. To specify multiple platforms, use commas. For example, `linux,darwin`.
 type SecurityOsqueryAPIPackPlatform = string
+
+// SecurityOsqueryAPIPackQueryVersionInput Uses the Osquery versions greater than or equal to the specified version string. Formatted as a numeric version string, e.g. `"5.10.0"`, or an empty string to inherit the pack's `min_osquery_version` (no constraint if the pack has none). Non-numeric values (e.g. `"latest"`) are rejected.
+type SecurityOsqueryAPIPackQueryVersionInput = string
 
 // SecurityOsqueryAPIPageOrUndefined The page number to return. The default is 1.
 type SecurityOsqueryAPIPageOrUndefined = int
@@ -74430,8 +74844,8 @@ type SecurityOsqueryAPIUpdatePacksRequestBody struct {
 	// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 	Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-	// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
-	MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
+	// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a numeric version string, e.g. `"5.10.0"`. Non-numeric values (e.g. `"latest"`) are rejected.
+	MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersionInput `json:"min_osquery_version,omitempty"`
 
 	// Name The pack name.
 	Name *SecurityOsqueryAPIPackName `json:"name,omitempty"`
@@ -74443,7 +74857,7 @@ type SecurityOsqueryAPIUpdatePacksRequestBody struct {
 	PolicyIds *SecurityOsqueryAPIPolicyIds `json:"policy_ids,omitempty"`
 
 	// Queries An object of queries.
-	Queries *SecurityOsqueryAPIObjectQueries `json:"queries,omitempty"`
+	Queries *SecurityOsqueryAPIObjectQueriesInput `json:"queries,omitempty"`
 
 	// ResultType Controls the result document type emitted by osquerybeat for this pack or query.
 	// - `snapshot`: Full table snapshot on every scheduled run (default).
@@ -74483,7 +74897,7 @@ type SecurityOsqueryAPIUpdatePacksResponse struct {
 		// Interval Pack-level interval, in seconds. Used when `schedule_type` is `interval`. Mutually exclusive with `rrule_schedule`.
 		Interval *SecurityOsqueryAPIPackInterval `json:"interval,omitempty"`
 
-		// MinOsqueryVersion Minimum osquery version required to run this pack or query. Formatted as a semver string, e.g. `"5.10.0"`.
+		// MinOsqueryVersion Minimum osquery version required to run this pack or query, e.g. `"5.10.0"`.
 		MinOsqueryVersion *SecurityOsqueryAPIMinOsqueryVersion `json:"min_osquery_version,omitempty"`
 
 		// Name The pack name.
@@ -75754,6 +76168,83 @@ type SyntheticsDeleteParameterResult = []struct {
 	Deleted *bool   `json:"deleted,omitempty"`
 	Id      *string `json:"id,omitempty"`
 }
+
+// SyntheticsApiMonitorFields defines model for Synthetics_apiMonitorFields.
+type SyntheticsApiMonitorFields struct {
+	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
+
+	// CertificateErrorSpkiAllowlist PEM certificates whose public keys (SPKI) are allowlisted so the API request context bypasses certificate errors for matching presented certificates. This does not add a CA to the trust store.
+	CertificateErrorSpkiAllowlist *[]string `json:"certificate_error_spki_allowlist,omitempty"`
+
+	// Enabled Specify whether the monitor is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// IgnoreHttpsErrors Ignore HTTPS errors.
+	IgnoreHttpsErrors *bool `json:"ignore_https_errors,omitempty"`
+
+	// InlineScript The inline API Journey script.
+	InlineScript string `json:"inline_script"`
+
+	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
+	Labels *map[string]string `json:"labels,omitempty"`
+
+	// Locations The location to deploy the monitor.
+	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
+	// To list available locations you can:
+	//
+	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
+	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
+	Locations *[]string `json:"locations,omitempty"`
+
+	// Name The monitor name.
+	Name string `json:"name"`
+
+	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
+	Namespace *string                 `json:"namespace,omitempty"`
+	Params    *map[string]interface{} `json:"params,omitempty"`
+
+	// PlaywrightOptions Playwright API request context options.
+	PlaywrightOptions *map[string]interface{} `json:"playwright_options,omitempty"`
+
+	// PrivateLocations The private locations to which the monitors will be deployed.
+	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
+	// You can specify a private location using the location's name.
+	// To list available private locations you can:
+	//
+	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
+	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
+	//
+	// > info
+	// > You can provide `locations` or `private_locations` or both. At least one is required.
+	PrivateLocations *[]string `json:"private_locations,omitempty"`
+
+	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
+	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
+
+	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
+	Schedule *float32 `json:"schedule,omitempty"`
+
+	// ServiceName The APM service name.
+	ServiceName *string `json:"service.name,omitempty"`
+
+	// SyntheticsArgs Synthetics agent CLI arguments.
+	SyntheticsArgs *[]string `json:"synthetics_args,omitempty"`
+
+	// Tags An array of tags.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
+	//
+	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
+	Timeout *float32 `json:"timeout,omitempty"`
+
+	// Type The monitor type.
+	Type                 SyntheticsApiMonitorFieldsType `json:"type"`
+	AdditionalProperties map[string]interface{}         `json:"-"`
+}
+
+// SyntheticsApiMonitorFieldsType The monitor type.
+type SyntheticsApiMonitorFieldsType string
 
 // SyntheticsBrowserMonitorFields defines model for Synthetics_browserMonitorFields.
 type SyntheticsBrowserMonitorFields struct {
@@ -79448,12 +79939,39 @@ type PostAlertingRulesBackfillSchedule200JSONResponseBody_Item struct {
 	union json.RawMessage
 }
 
+// GetAlertingV2ActionPoliciesParams defines parameters for GetAlertingV2ActionPolicies.
+type GetAlertingV2ActionPoliciesParams struct {
+	// Page The page number to return. Defaults to 1.
+	Page *int `form:"page,omitempty" json:"page,omitempty"`
+
+	// PerPage The number of action policies to return per page. Defaults to 20.
+	PerPage *int `form:"per_page,omitempty" json:"per_page,omitempty"`
+
+	// Filter A KQL filter to apply to the action policies. Supported fields: id, name, description, enabled.
+	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
+
+	// Search A text string to search across action policy fields.
+	Search *string `form:"search,omitempty" json:"search,omitempty"`
+
+	// SortField The field to sort action policies by.
+	SortField *GetAlertingV2ActionPoliciesParamsSortField `form:"sort_field,omitempty" json:"sort_field,omitempty"`
+
+	// SortOrder The sort direction.
+	SortOrder *GetAlertingV2ActionPoliciesParamsSortOrder `form:"sort_order,omitempty" json:"sort_order,omitempty"`
+}
+
+// GetAlertingV2ActionPoliciesParamsSortField defines parameters for GetAlertingV2ActionPolicies.
+type GetAlertingV2ActionPoliciesParamsSortField string
+
+// GetAlertingV2ActionPoliciesParamsSortOrder defines parameters for GetAlertingV2ActionPolicies.
+type GetAlertingV2ActionPoliciesParamsSortOrder string
+
 // GetAlertingV2ExecutionHistoryActionPoliciesParams defines parameters for GetAlertingV2ExecutionHistoryActionPolicies.
 type GetAlertingV2ExecutionHistoryActionPoliciesParams struct {
 	// Page Page number (1-indexed). Defaults to 1.
 	Page int `form:"page" json:"page"`
 
-	// PerPage Number of events per page. Defaults to 20. Pass 0 for a count-only read.
+	// PerPage Number of events per page. Defaults to 20.
 	PerPage int `form:"per_page" json:"per_page"`
 
 	// From Inclusive ISO datetime lower bound on the event timestamp; overrides the default 24-hour window. Independent of alert_ids — e.g. set it to an alert’s start time to scope results to that alert’s lifetime.
@@ -79462,7 +79980,7 @@ type GetAlertingV2ExecutionHistoryActionPoliciesParams struct {
 	// To Inclusive ISO datetime upper bound on the event timestamp.
 	To *time.Time `form:"to,omitempty" json:"to,omitempty"`
 
-	// AlertIds Alert filter. Narrows events to those referencing at least one of the provided alert ids.
+	// AlertIds Alert filter. Narrows events to those referencing at least one of the provided alert IDs.
 	AlertIds *[]string `form:"alert_ids,omitempty" json:"alert_ids,omitempty"`
 
 	// SortField Sort field. Defaults to "dispatched_at".
@@ -79474,7 +79992,7 @@ type GetAlertingV2ExecutionHistoryActionPoliciesParams struct {
 	// Search Free-text search. Matches policy name, rule name, policy/rule ID (case-insensitive).
 	Search *string `form:"search,omitempty" json:"search,omitempty"`
 
-	// RuleIds Explicit rule filter. Narrows events to those referencing at least one of the provided rule ids. Also unions with the search filter if both are provided.
+	// RuleIds Explicit rule filter. Narrows events to those referencing at least one of the provided rule IDs. Also unions with the search filter if both are provided.
 	RuleIds *[]string `form:"rule_ids,omitempty" json:"rule_ids,omitempty"`
 
 	// Outcomes Outcome filter. When omitted matches all outcomes. Pass one or more of "success", "throttled", "failure" to narrow.
@@ -79513,7 +80031,7 @@ type GetAlertingV2ExecutionHistoryRulesParams struct {
 	// Page Page number.
 	Page int `form:"page" json:"page"`
 
-	// PerPage Number of results per page. Pass 0 for a count-only read.
+	// PerPage Number of results per page.
 	PerPage int `form:"per_page" json:"per_page"`
 }
 
@@ -80288,6 +80806,18 @@ type FindCaseActivityDefaultSpaceParamsSortOrder string
 // FindCaseActivityDefaultSpaceParamsTypes defines parameters for FindCaseActivityDefaultSpace.
 type FindCaseActivityDefaultSpaceParamsTypes string
 
+// PostChatMessageJSONBody defines parameters for PostChatMessage.
+type PostChatMessageJSONBody struct {
+	// AgentId The ID of the agent to send the message to. Defaults to the default Elastic AI agent.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// ConversationId The ID of an existing conversation to continue. Omit it to start a new conversation; the response carries the ID to reuse on the next call.
+	ConversationId *string `json:"conversation_id,omitempty"`
+
+	// Message The user message to send to the agent.
+	Message string `json:"message"`
+}
+
 // GetContextEngineAiIndex200JSONResponseBodyAiIndicesAutomationsType defines parameters for GetContextEngineAiIndex.
 type GetContextEngineAiIndex200JSONResponseBodyAiIndicesAutomationsType string
 
@@ -80376,6 +80906,9 @@ type PostContextEngineAiIndexJSONBody struct {
 
 	// Id The unique identifier of the AI Index.
 	Id string `json:"id"`
+
+	// MemoryEnabled Whether this AI index accepts memory writes. Defaults to true when omitted.
+	MemoryEnabled *bool `json:"memory_enabled,omitempty"`
 
 	// Sources Additional sources that provide context for the AI Index. Defaults to an empty array when omitted.
 	Sources *[]PostContextEngineAiIndexJSONBody_Sources_Item `json:"sources,omitempty"`
@@ -80616,6 +81149,9 @@ type PutContextEngineAiIndexAiindexidJSONBody struct {
 		// SignalTimeRange Which signals the analysis reads. A read filter only.
 		SignalTimeRange *PutContextEngineAiIndexAiindexidJSONBody_FeedbackAnalysis_SignalTimeRange `json:"signal_time_range,omitempty"`
 	} `json:"feedback_analysis,omitempty"`
+
+	// MemoryEnabled Whether this AI index accepts memory writes. Defaults to true when omitted.
+	MemoryEnabled *bool `json:"memory_enabled,omitempty"`
 
 	// Sources Additional sources that provide context for the AI Index. Defaults to an empty array when omitted.
 	Sources *[]PutContextEngineAiIndexAiindexidJSONBody_Sources_Item `json:"sources,omitempty"`
@@ -83207,6 +83743,9 @@ type GetFleetAgentPoliciesParams struct {
 
 	// Kuery A KQL query string to filter results
 	Kuery *string `form:"kuery,omitempty" json:"kuery,omitempty"`
+
+	// ShowAgentless When false, exclude managed integration policies from the results. To manage these policies, use the managed integrations APIs.
+	ShowAgentless *bool `form:"showAgentless,omitempty" json:"showAgentless,omitempty"`
 
 	// NoAgentCount use withAgentCount instead
 	NoAgentCount *bool `form:"noAgentCount,omitempty" json:"noAgentCount,omitempty"`
@@ -86067,7 +86606,8 @@ type PutSavedObjectsTypeIdJSONBody struct {
 
 // PutSecurityEntityStoreJSONBody defines parameters for PutSecurityEntityStore.
 type PutSecurityEntityStoreJSONBody struct {
-	HistorySnapshot *struct {
+	ExcludedUserNames *[]string `json:"excludedUserNames,omitempty"`
+	HistorySnapshot   *struct {
 		Frequency     *string `json:"frequency,omitempty"`
 		RetentionDays *int    `json:"retentionDays,omitempty"`
 	} `json:"historySnapshot,omitempty"`
@@ -90237,8 +90777,9 @@ type PutSecurityEntityStoreHistorySnapshotDisableJSONBody struct {
 
 // PostSecurityEntityStoreInstallJSONBody defines parameters for PostSecurityEntityStoreInstall.
 type PostSecurityEntityStoreInstallJSONBody struct {
-	EntityTypes     *[]PostSecurityEntityStoreInstallJSONBodyEntityTypes `json:"entityTypes,omitempty"`
-	HistorySnapshot *struct {
+	EntityTypes       *[]PostSecurityEntityStoreInstallJSONBodyEntityTypes `json:"entityTypes,omitempty"`
+	ExcludedUserNames *[]string                                            `json:"excludedUserNames,omitempty"`
+	HistorySnapshot   *struct {
 		Frequency     *string `json:"frequency,omitempty"`
 		RetentionDays *int    `json:"retentionDays,omitempty"`
 	} `json:"historySnapshot,omitempty"`
@@ -90963,7 +91504,7 @@ type PutStreamsNameQueryJSONBody struct {
 // PostStreamsNameContentExportJSONBody defines parameters for PostStreamsNameContentExport.
 type PostStreamsNameContentExportJSONBody struct {
 	Description string                       `json:"description"`
-	Include     KibanaHTTPAPIsZodV453Schema0 `json:"include"`
+	Include     KibanaHTTPAPIsZodV454Schema0 `json:"include"`
 	Name        string                       `json:"name"`
 	Version     string                       `json:"version"`
 }
@@ -91154,6 +91695,17 @@ type GetSyntheticMonitorsParamsTags1 = []string
 // GetSyntheticMonitorsParamsUseLogicalAndFor defines parameters for GetSyntheticMonitors.
 type GetSyntheticMonitorsParamsUseLogicalAndFor string
 
+// PostSyntheticMonitorsBulkCreateJSONBody defines parameters for PostSyntheticMonitorsBulkCreate.
+type PostSyntheticMonitorsBulkCreateJSONBody struct {
+	// Monitors A non-empty list of monitor configurations, up to 1000 monitors.
+	Monitors []PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item `json:"monitors"`
+}
+
+// PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item defines parameters for PostSyntheticMonitorsBulkCreate.
+type PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item struct {
+	union json.RawMessage
+}
+
 // DeleteSyntheticMonitorsJSONBody defines parameters for DeleteSyntheticMonitors.
 type DeleteSyntheticMonitorsJSONBody struct {
 	// Ids An array of monitor IDs to delete.
@@ -91233,8 +91785,11 @@ type PostPrivateLocationJSONBody struct {
 
 // PutPrivateLocationJSONBody defines parameters for PutPrivateLocation.
 type PutPrivateLocationJSONBody struct {
+	// AgentPolicyId The ID of the Fleet agent policy to move the private location to.
+	AgentPolicyId *string `json:"agentPolicyId,omitempty"`
+
 	// Label A new label for the private location. Must be at least 1 character long.
-	Label string `json:"label"`
+	Label *string `json:"label,omitempty"`
 }
 
 // GetTagsParams defines parameters for GetTags.
@@ -92485,40 +93040,40 @@ type PutAlertingV2ActionPoliciesIdJSONRequestBody = KibanaHTTPAPIsAlertingPutAct
 type PostAlertingV2ActionPoliciesIdSnoozeJSONRequestBody = KibanaHTTPAPIsAlertingSnoozeActionPolicyRequest
 
 // PostAlertingV2AlertsBulkAckJSONRequestBody defines body for PostAlertingV2AlertsBulkAck for application/json ContentType.
-type PostAlertingV2AlertsBulkAckJSONRequestBody = KibanaHTTPAPIsAlertingBulkAckEpisodesRequest
+type PostAlertingV2AlertsBulkAckJSONRequestBody = KibanaHTTPAPIsAlertingBulkAckAlertsRequest
 
 // PostAlertingV2AlertsBulkActivateJSONRequestBody defines body for PostAlertingV2AlertsBulkActivate for application/json ContentType.
-type PostAlertingV2AlertsBulkActivateJSONRequestBody = KibanaHTTPAPIsAlertingBulkActivateEpisodesRequest
+type PostAlertingV2AlertsBulkActivateJSONRequestBody = KibanaHTTPAPIsAlertingBulkActivateAlertsRequest
 
 // PostAlertingV2AlertsBulkAssignJSONRequestBody defines body for PostAlertingV2AlertsBulkAssign for application/json ContentType.
-type PostAlertingV2AlertsBulkAssignJSONRequestBody = KibanaHTTPAPIsAlertingBulkAssignEpisodesRequest
+type PostAlertingV2AlertsBulkAssignJSONRequestBody = KibanaHTTPAPIsAlertingBulkAssignAlertsRequest
 
 // PostAlertingV2AlertsBulkDeactivateJSONRequestBody defines body for PostAlertingV2AlertsBulkDeactivate for application/json ContentType.
-type PostAlertingV2AlertsBulkDeactivateJSONRequestBody = KibanaHTTPAPIsAlertingBulkDeactivateEpisodesRequest
+type PostAlertingV2AlertsBulkDeactivateJSONRequestBody = KibanaHTTPAPIsAlertingBulkDeactivateAlertsRequest
 
 // PostAlertingV2AlertsBulkTagJSONRequestBody defines body for PostAlertingV2AlertsBulkTag for application/json ContentType.
-type PostAlertingV2AlertsBulkTagJSONRequestBody = KibanaHTTPAPIsAlertingBulkTagEpisodesRequest
+type PostAlertingV2AlertsBulkTagJSONRequestBody = KibanaHTTPAPIsAlertingBulkTagAlertsRequest
 
 // PostAlertingV2AlertsBulkUnackJSONRequestBody defines body for PostAlertingV2AlertsBulkUnack for application/json ContentType.
-type PostAlertingV2AlertsBulkUnackJSONRequestBody = KibanaHTTPAPIsAlertingBulkUnackEpisodesRequest
+type PostAlertingV2AlertsBulkUnackJSONRequestBody = KibanaHTTPAPIsAlertingBulkUnackAlertsRequest
 
-// PostAlertingV2AlertsAlertIdAckJSONRequestBody defines body for PostAlertingV2AlertsAlertIdAck for application/json ContentType.
-type PostAlertingV2AlertsAlertIdAckJSONRequestBody = KibanaHTTPAPIsAlertingNewAckEpisodeAction
+// PostAlertingV2AlertsIdAckJSONRequestBody defines body for PostAlertingV2AlertsIdAck for application/json ContentType.
+type PostAlertingV2AlertsIdAckJSONRequestBody = KibanaHTTPAPIsAlertingNewAckAlertAction
 
-// PostAlertingV2AlertsAlertIdActivateJSONRequestBody defines body for PostAlertingV2AlertsAlertIdActivate for application/json ContentType.
-type PostAlertingV2AlertsAlertIdActivateJSONRequestBody = KibanaHTTPAPIsAlertingNewActivateEpisodeAction
+// PostAlertingV2AlertsIdActivateJSONRequestBody defines body for PostAlertingV2AlertsIdActivate for application/json ContentType.
+type PostAlertingV2AlertsIdActivateJSONRequestBody = KibanaHTTPAPIsAlertingNewActivateAlertAction
 
-// PostAlertingV2AlertsAlertIdAssignJSONRequestBody defines body for PostAlertingV2AlertsAlertIdAssign for application/json ContentType.
-type PostAlertingV2AlertsAlertIdAssignJSONRequestBody = KibanaHTTPAPIsAlertingNewAssignEpisodeAction
+// PostAlertingV2AlertsIdAssignJSONRequestBody defines body for PostAlertingV2AlertsIdAssign for application/json ContentType.
+type PostAlertingV2AlertsIdAssignJSONRequestBody = KibanaHTTPAPIsAlertingNewAssignAlertAction
 
-// PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody defines body for PostAlertingV2AlertsAlertIdDeactivate for application/json ContentType.
-type PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody = KibanaHTTPAPIsAlertingNewDeactivateEpisodeAction
+// PostAlertingV2AlertsIdDeactivateJSONRequestBody defines body for PostAlertingV2AlertsIdDeactivate for application/json ContentType.
+type PostAlertingV2AlertsIdDeactivateJSONRequestBody = KibanaHTTPAPIsAlertingNewDeactivateAlertAction
 
-// PostAlertingV2AlertsAlertIdTagJSONRequestBody defines body for PostAlertingV2AlertsAlertIdTag for application/json ContentType.
-type PostAlertingV2AlertsAlertIdTagJSONRequestBody = KibanaHTTPAPIsAlertingNewTagEpisodeAction
+// PostAlertingV2AlertsIdTagJSONRequestBody defines body for PostAlertingV2AlertsIdTag for application/json ContentType.
+type PostAlertingV2AlertsIdTagJSONRequestBody = KibanaHTTPAPIsAlertingNewTagAlertAction
 
-// PostAlertingV2AlertsAlertIdUnackJSONRequestBody defines body for PostAlertingV2AlertsAlertIdUnack for application/json ContentType.
-type PostAlertingV2AlertsAlertIdUnackJSONRequestBody = KibanaHTTPAPIsAlertingNewUnackEpisodeAction
+// PostAlertingV2AlertsIdUnackJSONRequestBody defines body for PostAlertingV2AlertsIdUnack for application/json ContentType.
+type PostAlertingV2AlertsIdUnackJSONRequestBody = KibanaHTTPAPIsAlertingNewUnackAlertAction
 
 // PostAlertingV2RulesJSONRequestBody defines body for PostAlertingV2Rules for application/json ContentType.
 type PostAlertingV2RulesJSONRequestBody = KibanaHTTPAPIsAlertingNewRule
@@ -92642,6 +93197,9 @@ type PushCaseDefaultSpaceJSONRequestBody = PushCaseDefaultSpaceJSONBody
 
 // AddCaseFileDefaultSpaceMultipartRequestBody defines body for AddCaseFileDefaultSpace for multipart/form-data ContentType.
 type AddCaseFileDefaultSpaceMultipartRequestBody = CasesAddCaseFileRequest
+
+// PostChatMessageJSONRequestBody defines body for PostChatMessage for application/json ContentType.
+type PostChatMessageJSONRequestBody PostChatMessageJSONBody
 
 // PostContextEngineAiIndexJSONRequestBody defines body for PostContextEngineAiIndex for application/json ContentType.
 type PostContextEngineAiIndexJSONRequestBody PostContextEngineAiIndexJSONBody
@@ -93281,6 +93839,9 @@ type PutStreamsStreamnameAttachmentsAttachmenttypeAttachmentidJSONRequestBody Pu
 
 // PostSyntheticMonitorsJSONRequestBody defines body for PostSyntheticMonitors for application/json ContentType.
 type PostSyntheticMonitorsJSONRequestBody = SyntheticsMonitorRequest
+
+// PostSyntheticMonitorsBulkCreateJSONRequestBody defines body for PostSyntheticMonitorsBulkCreate for application/json ContentType.
+type PostSyntheticMonitorsBulkCreateJSONRequestBody PostSyntheticMonitorsBulkCreateJSONBody
 
 // DeleteSyntheticMonitorsJSONRequestBody defines body for DeleteSyntheticMonitors for application/json ContentType.
 type DeleteSyntheticMonitorsJSONRequestBody DeleteSyntheticMonitorsJSONBody
@@ -109040,6 +109601,338 @@ func (a KibanaHTTPAPIsUpdatePackageRequest_NamespaceCustomizationSettings_Additi
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for SyntheticsApiMonitorFields. Returns the specified
+// element and whether it was found
+func (a SyntheticsApiMonitorFields) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SyntheticsApiMonitorFields
+func (a *SyntheticsApiMonitorFields) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SyntheticsApiMonitorFields to handle AdditionalProperties
+func (a *SyntheticsApiMonitorFields) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["alert"]; found {
+		err = json.Unmarshal(raw, &a.Alert)
+		if err != nil {
+			return fmt.Errorf("error reading 'alert': %w", err)
+		}
+		delete(object, "alert")
+	}
+
+	if raw, found := object["certificate_error_spki_allowlist"]; found {
+		err = json.Unmarshal(raw, &a.CertificateErrorSpkiAllowlist)
+		if err != nil {
+			return fmt.Errorf("error reading 'certificate_error_spki_allowlist': %w", err)
+		}
+		delete(object, "certificate_error_spki_allowlist")
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["ignore_https_errors"]; found {
+		err = json.Unmarshal(raw, &a.IgnoreHttpsErrors)
+		if err != nil {
+			return fmt.Errorf("error reading 'ignore_https_errors': %w", err)
+		}
+		delete(object, "ignore_https_errors")
+	}
+
+	if raw, found := object["inline_script"]; found {
+		err = json.Unmarshal(raw, &a.InlineScript)
+		if err != nil {
+			return fmt.Errorf("error reading 'inline_script': %w", err)
+		}
+		delete(object, "inline_script")
+	}
+
+	if raw, found := object["labels"]; found {
+		err = json.Unmarshal(raw, &a.Labels)
+		if err != nil {
+			return fmt.Errorf("error reading 'labels': %w", err)
+		}
+		delete(object, "labels")
+	}
+
+	if raw, found := object["locations"]; found {
+		err = json.Unmarshal(raw, &a.Locations)
+		if err != nil {
+			return fmt.Errorf("error reading 'locations': %w", err)
+		}
+		delete(object, "locations")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["namespace"]; found {
+		err = json.Unmarshal(raw, &a.Namespace)
+		if err != nil {
+			return fmt.Errorf("error reading 'namespace': %w", err)
+		}
+		delete(object, "namespace")
+	}
+
+	if raw, found := object["params"]; found {
+		err = json.Unmarshal(raw, &a.Params)
+		if err != nil {
+			return fmt.Errorf("error reading 'params': %w", err)
+		}
+		delete(object, "params")
+	}
+
+	if raw, found := object["playwright_options"]; found {
+		err = json.Unmarshal(raw, &a.PlaywrightOptions)
+		if err != nil {
+			return fmt.Errorf("error reading 'playwright_options': %w", err)
+		}
+		delete(object, "playwright_options")
+	}
+
+	if raw, found := object["private_locations"]; found {
+		err = json.Unmarshal(raw, &a.PrivateLocations)
+		if err != nil {
+			return fmt.Errorf("error reading 'private_locations': %w", err)
+		}
+		delete(object, "private_locations")
+	}
+
+	if raw, found := object["retest_on_failure"]; found {
+		err = json.Unmarshal(raw, &a.RetestOnFailure)
+		if err != nil {
+			return fmt.Errorf("error reading 'retest_on_failure': %w", err)
+		}
+		delete(object, "retest_on_failure")
+	}
+
+	if raw, found := object["schedule"]; found {
+		err = json.Unmarshal(raw, &a.Schedule)
+		if err != nil {
+			return fmt.Errorf("error reading 'schedule': %w", err)
+		}
+		delete(object, "schedule")
+	}
+
+	if raw, found := object["service.name"]; found {
+		err = json.Unmarshal(raw, &a.ServiceName)
+		if err != nil {
+			return fmt.Errorf("error reading 'service.name': %w", err)
+		}
+		delete(object, "service.name")
+	}
+
+	if raw, found := object["synthetics_args"]; found {
+		err = json.Unmarshal(raw, &a.SyntheticsArgs)
+		if err != nil {
+			return fmt.Errorf("error reading 'synthetics_args': %w", err)
+		}
+		delete(object, "synthetics_args")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
+	if raw, found := object["timeout"]; found {
+		err = json.Unmarshal(raw, &a.Timeout)
+		if err != nil {
+			return fmt.Errorf("error reading 'timeout': %w", err)
+		}
+		delete(object, "timeout")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SyntheticsApiMonitorFields to handle AdditionalProperties
+func (a SyntheticsApiMonitorFields) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Alert != nil {
+		object["alert"], err = json.Marshal(a.Alert)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'alert': %w", err)
+		}
+	}
+
+	if a.CertificateErrorSpkiAllowlist != nil {
+		object["certificate_error_spki_allowlist"], err = json.Marshal(a.CertificateErrorSpkiAllowlist)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'certificate_error_spki_allowlist': %w", err)
+		}
+	}
+
+	if a.Enabled != nil {
+		object["enabled"], err = json.Marshal(a.Enabled)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+		}
+	}
+
+	if a.IgnoreHttpsErrors != nil {
+		object["ignore_https_errors"], err = json.Marshal(a.IgnoreHttpsErrors)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ignore_https_errors': %w", err)
+		}
+	}
+
+	object["inline_script"], err = json.Marshal(a.InlineScript)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'inline_script': %w", err)
+	}
+
+	if a.Labels != nil {
+		object["labels"], err = json.Marshal(a.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
+		}
+	}
+
+	if a.Locations != nil {
+		object["locations"], err = json.Marshal(a.Locations)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'locations': %w", err)
+		}
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	if a.Namespace != nil {
+		object["namespace"], err = json.Marshal(a.Namespace)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
+		}
+	}
+
+	if a.Params != nil {
+		object["params"], err = json.Marshal(a.Params)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'params': %w", err)
+		}
+	}
+
+	if a.PlaywrightOptions != nil {
+		object["playwright_options"], err = json.Marshal(a.PlaywrightOptions)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'playwright_options': %w", err)
+		}
+	}
+
+	if a.PrivateLocations != nil {
+		object["private_locations"], err = json.Marshal(a.PrivateLocations)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'private_locations': %w", err)
+		}
+	}
+
+	if a.RetestOnFailure != nil {
+		object["retest_on_failure"], err = json.Marshal(a.RetestOnFailure)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'retest_on_failure': %w", err)
+		}
+	}
+
+	if a.Schedule != nil {
+		object["schedule"], err = json.Marshal(a.Schedule)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'schedule': %w", err)
+		}
+	}
+
+	if a.ServiceName != nil {
+		object["service.name"], err = json.Marshal(a.ServiceName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
+		}
+	}
+
+	if a.SyntheticsArgs != nil {
+		object["synthetics_args"], err = json.Marshal(a.SyntheticsArgs)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'synthetics_args': %w", err)
+		}
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
+	}
+
+	if a.Timeout != nil {
+		object["timeout"], err = json.Marshal(a.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for SyntheticsBrowserMonitorFields. Returns the specified
 // element and whether it was found
 func (a SyntheticsBrowserMonitorFields) Get(fieldName string) (value interface{}, found bool) {
@@ -119701,22 +120594,22 @@ func (t *KibanaHTTPAPIsWiredStreamUpsertRequest_Stream_Ingest_Settings_IndexRefr
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV453Schema00 returns the union data inside the KibanaHTTPAPIsZodV453Schema0 as a KibanaHTTPAPIsZodV453Schema00
-func (t KibanaHTTPAPIsZodV453Schema0) AsKibanaHTTPAPIsZodV453Schema00() (KibanaHTTPAPIsZodV453Schema00, error) {
-	var body KibanaHTTPAPIsZodV453Schema00
+// AsKibanaHTTPAPIsZodV454Schema00 returns the union data inside the KibanaHTTPAPIsZodV454Schema0 as a KibanaHTTPAPIsZodV454Schema00
+func (t KibanaHTTPAPIsZodV454Schema0) AsKibanaHTTPAPIsZodV454Schema00() (KibanaHTTPAPIsZodV454Schema00, error) {
+	var body KibanaHTTPAPIsZodV454Schema00
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV453Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV453Schema0 as the provided KibanaHTTPAPIsZodV453Schema00
-func (t *KibanaHTTPAPIsZodV453Schema0) FromKibanaHTTPAPIsZodV453Schema00(v KibanaHTTPAPIsZodV453Schema00) error {
+// FromKibanaHTTPAPIsZodV454Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV454Schema0 as the provided KibanaHTTPAPIsZodV454Schema00
+func (t *KibanaHTTPAPIsZodV454Schema0) FromKibanaHTTPAPIsZodV454Schema00(v KibanaHTTPAPIsZodV454Schema00) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV453Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV453Schema0, using the provided KibanaHTTPAPIsZodV453Schema00
-func (t *KibanaHTTPAPIsZodV453Schema0) MergeKibanaHTTPAPIsZodV453Schema00(v KibanaHTTPAPIsZodV453Schema00) error {
+// MergeKibanaHTTPAPIsZodV454Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV454Schema0, using the provided KibanaHTTPAPIsZodV454Schema00
+func (t *KibanaHTTPAPIsZodV454Schema0) MergeKibanaHTTPAPIsZodV454Schema00(v KibanaHTTPAPIsZodV454Schema00) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -119727,22 +120620,22 @@ func (t *KibanaHTTPAPIsZodV453Schema0) MergeKibanaHTTPAPIsZodV453Schema00(v Kiba
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV453Schema01 returns the union data inside the KibanaHTTPAPIsZodV453Schema0 as a KibanaHTTPAPIsZodV453Schema01
-func (t KibanaHTTPAPIsZodV453Schema0) AsKibanaHTTPAPIsZodV453Schema01() (KibanaHTTPAPIsZodV453Schema01, error) {
-	var body KibanaHTTPAPIsZodV453Schema01
+// AsKibanaHTTPAPIsZodV454Schema01 returns the union data inside the KibanaHTTPAPIsZodV454Schema0 as a KibanaHTTPAPIsZodV454Schema01
+func (t KibanaHTTPAPIsZodV454Schema0) AsKibanaHTTPAPIsZodV454Schema01() (KibanaHTTPAPIsZodV454Schema01, error) {
+	var body KibanaHTTPAPIsZodV454Schema01
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV453Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV453Schema0 as the provided KibanaHTTPAPIsZodV453Schema01
-func (t *KibanaHTTPAPIsZodV453Schema0) FromKibanaHTTPAPIsZodV453Schema01(v KibanaHTTPAPIsZodV453Schema01) error {
+// FromKibanaHTTPAPIsZodV454Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV454Schema0 as the provided KibanaHTTPAPIsZodV454Schema01
+func (t *KibanaHTTPAPIsZodV454Schema0) FromKibanaHTTPAPIsZodV454Schema01(v KibanaHTTPAPIsZodV454Schema01) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV453Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV453Schema0, using the provided KibanaHTTPAPIsZodV453Schema01
-func (t *KibanaHTTPAPIsZodV453Schema0) MergeKibanaHTTPAPIsZodV453Schema01(v KibanaHTTPAPIsZodV453Schema01) error {
+// MergeKibanaHTTPAPIsZodV454Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV454Schema0, using the provided KibanaHTTPAPIsZodV454Schema01
+func (t *KibanaHTTPAPIsZodV454Schema0) MergeKibanaHTTPAPIsZodV454Schema01(v KibanaHTTPAPIsZodV454Schema01) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -119753,12 +120646,12 @@ func (t *KibanaHTTPAPIsZodV453Schema0) MergeKibanaHTTPAPIsZodV453Schema01(v Kiba
 	return err
 }
 
-func (t KibanaHTTPAPIsZodV453Schema0) MarshalJSON() ([]byte, error) {
+func (t KibanaHTTPAPIsZodV454Schema0) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *KibanaHTTPAPIsZodV453Schema0) UnmarshalJSON(b []byte) error {
+func (t *KibanaHTTPAPIsZodV454Schema0) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -119880,6 +120773,274 @@ func (t KibanaHTTPAPIsAlertingActionPolicyDestination) MarshalJSON() ([]byte, er
 }
 
 func (t *KibanaHTTPAPIsAlertingActionPolicyDestination) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping as a KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert
+func (t KibanaHTTPAPIsAlertingActionPolicyGrouping) AsKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert() (KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping as the provided KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) FromKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert(v KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert) error {
+	v.Mode = "per_alert"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping, using the provided KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) MergeKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert(v KibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert) error {
+	v.Mode = "per_alert"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyGroupingAll returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping as a KibanaHTTPAPIsAlertingActionPolicyGroupingAll
+func (t KibanaHTTPAPIsAlertingActionPolicyGrouping) AsKibanaHTTPAPIsAlertingActionPolicyGroupingAll() (KibanaHTTPAPIsAlertingActionPolicyGroupingAll, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyGroupingAll
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyGroupingAll overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping as the provided KibanaHTTPAPIsAlertingActionPolicyGroupingAll
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) FromKibanaHTTPAPIsAlertingActionPolicyGroupingAll(v KibanaHTTPAPIsAlertingActionPolicyGroupingAll) error {
+	v.Mode = "all"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyGroupingAll performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping, using the provided KibanaHTTPAPIsAlertingActionPolicyGroupingAll
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) MergeKibanaHTTPAPIsAlertingActionPolicyGroupingAll(v KibanaHTTPAPIsAlertingActionPolicyGroupingAll) error {
+	v.Mode = "all"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyGroupingPerField returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping as a KibanaHTTPAPIsAlertingActionPolicyGroupingPerField
+func (t KibanaHTTPAPIsAlertingActionPolicyGrouping) AsKibanaHTTPAPIsAlertingActionPolicyGroupingPerField() (KibanaHTTPAPIsAlertingActionPolicyGroupingPerField, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyGroupingPerField
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyGroupingPerField overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping as the provided KibanaHTTPAPIsAlertingActionPolicyGroupingPerField
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) FromKibanaHTTPAPIsAlertingActionPolicyGroupingPerField(v KibanaHTTPAPIsAlertingActionPolicyGroupingPerField) error {
+	v.Mode = "per_field"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyGroupingPerField performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyGrouping, using the provided KibanaHTTPAPIsAlertingActionPolicyGroupingPerField
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) MergeKibanaHTTPAPIsAlertingActionPolicyGroupingPerField(v KibanaHTTPAPIsAlertingActionPolicyGroupingPerField) error {
+	v.Mode = "per_field"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsAlertingActionPolicyGrouping) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"mode"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t KibanaHTTPAPIsAlertingActionPolicyGrouping) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "all":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyGroupingAll()
+	case "per_alert":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyGroupingPerAlert()
+	case "per_field":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyGroupingPerField()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t KibanaHTTPAPIsAlertingActionPolicyGrouping) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsAlertingActionPolicyGrouping) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as a KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) AsKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange() (KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as the provided KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) FromKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange(v KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange) error {
+	v.Strategy = "on_status_change"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle, using the provided KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) MergeKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange(v KibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange) error {
+	v.Strategy = "on_status_change"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as a KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) AsKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval() (KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as the provided KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) FromKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval(v KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval) error {
+	v.Strategy = "per_status_interval"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle, using the provided KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) MergeKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval(v KibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval) error {
+	v.Strategy = "per_status_interval"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as a KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) AsKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval() (KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as the provided KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) FromKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval(v KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval) error {
+	v.Strategy = "time_interval"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle, using the provided KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) MergeKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval(v KibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval) error {
+	v.Strategy = "time_interval"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime returns the union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as a KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) AsKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime() (KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime, error) {
+	var body KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime overwrites any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle as the provided KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) FromKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime(v KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime) error {
+	v.Strategy = "every_time"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime performs a merge with any union data inside the KibanaHTTPAPIsAlertingActionPolicyThrottle, using the provided KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) MergeKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime(v KibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime) error {
+	v.Strategy = "every_time"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"strategy"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "every_time":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyThrottleEveryTime()
+	case "on_status_change":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyThrottleOnStatusChange()
+	case "per_status_interval":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyThrottlePerStatusInterval()
+	case "time_interval":
+		return t.AsKibanaHTTPAPIsAlertingActionPolicyThrottleTimeInterval()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t KibanaHTTPAPIsAlertingActionPolicyThrottle) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsAlertingActionPolicyThrottle) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -144579,6 +145740,32 @@ func (t *KibanaHTTPAPIsVisTermsOperation_RankBy) FromKibanaHTTPAPIsVisTermsRankB
 
 // MergeKibanaHTTPAPIsVisTermsRankByCustomOperation performs a merge with any union data inside the KibanaHTTPAPIsVisTermsOperation_RankBy, using the provided KibanaHTTPAPIsVisTermsRankByCustomOperation
 func (t *KibanaHTTPAPIsVisTermsOperation_RankBy) MergeKibanaHTTPAPIsVisTermsRankByCustomOperation(v KibanaHTTPAPIsVisTermsRankByCustomOperation) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsVisTermsRankByCustomLastValueOperation returns the union data inside the KibanaHTTPAPIsVisTermsOperation_RankBy as a KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation
+func (t KibanaHTTPAPIsVisTermsOperation_RankBy) AsKibanaHTTPAPIsVisTermsRankByCustomLastValueOperation() (KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation, error) {
+	var body KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisTermsRankByCustomLastValueOperation overwrites any union data inside the KibanaHTTPAPIsVisTermsOperation_RankBy as the provided KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation
+func (t *KibanaHTTPAPIsVisTermsOperation_RankBy) FromKibanaHTTPAPIsVisTermsRankByCustomLastValueOperation(v KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisTermsRankByCustomLastValueOperation performs a merge with any union data inside the KibanaHTTPAPIsVisTermsOperation_RankBy, using the provided KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation
+func (t *KibanaHTTPAPIsVisTermsOperation_RankBy) MergeKibanaHTTPAPIsVisTermsRankByCustomLastValueOperation(v KibanaHTTPAPIsVisTermsRankByCustomLastValueOperation) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -175173,6 +176360,185 @@ func (t *PutStreamsStreamnameAttachmentsAttachmenttypeAttachmentidJSONBody) Unma
 	return err
 }
 
+// AsSyntheticsBrowserMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsBrowserMonitorFields
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsBrowserMonitorFields() (SyntheticsBrowserMonitorFields, error) {
+	var body SyntheticsBrowserMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSyntheticsBrowserMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsBrowserMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsBrowserMonitorFields(v SyntheticsBrowserMonitorFields) error {
+	v.Type = "Synthetics_browserMonitorFields"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSyntheticsBrowserMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsBrowserMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsBrowserMonitorFields(v SyntheticsBrowserMonitorFields) error {
+	v.Type = "Synthetics_browserMonitorFields"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSyntheticsHttpMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsHttpMonitorFields
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsHttpMonitorFields() (SyntheticsHttpMonitorFields, error) {
+	var body SyntheticsHttpMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSyntheticsHttpMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsHttpMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsHttpMonitorFields(v SyntheticsHttpMonitorFields) error {
+	v.Type = "Synthetics_httpMonitorFields"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSyntheticsHttpMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsHttpMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsHttpMonitorFields(v SyntheticsHttpMonitorFields) error {
+	v.Type = "Synthetics_httpMonitorFields"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSyntheticsIcmpMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsIcmpMonitorFields
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsIcmpMonitorFields() (SyntheticsIcmpMonitorFields, error) {
+	var body SyntheticsIcmpMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSyntheticsIcmpMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsIcmpMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsIcmpMonitorFields(v SyntheticsIcmpMonitorFields) error {
+	v.Type = "Synthetics_icmpMonitorFields"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSyntheticsIcmpMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsIcmpMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsIcmpMonitorFields(v SyntheticsIcmpMonitorFields) error {
+	v.Type = "Synthetics_icmpMonitorFields"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSyntheticsTcpMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsTcpMonitorFields
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsTcpMonitorFields() (SyntheticsTcpMonitorFields, error) {
+	var body SyntheticsTcpMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSyntheticsTcpMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsTcpMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsTcpMonitorFields(v SyntheticsTcpMonitorFields) error {
+	v.Type = "Synthetics_tcpMonitorFields"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSyntheticsTcpMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsTcpMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsTcpMonitorFields(v SyntheticsTcpMonitorFields) error {
+	v.Type = "Synthetics_tcpMonitorFields"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSyntheticsApiMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsApiMonitorFields
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsApiMonitorFields() (SyntheticsApiMonitorFields, error) {
+	var body SyntheticsApiMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSyntheticsApiMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsApiMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsApiMonitorFields(v SyntheticsApiMonitorFields) error {
+	v.Type = "Synthetics_apiMonitorFields"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSyntheticsApiMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsApiMonitorFields
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsApiMonitorFields(v SyntheticsApiMonitorFields) error {
+	v.Type = "Synthetics_apiMonitorFields"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "Synthetics_apiMonitorFields":
+		return t.AsSyntheticsApiMonitorFields()
+	case "Synthetics_browserMonitorFields":
+		return t.AsSyntheticsBrowserMonitorFields()
+	case "Synthetics_httpMonitorFields":
+		return t.AsSyntheticsHttpMonitorFields()
+	case "Synthetics_icmpMonitorFields":
+		return t.AsSyntheticsIcmpMonitorFields()
+	case "Synthetics_tcpMonitorFields":
+		return t.AsSyntheticsTcpMonitorFields()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsPostParametersJSONBody0 returns the union data inside the PostParametersJSONBody as a PostParametersJSONBody0
 func (t PostParametersJSONBody) AsPostParametersJSONBody0() (PostParametersJSONBody0, error) {
 	var body PostParametersJSONBody0
@@ -177253,6 +178619,9 @@ type ClientInterface interface {
 	// GetAlertingRulesBackfillId request
 	GetAlertingRulesBackfillId(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAlertingV2ActionPolicies request
+	GetAlertingV2ActionPolicies(ctx context.Context, params *GetAlertingV2ActionPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostAlertingV2ActionPoliciesWithBody request with any body
 	PostAlertingV2ActionPoliciesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -177351,35 +178720,35 @@ type ClientInterface interface {
 
 	PostAlertingV2AlertsBulkUnack(ctx context.Context, body PostAlertingV2AlertsBulkUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostAlertingV2AlertsAlertIdAckWithBody request with any body
-	PostAlertingV2AlertsAlertIdAckWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostAlertingV2AlertsIdAckWithBody request with any body
+	PostAlertingV2AlertsIdAckWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostAlertingV2AlertsAlertIdAck(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostAlertingV2AlertsIdAck(ctx context.Context, id string, body PostAlertingV2AlertsIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostAlertingV2AlertsAlertIdActivateWithBody request with any body
-	PostAlertingV2AlertsAlertIdActivateWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostAlertingV2AlertsIdActivateWithBody request with any body
+	PostAlertingV2AlertsIdActivateWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostAlertingV2AlertsAlertIdActivate(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostAlertingV2AlertsIdActivate(ctx context.Context, id string, body PostAlertingV2AlertsIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostAlertingV2AlertsAlertIdAssignWithBody request with any body
-	PostAlertingV2AlertsAlertIdAssignWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostAlertingV2AlertsIdAssignWithBody request with any body
+	PostAlertingV2AlertsIdAssignWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostAlertingV2AlertsAlertIdAssign(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostAlertingV2AlertsIdAssign(ctx context.Context, id string, body PostAlertingV2AlertsIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostAlertingV2AlertsAlertIdDeactivateWithBody request with any body
-	PostAlertingV2AlertsAlertIdDeactivateWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostAlertingV2AlertsIdDeactivateWithBody request with any body
+	PostAlertingV2AlertsIdDeactivateWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostAlertingV2AlertsAlertIdDeactivate(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostAlertingV2AlertsIdDeactivate(ctx context.Context, id string, body PostAlertingV2AlertsIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostAlertingV2AlertsAlertIdTagWithBody request with any body
-	PostAlertingV2AlertsAlertIdTagWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostAlertingV2AlertsIdTagWithBody request with any body
+	PostAlertingV2AlertsIdTagWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostAlertingV2AlertsAlertIdTag(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostAlertingV2AlertsIdTag(ctx context.Context, id string, body PostAlertingV2AlertsIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PostAlertingV2AlertsAlertIdUnackWithBody request with any body
-	PostAlertingV2AlertsAlertIdUnackWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// PostAlertingV2AlertsIdUnackWithBody request with any body
+	PostAlertingV2AlertsIdUnackWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostAlertingV2AlertsAlertIdUnack(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostAlertingV2AlertsIdUnack(ctx context.Context, id string, body PostAlertingV2AlertsIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAlertingV2ExecutionHistoryActionPolicies request
 	GetAlertingV2ExecutionHistoryActionPolicies(ctx context.Context, params *GetAlertingV2ExecutionHistoryActionPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -177728,6 +179097,11 @@ type ClientInterface interface {
 
 	// FindCaseActivityDefaultSpace request
 	FindCaseActivityDefaultSpace(ctx context.Context, caseId CasesCaseId, params *FindCaseActivityDefaultSpaceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostChatMessageWithBody request with any body
+	PostChatMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostChatMessage(ctx context.Context, body PostChatMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetContextEngineAiIndex request
 	GetContextEngineAiIndex(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -179422,6 +180796,11 @@ type ClientInterface interface {
 	PostSyntheticMonitorsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostSyntheticMonitors(ctx context.Context, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostSyntheticMonitorsBulkCreateWithBody request with any body
+	PostSyntheticMonitorsBulkCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostSyntheticMonitorsBulkCreate(ctx context.Context, body PostSyntheticMonitorsBulkCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteSyntheticMonitorsWithBody request with any body
 	DeleteSyntheticMonitorsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -181129,6 +182508,18 @@ func (c *Client) GetAlertingRulesBackfillId(ctx context.Context, id string, reqE
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetAlertingV2ActionPolicies(ctx context.Context, params *GetAlertingV2ActionPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAlertingV2ActionPoliciesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) PostAlertingV2ActionPoliciesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostAlertingV2ActionPoliciesRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -181585,8 +182976,8 @@ func (c *Client) PostAlertingV2AlertsBulkUnack(ctx context.Context, body PostAle
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdAckWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdAckRequestWithBody(c.Server, alertId, contentType, body)
+func (c *Client) PostAlertingV2AlertsIdAckWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdAckRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181597,8 +182988,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdAckWithBody(ctx context.Context, ale
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdAck(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdAckRequest(c.Server, alertId, body)
+func (c *Client) PostAlertingV2AlertsIdAck(ctx context.Context, id string, body PostAlertingV2AlertsIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdAckRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181609,8 +183000,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdAck(ctx context.Context, alertId str
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdActivateWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdActivateRequestWithBody(c.Server, alertId, contentType, body)
+func (c *Client) PostAlertingV2AlertsIdActivateWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdActivateRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181621,8 +183012,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdActivateWithBody(ctx context.Context
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdActivate(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdActivateRequest(c.Server, alertId, body)
+func (c *Client) PostAlertingV2AlertsIdActivate(ctx context.Context, id string, body PostAlertingV2AlertsIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdActivateRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181633,8 +183024,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdActivate(ctx context.Context, alertI
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdAssignWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdAssignRequestWithBody(c.Server, alertId, contentType, body)
+func (c *Client) PostAlertingV2AlertsIdAssignWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdAssignRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181645,8 +183036,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdAssignWithBody(ctx context.Context, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdAssign(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdAssignRequest(c.Server, alertId, body)
+func (c *Client) PostAlertingV2AlertsIdAssign(ctx context.Context, id string, body PostAlertingV2AlertsIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdAssignRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181657,8 +183048,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdAssign(ctx context.Context, alertId 
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdDeactivateWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdDeactivateRequestWithBody(c.Server, alertId, contentType, body)
+func (c *Client) PostAlertingV2AlertsIdDeactivateWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdDeactivateRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181669,8 +183060,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdDeactivateWithBody(ctx context.Conte
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdDeactivate(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdDeactivateRequest(c.Server, alertId, body)
+func (c *Client) PostAlertingV2AlertsIdDeactivate(ctx context.Context, id string, body PostAlertingV2AlertsIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdDeactivateRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181681,8 +183072,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdDeactivate(ctx context.Context, aler
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdTagWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdTagRequestWithBody(c.Server, alertId, contentType, body)
+func (c *Client) PostAlertingV2AlertsIdTagWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdTagRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181693,8 +183084,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdTagWithBody(ctx context.Context, ale
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdTag(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdTagRequest(c.Server, alertId, body)
+func (c *Client) PostAlertingV2AlertsIdTag(ctx context.Context, id string, body PostAlertingV2AlertsIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdTagRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181705,8 +183096,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdTag(ctx context.Context, alertId str
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdUnackWithBody(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdUnackRequestWithBody(c.Server, alertId, contentType, body)
+func (c *Client) PostAlertingV2AlertsIdUnackWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdUnackRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -181717,8 +183108,8 @@ func (c *Client) PostAlertingV2AlertsAlertIdUnackWithBody(ctx context.Context, a
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostAlertingV2AlertsAlertIdUnack(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostAlertingV2AlertsAlertIdUnackRequest(c.Server, alertId, body)
+func (c *Client) PostAlertingV2AlertsIdUnack(ctx context.Context, id string, body PostAlertingV2AlertsIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostAlertingV2AlertsIdUnackRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -183267,6 +184658,30 @@ func (c *Client) AddCaseFileDefaultSpaceWithBody(ctx context.Context, caseId Cas
 
 func (c *Client) FindCaseActivityDefaultSpace(ctx context.Context, caseId CasesCaseId, params *FindCaseActivityDefaultSpaceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFindCaseActivityDefaultSpaceRequest(c.Server, caseId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostChatMessageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostChatMessageRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostChatMessage(ctx context.Context, body PostChatMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostChatMessageRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -190861,6 +192276,30 @@ func (c *Client) PostSyntheticMonitors(ctx context.Context, body PostSyntheticMo
 	return c.Client.Do(req)
 }
 
+func (c *Client) PostSyntheticMonitorsBulkCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostSyntheticMonitorsBulkCreateRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostSyntheticMonitorsBulkCreate(ctx context.Context, body PostSyntheticMonitorsBulkCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostSyntheticMonitorsBulkCreateRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DeleteSyntheticMonitorsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteSyntheticMonitorsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -196583,6 +198022,120 @@ func NewGetAlertingRulesBackfillIdRequest(server string, id string) (*http.Reque
 	return req, nil
 }
 
+// NewGetAlertingV2ActionPoliciesRequest generates requests for GetAlertingV2ActionPolicies
+func NewGetAlertingV2ActionPoliciesRequest(server string, params *GetAlertingV2ActionPoliciesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/alerting/v2/action_policies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PerPage != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_page", *params.PerPage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Filter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "filter", *params.Filter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Search != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "search", *params.Search, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SortField != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort_field", *params.SortField, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SortOrder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort_order", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewPostAlertingV2ActionPoliciesRequest calls the generic PostAlertingV2ActionPolicies builder with application/json body
 func NewPostAlertingV2ActionPoliciesRequest(server string, body PostAlertingV2ActionPoliciesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -197448,24 +199001,24 @@ func NewPostAlertingV2AlertsBulkUnackRequestWithBody(server string, contentType 
 	return req, nil
 }
 
-// NewPostAlertingV2AlertsAlertIdAckRequest calls the generic PostAlertingV2AlertsAlertIdAck builder with application/json body
-func NewPostAlertingV2AlertsAlertIdAckRequest(server string, alertId string, body PostAlertingV2AlertsAlertIdAckJSONRequestBody) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdAckRequest calls the generic PostAlertingV2AlertsIdAck builder with application/json body
+func NewPostAlertingV2AlertsIdAckRequest(server string, id string, body PostAlertingV2AlertsIdAckJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostAlertingV2AlertsAlertIdAckRequestWithBody(server, alertId, "application/json", bodyReader)
+	return NewPostAlertingV2AlertsIdAckRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewPostAlertingV2AlertsAlertIdAckRequestWithBody generates requests for PostAlertingV2AlertsAlertIdAck with any type of body
-func NewPostAlertingV2AlertsAlertIdAckRequestWithBody(server string, alertId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdAckRequestWithBody generates requests for PostAlertingV2AlertsIdAck with any type of body
+func NewPostAlertingV2AlertsIdAckRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "alert_id", alertId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -197495,24 +199048,24 @@ func NewPostAlertingV2AlertsAlertIdAckRequestWithBody(server string, alertId str
 	return req, nil
 }
 
-// NewPostAlertingV2AlertsAlertIdActivateRequest calls the generic PostAlertingV2AlertsAlertIdActivate builder with application/json body
-func NewPostAlertingV2AlertsAlertIdActivateRequest(server string, alertId string, body PostAlertingV2AlertsAlertIdActivateJSONRequestBody) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdActivateRequest calls the generic PostAlertingV2AlertsIdActivate builder with application/json body
+func NewPostAlertingV2AlertsIdActivateRequest(server string, id string, body PostAlertingV2AlertsIdActivateJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostAlertingV2AlertsAlertIdActivateRequestWithBody(server, alertId, "application/json", bodyReader)
+	return NewPostAlertingV2AlertsIdActivateRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewPostAlertingV2AlertsAlertIdActivateRequestWithBody generates requests for PostAlertingV2AlertsAlertIdActivate with any type of body
-func NewPostAlertingV2AlertsAlertIdActivateRequestWithBody(server string, alertId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdActivateRequestWithBody generates requests for PostAlertingV2AlertsIdActivate with any type of body
+func NewPostAlertingV2AlertsIdActivateRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "alert_id", alertId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -197542,24 +199095,24 @@ func NewPostAlertingV2AlertsAlertIdActivateRequestWithBody(server string, alertI
 	return req, nil
 }
 
-// NewPostAlertingV2AlertsAlertIdAssignRequest calls the generic PostAlertingV2AlertsAlertIdAssign builder with application/json body
-func NewPostAlertingV2AlertsAlertIdAssignRequest(server string, alertId string, body PostAlertingV2AlertsAlertIdAssignJSONRequestBody) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdAssignRequest calls the generic PostAlertingV2AlertsIdAssign builder with application/json body
+func NewPostAlertingV2AlertsIdAssignRequest(server string, id string, body PostAlertingV2AlertsIdAssignJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostAlertingV2AlertsAlertIdAssignRequestWithBody(server, alertId, "application/json", bodyReader)
+	return NewPostAlertingV2AlertsIdAssignRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewPostAlertingV2AlertsAlertIdAssignRequestWithBody generates requests for PostAlertingV2AlertsAlertIdAssign with any type of body
-func NewPostAlertingV2AlertsAlertIdAssignRequestWithBody(server string, alertId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdAssignRequestWithBody generates requests for PostAlertingV2AlertsIdAssign with any type of body
+func NewPostAlertingV2AlertsIdAssignRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "alert_id", alertId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -197589,24 +199142,24 @@ func NewPostAlertingV2AlertsAlertIdAssignRequestWithBody(server string, alertId 
 	return req, nil
 }
 
-// NewPostAlertingV2AlertsAlertIdDeactivateRequest calls the generic PostAlertingV2AlertsAlertIdDeactivate builder with application/json body
-func NewPostAlertingV2AlertsAlertIdDeactivateRequest(server string, alertId string, body PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdDeactivateRequest calls the generic PostAlertingV2AlertsIdDeactivate builder with application/json body
+func NewPostAlertingV2AlertsIdDeactivateRequest(server string, id string, body PostAlertingV2AlertsIdDeactivateJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostAlertingV2AlertsAlertIdDeactivateRequestWithBody(server, alertId, "application/json", bodyReader)
+	return NewPostAlertingV2AlertsIdDeactivateRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewPostAlertingV2AlertsAlertIdDeactivateRequestWithBody generates requests for PostAlertingV2AlertsAlertIdDeactivate with any type of body
-func NewPostAlertingV2AlertsAlertIdDeactivateRequestWithBody(server string, alertId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdDeactivateRequestWithBody generates requests for PostAlertingV2AlertsIdDeactivate with any type of body
+func NewPostAlertingV2AlertsIdDeactivateRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "alert_id", alertId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -197636,24 +199189,24 @@ func NewPostAlertingV2AlertsAlertIdDeactivateRequestWithBody(server string, aler
 	return req, nil
 }
 
-// NewPostAlertingV2AlertsAlertIdTagRequest calls the generic PostAlertingV2AlertsAlertIdTag builder with application/json body
-func NewPostAlertingV2AlertsAlertIdTagRequest(server string, alertId string, body PostAlertingV2AlertsAlertIdTagJSONRequestBody) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdTagRequest calls the generic PostAlertingV2AlertsIdTag builder with application/json body
+func NewPostAlertingV2AlertsIdTagRequest(server string, id string, body PostAlertingV2AlertsIdTagJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostAlertingV2AlertsAlertIdTagRequestWithBody(server, alertId, "application/json", bodyReader)
+	return NewPostAlertingV2AlertsIdTagRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewPostAlertingV2AlertsAlertIdTagRequestWithBody generates requests for PostAlertingV2AlertsAlertIdTag with any type of body
-func NewPostAlertingV2AlertsAlertIdTagRequestWithBody(server string, alertId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdTagRequestWithBody generates requests for PostAlertingV2AlertsIdTag with any type of body
+func NewPostAlertingV2AlertsIdTagRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "alert_id", alertId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -197683,24 +199236,24 @@ func NewPostAlertingV2AlertsAlertIdTagRequestWithBody(server string, alertId str
 	return req, nil
 }
 
-// NewPostAlertingV2AlertsAlertIdUnackRequest calls the generic PostAlertingV2AlertsAlertIdUnack builder with application/json body
-func NewPostAlertingV2AlertsAlertIdUnackRequest(server string, alertId string, body PostAlertingV2AlertsAlertIdUnackJSONRequestBody) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdUnackRequest calls the generic PostAlertingV2AlertsIdUnack builder with application/json body
+func NewPostAlertingV2AlertsIdUnackRequest(server string, id string, body PostAlertingV2AlertsIdUnackJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostAlertingV2AlertsAlertIdUnackRequestWithBody(server, alertId, "application/json", bodyReader)
+	return NewPostAlertingV2AlertsIdUnackRequestWithBody(server, id, "application/json", bodyReader)
 }
 
-// NewPostAlertingV2AlertsAlertIdUnackRequestWithBody generates requests for PostAlertingV2AlertsAlertIdUnack with any type of body
-func NewPostAlertingV2AlertsAlertIdUnackRequestWithBody(server string, alertId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPostAlertingV2AlertsIdUnackRequestWithBody generates requests for PostAlertingV2AlertsIdUnack with any type of body
+func NewPostAlertingV2AlertsIdUnackRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "alert_id", alertId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -203013,6 +204566,46 @@ func NewFindCaseActivityDefaultSpaceRequest(server string, caseId CasesCaseId, p
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPostChatMessageRequest calls the generic PostChatMessage builder with application/json body
+func NewPostChatMessageRequest(server string, body PostChatMessageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostChatMessageRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostChatMessageRequestWithBody generates requests for PostChatMessage with any type of body
+func NewPostChatMessageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/chat/message")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -208513,6 +210106,18 @@ func NewGetFleetAgentPoliciesRequest(server string, params *GetFleetAgentPolicie
 		if params.Kuery != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kuery", *params.Kuery, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ShowAgentless != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "showAgentless", *params.ShowAgentless, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -225502,6 +227107,46 @@ func NewPostSyntheticMonitorsRequestWithBody(server string, contentType string, 
 	return req, nil
 }
 
+// NewPostSyntheticMonitorsBulkCreateRequest calls the generic PostSyntheticMonitorsBulkCreate builder with application/json body
+func NewPostSyntheticMonitorsBulkCreateRequest(server string, body PostSyntheticMonitorsBulkCreateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostSyntheticMonitorsBulkCreateRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostSyntheticMonitorsBulkCreateRequestWithBody generates requests for PostSyntheticMonitorsBulkCreate with any type of body
+func NewPostSyntheticMonitorsBulkCreateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/synthetics/monitors/_bulk_create")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeleteSyntheticMonitorsRequest calls the generic DeleteSyntheticMonitors builder with application/json body
 func NewDeleteSyntheticMonitorsRequest(server string, body DeleteSyntheticMonitorsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -233024,6 +234669,9 @@ type ClientWithResponsesInterface interface {
 	// GetAlertingRulesBackfillIdWithResponse request
 	GetAlertingRulesBackfillIdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetAlertingRulesBackfillIdResponse, error)
 
+	// GetAlertingV2ActionPoliciesWithResponse request
+	GetAlertingV2ActionPoliciesWithResponse(ctx context.Context, params *GetAlertingV2ActionPoliciesParams, reqEditors ...RequestEditorFn) (*GetAlertingV2ActionPoliciesResponse, error)
+
 	// PostAlertingV2ActionPoliciesWithBodyWithResponse request with any body
 	PostAlertingV2ActionPoliciesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2ActionPoliciesResponse, error)
 
@@ -233122,35 +234770,35 @@ type ClientWithResponsesInterface interface {
 
 	PostAlertingV2AlertsBulkUnackWithResponse(ctx context.Context, body PostAlertingV2AlertsBulkUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsBulkUnackResponse, error)
 
-	// PostAlertingV2AlertsAlertIdAckWithBodyWithResponse request with any body
-	PostAlertingV2AlertsAlertIdAckWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAckResponse, error)
+	// PostAlertingV2AlertsIdAckWithBodyWithResponse request with any body
+	PostAlertingV2AlertsIdAckWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAckResponse, error)
 
-	PostAlertingV2AlertsAlertIdAckWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAckResponse, error)
+	PostAlertingV2AlertsIdAckWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAckResponse, error)
 
-	// PostAlertingV2AlertsAlertIdActivateWithBodyWithResponse request with any body
-	PostAlertingV2AlertsAlertIdActivateWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdActivateResponse, error)
+	// PostAlertingV2AlertsIdActivateWithBodyWithResponse request with any body
+	PostAlertingV2AlertsIdActivateWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdActivateResponse, error)
 
-	PostAlertingV2AlertsAlertIdActivateWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdActivateResponse, error)
+	PostAlertingV2AlertsIdActivateWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdActivateResponse, error)
 
-	// PostAlertingV2AlertsAlertIdAssignWithBodyWithResponse request with any body
-	PostAlertingV2AlertsAlertIdAssignWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAssignResponse, error)
+	// PostAlertingV2AlertsIdAssignWithBodyWithResponse request with any body
+	PostAlertingV2AlertsIdAssignWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAssignResponse, error)
 
-	PostAlertingV2AlertsAlertIdAssignWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAssignResponse, error)
+	PostAlertingV2AlertsIdAssignWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAssignResponse, error)
 
-	// PostAlertingV2AlertsAlertIdDeactivateWithBodyWithResponse request with any body
-	PostAlertingV2AlertsAlertIdDeactivateWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdDeactivateResponse, error)
+	// PostAlertingV2AlertsIdDeactivateWithBodyWithResponse request with any body
+	PostAlertingV2AlertsIdDeactivateWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdDeactivateResponse, error)
 
-	PostAlertingV2AlertsAlertIdDeactivateWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdDeactivateResponse, error)
+	PostAlertingV2AlertsIdDeactivateWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdDeactivateResponse, error)
 
-	// PostAlertingV2AlertsAlertIdTagWithBodyWithResponse request with any body
-	PostAlertingV2AlertsAlertIdTagWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdTagResponse, error)
+	// PostAlertingV2AlertsIdTagWithBodyWithResponse request with any body
+	PostAlertingV2AlertsIdTagWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdTagResponse, error)
 
-	PostAlertingV2AlertsAlertIdTagWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdTagResponse, error)
+	PostAlertingV2AlertsIdTagWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdTagResponse, error)
 
-	// PostAlertingV2AlertsAlertIdUnackWithBodyWithResponse request with any body
-	PostAlertingV2AlertsAlertIdUnackWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdUnackResponse, error)
+	// PostAlertingV2AlertsIdUnackWithBodyWithResponse request with any body
+	PostAlertingV2AlertsIdUnackWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdUnackResponse, error)
 
-	PostAlertingV2AlertsAlertIdUnackWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdUnackResponse, error)
+	PostAlertingV2AlertsIdUnackWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdUnackResponse, error)
 
 	// GetAlertingV2ExecutionHistoryActionPoliciesWithResponse request
 	GetAlertingV2ExecutionHistoryActionPoliciesWithResponse(ctx context.Context, params *GetAlertingV2ExecutionHistoryActionPoliciesParams, reqEditors ...RequestEditorFn) (*GetAlertingV2ExecutionHistoryActionPoliciesResponse, error)
@@ -233499,6 +235147,11 @@ type ClientWithResponsesInterface interface {
 
 	// FindCaseActivityDefaultSpaceWithResponse request
 	FindCaseActivityDefaultSpaceWithResponse(ctx context.Context, caseId CasesCaseId, params *FindCaseActivityDefaultSpaceParams, reqEditors ...RequestEditorFn) (*FindCaseActivityDefaultSpaceResponse, error)
+
+	// PostChatMessageWithBodyWithResponse request with any body
+	PostChatMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostChatMessageResponse, error)
+
+	PostChatMessageWithResponse(ctx context.Context, body PostChatMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*PostChatMessageResponse, error)
 
 	// GetContextEngineAiIndexWithResponse request
 	GetContextEngineAiIndexWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetContextEngineAiIndexResponse, error)
@@ -235193,6 +236846,11 @@ type ClientWithResponsesInterface interface {
 	PostSyntheticMonitorsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error)
 
 	PostSyntheticMonitorsWithResponse(ctx context.Context, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error)
+
+	// PostSyntheticMonitorsBulkCreateWithBodyWithResponse request with any body
+	PostSyntheticMonitorsBulkCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsBulkCreateResponse, error)
+
+	PostSyntheticMonitorsBulkCreateWithResponse(ctx context.Context, body PostSyntheticMonitorsBulkCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsBulkCreateResponse, error)
 
 	// DeleteSyntheticMonitorsWithBodyWithResponse request with any body
 	DeleteSyntheticMonitorsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSyntheticMonitorsResponse, error)
@@ -237971,6 +239629,41 @@ func (r GetAlertingRulesBackfillIdResponse) ContentType() string {
 	return ""
 }
 
+type GetAlertingV2ActionPoliciesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *KibanaHTTPAPIsAlertingActionPolicyListResponse
+	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAlertingV2ActionPoliciesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAlertingV2ActionPoliciesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAlertingV2ActionPoliciesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type PostAlertingV2ActionPoliciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -238756,42 +240449,7 @@ func (r PostAlertingV2AlertsBulkUnackResponse) ContentType() string {
 	return ""
 }
 
-type PostAlertingV2AlertsAlertIdAckResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r PostAlertingV2AlertsAlertIdAckResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PostAlertingV2AlertsAlertIdAckResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PostAlertingV2AlertsAlertIdAckResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PostAlertingV2AlertsAlertIdActivateResponse struct {
+type PostAlertingV2AlertsIdAckResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
@@ -238804,7 +240462,7 @@ type PostAlertingV2AlertsAlertIdActivateResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r PostAlertingV2AlertsAlertIdActivateResponse) Status() string {
+func (r PostAlertingV2AlertsIdAckResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -238812,7 +240470,7 @@ func (r PostAlertingV2AlertsAlertIdActivateResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostAlertingV2AlertsAlertIdActivateResponse) StatusCode() int {
+func (r PostAlertingV2AlertsIdAckResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -238820,49 +240478,14 @@ func (r PostAlertingV2AlertsAlertIdActivateResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PostAlertingV2AlertsAlertIdActivateResponse) ContentType() string {
+func (r PostAlertingV2AlertsIdAckResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type PostAlertingV2AlertsAlertIdAssignResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r PostAlertingV2AlertsAlertIdAssignResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PostAlertingV2AlertsAlertIdAssignResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PostAlertingV2AlertsAlertIdAssignResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PostAlertingV2AlertsAlertIdDeactivateResponse struct {
+type PostAlertingV2AlertsIdActivateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
@@ -238875,7 +240498,7 @@ type PostAlertingV2AlertsAlertIdDeactivateResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r PostAlertingV2AlertsAlertIdDeactivateResponse) Status() string {
+func (r PostAlertingV2AlertsIdActivateResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -238883,7 +240506,7 @@ func (r PostAlertingV2AlertsAlertIdDeactivateResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostAlertingV2AlertsAlertIdDeactivateResponse) StatusCode() int {
+func (r PostAlertingV2AlertsIdActivateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -238891,26 +240514,27 @@ func (r PostAlertingV2AlertsAlertIdDeactivateResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PostAlertingV2AlertsAlertIdDeactivateResponse) ContentType() string {
+func (r PostAlertingV2AlertsIdActivateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type PostAlertingV2AlertsAlertIdTagResponse struct {
+type PostAlertingV2AlertsIdAssignResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON409      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r PostAlertingV2AlertsAlertIdTagResponse) Status() string {
+func (r PostAlertingV2AlertsIdAssignResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -238918,7 +240542,7 @@ func (r PostAlertingV2AlertsAlertIdTagResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostAlertingV2AlertsAlertIdTagResponse) StatusCode() int {
+func (r PostAlertingV2AlertsIdAssignResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -238926,26 +240550,27 @@ func (r PostAlertingV2AlertsAlertIdTagResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PostAlertingV2AlertsAlertIdTagResponse) ContentType() string {
+func (r PostAlertingV2AlertsIdAssignResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type PostAlertingV2AlertsAlertIdUnackResponse struct {
+type PostAlertingV2AlertsIdDeactivateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON409      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r PostAlertingV2AlertsAlertIdUnackResponse) Status() string {
+func (r PostAlertingV2AlertsIdDeactivateResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -238953,7 +240578,7 @@ func (r PostAlertingV2AlertsAlertIdUnackResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PostAlertingV2AlertsAlertIdUnackResponse) StatusCode() int {
+func (r PostAlertingV2AlertsIdDeactivateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -238961,7 +240586,79 @@ func (r PostAlertingV2AlertsAlertIdUnackResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PostAlertingV2AlertsAlertIdUnackResponse) ContentType() string {
+func (r PostAlertingV2AlertsIdDeactivateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostAlertingV2AlertsIdTagResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON409      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostAlertingV2AlertsIdTagResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostAlertingV2AlertsIdTagResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostAlertingV2AlertsIdTagResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostAlertingV2AlertsIdUnackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON409      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
+	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostAlertingV2AlertsIdUnackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostAlertingV2AlertsIdUnackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostAlertingV2AlertsIdUnackResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -241235,6 +242932,9 @@ type GetCaseConfigurationDefaultSpaceResponse struct {
 			Username   *string `json:"username"`
 		} `json:"updated_by,omitempty"`
 		Version *string `json:"version,omitempty"`
+
+		// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+		WorkflowTags *[]string `json:"workflowTags,omitempty"`
 	}
 	JSON401 *CasesResponse4xx
 }
@@ -241338,6 +243038,9 @@ type SetCaseConfigurationDefaultSpaceResponse struct {
 			Username   *string `json:"username"`
 		} `json:"updated_by,omitempty"`
 		Version *string `json:"version,omitempty"`
+
+		// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+		WorkflowTags *[]string `json:"workflowTags,omitempty"`
 	}
 	JSON401 *CasesResponse4xx
 }
@@ -241482,6 +243185,9 @@ type UpdateCaseConfigurationDefaultSpaceResponse struct {
 			Username   *string `json:"username"`
 		} `json:"updated_by,omitempty"`
 		Version *string `json:"version,omitempty"`
+
+		// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+		WorkflowTags *[]string `json:"workflowTags,omitempty"`
 	}
 	JSON401 *CasesResponse4xx
 }
@@ -242319,6 +244025,51 @@ func (r FindCaseActivityDefaultSpaceResponse) ContentType() string {
 	return ""
 }
 
+type PostChatMessageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Answer The agent's final text answer. Empty when the agent finished without a message.
+		Answer string `json:"answer"`
+
+		// ConversationId The conversation the message was added to: the one requested, or the one created for it.
+		ConversationId string `json:"conversation_id"`
+
+		// DeclinedPrompts The prompts that the endpoint declined. In an interactive conversation, these prompts pause the agent until the user answers. Examples are tool confirmations, questions to the user, and destructive API approvals. This endpoint has no user, so it declines each prompt and tells the agent why. The property is absent if the agent raised no prompts.
+		DeclinedPrompts *[]struct {
+			// Message The explanation the agent received in place of the prompt.
+			Message string `json:"message"`
+
+			// ToolId The tool whose call was declined.
+			ToolId string `json:"tool_id"`
+		} `json:"declined_prompts,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostChatMessageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostChatMessageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostChatMessageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetContextEngineAiIndexResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -242378,6 +244129,9 @@ type GetContextEngineAiIndexResponse struct {
 
 			// Managed Whether the AI Index is managed by a plugin and therefore immutable.
 			Managed bool `json:"managed"`
+
+			// MemoryEnabled Whether this AI Index accepts memory writes.
+			MemoryEnabled bool `json:"memory_enabled"`
 
 			// Sources Additional sources that provide context for the AI Index.
 			Sources []struct {
@@ -242698,6 +244452,9 @@ type GetContextEngineAiIndexAiindexidResponse struct {
 
 		// Managed Whether the AI Index is managed by a plugin and therefore immutable.
 		Managed bool `json:"managed"`
+
+		// MemoryEnabled Whether this AI Index accepts memory writes.
+		MemoryEnabled bool `json:"memory_enabled"`
 
 		// Sources Additional sources that provide context for the AI Index.
 		Sources []struct {
@@ -248440,6 +250197,7 @@ type GetFleetAgentsSetupResponse struct {
 	JSON200      *struct {
 		IsReady                       bool                                                            `json:"isReady"`
 		IsActionSecretsStorageEnabled *bool                                                           `json:"is_action_secrets_storage_enabled,omitempty"`
+		IsFipsEnabled                 *bool                                                           `json:"is_fips_enabled,omitempty"`
 		IsSecretsStorageEnabled       *bool                                                           `json:"is_secrets_storage_enabled,omitempty"`
 		IsSpaceAwarenessEnabled       *bool                                                           `json:"is_space_awareness_enabled,omitempty"`
 		IsSslSecretsStorageEnabled    *bool                                                           `json:"is_ssl_secrets_storage_enabled,omitempty"`
@@ -255105,6 +256863,9 @@ type OsqueryGetLiveQueryDetailsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SecurityOsqueryAPIFindLiveQueryDetailsResponse
+	JSON404      *struct {
+		Message *string `json:"message,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -255135,6 +256896,9 @@ type OsqueryGetLiveQueryResultsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SecurityOsqueryAPIGetLiveQueryResultsResponse
+	JSON404      *struct {
+		Message *string `json:"message,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -258988,6 +260752,49 @@ func (r PostSyntheticMonitorsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PostSyntheticMonitorsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostSyntheticMonitorsBulkCreateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Errors Optional service-level errors from the bulk sync.
+		Errors *[]interface{} `json:"errors,omitempty"`
+		Result []struct {
+			// Created Whether the monitor Saved Object was created.
+			Created bool `json:"created"`
+
+			// Error Present when `created` is `false`.
+			Error *string `json:"error,omitempty"`
+
+			// Id The config ID of the created monitor.
+			Id string `json:"id"`
+		} `json:"result"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostSyntheticMonitorsBulkCreateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostSyntheticMonitorsBulkCreateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostSyntheticMonitorsBulkCreateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -264130,6 +265937,15 @@ func (c *ClientWithResponses) GetAlertingRulesBackfillIdWithResponse(ctx context
 	return ParseGetAlertingRulesBackfillIdResponse(rsp)
 }
 
+// GetAlertingV2ActionPoliciesWithResponse request returning *GetAlertingV2ActionPoliciesResponse
+func (c *ClientWithResponses) GetAlertingV2ActionPoliciesWithResponse(ctx context.Context, params *GetAlertingV2ActionPoliciesParams, reqEditors ...RequestEditorFn) (*GetAlertingV2ActionPoliciesResponse, error) {
+	rsp, err := c.GetAlertingV2ActionPolicies(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAlertingV2ActionPoliciesResponse(rsp)
+}
+
 // PostAlertingV2ActionPoliciesWithBodyWithResponse request with arbitrary body returning *PostAlertingV2ActionPoliciesResponse
 func (c *ClientWithResponses) PostAlertingV2ActionPoliciesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2ActionPoliciesResponse, error) {
 	rsp, err := c.PostAlertingV2ActionPoliciesWithBody(ctx, contentType, body, reqEditors...)
@@ -264456,106 +266272,106 @@ func (c *ClientWithResponses) PostAlertingV2AlertsBulkUnackWithResponse(ctx cont
 	return ParsePostAlertingV2AlertsBulkUnackResponse(rsp)
 }
 
-// PostAlertingV2AlertsAlertIdAckWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsAlertIdAckResponse
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdAckWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAckResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdAckWithBody(ctx, alertId, contentType, body, reqEditors...)
+// PostAlertingV2AlertsIdAckWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsIdAckResponse
+func (c *ClientWithResponses) PostAlertingV2AlertsIdAckWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAckResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdAckWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdAckResponse(rsp)
+	return ParsePostAlertingV2AlertsIdAckResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdAckWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAckResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdAck(ctx, alertId, body, reqEditors...)
+func (c *ClientWithResponses) PostAlertingV2AlertsIdAckWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdAckJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAckResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdAck(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdAckResponse(rsp)
+	return ParsePostAlertingV2AlertsIdAckResponse(rsp)
 }
 
-// PostAlertingV2AlertsAlertIdActivateWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsAlertIdActivateResponse
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdActivateWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdActivateResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdActivateWithBody(ctx, alertId, contentType, body, reqEditors...)
+// PostAlertingV2AlertsIdActivateWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsIdActivateResponse
+func (c *ClientWithResponses) PostAlertingV2AlertsIdActivateWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdActivateResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdActivateWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdActivateResponse(rsp)
+	return ParsePostAlertingV2AlertsIdActivateResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdActivateWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdActivateResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdActivate(ctx, alertId, body, reqEditors...)
+func (c *ClientWithResponses) PostAlertingV2AlertsIdActivateWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdActivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdActivateResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdActivate(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdActivateResponse(rsp)
+	return ParsePostAlertingV2AlertsIdActivateResponse(rsp)
 }
 
-// PostAlertingV2AlertsAlertIdAssignWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsAlertIdAssignResponse
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdAssignWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAssignResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdAssignWithBody(ctx, alertId, contentType, body, reqEditors...)
+// PostAlertingV2AlertsIdAssignWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsIdAssignResponse
+func (c *ClientWithResponses) PostAlertingV2AlertsIdAssignWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAssignResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdAssignWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdAssignResponse(rsp)
+	return ParsePostAlertingV2AlertsIdAssignResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdAssignWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdAssignResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdAssign(ctx, alertId, body, reqEditors...)
+func (c *ClientWithResponses) PostAlertingV2AlertsIdAssignWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdAssignJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdAssignResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdAssign(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdAssignResponse(rsp)
+	return ParsePostAlertingV2AlertsIdAssignResponse(rsp)
 }
 
-// PostAlertingV2AlertsAlertIdDeactivateWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsAlertIdDeactivateResponse
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdDeactivateWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdDeactivateResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdDeactivateWithBody(ctx, alertId, contentType, body, reqEditors...)
+// PostAlertingV2AlertsIdDeactivateWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsIdDeactivateResponse
+func (c *ClientWithResponses) PostAlertingV2AlertsIdDeactivateWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdDeactivateResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdDeactivateWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdDeactivateResponse(rsp)
+	return ParsePostAlertingV2AlertsIdDeactivateResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdDeactivateWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdDeactivateResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdDeactivate(ctx, alertId, body, reqEditors...)
+func (c *ClientWithResponses) PostAlertingV2AlertsIdDeactivateWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdDeactivateResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdDeactivate(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdDeactivateResponse(rsp)
+	return ParsePostAlertingV2AlertsIdDeactivateResponse(rsp)
 }
 
-// PostAlertingV2AlertsAlertIdTagWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsAlertIdTagResponse
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdTagWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdTagResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdTagWithBody(ctx, alertId, contentType, body, reqEditors...)
+// PostAlertingV2AlertsIdTagWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsIdTagResponse
+func (c *ClientWithResponses) PostAlertingV2AlertsIdTagWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdTagResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdTagWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdTagResponse(rsp)
+	return ParsePostAlertingV2AlertsIdTagResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdTagWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdTagResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdTag(ctx, alertId, body, reqEditors...)
+func (c *ClientWithResponses) PostAlertingV2AlertsIdTagWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdTagJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdTagResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdTag(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdTagResponse(rsp)
+	return ParsePostAlertingV2AlertsIdTagResponse(rsp)
 }
 
-// PostAlertingV2AlertsAlertIdUnackWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsAlertIdUnackResponse
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdUnackWithBodyWithResponse(ctx context.Context, alertId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdUnackResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdUnackWithBody(ctx, alertId, contentType, body, reqEditors...)
+// PostAlertingV2AlertsIdUnackWithBodyWithResponse request with arbitrary body returning *PostAlertingV2AlertsIdUnackResponse
+func (c *ClientWithResponses) PostAlertingV2AlertsIdUnackWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdUnackResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdUnackWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdUnackResponse(rsp)
+	return ParsePostAlertingV2AlertsIdUnackResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostAlertingV2AlertsAlertIdUnackWithResponse(ctx context.Context, alertId string, body PostAlertingV2AlertsAlertIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsAlertIdUnackResponse, error) {
-	rsp, err := c.PostAlertingV2AlertsAlertIdUnack(ctx, alertId, body, reqEditors...)
+func (c *ClientWithResponses) PostAlertingV2AlertsIdUnackWithResponse(ctx context.Context, id string, body PostAlertingV2AlertsIdUnackJSONRequestBody, reqEditors ...RequestEditorFn) (*PostAlertingV2AlertsIdUnackResponse, error) {
+	rsp, err := c.PostAlertingV2AlertsIdUnack(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePostAlertingV2AlertsAlertIdUnackResponse(rsp)
+	return ParsePostAlertingV2AlertsIdUnackResponse(rsp)
 }
 
 // GetAlertingV2ExecutionHistoryActionPoliciesWithResponse request returning *GetAlertingV2ExecutionHistoryActionPoliciesResponse
@@ -265678,6 +267494,23 @@ func (c *ClientWithResponses) FindCaseActivityDefaultSpaceWithResponse(ctx conte
 		return nil, err
 	}
 	return ParseFindCaseActivityDefaultSpaceResponse(rsp)
+}
+
+// PostChatMessageWithBodyWithResponse request with arbitrary body returning *PostChatMessageResponse
+func (c *ClientWithResponses) PostChatMessageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostChatMessageResponse, error) {
+	rsp, err := c.PostChatMessageWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostChatMessageResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostChatMessageWithResponse(ctx context.Context, body PostChatMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*PostChatMessageResponse, error) {
+	rsp, err := c.PostChatMessage(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostChatMessageResponse(rsp)
 }
 
 // GetContextEngineAiIndexWithResponse request returning *GetContextEngineAiIndexResponse
@@ -271166,6 +272999,23 @@ func (c *ClientWithResponses) PostSyntheticMonitorsWithResponse(ctx context.Cont
 	return ParsePostSyntheticMonitorsResponse(rsp)
 }
 
+// PostSyntheticMonitorsBulkCreateWithBodyWithResponse request with arbitrary body returning *PostSyntheticMonitorsBulkCreateResponse
+func (c *ClientWithResponses) PostSyntheticMonitorsBulkCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsBulkCreateResponse, error) {
+	rsp, err := c.PostSyntheticMonitorsBulkCreateWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostSyntheticMonitorsBulkCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostSyntheticMonitorsBulkCreateWithResponse(ctx context.Context, body PostSyntheticMonitorsBulkCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsBulkCreateResponse, error) {
+	rsp, err := c.PostSyntheticMonitorsBulkCreate(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostSyntheticMonitorsBulkCreateResponse(rsp)
+}
+
 // DeleteSyntheticMonitorsWithBodyWithResponse request with arbitrary body returning *DeleteSyntheticMonitorsResponse
 func (c *ClientWithResponses) DeleteSyntheticMonitorsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSyntheticMonitorsResponse, error) {
 	rsp, err := c.DeleteSyntheticMonitorsWithBody(ctx, contentType, body, reqEditors...)
@@ -274300,6 +276150,67 @@ func ParseGetAlertingRulesBackfillIdResponse(rsp *http.Response) (*GetAlertingRu
 	return response, nil
 }
 
+// ParseGetAlertingV2ActionPoliciesResponse parses an HTTP response from a GetAlertingV2ActionPoliciesWithResponse call
+func ParseGetAlertingV2ActionPoliciesResponse(rsp *http.Response) (*GetAlertingV2ActionPoliciesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAlertingV2ActionPoliciesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KibanaHTTPAPIsAlertingActionPolicyListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParsePostAlertingV2ActionPoliciesResponse parses an HTTP response from a PostAlertingV2ActionPoliciesWithResponse call
 func ParsePostAlertingV2ActionPoliciesResponse(rsp *http.Response) (*PostAlertingV2ActionPoliciesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -275747,76 +277658,15 @@ func ParsePostAlertingV2AlertsBulkUnackResponse(rsp *http.Response) (*PostAlerti
 	return response, nil
 }
 
-// ParsePostAlertingV2AlertsAlertIdAckResponse parses an HTTP response from a PostAlertingV2AlertsAlertIdAckWithResponse call
-func ParsePostAlertingV2AlertsAlertIdAckResponse(rsp *http.Response) (*PostAlertingV2AlertsAlertIdAckResponse, error) {
+// ParsePostAlertingV2AlertsIdAckResponse parses an HTTP response from a PostAlertingV2AlertsIdAckWithResponse call
+func ParsePostAlertingV2AlertsIdAckResponse(rsp *http.Response) (*PostAlertingV2AlertsIdAckResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostAlertingV2AlertsAlertIdAckResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON503 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePostAlertingV2AlertsAlertIdActivateResponse parses an HTTP response from a PostAlertingV2AlertsAlertIdActivateWithResponse call
-func ParsePostAlertingV2AlertsAlertIdActivateResponse(rsp *http.Response) (*PostAlertingV2AlertsAlertIdActivateResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PostAlertingV2AlertsAlertIdActivateResponse{
+	response := &PostAlertingV2AlertsIdAckResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -275876,76 +277726,15 @@ func ParsePostAlertingV2AlertsAlertIdActivateResponse(rsp *http.Response) (*Post
 	return response, nil
 }
 
-// ParsePostAlertingV2AlertsAlertIdAssignResponse parses an HTTP response from a PostAlertingV2AlertsAlertIdAssignWithResponse call
-func ParsePostAlertingV2AlertsAlertIdAssignResponse(rsp *http.Response) (*PostAlertingV2AlertsAlertIdAssignResponse, error) {
+// ParsePostAlertingV2AlertsIdActivateResponse parses an HTTP response from a PostAlertingV2AlertsIdActivateWithResponse call
+func ParsePostAlertingV2AlertsIdActivateResponse(rsp *http.Response) (*PostAlertingV2AlertsIdActivateResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostAlertingV2AlertsAlertIdAssignResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON503 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePostAlertingV2AlertsAlertIdDeactivateResponse parses an HTTP response from a PostAlertingV2AlertsAlertIdDeactivateWithResponse call
-func ParsePostAlertingV2AlertsAlertIdDeactivateResponse(rsp *http.Response) (*PostAlertingV2AlertsAlertIdDeactivateResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PostAlertingV2AlertsAlertIdDeactivateResponse{
+	response := &PostAlertingV2AlertsIdActivateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -276005,15 +277794,15 @@ func ParsePostAlertingV2AlertsAlertIdDeactivateResponse(rsp *http.Response) (*Po
 	return response, nil
 }
 
-// ParsePostAlertingV2AlertsAlertIdTagResponse parses an HTTP response from a PostAlertingV2AlertsAlertIdTagWithResponse call
-func ParsePostAlertingV2AlertsAlertIdTagResponse(rsp *http.Response) (*PostAlertingV2AlertsAlertIdTagResponse, error) {
+// ParsePostAlertingV2AlertsIdAssignResponse parses an HTTP response from a PostAlertingV2AlertsIdAssignWithResponse call
+func ParsePostAlertingV2AlertsIdAssignResponse(rsp *http.Response) (*PostAlertingV2AlertsIdAssignResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostAlertingV2AlertsAlertIdTagResponse{
+	response := &PostAlertingV2AlertsIdAssignResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -276046,6 +277835,13 @@ func ParsePostAlertingV2AlertsAlertIdTagResponse(rsp *http.Response) (*PostAlert
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest KibanaHTTPAPIsAlertingErrorResponse
@@ -276066,15 +277862,15 @@ func ParsePostAlertingV2AlertsAlertIdTagResponse(rsp *http.Response) (*PostAlert
 	return response, nil
 }
 
-// ParsePostAlertingV2AlertsAlertIdUnackResponse parses an HTTP response from a PostAlertingV2AlertsAlertIdUnackWithResponse call
-func ParsePostAlertingV2AlertsAlertIdUnackResponse(rsp *http.Response) (*PostAlertingV2AlertsAlertIdUnackResponse, error) {
+// ParsePostAlertingV2AlertsIdDeactivateResponse parses an HTTP response from a PostAlertingV2AlertsIdDeactivateWithResponse call
+func ParsePostAlertingV2AlertsIdDeactivateResponse(rsp *http.Response) (*PostAlertingV2AlertsIdDeactivateResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PostAlertingV2AlertsAlertIdUnackResponse{
+	response := &PostAlertingV2AlertsIdDeactivateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -276107,6 +277903,149 @@ func ParsePostAlertingV2AlertsAlertIdUnackResponse(rsp *http.Response) (*PostAle
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostAlertingV2AlertsIdTagResponse parses an HTTP response from a PostAlertingV2AlertsIdTagWithResponse call
+func ParsePostAlertingV2AlertsIdTagResponse(rsp *http.Response) (*PostAlertingV2AlertsIdTagResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostAlertingV2AlertsIdTagResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostAlertingV2AlertsIdUnackResponse parses an HTTP response from a PostAlertingV2AlertsIdUnackWithResponse call
+func ParsePostAlertingV2AlertsIdUnackResponse(rsp *http.Response) (*PostAlertingV2AlertsIdUnackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostAlertingV2AlertsIdUnackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest KibanaHTTPAPIsAlertingErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest KibanaHTTPAPIsAlertingErrorResponse
@@ -279290,6 +281229,9 @@ func ParseGetCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*GetCase
 				Username   *string `json:"username"`
 			} `json:"updated_by,omitempty"`
 			Version *string `json:"version,omitempty"`
+
+			// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+			WorkflowTags *[]string `json:"workflowTags,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -279395,6 +281337,9 @@ func ParseSetCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*SetCase
 				Username   *string `json:"username"`
 			} `json:"updated_by,omitempty"`
 			Version *string `json:"version,omitempty"`
+
+			// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+			WorkflowTags *[]string `json:"workflowTags,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -279543,6 +281488,9 @@ func ParseUpdateCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*Upda
 				Username   *string `json:"username"`
 			} `json:"updated_by,omitempty"`
 			Version *string `json:"version,omitempty"`
+
+			// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
+			WorkflowTags *[]string `json:"workflowTags,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -280564,6 +282512,47 @@ func ParseFindCaseActivityDefaultSpaceResponse(rsp *http.Response) (*FindCaseAct
 	return response, nil
 }
 
+// ParsePostChatMessageResponse parses an HTTP response from a PostChatMessageWithResponse call
+func ParsePostChatMessageResponse(rsp *http.Response) (*PostChatMessageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostChatMessageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Answer The agent's final text answer. Empty when the agent finished without a message.
+			Answer string `json:"answer"`
+
+			// ConversationId The conversation the message was added to: the one requested, or the one created for it.
+			ConversationId string `json:"conversation_id"`
+
+			// DeclinedPrompts The prompts that the endpoint declined. In an interactive conversation, these prompts pause the agent until the user answers. Examples are tool confirmations, questions to the user, and destructive API approvals. This endpoint has no user, so it declines each prompt and tells the agent why. The property is absent if the agent raised no prompts.
+			DeclinedPrompts *[]struct {
+				// Message The explanation the agent received in place of the prompt.
+				Message string `json:"message"`
+
+				// ToolId The tool whose call was declined.
+				ToolId string `json:"tool_id"`
+			} `json:"declined_prompts,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetContextEngineAiIndexResponse parses an HTTP response from a GetContextEngineAiIndexWithResponse call
 func ParseGetContextEngineAiIndexResponse(rsp *http.Response) (*GetContextEngineAiIndexResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -280635,6 +282624,9 @@ func ParseGetContextEngineAiIndexResponse(rsp *http.Response) (*GetContextEngine
 
 				// Managed Whether the AI Index is managed by a plugin and therefore immutable.
 				Managed bool `json:"managed"`
+
+				// MemoryEnabled Whether this AI Index accepts memory writes.
+				MemoryEnabled bool `json:"memory_enabled"`
 
 				// Sources Additional sources that provide context for the AI Index.
 				Sources []struct {
@@ -281005,6 +282997,9 @@ func ParseGetContextEngineAiIndexAiindexidResponse(rsp *http.Response) (*GetCont
 
 			// Managed Whether the AI Index is managed by a plugin and therefore immutable.
 			Managed bool `json:"managed"`
+
+			// MemoryEnabled Whether this AI Index accepts memory writes.
+			MemoryEnabled bool `json:"memory_enabled"`
 
 			// Sources Additional sources that provide context for the AI Index.
 			Sources []struct {
@@ -287241,6 +289236,7 @@ func ParseGetFleetAgentsSetupResponse(rsp *http.Response) (*GetFleetAgentsSetupR
 		var dest struct {
 			IsReady                       bool                                                            `json:"isReady"`
 			IsActionSecretsStorageEnabled *bool                                                           `json:"is_action_secrets_storage_enabled,omitempty"`
+			IsFipsEnabled                 *bool                                                           `json:"is_fips_enabled,omitempty"`
 			IsSecretsStorageEnabled       *bool                                                           `json:"is_secrets_storage_enabled,omitempty"`
 			IsSpaceAwarenessEnabled       *bool                                                           `json:"is_space_awareness_enabled,omitempty"`
 			IsSslSecretsStorageEnabled    *bool                                                           `json:"is_ssl_secrets_storage_enabled,omitempty"`
@@ -294171,6 +296167,15 @@ func ParseOsqueryGetLiveQueryDetailsResponse(rsp *http.Response) (*OsqueryGetLiv
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Message *string `json:"message,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -294196,6 +296201,15 @@ func ParseOsqueryGetLiveQueryResultsResponse(rsp *http.Response) (*OsqueryGetLiv
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest struct {
+			Message *string `json:"message,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -297199,6 +299213,45 @@ func ParsePostSyntheticMonitorsResponse(rsp *http.Response) (*PostSyntheticMonit
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostSyntheticMonitorsBulkCreateResponse parses an HTTP response from a PostSyntheticMonitorsBulkCreateWithResponse call
+func ParsePostSyntheticMonitorsBulkCreateResponse(rsp *http.Response) (*PostSyntheticMonitorsBulkCreateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostSyntheticMonitorsBulkCreateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Errors Optional service-level errors from the bulk sync.
+			Errors *[]interface{} `json:"errors,omitempty"`
+			Result []struct {
+				// Created Whether the monitor Saved Object was created.
+				Created bool `json:"created"`
+
+				// Error Present when `created` is `false`.
+				Error *string `json:"error,omitempty"`
+
+				// Id The config ID of the created monitor.
+				Id string `json:"id"`
+			} `json:"result"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

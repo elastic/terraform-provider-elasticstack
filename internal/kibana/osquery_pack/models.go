@@ -192,9 +192,9 @@ func (m *queryModel) fromAPIType(item kbapi.SecurityOsqueryAPIObjectQueriesItem)
 	return diags
 }
 
-func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObjectQueriesItem, diag.Diagnostics) {
+func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObjectQueriesItemInput, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	item := kbapi.SecurityOsqueryAPIObjectQueriesItem{}
+	item := kbapi.SecurityOsqueryAPIObjectQueriesItemInput{}
 
 	if typeutils.IsKnown(m.Query) {
 		q := m.Query.ValueString()
