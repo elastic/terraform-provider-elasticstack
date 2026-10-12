@@ -66,8 +66,6 @@ func (m *processorGrokModel) MarshalBody() (any, diag.Diagnostics) {
 	body.TraceMatch = typeutils.BoolDefault(&m.TraceMatch, false)
 	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

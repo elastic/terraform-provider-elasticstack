@@ -59,8 +59,6 @@ func (m *processorDateModel) MarshalBody() (any, diag.Diagnostics) {
 	body.Locale = typeutils.StringDefault(&m.Locale, "en")
 	body.OutputFormat = typeutils.StringDefault(&m.OutputFormat, "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

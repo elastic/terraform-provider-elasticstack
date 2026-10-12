@@ -47,8 +47,6 @@ func (m *processorFailModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Message = m.Message.ValueString()
 	}
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 
