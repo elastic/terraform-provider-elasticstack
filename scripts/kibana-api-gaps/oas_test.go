@@ -38,7 +38,7 @@ func TestOASExposesOperationBodyQueryAndFlags(t *testing.T) {
 	assert.Equal(t, "/components/schemas/Widget", op.Body.pointer)
 	require.Len(t, op.Query, 2)
 	assert.Equal(t, "dry_run", op.Query[0].name)
-	assert.Equal(t, "/paths/~1api~1widgets/post/parameters/0", op.Query[0].ref.pointer)
+	assert.Equal(t, "/paths/~1api~1widgets/post/parameters/dry_run", op.Query[0].ref.pointer)
 }
 
 func TestOASMatchesPathTemplatesIgnoringParameterNames(t *testing.T) {

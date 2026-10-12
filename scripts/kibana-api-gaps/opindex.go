@@ -41,6 +41,8 @@ type opSpec struct {
 	Path       string
 	ParamsType types.Type
 	BodyType   types.Type
+	// RawBody is set for client methods that take the request body as an opaque io.Reader.
+	RawBody bool
 }
 
 type opIndex struct {
@@ -105,7 +107,9 @@ func buildOpIndex(kbapi *packages.Package) (*opIndex, error) {
 		if ctor == "" {
 			return nil, fmt.Errorf("kbapi client method %s has no request constructor", fn.Name.Name)
 		}
-		idx.methods[fn.Name.Name] = perOp[operationKey(resolved[ctor].Method, resolved[ctor].Path)]
+		spec := perOp[operationKey(resolved[ctor].Method, resolved[ctor].Path)]
+		spec.RawBody = strings.HasSuffix(ctor, requestWithBodySuffix)
+		idx.methods[fn.Name.Name] = spec
 	}
 	for _, fn := range responseMethods {
 		target := calledClientMethod(fn, idx)

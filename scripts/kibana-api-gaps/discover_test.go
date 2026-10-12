@@ -40,6 +40,7 @@ var fixtureResources = []Resource{
 	{Name: "fx_passthrough", PkgPath: "fixture/passthrough"},
 	{Name: "fx_nokibana", PkgPath: "fixture/nokibana"},
 	{Name: "fx_blobs", PkgPath: "fixture/blobs"},
+	{Name: "fx_rawbody", PkgPath: "fixture/rawbody"},
 }
 
 func fixtureOASVariant(t *testing.T, oldText, newText string) string {
@@ -100,11 +101,11 @@ func TestDiscoverDoesNotReportUsedFields(t *testing.T) {
 		}
 	}
 	assert.Nil(t, d.group("fx_direct#"+widgetPtr+"name"))
-	assert.Nil(t, d.group("fx_direct#/paths/~1api~1widgets/post/parameters/0"), "dry_run is used")
+	assert.Nil(t, d.group("fx_direct#/paths/~1api~1widgets/post/parameters/dry_run"), "dry_run is used")
 }
 
 func TestDiscoverReportsUnusedQueryParametersAsTopLevelFields(t *testing.T) {
-	g := mustDiscover(t).group("fx_direct#/paths/~1api~1widgets/post/parameters/1")
+	g := mustDiscover(t).group("fx_direct#/paths/~1api~1widgets/post/parameters/verbose")
 	require.NotNil(t, g)
 	assert.Equal(t, []string{"verbose"}, memberFields(g))
 }
@@ -216,4 +217,29 @@ func TestDiscoverWalksUnionRequestBodiesBranchByBranch(t *testing.T) {
 	require.NotNil(t, text)
 	assert.Equal(t, []string{"text"}, memberFields(text))
 	assert.NotNil(t, d.group("fx_blobs#/components/schemas/BlobNumber/properties/number"))
+}
+
+func TestDiscoverTreatsRawBodyClientMethodsAsCoveredButKeepsQueryParameters(t *testing.T) {
+	d := mustDiscover(t)
+	for _, g := range d.Groups {
+		if g.Resource == "fx_rawbody" {
+			assert.NotContains(t, g.Pointer, "/components/schemas/Widget/", g.Key)
+		}
+	}
+	assert.NotNil(t, d.group("fx_rawbody#/paths/~1api~1widgets/post/parameters/dry_run"))
+	assert.Nil(t, d.group("fx_rawbody#/paths/~1api~1widgets/post/parameters/verbose"))
+	var recorded bool
+	for _, s := range d.SkippedShapes {
+		recorded = recorded || (s.Resource == "fx_rawbody" && strings.Contains(s.Shape, "raw"))
+	}
+	assert.True(t, recorded)
+}
+
+func TestDiscoverKeysQueryParameterGroupsByNameNotPosition(t *testing.T) {
+	reordered := fixtureOASVariant(t,
+		"        - {name: dry_run, in: query, schema: {type: boolean}}\n        - {name: verbose, in: query, schema: {type: boolean}}\n",
+		"        - {name: verbose, in: query, schema: {type: boolean}}\n        - {name: dry_run, in: query, schema: {type: boolean}}\n")
+	d, err := discoverFixture(t, reordered)
+	require.NoError(t, err)
+	assert.NotNil(t, d.group("fx_direct#/paths/~1api~1widgets/post/parameters/verbose"))
 }

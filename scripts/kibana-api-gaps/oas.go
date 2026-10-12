@@ -141,9 +141,10 @@ func (d *oasDoc) buildOperation(method, template, pathPointer string, pathItem, 
 	for _, source := range []struct {
 		node    *yaml.Node
 		pointer string
+		owner   string
 	}{
-		{mappingValue(pathItem, "parameters"), pathPointer + "/parameters"},
-		{mappingValue(opNode, "parameters"), opPointer + "/parameters"},
+		{mappingValue(pathItem, "parameters"), pathPointer + "/parameters", pathPointer},
+		{mappingValue(opNode, "parameters"), opPointer + "/parameters", opPointer},
 	} {
 		if source.node == nil {
 			continue
@@ -156,8 +157,10 @@ func (d *oasDoc) buildOperation(method, template, pathPointer string, pathItem, 
 			if stringValue(param.node, "in") != "query" {
 				continue
 			}
+			name := stringValue(param.node, "name")
+			param.pointer = source.owner + "/parameters/" + escapePointerToken(name)
 			op.Query = append(op.Query, oasParam{
-				name:       stringValue(param.node, "name"),
+				name:       name,
 				deprecated: boolValue(param.node, "deprecated"),
 				ref:        param,
 			})

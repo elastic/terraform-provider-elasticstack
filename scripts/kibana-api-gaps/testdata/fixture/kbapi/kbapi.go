@@ -117,6 +117,7 @@ type Client struct {
 }
 
 type ClientInterface interface {
+	CreateWidgetWithBody(ctx context.Context, params *CreateWidgetParams, contentType string, body io.Reader) (*http.Response, error)
 	CreateBlob(ctx context.Context, body CreateBlobJSONRequestBody) (*http.Response, error)
 	CreateWidget(ctx context.Context, params *CreateWidgetParams, body CreateWidgetJSONRequestBody) (*http.Response, error)
 	GetWidget(ctx context.Context, id string) (*http.Response, error)
@@ -142,6 +143,15 @@ func (c *Client) GetWidget(ctx context.Context, id string) (*http.Response, erro
 
 func (c *Client) CreateBlob(ctx context.Context, body CreateBlobJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateBlobRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateWidgetWithBody(ctx context.Context, params *CreateWidgetParams, contentType string, body io.Reader) (*http.Response, error) {
+	req, err := NewCreateWidgetRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -188,6 +198,14 @@ func (c *ClientWithResponses) CreateBlobWithResponse(ctx context.Context, body C
 		return nil, err
 	}
 	return &CreateBlobResponse{Body: nil}, rsp.Body.Close()
+}
+
+func (c *ClientWithResponses) CreateWidgetWithBodyWithResponse(ctx context.Context, params *CreateWidgetParams, contentType string, body io.Reader) (*CreateWidgetResponse, error) {
+	rsp, err := c.CreateWidgetWithBody(ctx, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	return &CreateWidgetResponse{Body: nil}, rsp.Body.Close()
 }
 
 func NewCreateBlobRequest(server string, body CreateBlobJSONRequestBody) (*http.Request, error) {

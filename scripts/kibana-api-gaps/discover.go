@@ -99,9 +99,15 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 func reachedOperations(reach *reachResult, idx *opIndex) []opSpec {
 	byKey := make(map[string]opSpec)
 	for name := range reach.Methods {
-		if spec, ok := idx.method(name); ok {
-			byKey[operationKey(spec.Method, spec.Path)] = spec
+		spec, ok := idx.method(name)
+		if !ok {
+			continue
 		}
+		key := operationKey(spec.Method, spec.Path)
+		if existing, seen := byKey[key]; seen && !existing.RawBody {
+			continue
+		}
+		byKey[key] = spec
 	}
 	keys := make([]string, 0, len(byKey))
 	for key := range byKey {
@@ -126,6 +132,10 @@ func operationGaps(doc *oasDoc, w *walker, spec opSpec) ([]propGap, error) {
 		return nil, err
 	}
 	if op.Body == nil {
+		return props, nil
+	}
+	if spec.RawBody {
+		w.skip(op.Body.pointer, "raw request body: the client method takes an opaque io.Reader")
 		return props, nil
 	}
 	if spec.BodyType == nil {
