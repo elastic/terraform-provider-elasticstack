@@ -450,6 +450,65 @@ func BuildConfig(pm models.PanelModel, olPanel *kbapi.KibanaHTTPAPIsKbnDashboard
 	}
 }
 
+// sharedOptionsListBuildFields points at the destination API struct fields shared by both the
+// Field and ES|QL variants (identical Go types on both
+// KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchema{Field,Esql}), letting buildFieldConfig
+// and buildEsqlConfig populate them through one implementation. SearchTechnique, SelectedOptions,
+// and Sort are deliberately excluded: each API variant declares its own named enum/struct type for
+// them, so those branches keep their own conversion code.
+type sharedOptionsListBuildFields struct {
+	Title             **string
+	UseGlobalFilters  **bool
+	IgnoreValidations **bool
+	SingleSelect      **bool
+	Exclude           **bool
+	ExistsSelected    **bool
+	RunPastTimeout    **bool
+	DisplaySettings   **displaySettingsAPI
+}
+
+// sharedOptionsListModelFields mirrors sharedOptionsListBuildFields on the TF model side.
+type sharedOptionsListModelFields struct {
+	Title             *types.String
+	UseGlobalFilters  *types.Bool
+	IgnoreValidations *types.Bool
+	SingleSelect      *types.Bool
+	Exclude           *types.Bool
+	ExistsSelected    *types.Bool
+	RunPastTimeout    *types.Bool
+	DisplaySettings   *models.OptionsListControlDisplaySettingsModel
+}
+
+// populateSharedOptionsListFieldsToAPI writes the by_field/by_esql attributes common to both
+// branches into the destination API struct, leaving a field unset (so the wire omits it) when the
+// corresponding model value is unknown/null.
+func populateSharedOptionsListFieldsToAPI(dst sharedOptionsListBuildFields, cfg sharedOptionsListModelFields) {
+	if typeutils.IsKnown(*cfg.Title) {
+		*dst.Title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(*cfg.UseGlobalFilters) {
+		*dst.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.IgnoreValidations) {
+		*dst.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.SingleSelect) {
+		*dst.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.Exclude) {
+		*dst.Exclude = cfg.Exclude.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.ExistsSelected) {
+		*dst.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.RunPastTimeout) {
+		*dst.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
+	}
+	if cfg.DisplaySettings != nil {
+		*dst.DisplaySettings = buildDisplaySettingsAPI(cfg.DisplaySettings)
+	}
+}
+
 // buildFieldConfig writes the by_field branch into the API payload. values_source is not exposed as
 // a user-facing attribute for this branch, and is deliberately left unset on the wire: Kibana treats
 // it as "field" when absent (its default for legacy controls, per design D2), and Kibana versions
@@ -461,36 +520,17 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 	c.DataViewId = cfg.DataViewID.ValueString()
 	c.FieldName = cfg.FieldName.ValueString()
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.SingleSelect) {
-		c.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.Exclude) {
-		c.Exclude = cfg.Exclude.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.ExistsSelected) {
-		c.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.RunPastTimeout) {
-		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
-	}
+	populateSharedOptionsListFieldsToAPI(
+		sharedOptionsListBuildFields{&c.Title, &c.UseGlobalFilters, &c.IgnoreValidations, &c.SingleSelect, &c.Exclude, &c.ExistsSelected, &c.RunPastTimeout, &c.DisplaySettings},
+		sharedOptionsListModelFields{&cfg.Title, &cfg.UseGlobalFilters, &cfg.IgnoreValidations, &cfg.SingleSelect, &cfg.Exclude, &cfg.ExistsSelected, &cfg.RunPastTimeout, cfg.DisplaySettings},
+	)
+
 	if typeutils.IsKnown(cfg.SearchTechnique) {
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
 	}
 	if typeutils.IsKnown(cfg.SelectedOptions) {
 		c.SelectedOptions = buildSelectedOptionsField(cfg.SelectedOptions)
-	}
-	if cfg.DisplaySettings != nil {
-		c.DisplaySettings = buildDisplaySettingsAPI(cfg.DisplaySettings)
 	}
 	if cfg.Sort != nil {
 		c.Sort = &struct {
@@ -521,36 +561,17 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 	c.EsqlQuery = cfg.EsqlQuery.ValueString()
 	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.SingleSelect) {
-		c.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.Exclude) {
-		c.Exclude = cfg.Exclude.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.ExistsSelected) {
-		c.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.RunPastTimeout) {
-		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
-	}
+	populateSharedOptionsListFieldsToAPI(
+		sharedOptionsListBuildFields{&c.Title, &c.UseGlobalFilters, &c.IgnoreValidations, &c.SingleSelect, &c.Exclude, &c.ExistsSelected, &c.RunPastTimeout, &c.DisplaySettings},
+		sharedOptionsListModelFields{&cfg.Title, &cfg.UseGlobalFilters, &cfg.IgnoreValidations, &cfg.SingleSelect, &cfg.Exclude, &cfg.ExistsSelected, &cfg.RunPastTimeout, cfg.DisplaySettings},
+	)
+
 	if typeutils.IsKnown(cfg.SearchTechnique) {
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
 	}
 	if typeutils.IsKnown(cfg.SelectedOptions) {
 		c.SelectedOptions = buildSelectedOptionsEsql(cfg.SelectedOptions)
-	}
-	if cfg.DisplaySettings != nil {
-		c.DisplaySettings = buildDisplaySettingsAPI(cfg.DisplaySettings)
 	}
 	if cfg.Sort != nil {
 		c.Sort = &struct {

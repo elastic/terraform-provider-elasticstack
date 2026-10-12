@@ -240,22 +240,10 @@ func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi
 	// dashboardacctest.MinControlByFieldEsqlUnionSupport) reject the property entirely if present.
 	// Omitting it keeps by_field writes compatible with every Kibana version this resource supports.
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.Value) {
-		c.Value = stringListToAPI(cfg.Value)
-	}
-	if typeutils.IsKnown(cfg.Step) {
-		v := cfg.Step.ValueFloat32()
-		c.Step = &v
-	}
+	populateRangeSliderSharedFieldsToAPI(
+		rangeSliderSharedBuildFields{&c.Title, &c.UseGlobalFilters, &c.IgnoreValidations, &c.Value, &c.Step},
+		rangeSliderSharedFields{&cfg.Title, &cfg.UseGlobalFilters, &cfg.IgnoreValidations, &cfg.Value, &cfg.Step},
+	)
 
 	if rsPanel.Config == nil {
 		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
@@ -277,22 +265,10 @@ func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.K
 	// hardcoded here rather than derived from the (already-validated) model string.
 	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.Value) {
-		c.Value = stringListToAPI(cfg.Value)
-	}
-	if typeutils.IsKnown(cfg.Step) {
-		v := cfg.Step.ValueFloat32()
-		c.Step = &v
-	}
+	populateRangeSliderSharedFieldsToAPI(
+		rangeSliderSharedBuildFields{&c.Title, &c.UseGlobalFilters, &c.IgnoreValidations, &c.Value, &c.Step},
+		rangeSliderSharedFields{&cfg.Title, &cfg.UseGlobalFilters, &cfg.IgnoreValidations, &cfg.Value, &cfg.Step},
+	)
 
 	if rsPanel.Config == nil {
 		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
@@ -303,6 +279,40 @@ func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.K
 		return diags
 	}
 	return nil
+}
+
+// rangeSliderSharedBuildFields points at the destination API struct fields shared by both the
+// Field and ES|QL variants (identical Go types on both
+// KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchema{Field,Esql}), letting buildFieldConfig
+// and buildEsqlConfig populate them through one implementation.
+type rangeSliderSharedBuildFields struct {
+	Title             **string
+	UseGlobalFilters  **bool
+	IgnoreValidations **bool
+	Value             **[]string
+	Step              **float32
+}
+
+// populateRangeSliderSharedFieldsToAPI writes the by_field/by_esql attributes common to both
+// branches into the destination API struct, leaving a field unset (so the wire omits it) when the
+// corresponding model value is unknown/null.
+func populateRangeSliderSharedFieldsToAPI(dst rangeSliderSharedBuildFields, cfg rangeSliderSharedFields) {
+	if typeutils.IsKnown(*cfg.Title) {
+		*dst.Title = cfg.Title.ValueStringPointer()
+	}
+	if typeutils.IsKnown(*cfg.UseGlobalFilters) {
+		*dst.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.IgnoreValidations) {
+		*dst.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
+	}
+	if typeutils.IsKnown(*cfg.Value) {
+		*dst.Value = stringListToAPI(*cfg.Value)
+	}
+	if typeutils.IsKnown(*cfg.Step) {
+		v := cfg.Step.ValueFloat32()
+		*dst.Step = &v
+	}
 }
 
 func stringListToAPI(l types.List) *[]string {
