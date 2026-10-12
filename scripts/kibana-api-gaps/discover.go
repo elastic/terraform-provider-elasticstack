@@ -18,9 +18,11 @@
 package main
 
 import (
+	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -64,7 +66,7 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 		NoOperations:  []string{},
 	}
 	defined := buildDefinedTypes(cfg.module.byPath[cfg.kbapiPath])
-	groups := make(map[string]*Group)
+	groups := make(map[string]*groupBuild)
 	for _, res := range cfg.resources {
 		reach := computeReach(cfg.module, cfg.kbapiPath, res.PkgPath)
 		ops := reachedOperations(reach, opIdx)
@@ -80,16 +82,17 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 				return nil, fmt.Errorf("%s: %w", res.Name, err)
 			}
 			for _, prop := range props {
-				if err := addGroup(groups, cfg.oas, res.Name, prop); err != nil {
-					return nil, err
-				}
+				addGroup(groups, res.Name, prop)
 			}
 		}
 		out.SkippedShapes = append(out.SkippedShapes, w.skipped...)
 	}
-	for _, g := range groups {
-		sort.Slice(g.Members, func(i, j int) bool { return g.Members[i].Field < g.Members[j].Field })
-		out.Groups = append(out.Groups, *g)
+	for _, build := range groups {
+		group, err := build.finish(cfg.oas)
+		if err != nil {
+			return nil, err
+		}
+		out.Groups = append(out.Groups, group)
 	}
 	sort.Slice(out.Groups, func(i, j int) bool { return out.Groups[i].Key < out.Groups[j].Key })
 	sort.Strings(out.NoOperations)
@@ -149,44 +152,45 @@ func operationGaps(doc *oasDoc, w *walker, spec opSpec) ([]propGap, error) {
 	return append(props, bodyProps...), nil
 }
 
-func addGroup(groups map[string]*Group, doc *oasDoc, resource string, prop propGap) error {
+// groupBuild accumulates a group across operations; required is OR-ed so the result does not
+// depend on operation order.
+type groupBuild struct {
+	group    Group
+	ref      schemaRef
+	required bool
+}
+
+func addGroup(groups map[string]*groupBuild, resource string, prop propGap) {
 	if len(prop.members) == 0 {
-		return nil
+		return
 	}
 	key := resource + "#" + prop.ref.pointer
-	group, ok := groups[key]
+	build, ok := groups[key]
 	if !ok {
-		fp, err := fieldFingerprint(doc, prop)
-		if err != nil {
-			return err
+		build = &groupBuild{
+			group: Group{Key: key, Resource: resource, Field: prop.name, Pointer: prop.ref.pointer},
+			ref:   prop.ref,
 		}
-		group = &Group{Key: key, Resource: resource, Field: prop.name, Pointer: prop.ref.pointer, Fingerprint: fp}
-		groups[key] = group
+		groups[key] = build
 	}
+	build.required = build.required || prop.required
 	for _, member := range prop.members {
-		if !hasMember(group, member) {
-			group.Members = append(group.Members, member)
+		if !slices.Contains(build.group.Members, member) {
+			build.group.Members = append(build.group.Members, member)
 		}
 	}
-	return nil
 }
 
-func hasMember(group *Group, member Member) bool {
-	for _, existing := range group.Members {
-		if existing.Field == member.Field && existing.Pointer == member.Pointer {
-			return true
-		}
-	}
-	return false
-}
-
-// fieldFingerprint is the structure fingerprint of the top-level field, including whether its
-// parent requires it.
-func fieldFingerprint(doc *oasDoc, prop propGap) (string, error) {
-	structure, err := doc.fingerprint(prop.ref)
+func (b *groupBuild) finish(doc *oasDoc) (Group, error) {
+	structure, err := doc.fingerprint(b.ref)
 	if err != nil {
-		return "", err
+		return Group{}, err
 	}
-	sum := sha256.Sum256([]byte(structure + "|" + strings.ToLower(fmt.Sprint(prop.required))))
-	return hex.EncodeToString(sum[:]), nil
+	sum := sha256.Sum256([]byte(structure + "|" + strings.ToLower(fmt.Sprint(b.required))))
+	group := b.group
+	group.Fingerprint = hex.EncodeToString(sum[:])
+	slices.SortFunc(group.Members, func(a, b Member) int {
+		return cmp.Or(strings.Compare(a.Field, b.Field), strings.Compare(a.Pointer, b.Pointer), strings.Compare(a.XState, b.XState))
+	})
+	return group, nil
 }

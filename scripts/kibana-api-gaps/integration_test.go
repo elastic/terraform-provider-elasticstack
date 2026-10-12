@@ -38,19 +38,25 @@ func TestDiscoverRealRepository(t *testing.T) {
 	}
 	ensureFilteredOAS(t)
 
-	first, err := discoverRepository(repoRoot, nil)
+	doc, err := loadOAS(filepath.Join(repoRoot, "generated/kbapi/oas-filtered.yaml"))
+	require.NoError(t, err)
+	mod, err := loadModule(repoRoot, "./...")
+	require.NoError(t, err)
+	resources := discoverResources()
+
+	first, err := discoverLoaded(mod, doc, resources)
 	require.NoError(t, err, "no json tag may be left unmatched")
 
 	analysed := first.Operations
 	assert.Contains(t, analysed, "elasticstack_fleet_agent_policy")
 	assert.Contains(t, analysed, "elasticstack_apm_agent_configuration")
 
-	for _, name := range entitycoreResources(t) {
+	for _, name := range entitycoreResources(t, mod, resources) {
 		assert.Positive(t, analysed[name], "entitycore-based resource %s maps no operation", name)
 	}
 
 	registered := make(map[string]bool)
-	for _, r := range discoverResources() {
+	for _, r := range resources {
 		registered[r.Name] = true
 	}
 	for name := range analysed {
@@ -65,7 +71,7 @@ func TestDiscoverRealRepository(t *testing.T) {
 	}
 	assert.NotEmpty(t, first.Groups)
 
-	second, err := discoverRepository(repoRoot, nil)
+	second, err := discoverLoaded(mod, doc, resources)
 	require.NoError(t, err)
 	firstJSON, err := json.Marshal(first)
 	require.NoError(t, err)
@@ -84,13 +90,10 @@ func ensureFilteredOAS(t *testing.T) {
 	require.NoError(t, err, string(out))
 }
 
-func entitycoreResources(t *testing.T) []string {
+func entitycoreResources(t *testing.T, mod *loadedModule, resources []Resource) []string {
 	t.Helper()
-	mod, err := loadModule(repoRoot, "./...")
-	require.NoError(t, err)
-
 	var names []string
-	for _, r := range discoverResources() {
+	for _, r := range resources {
 		pkg, ok := mod.byPath[r.PkgPath]
 		require.True(t, ok, r.PkgPath)
 		for _, obj := range pkg.TypesInfo.Uses {

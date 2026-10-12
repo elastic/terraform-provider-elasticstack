@@ -31,6 +31,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 const kbapiPkgSuffix = "/generated/kbapi"
@@ -76,6 +77,10 @@ func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 // discoverRepository runs discovery over the provider and generated/kbapi/oas-filtered.yaml
 // of the repository at root, optionally restricted to the named resources.
 func discoverRepository(root string, only []string) (*Discovery, error) {
+	resources, err := selectResources(discoverResources(), only)
+	if err != nil {
+		return nil, err
+	}
 	doc, err := loadOAS(filepath.Join(root, "generated/kbapi/oas-filtered.yaml"))
 	if err != nil {
 		return nil, err
@@ -84,24 +89,44 @@ func discoverRepository(root string, only []string) (*Discovery, error) {
 	if err != nil {
 		return nil, err
 	}
-	kbapiPath, err := findKbapiPackage(mod)
+	return discoverLoaded(mod, doc, resources)
+}
+
+func discoverLoaded(mod *loadedModule, doc *oasDoc, resources []Resource) (*Discovery, error) {
+	kbapiPath, err := findPackageBySuffix(mod, kbapiPkgSuffix)
 	if err != nil {
 		return nil, err
-	}
-	var resources []Resource
-	for _, r := range discoverResources() {
-		if len(only) == 0 || slices.Contains(only, r.Name) {
-			resources = append(resources, r)
-		}
 	}
 	return discover(discoverConfig{module: mod, kbapiPath: kbapiPath, oas: doc, resources: resources})
 }
 
-func findKbapiPackage(mod *loadedModule) (string, error) {
+// selectResources restricts resources to the named ones; an unknown name is an error so a
+// typo cannot silently produce an empty report.
+func selectResources(all []Resource, only []string) ([]Resource, error) {
+	if len(only) == 0 {
+		return all, nil
+	}
+	var selected []Resource
+	for _, name := range only {
+		i := slices.IndexFunc(all, func(r Resource) bool { return r.Name == name })
+		if i < 0 {
+			return nil, fmt.Errorf("unknown resource %q", name)
+		}
+		selected = append(selected, all[i])
+	}
+	return selected, nil
+}
+
+func findPackageBySuffix(mod *loadedModule, suffix string) (string, error) {
+	var matches []string
 	for path := range mod.byPath {
-		if len(path) > len(kbapiPkgSuffix) && path[len(path)-len(kbapiPkgSuffix):] == kbapiPkgSuffix {
-			return path, nil
+		if strings.HasSuffix(path, suffix) {
+			matches = append(matches, path)
 		}
 	}
-	return "", errors.New("generated/kbapi package not found in the module")
+	if len(matches) != 1 {
+		slices.Sort(matches)
+		return "", fmt.Errorf("expected exactly one package ending in %s, found %v", suffix, matches)
+	}
+	return matches[0], nil
 }

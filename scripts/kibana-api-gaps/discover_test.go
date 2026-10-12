@@ -257,3 +257,25 @@ func TestDiscoverTreatsWholeValueConversionsCopiesAndUnionPassthroughAsCovered(t
 		}
 	}
 }
+
+func TestAddGroupMergesRequiredAcrossOperationsRegardlessOfOrder(t *testing.T) {
+	doc, err := loadOAS(fixtureOAS)
+	require.NoError(t, err)
+	node, err := doc.lookup(widgetPtr + "name")
+	require.NoError(t, err)
+	prop := func(required bool) propGap {
+		return propGap{name: "name", ref: schemaRef{node: node, pointer: widgetPtr + "name"}, required: required, members: []Member{{Field: "name", Pointer: widgetPtr + "name"}}}
+	}
+	fingerprintAfter := func(order ...bool) string {
+		groups := make(map[string]*groupBuild)
+		for _, required := range order {
+			addGroup(groups, "r", prop(required))
+		}
+		group, err := groups["r#"+widgetPtr+"name"].finish(doc)
+		require.NoError(t, err)
+		return group.Fingerprint
+	}
+
+	assert.Equal(t, fingerprintAfter(false, true), fingerprintAfter(true, false))
+	assert.NotEqual(t, fingerprintAfter(false), fingerprintAfter(true))
+}
