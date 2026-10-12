@@ -65,3 +65,16 @@ func TestOpIndexReportsClientMethodWithoutConstructor(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Orphan")
 }
+
+func TestOpIndexReportsConstructorDelegationCycles(t *testing.T) {
+	mod := loadFixture(t, "testdata/badctor")
+	_, err := buildOpIndex(mod.pkg(t, "badctor/cycle"))
+	require.Error(t, err)
+}
+
+func TestOpIndexReportsConstructorsWithoutLiteralPath(t *testing.T) {
+	mod := loadFixture(t, "testdata/badctor")
+	_, err := buildOpIndex(mod.pkg(t, "badctor/literalless"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "NewOpRequest")
+}

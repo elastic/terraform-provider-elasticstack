@@ -279,3 +279,23 @@ func TestAddGroupMergesRequiredAcrossOperationsRegardlessOfOrder(t *testing.T) {
 	assert.Equal(t, fingerprintAfter(false, true), fingerprintAfter(true, false))
 	assert.NotEqual(t, fingerprintAfter(false), fingerprintAfter(true))
 }
+
+func TestDiscoverFailsWhenUnionBranchCountDiffersFromGoVariants(t *testing.T) {
+	oas := fixtureOASVariant(t, "            - $ref: '#/components/schemas/SourceB'\n",
+		"            - $ref: '#/components/schemas/SourceB'\n            - $ref: '#/components/schemas/SourceB'\n")
+	_, err := discoverFixture(t, oas)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "oneOf/anyOf branches")
+}
+
+func TestDiscoverFailsOnGoFieldWithoutOASProperty(t *testing.T) {
+	_, err := discoverFixture(t, fixtureOASVariant(t, "        retries: {type: integer}\n", ""))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "retries")
+}
+
+func TestDiscoverFailsWhenAClientOperationIsMissingFromTheOAS(t *testing.T) {
+	_, err := discoverFixture(t, fixtureOASVariant(t, "  /api/blobs:", "  /api/blobz:"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "missing from the OpenAPI document")
+}

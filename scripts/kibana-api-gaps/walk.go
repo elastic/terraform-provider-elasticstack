@@ -188,6 +188,12 @@ func (w *walker) gaps(ref schemaRef, goType types.Type, path string) ([]Member, 
 		return w.elementGaps(v, u.Elem(), path)
 	case *types.Struct:
 		return w.objectGaps(v, t, ref.pointer, path)
+	case *types.Map:
+		w.skip(ref.pointer, "map-valued field: dynamic keys cannot be proven unused")
+		return nil, nil
+	case *types.Interface:
+		w.skip(ref.pointer, "untyped value: contents cannot be proven unused")
+		return nil, nil
 	default:
 		return nil, nil
 	}

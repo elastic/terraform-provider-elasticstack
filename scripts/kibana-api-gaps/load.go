@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -37,6 +38,8 @@ type loadedModule struct {
 func loadModule(dir string, patterns ...string) (*loadedModule, error) {
 	cfg := &packages.Config{
 		Dir: dir,
+		// Pinned so results do not depend on the host platform.
+		Env: append(os.Environ(), "GOOS=linux", "GOARCH=amd64", "CGO_ENABLED=0"),
 		Mode: packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports |
 			packages.NeedTypes | packages.NeedTypesInfo | packages.NeedSyntax,
 	}

@@ -32,6 +32,8 @@ paths:
       responses: {"200": {description: ok}}
   /api/gadgets:
     post:
+      deprecated: true
+      x-state: Added in 9.1.0
       operationId: createGadget
       requestBody:
         content:

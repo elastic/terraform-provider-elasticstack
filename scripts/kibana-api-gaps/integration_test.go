@@ -66,9 +66,13 @@ func TestDiscoverRealRepository(t *testing.T) {
 		assert.NotContains(t, analysed, name)
 	}
 	assert.NotEmpty(t, first.NoOperations, "Elasticsearch-only resources must be reported as not analysed")
-	for name := range analysed {
-		assert.False(t, strings.HasPrefix(name, "elasticstack_elasticsearch_"), "Elasticsearch resource %s was analysed", name)
+	for _, r := range resources {
+		if _, isAnalysed := analysed[r.Name]; isAnalysed {
+			assert.False(t, strings.HasPrefix(r.Name, "elasticstack_elasticsearch_"), "Elasticsearch resource %s was analysed", r.Name)
+			assert.NotContains(t, r.PkgPath, "/internal/elasticsearch/", "Elasticsearch package %s was analysed", r.PkgPath)
+		}
 	}
+	assertProviderClientsPackageIsKbapiFree(t, mod)
 	assert.NotEmpty(t, first.Groups)
 
 	second, err := discoverLoaded(mod, doc, resources)
@@ -105,4 +109,19 @@ func entitycoreResources(t *testing.T, mod *loadedModule, resources []Resource) 
 	}
 	require.NotEmpty(t, names)
 	return names
+}
+
+// The reachability walk never expands into the provider's client plumbing package; this keeps
+// that cut sound by asserting the package cannot hide field usage or operations.
+func assertProviderClientsPackageIsKbapiFree(t *testing.T, mod *loadedModule) {
+	t.Helper()
+	kbapiPath, err := findPackageBySuffix(mod, kbapiPkgSuffix)
+	require.NoError(t, err)
+	clientsPath, err := findPackageBySuffix(mod, providerClientsPkgSuffix)
+	require.NoError(t, err)
+	for _, obj := range mod.byPath[clientsPath].TypesInfo.Uses {
+		if obj.Pkg() != nil && obj.Pkg().Path() == kbapiPath {
+			t.Errorf("%s references kbapi object %s; the reach cut at it is no longer sound", clientsPath, obj.Name())
+		}
+	}
 }

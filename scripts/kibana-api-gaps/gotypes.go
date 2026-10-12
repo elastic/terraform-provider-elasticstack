@@ -33,11 +33,14 @@ type jsonField struct {
 // structs the way encoding/json does. Fields hidden from JSON ("-") and unexported fields are skipped.
 func jsonFields(t types.Type) map[string]jsonField {
 	out := make(map[string]jsonField)
-	collectJSONFields(t, out)
+	depths := make(map[string]int)
+	collectJSONFields(t, out, depths, 0)
 	return out
 }
 
-func collectJSONFields(t types.Type, out map[string]jsonField) {
+// collectJSONFields follows encoding/json precedence: when embedded structs expose the same
+// JSON name, the shallowest field wins.
+func collectJSONFields(t types.Type, out map[string]jsonField, depths map[string]int, depth int) {
 	t = derefType(t)
 	st, ok := t.Underlying().(*types.Struct)
 	if !ok {
@@ -50,7 +53,7 @@ func collectJSONFields(t types.Type, out map[string]jsonField) {
 			continue
 		}
 		if field.Anonymous() && name == "" {
-			collectJSONFields(field.Type(), out)
+			collectJSONFields(field.Type(), out, depths, depth+1)
 			continue
 		}
 		if !field.Exported() {
@@ -59,6 +62,10 @@ func collectJSONFields(t types.Type, out map[string]jsonField) {
 		if name == "" {
 			name = field.Name()
 		}
+		if existing, seen := depths[name]; seen && existing <= depth {
+			continue
+		}
+		depths[name] = depth
 		out[name] = jsonField{field: field, owner: t}
 	}
 }
