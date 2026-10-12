@@ -37,7 +37,7 @@ type Model struct {
 	SpaceID        types.String `tfsdk:"space_id"`
 	Title          types.String `tfsdk:"title"`
 	Enabled        types.Bool   `tfsdk:"enabled"`
-	CustomSchedule Schedule     `tfsdk:"custom_schedule"`
+	CustomSchedule *Schedule    `tfsdk:"custom_schedule"`
 	Scope          *Scope       `tfsdk:"scope"`
 }
 
@@ -154,7 +154,7 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response kbapi.KibanaHTTPA
 	m.Title = types.StringValue(response.Title)
 	m.Enabled = types.BoolValue(response.Enabled)
 
-	m.CustomSchedule = Schedule{
+	m.CustomSchedule = &Schedule{
 		Start:    types.StringValue(response.Schedule.Custom.Start),
 		Duration: kibanacustomtypes.NewAlertingDurationValue(response.Schedule.Custom.Duration),
 		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),

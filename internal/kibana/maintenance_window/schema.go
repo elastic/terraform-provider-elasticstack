@@ -28,7 +28,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -81,6 +83,7 @@ func getSchema(_ context.Context) schema.Schema {
 						Description: "The timezone of the schedule. The default timezone is UTC.",
 						Optional:    true,
 						Computed:    true,
+						Default:     stringdefault.StaticString("UTC"),
 					},
 					"recurring": schema.SingleNestedAttribute{
 						Description: descCustomSchedule,
@@ -142,6 +145,15 @@ func getSchema(_ context.Context) schema.Schema {
 			"scope": schema.SingleNestedAttribute{
 				Description: "An object that narrows the scope of what is affected by this maintenance window.",
 				Optional:    true,
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.RequiresReplaceIf(
+						func(_ context.Context, req planmodifier.ObjectRequest, resp *objectplanmodifier.RequiresReplaceIfFuncResponse) {
+							resp.RequiresReplace = !req.StateValue.IsNull() && req.PlanValue.IsNull()
+						},
+						"The API cannot clear scope in place once set; removing it requires destroying and recreating the resource.",
+						"The API cannot clear scope in place once set; removing it requires destroying and recreating the resource.",
+					),
+				},
 				Attributes: map[string]schema.Attribute{
 					"alerting": schema.SingleNestedAttribute{
 						Description: descCustomSchedule,
