@@ -19,6 +19,7 @@ package main
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 )
 
@@ -134,39 +135,43 @@ func (u *usageSet) opaque(t types.Type) bool {
 }
 
 // markConversion records a conversion into a type as a whole-value construction: the fields
-// were populated somewhere this analysis cannot see.
+// were populated somewhere this analysis cannot see. Converting a composite literal is not
+// one, because the literal's own keys are already counted.
 func (u *usageSet) markConversion(info *types.Info, call *ast.CallExpr) {
-	if tv, ok := info.Types[call.Fun]; ok && tv.IsType() {
-		u.markOpaqueType(tv.Type)
+	tv, ok := info.Types[call.Fun]
+	if !ok || !tv.IsType() || len(call.Args) != 1 || isCompositeLiteral(call.Args[0]) {
+		return
 	}
+	u.markOpaqueType(tv.Type)
 }
 
-// markWholeValueCopy records struct assignments such as `*out = *in` or `dst = src`, which copy
-// every field from a value built elsewhere. Literals and calls are not copies: the fields set
-// by the code that builds them are counted through its own selections and literals.
+func isCompositeLiteral(expr ast.Expr) bool {
+	expr = ast.Unparen(expr)
+	if unary, ok := expr.(*ast.UnaryExpr); ok && unary.Op == token.AND {
+		expr = ast.Unparen(unary.X)
+	}
+	_, ok := expr.(*ast.CompositeLit)
+	return ok
+}
+
+// markWholeValueCopy records dereferencing copies such as `*out = *in`, which overwrite every
+// field of a value with one built elsewhere. Plain variable and selector copies are not
+// treated as opaque: they would hide real gaps whenever any local struct is copied.
 func (u *usageSet) markWholeValueCopy(info *types.Info, assign *ast.AssignStmt) {
 	if len(assign.Lhs) != len(assign.Rhs) {
 		return
 	}
-	for i, rhs := range assign.Rhs {
-		switch ast.Unparen(rhs).(type) {
-		case *ast.StarExpr, *ast.Ident, *ast.SelectorExpr:
-		default:
+	for i, lhs := range assign.Lhs {
+		if _, deref := ast.Unparen(lhs).(*ast.StarExpr); !deref {
 			continue
 		}
-		t := info.TypeOf(assign.Lhs[i])
-		if t == nil {
+		if _, deref := ast.Unparen(assign.Rhs[i]).(*ast.StarExpr); !deref {
 			continue
 		}
-		if _, isStruct := derefType(t).Underlying().(*types.Struct); isStruct && !isPointer(t) {
+		if t := info.TypeOf(lhs); t != nil {
 			u.markOpaqueType(t)
 		}
 	}
-}
-
-func isPointer(t types.Type) bool {
-	_, ok := types.Unalias(t).(*types.Pointer)
-	return ok
 }
 
 // markJSONCall records the targets of whole-value encoding/json decodes as opaque types.

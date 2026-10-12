@@ -41,6 +41,7 @@ var fixtureResources = []Resource{
 	{Name: "fx_nokibana", PkgPath: "fixture/nokibana"},
 	{Name: "fx_blobs", PkgPath: "fixture/blobs"},
 	{Name: "fx_rawbody", PkgPath: "fixture/rawbody"},
+	{Name: "fx_nohide", PkgPath: "fixture/nohide"},
 	{Name: "fx_convert", PkgPath: "fixture/convert"},
 	{Name: "fx_copyassign", PkgPath: "fixture/copyassign"},
 	{Name: "fx_unionpass", PkgPath: "fixture/unionpass"},
@@ -222,20 +223,34 @@ func TestDiscoverWalksUnionRequestBodiesBranchByBranch(t *testing.T) {
 	assert.NotNil(t, d.group("fx_blobs#/components/schemas/BlobNumber/properties/number"))
 }
 
-func TestDiscoverTreatsRawBodyClientMethodsAsCoveredButKeepsQueryParameters(t *testing.T) {
+func TestDiscoverWalksRawBodyClientMethodsWhenTheTypedBodyIsKnown(t *testing.T) {
 	d := mustDiscover(t)
-	for _, g := range d.Groups {
-		if g.Resource == "fx_rawbody" {
-			assert.NotContains(t, g.Pointer, "/components/schemas/Widget/", g.Key)
-		}
-	}
+	assert.NotNil(t, d.group("fx_rawbody#"+widgetPtr+"description"))
 	assert.NotNil(t, d.group("fx_rawbody#/paths/~1api~1widgets/post/parameters/dry_run"))
 	assert.Nil(t, d.group("fx_rawbody#/paths/~1api~1widgets/post/parameters/verbose"))
-	var recorded bool
-	for _, s := range d.SkippedShapes {
-		recorded = recorded || (s.Resource == "fx_rawbody" && strings.Contains(s.Shape, "raw"))
-	}
-	assert.True(t, recorded)
+}
+
+func TestDiscoverSkipsRawBodiesWithoutATypedBody(t *testing.T) {
+	doc, err := loadOAS(fixtureOAS)
+	require.NoError(t, err)
+	op, ok := doc.operation("POST", "/api/blobs")
+	require.True(t, ok)
+	w := newWalker(doc, &usageSet{}, nil, "r")
+
+	_, err = operationGaps(doc, w, opSpec{Method: "POST", Path: "/api/blobs", RawBody: true})
+	require.NoError(t, err)
+	require.Len(t, w.skipped, 1)
+	assert.Equal(t, op.Body.pointer, w.skipped[0].Pointer)
+}
+
+func TestDiscoverDoesNotHideGapsBehindLocalCopiesOrLiteralConversions(t *testing.T) {
+	d := mustDiscover(t)
+	labels := d.group("fx_nohide#" + widgetPtr + "labels")
+	require.NotNil(t, labels)
+	assert.Equal(t, []string{"labels[].value"}, memberFields(labels))
+	settings := d.group("fx_nohide#" + widgetPtr + "settings")
+	require.NotNil(t, settings)
+	assert.Equal(t, []string{"settings.retries"}, memberFields(settings))
 }
 
 func TestDiscoverKeysQueryParameterGroupsByNameNotPosition(t *testing.T) {

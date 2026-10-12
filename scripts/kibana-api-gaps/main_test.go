@@ -31,6 +31,10 @@ func TestSelectResourcesRejectsUnknownNames(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []Resource{{Name: "b"}}, got)
 
+	got, err = selectResources(all, []string{"b", "a", "b"})
+	require.NoError(t, err)
+	assert.Equal(t, all, got, "duplicates collapse and canonical order is kept")
+
 	_, err = selectResources(all, []string{"typo"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "typo")

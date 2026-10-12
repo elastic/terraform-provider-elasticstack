@@ -259,6 +259,8 @@ func (w *reachWalker) implementations(iface *types.Interface, name string) []*ty
 			break
 		}
 	}
+	// Generic types are matched by method name only, so this intentionally over-includes:
+	// usage is over-counted, which can only hide gaps, never invent them.
 	for _, generic := range w.idx.genericTypes {
 		for method := range generic.Methods() {
 			if method.Name() == name {

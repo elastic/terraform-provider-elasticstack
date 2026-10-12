@@ -137,12 +137,12 @@ func operationGaps(doc *oasDoc, w *walker, spec opSpec) ([]propGap, error) {
 	if op.Body == nil {
 		return props, nil
 	}
-	if spec.RawBody {
-		w.skip(op.Body.pointer, "raw request body: the client method takes an opaque io.Reader")
-		return props, nil
-	}
 	if spec.BodyType == nil {
-		w.skip(op.Body.pointer, "request body without a JSON request body type in the client")
+		shape := "request body without a JSON request body type in the client"
+		if spec.RawBody {
+			shape = "raw request body: the client method takes an opaque io.Reader and no typed body is known"
+		}
+		w.skip(op.Body.pointer, shape)
 		return props, nil
 	}
 	bodyProps, err := w.bodyGaps(*op.Body, spec.BodyType)

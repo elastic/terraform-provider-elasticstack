@@ -106,15 +106,12 @@ func selectResources(all []Resource, only []string) ([]Resource, error) {
 	if len(only) == 0 {
 		return all, nil
 	}
-	var selected []Resource
 	for _, name := range only {
-		i := slices.IndexFunc(all, func(r Resource) bool { return r.Name == name })
-		if i < 0 {
+		if !slices.ContainsFunc(all, func(r Resource) bool { return r.Name == name }) {
 			return nil, fmt.Errorf("unknown resource %q", name)
 		}
-		selected = append(selected, all[i])
 	}
-	return selected, nil
+	return slices.DeleteFunc(slices.Clone(all), func(r Resource) bool { return !slices.Contains(only, r.Name) }), nil
 }
 
 func findPackageBySuffix(mod *loadedModule, suffix string) (string, error) {
