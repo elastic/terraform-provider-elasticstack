@@ -19,7 +19,8 @@
 //
 // Usage:
 //
-//	go run ./scripts/kibana-api-gaps discover [--repo .] [--resource elasticstack_kibana_slo]
+//	go run ./scripts/kibana-api-gaps discover [--repo .] [--slots 3] [--memory state.json] [--report report.json] [--resource elasticstack_kibana_slo]
+//	go run ./scripts/kibana-api-gaps record --report report.json --verdicts verdicts.json --memory state.json
 package main
 
 import (
@@ -34,7 +35,10 @@ import (
 	"strings"
 )
 
-const kbapiPkgSuffix = "/generated/kbapi"
+const (
+	kbapiPkgSuffix = "/generated/kbapi"
+	defaultSlots   = 3
+)
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout, os.Stderr); err != nil {
@@ -44,11 +48,16 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
-	if len(args) == 0 || args[0] != "discover" {
-		fmt.Fprintln(stderr, "Usage: kibana-api-gaps discover [--repo dir] [--resource name]...")
-		return errors.New("unknown or missing command")
+	if len(args) > 0 {
+		switch args[0] {
+		case "discover":
+			return cmdDiscover(args[1:], stdout, stderr)
+		case "record":
+			return cmdRecord(args[1:], stdout, stderr)
+		}
 	}
-	return cmdDiscover(args[1:], stdout, stderr)
+	fmt.Fprintln(stderr, "Usage: kibana-api-gaps discover|record [flags]")
+	return errors.New("unknown or missing command")
 }
 
 type stringList []string
@@ -56,12 +65,24 @@ type stringList []string
 func (s *stringList) String() string     { return fmt.Sprint([]string(*s)) }
 func (s *stringList) Set(v string) error { *s = append(*s, v); return nil }
 
+type discoverOptions struct {
+	slots       int
+	memoryPath  string
+	reportPath  string
+	summaryPath string
+}
+
 func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 	fs := flag.NewFlagSet("discover", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	repo := fs.String("repo", ".", "repository root")
 	var only stringList
 	fs.Var(&only, "resource", "restrict discovery to this resource type name (repeatable)")
+	var opts discoverOptions
+	fs.IntVar(&opts.slots, "slots", defaultSlots, "available issue slots; zero disables triage")
+	fs.StringVar(&opts.memoryPath, "memory", "state.json", "memory state.json; an absent file is an empty memory")
+	fs.StringVar(&opts.reportPath, "report", "report.json", "where to write report.json")
+	fs.StringVar(&opts.summaryPath, "summary", os.Getenv("GITHUB_STEP_SUMMARY"), "file to append a step summary to")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -69,9 +90,26 @@ func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	enc := json.NewEncoder(stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	return finishDiscover(result, opts, stdout)
+}
+
+// finishDiscover turns a discovery result into report.json, a step summary, and a one-line status.
+func finishDiscover(result *Discovery, opts discoverOptions, stdout io.Writer) error {
+	mem, err := loadMemory(opts.memoryPath)
+	if err != nil {
+		return err
+	}
+	report := buildReport(result, mem, opts.slots)
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(opts.reportPath, append(data, '\n'), 0o600); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "wrote report to %s; run_agent=%t gate_reason=%s queue=%d groups=%d\n",
+		opts.reportPath, report.RunAgent, report.GateReason, len(report.Queue), len(report.Groups))
+	return appendSummary(opts.summaryPath, renderDiscoverSummary(report))
 }
 
 // discoverRepository runs discovery over the provider and generated/kbapi/oas-filtered.yaml
