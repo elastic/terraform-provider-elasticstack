@@ -25,7 +25,10 @@ test('constants match the per-input limit and part count', () => {
 });
 
 test('sentinels are not HTML comments, which the platform strips', () => {
-  assert.doesNotMatch(PART_START + PART_END, /<!--|-->/);
+  // Plain substring checks (not a comment-matching regex): the sentinels must contain no comment markers.
+  for (const marker of ['<!', '-->', '--!>']) {
+    assert.ok(!(PART_START + PART_END).includes(marker), `sentinels must not contain ${marker}`);
+  }
   assert.equal(PART_START, PART_START.trim());
   assert.equal(PART_END, PART_END.trim());
 });
