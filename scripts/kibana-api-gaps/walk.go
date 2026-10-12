@@ -62,6 +62,20 @@ func newWalker(doc *oasDoc, usage *usageSet, defined definedTypes, resource stri
 	return &walker{doc: doc, usage: usage, defined: defined, resource: resource, active: make(map[string]bool)}
 }
 
+// isOpaque also checks the type a defined type was declared from, since JSON decoding may
+// target either.
+func (w *walker) isOpaque(t types.Type) bool {
+	if w.usage.opaque(t) {
+		return true
+	}
+	if named, ok := t.(*types.Named); ok {
+		if source, ok := w.defined[named.Obj()]; ok {
+			return w.usage.opaque(source)
+		}
+	}
+	return false
+}
+
 func (w *walker) skip(pointer, shape string) {
 	w.skipped = append(w.skipped, SkippedShape{Resource: w.resource, Pointer: pointer, Shape: shape})
 }
@@ -78,6 +92,9 @@ func (w *walker) bodyGaps(schema schemaRef, goType types.Type) ([]propGap, error
 		return nil, nil
 	}
 	t := derefType(goType)
+	if w.isOpaque(t) {
+		return nil, nil
+	}
 	if variants, ok := w.defined.unionVariants(t); ok {
 		return w.unionBodyGaps(v, variants, schema.pointer)
 	}
@@ -154,7 +171,7 @@ func (w *walker) gaps(ref schemaRef, goType types.Type, path string) ([]Member, 
 		return nil, nil
 	}
 	t := derefType(goType)
-	if w.usage.opaque(t) {
+	if w.isOpaque(t) {
 		return nil, nil
 	}
 	key := v.pointer + "|" + types.TypeString(t, nil)
@@ -251,12 +268,12 @@ func (w *walker) structGaps(v *schemaView, t types.Type, path string) ([]propGap
 			if err != nil {
 				return nil, err
 			}
-		} else if !w.usage.opaque(t) {
+		} else if !w.isOpaque(t) {
 			gap.members = []Member{{Field: fieldPath, Pointer: prop.ref.pointer, XState: child.xState}}
 		}
 		out = append(out, gap)
 	}
-	if !w.usage.opaque(t) {
+	if !w.isOpaque(t) {
 		if err := unmatchedGoFields(fields, matched, t); err != nil {
 			return nil, err
 		}

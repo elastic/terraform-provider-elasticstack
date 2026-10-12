@@ -45,7 +45,10 @@ func collectUsage(reach *reachResult) *usageSet {
 			case *ast.CompositeLit:
 				u.markCompositeLit(info, node)
 			case *ast.CallExpr:
+				u.markConversion(info, node)
 				u.markJSONCall(info, node)
+			case *ast.AssignStmt:
+				u.markWholeValueCopy(info, node)
 			}
 			return true
 		})
@@ -130,7 +133,45 @@ func (u *usageSet) opaque(t types.Type) bool {
 	return ok && u.opaqueNamed[named.Origin().Obj()]
 }
 
-// markJSONCall records the targets of whole-value encoding/json calls as opaque types.
+// markConversion records a conversion into a type as a whole-value construction: the fields
+// were populated somewhere this analysis cannot see.
+func (u *usageSet) markConversion(info *types.Info, call *ast.CallExpr) {
+	if tv, ok := info.Types[call.Fun]; ok && tv.IsType() {
+		u.markOpaqueType(tv.Type)
+	}
+}
+
+// markWholeValueCopy records struct assignments such as `*out = *in` or `dst = src`, which copy
+// every field from a value built elsewhere. Literals and calls are not copies: the fields set
+// by the code that builds them are counted through its own selections and literals.
+func (u *usageSet) markWholeValueCopy(info *types.Info, assign *ast.AssignStmt) {
+	if len(assign.Lhs) != len(assign.Rhs) {
+		return
+	}
+	for i, rhs := range assign.Rhs {
+		switch ast.Unparen(rhs).(type) {
+		case *ast.StarExpr, *ast.Ident, *ast.SelectorExpr:
+		default:
+			continue
+		}
+		t := info.TypeOf(assign.Lhs[i])
+		if t == nil {
+			continue
+		}
+		if _, isStruct := derefType(t).Underlying().(*types.Struct); isStruct && !isPointer(t) {
+			u.markOpaqueType(t)
+		}
+	}
+}
+
+func isPointer(t types.Type) bool {
+	_, ok := types.Unalias(t).(*types.Pointer)
+	return ok
+}
+
+// markJSONCall records the targets of whole-value encoding/json decodes as opaque types.
+// Marshal and Encode are deliberately ignored: serialising a value says nothing about who
+// populated its fields, so counting them would hide real gaps.
 func (u *usageSet) markJSONCall(info *types.Info, call *ast.CallExpr) {
 	argIndex, ok := jsonValueArgument(info, call)
 	if !ok || argIndex >= len(call.Args) {
@@ -156,7 +197,7 @@ func jsonValueArgument(info *types.Info, call *ast.CallExpr) (int, bool) {
 	switch fn.Name() {
 	case "Unmarshal":
 		return 1, true
-	case "Marshal", "MarshalIndent", "Decode", "Encode":
+	case "Decode":
 		return 0, true
 	default:
 		return 0, false

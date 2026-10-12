@@ -41,6 +41,9 @@ var fixtureResources = []Resource{
 	{Name: "fx_nokibana", PkgPath: "fixture/nokibana"},
 	{Name: "fx_blobs", PkgPath: "fixture/blobs"},
 	{Name: "fx_rawbody", PkgPath: "fixture/rawbody"},
+	{Name: "fx_convert", PkgPath: "fixture/convert"},
+	{Name: "fx_copyassign", PkgPath: "fixture/copyassign"},
+	{Name: "fx_unionpass", PkgPath: "fixture/unionpass"},
 }
 
 func fixtureOASVariant(t *testing.T, oldText, newText string) string {
@@ -242,4 +245,15 @@ func TestDiscoverKeysQueryParameterGroupsByNameNotPosition(t *testing.T) {
 	d, err := discoverFixture(t, reordered)
 	require.NoError(t, err)
 	assert.NotNil(t, d.group("fx_direct#/paths/~1api~1widgets/post/parameters/verbose"))
+}
+
+func TestDiscoverTreatsWholeValueConversionsCopiesAndUnionPassthroughAsCovered(t *testing.T) {
+	d := mustDiscover(t)
+	for _, resource := range []string{"fx_convert", "fx_copyassign", "fx_unionpass"} {
+		for _, g := range d.Groups {
+			if g.Resource == resource {
+				assert.NotContains(t, g.Pointer, "/components/schemas/", g.Key)
+			}
+		}
+	}
 }
