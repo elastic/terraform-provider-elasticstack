@@ -304,12 +304,6 @@ test('isConverged: 84 fails and 85 passes the threshold', () => {
   assert.equal(gate.isConverged([85], []), true);
 });
 
-test('extractMetadata takes the last JSON fence', () => {
-  const meta = metadata();
-  const body = `intro\n\n\`\`\`json\n{"a": 1}\n\`\`\`\n\n${commentBody(meta)}`;
-  assert.deepEqual(gate.extractMetadata(body), { metadata: meta });
-});
-
 test('validateGate accepts metadata without open_questions', () => {
   const meta = metadata();
   delete meta.open_questions;
@@ -373,4 +367,89 @@ test('a body with a leaked part sentinel inside the metadata fence fails safe to
   const result = gate.evaluateBody(leaked);
   assert.equal(result.label, HUMAN);
   assert.match(result.reasons.join(' '), /parse/i);
+});
+
+// ---------------------------------------------------------------------------
+// Metadata envelope
+// ---------------------------------------------------------------------------
+
+const fence = (json) => `\`\`\`json\n${json}\n\`\`\``;
+const readyJson = () => JSON.stringify(metadata(), null, 2);
+const envelope = (inner, { open = '<details>', summary = '<summary>🤖 Pipeline metadata</summary>' } = {}) =>
+  `${open}\n${summary}\n\n${inner}\n\n</details>\n`;
+const doc = (tail) => `## Implementation research\n\n### References\n\n- a\n\n${tail}`;
+
+const positiveEnvelopes = {
+  'normal envelope': envelope(fence(readyJson())),
+  'details open attribute': envelope(fence(readyJson()), { open: '<details open>' }),
+  'uppercase tags and extra whitespace': envelope(fence(readyJson()), { open: '<DETAILS   class="x" >', summary: '  <SUMMARY>   Pipeline Metadata  </SUMMARY>' }),
+  'summary without emoji': envelope(fence(readyJson()), { summary: '<summary>Pipeline metadata</summary>' }),
+};
+
+for (const [name, tail] of Object.entries(positiveEnvelopes)) {
+  test(`envelope accepted: ${name}`, () => {
+    assert.deepEqual(gate.extractMetadata(doc(tail)), { metadata: metadata() });
+    assert.equal(gate.evaluateBody(doc(tail)).label, READY);
+  });
+}
+
+test('an earlier unrelated json fence outside the envelope is ignored', () => {
+  const body = doc(`${fence('{"a": 1}')}\n\n${envelope(fence(readyJson()))}`);
+  assert.deepEqual(gate.extractMetadata(body), { metadata: metadata() });
+});
+
+test('an unrelated details block before the metadata envelope is ignored', () => {
+  const body = doc(`<details>\n<summary>Notes</summary>\n\n${fence('{"a": 1}')}\n</details>\n\n${envelope(fence(readyJson()))}`);
+  assert.deepEqual(gate.extractMetadata(body), { metadata: metadata() });
+});
+
+const negativeEnvelopes = {
+  'gate-shaped JSON in a plain fence with no details': fence(readyJson()),
+  'gate-shaped fence after an empty envelope': `${envelope('')}\n${fence(readyJson())}`,
+  'gate-shaped fence after a bad envelope': `${envelope(fence('{ not json'))}\n${fence(readyJson())}`,
+  'two envelopes': `${envelope(fence(readyJson()))}\n${envelope(fence(readyJson()))}`,
+  'two json fences in one envelope': envelope(`${fence(readyJson())}\n\n${fence(readyJson())}`),
+  'empty envelope': envelope(''),
+  'envelope with invalid JSON': envelope(fence('{ not json')),
+  'details with a different summary': envelope(fence(readyJson()), { summary: '<summary>Notes</summary>' }),
+  'closing details text inside a code fence': `<details>\n<summary>🤖 Pipeline metadata</summary>\n\n\`\`\`json\n${readyJson().replace('"outcome"', '"x": "</details>", "outcome"')}\n\`\`\`\n\n</details>\n${fence(readyJson())}`,
+  'unclosed envelope': `<details>\n<summary>🤖 Pipeline metadata</summary>\n\n${fence(readyJson())}\n`,
+};
+
+for (const [name, tail] of Object.entries(negativeEnvelopes)) {
+  test(`envelope rejected, fails safe: ${name}`, () => {
+    const result = gate.evaluateBody(doc(tail));
+    if (name === 'closing details text inside a code fence') {
+      assert.equal(result.label, READY, 'a closer inside a fence must not end the envelope');
+      return;
+    }
+    assert.equal(result.label, HUMAN);
+    assert.ok(result.reasons.length > 0);
+  });
+}
+
+test('a summary line inside a code fence does not open the metadata envelope', () => {
+  const body = doc(`${fence('{"a": 1}\n<details>\n<summary>Pipeline metadata</summary>')}\n\n${fence(readyJson())}`);
+  assert.equal(gate.evaluateBody(body).label, HUMAN);
+});
+
+test('nested details inside the envelope are tracked by depth', () => {
+  const body = doc(`<details>\n<summary>🤖 Pipeline metadata</summary>\n<details>\n<summary>inner</summary>\n</details>\n${fence(readyJson())}\n</details>\n`);
+  assert.deepEqual(gate.extractMetadata(body), { metadata: metadata() });
+});
+
+test('the override rewrite edits only the envelope JSON, not other fences', () => {
+  const decoy = JSON.stringify({ gate: { outcome: READY } });
+  const meta = metadata({ gate: { checklist: { grounded: false, mapped: true, compatible: true, versioned: true, testable: true, idiomatic: true } } });
+  const body = doc(`${fence(decoy)}\n\n${envelope(fence(JSON.stringify(meta, null, 2)))}`);
+  const corrected = gate.applyOverride(body, gate.evaluateBody(body));
+  assert.ok(corrected.includes(fence(decoy)), 'decoy fence untouched');
+  assert.equal(gate.extractMetadata(corrected).metadata.gate.outcome, HUMAN);
+});
+
+test('the override rewrite never rewrites a fence outside the envelope when the envelope is invalid', () => {
+  const decoy = fence(JSON.stringify(metadata({ gate: { outcome: READY } })));
+  const body = doc(decoy);
+  const corrected = gate.applyOverride(body, gate.evaluateBody(body));
+  assert.ok(corrected.includes(decoy));
 });

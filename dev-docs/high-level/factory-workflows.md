@@ -86,7 +86,7 @@ The done gate has two parts:
 - **Hard checklist** (all must pass): Grounded, Mapped, Compatible, Versioned, Testable, Idiomatic. `Versioned` passes with a sourced minimum version and a named gating strategy, or with an explicitly disclosed unsourced version plus a conservative gating strategy and a confirming probe; inaccurate claims about repository enforcement fail Grounded instead.
 - **Convergence**: the final critic score is at least 85, and either the last 2 rounds both scored at least 85 or the critic has no actionable feedback. The loop runs at most 5 rounds, within a 50-minute self-budget (the job times out at 60 minutes). More rounds raise cost and run time; `--autocompact 250k` is the context margin.
 
-The comment includes a `### Quality gate` section (outcome line, checklist table, score, rounds, and outstanding feedback when human review is needed) and metadata schema `1.1` with a `gate` object. The section is informational; `change-factory` must not treat it as scope.
+The gate reads metadata only from the single `json` fence inside the single "Pipeline metadata" `<details>` element; anything else fails safe to `research-needs-human`. The comment includes a `### Quality gate` section (outcome line, checklist table, score, rounds, and outstanding feedback when human review is needed) and metadata schema `1.1` with a `gate` object. The section is informational; `change-factory` must not treat it as scope.
 
 ### Outcome labels
 

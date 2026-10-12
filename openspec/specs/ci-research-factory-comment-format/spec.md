@@ -80,7 +80,7 @@ The `### Quality gate` section is informational. Downstream consumers SHALL NOT 
 - **AND** the section SHALL show a critic score of at least 85
 
 ### Requirement: Comment contains a structured machine-readable JSON metadata block
-After the `### References` section, the comment SHALL contain an HTML `<details>` element with a `<summary>` of exactly "🤖 Pipeline metadata". Inside the `<details>` element, the comment SHALL contain exactly one fenced JSON code block (language `json`) containing a machine-readable representation of the research. The JSON object SHALL conform to the following schema:
+After the `### References` section, the comment SHALL contain an HTML `<details>` element with a `<summary>` of exactly "🤖 Pipeline metadata". The comment SHALL contain exactly one such `<details>` element, and inside it exactly one fenced JSON code block (language `json`) containing a machine-readable representation of the research. The metadata SHALL be this single JSON fence inside the single "Pipeline metadata" `<details>`; JSON anywhere else in the comment SHALL NOT be treated as metadata. The JSON object SHALL conform to the following schema:
 
 - `schema_version` (string, required): the version of this metadata schema. Every comment produced by the workflow SHALL use `"1.1"`. Version `"1.0"` exists only in comments written before this change.
 - `recommendation` (object, required):
@@ -118,6 +118,12 @@ All fields present in schema version `"1.0"` SHALL keep their meaning, so consum
 - **AND** inside that element there SHALL be a fenced JSON block conforming to the schema above
 - **AND** the JSON `recommendation.spine` SHALL match the human-readable `### Recommendation` content
 - **AND** the JSON `gate` values SHALL match the human-readable `### Quality gate` content
+
+#### Scenario: Metadata outside the required envelope fails safe
+- **GIVEN** a research comment whose only gate-shaped JSON is in a fenced block that is not inside a "Pipeline metadata" `<details>` element, or which has more than one such element, or more than one JSON block inside it
+- **WHEN** the label is derived
+- **THEN** the issue SHALL be labelled `research-needs-human`
+- **AND** the JSON outside the envelope SHALL NOT be used as metadata
 
 #### Scenario: JSON metadata is hidden from human readers by default
 - **GIVEN** a research comment produced by the workflow

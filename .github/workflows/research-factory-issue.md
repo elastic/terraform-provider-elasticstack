@@ -644,7 +644,8 @@ containing a fenced JSON block (language `json`) that conforms to the
 
 Ensure the JSON metadata, including `gate`, is internally consistent with the human-readable subsections above it.
 The `<details>` element SHALL be closed by default so that human readers do not see the JSON unless
-they expand it.
+they expand it. Include exactly one such `<details>` element and exactly one `json` fenced block inside it;
+the workflow reads metadata only from that block.
 
 ## Free-will semantics
 

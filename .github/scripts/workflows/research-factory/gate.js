@@ -11,7 +11,9 @@ const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CONFIDENCES = ['high', 'medium', 'low'];
 const SCOPES = ['small', 'medium', 'large', 'unknown'];
 const REFERENCE_TYPES = ['elastic-docs', 'repo-path', 'issue', 'pr', 'external'];
-const JSON_FENCE = /```json[^\S\n]*\n([\s\S]*?)\n[^\S\n]*```/g;
+const FENCE_LINE = /^ {0,3}(`{3,}|~{3,})([^`~\s]*)?(.*)$/;
+const DETAILS_TAG = /<details(?:\s[^>]*)?>|<\/details\s*>/gi;
+const SUMMARY_TEXT = /<summary(?:\s[^>]*)?>(.*?)<\/summary\s*>/i;
 const OUTCOME_LINE = /^\*\*Outcome:\*\* .*$/m;
 const QUALITY_GATE_HEADING = /^### Quality gate[^\S\n]*$/m;
 const REFERENCES_HEADING = /^### References[^\S\n]*$/m;
@@ -20,17 +22,91 @@ function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function extractFences(body) {
-  return [...String(body ?? '').matchAll(JSON_FENCE)];
+function fenceOf(line) {
+  const m = FENCE_LINE.exec(line.replace(/\r?\n$/, ''));
+  if (!m) {
+    return null;
+  }
+  const info = `${m[2] || ''}${m[3] || ''}`;
+  if (m[1][0] === '`' && info.includes('`')) {
+    return null;
+  }
+  return { char: m[1][0], length: m[1].length, info: info.trim() };
+}
+
+// Locates the content range of the single json fence inside the single "Pipeline metadata"
+// <details> envelope. Fence-aware: tags inside code fences are ignored.
+function locateMetadata(body) {
+  const text = String(body ?? '');
+  const stack = [];
+  const envelopes = [];
+  let fence = null;
+
+  for (const match of text.matchAll(/[^\n]*\n|[^\n]+/g)) {
+    const line = match[0];
+    const index = match.index;
+    const parsed = fenceOf(line);
+
+    if (fence) {
+      if (parsed && parsed.char === fence.char && parsed.length >= fence.length && parsed.info === '') {
+        if (fence.json && fence.envelope) {
+          const end = text[index - 1] === '\n' ? index - 1 : index;
+          fence.envelope.fences.push({ start: fence.start, end: Math.max(fence.start, text[end - 1] === '\r' ? end - 1 : end) });
+        }
+        fence = null;
+      }
+      continue;
+    }
+    if (parsed) {
+      fence = {
+        ...parsed,
+        json: parsed.info.toLowerCase() === 'json',
+        start: index + line.length,
+        envelope: [...stack].reverse().find((entry) => entry.meta),
+      };
+      continue;
+    }
+
+    const summary = SUMMARY_TEXT.exec(line);
+    for (const tag of line.matchAll(DETAILS_TAG)) {
+      if (tag[0][1] === '/') {
+        const entry = stack.pop();
+        if (entry && entry.meta) {
+          envelopes.push(entry);
+        }
+      } else {
+        stack.push({ meta: false, fences: [], summarySeen: false });
+      }
+    }
+    if (summary && stack.length > 0) {
+      const top = stack[stack.length - 1];
+      if (!top.summarySeen) {
+        top.summarySeen = true;
+        top.meta = /pipeline metadata/i.test(summary[1]);
+      }
+    }
+  }
+
+  if (envelopes.length === 0) {
+    return { error: 'Pipeline metadata <details> envelope not found in comment' };
+  }
+  if (envelopes.length > 1) {
+    return { error: 'multiple Pipeline metadata <details> envelopes found in comment' };
+  }
+  const fences = envelopes[0].fences;
+  if (fences.length !== 1) {
+    return { error: `Pipeline metadata envelope must contain exactly one json block, found ${fences.length}` };
+  }
+  return { start: fences[0].start, end: fences[0].end, text: text.slice(fences[0].start, fences[0].end) };
 }
 
 function extractMetadata(body) {
-  const fences = extractFences(body);
-  if (fences.length === 0) {
-    return { error: 'Pipeline metadata JSON block not found in comment' };
+  const located = locateMetadata(body);
+  if (located.error) {
+    return { error: located.error };
   }
   try {
-    return { metadata: JSON.parse(fences[fences.length - 1][1]) };
+    return { metadata: JSON.parse(located.text) };
   } catch (err) {
     return { error: `Pipeline metadata JSON could not be parsed: ${err.message}` };
   }
@@ -262,14 +338,13 @@ function correctSection(body, result) {
 }
 
 function rewriteReportedOutcome(body, label) {
-  const fences = extractFences(body);
-  if (fences.length === 0) {
+  const located = locateMetadata(body);
+  if (located.error) {
     return body;
   }
-  const last = fences[fences.length - 1];
   let meta;
   try {
-    meta = JSON.parse(last[1]);
+    meta = JSON.parse(located.text);
   } catch {
     return body;
   }
@@ -277,8 +352,7 @@ function rewriteReportedOutcome(body, label) {
     return body;
   }
   meta.gate.outcome = label;
-  const start = last.index + last[0].indexOf(last[1]);
-  return body.slice(0, start) + JSON.stringify(meta, null, 2) + body.slice(start + last[1].length);
+  return body.slice(0, located.start) + JSON.stringify(meta, null, 2) + body.slice(located.end);
 }
 
 function applyOverride(body, result) {

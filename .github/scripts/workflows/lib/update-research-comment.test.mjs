@@ -367,3 +367,13 @@ for (const [name, fn] of sanitizers) {
     assert.equal(env.core.failures.length, 0);
   });
 }
+
+test('gate-shaped JSON in a plain fence without the metadata envelope gets needs-human, not ready', async () => {
+  const meta = readyMetadata();
+  const env = setup({
+    rawBody: `## Implementation research\n\n### References\n\n- a\n\n\`\`\`json\n${JSON.stringify(meta, null, 2)}\n\`\`\`\n`,
+  });
+  await updateResearchComment(env);
+  assert.deepEqual(env.calls[1][1].labels, [HUMAN]);
+  assert.match(env.calls[0][1].body, /overridden by the gate rule/);
+});
