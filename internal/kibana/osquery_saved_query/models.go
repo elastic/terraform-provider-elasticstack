@@ -198,17 +198,7 @@ func intervalFromCreateAPI(interval *kbapi.SecurityOsqueryAPICreateSavedQueryRes
 		return types.Int64Null(), nil
 	}
 
-	if value, err := interval.AsSecurityOsqueryAPICreateSavedQueryResponseDataInterval0(); err == nil {
-		return types.Int64Value(int64(value)), nil
-	}
-
-	if value, err := interval.AsSecurityOsqueryAPICreateSavedQueryResponseDataInterval1(); err == nil {
-		return parseIntervalString(value)
-	}
-
-	return types.Int64Null(), diag.Diagnostics{
-		diag.NewErrorDiagnostic("Invalid interval value", "Create response interval is neither integer nor string."),
-	}
+	return intervalFromOneOf(interval.AsSecurityOsqueryAPICreateSavedQueryResponseDataInterval0, interval.AsSecurityOsqueryAPICreateSavedQueryResponseDataInterval1, "Create")
 }
 
 func intervalFromGetAPI(interval *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResponse_Data_Interval) (types.Int64, diag.Diagnostics) {
@@ -216,17 +206,7 @@ func intervalFromGetAPI(interval *kbapi.SecurityOsqueryAPIFindSavedQueryDetailRe
 		return types.Int64Null(), nil
 	}
 
-	if value, err := interval.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataInterval0(); err == nil {
-		return types.Int64Value(int64(value)), nil
-	}
-
-	if value, err := interval.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataInterval1(); err == nil {
-		return parseIntervalString(value)
-	}
-
-	return types.Int64Null(), diag.Diagnostics{
-		diag.NewErrorDiagnostic("Invalid interval value", "Get response interval is neither integer nor string."),
-	}
+	return intervalFromOneOf(interval.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataInterval0, interval.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataInterval1, "Get")
 }
 
 func intervalFromUpdateAPI(interval *kbapi.SecurityOsqueryAPIUpdateSavedQueryResponse_Data_Interval) (types.Int64, diag.Diagnostics) {
@@ -234,16 +214,22 @@ func intervalFromUpdateAPI(interval *kbapi.SecurityOsqueryAPIUpdateSavedQueryRes
 		return types.Int64Null(), nil
 	}
 
-	if value, err := interval.AsSecurityOsqueryAPIUpdateSavedQueryResponseDataInterval0(); err == nil {
+	return intervalFromOneOf(interval.AsSecurityOsqueryAPIUpdateSavedQueryResponseDataInterval0, interval.AsSecurityOsqueryAPIUpdateSavedQueryResponseDataInterval1, "Update")
+}
+
+// intervalFromOneOf unwraps a generated kbapi oneOf(int, string) interval response into types.Int64.
+// asInt and asString are the generated type's AsXxx0/AsXxx1 accessors; context labels the error message.
+func intervalFromOneOf(asInt func() (int, error), asString func() (string, error), context string) (types.Int64, diag.Diagnostics) {
+	if value, err := asInt(); err == nil {
 		return types.Int64Value(int64(value)), nil
 	}
 
-	if value, err := interval.AsSecurityOsqueryAPIUpdateSavedQueryResponseDataInterval1(); err == nil {
+	if value, err := asString(); err == nil {
 		return parseIntervalString(value)
 	}
 
 	return types.Int64Null(), diag.Diagnostics{
-		diag.NewErrorDiagnostic("Invalid interval value", "Update response interval is neither integer nor string."),
+		diag.NewErrorDiagnostic("Invalid interval value", fmt.Sprintf("%s response interval is neither integer nor string.", context)),
 	}
 }
 
@@ -252,17 +238,7 @@ func versionFromCreateAPI(version *kbapi.SecurityOsqueryAPICreateSavedQueryRespo
 		return types.StringNull(), nil
 	}
 
-	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion1(); err == nil {
-		return typeutils.TrimmedStringishValue(value), nil
-	}
-
-	if value, err := version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion0(); err == nil {
-		return types.StringValue(strconv.Itoa(value)), nil
-	}
-
-	return types.StringNull(), diag.Diagnostics{
-		diag.NewErrorDiagnostic("Invalid version value", "Create response version is neither integer nor string."),
-	}
+	return versionFromOneOf(version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion1, version.AsSecurityOsqueryAPICreateSavedQueryResponseDataVersion0, "Create")
 }
 
 func versionFromGetAPI(version *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResponse_Data_Version) (types.String, diag.Diagnostics) {
@@ -270,16 +246,22 @@ func versionFromGetAPI(version *kbapi.SecurityOsqueryAPIFindSavedQueryDetailResp
 		return types.StringNull(), nil
 	}
 
-	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion1(); err == nil {
+	return versionFromOneOf(version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion1, version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion0, "Get")
+}
+
+// versionFromOneOf unwraps a generated kbapi oneOf(string, int) version response into types.String.
+// asString and asInt are the generated type's AsXxx1/AsXxx0 accessors; context labels the error message.
+func versionFromOneOf(asString func() (string, error), asInt func() (int, error), context string) (types.String, diag.Diagnostics) {
+	if value, err := asString(); err == nil {
 		return typeutils.TrimmedStringishValue(value), nil
 	}
 
-	if value, err := version.AsSecurityOsqueryAPIFindSavedQueryDetailResponseDataVersion0(); err == nil {
+	if value, err := asInt(); err == nil {
 		return types.StringValue(strconv.Itoa(value)), nil
 	}
 
 	return types.StringNull(), diag.Diagnostics{
-		diag.NewErrorDiagnostic("Invalid version value", "Get response version is neither integer nor string."),
+		diag.NewErrorDiagnostic("Invalid version value", fmt.Sprintf("%s response version is neither integer nor string.", context)),
 	}
 }
 
