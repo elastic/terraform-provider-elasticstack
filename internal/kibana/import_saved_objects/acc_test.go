@@ -31,9 +31,32 @@ import (
 
 var minVersionCompatibilityMode = version.Must(version.NewVersion("8.8.0"))
 
+// Kibana 8.2 removed the deprecated top-level SavedObjectsImportFailure.title
+// (elastic/kibana#127043). 8.0 and 8.1 still copy the saved object title there.
+var minVersionWithoutImportErrorTitle = version.Must(version.NewVersion("8.2.0"))
+
 const resourceName = "elasticstack_kibana_import_saved_objects.settings"
 
+const missingRefObjectTitle = "healthchecks"
+
+// missingReferencesErrorTitle is the value Kibana puts on errors.0.title for the
+// missing_ref fixture. Before 8.2 that is the object title; from 8.2 it is empty
+// and only errors.0.meta.title is set.
+func missingReferencesErrorTitle(t *testing.T) string {
+	t.Helper()
+	legacyTitle, err := versionutils.CheckIfVersionIsUnsupported(minVersionWithoutImportErrorTitle)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if legacyTitle {
+		return missingRefObjectTitle
+	}
+	return ""
+}
+
 func TestAccResourceImportSavedObjects(t *testing.T) {
+	errorTitle := missingReferencesErrorTitle(t)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
 		Steps: []resource.TestStep{
@@ -82,11 +105,9 @@ func TestAccResourceImportSavedObjects(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.type"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "errors.0.error.type"),
-					// Kibana's missing_references error does not populate the top-level
-					// "title" field (only errors.0.meta.title is set for this error type).
-					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.title", ""),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.title", errorTitle),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.meta.icon", "visualizeApp"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.meta.title", "healthchecks"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "errors.0.meta.title", missingRefObjectTitle),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_import_saved_objects.settings", "success_results.0.type"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_import_saved_objects.settings", "success_results.0.destination_id", ""),
