@@ -6,31 +6,13 @@ Two conditional-replacement designs were evaluated and rejected (see `design.md`
 
 ## What Changes
 
-- **BREAKING**: `comments` becomes a computed-only attribute (`id`, `comment`, `created_at`, `created_by`) representing the full comment log Kibana has stored for the item, including comments added outside Terraform. Configurations that currently set `comments` will fail to apply and must migrate (see Migration below).
-- Add a new optional `required_comments` attribute: a list of comment-text strings that Terraform ensures are present somewhere in the log. It is a "must contain" set, not the log itself and not an exclusive list. Validated as non-empty, non-whitespace-only strings with no duplicate entries (exact, case-sensitive comparison).
+- **BREAKING**: `comments` becomes a computed-only attribute (`id`, `comment`, `created_at`, `created_by`) representing the full comment log Kibana has stored for the item, including comments added outside Terraform. `created_at` uses the same `2006-01-02T15:04:05.000Z` layout as the item's other audit timestamps. An empty log is null in state. Configurations that currently set `comments` will fail to apply. Users who still want those texts enforced move them onto `required_comments` and delete the `comments` block. The changelog is the only user-facing migration note.
+- Add a new optional `required_comments` attribute: a list of comment-text strings that Terraform ensures are present somewhere in the log. It is a "must contain" set, not the log itself and not an exclusive list. Validated as non-empty, non-whitespace-only strings with no duplicate entries (exact, case-sensitive comparison). A stored text satisfies an entry whether or not Terraform wrote it.
 - **Create**: POST `required_comments`, in configuration order, as `{comment}` entries with no `id`, when the list is non-null and non-empty; omit `comments` from the create body otherwise.
-- **Update**: Before building the update request, compute `missing` as the `required_comments` texts not already present (by exact text) among the item's currently-stored comment texts, determined from a fresh read taken during apply (not from the planned `comments` value). When `missing` is empty, omit `comments` from the PUT body entirely — even when some other attribute changed. When `missing` is non-empty, send only those texts, in configuration order, each as `{comment}` with no `id`; never echo existing comments or ids back to the API.
-- **Plan**: `comments` is planned as unknown whenever apply could append (any configured `required_comments` text not already present in state); otherwise the prior state value is carried through unchanged, so reordering or removing a `required_comments` entry — which never touches the Kibana log — does not perturb `comments` in the plan.
-- **No `RequiresReplace`** is added to either `comments` or `required_comments`. Comment drift of any kind (edit, remove, reorder) never destroys and recreates the exception item under this design — only a change to an existing immutable attribute (e.g. `list_id`, `type`) does, per existing REQ-010 behavior.
+- **Update**: Before building the update request, compute `missing` as the `required_comments` texts not already present (by exact text) among the item's currently-stored comment texts, determined from a fresh read taken during apply (not from the planned `comments` value). When `missing` is empty, omit `comments` from the PUT body entirely — even when some other attribute changed. When `missing` is non-empty, append those texts in configuration order. The body is either only the missing texts, or every stored comment echoed with its `id` in stored order followed by the missing texts. Sending only the missing texts was verified on Kibana 9.4.0. Versions that predate elastic/kibana#145575 (merged 2022-11-18) reject that shape and must use the echo-with-ids body. A stored text is never sent again without its `id`.
+- **Plan**: `comments` is planned as unknown on create, when `required_comments` is unknown, and when any known required text is absent from state. Otherwise the prior state value is carried through unchanged, so reordering or removing a `required_comments` entry — which never touches the Kibana log — does not perturb `comments` in the plan.
+- **No `RequiresReplace`** is added to either `comments` or `required_comments`. A comment-only change never destroys and recreates the exception item. A change to an existing immutable attribute (`space_id`, `item_id`, `list_id`, `type`, `namespace_type`) still replaces the resource under REQ-010, and the new item's initial comments are `required_comments` only.
 - Removing a string from `required_comments` only stops Terraform from requiring it; the corresponding Kibana comment, if it had been created, is left in place. Terraform never issues a delete for an individual comment — the public API offers no such operation.
-
-### Migration (breaking change, one release)
-
-```hcl
-# Before
-comments = [
-  { comment = "Exception approved in ticket SEC-123" },
-  { comment = "Scoped to linux hosts only" },
-]
-
-# After
-required_comments = [
-  "Exception approved in ticket SEC-123",
-  "Scoped to linux hosts only",
-]
-```
-
-Comments already stored in Kibana are unaffected either way; they surface under the now-computed `comments` attribute after the next read. `required_comments` does not need to list them to avoid deletion — nothing in this resource ever deletes a comment.
 
 ## Capabilities
 
@@ -40,8 +22,9 @@ Comments already stored in Kibana are unaffected either way; they surface under 
 
 ## Impact
 
-- **Affected code**: `internal/kibana/security_exception_item/schema.go` (new `required_comments` attribute; `comments` becomes `Computed`-only with new `created_at`/`created_by` nested attributes), `internal/kibana/security_exception_item/models.go` (comment-to-API mapping, missing-text computation, plan modifiers for `comments`), `internal/kibana/security_exception_item/resource.go` or equivalent CRUD wiring (fresh read during update before building the PUT body).
-- **Acceptance tests**: `internal/kibana/security_exception_item/acc_test.go` needs new cases for no-op second apply, incremental append, removal-without-delete, edit-without-delete, out-of-band comment tolerance, and import behavior (see `tasks.md`).
-- **Documentation**: the resource's generated docs (`docs/resources/kibana_security_exception_item.md.tmpl` or equivalent) need a breaking-change note and usage guidance for `required_comments`; out of scope for this proposal-only change but flagged in `tasks.md` for the implementer.
-- **Changelog**: a breaking-change entry is required; flagged in `tasks.md` for the implementer (`make` changelog tooling, not authored here).
+- **Affected code**: `internal/kibana/security_exception_item/schema.go` (new `required_comments` attribute; `comments` becomes `Computed`-only with new `created_at`/`created_by` nested attributes), `internal/kibana/security_exception_item/models.go` (comment-to-API mapping, missing-text computation, plan modifiers for `comments`), and the create/update/read paths (fresh read during update before building the PUT body).
+- **Acceptance tests**: `internal/kibana/security_exception_item/acc_test.go` and `testdata/TestAccResourceExceptionItem_Comments` still configure a `comments` block and must be rewritten. New cases cover no-op second apply, incremental append, removal-without-delete, edit-without-delete, out-of-band comment tolerance, an analyst-written text that already satisfies a requirement, and import behavior (see `tasks.md`).
+- **Documentation**: tfplugindocs generates `docs/resources/kibana_security_exception_item.md` from schema descriptions. Those descriptions cover `required_comments` and the computed `comments` log. They do not include a migration snippet.
+- **Canonical spec**: syncing this change replaces the `comments` stanza in `openspec/specs/kibana-security-exception-item/spec.md` with the schema refinement in the delta.
+- **Changelog**: a breaking-change entry is the user-facing migration note; flagged in `tasks.md` for the implementer (`make` changelog tooling, not authored here).
 - Out of scope: `elasticstack_kibana_security_exception_list` (no `comments` attribute today), editing or deleting a single existing comment (unsupported by the Kibana API), preserving `created_by`/`created_at` across a replacement triggered by an unrelated immutable attribute, enforcing comment order after create, and PR #3572 (the id-passthrough + conditional-`RequiresReplace` fix), which this proposal supersedes and which must not be merged.

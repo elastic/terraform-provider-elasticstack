@@ -17,7 +17,7 @@ The following was measured directly against a local Kibana **9.4.0** stack (`PUT
 | Item that had no comments, then `[{comment: "gamma"}]` | 200 | `gamma` stored. |
 | `[{comment: "alpha"}]` when `alpha` already exists, no id | 200 | A second `alpha` is appended. Kibana does not dedupe. |
 
-An append does not need the existing comments echoed back: sending only the new texts appends them, and echoing existing ids is a valid but unnecessary append. Sending an existing text again with no id is exactly what duplicates the log. Omitting `comments`, or sending `[]`, leaves the log untouched.
+An append does not need the existing comments echoed back on Kibana 9.4.0: sending only the new texts appends them. Echoing existing ids, then the new texts, is also a correct append on that version, and it is the body older servers require (elastic/kibana#145575). Sending an existing text again with no id is exactly what duplicates the log. Omitting `comments`, or sending `[]`, leaves the log untouched.
 
 The sibling resource, `elasticstack_kibana_security_exception_list`, has no `comments` attribute; this change is scoped to `security_exception_item` only.
 
@@ -42,9 +42,13 @@ The sibling resource, `elasticstack_kibana_security_exception_list`, has no `com
 
 `comments` becomes fully computed and reflects whatever Kibana actually stores, including comments added outside Terraform. `required_comments` is a separate, optional, user-owned list of strings; its only contract is that each listed text exists somewhere in the log after apply. Removing a string from `required_comments` stops requiring it going forward but never deletes the underlying Kibana comment, and never forces replacement.
 
-On update, the provider performs a fresh read during apply, computes the set difference between `required_comments` and the currently-stored comment texts (exact, case-sensitive match), and PUTs only the missing texts as `{comment}` entries with no `id`. When nothing is missing, `comments` is omitted from the PUT entirely, so an unrelated attribute change (name, description, entries, tags, …) never touches the comment log.
+On update, the provider performs a fresh read during apply and computes the set difference between `required_comments` and the currently-stored comment texts (exact, case-sensitive match). A stored text counts whether or not Terraform wrote it. When nothing is missing, `comments` is omitted from the PUT entirely, so an unrelated attribute change (name, description, entries, tags, …) never touches the comment log. When something is missing, the PUT appends those texts and never resends a stored text without its `id`.
 
-No `RequiresReplace` plan modifier is added to `comments` or `required_comments`. Comment drift — an edit, a removal, a reorder, or an out-of-band addition — never destroys and recreates the exception item.
+Two bodies do that. Only the missing texts, each `{comment}` with no `id`, was verified on Kibana 9.4.0. Echoing every stored comment as `{id, comment}` in stored order, then the missing texts, was also a correct append on that cluster. elastic/kibana#145575 (merged 2022-11-18) fixed servers that rejected an update whose `comments` array contained only the new comment. This provider still tests stacks back to 8.0.1, which predate that fix, so those versions use the echo-with-ids body. A new comment is never placed before an id-bearing entry.
+
+`comments` is unknown in the plan on create, when `required_comments` is unknown, and when a known required text is absent from state. Otherwise the prior log is kept, so a post-apply read of a longer list cannot disagree with a plan that still showed the old one. An empty API log is stored as null, the same as this resource's other empty collections. Comment `created_at` uses `2006-01-02T15:04:05.000Z`.
+
+No `RequiresReplace` plan modifier is added to `comments` or `required_comments`. Comment drift — an edit, a removal, a reorder, or an out-of-band addition — never destroys and recreates the exception item. A change to `space_id`, `item_id`, `list_id`, `type`, or `namespace_type` still replaces it under the existing rule, and the new item starts from `required_comments` only.
 
 ### Rejected: Option A — id passthrough + `UseStateForUnknown` + conditional `RequiresReplace` on the full list
 
@@ -76,10 +80,12 @@ Copied verbatim from the implementation-research comment; the first (blocking) q
 
 ## Migration Plan
 
-This is a one-release breaking change with no compatibility shim: configurations that set `comments` fail to apply starting with the release that ships this change. No state upgrader copies prior `comments` state into `required_comments` — pre-change state `comments` holds the full server log as of the last read (including out-of-band comments), which is not the same set as the config the user originally wrote, so blindly copying it would silently over-require texts the user never intended to pin. Users migrate by moving each text they want enforced from `comments` into `required_comments` and deleting the `comments` block from configuration (see `proposal.md`). The implementer must add a changelog entry documenting the breaking change (tracked in `tasks.md`; not authored as part of this proposal-only change).
+This is a one-release breaking change with no compatibility shim: configurations that set `comments` fail to apply starting with the release that ships this change. No state upgrader copies prior `comments` state into `required_comments` — pre-change state `comments` holds the full server log as of the last read (including out-of-band comments), which is not the same set as the config the user originally wrote, so blindly copying it would silently over-require texts the user never intended to pin. Users who want a text enforced move it from `comments` onto `required_comments` and delete the `comments` block. Stored comments stay in Kibana either way. The changelog entry is the user-facing migration note. Resource docs do not repeat it.
+
+Syncing this change into `openspec/specs/kibana-security-exception-item/spec.md` also replaces the `comments` stanza in that file's schema block. Requirement deltas do not rewrite that fence on their own, and leaving it in place would describe the old optional list after REQ-025 has changed.
 
 ## Rollout considerations
 
 Flagged for the implementer, out of scope for this proposal:
-- Changelog entry under "Breaking changes".
-- Resource documentation update describing `required_comments`, the append-only nature of `comments`, and the migration snippet.
+- Changelog entry under "Breaking changes", including how to move enforced texts onto `required_comments`.
+- Schema descriptions for `required_comments` and the computed `comments` log. tfplugindocs writes those into `docs/resources/kibana_security_exception_item.md`. No migration snippet in the description or the example.
