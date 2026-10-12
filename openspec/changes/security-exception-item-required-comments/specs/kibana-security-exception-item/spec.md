@@ -25,9 +25,9 @@ The `comments` attribute SHALL be `Computed`-only and SHALL NOT be settable in c
 
 On create, when `required_comments` is known and non-empty, the resource SHALL include each text in the create request body, in configuration order, using the create-comment API shape (`{comment}`, no `id`). When `required_comments` is null or empty, the resource SHALL omit `comments` from the create request body.
 
-On update, the resource SHALL first perform a fresh read of the item's current comments, then compute `missing` as the `required_comments` texts (exact, case-sensitive string match) not present among the currently-stored comment texts. A stored text satisfies a required text whether or not Terraform created that comment. When `missing` is empty, the resource SHALL omit `comments` from the update request body, even when other attributes changed. When `missing` is non-empty, the resource SHALL send a `comments` array that appends exactly those missing texts, in configuration order, each as `{comment}` with no `id`. The resource SHALL NOT include a stored comment text in that array unless the entry also carries that comment's stored `id`. Any id-bearing entries SHALL keep stored order and SHALL precede the new no-id entries.
+On update, the resource SHALL first perform a fresh read of the item's complete current comments, then compute `missing` as the `required_comments` texts (exact, case-sensitive string match) not present among the currently-stored comment texts. If the fresh read fails or cannot return the complete log, the resource SHALL abort the update, return the read diagnostic, and issue no PUT. A stored text satisfies a required text whether or not Terraform created that comment. When `missing` is empty, the resource SHALL omit `comments` from the update request body, even when other attributes changed. When `missing` is non-empty, the resource SHALL discover the Kibana version before choosing the request body; a version-discovery diagnostic SHALL abort before PUT. The resource SHALL send a `comments` array that appends exactly those missing texts, in configuration order, each as `{comment}` with no `id`. The resource SHALL NOT include a stored comment text in that array unless the entry also carries that comment's stored `id`. Any id-bearing entries SHALL keep stored order and SHALL precede the new no-id entries.
 
-Two bodies meet that rule. The first is only the missing texts. The second is every stored comment echoed as `{id, comment}` in stored order, followed by the missing texts. Sending only the missing texts was verified on Kibana 9.4.0. Kibana versions that predate elastic/kibana#145575 (merged 2022-11-18) reject an update whose `comments` array contains only the new comment; on those versions the resource SHALL use the echo-with-ids body. The resource SHALL NOT resend a stored text with no `id`.
+Kibana 8.6.0 and later SHALL use a body containing only the missing texts. Kibana versions before 8.6.0 SHALL use every stored comment echoed as `{id, comment}` in stored order, followed by the missing texts. The resource SHALL NOT resend a stored text with no `id`.
 
 Computed comment `id`, `comment`, `created_at`, and `created_by` values SHALL be populated from the API response on every read, for every comment currently stored (not only ones Terraform created). `created_at` SHALL be formatted as `2006-01-02T15:04:05.000Z`, the same layout as REQ-030. When the API returns no comments, `comments` SHALL be null in state, not an empty list.
 
@@ -62,6 +62,37 @@ Computed comment `id`, `comment`, `created_at`, and `created_by` values SHALL be
 - GIVEN the API returns a comment `created_at`
 - WHEN state is written
 - THEN that value SHALL be the string form `2006-01-02T15:04:05.000Z`
+
+#### Scenario: Failed fresh read aborts update
+
+- GIVEN an update requires comment reconciliation and the fresh read of the complete current log fails
+- WHEN the update runs
+- THEN the resource SHALL return the read diagnostic and SHALL NOT issue a PUT
+
+#### Scenario: Kibana 8.5 uses echo-with-ids update body
+
+- GIVEN a Kibana 8.5 server and at least one required comment is missing
+- WHEN the resource updates the item
+- THEN the update body SHALL echo stored comments with their ids in stored order before appending the missing texts
+
+#### Scenario: Kibana 8.6 or later uses missing-only update body
+
+- GIVEN a Kibana 8.6 or later server and at least one required comment is missing
+- WHEN the resource updates the item
+- THEN the update body SHALL contain only the missing texts
+
+#### Scenario: Version discovery failure aborts update
+
+- GIVEN an update requires a comment append and Kibana version discovery returns a diagnostic
+- WHEN the resource updates the item
+- THEN the resource SHALL return the version diagnostic and SHALL NOT issue a PUT
+
+#### Scenario: Concurrent append may duplicate a required text
+
+- GIVEN a required text is absent during the fresh read and another writer appends it before the provider's PUT
+- WHEN the provider sends its append request
+- THEN Kibana may store the required text more than once because the update is not conditional on `_version`
+- AND the provider SHALL NOT automatically retry a failed append request
 
 ## ADDED Requirements
 
@@ -166,3 +197,14 @@ On import, the resource SHALL populate `comments` from the API read, including e
 - GIVEN an imported resource with `required_comments` subsequently set in configuration to a text not already stored
 - WHEN the next apply runs
 - THEN only that missing text SHALL be appended; previously-stored comments SHALL be left untouched
+
+### Requirement: Upgrade existing comment state (REQ-025f)
+
+The resource SHALL upgrade v0 state to schema version 1 so existing comment objects remain decodable after adding the computed `created_at` and `created_by` attributes. The upgrade SHALL preserve each existing `id` and `comment`, add null values for the new audit attributes, and leave `required_comments` null. It SHALL NOT infer `required_comments` from prior comment state.
+
+#### Scenario: Upgrade v0 comment state
+
+- GIVEN v0 state contains a comment object with `id` and `comment` only
+- WHEN Terraform upgrades the resource state to version 1
+- THEN the comment's `id` and `comment` SHALL be preserved
+- AND `created_at`, `created_by`, and `required_comments` SHALL be null
