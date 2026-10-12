@@ -73,6 +73,36 @@ type CreateWidgetParams struct {
 
 type CreateWidgetJSONRequestBody = Widget
 
+type BlobText struct {
+	Text *string `json:"text,omitempty"`
+}
+
+type BlobNumber struct {
+	Number *int `json:"number,omitempty"`
+}
+
+type CreateBlobJSONBody struct {
+	union json.RawMessage
+}
+
+func (t CreateBlobJSONBody) AsBlobText() (BlobText, error) {
+	var body BlobText
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+func (t CreateBlobJSONBody) AsBlobNumber() (BlobNumber, error) {
+	var body BlobNumber
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+type CreateBlobJSONRequestBody CreateBlobJSONBody
+
+type CreateBlobResponse struct {
+	Body []byte
+}
+
 type GetWidgetResponse struct {
 	Body []byte
 }
@@ -87,6 +117,7 @@ type Client struct {
 }
 
 type ClientInterface interface {
+	CreateBlob(ctx context.Context, body CreateBlobJSONRequestBody) (*http.Response, error)
 	CreateWidget(ctx context.Context, params *CreateWidgetParams, body CreateWidgetJSONRequestBody) (*http.Response, error)
 	GetWidget(ctx context.Context, id string) (*http.Response, error)
 }
@@ -102,6 +133,15 @@ func (c *Client) CreateWidget(ctx context.Context, params *CreateWidgetParams, b
 
 func (c *Client) GetWidget(ctx context.Context, id string) (*http.Response, error) {
 	req, err := NewGetWidgetRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateBlob(ctx context.Context, body CreateBlobJSONRequestBody) (*http.Response, error) {
+	req, err := NewCreateBlobRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +179,27 @@ func NewCreateWidgetRequest(server string, params *CreateWidgetParams, body Crea
 
 func NewCreateWidgetRequestWithBody(server string, _ *CreateWidgetParams, _ string, body io.Reader) (*http.Request, error) {
 	operationPath := fmt.Sprintf("/api/widgets")
+	return http.NewRequest(http.MethodPost, server+operationPath, body)
+}
+
+func (c *ClientWithResponses) CreateBlobWithResponse(ctx context.Context, body CreateBlobJSONRequestBody) (*CreateBlobResponse, error) {
+	rsp, err := c.CreateBlob(ctx, body)
+	if err != nil {
+		return nil, err
+	}
+	return &CreateBlobResponse{Body: nil}, rsp.Body.Close()
+}
+
+func NewCreateBlobRequest(server string, body CreateBlobJSONRequestBody) (*http.Request, error) {
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	return NewCreateBlobRequestWithBody(server, "application/json", bytes.NewReader(buf))
+}
+
+func NewCreateBlobRequestWithBody(server string, _ string, body io.Reader) (*http.Request, error) {
+	operationPath := fmt.Sprintf("/api/blobs")
 	return http.NewRequest(http.MethodPost, server+operationPath, body)
 }
 

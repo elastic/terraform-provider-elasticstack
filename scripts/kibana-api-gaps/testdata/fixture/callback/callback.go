@@ -20,6 +20,11 @@ func create(ctx context.Context, m model) error {
 	retries := 3
 	body := kbapi.CreateWidgetJSONRequestBody{Name: "w", Description: &desc}
 	body.Settings = &kbapi.Settings{Retries: &retries}
+	var source kbapi.Source
+	if err := source.FromSourceA(kbapi.SourceA{A: &desc}); err != nil {
+		return err
+	}
+	body.Source = &source
 	_, err := m.client.CreateWidgetWithResponse(ctx, nil, body)
 	return err
 }

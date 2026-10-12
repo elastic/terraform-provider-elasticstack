@@ -21,9 +21,15 @@ import (
 	"go/ast"
 	"go/types"
 	"slices"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
+
+// providerClientsPkgSuffix identifies the provider's connection and version-check plumbing. It
+// is never expanded: it returns clients rather than calling operations for a resource, and
+// interface resolution would otherwise credit every resource with its version-check calls.
+const providerClientsPkgSuffix = "/internal/clients"
 
 // scanUnit is a piece of syntax reachable from a resource, with the type information to read it.
 type scanUnit struct {
@@ -178,7 +184,7 @@ func (w *reachWalker) follow(fn *types.Func) {
 
 func (w *reachWalker) followDecl(fn *types.Func) {
 	site, ok := w.idx.funcs[fn.Origin()]
-	if !ok {
+	if !ok || strings.HasSuffix(site.pkg.PkgPath, providerClientsPkgSuffix) {
 		return
 	}
 	w.result.Funcs[fn.FullName()] = true

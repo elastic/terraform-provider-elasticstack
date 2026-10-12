@@ -57,3 +57,9 @@ func TestReachResolvesInterfaceCallsToAllImplementations(t *testing.T) {
 func TestReachIsEmptyForResourcesNotCallingTheClient(t *testing.T) {
 	assert.Empty(t, reachFor(t, "nokibana").Methods)
 }
+
+func TestReachDoesNotExpandIntoProviderClientPlumbing(t *testing.T) {
+	r := reachFor(t, "nokibana")
+	assert.False(t, r.Funcs["(*fixture/internal/clients.Scoped).Check"])
+	assert.Empty(t, r.Methods)
+}

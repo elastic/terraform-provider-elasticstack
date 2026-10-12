@@ -216,7 +216,7 @@ func (d *oasDoc) resolve(ref schemaRef) (schemaRef, error) {
 
 func (d *oasDoc) lookup(pointer string) (*yaml.Node, error) {
 	node := d.root
-	for _, token := range strings.Split(strings.TrimPrefix(pointer, "/"), "/") {
+	for token := range strings.SplitSeq(strings.TrimPrefix(pointer, "/"), "/") {
 		token = unescapePointerToken(token)
 		if node.Kind == yaml.SequenceNode {
 			var index int
