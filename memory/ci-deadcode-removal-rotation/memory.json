@@ -1637,6 +1637,12 @@
           "./internal/models"
         ]
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.GetKbActionConnectionBlock",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-10-12T03:18:11.842942484Z",
+      "reason": "build_failed"
     }
   ]
 }
