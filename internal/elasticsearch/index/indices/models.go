@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
 
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
@@ -34,7 +33,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 var (
@@ -251,7 +249,6 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 
 	for _, key := range allSettingsKeys {
 		settingsValue, ok := settingsMap["index."+key]
-		var tfValue attr.Value
 		if !ok {
 			continue
 		}
@@ -267,127 +264,9 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 			}
 		}
 
-		switch a := value.(type) {
-		case types.String:
-			settingStr, ok := settingsValue.(string)
-			if !ok {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"failed to convert setting to string",
-						fmt.Sprintf("expected setting to be a string but got %t", settingsValue),
-					)}
-			}
-			tfValue = basetypes.NewStringValue(settingStr)
-		case types.Bool:
-			if settingStr, ok := settingsValue.(string); ok {
-				settingBool, err := strconv.ParseBool(settingStr)
-				if err != nil {
-					return diag.Diagnostics{
-						diag.NewErrorDiagnostic(
-							"failed to convert setting to bool",
-							fmt.Sprintf("expected setting to be a bool but it was a string. Attempted to parse it but got %s", err.Error()),
-						),
-					}
-				}
-
-				settingsValue = settingBool
-			}
-
-			settingBool, ok := settingsValue.(bool)
-			if !ok {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"failed to convert setting to bool",
-						fmt.Sprintf("expected setting to be a bool but got %t", settingsValue),
-					)}
-			}
-			tfValue = basetypes.NewBoolValue(settingBool)
-		case types.Int64:
-			if settingStr, ok := settingsValue.(string); ok {
-				settingInt, err := strconv.Atoi(settingStr)
-				if err != nil {
-					return diag.Diagnostics{
-						diag.NewErrorDiagnostic(
-							"failed to convert setting to int",
-							fmt.Sprintf("expected setting to be an int but it was a string. Attempted to parse it but got %s", err.Error()),
-						),
-					}
-				}
-
-				settingsValue = int64(settingInt)
-			}
-
-			// json.Unmarshal stores numbers as float64 in map[string]any
-			if settingFloat, ok := settingsValue.(float64); ok {
-				settingsValue = int64(settingFloat)
-			}
-
-			settingInt, ok := settingsValue.(int64)
-			if !ok {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"failed to convert setting to int",
-						fmt.Sprintf("expected setting to be a int but got %t", settingsValue),
-					)}
-			}
-			tfValue = basetypes.NewInt64Value(settingInt)
-		case types.List:
-			elemType := a.ElementType(ctx)
-			if elemType != types.StringType {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"expected list of string",
-						fmt.Sprintf("expected list element type to be string but got %s", elemType),
-					),
-				}
-			}
-
-			elems, ok := settingsValue.([]any)
-			if !ok {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"failed to convert setting to []string",
-						fmt.Sprintf("expected setting to be a []string but got %#v", settingsValue),
-					)}
-			}
-
-			var diags diag.Diagnostics
-			tfValue, diags = basetypes.NewListValueFrom(ctx, basetypes.StringType{}, elems)
-			if diags.HasError() {
-				return diags
-			}
-		case types.Set:
-			elemType := a.ElementType(ctx)
-			if elemType != types.StringType {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"expected set of string",
-						fmt.Sprintf("expected set element type to be string but got %s", elemType),
-					),
-				}
-			}
-
-			elems, ok := settingsValue.([]any)
-			if !ok {
-				return diag.Diagnostics{
-					diag.NewErrorDiagnostic(
-						"failed to convert setting to []string",
-						fmt.Sprintf("expected setting to be a thing []string but got %#v", settingsValue),
-					)}
-			}
-
-			var diags diag.Diagnostics
-			tfValue, diags = basetypes.NewSetValueFrom(ctx, basetypes.StringType{}, elems)
-			if diags.HasError() {
-				return diags
-			}
-		default:
-			return diag.Diagnostics{
-				diag.NewErrorDiagnostic(
-					"unknown value type",
-					fmt.Sprintf("unknown index setting value type %s", a.Type(ctx)),
-				),
-			}
+		tfValue, diags := typeutils.DecodeAnyToAttrValue(ctx, value.Type(ctx), settingsValue)
+		if diags.HasError() {
+			return diags
 		}
 
 		ok = model.setFieldValueByTagValue(tfFieldKey, modelType, tfValue)

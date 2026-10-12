@@ -227,32 +227,16 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 	}
 
 	switch value.(type) {
-	case types.Int64:
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
+	case types.Int64, types.Bool, types.String:
+		decoded := parseFlatSettingJSONValue(raw)
+		if decoded == nil {
 			return
 		}
-		i, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
+		attrValue, diags := typeutils.DecodeAnyToAttrValue(ctx, value.Type(ctx), decoded)
+		if diags.HasError() {
 			return
 		}
-		setTFModelField(model, tfFieldKey, types.Int64Value(i))
-	case types.Bool:
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
-			return
-		}
-		b, err := strconv.ParseBool(s)
-		if err != nil {
-			return
-		}
-		setTFModelField(model, tfFieldKey, types.BoolValue(b))
-	case types.String:
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
-			return
-		}
-		setTFModelField(model, tfFieldKey, types.StringValue(s))
+		setTFModelField(model, tfFieldKey, attrValue)
 	case types.Set:
 		elems := extractStringSliceFromFlatRaw(raw)
 		if len(elems) == 0 {
