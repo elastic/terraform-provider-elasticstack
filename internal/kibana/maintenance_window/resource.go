@@ -20,6 +20,7 @@ package maintenancewindow
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -57,6 +58,12 @@ func NewResource() resource.Resource {
 	return newResource()
 }
 
+// ImportState imports a maintenance window by its plain ID. The ID alone
+// carries no space information, so space_id is explicitly seeded to the
+// default space; Terraform does not apply the schema's Default plan
+// modifier before the post-import Read that resolves the space-scoped API
+// path.
 func (r *Resource) ImportState(ctx context.Context, request resource.ImportStateRequest, response *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), request, response)
+	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("space_id"), clients.DefaultSpaceID)...)
 }
