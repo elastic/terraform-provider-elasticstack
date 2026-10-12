@@ -29,7 +29,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -468,7 +470,10 @@ func waitForAlertingRuleFirstExecution(t *testing.T, spaceID, ruleID string) {
 // contains a slash is still found via a plain rule_id lookup in its own space. See
 // TestRead_compositeRuleIDIsFetchedLiterally in datasource_read_test.go for the unit-level
 // equivalent, and TestAccDataSourceKibanaAlertingRules_compositeRuleID for the not-found case.
+// Kibana rejects a predefined non-UUID rule ID before 8.17.0, so this test is skipped there.
 func TestAccDataSourceKibanaAlertingRules_ruleIDWithSlash(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.17.0")), versionutils.FlavorAny)
+
 	ruleID := "sub/" + uuid.New().String()
 	name := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
 
