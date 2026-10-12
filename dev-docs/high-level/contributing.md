@@ -74,10 +74,11 @@ See [`repo-structure.md`](./repo-structure.md).
 
 The repository uses agentic CI workflows ("factories") that react to labels on issues, plus scheduled scanners that dispatch to them. See [`agentic-development-workflow.md`](./agentic-development-workflow.md) for the overview, [`factory-workflows.md`](./factory-workflows.md) for per-factory details, and [`continuous-quality-workflows.md`](./continuous-quality-workflows.md) for the scheduled scanners that hand off to `code-factory`.
 
-Before the workflows can run, two label sets must exist in repo settings:
+Before the workflows can run, three label sets must exist in repo settings:
 
 - **Trigger labels** applied by maintainers: `research-factory`, `reproducer-factory`, `change-factory`, `code-factory`.
 - **Phase labels** applied by the workflows themselves: `phase-research`, `phase-reproduction`, `phase-specification`, `phase-coding`.
+- **Outcome labels** applied by `research-factory` after its quality gate: `ready-for-change-factory` and `research-needs-human`. Neither triggers a workflow; they only signal whether a maintainer can promote the research to `change-factory` or must review it first.
 
 ## Releasing (maintainers)
 
