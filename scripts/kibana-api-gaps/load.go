@@ -20,6 +20,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -28,6 +29,9 @@ import (
 type loadedModule struct {
 	pkgs   []*packages.Package
 	byPath map[string]*packages.Package
+
+	indexOnce sync.Once
+	index     *moduleIndex
 }
 
 func loadModule(dir string, patterns ...string) (*loadedModule, error) {
