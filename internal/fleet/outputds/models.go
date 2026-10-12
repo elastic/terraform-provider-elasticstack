@@ -74,70 +74,36 @@ func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.
 	})
 }
 
-// outputAPICommonData holds the fields shared across all output API types so
-// that fromAPICommonFields can serve as the single point of change for the
-// common field mapping logic.
-type outputAPICommonData struct {
-	id                   *string
-	name                 string
-	outputType           string
-	hosts                []string
-	caSha256             *string
-	caTrustedFingerprint *string
-	isDefault            *bool
-	isDefaultMonitoring  *bool
-	configYaml           *string
-}
-
-func (model *outputItemModel) fromAPICommonFields(ctx context.Context, d outputAPICommonData) (diags diag.Diagnostics) {
-	model.ID = types.StringPointerValue(d.id)
-	model.Name = types.StringValue(d.name)
-	model.Type = types.StringValue(d.outputType)
-	model.Hosts = typeutils.SliceToListTypeString(ctx, d.hosts, path.Root("hosts"), &diags)
-	model.CaSha256 = types.StringPointerValue(d.caSha256)
-	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(d.caTrustedFingerprint)
-	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
-	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
-	model.ConfigYaml = types.StringPointerValue(d.configYaml)
+// fromAPICommonFields is the single point of change for the field mapping
+// shared across all output API types. The four fromAPI*Model methods below
+// exist only to adapt each generated kbapi response type's fields into this
+// common call, since Go's type system requires a distinct method per
+// concrete parameter type for fleet.OutputUnionHandlers.
+func (model *outputItemModel) fromAPICommonFields(ctx context.Context, id *string, name, outputType string, hosts []string, caSha256, caTrustedFingerprint *string, isDefault, isDefaultMonitoring *bool, configYaml *string) (diags diag.Diagnostics) {
+	model.ID = types.StringPointerValue(id)
+	model.Name = types.StringValue(name)
+	model.Type = types.StringValue(outputType)
+	model.Hosts = typeutils.SliceToListTypeString(ctx, hosts, path.Root("hosts"), &diags)
+	model.CaSha256 = types.StringPointerValue(caSha256)
+	model.CaTrustedFingerprint = typeutils.NonEmptyStringishPointerValue(caTrustedFingerprint)
+	model.DefaultIntegrations = types.BoolPointerValue(isDefault)
+	model.DefaultMonitoring = types.BoolPointerValue(isDefaultMonitoring)
+	model.ConfigYaml = types.StringPointerValue(configYaml)
 	return
 }
 
-func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseElasticsearch) (diags diag.Diagnostics) {
-	return model.fromAPICommonFields(ctx, outputAPICommonData{
-		id: data.Id, name: data.Name, outputType: string(data.Type),
-		hosts: data.Hosts, caSha256: data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
-		configYaml: data.ConfigYaml,
-	})
+func (model *outputItemModel) fromAPIElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseElasticsearch) diag.Diagnostics {
+	return model.fromAPICommonFields(ctx, data.Id, data.Name, string(data.Type), data.Hosts, data.CaSha256, data.CaTrustedFingerprint, data.IsDefault, data.IsDefaultMonitoring, data.ConfigYaml)
 }
 
-func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseKafka) (diags diag.Diagnostics) {
-	return model.fromAPICommonFields(ctx, outputAPICommonData{
-		id: data.Id, name: data.Name, outputType: string(data.Type),
-		hosts: data.Hosts, caSha256: data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
-		configYaml: data.ConfigYaml,
-	})
+func (model *outputItemModel) fromAPIKafkaModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseKafka) diag.Diagnostics {
+	return model.fromAPICommonFields(ctx, data.Id, data.Name, string(data.Type), data.Hosts, data.CaSha256, data.CaTrustedFingerprint, data.IsDefault, data.IsDefaultMonitoring, data.ConfigYaml)
 }
 
-func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseLogstash) (diags diag.Diagnostics) {
-	return model.fromAPICommonFields(ctx, outputAPICommonData{
-		id: data.Id, name: data.Name, outputType: string(data.Type),
-		hosts: data.Hosts, caSha256: data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
-		configYaml: data.ConfigYaml,
-	})
+func (model *outputItemModel) fromAPILogstashModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseLogstash) diag.Diagnostics {
+	return model.fromAPICommonFields(ctx, data.Id, data.Name, string(data.Type), data.Hosts, data.CaSha256, data.CaTrustedFingerprint, data.IsDefault, data.IsDefaultMonitoring, data.ConfigYaml)
 }
 
-func (model *outputItemModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch) (diags diag.Diagnostics) {
-	return model.fromAPICommonFields(ctx, outputAPICommonData{
-		id: data.Id, name: data.Name, outputType: string(data.Type),
-		hosts: data.Hosts, caSha256: data.CaSha256,
-		caTrustedFingerprint: data.CaTrustedFingerprint,
-		isDefault:            data.IsDefault, isDefaultMonitoring: data.IsDefaultMonitoring,
-		configYaml: data.ConfigYaml,
-	})
+func (model *outputItemModel) fromAPIRemoteElasticsearchModel(ctx context.Context, data *kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch) diag.Diagnostics {
+	return model.fromAPICommonFields(ctx, data.Id, data.Name, string(data.Type), data.Hosts, data.CaSha256, data.CaTrustedFingerprint, data.IsDefault, data.IsDefaultMonitoring, data.ConfigYaml)
 }
