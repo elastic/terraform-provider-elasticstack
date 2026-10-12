@@ -63,3 +63,11 @@ func TestReachDoesNotExpandIntoProviderClientPlumbing(t *testing.T) {
 	assert.False(t, r.Funcs["(*fixture/internal/clients.Scoped).Check"])
 	assert.Empty(t, r.Methods)
 }
+
+func TestReachResolvesInterfaceCallsToGenericImplementations(t *testing.T) {
+	assert.Equal(t, []string{"GetWidgetWithResponse"}, sortedMethods(reachFor(t, "generic")))
+}
+
+func TestReachScansAllMethodsOfReferencedModuleTypes(t *testing.T) {
+	assert.Equal(t, []string{"CreateWidgetWithResponse"}, sortedMethods(reachFor(t, "embed")))
+}

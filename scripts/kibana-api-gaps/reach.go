@@ -56,7 +56,10 @@ type moduleIndex struct {
 	funcs      map[*types.Func]declSite
 	vars       map[*types.Var]declSite
 	namedTypes []*types.Named
-	implCache  map[implKey][]*types.Func
+	// genericTypes cannot be tested with types.Implements without an instantiation, so any
+	// method of a matching name is conservatively included.
+	genericTypes []*types.Named
+	implCache    map[implKey][]*types.Func
 }
 
 type implKey struct {
@@ -88,7 +91,11 @@ func buildModuleIndex(mod *loadedModule) *moduleIndex {
 				continue
 			}
 			named, ok := tn.Type().(*types.Named)
-			if !ok || named.TypeParams().Len() > 0 || types.IsInterface(named) {
+			if !ok || types.IsInterface(named) {
+				continue
+			}
+			if named.TypeParams().Len() > 0 {
+				idx.genericTypes = append(idx.genericTypes, named)
 				continue
 			}
 			idx.namedTypes = append(idx.namedTypes, named)
@@ -160,6 +167,8 @@ func (w *reachWalker) scan(pkg *packages.Package, node ast.Node) {
 			if site, ok := w.idx.vars[obj.Origin()]; ok {
 				w.scan(site.pkg, site.node)
 			}
+		case *types.TypeName:
+			w.followMethods(obj)
 		}
 		return true
 	})
@@ -180,6 +189,18 @@ func (w *reachWalker) follow(fn *types.Func) {
 		return
 	}
 	w.followDecl(origin)
+}
+
+// followMethods scans every method of a referenced module type: frameworks and envelopes call
+// them through interfaces, so no identifier in the resource's own code names them.
+func (w *reachWalker) followMethods(tn *types.TypeName) {
+	named, ok := types.Unalias(tn.Type()).(*types.Named)
+	if !ok || (tn.Pkg() != nil && tn.Pkg().Path() == w.kbapiPath) {
+		return
+	}
+	for method := range named.Origin().Methods() {
+		w.followDecl(method)
+	}
 }
 
 func (w *reachWalker) followDecl(fn *types.Func) {
@@ -236,6 +257,13 @@ func (w *reachWalker) implementations(iface *types.Interface, name string) []*ty
 				impls = append(impls, fn)
 			}
 			break
+		}
+	}
+	for _, generic := range w.idx.genericTypes {
+		for method := range generic.Methods() {
+			if method.Name() == name {
+				impls = append(impls, method)
+			}
 		}
 	}
 	w.idx.implCache[key] = impls
