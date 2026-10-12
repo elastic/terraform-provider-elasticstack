@@ -83,6 +83,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
             query    = "SELECT * FROM system_info;"
             platform = "linux"
             version  = "4.7.0"
+            removed  = true
+            snapshot = true
           }
         ]
       }

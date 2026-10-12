@@ -28,6 +28,10 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   threat_index = ["threat-intel-*"]
   threat_query = "threat.indicator.type:ip"
 
+  threat_indicator_path = "threat.indicator"
+  concurrent_searches   = 1
+  items_per_search      = 10
+
   filters = jsonencode([
     {
       "bool" = {

@@ -781,6 +781,8 @@ func TestAccResourceSecurityDetectionRule_MachineLearning(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.query", "SELECT * FROM system_info;"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.platform", "linux"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.version", "4.7.0"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.removed", "true"),
+					resource.TestCheckResourceAttr(resourceName, "response_actions.0.params.queries.0.snapshot", "true"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.action_type_id", ".endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.command", "isolate"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.comment", "Collect process tree for ML anomaly investigation"),
@@ -1154,6 +1156,9 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "threat_index.0", "threat-intel-*"),
 					resource.TestCheckResourceAttr(resourceName, "threat_query", "threat.indicator.type:ip"),
+					resource.TestCheckResourceAttr(resourceName, "threat_indicator_path", "threat.indicator"),
+					resource.TestCheckResourceAttr(resourceName, "concurrent_searches", "1"),
+					resource.TestCheckResourceAttr(resourceName, "items_per_search", "10"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.field", "destination.ip"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.type", "mapping"),
 					resource.TestCheckResourceAttr(resourceName, "threat_mapping.0.entries.0.value", "threat.indicator.ip"),
@@ -1297,8 +1302,8 @@ func TestAccResourceSecurityDetectionRule_ThreatMatch(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.field", "process.entity_id"),
 					resource.TestCheckResourceAttr(resourceName, "response_actions.1.params.config.overwrite", "false"),
 
-					// Check threat_indicator_path, concurrent_searches, items_per_search
-					resource.TestCheckResourceAttr(resourceName, "threat_indicator_path", "threat.indicator"),
+					// Check threat_indicator_path, concurrent_searches, items_per_search (updated values)
+					resource.TestCheckResourceAttr(resourceName, "threat_indicator_path", "threat.indicator.ip"),
 					resource.TestCheckResourceAttr(resourceName, "concurrent_searches", "2"),
 					resource.TestCheckResourceAttr(resourceName, "items_per_search", "25"),
 				),
@@ -1915,6 +1920,7 @@ func TestAccResourceSecurityDetectionRule_WithConnectorAction(t *testing.T) {
 
 					// Check updated action attributes
 					resource.TestCheckResourceAttr(resourceName, "actions.0.params", `{"message":"UPDATED CRITICAL Alert: Security event detected"}`),
+					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.notify_when", "onThrottleInterval"),
 					resource.TestCheckResourceAttr(resourceName, "actions.0.frequency.throttle", "5m"),
 
 					// Check exceptions list attributes
@@ -2063,7 +2069,7 @@ func TestAccResourceSecurityDetectionRule_QueryMinimal(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", updatedRuleName),
 					resource.TestCheckResourceAttr(resourceName, "type", "query"),
 					resource.TestCheckResourceAttr(resourceName, "query", "event.category:authentication"),
-					resource.TestCheckResourceAttr(resourceName, "language", "kuery"),
+					resource.TestCheckResourceAttr(resourceName, "language", "lucene"),
 					resource.TestCheckResourceAttr(resourceName, "enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test query security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
@@ -2833,6 +2839,9 @@ func TestAccResourceSecurityDetectionRule_QueryWithMitreThreat(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "author.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "author.0", "Security Team"),
 					resource.TestCheckResourceAttr(resourceName, "author.1", "SOC Team"),
+
+					// Check updated license
+					resource.TestCheckResourceAttr(resourceName, "license", "Apache License 2.0"),
 
 					// Check updated note
 					resource.TestCheckResourceAttr(resourceName, "note", "Investigate parent process and command line. Check for malicious documents."),
