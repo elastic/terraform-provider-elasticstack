@@ -7,7 +7,15 @@ const require = createRequire(import.meta.url);
 // (strip XML comments, balance unclosed fences by appending a closing fence, trim). Optionally the
 // real sanitizer is used when RF_REAL_SANITIZER_DIR points at a checkout of gh-aw's actions/setup/js.
 export function miniSanitize(value) {
-  let out = value.replace(/<!--[\s\S]*?-->/g, '');
+  // Repeat until stable: a single pass can leave a `<!--` behind for nested input such as
+  // `<!<!---->-->` (CodeQL js/incomplete-multi-character-sanitization). The real sanitizer uses a
+  // depth-tracking scan; this fixed-point loop also drops any leftover opener, which is stricter than
+  // needed for these tests and cannot leave a `<!--` in the output.
+  let out = value;
+  for (let prev = null; prev !== out; ) {
+    prev = out;
+    out = out.replace(/<!--[\s\S]*?-->/g, '').replace(/<!--/g, '');
+  }
   const fence = /^( {0,3})(`{3,}|~{3,})([^`~\s]*)?(.*)$/;
   let open = null;
   for (const line of out.replace(/\r\n/g, '\n').split('\n')) {
