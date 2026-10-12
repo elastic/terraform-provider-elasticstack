@@ -109,7 +109,7 @@ func TestDecodeAnyToAttrValue_List(t *testing.T) {
 
 	t.Run("non-array raw is null for object element lists", func(t *testing.T) {
 		t.Parallel()
-		got, diags := typeutils.DecodeAnyToAttrValue(ctx, types.ListType{ElemType: objType}, nil)
+		got, diags := typeutils.DecodeAnyToAttrValue(ctx, types.ListType{ElemType: objType}, "not-a-list")
 		require.False(t, diags.HasError(), "%v", diags)
 		assert.True(t, got.(types.List).IsNull())
 	})

@@ -239,7 +239,10 @@ func coerceInt64(v any) (int64, bool) {
 		return int64(n), true
 	case int64:
 		return n, true
-	case float64:
+case float64:
+		if n < float64(-1<<63) || n >= float64(1<<63) || n != float64(int64(n)) {
+			return 0, false
+		}
 		return int64(n), true
 	case json.Number:
 		i, err := n.Int64()
