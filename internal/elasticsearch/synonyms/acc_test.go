@@ -100,6 +100,55 @@ func TestAccResourceSynonymSet(t *testing.T) {
 	})
 }
 
+// TestAccResourceSynonymSetEmptyRules verifies that a synonym set can be created with
+// an empty `synonyms_set` (zero rules) — the Elasticsearch Synonyms PUT API accepts an
+// empty rule list — and that a subsequent update populating rules is reflected correctly.
+func TestAccResourceSynonymSetEmptyRules(t *testing.T) {
+	synonymSetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkSynonymSetDestroy(synonymSetID),
+		Steps: []resource.TestStep{
+			// Step 1: Create with an empty synonyms_set.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_synonym_set.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonym_set_id", synonymSetID),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "0"),
+				),
+			},
+			// Step 2: Update from zero rules to two rules — verify the transition works.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("populated"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.id", "rule-1"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.0.synonyms", "i-pod, i pod => ipod"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.1.id", "rule-2"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.1.synonyms", "universe, cosmos"),
+				),
+			},
+			// Step 3: Shrink back to zero rules — verify the empty state is reachable via update too.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceSynonymSetReplaceOnIDChange verifies that changing synonym_set_id triggers
 // a destroy+create (RequiresReplace plan modifier) rather than an in-place update.
 func TestAccResourceSynonymSetReplaceOnIDChange(t *testing.T) {
