@@ -181,7 +181,7 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
 
 Work through the queue **strictly in order**, one group at a time. For each group:
 
-1. Read the OAS node(s) it lists in `generated/kbapi/oas-filtered.yaml` (the pointers in the body), and the resource implementation under `internal/`.
+1. Read the pre-rendered issue body for the group (its fields, OAS pointers, and any `x-state` version) and the resource implementation under `internal/`.
 2. Decide exactly one verdict, `file` or `suppress`, and write **one** short reason for it.
 3. If the verdict is `file`, call `create-issue` for that group (see below).
 
