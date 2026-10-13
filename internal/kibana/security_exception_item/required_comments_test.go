@@ -105,6 +105,18 @@ func TestRequiredCommentsValidator_RejectsDuplicateText(t *testing.T) {
 	}
 }
 
+func TestRequiredCommentsValidator_SkipsUnknownElements(t *testing.T) {
+	t.Parallel()
+
+	// Unknown elements are resolved later (the comments plan modifier keeps
+	// them unknown while required_comments is unknown); they must not be
+	// compared as duplicate empty strings.
+	list := types.ListValueMust(types.StringType, []attr.Value{types.StringUnknown(), types.StringUnknown()})
+
+	resp := validateRequiredComments(t, list)
+	require.Empty(t, resp.Diagnostics.Errors(), "unknown elements must not be reported as duplicates: %s", resp.Diagnostics)
+}
+
 func TestMissingCommentTexts(t *testing.T) {
 	t.Parallel()
 

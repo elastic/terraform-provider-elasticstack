@@ -81,6 +81,12 @@ func (uniqueValuesValidator) ValidateList(_ context.Context, req validator.ListR
 	}
 	seen := make(map[string]struct{}, len(req.ConfigValue.Elements()))
 	for _, elem := range req.ConfigValue.Elements() {
+		if elem.(types.String).IsUnknown() {
+			// Unknown elements resolve later (the comments plan modifier keeps
+			// them unknown while required_comments is unknown) and must not be
+			// compared as duplicate empty strings.
+			continue
+		}
 		text := elem.(types.String).ValueString()
 		if _, ok := seen[text]; ok {
 			resp.Diagnostics.AddError(

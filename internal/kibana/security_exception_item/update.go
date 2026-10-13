@@ -61,26 +61,20 @@ func updateExceptionItem(
 }
 
 // reconcileRequiredComments returns the update-request comments body for the
-// plan's required_comments, or nil when the request must omit comments. Both
-// the fresh-read and version-discovery failure paths return diagnostics
-// before any PUT is sent.
+// plan's required_comments, or nil when the request must omit comments. The
+// fresh read happens on every update — even when required_comments is null,
+// unknown, or empty — so a failed read or a missing item aborts the update
+// before any PUT. Version discovery only runs when a required text is missing.
 func reconcileRequiredComments(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[ExceptionItemModel],
 	plan ExceptionItemModel,
 ) (*updateCommentsArray, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	required, known := requiredCommentTexts(plan.RequiredComments)
-	if !known || len(required) == 0 {
-		return nil, diags
-	}
+	required, _ := requiredCommentTexts(plan.RequiredComments)
 
 	reconciler := newCommentReconciler(client, req.SpaceID, req.WriteID, plan.NamespaceType)
-	commentsBody, d := reconciler.reconcile(ctx, required)
-	diags.Append(d...)
-	return commentsBody, diags
+	return reconciler.reconcile(ctx, required)
 }
 
 // newCommentReconciler builds the update-path comment reconciler from a live
