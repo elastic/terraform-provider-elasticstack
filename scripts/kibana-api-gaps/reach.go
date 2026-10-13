@@ -44,6 +44,8 @@ type reachResult struct {
 	// Funcs holds the full names of the reachable module functions.
 	Funcs map[string]bool
 	units []scanUnit
+	// implementations resolves an interface method to every module implementation.
+	implementations func(iface *types.Interface, name string) []*types.Func
 }
 
 type declSite struct {
@@ -136,6 +138,7 @@ func computeReach(mod *loadedModule, kbapiPath, pkgPath string) *reachResult {
 	}
 	idx := mod.moduleIndex()
 	w := &reachWalker{idx: idx, kbapiPath: kbapiPath, result: result, visited: make(map[ast.Node]bool)}
+	result.implementations = w.implementations
 	for _, file := range root.Syntax {
 		w.scan(root, file)
 	}

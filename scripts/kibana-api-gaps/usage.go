@@ -51,7 +51,7 @@ func collectUsage(reach *reachResult) *usageSet {
 				u.markConversion(info, node)
 				u.markJSONCall(info, node)
 				u.markReflectCall(info, node)
-				u.markReflectingCallSite(info, node, reflecting)
+				u.markReflectingCallSite(reach, info, node, reflecting)
 			case *ast.AssignStmt:
 				u.markWholeValueCopy(info, node)
 			}
@@ -231,28 +231,56 @@ func (u *usageSet) markOpaqueType(t types.Type) {
 }
 
 // reflectingFuncs finds the reachable functions that hand a value of non-concrete static type
-// (a type parameter or an interface) to the reflect package. Which struct they inspect is only
-// known at their call sites.
+// (a type parameter or an interface) to the reflect package, directly or through another
+// reflecting function. Which struct they inspect is only known at their call sites.
 func reflectingFuncs(reach *reachResult) map[*types.Func]bool {
-	found := make(map[*types.Func]bool)
+	type decl struct {
+		fn   *types.Func
+		node *ast.FuncDecl
+		info *types.Info
+	}
+	var decls []decl
 	for _, unit := range reach.units {
-		decl, ok := unit.node.(*ast.FuncDecl)
-		if !ok {
-			continue
-		}
-		info := unit.pkg.TypesInfo
-		fn, ok := info.Defs[decl.Name].(*types.Func)
-		if !ok {
-			continue
-		}
-		ast.Inspect(decl, func(n ast.Node) bool {
-			if call, ok := n.(*ast.CallExpr); ok && isReflectCall(info, call) && slices.ContainsFunc(call.Args, func(arg ast.Expr) bool { return !concreteType(info.TypeOf(arg)) }) {
-				found[fn.Origin()] = true
+		if node, ok := unit.node.(*ast.FuncDecl); ok {
+			if fn, ok := unit.pkg.TypesInfo.Defs[node.Name].(*types.Func); ok {
+				decls = append(decls, decl{fn.Origin(), node, unit.pkg.TypesInfo})
 			}
-			return true
-		})
+		}
+	}
+	found := make(map[*types.Func]bool)
+	for changed := true; changed; {
+		changed = false
+		for _, d := range decls {
+			if found[d.fn] {
+				continue
+			}
+			ast.Inspect(d.node, func(n ast.Node) bool {
+				call, ok := n.(*ast.CallExpr)
+				if !ok || found[d.fn] || !slices.ContainsFunc(call.Args, func(arg ast.Expr) bool { return !concreteType(d.info.TypeOf(arg)) }) {
+					return !found[d.fn]
+				}
+				if isReflectCall(d.info, call) || callsReflecting(reach, d.info, call, found) {
+					found[d.fn] = true
+					changed = true
+				}
+				return !found[d.fn]
+			})
+		}
 	}
 	return found
+}
+
+// callsReflecting reports whether any possible target of the call is a reflecting function;
+// interface method calls are resolved to every implementation.
+func callsReflecting(reach *reachResult, info *types.Info, call *ast.CallExpr, reflecting map[*types.Func]bool) bool {
+	fn := calledFunc(info, call)
+	if fn == nil {
+		return false
+	}
+	if iface := receiverInterface(fn.Origin()); iface != nil && reach.implementations != nil {
+		return slices.ContainsFunc(reach.implementations(iface, fn.Name()), func(impl *types.Func) bool { return reflecting[impl.Origin()] })
+	}
+	return reflecting[fn.Origin()]
 }
 
 func concreteType(t types.Type) bool {
@@ -295,9 +323,8 @@ func (u *usageSet) markReflectCall(info *types.Info, call *ast.CallExpr) {
 
 // markReflectingCallSite marks every argument type and type argument of a call to a reflecting
 // function as opaque, which over-approximates what the callee inspects.
-func (u *usageSet) markReflectingCallSite(info *types.Info, call *ast.CallExpr, reflecting map[*types.Func]bool) {
-	fn := calledFunc(info, call)
-	if fn == nil || !reflecting[fn.Origin()] {
+func (u *usageSet) markReflectingCallSite(reach *reachResult, info *types.Info, call *ast.CallExpr, reflecting map[*types.Func]bool) {
+	if !callsReflecting(reach, info, call, reflecting) {
 		return
 	}
 	for _, arg := range call.Args {

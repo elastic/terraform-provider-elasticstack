@@ -100,3 +100,9 @@ func TestUsageTreatsTypesPassedToReflectThroughInterfaceParametersAsOpaque(t *te
 	assert.True(t, p.opaque("Settings"), "a concrete value handed straight to reflect is opaque")
 	assert.False(t, usageFor(t, "direct").opaque("Settings"))
 }
+
+func TestUsageFollowsReflectionThroughWrappersAndInterfaceCalls(t *testing.T) {
+	p := usageFor(t, "reflectwrap")
+	assert.True(t, p.opaque("Widget"), "wrapper forwarding to a reflecting helper")
+	assert.True(t, p.opaque("Settings"), "interface call resolved to a reflecting implementation")
+}
