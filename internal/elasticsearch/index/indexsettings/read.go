@@ -160,7 +160,7 @@ func readDeclaredTypedSettings(ctx context.Context, state *tfModel, flat map[str
 
 		raw, ok := flat[settingKey]
 		if !ok {
-			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, nullTypedSettingValue(current))
+			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, typeutils.NullValueForType(current.Type(ctx)))
 			continue
 		}
 
