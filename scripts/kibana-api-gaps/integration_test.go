@@ -20,6 +20,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -124,4 +125,40 @@ func assertProviderClientsPackageIsKbapiFree(t *testing.T, mod *loadedModule) {
 			t.Errorf("%s references kbapi object %s; the reach cut at it is no longer sound", clientsPath, obj.Name())
 		}
 	}
+}
+
+func TestCmdDiscoverEndToEndOnTheRealRepository(t *testing.T) {
+	if testing.Short() {
+		t.Skip("real-repository discovery is skipped under -short")
+	}
+	ensureFilteredOAS(t)
+	dir := t.TempDir()
+	run := func(slots string) Report {
+		report := filepath.Join(dir, "report-"+slots+".json")
+		var out bytes.Buffer
+		err := cmdDiscover([]string{"--repo", repoRoot, "--slots", slots, "--memory", filepath.Join(dir, "none.json"), "--report", report,
+			"--resource", "elasticstack_kibana_slo", "--resource", "elasticstack_kibana_synthetics_monitor"}, &out, os.Stderr)
+		require.NoError(t, err)
+		assert.Contains(t, out.String(), "wrote report")
+		var got Report
+		require.NoError(t, readJSON(report, &got, false))
+		return got
+	}
+
+	none := run("0")
+	assert.False(t, none.RunAgent)
+	assert.Empty(t, none.Queue)
+	assert.Equal(t, gateReasonNoSlots, none.GateReason)
+
+	two := run("2")
+	assert.True(t, two.RunAgent)
+	assert.NotEmpty(t, two.Queue)
+	assert.LessOrEqual(t, len(two.Queue), maxTriagePerRun)
+	assert.Equal(t, 2, two.Slots)
+	for _, g := range two.Groups {
+		assert.Contains(t, []string{"elasticstack_kibana_slo", "elasticstack_kibana_synthetics_monitor"}, g.Resource, "the resource filter applies")
+	}
+
+	err := cmdDiscover([]string{"--repo", repoRoot, "--resource", "elasticstack_typo"}, io.Discard, io.Discard)
+	require.Error(t, err)
 }

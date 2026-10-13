@@ -76,3 +76,32 @@ func TestMemoryCoversAGroupOnlyWhileTheFingerprintMatches(t *testing.T) {
 	assert.False(t, mem.covers(Group{Key: "other", Fingerprint: "a"}))
 	assert.False(t, (&Memory{}).covers(Group{Key: "k"}))
 }
+
+func TestLoadMemoryReplacesNullMapsWithEmptyOnes(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"groups":null,"resources":null}`), 0o600))
+
+	mem, err := loadMemory(path)
+
+	require.NoError(t, err)
+	assert.NotNil(t, mem.Groups)
+	assert.NotNil(t, mem.Resources)
+	mem.Groups["k"] = Record{}
+}
+
+func TestSaveMemoryFailsWhenTheDirectoryCannotBeCreated(t *testing.T) {
+	blocker := filepath.Join(t.TempDir(), "file")
+	require.NoError(t, os.WriteFile(blocker, nil, 0o600))
+	require.Error(t, saveMemory(filepath.Join(blocker, "state.json"), newMemory()))
+}
+
+func TestSaveMemoryLeavesNoTemporaryFilesAndKeepsTheOldFileOnFailure(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+	require.NoError(t, saveMemory(path, newMemory()))
+
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, "state.json", entries[0].Name())
+}

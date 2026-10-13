@@ -18,6 +18,9 @@
 package main
 
 import (
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -55,4 +58,45 @@ func TestFindPackageBySuffixRequiresExactlyOneMatch(t *testing.T) {
 	require.Error(t, err)
 	_, err = findPackageBySuffix(mod, "s")
 	require.Error(t, err)
+}
+
+func TestRunRejectsMissingAndUnknownSubcommands(t *testing.T) {
+	for _, args := range [][]string{nil, {"bogus"}, {"--repo", "."}} {
+		require.Error(t, run(args, io.Discard, io.Discard), args)
+	}
+}
+
+func TestRunDispatchesRecordToItsCommand(t *testing.T) {
+	err := run([]string{"record"}, io.Discard, io.Discard)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--report")
+}
+
+func TestStringListCollectsRepeatedValues(t *testing.T) {
+	var list stringList
+	require.NoError(t, list.Set("a"))
+	require.NoError(t, list.Set("b"))
+	assert.Equal(t, stringList{"a", "b"}, list)
+	assert.Equal(t, "[a b]", list.String())
+}
+
+func TestCmdDiscoverRejectsAnUnknownFlag(t *testing.T) {
+	require.Error(t, cmdDiscover([]string{"--nope"}, io.Discard, io.Discard))
+}
+
+func TestFinishDiscoverReportsErrors(t *testing.T) {
+	dir := t.TempDir()
+	d := &Discovery{Groups: []Group{gapGroup("r", "a", 1, "f")}}
+	bad := filepath.Join(dir, "bad.json")
+	require.NoError(t, os.WriteFile(bad, []byte("{broken"), 0o600))
+	blocker := filepath.Join(dir, "file")
+	require.NoError(t, os.WriteFile(blocker, nil, 0o600))
+
+	none := filepath.Join(dir, "none")
+	report := filepath.Join(dir, "r.json")
+
+	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: bad, reportPath: report}, io.Discard), "malformed memory")
+	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: none, reportPath: filepath.Join(blocker, "r.json")}, io.Discard), "unwritable report")
+	opts := discoverOptions{memoryPath: none, reportPath: report, summaryPath: filepath.Join(blocker, "s.md")}
+	require.Error(t, finishDiscover(d, opts, io.Discard), "unwritable summary")
 }
