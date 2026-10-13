@@ -6,6 +6,13 @@ name: Kibana API Gap Scanner
 description: Finds Kibana API request fields that Terraform resources never use, triages them with an LLM that may only suppress, and files grounded issues for research.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: daily
+  push:
+    branches:
+      - main
+    paths:
+      - 'generated/kbapi/**'
   steps:
     - name: Checkout repository
       uses: actions/checkout@v7.0.1

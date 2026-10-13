@@ -58,3 +58,9 @@ test('compiled scanner lock dispatches research-factory-issue.lock.yml after saf
   assert.match(job[0], /- safe_outputs/);
   assert.match(job[0], /research-factory-issue\.lock\.yml/);
 });
+
+test('compiled scanner lock declares schedule, kbapi push filter and dispatch', () => {
+  assert.match(scannerLock, /\n  schedule:\n    - cron:/);
+  assert.match(scannerLock, /\n  push:\n    branches:\n      - main\n    paths:\n      - generated\/kbapi\/\*\*\n/);
+  assert.match(scannerLock, /\n  workflow_dispatch:/);
+});
