@@ -3,7 +3,7 @@
 - [x] 1.1 Make `comments` computed-only with `id`, `comment`, `created_at`, and `created_by`, and add optional validated `required_comments`; verify schema tests cover timestamp format, whitespace, and duplicates.
 - [x] 1.2 Create items from `required_comments` in configuration order and populate the full computed log on authoritative read; verify create/read tests cover empty and non-empty logs.
 - [x] 1.3 Read the full comment log independently of `required_comments`, representing an empty log as null; verify read tests include out-of-band entries and the exact `2006-01-02T15:04:05.000Z` layout.
-- [x] 1.4 Replace the canonical spec's old writable `comments` schema sketch with the computed log and `required_comments`; verify the sketch matches the delta schema.
+- [ ] 1.4 Replace the canonical spec's old writable `comments` schema sketch with the computed log and `required_comments`; verify the sketch matches the delta schema. **Deferred by user decision during PR review: revert the partial canonical schema edit and sync the schema plus full requirement delta together during OpenSpec verification/archive.**
 
 ## 2. Reconcile missing comments in-place on update
 
