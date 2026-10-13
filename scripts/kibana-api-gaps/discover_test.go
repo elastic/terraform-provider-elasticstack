@@ -45,6 +45,8 @@ var fixtureResources = []Resource{
 	{Name: "fx_convert", PkgPath: "fixture/convert"},
 	{Name: "fx_copyassign", PkgPath: "fixture/copyassign"},
 	{Name: "fx_unionpass", PkgPath: "fixture/unionpass"},
+	{Name: "fx_reflecting", PkgPath: "fixture/reflecting"},
+	{Name: "fx_reflectany", PkgPath: "fixture/reflectany"},
 }
 
 func fixtureOASVariant(t *testing.T, oldText, newText string) string {
@@ -313,4 +315,15 @@ func TestDiscoverFailsWhenAClientOperationIsMissingFromTheOAS(t *testing.T) {
 	_, err := discoverFixture(t, fixtureOASVariant(t, "  /api/blobs:", "  /api/blobz:"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing from the OpenAPI document")
+}
+
+func TestDiscoverTreatsTypesHandledByReflectionAsCovered(t *testing.T) {
+	d := mustDiscover(t)
+	for _, resource := range []string{"fx_reflecting", "fx_reflectany"} {
+		for _, g := range d.Groups {
+			if g.Resource == resource {
+				assert.NotContains(t, g.Pointer, "/components/schemas/", g.Key)
+			}
+		}
+	}
 }

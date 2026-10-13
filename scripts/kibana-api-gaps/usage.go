@@ -21,6 +21,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"slices"
 )
 
 // usageSet records which struct fields a resource's reachable code reads or writes, and which
@@ -37,6 +38,7 @@ func collectUsage(reach *reachResult) *usageSet {
 		anon:        make(map[string][]*types.Struct),
 		opaqueNamed: make(map[*types.TypeName]bool),
 	}
+	reflecting := reflectingFuncs(reach)
 	for _, unit := range reach.units {
 		info := unit.pkg.TypesInfo
 		ast.Inspect(unit.node, func(n ast.Node) bool {
@@ -48,6 +50,8 @@ func collectUsage(reach *reachResult) *usageSet {
 			case *ast.CallExpr:
 				u.markConversion(info, node)
 				u.markJSONCall(info, node)
+				u.markReflectCall(info, node)
+				u.markReflectingCallSite(info, node, reflecting)
 			case *ast.AssignStmt:
 				u.markWholeValueCopy(info, node)
 			}
@@ -224,4 +228,103 @@ func (u *usageSet) markOpaqueType(t types.Type) {
 	case *types.Map:
 		u.markOpaqueType(typed.Elem())
 	}
+}
+
+// reflectingFuncs finds the reachable functions that hand a value of non-concrete static type
+// (a type parameter or an interface) to the reflect package. Which struct they inspect is only
+// known at their call sites.
+func reflectingFuncs(reach *reachResult) map[*types.Func]bool {
+	found := make(map[*types.Func]bool)
+	for _, unit := range reach.units {
+		decl, ok := unit.node.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+		info := unit.pkg.TypesInfo
+		fn, ok := info.Defs[decl.Name].(*types.Func)
+		if !ok {
+			continue
+		}
+		ast.Inspect(decl, func(n ast.Node) bool {
+			if call, ok := n.(*ast.CallExpr); ok && isReflectCall(info, call) && slices.ContainsFunc(call.Args, func(arg ast.Expr) bool { return !concreteType(info.TypeOf(arg)) }) {
+				found[fn.Origin()] = true
+			}
+			return true
+		})
+	}
+	return found
+}
+
+func concreteType(t types.Type) bool {
+	if t == nil {
+		return false
+	}
+	switch derefType(t).(type) {
+	case *types.TypeParam:
+		return false
+	}
+	return !types.IsInterface(derefType(t))
+}
+
+func isReflectCall(info *types.Info, call *ast.CallExpr) bool {
+	fn := calledFunc(info, call)
+	return fn != nil && fn.Pkg() != nil && fn.Pkg().Path() == "reflect" && fn.Type().(*types.Signature).Recv() == nil
+}
+
+func calledFunc(info *types.Info, call *ast.CallExpr) *types.Func {
+	ident := funcIdent(call)
+	if ident == nil {
+		return nil
+	}
+	fn, _ := info.Uses[ident].(*types.Func)
+	return fn
+}
+
+// markReflectCall treats a concrete value handed to the reflect package as an opaque whole:
+// reflection can read and write any of its fields by name.
+func (u *usageSet) markReflectCall(info *types.Info, call *ast.CallExpr) {
+	if !isReflectCall(info, call) {
+		return
+	}
+	for _, arg := range call.Args {
+		if t := info.TypeOf(arg); concreteType(t) {
+			u.markOpaqueType(t)
+		}
+	}
+}
+
+// markReflectingCallSite marks every argument type and type argument of a call to a reflecting
+// function as opaque, which over-approximates what the callee inspects.
+func (u *usageSet) markReflectingCallSite(info *types.Info, call *ast.CallExpr, reflecting map[*types.Func]bool) {
+	fn := calledFunc(info, call)
+	if fn == nil || !reflecting[fn.Origin()] {
+		return
+	}
+	for _, arg := range call.Args {
+		u.markOpaqueType(info.TypeOf(arg))
+	}
+	if ident := funcIdent(call); ident != nil {
+		if inst, ok := info.Instances[ident]; ok {
+			for i := range inst.TypeArgs.Len() {
+				u.markOpaqueType(inst.TypeArgs.At(i))
+			}
+		}
+	}
+}
+
+func funcIdent(call *ast.CallExpr) *ast.Ident {
+	fun := ast.Unparen(call.Fun)
+	switch f := fun.(type) {
+	case *ast.IndexExpr:
+		fun = f.X
+	case *ast.IndexListExpr:
+		fun = f.X
+	}
+	switch f := fun.(type) {
+	case *ast.Ident:
+		return f
+	case *ast.SelectorExpr:
+		return f.Sel
+	}
+	return nil
 }

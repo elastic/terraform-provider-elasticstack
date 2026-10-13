@@ -89,3 +89,14 @@ func TestUsageTreatsWholeValueJSONPassthroughAsOpaque(t *testing.T) {
 	assert.True(t, p.opaque("Widget"))
 	assert.False(t, usageFor(t, "direct").opaque("Widget"))
 }
+
+func TestUsageTreatsTypesPassedToReflectThroughGenericHelpersAsOpaque(t *testing.T) {
+	assert.True(t, usageFor(t, "reflecting").opaque("Widget"))
+}
+
+func TestUsageTreatsTypesPassedToReflectThroughInterfaceParametersAsOpaque(t *testing.T) {
+	p := usageFor(t, "reflectany")
+	assert.True(t, p.opaque("Widget"))
+	assert.True(t, p.opaque("Settings"), "a concrete value handed straight to reflect is opaque")
+	assert.False(t, usageFor(t, "direct").opaque("Settings"))
+}
