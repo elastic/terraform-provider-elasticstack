@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
@@ -962,7 +963,7 @@ func getAlertsFilterTimeframeAttrTypes() map[string]attr.Type {
 
 // func getCardinalityType() map[string]attr.Type {
 func getCardinalityType() attr.Type {
-	return GetSchema().Attributes[ruleTypeThreshold].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes[ruleTypeThreshold].(schema.SingleNestedAttribute).Attributes["cardinality"].GetType())
 }
 
 // getThresholdType returns the attribute types for threshold objects
@@ -977,41 +978,41 @@ func getAlertSuppressionType() map[string]attr.Type {
 
 // getThreatElementType returns the element type for threat objects (MITRE ATT&CK framework)
 func getThreatElementType() attr.Type {
-	return GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["threat"].GetType())
 }
 
 func getThreatMappingElementType() attr.Type {
-	return GetSchema().Attributes["threat_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["threat_mapping"].GetType())
 }
 
 func getThreatMappingEntryElementType() attr.Type {
-	threatMappingType := GetSchema().Attributes["threat_mapping"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	return threatMappingType.AttributeTypes()["entries"].(attr.TypeWithElementType).ElementType()
+	threatMappingType := typeutils.ElementTypeOf(GetSchema().Attributes["threat_mapping"].GetType()).(attr.TypeWithAttributeTypes)
+	return typeutils.ElementTypeOf(threatMappingType.AttributeTypes()["entries"])
 }
 
 func getResponseActionElementType() attr.Type {
-	return GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["response_actions"].GetType())
 }
 
 func getResponseActionParamsType() map[string]attr.Type {
-	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	responseActionType := typeutils.ElementTypeOf(GetSchema().Attributes["response_actions"].GetType()).(attr.TypeWithAttributeTypes)
 	return responseActionType.AttributeTypes()[attrParams].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getOsqueryQueryElementType() attr.Type {
-	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	responseActionType := typeutils.ElementTypeOf(GetSchema().Attributes["response_actions"].GetType()).(attr.TypeWithAttributeTypes)
 	paramsType := responseActionType.AttributeTypes()[attrParams].(attr.TypeWithAttributeTypes)
-	return paramsType.AttributeTypes()["queries"].(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(paramsType.AttributeTypes()["queries"])
 }
 
 func getEndpointProcessConfigType() map[string]attr.Type {
-	responseActionType := GetSchema().Attributes["response_actions"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	responseActionType := typeutils.ElementTypeOf(GetSchema().Attributes["response_actions"].GetType()).(attr.TypeWithAttributeTypes)
 	paramsType := responseActionType.AttributeTypes()[attrParams].(attr.TypeWithAttributeTypes)
 	return paramsType.AttributeTypes()["config"].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getActionElementType() attr.Type {
-	return GetSchema().Attributes[attrActions].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes[attrActions].GetType())
 }
 
 func getActionFrequencyType() map[string]attr.Type {
@@ -1019,37 +1020,37 @@ func getActionFrequencyType() map[string]attr.Type {
 }
 
 func getExceptionsListElementType() attr.Type {
-	return GetSchema().Attributes["exceptions_list"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["exceptions_list"].GetType())
 }
 
 func getRiskScoreMappingElementType() attr.Type {
-	return GetSchema().Attributes["risk_score_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["risk_score_mapping"].GetType())
 }
 
 func getRelatedIntegrationElementType() attr.Type {
-	return GetSchema().Attributes["related_integrations"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["related_integrations"].GetType())
 }
 
 func getRequiredFieldElementType() attr.Type {
-	return GetSchema().Attributes["required_fields"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["required_fields"].GetType())
 }
 
 func getSeverityMappingElementType() attr.Type {
-	return GetSchema().Attributes["severity_mapping"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema().Attributes["severity_mapping"].GetType())
 }
 
 func getThreatTacticType() map[string]attr.Type {
-	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
+	threatType := typeutils.ElementTypeOf(GetSchema().Attributes["threat"].GetType()).(attr.TypeWithAttributeTypes)
 	return threatType.AttributeTypes()["tactic"].(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
 func getThreatTechniqueElementType() attr.Type {
-	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	return threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType()
+	threatType := typeutils.ElementTypeOf(GetSchema().Attributes["threat"].GetType()).(attr.TypeWithAttributeTypes)
+	return typeutils.ElementTypeOf(threatType.AttributeTypes()["technique"])
 }
 
 func getThreatSubtechniqueElementType() attr.Type {
-	threatType := GetSchema().Attributes["threat"].GetType().(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	techniqueType := threatType.AttributeTypes()["technique"].(attr.TypeWithElementType).ElementType().(attr.TypeWithAttributeTypes)
-	return techniqueType.AttributeTypes()["subtechnique"].(attr.TypeWithElementType).ElementType()
+	threatType := typeutils.ElementTypeOf(GetSchema().Attributes["threat"].GetType()).(attr.TypeWithAttributeTypes)
+	techniqueType := typeutils.ElementTypeOf(threatType.AttributeTypes()["technique"]).(attr.TypeWithAttributeTypes)
+	return typeutils.ElementTypeOf(techniqueType.AttributeTypes()["subtechnique"])
 }
