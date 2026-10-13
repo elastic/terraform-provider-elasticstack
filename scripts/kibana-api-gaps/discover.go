@@ -25,6 +25,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Group is the set of unused request fields beneath one top-level request field of a resource.
@@ -54,6 +55,7 @@ type discoverConfig struct {
 	kbapiPath string
 	oas       *oasDoc
 	resources []Resource
+	log       *phaseLog
 }
 
 func discover(cfg discoverConfig) (*Discovery, error) {
@@ -69,8 +71,12 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 	}
 	defined := buildDefinedTypes(cfg.module.byPath[cfg.kbapiPath])
 	groups := make(map[string]*groupBuild)
+	var reachTime time.Duration
+	started := time.Now()
 	for _, res := range cfg.resources {
+		reachStart := time.Now()
 		reach := computeReach(cfg.module, cfg.kbapiPath, res.PkgPath)
+		reachTime += time.Since(reachStart)
 		ops := reachedOperations(reach, opIdx)
 		if len(ops) == 0 {
 			out.NoOperations = append(out.NoOperations, res.Name)
@@ -89,6 +95,8 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 		}
 		out.SkippedShapes = append(out.SkippedShapes, w.skipped...)
 	}
+	cfg.log.report("reach (all resources)", reachTime)
+	groupStart := time.Now()
 	for _, build := range groups {
 		group, err := build.finish(cfg.oas)
 		if err != nil {
@@ -103,6 +111,8 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 		}
 	}
 	sort.Strings(out.NoOperations)
+	cfg.log.report("group", time.Since(groupStart))
+	cfg.log.report("analyse (reach + usage + gaps + group)", time.Since(started))
 	return out, nil
 }
 

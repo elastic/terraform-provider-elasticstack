@@ -89,11 +89,16 @@ func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	result, err := discoverRepository(*repo, only)
+	log := newPhaseLog(stderr)
+	result, err := discoverRepository(*repo, only, log)
 	if err != nil {
 		return err
 	}
-	return finishDiscover(result, opts, stdout)
+	if err := finishDiscover(result, opts, stdout); err != nil {
+		return err
+	}
+	log.total()
+	return nil
 }
 
 // finishDiscover turns a discovery result into report.json, a step summary, and a one-line status.
@@ -117,28 +122,35 @@ func finishDiscover(result *Discovery, opts discoverOptions, stdout io.Writer) e
 
 // discoverRepository runs discovery over the provider and generated/kbapi/oas-filtered.yaml
 // of the repository at root, optionally restricted to the named resources.
-func discoverRepository(root string, only []string) (*Discovery, error) {
+func discoverRepository(root string, only []string, log *phaseLog) (*Discovery, error) {
 	resources, err := selectResources(discoverResources(), only)
 	if err != nil {
 		return nil, err
 	}
+	log.begin("oas")
 	doc, err := loadOAS(filepath.Join(root, "generated/kbapi/oas-filtered.yaml"))
 	if err != nil {
 		return nil, err
 	}
+	log.end("oas")
+	log.begin("load")
 	mod, err := loadModule(root, "./...")
 	if err != nil {
 		return nil, err
 	}
-	return discoverLoaded(mod, doc, resources)
+	log.end("load")
+	log.begin("index")
+	mod.moduleIndex()
+	log.end("index")
+	return discoverLoaded(mod, doc, resources, log)
 }
 
-func discoverLoaded(mod *loadedModule, doc *oasDoc, resources []Resource) (*Discovery, error) {
+func discoverLoaded(mod *loadedModule, doc *oasDoc, resources []Resource, log *phaseLog) (*Discovery, error) {
 	kbapiPath, err := findPackageBySuffix(mod, kbapiPkgSuffix)
 	if err != nil {
 		return nil, err
 	}
-	return discover(discoverConfig{module: mod, kbapiPath: kbapiPath, oas: doc, resources: resources})
+	return discover(discoverConfig{module: mod, kbapiPath: kbapiPath, oas: doc, resources: resources, log: log})
 }
 
 // selectResources restricts resources to the named ones; an unknown name is an error so a

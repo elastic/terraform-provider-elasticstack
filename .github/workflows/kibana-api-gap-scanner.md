@@ -13,77 +13,10 @@ on:
       - main
     paths:
       - 'generated/kbapi/**'
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v7.0.1
-      with:
-        persist-credentials: false
-        fetch-depth: 1
-    - name: Setup Go
-      uses: actions/setup-go@v7.0.0
-      with:
-        go-version-file: go.mod
-        cache: false
-    - name: Compute issue slots
-      id: compute_issue_slots
-      uses: actions/github-script@v9.0.0
-      env:
-        ISSUE_SLOTS_LABEL: kibana-api-gap
-        ISSUE_SLOTS_CAP: "3"
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
-          await fn({ github, context, core });
-    # NOTE: This ref must match the repo-memory tool config branch-name below.
-    - name: Check for repo-memory branch
-      id: memory_branch
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        # Exit code 2 means the branch does not exist yet (first run); any other failure must fail the job.
-        set +e
-        git ls-remote --exit-code --heads "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" memory/kibana-api-gap-scanner > /dev/null
-        status=$?
-        set -e
-        case "$status" in
-          0) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
-          2) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
-          *) echo "git ls-remote failed with exit code $status" >&2; exit "$status" ;;
-        esac
-    - name: Checkout repo-memory branch
-      if: steps.memory_branch.outputs.exists == 'true'
-      uses: actions/checkout@v7.0.1
-      with:
-        ref: memory/kibana-api-gap-scanner
-        path: gh-aw-repo-memory/kibana-api-gap-scanner
-        fetch-depth: 1
-    - name: Generate filtered Kibana OpenAPI spec
-      run: make -C generated/kbapi transform
-    - name: Discover Kibana API gaps
-      id: discover_gaps
-      env:
-        TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: "true"
-        ISSUE_SLOTS_AVAILABLE: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
-      run: |
-        mkdir -p /tmp/gh-aw/agent
-        go run ./scripts/kibana-api-gaps discover \
-          --repo . \
-          --slots "${ISSUE_SLOTS_AVAILABLE}" \
-          --memory gh-aw-repo-memory/kibana-api-gap-scanner/memory/kibana-api-gap-scanner/state.json \
-          --report /tmp/gh-aw/agent/report.json
-        {
-          echo "run_agent=$(jq -r '.run_agent' /tmp/gh-aw/agent/report.json)"
-          echo "gate_reason=$(jq -r '.gate_reason' /tmp/gh-aw/agent/report.json)"
-          echo "queue_size=$(jq -r '.queue | length' /tmp/gh-aw/agent/report.json)"
-        } >> "$GITHUB_OUTPUT"
-    - name: Upload Kibana API gap report
-      if: success()
-      uses: actions/upload-artifact@v7.0.1
-      with:
-        name: kibana-api-gap-report
-        path: /tmp/gh-aw/agent/report.json
-        if-no-files-found: error
+  # Discovery compiles the whole provider, which does not fit pre_activation (1 vCPU,
+  # 15 minute cap). It runs in the dedicated discover job below, ahead of pre_activation.
+  needs:
+    - discover
 concurrency:
   group: kibana-api-gap-scanner
   cancel-in-progress: false
@@ -137,7 +70,7 @@ safe-outputs:
 network:
   allowed: [defaults, node, go, openrouter.ai]
 if: >-
-  needs.pre_activation.outputs.run_agent == 'true'
+  needs.discover.outputs.run_agent == 'true'
 steps:
   - name: Download Kibana API gap report
     uses: actions/download-artifact@v8.0.1
@@ -147,13 +80,100 @@ steps:
   - name: Verify report artifact path
     run: test -f /tmp/gh-aw/agent/report.json
 jobs:
-  pre-activation:
+  discover:
+    # A standard runner with a Go build/module cache: a cold build of the provider and its
+    # dependency graph needs several CPU minutes. The timeouts fail a hang fast.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      issues: read
     outputs:
       run_agent: ${{ steps.discover_gaps.outputs.run_agent }}
       open_issues: ${{ steps.compute_issue_slots.outputs.open_issues }}
       issue_slots_available: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
       queue_size: ${{ steps.discover_gaps.outputs.queue_size }}
       gate_reason: ${{ steps.discover_gaps.outputs.gate_reason }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Setup Go
+        uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Compute issue slots
+        id: compute_issue_slots
+        uses: actions/github-script@v9.0.0
+        env:
+          ISSUE_SLOTS_LABEL: kibana-api-gap
+          ISSUE_SLOTS_CAP: "3"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
+            await fn({ github, context, core });
+      # NOTE: This ref must match the repo-memory tool config branch-name below.
+      - name: Check for repo-memory branch
+        id: memory_branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Exit code 2 means the branch does not exist yet (first run); any other failure must fail the job.
+          set +e
+          git ls-remote --exit-code --heads "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" memory/kibana-api-gap-scanner > /dev/null
+          status=$?
+          set -e
+          case "$status" in
+            0) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            2) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "git ls-remote failed with exit code $status" >&2; exit "$status" ;;
+          esac
+      - name: Checkout repo-memory branch
+        if: steps.memory_branch.outputs.exists == 'true'
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: memory/kibana-api-gap-scanner
+          path: gh-aw-repo-memory/kibana-api-gap-scanner
+          fetch-depth: 1
+      - name: Generate filtered Kibana OpenAPI spec
+        timeout-minutes: 5
+        run: make -C generated/kbapi transform
+      # CGO_ENABLED=0 matches the environment discover pins for its package load, so the
+      # provider is compiled once and the load reuses the build cache instead of recompiling.
+      - name: Build gap scanner
+        timeout-minutes: 12
+        env:
+          CGO_ENABLED: "0"
+        run: go build -o "${RUNNER_TEMP}/kibana-api-gaps" ./scripts/kibana-api-gaps
+      - name: Discover Kibana API gaps
+        id: discover_gaps
+        timeout-minutes: 10
+        env:
+          TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: "true"
+          ISSUE_SLOTS_AVAILABLE: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
+        run: |
+          mkdir -p /tmp/gh-aw/agent
+          "${RUNNER_TEMP}/kibana-api-gaps" discover \
+            --repo . \
+            --slots "${ISSUE_SLOTS_AVAILABLE}" \
+            --memory gh-aw-repo-memory/kibana-api-gap-scanner/memory/kibana-api-gap-scanner/state.json \
+            --report /tmp/gh-aw/agent/report.json
+          {
+            echo "run_agent=$(jq -r '.run_agent' /tmp/gh-aw/agent/report.json)"
+            echo "gate_reason=$(jq -r '.gate_reason' /tmp/gh-aw/agent/report.json)"
+            echo "queue_size=$(jq -r '.queue | length' /tmp/gh-aw/agent/report.json)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Upload Kibana API gap report
+        if: success()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: kibana-api-gap-report
+          path: /tmp/gh-aw/agent/report.json
+          if-no-files-found: error
 ---
 
 # Kibana API Gap Scanner Worker
@@ -164,14 +184,14 @@ Deterministic discovery has already proven that each gap group below is a set of
 
 Do **not** query GitHub issue counts yourself; use only these values.
 
-- **Open `kibana-api-gap` issues**: `${{ needs.pre_activation.outputs.open_issues }}`
-- **Issue slots available**: `${{ needs.pre_activation.outputs.issue_slots_available }}`
-- **Groups in the triage queue**: `${{ needs.pre_activation.outputs.queue_size }}`
-- **Gate reason**: ${{ needs.pre_activation.outputs.gate_reason }}
+- **Open `kibana-api-gap` issues**: `${{ needs.discover.outputs.open_issues }}`
+- **Issue slots available**: `${{ needs.discover.outputs.issue_slots_available }}`
+- **Groups in the triage queue**: `${{ needs.discover.outputs.queue_size }}`
+- **Gate reason**: ${{ needs.discover.outputs.gate_reason }}
 
 ## Inputs
 
-Read `/tmp/gh-aw/agent/report.json` (downloaded from the pre-activation artifact). Only its `queue` matters to you. Each queue item has `key`, `resource`, `fingerprint`, `size`, `title`, and `body` (a pre-rendered issue body that ends with a hidden `<!-- kibana-api-gap ... -->` marker). Ignore `groups` and the diagnostics.
+Read `/tmp/gh-aw/agent/report.json` (downloaded from the discover job artifact). Only its `queue` matters to you. Each queue item has `key`, `resource`, `fingerprint`, `size`, `title`, and `body` (a pre-rendered issue body that ends with a hidden `<!-- kibana-api-gap ... -->` marker). Ignore `groups` and the diagnostics.
 
 ## Repository toolchain
 
@@ -187,7 +207,7 @@ Work through the queue **strictly in order**, one group at a time. For each grou
 
 Stop as soon as **either** of these is true:
 
-- the number of `file` verdicts equals `${{ needs.pre_activation.outputs.issue_slots_available }}`; or
+- the number of `file` verdicts equals `${{ needs.discover.outputs.issue_slots_available }}`; or
 - 15 groups have been triaged.
 
 `suppress` verdicts never consume a slot. Never skip a group to reach a later one: your verdicts must be a prefix of the queue in queue order. `record` also rejects a prefix that stops early, so keep triaging until the slots are filled with `file` verdicts or the whole queue is covered.

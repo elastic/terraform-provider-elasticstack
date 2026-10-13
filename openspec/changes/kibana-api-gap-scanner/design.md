@@ -60,10 +60,10 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
 ```
  workflow: kibana-api-gap-scanner.md   (concurrency: 1 run at a time, queued)
  +-----------------------------------------------------------------------------+
- | pre-activation job (deterministic, no LLM)                                  |
+ | discover job (deterministic, no LLM; ubuntu-latest, Go cache, on.needs)     |
  |   checkout + memory branch (memory/kibana-api-gap-scanner)                  |
  |   issue-slots/compute.js  (label kibana-api-gap, cap 3)  -> slots           |
- |   go run ./scripts/kibana-api-gaps discover                                 |
+ |   go build + kibana-api-gaps discover (timeouts; phase timings on stderr)   |
  |   go/packages + oas-filtered.yaml -> all gap groups (key, fp, fields)       |
  |        minus groups covered in memory (same fingerprint)                    |
  |        ordered (resource rotation, size, key) -> triage queue (<= 15)       |
@@ -112,7 +112,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | `fingerprint` | SHA-256 of a canonical JSON projection of the resolved subtree over `type`, `format`, `properties`, `required`, `enum`, `items`, combinators, `additionalProperties`, and `deprecated`; excludes `description`, `title`, `example(s)`, and `x-*` | Implements the "structure only" fingerprint |
 | `memory` | Reads and writes `memory/kibana-api-gap-scanner/state.json`: `groups{key: {fingerprint, verdict, reason, date}}` and `resources{name: last_triaged}` | The issue reference in a `file` record is the group key itself |
 | `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a hidden marker `<!-- kibana-api-gap key=… fp=… -->` | The agent supplies only the reason paragraph |
-| cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in pre-activation |
+| cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in the `discover` job, ahead of pre_activation |
 | cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, verdicts out of queue order, verdicts after the slots are filled with `file` verdicts, verdict lists that stop early (neither filling the slots with `file` verdicts nor covering the whole queue), and empty reasons; updates `last_triaged` (an RFC 3339 timestamp per resource, so same-day runs rotate) | Run by the agent, like `memory-record-from-report` |
 
 **Workflow and CI components:**
@@ -127,7 +127,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 ### D4. Data flow and state ownership
 
 ```
- durable inputs                     pre-activation                 agent job
+ durable inputs                     discover job                   agent job
  --------------                     --------------                 ---------
  repo @ SHA (Go, oas-filtered) --> discover --> report.json --artifact--> read queue
  memory branch state.json ------->     |          (queue <= 15,             |
@@ -164,7 +164,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 
 | Failure | Where | Handling | Result |
 |---|---|---|---|
-| `go/packages` load or type-check fails | `discover` | Non-zero exit; pre-activation fails and `run_agent` is never set | No triage, no issues, memory untouched |
+| `go/packages` load or type-check fails | `discover` | Non-zero exit; the discover job fails and `run_agent` is never set | No triage, no issues, memory untouched |
 | The lockstep walk finds a json tag with no OAS match, or the reverse | `walk` | **Tool error** naming the type, field, and operation; the run fails rather than guessing | As above; signals that kbapi and `oas-filtered.yaml` are out of sync or that `walk` has a gap |
 | A kbapi method has no matching `New<Op>Request` constructor | `opindex` | Tool error | As above |
 | Unsupported schema shape (e.g. `not`, exotic `allOf`) | `walk` | That **subtree** is treated as covered and listed in the report's `skipped_shapes` diagnostics; the run continues | No false gap is possible; visible in the artifact |
@@ -236,7 +236,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 
 | Concern | Risk | Mitigation |
 |---|---|---|
-| **Performance of `discover`** | A full-module load with types, plus a 12 MB generated `kibana.gen.go` and a large `oas-filtered.yaml`, could take minutes and several GB of RAM | One load per run, reused throughout; standard `ubuntu-latest` runners (16 GB) suffice; the integration test is skipped under `-short`. If load time exceeds about 5 minutes, load only the resource packages and their dependencies. |
+| **Performance of `discover`** | `discover` imports the provider (resource inventory) and then `packages.Load`s the module with types, so a cold run compiles the whole dependency graph twice if the two builds differ in GOOS/GOARCH/CGO. Measured cold (14-core laptop): build 48 s (274 CPU-s) plus load 52 s (2 GB RSS) with mismatched env, versus 24 s plus 4 s when the build also uses `CGO_ENABLED=0`; the analysis itself is about 3 s. On the 1 vCPU `ubuntu-slim` pre_activation runner (15 minute cap, no Go cache) this timed out after about 13.7 minutes. | `discover` runs in a dedicated `discover` job (`on.needs`, so it precedes pre_activation) on `ubuntu-latest` with `setup-go` caching, a build step with `CGO_ENABLED=0` so the load reuses the build cache, and `timeout-minutes` on the job (25) and on the build (12) and discover (10) steps. `discover` logs each phase (oas, load, index, reach, group, total) on stderr. The integration test is skipped under `-short`. If load time stays above about 5 minutes, load only the resource packages and their dependencies. |
 | **Reference graph over-approximates** | Resolving interface calls to all implementations, and following every function reference, pulls in more code than a resource really executes. Usage is over-counted, so some real gaps are missed. Operations can also be over-counted, so a resource may be credited with an operation a shared helper references for another resource. | Missing gaps is the safe direction (no false absence). Operation over-counting yields candidates that are true statements about reachable code, and triage can suppress them as irrelevant. The report lists resources with zero mapped operations and per-resource operation counts, so outliers show up during the spike. |
 | **Triage model and prompt** | Weak suppression criteria make the filter too lenient or too aggressive | The same OpenRouter Claude setup as schema-coverage (`anthropic/claude-sonnet-5`, `--effort high`). The prompt lists concrete suppress categories (server-managed or computed state, internal or telemetry fields, runtime actions that make no sense as IaC, fields covered by an opaque attribute that `usage` missed) and says "if in doubt, file". Every suppression and its reason is in memory for review. |
 | **Prompt injection via the spec** | OAS descriptions come from upstream Kibana and are shown to the triage agent | Low risk, because upstream is Elastic's own spec. The agent is read-only (`contents: read`, `issues: read`); writes are limited to `create-issue` (max 3) and `record`, whose input is validated. An injected "file everything" is still capped by slots and keys. |

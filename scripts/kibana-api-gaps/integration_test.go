@@ -45,7 +45,7 @@ func TestDiscoverRealRepository(t *testing.T) {
 	require.NoError(t, err)
 	resources := discoverResources()
 
-	first, err := discoverLoaded(mod, doc, resources)
+	first, err := discoverLoaded(mod, doc, resources, nil)
 	require.NoError(t, err, "no json tag may be left unmatched")
 
 	analysed := first.Operations
@@ -76,7 +76,7 @@ func TestDiscoverRealRepository(t *testing.T) {
 	assertProviderClientsPackageIsKbapiFree(t, mod)
 	assert.NotEmpty(t, first.Groups)
 
-	second, err := discoverLoaded(mod, doc, resources)
+	second, err := discoverLoaded(mod, doc, resources, nil)
 	require.NoError(t, err)
 	firstJSON, err := json.Marshal(first)
 	require.NoError(t, err)
