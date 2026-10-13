@@ -67,7 +67,10 @@ introduces the first live preflight check in that package.
    building the API request, decode each XY data layer's `y[].ConfigJSON`, and run the detection
    helper. Only when at least one metric trips it do they call
    `client.EnforceMinVersion(ctx, panelkit.MinKibanaAPISupportDurationFormatParams)`; otherwise no
-   extra API call happens.
+   extra API call happens. If status retrieval or version parsing returns error diagnostics, append
+   and propagate those diagnostics and abort the dashboard request; do not replace the operational
+   failure with the minimum-version diagnostic. Add the minimum-version diagnostic only when the
+   version check completes without error diagnostics and reports an unsupported stateful version.
 
 4. **Panel traversal scope: `panels` and `sections[].panels` only**
    `models.PinnedPanelModel` (`internal/kibana/dashboard/models/panel.go`) only has control-type

@@ -14,15 +14,10 @@ Kibana's raw, hard-to-read 400 error.
 ## What Changes
 
 - Add a version constant for the Kibana release that fixed duration-format `decimals`/`compact`
-  validation, alongside the existing `panelkit.MinKibanaAPISupport95` pattern.
-- Add a pure helper that inspects a Lens metric's `config_json`-decoded map and reports whether its
-  `format` uses `type/id == "duration"` together with a `decimals` or `compact` key (top-level or
-  under `format.params`).
-- Walk the dashboard plan model's panels (top-level `panels` and panels nested in `sections`) for XY
-  chart layers before building the create/update API request. When any `y[]` metric trips the
-  helper, call `client.EnforceMinVersion` against the new constant and fail with a diagnostic that
-  names the offending panel/layer/metric path and the two unsupported properties, instead of letting
-  the raw Kibana 400 reach the practitioner.
+- Check affected Lens XY chart `y[]` metrics before dashboard create/update requests and require
+  Elastic Stack 9.5.2 or later on stateful stacks.
+- Return an actionable diagnostic identifying the affected configuration on older stacks, and
+  propagate status-retrieval or version-parsing diagnostics while aborting the dashboard request.
 - No behavior change for `number`/`percent` formats, for duration formats without `decimals`/
   `compact`, for dashboards with no XY charts, or on Kibana >= 9.5.2 / Serverless.
 - Document the minimum version on the `y[].config_json` attribute description for the XY chart data
@@ -42,12 +37,8 @@ Kibana's raw, hard-to-read 400 error.
 
 ## Impact
 
-- **Code**: `internal/kibana/dashboard/panelkit/version_support.go` (new constant),
-  `internal/kibana/dashboard/lenscommon/` (new detection helper, new tests),
-  `internal/kibana/dashboard/create.go` and `internal/kibana/dashboard/update.go` (preflight check
-  wired into the write path), `internal/kibana/dashboard/panel/lensxy/schema_attrs.go` (attribute
-  description update).
+- **Code**: Dashboard create/update validation, Lens XY chart configuration documentation, and
+  focused tests.
 - **Specs**: Delta under `openspec/changes/dashboard-lens-duration-format-version-gate/specs/
   kibana-dashboard/`; merges into `openspec/specs/kibana-dashboard/spec.md` on archive.
-- **Dependencies**: Existing `clients.KibanaScopedClient.EnforceMinVersion` and `hashicorp/go-version`
-  (already used throughout `internal/kibana/dashboard`); no new dependencies.
+- **Dependencies**: No new dependencies.

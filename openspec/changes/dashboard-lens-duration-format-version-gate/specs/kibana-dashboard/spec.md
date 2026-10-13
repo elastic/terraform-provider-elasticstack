@@ -45,6 +45,25 @@ accept `decimals`/`compact` on every supported Kibana version).
 - THEN the provider SHALL NOT return a version-gate error, consistent with
   `EnforceMinVersion` always being satisfied on Serverless
 
+#### Scenario: Status retrieval failure during the version check
+
+- GIVEN the same configuration as above
+- AND the Kibana status API request fails
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL propagate the status-retrieval error diagnostic
+- AND the provider SHALL NOT return a misleading minimum-version diagnostic
+- AND the provider SHALL NOT issue the dashboard API request
+
+#### Scenario: Version parsing failure during the version check
+
+- GIVEN the same configuration as above
+- AND the connected stack is stateful
+- AND the Kibana status API returns a version that cannot be parsed
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL propagate the version-parsing error diagnostic
+- AND the provider SHALL NOT return a misleading minimum-version diagnostic
+- AND the provider SHALL NOT issue the dashboard API request
+
 #### Scenario: Duration format without decimals or compact
 
 - GIVEN an XY chart `y[]` metric with `config_json` containing `format = { type = "duration", from
