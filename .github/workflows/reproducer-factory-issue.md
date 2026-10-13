@@ -326,9 +326,18 @@ engine:
   args:
     - "--effort"
     - "high"
+    # Keep the author's context window bounded so it is not compacted mid-run.
+    - "--autocompact"
+    - "250k"
   env:
     ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
     ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    # Experimental (same settings as research-factory-issue): tell the CLI the real window for
+    # these non-first-party slugs and cap the compaction window. Verify via compact_boundary
+    # pre_tokens in the run log (it should be about 212k or higher, not about 170k). Remove
+    # both if they cause API errors.
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1000000"
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: "250000"
 # Disable the per-run AI Credits budget guard. The OpenRouter model slug
 # "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
 # pricing table. gh-aw's models.providers frontmatter override does not
@@ -448,19 +457,17 @@ If you are running short on time, prefer emitting a **partial-but-valid** `updat
 
 ## How to emit safe outputs
 
-Safe outputs are recorded **only** when you call the safe-output tool. Writing the comment in your final assistant message — for example inside a fenced code block — emits **nothing**, and the run completes without any visible output. The tool names use underscores, not the hyphenated job names: `update_reproducer_comment`, `create_pull_request`.
+At the very start of the run, write the exact command below to `/tmp/gh-aw/agent/EMIT.md` and re-read that file before you emit and after any context summary; it survives context compaction.
 
-1. **Preferred**: call the `update_reproducer_comment` safe-output tool with the `body` input set to the full markdown comment (without the `<!-- gha-reproducer-factory -->` marker).
-2. **Fallback (CLI transport)**: if the safe-output MCP tools are not available in your session, write the body to a file and emit it from bash via the `safeoutputs` CLI on `PATH`:
+The only exit path is the CLI `safeoutputs update_reproducer_comment`, which is on `PATH`. It is **not** a native or MCP tool, so it will never appear in your function list — never conclude it is missing, and never inspect `mcp-servers.json`, `tools.json`, or the safe-outputs mount. Writing the comment in your final assistant message — for example inside a fenced code block — emits **nothing**, and the run completes without any visible output. The CLI tool names use underscores, not the hyphenated job names: `update_reproducer_comment`, `create_pull_request`.
 
-   ```bash
-   cat <<'EOF' > /tmp/gh-aw/agent/reproducer-comment.md
-   ...full comment markdown...
-   EOF
-   jq -Rs '{body: .}' /tmp/gh-aw/agent/reproducer-comment.md | safeoutputs update_reproducer_comment .
-   ```
+Write the final body to `/tmp/gh-aw/agent/reproducer-comment.md` (without the `<!-- gha-reproducer-factory -->` marker), then run from the repository root:
 
-3. Before finishing, confirm you made at least one successful safe-output call this session. If you cannot emit the comment for any reason, call `noop` with an explanation instead of ending silently.
+```bash
+jq -Rs '{body: .}' /tmp/gh-aw/agent/reproducer-comment.md | safeoutputs update_reproducer_comment .
+```
+
+The `body` input is limited to 10 KiB and there is no chunking helper — keep the comment under 10,000 bytes (check with `wc -c`); if you exceed it, trim investigation detail, never the required sections. Run `safeoutputs update_reproducer_comment --help` to see the syntax if unsure. If you are unsure of anything, re-read `EMIT.md`. You **SHALL NOT** call it more than once. If you cannot emit the comment for any reason, call `noop` with an explanation instead of ending silently.
 
 ## Test environment
 
@@ -552,4 +559,4 @@ The JSON `outcome` and optional fields MUST be internally consistent with the hu
 - If you cannot complete a full investigation, prefer a **partial** outcome-B `update_reproducer_comment` that states unknowns honestly over `noop`.
 - Do **not** emit `noop` solely because the `elastic-docs` MCP server is unavailable.
 - Do **not** include `<!-- gha-reproducer-factory -->` in the markdown you pass to `update_reproducer_comment`; the workflow adds it.
-- Do **not** write safe outputs as fenced code blocks or plain text in your final message — only actual safe-output tool/CLI calls are recorded.
+- Do **not** write safe outputs as fenced code blocks or plain text in your final message — only `safeoutputs` CLI calls are recorded.
