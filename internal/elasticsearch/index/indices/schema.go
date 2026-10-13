@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -429,9 +430,9 @@ func getAliasSchema() schema.SetNestedAttribute {
 }
 
 func indicesElementType(ctx context.Context) attr.Type {
-	return getDataSourceSchema(ctx).Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getDataSourceSchema(ctx).Attributes["indices"].GetType())
 }
 
 func aliasElementType() attr.Type {
-	return getAliasSchema().GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getAliasSchema().GetType())
 }

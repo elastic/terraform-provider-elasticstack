@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/planmodifiers"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -418,13 +419,13 @@ func getAttributes() map[string]schema.Attribute {
 }
 
 func aliasElementType(ctx context.Context) attr.Type {
-	return getSchema(ctx).Attributes["alias"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchema(ctx).Attributes["alias"].GetType())
 }
 
 func settingsElementType(ctx context.Context) attr.Type {
-	return getSchema(ctx).Blocks["settings"].Type().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchema(ctx).Blocks["settings"].Type())
 }
 
 func settingElementType(ctx context.Context) attr.Type {
-	return getSchema(ctx).Blocks["settings"].GetNestedObject().GetBlocks()[attrSetting].Type().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchema(ctx).Blocks["settings"].GetNestedObject().GetBlocks()[attrSetting].Type())
 }
