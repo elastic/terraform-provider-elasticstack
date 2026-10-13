@@ -94,7 +94,7 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 		}
 		out.Groups = append(out.Groups, group)
 	}
-	sort.Slice(out.Groups, func(i, j int) bool { return out.Groups[i].Key < out.Groups[j].Key })
+	out.Groups = mergeGroups(out.Groups)
 	sort.Strings(out.NoOperations)
 	return out, nil
 }
@@ -193,4 +193,48 @@ func (b *groupBuild) finish(doc *oasDoc) (Group, error) {
 		return cmp.Or(strings.Compare(a.Field, b.Field), strings.Compare(a.Pointer, b.Pointer), strings.Compare(a.XState, b.XState))
 	})
 	return group, nil
+}
+
+// mergeGroups collapses the groups of one resource that share a top-level field name, such as the
+// same field in a create and an update body or in every variant of a union body, into a single
+// group. The merged group is keyed by the smallest member location so its identity does not
+// depend on input order; its fingerprint covers every constituent, so a structural change to
+// any of them, or a new constituent, expires the verdict. A group with no siblings is returned
+// unchanged.
+func mergeGroups(groups []Group) []Group {
+	type id struct{ resource, field string }
+	byID := make(map[id][]Group)
+	for _, g := range groups {
+		byID[id{g.Resource, g.Field}] = append(byID[id{g.Resource, g.Field}], g)
+	}
+	merged := make([]Group, 0, len(byID))
+	for _, siblings := range byID {
+		merged = append(merged, mergeSiblings(siblings))
+	}
+	sort.Slice(merged, func(i, j int) bool { return merged[i].Key < merged[j].Key })
+	return merged
+}
+
+func mergeSiblings(siblings []Group) Group {
+	if len(siblings) == 1 {
+		return siblings[0]
+	}
+	slices.SortFunc(siblings, func(a, b Group) int { return strings.Compare(a.Pointer, b.Pointer) })
+	out := siblings[0]
+	out.Members = nil
+	var structure strings.Builder
+	for _, g := range siblings {
+		structure.WriteString(g.Pointer + "=" + g.Fingerprint + "\n")
+		for _, m := range g.Members {
+			if !slices.Contains(out.Members, m) {
+				out.Members = append(out.Members, m)
+			}
+		}
+	}
+	slices.SortFunc(out.Members, func(a, b Member) int {
+		return cmp.Or(strings.Compare(a.Field, b.Field), strings.Compare(a.Pointer, b.Pointer), strings.Compare(a.XState, b.XState))
+	})
+	sum := sha256.Sum256([]byte(structure.String()))
+	out.Fingerprint = hex.EncodeToString(sum[:])
+	return out
 }

@@ -259,11 +259,11 @@ func concreteType(t types.Type) bool {
 	if t == nil {
 		return false
 	}
-	switch derefType(t).(type) {
-	case *types.TypeParam:
+	t = derefType(t)
+	if _, isTypeParam := t.(*types.TypeParam); isTypeParam {
 		return false
 	}
-	return !types.IsInterface(derefType(t))
+	return !types.IsInterface(t)
 }
 
 func isReflectCall(info *types.Info, call *ast.CallExpr) bool {
@@ -305,8 +305,8 @@ func (u *usageSet) markReflectingCallSite(info *types.Info, call *ast.CallExpr, 
 	}
 	if ident := funcIdent(call); ident != nil {
 		if inst, ok := info.Instances[ident]; ok {
-			for i := range inst.TypeArgs.Len() {
-				u.markOpaqueType(inst.TypeArgs.At(i))
+			for t := range inst.TypeArgs.Types() {
+				u.markOpaqueType(t)
 			}
 		}
 	}
