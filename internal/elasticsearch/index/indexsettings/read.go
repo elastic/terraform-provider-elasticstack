@@ -393,7 +393,7 @@ func flatSettingAsTypedValue(ctx context.Context, current attr.Value, raw json.R
 		}
 		return types.StringValue(s), true
 	case types.Set:
-		elems, ok := stringElemsFromFlatRaw(raw)
+		elems, ok := typeutils.StringSliceFromRawJSON(raw)
 		if !ok {
 			return types.SetNull(types.StringType), false
 		}
@@ -402,45 +402,6 @@ func flatSettingAsTypedValue(ctx context.Context, current attr.Value, raw json.R
 			return types.SetNull(types.StringType), false
 		}
 		return set, true
-	default:
-		return nil, false
-	}
-}
-
-// stringElemsFromFlatRaw extracts string elements from a flat settings value
-// that may be a scalar string or a JSON array of strings (for example
-// index.query.default_field). ok distinguishes a value that cannot be
-// represented as string elements from a valid empty array, which is a legal
-// tracked value and must round-trip as an empty set.
-func stringElemsFromFlatRaw(raw json.RawMessage) ([]string, bool) {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return nil, false
-	}
-
-	switch value := v.(type) {
-	case string:
-		// A string value may itself be a JSON-encoded string array (for
-		// example index.query.default_field), mirroring the index resource's
-		// stringSliceFromAny decoding.
-		trimmed := strings.TrimSpace(value)
-		if strings.HasPrefix(trimmed, "[") {
-			var arr []string
-			if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
-				return arr, true
-			}
-		}
-		return []string{value}, true
-	case []any:
-		elems := make([]string, 0, len(value))
-		for _, elem := range value {
-			s, ok := elem.(string)
-			if !ok {
-				return nil, false
-			}
-			elems = append(elems, s)
-		}
-		return elems, true
 	default:
 		return nil, false
 	}
