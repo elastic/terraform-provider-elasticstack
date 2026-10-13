@@ -158,7 +158,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 - **Stale records are kept.** Records whose group no longer appears in discovery (the gap was fixed) are ignored; there is no garbage collection in v1.
 - **The agent never decides facts.** Group membership, fields, and issue text come from the report; the agent adds only a verdict and reason, and `record` refuses keys outside the queue.
 - **All-or-nothing runs** (gh-aw job gating). If the agent fails, no issues are created and no memory is pushed, so the next run re-triages cleanly with no duplicates. If the agent succeeds, memory is pushed after issue creation has been attempted. A blocked or failed `create-issue` therefore still leaves a `file` record, which is the accepted limitation in the spec.
-- **`discover` is deterministic:** the same SHA and memory produce a byte-identical report, which the unit tests and the spike's repeatability check rely on.
+- **`discover` is deterministic:** the same SHA and memory produce a byte-identical report, which the unit tests rely on.
 
 ### D5. Failure handling: fail loudly on unknown shapes, never guess absence
 
@@ -176,6 +176,8 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | Two triggers at the same time | Workflow | Queueing `concurrency` group (no cancel-in-progress) | Runs are serialised |
 
 **Ordering inside the agent:** for each group, triage, then append the verdict, then call `create-issue` if the verdict is `file`. `record` runs once at the end, after all verdicts, and must succeed before the agent finishes. Running `record` incrementally would add nothing, because memory is only pushed when the whole agent job succeeds.
+
+**Accepted ordering asymmetry:** `create-issue` is a gh-aw safe output that runs after the agent finishes, while `record` validates the verdicts inside the agent. A `record` failure therefore stops the agent, and gh-aw then processes no safe outputs, so no issue is created from an invalid run. The residual asymmetry is the reverse: issues for `file` verdicts are created before memory is pushed, so if the memory push fails the issues exist without records. This is accepted: the exposure is bounded by the slot cap (at most 3 issues per run), the key marker makes duplicates obvious, and the behaviour is verified live in task 4.3.
 
 **Observability:**
 - the report artifact: all groups, the queue, `skipped_shapes`, the gate reason, and resources with zero mapped operations;
@@ -197,38 +199,38 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 - **Real-repo variety** is covered by the integration test, which fails loudly on unknown shapes instead of silently mis-reporting.
 - No live Elastic Stack is needed.
 
-### D7. Rollout in two PRs, with no unwatched period
+### D7. Rollout in a single PR, verified live after merge
 
 ```
  step 0  spike: discover (resource-filtered) on 3 resources -> signal-to-noise review
-         NO-GO -> stop, revisit the change (proposal gate)
+         (conditional go, user-approved; see "Spike outcome" below)
            |
- step 1  PR 1: scripts/kibana-api-gaps + tests, shared dispatch-research-factory
-         fragment, scanner workflow with ONLY workflow_dispatch enabled;
-         provision the kibana-api-gap label; kibana-spec-impact untouched
+ step 1  ONE PR: scripts/kibana-api-gaps + tests, shared dispatch-research-factory
+         fragment, scanner workflow with schedule + push + dispatch,
+         REMOVE kibana-spec-impact (workflow, lock, script, Makefile line),
+         docs: continuous-quality-workflows.md + factory-workflows.md
            |
- step 2  live dispatch runs: verify triage, issues, dispatch,
-         memory branch, failed-agent all-or-nothing; tune triage prompt if needed
+ step 2  after merge: live dispatch runs (task 4.3): verify triage, issues,
+         dispatch, memory branch, failed-agent all-or-nothing; tune the prompt if needed
            |
- step 3  PR 2: enable daily schedule + push trigger;
-         REMOVE kibana-spec-impact (workflow, lock, script, Makefile line,
-         spec via archive of this change); delete memory/kibana-spec-impact branch
-           |
- step 4  docs: continuous-quality-workflows.md + factory-workflows.md (in PR 2)
+ step 3  after merge, manual: delete the memory/kibana-spec-impact branch;
+         archive this change so the ci-kibana-spec-impact-issues removal reaches the main specs
 ```
 
-- **Why two PRs:**
-  - Removing `kibana-spec-impact` in the same PR that first introduces the scanner would leave Kibana client changes unwatched if the scanner turns out noisy.
-  - Running dispatch-only first lets the triage prompt and the all-or-nothing behaviour be checked on real data, with no exposure to the schedule.
-  - Swapping the two in PR 2 means there is never a coverage gap and never two scanners filing at once.
+- **What shipped and the trade-off:**
+  - The original plan used two PRs: dispatch-only first, then schedule plus the `kibana-spec-impact` removal. Review and the spike's reflection and merge fixes made the scanner deterministic and unit-tested, so it shipped as one PR instead.
+  - Cost: the live behaviour (triage in order, issue creation, dispatch, memory, failed-agent all-or-nothing) is first exercised after merge, with the schedule already enabled. Exposure is bounded: at most 3 open `kibana-api-gap` issues (slots), at most 15 groups triaged per run, and at most 3 research-factory dispatches per day.
+  - Benefit: there is never a coverage gap and never two scanners filing at once, and no intermediate state to maintain.
 - **Compatibility:**
   - **First-run backlog:** the first scheduled run sees the whole historical backlog; the slot cap (at most 3 open) and the triage budget (15 per run) throttle it with no seeding.
   - **Memory bootstrap:** the branch is created as an orphan on the first `record` (`create-orphan: true`).
   - **Existing `[kibana-spec-impact]` issues** stay open. They lack the `kibana-api-gap` label, so they do not consume slots. Overlap with new gap issues is possible for a few resources; it is visible and harmless.
   - **research-factory load:** at most 3 dispatches per day at steady state. The `research-factory-critic-gate` change is recommended to land first.
 - **Rollback:**
-  - Before step 3: disable or delete the scanner; `kibana-spec-impact` never stopped running.
-  - After step 3: revert PR 2. The `kibana-spec-impact` helper can be restored from git and its baseline re-seeded from current `main`. Its old dedupe fingerprints are lost, so it may re-file a few entities once.
+  - If live verification (task 4.3) shows a problem: disable the schedule and push triggers (leaving dispatch), or disable the scanner; fix forward.
+  - To restore the old scanner: revert the PR. The `kibana-spec-impact` helper comes back from git and its baseline is re-seeded from current `main`. Its old dedupe fingerprints (and the deleted memory branch, if already removed) are lost, so it may re-file a few entities once.
+
+**Spike outcome (task 2.3):** conditional go, user-approved. The whole-repository group count fell from 1,632 to 1,051 after treating types handed to `reflect` as opaque-covered, and to 236 after merging same-field groups across create, update, and union bodies; the three spike resources (SLO, synthetics monitor, Fleet agent policy) produced 21 groups, matching the 21 logical fields counted by hand, with about 57% plausible real gaps and the rest in the triage suppress categories.
 
 ## Risks / Trade-offs
 
