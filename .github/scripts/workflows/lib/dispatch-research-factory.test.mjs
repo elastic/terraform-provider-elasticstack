@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { normalizeCompiledLock } from './compiled-lock.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workflowsDir = path.resolve(__dirname, '../../../workflows');
@@ -26,4 +27,34 @@ test('scanner workflow name slugifies to kibana-api-gap-scanner', () => {
   const source = readFileSync(path.join(workflowsDir, 'kibana-api-gap-scanner.md'), 'utf8');
   const name = source.match(/^name:\s*(.+)$/m)[1].trim();
   assert.equal(name.toLowerCase().split(' ').join('-'), 'kibana-api-gap-scanner');
+});
+
+const scanner = readFileSync(path.join(workflowsDir, 'kibana-api-gap-scanner.md'), 'utf8');
+const scannerLock = normalizeCompiledLock(
+  readFileSync(path.join(workflowsDir, 'kibana-api-gap-scanner.lock.yml'), 'utf8')
+);
+
+test('scanner imports the dispatch-research-factory fragment', () => {
+  const imports = scanner.match(/^imports:\s*\n((?:\s+- .+\n)+)/m);
+  assert.ok(imports, 'expected an imports list');
+  assert.match(imports[1], /- shared\/dispatch-research-factory\.md/);
+});
+
+test('scanner prompt requests one dispatch_research_factory call with dispatch: true', () => {
+  assert.match(scanner, /`dispatch_research_factory` safe output tool once with `dispatch: true`/);
+});
+
+test('compiled scanner lock exposes dispatch_research_factory with a required boolean dispatch input', () => {
+  assert.match(
+    scannerLock,
+    /"dispatch-research-factory":\{"description":"[^"]*","inputs":\{"dispatch":\{[^}]*"required":true,"type":"boolean"\}\}\}/
+  );
+  assert.match(scannerLock, /name": "dispatch_research_factory"/);
+});
+
+test('compiled scanner lock dispatches research-factory-issue.lock.yml after safe_outputs', () => {
+  const job = scannerLock.match(/\n  dispatch_research_factory:\n[\s\S]*?\n  [a-z_]+:\n/);
+  assert.ok(job, 'expected a dispatch_research_factory job');
+  assert.match(job[0], /- safe_outputs/);
+  assert.match(job[0], /research-factory-issue\.lock\.yml/);
 });
