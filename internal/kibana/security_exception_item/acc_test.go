@@ -1163,6 +1163,11 @@ func TestAccResourceExceptionItem_Comments(t *testing.T) {
 					"list_id": config.StringVariable(listID),
 					"item_id": config.StringVariable(itemID),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionNoop),
+					},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "comments.#", "1"),
 					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {

@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -40,6 +41,15 @@ func validateRequiredComments(t *testing.T, list types.List) *validator.ListResp
 		}, resp)
 	}
 	return resp
+}
+
+func TestRequiredCommentsValidator_RejectsNullElement(t *testing.T) {
+	t.Parallel()
+
+	list := types.ListValueMust(types.StringType, []attr.Value{types.StringNull()})
+
+	resp := validateRequiredComments(t, list)
+	require.NotEmpty(t, resp.Diagnostics.Errors(), "a null element must be rejected: %s", resp.Diagnostics)
 }
 
 func TestRequiredCommentsValidator_RejectsWhitespaceOnlyText(t *testing.T) {

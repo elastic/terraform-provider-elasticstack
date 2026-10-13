@@ -51,7 +51,10 @@ func (nonWhitespaceStringValidator) MarkdownDescription(ctx context.Context) str
 }
 
 func (nonWhitespaceStringValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+	// Unknown values are validated once resolved, but a null element must be
+	// treated like an empty one: it would otherwise reach the API as a missing
+	// comment body instead of a plan-time diagnostic.
+	if req.ConfigValue.IsUnknown() {
 		return
 	}
 	if strings.TrimSpace(req.ConfigValue.ValueString()) == "" {
