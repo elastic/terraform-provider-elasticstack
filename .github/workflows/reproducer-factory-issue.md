@@ -417,7 +417,7 @@ safe-outputs:
 
 You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled`reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
 
-Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced).
+Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update_reproducer_comment` safe output on every activation (see **How to emit safe outputs** — a fenced code block in your final message emits nothing). You **MAY** emit `create_pull_request` **only** for outcome A (reproduced).
 
 ## Pre-activation context
 
@@ -440,11 +440,27 @@ Read all context files before proceeding. They may contain markdown, code fences
 
 ## Time budget
 
-Reserve approximately **55 minutes** for investigation, documentation lookup, test authoring, and test runs. The job hard-kills at **65 minutes**. Reserve the final **~5 minutes** for emitting safe outputs (`update-reproducer-comment`, and `create-pull-request` only for outcome A).
+Reserve approximately **55 minutes** for investigation, documentation lookup, test authoring, and test runs. The job hard-kills at **65 minutes**. Reserve the final **~5 minutes** for emitting safe outputs (`update_reproducer_comment`, and `create_pull_request` only for outcome A).
 
 ## Partial output preference
 
-If you are running short on time, prefer emitting a **partial-but-valid** `update-reproducer-comment` (for example an honest outcome-B comment with clear unknowns) over emitting `noop`. A partial comment that documents what you tried is more useful than silence.
+If you are running short on time, prefer emitting a **partial-but-valid** `update_reproducer_comment` (for example an honest outcome-B comment with clear unknowns) over emitting `noop`. A partial comment that documents what you tried is more useful than silence.
+
+## How to emit safe outputs
+
+Safe outputs are recorded **only** when you call the safe-output tool. Writing the comment in your final assistant message — for example inside a fenced code block — emits **nothing**, and the run completes without any visible output. The tool names use underscores, not the hyphenated job names: `update_reproducer_comment`, `create_pull_request`.
+
+1. **Preferred**: call the `update_reproducer_comment` safe-output tool with the `body` input set to the full markdown comment (without the `<!-- gha-reproducer-factory -->` marker).
+2. **Fallback (CLI transport)**: if the safe-output MCP tools are not available in your session, write the body to a file and emit it from bash via the `safeoutputs` CLI on `PATH`:
+
+   ```bash
+   cat <<'EOF' > /tmp/gh-aw/agent/reproducer-comment.md
+   ...full comment markdown...
+   EOF
+   jq -Rs '{body: .}' /tmp/gh-aw/agent/reproducer-comment.md | safeoutputs update_reproducer_comment .
+   ```
+
+3. Before finishing, confirm you made at least one successful safe-output call this session. If you cannot emit the comment for any reason, call `noop` with an explanation instead of ending silently.
 
 ## Test environment
 
@@ -480,11 +496,11 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 4. **Run** the acceptance test against the live Elastic Stack (see **Test environment**). If the test passes with `ExpectError` or `ExpectNonEmptyPlan`, the failure is reproduced. If it fails for a different reason, iterate on the config. If it passes unexpectedly, consider outcome C.
 5. **Route by result:**
    - **Test reproduces the failure** (`ExpectError` or `ExpectNonEmptyPlan` passes against the live stack) → **Outcome A (reproduced)**
-     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
+     Emit `update_reproducer_comment` with the outcome-A body, then emit `create_pull_request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
    - **Cannot build a credible test config or cannot determine from static analysis** → **Outcome B (cannot reproduce)**
-     Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
+     Emit `update_reproducer_comment` with the outcome-B body. **Do not** emit `create_pull_request`.
    - **Static analysis suggests the issue no longer applies** (e.g. recently merged fix, code path changed) → **Outcome C (appears fixed)**
-     Emit `update-reproducer-comment` with the outcome-C body, including the test configuration (inline or fenced), evidence from code/git history that the failure condition no longer applies. **Do not** emit `create-pull-request`.
+     Emit `update_reproducer_comment` with the outcome-C body, including the test configuration (inline or fenced), evidence from code/git history that the failure condition no longer applies. **Do not** emit `create_pull_request`.
 
 ## Test file placement
 
@@ -494,7 +510,7 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 
 ## Comment format
 
-The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-format` capability. The workflow automatically prepends `<!-- gha-reproducer-factory -->`; **do not** include that marker in the body you pass to `update-reproducer-comment`.
+The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-format` capability. The workflow automatically prepends `<!-- gha-reproducer-factory -->`; **do not** include that marker in the body you pass to `update_reproducer_comment`.
 
 1. **`## Bug reproduction`** — Open the body with this H2 heading. Immediately below it, add a provenance header that records the run timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and a one-line notice that the comment is replaced on each run, e.g.:
 
@@ -524,7 +540,7 @@ The JSON `outcome` and optional fields MUST be internally consistent with the hu
 **Outcome A only:**
 
 - Branch: `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
-- Label: `reproducer-factory` (via `create-pull-request` safe output)
+- Label: `reproducer-factory` (via `create_pull_request` safe output)
 - PR body **MUST** contain `Related to #${{ needs.pre_activation.outputs.issue_number }}`. Do **not** use `Closes #${{ needs.pre_activation.outputs.issue_number }}` — the reproduction confirms the bug for **#${{ needs.pre_activation.outputs.issue_number }}**; it does not resolve the issue.
 - Include **only** the reproduction test file — no unrelated changes.
 
@@ -532,7 +548,8 @@ The JSON `outcome` and optional fields MUST be internally consistent with the hu
 
 - Do **not** re-check pre-activation gates (event eligibility, actor trust, duplicate PR state); pre-activation already handled them.
 - Emit **only** configured safe outputs — **no** free-form issue comments, **no** label changes, **no** extra pull requests.
-- Emit **at most one** `update-reproducer-comment` and **at most one** `create-pull-request`.
-- If you cannot complete a full investigation, prefer a **partial** outcome-B `update-reproducer-comment` that states unknowns honestly over `noop`.
+- Emit **at most one** `update_reproducer_comment` and **at most one** `create_pull_request`.
+- If you cannot complete a full investigation, prefer a **partial** outcome-B `update_reproducer_comment` that states unknowns honestly over `noop`.
 - Do **not** emit `noop` solely because the `elastic-docs` MCP server is unavailable.
-- Do **not** include `<!-- gha-reproducer-factory -->` in the markdown you pass to `update-reproducer-comment`; the workflow adds it.
+- Do **not** include `<!-- gha-reproducer-factory -->` in the markdown you pass to `update_reproducer_comment`; the workflow adds it.
+- Do **not** write safe outputs as fenced code blocks or plain text in your final message — only actual safe-output tool/CLI calls are recorded.
