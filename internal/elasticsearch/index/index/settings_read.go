@@ -213,11 +213,8 @@ func hydrateQueryDefaultFieldFromRaw(ctx context.Context, model *tfModel, raw js
 // extractStringSliceFromFlatRaw extracts string values from a flat-settings JSON
 // value (scalar string or JSON array).
 func extractStringSliceFromFlatRaw(raw json.RawMessage) []string {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return nil
-	}
-	return stringSliceFromAny(v)
+	elems, _ := typeutils.StringSliceFromRawJSON(raw)
+	return elems
 }
 
 func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey string, raw json.RawMessage, modelType reflect.Type) {
