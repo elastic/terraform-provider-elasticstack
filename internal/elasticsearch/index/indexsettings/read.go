@@ -160,7 +160,7 @@ func readDeclaredTypedSettings(ctx context.Context, state *tfModel, flat map[str
 
 		raw, ok := flat[settingKey]
 		if !ok {
-			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, nullTypedSettingValue(current))
+			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, typeutils.NullValueForType(current.Type(ctx)))
 			continue
 		}
 
@@ -443,22 +443,5 @@ func stringElemsFromFlatRaw(raw json.RawMessage) ([]string, bool) {
 		return elems, true
 	default:
 		return nil, false
-	}
-}
-
-// nullTypedSettingValue returns the null value matching the declared type of
-// the current attribute value.
-func nullTypedSettingValue(current attr.Value) attr.Value {
-	switch current.(type) {
-	case types.Int64:
-		return types.Int64Null()
-	case types.Bool:
-		return types.BoolNull()
-	case types.String:
-		return types.StringNull()
-	case types.Set:
-		return types.SetNull(types.StringType)
-	default:
-		return current
 	}
 }
