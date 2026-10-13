@@ -113,7 +113,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | `memory` | Reads and writes `memory/kibana-api-gap-scanner/state.json`: `groups{key: {fingerprint, verdict, reason, date}}` and `resources{name: last_triaged}` | The issue reference in a `file` record is the group key itself |
 | `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a hidden marker `<!-- kibana-api-gap key=… fp=… -->` | The agent supplies only the reason paragraph |
 | cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in pre-activation |
-| cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, verdicts out of queue order, verdicts after the slots are filled with `file` verdicts, and empty reasons; updates `last_triaged` (an RFC 3339 timestamp per resource, so same-day runs rotate) | Run by the agent, like `memory-record-from-report` |
+| cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, verdicts out of queue order, verdicts after the slots are filled with `file` verdicts, verdict lists that stop early (neither filling the slots with `file` verdicts nor covering the whole queue), and empty reasons; updates `last_triaged` (an RFC 3339 timestamp per resource, so same-day runs rotate) | Run by the agent, like `memory-record-from-report` |
 
 **Workflow and CI components:**
 
@@ -169,7 +169,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | A kbapi method has no matching `New<Op>Request` constructor | `opindex` | Tool error | As above |
 | Unsupported schema shape (e.g. `not`, exotic `allOf`) | `walk` | That **subtree** is treated as covered and listed in the report's `skipped_shapes` diagnostics; the run continues | No false gap is possible; visible in the artifact |
 | No slots, or an empty queue | `discover` | `run_agent=false` with a gate reason, as in kibana-spec-impact | Agent skipped |
-| A verdict for an unknown key, out of queue order, after the slots are filled, or with an empty reason | `record` | The whole `verdicts.json` is rejected with a precise error; the agent fixes it and re-runs `record` | Memory only ever takes valid verdicts |
+| A verdict for an unknown key, out of queue order, after the slots are filled, a list that stops early, or with an empty reason | `record` | The whole `verdicts.json` is rejected with a precise error; the agent fixes it and re-runs `record` | Memory only ever takes valid verdicts |
 | Agent dies or times out mid-triage | Agent job | gh-aw processes no safe outputs and pushes no memory for a failed agent | No issues, memory unchanged; the next run re-triages those groups |
 | Memory push fails after successful triage | gh-aw repo-memory | The job fails visibly | Red run. Issues from this run exist without records, so the next run may re-file them. Rare, because the push is a plain git push to a dedicated branch; the key marker makes any duplicate obvious. |
 | `create-issue` fails or is blocked by threat detection | `safe_outputs` | None | Accepted limitation: the group stays covered until its fingerprint changes |

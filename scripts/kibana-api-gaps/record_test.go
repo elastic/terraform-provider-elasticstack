@@ -47,13 +47,14 @@ func TestApplyVerdictsMergesFileAndSuppressRecords(t *testing.T) {
 	err := applyVerdicts(recordTestReport(2), mem, []Verdict{
 		{Key: "r#/a", Verdict: verdictFile, Reason: "useful"},
 		{Key: "r#/b", Verdict: verdictSuppress, Reason: "server-managed counter"},
+		{Key: "s#/c", Verdict: verdictSuppress, Reason: "internal"},
 	}, testTime)
 
 	require.NoError(t, err)
 	assert.Equal(t, Record{Fingerprint: "fa", Verdict: verdictFile, Reason: "useful", Date: "2026-10-13", Issue: "r#/a"}, mem.Groups["r#/a"])
 	assert.Equal(t, Record{Fingerprint: "fb", Verdict: verdictSuppress, Reason: "server-managed counter", Date: "2026-10-13"}, mem.Groups["r#/b"])
 	assert.Contains(t, mem.Groups, "r#/old", "unrelated records are kept")
-	assert.Equal(t, map[string]string{"r": "2026-10-13T12:00:00Z"}, mem.Resources)
+	assert.Equal(t, map[string]string{"r": "2026-10-13T12:00:00Z", "s": "2026-10-13T12:00:00Z"}, mem.Resources)
 }
 
 func TestApplyVerdictsReplacesAnExpiredRecord(t *testing.T) {
@@ -104,7 +105,7 @@ func TestApplyVerdictsAllowsUnlimitedSuppressVerdicts(t *testing.T) {
 }
 
 func TestApplyVerdictsIsIdempotent(t *testing.T) {
-	verdicts := []Verdict{{Key: "r#/a", Verdict: verdictFile, Reason: "x"}, {Key: "r#/b", Verdict: verdictSuppress, Reason: "y"}}
+	verdicts := []Verdict{{Key: "r#/a", Verdict: verdictFile, Reason: "x"}, {Key: "r#/b", Verdict: verdictSuppress, Reason: "y"}, {Key: "s#/c", Verdict: verdictSuppress, Reason: "z"}}
 	once, twice := newMemory(), newMemory()
 
 	require.NoError(t, applyVerdicts(recordTestReport(2), once, verdicts, testTime))
@@ -127,6 +128,7 @@ func TestRecordCommandCreatesMemoryAndWritesSummary(t *testing.T) {
 	writeJSON(t, filepath.Join(dir, "verdicts.json"), []Verdict{
 		{Key: "r#/a", Verdict: verdictFile, Reason: "useful"},
 		{Key: "r#/b", Verdict: verdictSuppress, Reason: "server-managed counter"},
+		{Key: "s#/c", Verdict: verdictSuppress, Reason: "internal"},
 	})
 	memory := filepath.Join(dir, "memory", "state.json")
 	summary := filepath.Join(dir, "summary.md")
@@ -224,8 +226,32 @@ func TestApplyVerdictsRequiresTheTriageOrder(t *testing.T) {
 			assert.Equal(t, newMemory(), mem)
 		})
 	}
-	prefix := []Verdict{{Key: "r#/a", Verdict: verdictSuppress, Reason: "x"}, {Key: "r#/b", Verdict: verdictSuppress, Reason: "x"}}
-	require.NoError(t, applyVerdicts(fourQueueReport(2), newMemory(), prefix, testTime), "a prefix of the queue is accepted")
+	prefix := []Verdict{{Key: "r#/a", Verdict: verdictSuppress, Reason: "x"}, {Key: "r#/b", Verdict: verdictFile, Reason: "x"}, {Key: "r#/c", Verdict: verdictFile, Reason: "x"}}
+	require.NoError(t, applyVerdicts(fourQueueReport(2), newMemory(), prefix, testTime), "a prefix that fills the slots is accepted")
+}
+
+func TestApplyVerdictsRejectsAShortPrefixThatNeitherFillsSlotsNorCoversTheQueue(t *testing.T) {
+	short := []Verdict{{Key: "r#/a", Verdict: verdictSuppress, Reason: "x"}, {Key: "r#/b", Verdict: verdictFile, Reason: "x"}}
+	mem := newMemory()
+	err := applyVerdicts(fourQueueReport(2), mem, short, testTime)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stopped early")
+	assert.Equal(t, newMemory(), mem)
+
+	allSuppressShort := []Verdict{{Key: "r#/a", Verdict: verdictSuppress, Reason: "x"}, {Key: "r#/b", Verdict: verdictSuppress, Reason: "x"}}
+	require.Error(t, applyVerdicts(fourQueueReport(2), newMemory(), allSuppressShort, testTime))
+}
+
+func TestApplyVerdictsAcceptsFewerFilesThanSlotsWhenTheWholeQueueIsCovered(t *testing.T) {
+	all := []Verdict{
+		{Key: "r#/a", Verdict: verdictSuppress, Reason: "x"},
+		{Key: "r#/b", Verdict: verdictSuppress, Reason: "x"},
+		{Key: "r#/c", Verdict: verdictFile, Reason: "x"},
+		{Key: "r#/d", Verdict: verdictSuppress, Reason: "x"},
+	}
+	mem := newMemory()
+	require.NoError(t, applyVerdicts(fourQueueReport(2), mem, all, testTime))
+	assert.Len(t, mem.Groups, 4)
 }
 
 func TestApplyVerdictsTrimsKeyAndVerdictAndReason(t *testing.T) {
@@ -237,7 +263,8 @@ func TestApplyVerdictsTrimsKeyAndVerdictAndReason(t *testing.T) {
 func TestApplyVerdictsRecordsTheTimestampPerResourceForSameDayRotation(t *testing.T) {
 	mem := newMemory()
 	later := testTime.Add(3 * time.Hour)
-	require.NoError(t, applyVerdicts(recordTestReport(3), mem, []Verdict{{Key: "r#/a", Verdict: verdictSuppress, Reason: "x"}}, later))
+	suppress := func(key string) Verdict { return Verdict{Key: key, Verdict: verdictSuppress, Reason: "x"} }
+	require.NoError(t, applyVerdicts(recordTestReport(3), mem, []Verdict{suppress("r#/a"), suppress("r#/b"), suppress("s#/c")}, later))
 	assert.Equal(t, "2026-10-13T15:00:00Z", mem.Resources["r"])
 }
 

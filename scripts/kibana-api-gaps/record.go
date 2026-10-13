@@ -37,8 +37,8 @@ type Verdict struct {
 }
 
 // applyVerdicts validates verdicts against the report's queue and merges them into mem. The
-// verdicts must follow the triage order: a prefix of the queue, stopping once the slots are
-// filled with `file` verdicts. mem is only modified when every verdict is valid.
+// verdicts must follow the triage order: a prefix of the queue that either ends once the slots
+// are filled with `file` verdicts or covers the entire queue. mem is only modified when every verdict is valid.
 func applyVerdicts(report *Report, mem *Memory, verdicts []Verdict, when time.Time) error {
 	verdicts = normalise(verdicts)
 	queued := make(map[string]QueueItem, len(report.Queue))
@@ -70,6 +70,10 @@ func applyVerdicts(report *Report, mem *Memory, verdicts []Verdict, when time.Ti
 		if v.Verdict == verdictFile {
 			files++
 		}
+	}
+	if files != report.Slots && len(verdicts) < len(report.Queue) {
+		return fmt.Errorf("triage stopped early: %d of %d queued groups have verdicts and only %d of %d slots are filled; "+
+			"triage the remaining groups", len(verdicts), len(report.Queue), files, report.Slots)
 	}
 	date := when.UTC().Format(time.DateOnly)
 	for _, v := range verdicts {
