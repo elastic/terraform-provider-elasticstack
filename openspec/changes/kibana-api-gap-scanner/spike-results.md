@@ -67,3 +67,24 @@ Required before PR 2 (schedule), preferably before PR 1 lands, both small and lo
 Resources that should not be scanned until the above is done: `elasticstack_kibana_security_detection_rule`, `elasticstack_kibana_alerting_rule` (the spec has no per-resource exclusion; the options are to fix, or accept that triage and the 15-group budget will spend several days suppressing them).
 
 If neither fix is wanted, the honest alternative is **NO-GO** on the whole-repo scanner and a narrower v1 limited to an allow-list of resources.
+
+## Decision
+
+**Decision: conditional go, user-approved, fixes applied.**
+
+Both required fixes were implemented in `scripts/kibana-api-gaps` with tests:
+
+1. Types handed to `reflect` are opaque-covered. A concrete value passed to a `reflect` function is marked opaque. A function that passes a type parameter or interface value to `reflect` is a "reflecting" function, and every argument type and type argument at its call sites is marked opaque (over-approximation, so it can only hide gaps). Fixtures: `testdata/fixture/reflecting` (generic helper) and `reflectany` (interface parameter, direct `reflect.TypeOf`).
+2. Groups of the same resource with the same top-level field name are merged (create and update bodies, union variants). The merged key uses the smallest OAS pointer, members keep their own pointers, and the fingerprint covers every constituent pointer and fingerprint. Spec requirement and design D3 were adjusted minimally, with one new scenario.
+
+### Before and after (same command, same repository state)
+
+| Scope | Before | After reflection fix | After reflection fix and merge |
+|---|---|---|---|
+| Whole repository, gap groups | 1,632 | 1,051 | 236 |
+| `elasticstack_kibana_security_detection_rule` | 583 | 0 | 0 |
+| `elasticstack_kibana_alerting_rule` | 506 | 506 | 15 |
+| Spike resources (SLO, synthetics, Fleet agent policy) | 38 | 38 | 21 (Fleet 17, SLO 2, synthetics 2) |
+| Fleet agent policy | 33 | 33 | 17 |
+
+The 21 spike groups equal the 21 logical fields counted by hand earlier, so create/update duplication is gone. The largest remaining resources are `fleet_integration_policy` (29), `security_entity_store_entity` (23), `fleet_elastic_defend_integration_policy` (18), `fleet_output` (17), and `alerting_rule` (15), which are now within the 15-per-run triage budget scale. The remaining groups have not been hand-reviewed outside the three spike resources.
