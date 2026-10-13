@@ -104,7 +104,7 @@ func finishDiscover(result *Discovery, opts discoverOptions, stdout io.Writer) e
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(opts.reportPath, append(data, '\n'), 0o600); err != nil {
+	if err := writeFileAtomic(opts.reportPath, append(data, '\n')); err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "wrote report to %s; run_agent=%t gate_reason=%s queue=%d groups=%d\n",

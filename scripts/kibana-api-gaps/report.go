@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 )
 
 const (
@@ -114,10 +115,23 @@ func compareResources(mem *Memory, a, b string) int {
 			return -1
 		}
 		return 1
-	case triagedA && lastA != lastB:
-		return strings.Compare(lastA, lastB)
+	case triagedA:
+		if c := parseTriageTime(lastA).Compare(parseTriageTime(lastB)); c != 0 {
+			return c
+		}
 	}
 	return strings.Compare(a, b)
+}
+
+// parseTriageTime reads a last_triaged value: an RFC 3339 timestamp, or a bare date. An
+// unreadable value sorts as the oldest, so the resource is triaged soon rather than starved.
+func parseTriageTime(s string) time.Time {
+	for _, layout := range []string{time.RFC3339, time.DateOnly} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t
+		}
+	}
+	return time.Time{}
 }
 
 func renderDiscoverSummary(r *Report) string {

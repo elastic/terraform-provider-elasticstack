@@ -86,8 +86,30 @@ func saveMemory(path string, mem *Memory) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+	return writeFileAtomic(path, append(data, '\n'))
+}
+
+// writeFileAtomic writes through a temporary file in the same directory and renames it into
+// place, so a crash never leaves a truncated file behind.
+func writeFileAtomic(path string, data []byte) (err error) {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '\n'), 0o600)
+	tmp, err := os.CreateTemp(dir, filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, os.Remove(tmp.Name()))
+		}
+	}()
+	if _, err = tmp.Write(data); err != nil {
+		return errors.Join(err, tmp.Close())
+	}
+	if err = tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }

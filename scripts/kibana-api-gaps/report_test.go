@@ -229,3 +229,19 @@ func TestFinishDiscoverIsByteIdenticalAcrossRuns(t *testing.T) {
 	}
 	assert.Equal(t, read("1.json"), read("2.json"))
 }
+
+func TestBuildReportRotatesResourcesTriagedEarlierTheSameDay(t *testing.T) {
+	d := &Discovery{Groups: []Group{gapGroup("r_a", "x", 1, "f"), gapGroup("r_b", "x", 1, "f")}}
+	mem := &Memory{Resources: map[string]string{"r_a": "2026-10-13T15:00:00Z", "r_b": "2026-10-13T09:00:00Z"}}
+
+	assert.Equal(t, []string{
+		"r_b#/components/schemas/W/properties/x",
+		"r_a#/components/schemas/W/properties/x",
+	}, queueKeys(buildReport(d, mem, 3)))
+}
+
+func TestParseTriageTimeSortsUnreadableValuesOldest(t *testing.T) {
+	assert.True(t, parseTriageTime("garbage").IsZero())
+	assert.False(t, parseTriageTime("2026-10-13").IsZero())
+	assert.False(t, parseTriageTime("2026-10-13T09:00:00Z").IsZero())
+}
