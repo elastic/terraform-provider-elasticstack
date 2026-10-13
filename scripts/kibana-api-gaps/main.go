@@ -21,6 +21,7 @@
 //
 //	go run ./scripts/kibana-api-gaps discover [--repo .] [--slots 3] [--memory state.json] [--report report.json] [--resource elasticstack_kibana_slo]
 //	go run ./scripts/kibana-api-gaps record --report report.json --verdicts verdicts.json --memory state.json
+//	go run ./scripts/kibana-api-gaps render-issue --report report.json --key <key> --reason <reason>
 package main
 
 import (
@@ -54,9 +55,11 @@ func run(args []string, stdout, stderr io.Writer) error {
 			return cmdDiscover(args[1:], stdout, stderr)
 		case "record":
 			return cmdRecord(args[1:], stdout, stderr)
+		case "render-issue":
+			return cmdRenderIssue(args[1:], stdout, stderr)
 		}
 	}
-	fmt.Fprintln(stderr, "Usage: kibana-api-gaps discover|record [flags]")
+	fmt.Fprintln(stderr, "Usage: kibana-api-gaps discover|record|render-issue [flags]")
 	return errors.New("unknown or missing command")
 }
 
