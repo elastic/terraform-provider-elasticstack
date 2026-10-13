@@ -1643,6 +1643,28 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
       "attemptedAt": "2026-10-12T03:18:11.842942484Z",
       "reason": "build_failed"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.GetKbEphemeralConnectionBlock",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-10-13T03:12:29.005492592Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.fwAttributeToAttrType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-10-13T03:12:29.005492796Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/schema.fwNestedBlockAttributesToAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/schema",
+      "attemptedAt": "2026-10-13T03:21:47.3397653Z",
+      "reason": "build_failed",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
