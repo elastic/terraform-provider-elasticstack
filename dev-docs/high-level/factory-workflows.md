@@ -30,7 +30,7 @@ The classifier never applies factory trigger labels itself. A maintainer (or fut
 
 > Maintainer setup: these labels must exist in repo settings before the workflows can be triggered by label events. See [`contributing.md`](./contributing.md#factory-workflow-labels-maintainers).
 
-All factories also support `workflow_dispatch` with an `issue_number` input, which is how the continuous-quality scanners fan out to `code-factory` (see [`continuous-quality-workflows.md`](./continuous-quality-workflows.md)).
+All factories also support `workflow_dispatch` with an `issue_number` input, which is how the continuous-quality scanners fan out to `code-factory` (and, for the Kibana API Gap Scanner, `research-factory`) (see [`continuous-quality-workflows.md`](./continuous-quality-workflows.md)).
 
 ## Phase labels
 
@@ -67,7 +67,7 @@ Adds a deep-research pass **before** `change-factory`. It compares at least two 
 ### Trigger
 
 - Apply the `research-factory` label to an issue.
-- Or dispatch the workflow with `issue_number`.
+- Or dispatch the workflow with `issue_number` (and optionally `source_workflow`); the Kibana API Gap Scanner does this for each issue it creates (see [`continuous-quality-workflows.md`](./continuous-quality-workflows.md)).
 
 ### Output: sticky comment
 
