@@ -321,6 +321,29 @@ func TestAccDataSourceSynonymSetCountVariety(t *testing.T) {
 	})
 }
 
+// TestAccDataSourceSynonymSetZeroRules verifies that the data source correctly
+// reflects a synonym set that currently has zero rules, rather than erroring or
+// returning a non-empty list.
+func TestAccDataSourceSynonymSetZeroRules(t *testing.T) {
+	synonymSetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("zero-rules"),
+				ConfigVariables:          config.Variables{"synonym_set_id": config.StringVariable(synonymSetID)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_synonym_set.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonym_set_id", synonymSetID),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_synonym_set.test", "synonyms_set.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccDataSourceSynonymSet verifies that the synonym set data source reads a
 // resource created by the synonym set resource and reflects all attributes correctly.
 func TestAccDataSourceSynonymSet(t *testing.T) {
