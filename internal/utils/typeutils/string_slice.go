@@ -50,10 +50,7 @@ func StringSliceFromAny(v any) ([]string, bool) {
 				return arr, true
 			}
 		}
-		if trimmed == "" {
-			return nil, false
-		}
-		return []string{trimmed}, true
+		return []string{x}, true
 	default:
 		return nil, false
 	}
