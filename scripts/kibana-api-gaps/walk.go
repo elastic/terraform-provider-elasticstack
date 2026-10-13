@@ -47,6 +47,8 @@ type propGap struct {
 	ref      schemaRef
 	required bool
 	members  []Member
+	// query marks a query parameter, as opposed to a request body property.
+	query bool
 }
 
 type walker struct {
@@ -142,7 +144,7 @@ func (w *walker) queryGaps(params []oasParam, paramsType types.Type, opName stri
 		if !ok {
 			return nil, fmt.Errorf("unmatched json tag: query parameter %q of %s has no field in Go type %s", param.name, opName, paramsType)
 		}
-		gap := propGap{name: param.name, ref: param.ref, required: boolValue(param.ref.node, "required")}
+		gap := propGap{name: param.name, ref: param.ref, required: boolValue(param.ref.node, "required"), query: true}
 		if !w.usage.fieldUsed(entry.owner, entry.field.Name()) {
 			gap.members = []Member{{Field: param.name, Pointer: param.ref.pointer, XState: stringValue(param.ref.node, "x-state")}}
 		} else if schema := mappingValue(param.ref.node, "schema"); schema != nil {

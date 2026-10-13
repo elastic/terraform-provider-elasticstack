@@ -86,7 +86,7 @@ func TestMergeGroupsReturnsGroupsSortedByKey(t *testing.T) {
 func TestMergeGroupsKeepsQueryParametersApartFromBodyFieldsOfTheSameName(t *testing.T) {
 	body := variantGroup("r", "Create", "force", "fb", "force")
 	query := Group{Key: "r#/paths/~1api~1x/delete/parameters/force", Resource: "r", Field: "force", Pointer: "/paths/~1api~1x/delete/parameters/force", Fingerprint: "fq",
-		Members: []Member{{Field: "force", Pointer: "/paths/~1api~1x/delete/parameters/force"}}}
+		Members: []Member{{Field: "force", Pointer: "/paths/~1api~1x/delete/parameters/force"}}, query: true}
 
 	assert.Len(t, mergeGroups([]Group{body, query}), 2)
 }
@@ -100,4 +100,18 @@ func TestMergeGroupsKeyChangesWhenASmallerLocationAppears(t *testing.T) {
 	assert.Equal(t, update.Key, before.Key)
 	assert.Equal(t, create.Key, withCreate.Key, "the smallest location becomes the key; the group is re-triaged once")
 	assert.NotEqual(t, before.Fingerprint, withCreate.Fingerprint)
+}
+
+func TestMergeGroupsUsesTheCarriedKindNotThePointerShape(t *testing.T) {
+	body := variantGroup("r", "Create", "force", "fb", "force")
+	query := variantGroup("r", "Other", "force", "fq", "force")
+	query.query = true
+
+	assert.Len(t, mergeGroups([]Group{body, query}), 2, "a query group is not merged with a body group even when its pointer has no /parameters/ segment")
+
+	sibling := variantGroup("r", "Another", "force", "fq2", "force")
+	sibling.query = true
+	merged := mergeGroups([]Group{query, sibling})
+	require.Len(t, merged, 1)
+	assert.True(t, merged[0].query, "the merged group keeps its kind")
 }

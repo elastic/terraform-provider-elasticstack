@@ -35,6 +35,8 @@ type Group struct {
 	Pointer     string   `json:"pointer"`
 	Fingerprint string   `json:"fingerprint"`
 	Members     []Member `json:"members"`
+	// query is true for a query parameter group and false for a request body property group.
+	query bool
 }
 
 // Discovery is the deterministic result of analysing every in-scope resource.
@@ -173,7 +175,7 @@ func addGroup(groups map[string]*groupBuild, resource string, prop propGap) {
 	build, ok := groups[key]
 	if !ok {
 		build = &groupBuild{
-			group: Group{Key: key, Resource: resource, Field: prop.name, Pointer: prop.ref.pointer},
+			group: Group{Key: key, Resource: resource, Field: prop.name, Pointer: prop.ref.pointer, query: prop.query},
 			ref:   prop.ref,
 		}
 		groups[key] = build
@@ -213,7 +215,7 @@ func mergeGroups(groups []Group) []Group {
 	}
 	byID := make(map[id][]Group)
 	for _, g := range groups {
-		key := id{g.Resource, g.Field, strings.Contains(g.Pointer, "/parameters/")}
+		key := id{g.Resource, g.Field, g.query}
 		byID[key] = append(byID[key], g)
 	}
 	merged := make([]Group, 0, len(byID))
