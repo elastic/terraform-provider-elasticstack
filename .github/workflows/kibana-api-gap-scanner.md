@@ -58,6 +58,8 @@ on:
         ref: memory/kibana-api-gap-scanner
         path: gh-aw-repo-memory/kibana-api-gap-scanner
         fetch-depth: 1
+    - name: Generate filtered Kibana OpenAPI spec
+      run: make -C generated/kbapi transform
     - name: Discover Kibana API gaps
       id: discover_gaps
       env:
@@ -188,7 +190,7 @@ Stop as soon as **either** of these is true:
 - the number of `file` verdicts equals `${{ needs.pre_activation.outputs.issue_slots_available }}`; or
 - 15 groups have been triaged.
 
-`suppress` verdicts never consume a slot. Never skip a group to reach a later one: your verdicts must be a prefix of the queue in queue order, and `record` rejects anything else.
+`suppress` verdicts never consume a slot. Never skip a group to reach a later one: your verdicts must be a prefix of the queue in queue order. `record` also rejects a prefix that stops early, so keep triaging until the slots are filled with `file` verdicts or the whole queue is covered.
 
 ### When to suppress
 
@@ -234,7 +236,7 @@ go run ./scripts/kibana-api-gaps record \
   --memory /tmp/gh-aw/repo-memory/kibana-api-gap-scanner/memory/kibana-api-gap-scanner/state.json
 ```
 
-`record` validates the verdicts against the report (known keys, queue order, no more `file` verdicts than slots, non-empty reasons). If it rejects the file, fix `verdicts.json` and run it again; it must succeed before you finish. Never write `state.json` by hand.
+`record` validates the verdicts against the report (known keys, queue order, no more `file` verdicts than slots, no early stop before the slots are filled or the queue is covered, non-empty reasons). If it rejects the file, fix `verdicts.json` and run it again; it must succeed before you finish. Never write `state.json` by hand.
 
 If you filed nothing and the queue was non-empty, still call `record`, then call `noop` with a short reason.
 

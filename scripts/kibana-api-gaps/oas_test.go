@@ -110,3 +110,9 @@ func mustNode(t *testing.T, text string) *yaml.Node {
 	require.NoError(t, yaml.Unmarshal([]byte(text), &doc))
 	return doc.Content[0]
 }
+
+func TestLoadOASReportsHowToGenerateAMissingFile(t *testing.T) {
+	_, err := loadOAS(filepath.Join(t.TempDir(), "oas-filtered.yaml"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "make -C generated/kbapi transform")
+}

@@ -18,7 +18,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -55,6 +57,9 @@ type oasDoc struct {
 
 func loadOAS(path string) (*oasDoc, error) {
 	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("%s does not exist; generate it with `make -C generated/kbapi transform`: %w", path, err)
+	}
 	if err != nil {
 		return nil, err
 	}
