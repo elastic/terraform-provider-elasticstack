@@ -29,13 +29,28 @@ on:
           const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
           await fn({ github, context, core });
     # NOTE: This ref must match the repo-memory tool config branch-name below.
+    - name: Check for repo-memory branch
+      id: memory_branch
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Exit code 2 means the branch does not exist yet (first run); any other failure must fail the job.
+        set +e
+        git ls-remote --exit-code --heads "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" memory/kibana-api-gap-scanner > /dev/null
+        status=$?
+        set -e
+        case "$status" in
+          0) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+          2) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
+          *) echo "git ls-remote failed with exit code $status" >&2; exit "$status" ;;
+        esac
     - name: Checkout repo-memory branch
+      if: steps.memory_branch.outputs.exists == 'true'
       uses: actions/checkout@v7.0.1
       with:
         ref: memory/kibana-api-gap-scanner
         path: gh-aw-repo-memory/kibana-api-gap-scanner
         fetch-depth: 1
-      continue-on-error: true
     - name: Discover Kibana API gaps
       id: discover_gaps
       env:
@@ -60,8 +75,6 @@ on:
         name: kibana-api-gap-report
         path: /tmp/gh-aw/agent/report.json
         if-no-files-found: error
-checkout:
-  fetch-depth: 0
 concurrency:
   group: kibana-api-gap-scanner
   cancel-in-progress: false
@@ -159,7 +172,7 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
 
 Work through the queue **strictly in order**, one group at a time. For each group:
 
-1. Read the OAS node(s) it lists in `generated/kbapi/oas-filtered.yaml` (the pointers in the body), the resource implementation under `internal/`, and, when useful, the Elastic docs.
+1. Read the OAS node(s) it lists in `generated/kbapi/oas-filtered.yaml` (the pointers in the body), and the resource implementation under `internal/`.
 2. Decide exactly one verdict, `file` or `suppress`, and write **one** short reason for it.
 3. If the verdict is `file`, call `create-issue` for that group (see below).
 
@@ -186,7 +199,7 @@ Suppress **only** when you are highly confident the group should not be exposed 
 For each `file` verdict call `create-issue` once:
 
 - **title**: the queue item's `title`, unchanged (the `[kibana-api-gap] ` prefix is added automatically, so do not repeat it).
-- **body**: the queue item's `body` **unchanged**, with one added paragraph before the hidden marker line that begins `Triage reason:` followed by your reason. Never edit the field list, pointers, or the marker.
+- **body**: the exact stdout of `go run ./scripts/kibana-api-gaps render-issue --report /tmp/gh-aw/agent/report.json --key '<queue key>' --reason '<your reason>'`, pasted byte for byte. The command inserts the `Triage reason:` paragraph before the hidden marker and strips newlines and HTML comment delimiters from the reason. Never edit, reflow, or add to the body yourself.
 
 Do not apply any labels yourself and do not add any factory trigger label; the safe output applies `kibana-api-gap` and `triaged`.
 
