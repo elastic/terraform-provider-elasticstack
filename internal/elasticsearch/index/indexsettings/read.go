@@ -406,20 +406,3 @@ func flatSettingAsTypedValue(ctx context.Context, current attr.Value, raw json.R
 		return nil, false
 	}
 }
-
-// nullTypedSettingValue returns the null value matching the declared type of
-// the current attribute value.
-func nullTypedSettingValue(current attr.Value) attr.Value {
-	switch current.(type) {
-	case types.Int64:
-		return types.Int64Null()
-	case types.Bool:
-		return types.BoolNull()
-	case types.String:
-		return types.StringNull()
-	case types.Set:
-		return types.SetNull(types.StringType)
-	default:
-		return current
-	}
-}
