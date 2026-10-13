@@ -36,12 +36,8 @@ resource "elasticstack_kibana_security_exception_item" "test" {
     value    = "test-process"
   }]
 
-  comments = [
-    {
-      comment = "First comment"
-    },
-    {
-      comment = "Second comment"
-    }
+  required_comments = [
+    "First comment",
+    "Second comment"
   ]
 }
