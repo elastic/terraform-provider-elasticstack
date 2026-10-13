@@ -296,28 +296,6 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 			continue
 		}
 
-		nullVal := nullAttrValueForField(ctx, planField)
-		if nullVal != nil {
-			setTFModelField(plan, fieldKey, nullVal)
-		}
-	}
-}
-
-func nullAttrValueForField(ctx context.Context, v attr.Value) attr.Value {
-	switch val := v.(type) {
-	case types.Int64:
-		return types.Int64Null()
-	case types.Bool:
-		return types.BoolNull()
-	case types.String:
-		return types.StringNull()
-	case types.Set:
-		return types.SetNull(val.ElementType(ctx))
-	case types.List:
-		return types.ListNull(val.ElementType(ctx))
-	case jsontypes.Normalized:
-		return jsontypes.NewNormalizedNull()
-	default:
-		return nil
+		setTFModelField(plan, fieldKey, typeutils.NullValueForType(planField.Type(ctx)))
 	}
 }

@@ -63,8 +63,6 @@ func (m *processorCSVModel) MarshalBody() (any, diag.Diagnostics) {
 		body.EmptyValue = m.EmptyValue.ValueString()
 	}
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.16.6] - 2026-10-12
 
 ### Breaking changes
 
@@ -30,6 +30,7 @@ query = {
 
 ### Changes
 
+- Fixes three latent bugs in the maintenance window resource (import decode failure, import `space_id` resolution, and scope removal producing an inconsistent plan) that were exposed while closing the 5 documented schema-coverage test gaps. ([#5188](https://github.com/elastic/terraform-provider-elasticstack/pull/5188))
 - Preserve known-empty tags list on elasticstack_kibana_dashboard read-back so `tags = []` no longer errors with "was cty.ListValEmpty(cty.String), but now null". ([#5146](https://github.com/elastic/terraform-provider-elasticstack/pull/5146))
 - Read Kibana alerting rule execution status from a data source. ([#5145](https://github.com/elastic/terraform-provider-elasticstack/pull/5145))
 - The ML job state resource now fails fast with a clear error when a job settles into a terminal state ("opened", "closed", or "failed") other than the one requested, instead of waiting out the full operation timeout. ([#5156](https://github.com/elastic/terraform-provider-elasticstack/pull/5156))
@@ -1141,7 +1142,8 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.5...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.6...HEAD
+[0.16.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.5...v0.16.6
 [0.16.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.2...v0.16.3

@@ -47,8 +47,6 @@ func (m *processorRemoveModel) MarshalBody() (any, diag.Diagnostics) {
 	body.Field = typeutils.StringElements(m.Field, &diags)
 	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

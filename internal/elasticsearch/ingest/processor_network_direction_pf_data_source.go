@@ -63,8 +63,6 @@ func (m *processorNetworkDirectionModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, true)
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 
