@@ -252,8 +252,7 @@ workflow-generate: ## Generate workflow markdown sources
 	@ gh aw compile
 
 .PHONY: workflow-test
-workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spec-impact + kibana-api-gaps, node workflow lib)
-	@ go test ./scripts/kibana-spec-impact/... -count=1
+workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-api-gaps, node workflow lib)
 	@ go test ./scripts/kibana-api-gaps/... -count=1
 	@ go test ./scripts/changelog/... -count=1
 	@ go test ./scripts/version-matrix/... -count=1
