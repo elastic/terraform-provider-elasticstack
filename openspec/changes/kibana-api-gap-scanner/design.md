@@ -230,7 +230,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
   - If live verification (task 4.3) shows a problem: disable the schedule and push triggers (leaving dispatch), or disable the scanner; fix forward.
   - To restore the old scanner: revert the PR. The `kibana-spec-impact` helper comes back from git and its baseline is re-seeded from current `main`. Its old dedupe fingerprints (and the deleted memory branch, if already removed) are lost, so it may re-file a few entities once.
 
-**Spike outcome (task 2.3):** conditional go, user-approved. The whole-repository group count fell from 1,632 to 1,051 after treating types handed to `reflect` as opaque-covered, and to 236 after merging same-field groups across create, update, and union bodies; the three spike resources (SLO, synthetics monitor, Fleet agent policy) produced 21 groups, matching the 21 logical fields counted by hand, with about 57% plausible real gaps and the rest in the triage suppress categories.
+**Spike outcome (task 2.3):** conditional go, user-approved. The whole-repository group count fell from 1,632 to 1,051 after treating types handed to `reflect` as opaque-covered, and to 244 after merging same-field groups across create, update, and union bodies (keeping query-parameter and body groups apart); the three spike resources (SLO, synthetics monitor, Fleet agent policy) produced 21 groups, matching the 21 logical fields counted by hand, with about 57% plausible real gaps and the rest in the triage suppress categories.
 
 ## Risks / Trade-offs
 
