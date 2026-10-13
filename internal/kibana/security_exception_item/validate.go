@@ -44,8 +44,14 @@ const (
 	attrField    = "field"
 	attrOperator = "operator"
 	attrValue    = "value"
-	attrValues   = "values"
-	attrEntries  = "entries"
+
+	// attrCreatedAt / attrCreatedBy are the computed comment audit attribute
+	// names. They are shared by getCommentAttrTypes and the comments nested
+	// schema so the key stays a single point of truth (goconst).
+	attrCreatedAt = "created_at"
+	attrCreatedBy = "created_by"
+	attrValues    = "values"
+	attrEntries   = "entries"
 )
 
 // ValidateConfig validates the configuration for an exception item resource.

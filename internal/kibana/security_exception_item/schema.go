@@ -41,6 +41,7 @@ var exceptionItemResourceDescription string
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
+		Version:             1,
 		MarkdownDescription: exceptionItemResourceDescription,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -220,9 +221,19 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
+			"required_comments": schema.ListAttribute{
+				MarkdownDescription: "Comment texts that must be present in the item's comment log. " +
+					"The provider appends any missing text in configuration order; it never edits, " +
+					"reorders, or deletes stored comments. Texts are matched exactly and must not " +
+					"be empty, whitespace-only, or repeated.",
+				Optional:    true,
+				ElementType: types.StringType,
+				Validators:  requiredCommentValidators(),
+			},
 			"comments": schema.ListNestedAttribute{
-				MarkdownDescription: "Array of comments about the exception item.",
-				Optional:            true,
+				MarkdownDescription: "The full comment log stored in Kibana, including comments created outside Terraform. Computed; read-only.",
+				Computed:            true,
+				PlanModifiers:       commentsPlanModifiers(),
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
@@ -231,7 +242,15 @@ func getSchema(_ context.Context) schema.Schema {
 						},
 						"comment": schema.StringAttribute{
 							MarkdownDescription: "The comment text.",
-							Required:            true,
+							Computed:            true,
+						},
+						attrCreatedAt: schema.StringAttribute{
+							MarkdownDescription: "The timestamp of when the comment was created (`2006-01-02T15:04:05.000Z`).",
+							Computed:            true,
+						},
+						attrCreatedBy: schema.StringAttribute{
+							MarkdownDescription: "The user who created the comment.",
+							Computed:            true,
 						},
 					},
 				},
