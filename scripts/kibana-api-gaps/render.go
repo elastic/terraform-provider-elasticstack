@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var versionPattern = regexp.MustCompile(`\d+\.\d+(?:\.\d+)?`)
@@ -31,8 +32,22 @@ func introducedVersion(xState string) string {
 	return versionPattern.FindString(xState)
 }
 
+// renderTitle and renderBody produce the issue content from facts only. The `[kibana-api-gap] `
+// title prefix is added by the create-issue safe output, and triage's reason is appended to the
+// body by the agent (workflow task 4.1).
 func renderTitle(g Group) string {
 	return g.Resource + ": " + g.Field
+}
+
+// checkMarkerSafe verifies that the group key and fingerprint can be read back from the hidden
+// marker with `key=(\S+) fp=(\S+)` and cannot close the HTML comment early.
+func checkMarkerSafe(g Group) error {
+	for name, value := range map[string]string{"key": g.Key, "fingerprint": g.Fingerprint} {
+		if value == "" || strings.ContainsFunc(value, unicode.IsSpace) || strings.Contains(value, "-->") {
+			return fmt.Errorf("group %s %q cannot be embedded in an issue marker", name, value)
+		}
+	}
+	return nil
 }
 
 func marker(g Group) string {

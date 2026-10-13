@@ -82,3 +82,22 @@ func TestMergeGroupsReturnsGroupsSortedByKey(t *testing.T) {
 	})
 	assert.Equal(t, "a", merged[0].Resource)
 }
+
+func TestMergeGroupsKeepsQueryParametersApartFromBodyFieldsOfTheSameName(t *testing.T) {
+	body := variantGroup("r", "Create", "force", "fb", "force")
+	query := Group{Key: "r#/paths/~1api~1x/delete/parameters/force", Resource: "r", Field: "force", Pointer: "/paths/~1api~1x/delete/parameters/force", Fingerprint: "fq",
+		Members: []Member{{Field: "force", Pointer: "/paths/~1api~1x/delete/parameters/force"}}}
+
+	assert.Len(t, mergeGroups([]Group{body, query}), 2)
+}
+
+func TestMergeGroupsKeyChangesWhenASmallerLocationAppears(t *testing.T) {
+	update := variantGroup("r", "Update", "settings", "fu", "settings.x")
+	create := variantGroup("r", "Create", "settings", "fc", "settings.x")
+	before := mergeGroups([]Group{update})[0]
+	withCreate := mergeGroups([]Group{update, create})[0]
+
+	assert.Equal(t, update.Key, before.Key)
+	assert.Equal(t, create.Key, withCreate.Key, "the smallest location becomes the key; the group is re-triaged once")
+	assert.NotEqual(t, before.Fingerprint, withCreate.Fingerprint)
+}

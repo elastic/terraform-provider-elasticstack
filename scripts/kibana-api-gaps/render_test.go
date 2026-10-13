@@ -18,9 +18,11 @@
 package main
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRenderIssueTitleNamesResourceAndTopLevelField(t *testing.T) {
@@ -65,4 +67,20 @@ func countOccurrences(s, sub string) int {
 		}
 	}
 	return n
+}
+
+func TestCheckMarkerSafeRejectsKeysThatCouldBreakTheHiddenMarker(t *testing.T) {
+	assert.NoError(t, checkMarkerSafe(gapGroup("r", "a", 1, "fp")))
+	assert.NoError(t, checkMarkerSafe(Group{Key: "r#/paths/~1api~1x~1{id}/get/parameters/format", Fingerprint: "fp"}))
+	for _, key := range []string{"r#/a b", "r#/a-->b", "r#/a\n", ""} {
+		assert.Error(t, checkMarkerSafe(Group{Key: key, Fingerprint: "fp"}), key)
+	}
+}
+
+func TestMarkerRoundTripsThroughTheDocumentedPattern(t *testing.T) {
+	g := gapGroup("r", "a", 1, "abc123")
+	match := regexp.MustCompile(`<!-- kibana-api-gap key=(\S+) fp=(\S+) -->`).FindStringSubmatch(renderBody(g))
+	require.Len(t, match, 3)
+	assert.Equal(t, g.Key, match[1])
+	assert.Equal(t, "abc123", match[2])
 }

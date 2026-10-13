@@ -95,6 +95,11 @@ func discover(cfg discoverConfig) (*Discovery, error) {
 		out.Groups = append(out.Groups, group)
 	}
 	out.Groups = mergeGroups(out.Groups)
+	for _, g := range out.Groups {
+		if err := checkMarkerSafe(g); err != nil {
+			return nil, err
+		}
+	}
 	sort.Strings(out.NoOperations)
 	return out, nil
 }
@@ -195,17 +200,21 @@ func (b *groupBuild) finish(doc *oasDoc) (Group, error) {
 	return group, nil
 }
 
-// mergeGroups collapses the groups of one resource that share a top-level field name, such as the
+// mergeGroups collapses the groups of one resource that share a top-level field name and kind (request-body property or query parameter), such as the
 // same field in a create and an update body or in every variant of a union body, into a single
 // group. The merged group is keyed by the smallest member location so its identity does not
 // depend on input order; its fingerprint covers every constituent, so a structural change to
 // any of them, or a new constituent, expires the verdict. A group with no siblings is returned
 // unchanged.
 func mergeGroups(groups []Group) []Group {
-	type id struct{ resource, field string }
+	type id struct {
+		resource, field string
+		query           bool
+	}
 	byID := make(map[id][]Group)
 	for _, g := range groups {
-		byID[id{g.Resource, g.Field}] = append(byID[id{g.Resource, g.Field}], g)
+		key := id{g.Resource, g.Field, strings.Contains(g.Pointer, "/parameters/")}
+		byID[key] = append(byID[key], g)
 	}
 	merged := make([]Group, 0, len(byID))
 	for _, siblings := range byID {
