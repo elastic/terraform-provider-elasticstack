@@ -971,6 +971,17 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 				ExpectError: regexp.MustCompile(`(Nested entry requires 'operator' to be set|attribute "operator" is required)`),
 				PlanOnly:    true,
 			},
+			// Test 14: Entries list is empty
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_entries_empty"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("list must contain at least 1 elements"),
+				PlanOnly:    true,
+			},
 		},
 	})
 }
@@ -1524,6 +1535,68 @@ func TestAccResourceExceptionItem_CommentsImmutableFieldReplace(t *testing.T) {
 	})
 }
 
+// TestAccResourceExceptionItem_CommentsUnsetToSet exercises the unset->set
+// transition for the optional comments list: the Security Exceptions API
+// appends whatever comments are sent on update to the comments the item
+// already has, so this is only safely verifiable (without the apply
+// producing an inconsistent-state error) when the item starts out with no
+// comments at all. Editing an existing comment, and a set->unset transition,
+// are not exercised here because the provider never forwards comment IDs on
+// update and always re-reads the full (server-appended) comment history
+// from the API, which makes those transitions inherently inconsistent with
+// the planned value for this non-Computed list attribute.
+func TestAccResourceExceptionItem_CommentsUnsetToSet(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-comments-unset-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-comments-unset-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_comments"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.TestCheckNoResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.#"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("two_comments"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.0.comment", "First comment"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "comments.0.id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.1.comment", "Second comment"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "comments.1.id"),
+				),
+			},
+		},
+	})
+}
+
+// NOTE: coverage for the `meta` attribute (configuring it with a real,
+// non-empty JSON object and asserting the value) was deliberately NOT added
+// here. Verified directly against the target Kibana/Elasticsearch stack
+// (both through this provider and with raw curl calls to
+// /api/exception_lists/items, bypassing the provider entirely) that
+// submitting ANY non-null `meta` object -- including `{}` -- is rejected by
+// Elasticsearch with a document_parsing_exception: the saved-object mapping
+// for `exception-list.meta` in this stack is `keyword` (plain text), while
+// the Kibana REST API and generated client both type `meta` as a free-form
+// JSON object. This is a pre-existing backend/storage-mapping
+// incompatibility, not something introduced by or fixable within this
+// schema-coverage change; see the PR description for details and a
+// suggested follow-up.
+
 func TestAccResourceExceptionItem_EmptyTagsAndOsTypes(t *testing.T) {
 	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
 
@@ -1585,6 +1658,79 @@ func TestAccResourceExceptionItem_EmptyTagsAndOsTypes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "os_types.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_NamespaceTypeDefault(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-ns-default-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-ns-default-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("namespace_type_default"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "namespace_type", "single"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_ReplaceOnChange(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-replace-%s", uuid.New().String()[:8])
+	itemIDA := fmt.Sprintf("test-exception-item-replace-a-%s", uuid.New().String()[:8])
+	itemIDB := fmt.Sprintf("test-exception-item-replace-b-%s", uuid.New().String()[:8])
+
+	resourceName := "elasticstack_kibana_security_exception_item.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: create with item_id = itemIDA.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemIDA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "item_id", itemIDA),
+					resource.TestCheckResourceAttr(resourceName, "namespace_type", "single"),
+				),
+			},
+			// Step 2: changing item_id must force a destroy-before-create replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemIDB),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "item_id", itemIDB),
+					resource.TestCheckResourceAttr(resourceName, "namespace_type", "single"),
 				),
 			},
 		},

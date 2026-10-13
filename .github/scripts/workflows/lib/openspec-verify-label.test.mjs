@@ -274,6 +274,15 @@ test("verify-label workflow bootstrap steps run unconditionally (no verification
 	assert.match(lock, /name: Setup repository dependencies/);
 });
 
+test("verify-label compiled lock agent job can read check runs", () => {
+	const lock = lockSource();
+	const agentMatch = lock.match(/^ {2}agent:\n([\s\S]*?)(?=\n {2}\w[\w-]*:\n)/m);
+	assert.ok(agentMatch, "expected to find agent job block in lock file");
+	const agentBlock = agentMatch[0];
+	assert.ok(agentBlock.includes("checks: read"), "expected checks: read in agent job permissions");
+	assert.match(workflowSource(), /permissions:\n {2}contents: read\n {2}pull-requests: read\n {2}checks: read/);
+});
+
 test("verify-label compiled lock pre_activation job has issues and pull-requests write permissions", () => {
 	const lock = lockSource();
 	// Extract just the pre_activation job block (up to the next top-level job key)
