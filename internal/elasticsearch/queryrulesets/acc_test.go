@@ -367,7 +367,7 @@ func TestAccDataSourceQueryRuleset(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_query_ruleset.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "ruleset_id", rulesetID),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "4"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.rule_id", "rule-1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.type", "pinned"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.priority", "1"),
@@ -380,9 +380,68 @@ func TestAccDataSourceQueryRuleset(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.ids.1", "doc-2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.rule_id", "rule-2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.type", "exclude"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.priority"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.type", "contains"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.values", `["deprecated"]`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.actions.ids.0", "doc-old"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.rule_id", "rule-3"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.type", "always"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.metadata"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.values"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.rule_id", "rule-4"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.type", "gt"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.metadata", "popularity"),
+					// The Query Rules API normalizes numeric criteria values to strings on
+					// GET; the data source has no prior state to preserve the original
+					// numeric JSON formatting from, unlike the resource's Read.
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.values", `["100"]`),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceQueryRulesetCriteriaTypes verifies the data source preserves rule
+// declaration order across a 7-rule ruleset and correctly surfaces a rule with
+// multiple criteria entries, mirroring the resource-side TestAccResourceQueryRulesetCriteriaTypes.
+func TestAccDataSourceQueryRulesetCriteriaTypes(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "7"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.rule_id", "rule-fuzzy"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.criteria.0.type", "fuzzy"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.rule_id", "rule-prefix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.type", "prefix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.rule_id", "rule-suffix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.type", "suffix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.rule_id", "rule-lt"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.type", "lt"),
+					// See the comment in TestAccDataSourceQueryRuleset: the API normalizes
+					// numeric criteria values to strings on GET, and the data source has no
+					// prior state to preserve the original numeric formatting from.
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.values", `["10"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.4.rule_id", "rule-lte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.4.criteria.0.type", "lte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.4.criteria.0.values", `["50"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.5.rule_id", "rule-gte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.5.criteria.0.type", "gte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.5.criteria.0.values", `["5"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.rule_id", "rule-multi"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.0.type", "exact"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.0.metadata", "query"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.1.type", "prefix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.1.metadata", "query"),
 				),
 			},
 		},
