@@ -95,7 +95,7 @@ func (h ControlPinnedHandler[G, P]) FromAPI(ctx context.Context, prior *models.P
 	ppm, populateTf := models.SeedPinnedPanelForRead(prior, h.PanelTypeDiscriminator)
 	if h.SizingFromGroup != nil {
 		width, grow := h.SizingFromGroup(group)
-		if populateTf == nil {
+		if prior == nil {
 			ppm.Width = types.StringPointerValue(width)
 			ppm.Grow = types.BoolPointerValue(grow)
 		} else {
@@ -144,6 +144,15 @@ func (h ControlPinnedHandler[G, P]) ToAPI(ppm models.PinnedPanelModel) (kbapi.Da
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	return item, diags
+}
+
+// BoolPointer converts a known Terraform bool into a pointer. Null and unknown values yield nil.
+func BoolPointer(v types.Bool) *bool {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	b := v.ValueBool()
+	return &b
 }
 
 // EnumPointerFromString converts a known Terraform string into a pointer to the generated enum type E.

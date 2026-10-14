@@ -48,7 +48,7 @@ func newPinnedHandler() pinnedHandler {
 		BuildConfig: BuildConfig,
 		AfterRemapToGroup: func(ppm models.PinnedPanelModel, group *kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl) {
 			group.Width = panelkit.EnumPointerFromString[kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControlWidth](ppm.Width)
-			group.Grow = ppm.Grow.ValueBoolPointer()
+			group.Grow = panelkit.BoolPointer(ppm.Grow)
 		},
 		SizingFromGroup: func(group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl) (*string, *bool) {
 			return panelkit.StringPointerFromEnum(group.Width), group.Grow

@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -67,11 +68,18 @@ type pinnedSizingCase struct {
 
 func pinnedSizingCases() []pinnedSizingCase {
 	return []pinnedSizingCase{
-		{panelTypeOptionsListControl, pinnedFixtureOptionsList("status")},
+		{panelTypeOptionsListControl, pinnedFixtureOptionsList()},
 		{panelTypeRangeSlider, pinnedFixtureRangeSlider("1", "2", 1)},
 		{panelTypeEsqlControl, pinnedFixtureEsql()},
 		{panelTypeTimeSlider, pinnedFixtureTimeSlider()},
 	}
+}
+
+func otherTypeFixture(name string) models.PinnedPanelModel {
+	if name == panelTypeOptionsListControl {
+		return pinnedFixtureTimeSlider()
+	}
+	return pinnedFixtureOptionsList()
 }
 
 func pinnedPayloadSizing(t *testing.T, ppm models.PinnedPanelModel) map[string]any {
@@ -99,6 +107,18 @@ func Test_pinnedPanels_widthGrow_toAPI(t *testing.T) {
 			payload := pinnedPayloadSizing(t, withSizing(tc.fixture, types.StringValue("large"), types.BoolValue(false)))
 			require.Equal(t, "large", payload["width"])
 			require.Equal(t, false, payload["grow"])
+		})
+		t.Run(tc.name+" includes width alone", func(t *testing.T) {
+			t.Parallel()
+			payload := pinnedPayloadSizing(t, withSizing(tc.fixture, types.StringValue("medium"), types.BoolNull()))
+			require.Equal(t, "medium", payload["width"])
+			require.NotContains(t, payload, "grow")
+		})
+		t.Run(tc.name+" includes grow alone", func(t *testing.T) {
+			t.Parallel()
+			payload := pinnedPayloadSizing(t, withSizing(tc.fixture, types.StringNull(), types.BoolValue(true)))
+			require.NotContains(t, payload, "width")
+			require.Equal(t, true, payload["grow"])
 		})
 		t.Run(tc.name+" omits null width and grow", func(t *testing.T) {
 			t.Parallel()
@@ -159,17 +179,54 @@ func Test_pinnedPanels_widthGrow_fromAPI(t *testing.T) {
 			require.Equal(t, types.StringValue("small"), out[0].Width)
 			require.Equal(t, types.BoolValue(false), out[0].Grow)
 		})
-		t.Run(tc.name+" different-type prior reads API values directly", func(t *testing.T) {
+		t.Run(tc.name+" different-type prior with null sizing preserves null", func(t *testing.T) {
 			t.Parallel()
-			other := pinnedFixtureOptionsList("status")
-			if tc.name == panelTypeOptionsListControl {
-				other = pinnedFixtureTimeSlider()
-			}
-			prior := []models.PinnedPanelModel{withSizing(other, types.StringNull(), types.BoolNull())}
+			prior := []models.PinnedPanelModel{withSizing(otherTypeFixture(tc.name), types.StringNull(), types.BoolNull())}
+			out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, apiWith(t, types.StringValue("medium"), types.BoolValue(false)))
+			require.False(t, diags.HasError(), "%s", diags)
+			require.True(t, out[0].Width.IsNull())
+			require.True(t, out[0].Grow.IsNull())
+		})
+		t.Run(tc.name+" different-type prior with configured sizing reads API values", func(t *testing.T) {
+			t.Parallel()
+			prior := []models.PinnedPanelModel{withSizing(otherTypeFixture(tc.name), types.StringValue("large"), types.BoolValue(true))}
+			out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, apiWith(t, types.StringValue("small"), types.BoolValue(false)))
+			require.False(t, diags.HasError(), "%s", diags)
+			require.Equal(t, types.StringValue("small"), out[0].Width)
+			require.Equal(t, types.BoolValue(false), out[0].Grow)
+		})
+		t.Run(tc.name+" width set and grow null prior", func(t *testing.T) {
+			t.Parallel()
+			prior := []models.PinnedPanelModel{withSizing(tc.fixture, types.StringValue("small"), types.BoolNull())}
+			out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, apiWith(t, types.StringValue("small"), types.BoolValue(false)))
+			require.False(t, diags.HasError(), "%s", diags)
+			require.Equal(t, types.StringValue("small"), out[0].Width)
+			require.True(t, out[0].Grow.IsNull())
+		})
+		t.Run(tc.name+" grow set and width null prior", func(t *testing.T) {
+			t.Parallel()
+			prior := []models.PinnedPanelModel{withSizing(tc.fixture, types.StringNull(), types.BoolValue(true))}
 			out, diags := dashboardMapPinnedPanelsFromAPI(ctx, prior, apiWith(t, types.StringValue("medium"), types.BoolValue(true)))
 			require.False(t, diags.HasError(), "%s", diags)
-			require.Equal(t, types.StringValue("medium"), out[0].Width)
+			require.True(t, out[0].Width.IsNull())
 			require.Equal(t, types.BoolValue(true), out[0].Grow)
 		})
 	}
+}
+
+func Test_panelkit_pointerHelpers(t *testing.T) {
+	t.Parallel()
+
+	type testWidth string
+	require.Nil(t, panelkit.EnumPointerFromString[testWidth](types.StringNull()))
+	require.Nil(t, panelkit.EnumPointerFromString[testWidth](types.StringUnknown()))
+	got := panelkit.EnumPointerFromString[testWidth](types.StringValue("small"))
+	require.NotNil(t, got)
+	require.Equal(t, testWidth("small"), *got)
+
+	require.Nil(t, panelkit.BoolPointer(types.BoolNull()))
+	require.Nil(t, panelkit.BoolPointer(types.BoolUnknown()))
+	f := panelkit.BoolPointer(types.BoolValue(false))
+	require.NotNil(t, f)
+	require.False(t, *f)
 }

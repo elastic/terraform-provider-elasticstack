@@ -75,13 +75,14 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
    `PreserveString`/`PreserveBool` (`internal/kibana/dashboard/panelkit/nullpreserve.go`) return the
    existing Terraform value unchanged when it is null/unknown, and only convert the API pointer to a
    `ControlPinnedHandler.FromAPI` receives the prior panel at the same list index, which is not
-   necessarily the same control type as the API response. The read callback must therefore use the
-   same type-match criterion as `SeedPinnedPanelForRead`: when `prior` is nil, its type is unknown,
-   or its type differs from the current discriminator, set `width`/`grow` directly from the API's
-   `Width`/`Grow` pointers (nil pointer → null Terraform value). When a same-type prior exists, use
-   `PreserveString`/`PreserveBool` against `prior.Width`/`prior.Grow` so an omitted config value that
-   reads back as the server default (`medium`/`false`) stays null instead of being overwritten. This
-   mirrors the existing import-vs-refresh and type-change branching used by the pinned-panel path.
+   necessarily the same control type as the API response; `width`/`grow` are sibling attributes
+   independent of the control type, so any prior entry at that index is reusable for them. The read
+   callback therefore branches only on whether a prior exists: when `prior` is nil (import or a
+   missing index), set `width`/`grow` directly from the API's `Width`/`Grow` pointers (nil pointer
+   -> null Terraform value). When a prior exists (regardless of its control type), use
+   `PreserveString`/`PreserveBool` against `prior.Width`/`prior.Grow` so an omitted config value
+   that reads back as the server default (`medium`/`false`) stays null instead of being
+   overwritten, including on a type change at that list position where the prior is the plan.
 
 4. **Validator and type conversion for `width`**
    The Terraform attribute is a plain `types.String` validated with `stringvalidator.OneOf("small",

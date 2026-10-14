@@ -30,12 +30,9 @@ corresponding pinned-control-group API payload on create and update. When `width
 null in configuration, the resource SHALL omit them from the API payload and SHALL let Kibana apply
 its own defaults (`medium` for `width`, `false` for `grow`).
 
-On read, when a prior Terraform value exists for a `pinned_panels` entry matched by `type`, the
-resource SHALL preserve a null/unknown `width` or `grow` value rather than overwriting it with the
+On read, when a prior Terraform value exists for the `pinned_panels` entry at that list position (regardless of its `type`), the resource SHALL preserve a null/unknown `width` or `grow` value rather than overwriting it with the
 value Kibana reports (including a Kibana-applied default), so that omitting `width`/`grow` from
-configuration produces no diff. When there is no prior Terraform value for the entry (for example
-during `terraform import`, or when no prior entry of the same `type` exists at that list position),
-the resource SHALL populate `width` and `grow` directly from the API response.
+configuration produces no diff. When there is no prior Terraform value for the entry (for example during `terraform import`), the resource SHALL populate `width` and `grow` directly from the API response.
 
 On create and update, the resource SHALL include `pinned_panels` in the dashboard API request body
 in the order given in configuration. On read, the resource SHALL repopulate `pinned_panels` from the
