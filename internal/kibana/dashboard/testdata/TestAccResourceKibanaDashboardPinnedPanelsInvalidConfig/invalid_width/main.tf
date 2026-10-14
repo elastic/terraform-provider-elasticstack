@@ -13,7 +13,7 @@ resource "elasticstack_kibana_data_view" "test" {
 
 resource "elasticstack_kibana_dashboard" "test" {
   title       = var.dashboard_title
-  description = "Invalid pinned panel discriminator mismatch"
+  description = "Invalid pinned panel width value"
 
   time_range = {
     from = "now-15m"
