@@ -3,7 +3,6 @@
 #
 # Inputs, passed via the step's env: block:
 #   EVENT_NAME    - github.event_name; only "pull_request" runs the selector
-#   PR_BASE_SHA   - github.event.pull_request.base.sha (PR events only)
 #   GITHUB_OUTPUT - GitHub Actions step-output file (tests point this at a
 #                   temp file)
 #
@@ -24,10 +23,13 @@ if [[ "${EVENT_NAME}" != "pull_request" ]]; then
   } >>"$GITHUB_OUTPUT"
   exit 0
 fi
-# The actions/checkout step gives us a shallow merge commit only, so
-# merge-base / HEAD~1 resolution fails and the tool falls back to the
-# full suite. Fetch the PR base commit and pass it explicitly so the
-# tool can compute the real diff for this PR.
+# On pull_request events actions/checkout checks out the PR merge commit
+# (refs/pull/N/merge), whose first parent is the current tip of the base
+# branch. Diffing HEAD^1..HEAD therefore yields exactly the changes this PR
+# introduces, independent of how far the base branch has moved since the PR
+# was opened (github.event.pull_request.base.sha is the stale fork point and
+# would also sweep in every commit merged to the base branch since).
+# The workflow must check out with fetch-depth >= 2 so HEAD^1 is available.
 selector_output() {
   local out
   if ! out=$(go run ./scripts/targeted-testacc/... "$@"); then
@@ -37,11 +39,10 @@ selector_output() {
   printf '%s' "$out"
 }
 
-base_ref="refs/remotes/origin/pr-base"
-if git fetch origin +"${PR_BASE_SHA}":"${base_ref}" --depth=1; then
-  plan=$(selector_output --base="${base_ref}" --total-shards=2)
+if git rev-parse --verify --quiet HEAD^1 >/dev/null; then
+  plan=$(selector_output --base=HEAD^1 --total-shards=2)
 else
-  echo "::warning::PR base commit fetch failed; running the selector without --base, which may fall back to the full suite" >&2
+  echo "::warning::HEAD^1 is not available (checkout too shallow?); running the selector without --base, which may fall back to the full suite" >&2
   plan=$(selector_output --total-shards=2)
 fi
 
@@ -59,6 +60,17 @@ if ! jq -e '
   echo "::error::invalid targeted-testacc shard plan; refusing to skip tests" >&2
   exit 1
 fi
+
+{
+  echo "::group::targeted-testacc plan"
+  jq -r '
+    "selected \(.selected_packages | length) package(s) across \(.shards | length) shard(s):",
+    (.selected_packages[] | "  " + .),
+    "rationale:",
+    (.rationale[] | "  " + .)
+  ' <<<"$plan"
+  echo "::endgroup::"
+} >&2
 
 outputs=$(jq -r '
   "has_packages=\(.has_packages)",

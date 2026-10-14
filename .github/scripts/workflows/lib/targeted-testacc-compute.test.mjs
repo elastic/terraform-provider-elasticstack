@@ -91,7 +91,7 @@ test("non-PR event → fixed shards [0,1], has_packages=true, no selector invoke
   try {
     const { outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "push", PR_BASE_SHA: "" },
+      env: { EVENT_NAME: "push" },
     });
     assert.equal(outputs.has_packages, "true");
     assert.equal(outputs.shards, "[0,1]");
@@ -110,7 +110,7 @@ test("non-PR event → fixed shards [0,1], has_packages=true, no selector invoke
   }
 });
 
-test("PR event with successful base fetch → selector invoked once with --base, no shard index", () => {
+test("PR event with HEAD^1 available → selector invoked once with --base, no shard index", () => {
   const stubs = makeStubs({
     goOutput: JSON.stringify({
       has_packages: true,
@@ -122,7 +122,7 @@ test("PR event with successful base fetch → selector invoked once with --base,
   try {
     const { outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     const gitArgs = readFileSync(
       path.join(stubs.root, "log", "git.log"),
@@ -131,10 +131,10 @@ test("PR event with successful base fetch → selector invoked once with --base,
       .split("\n")
       .filter(Boolean);
     assert.deepEqual(gitArgs, [
-      "fetch",
-      "origin",
-      "+deadbeef:refs/remotes/origin/pr-base",
-      "--depth=1",
+      "rev-parse",
+      "--verify",
+      "--quiet",
+      "HEAD^1",
     ]);
     const goArgs = readFileSync(path.join(stubs.root, "log", "go.log"), "utf8")
       .split("\n")
@@ -142,7 +142,7 @@ test("PR event with successful base fetch → selector invoked once with --base,
     assert.deepEqual(goArgs, [
       "run",
       "./scripts/targeted-testacc/...",
-      "--base=refs/remotes/origin/pr-base",
+      "--base=HEAD^1",
       "--total-shards=2",
     ]);
     assert.equal(outputs.has_packages, "true");
@@ -157,7 +157,7 @@ test("PR event with successful base fetch → selector invoked once with --base,
   }
 });
 
-test("PR event with failed base fetch → selector invoked WITHOUT --base", () => {
+test("PR event with HEAD^1 unavailable → selector invoked WITHOUT --base", () => {
   const stubs = makeStubs({
     gitFetchOk: false,
     goOutput: JSON.stringify({
@@ -170,11 +170,11 @@ test("PR event with failed base fetch → selector invoked WITHOUT --base", () =
   try {
     const { stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.match(
       stderr,
-      /^::warning::PR base commit fetch failed/m,
+      /^::warning::HEAD\^1 is not available/m,
     );
     const goArgs = readFileSync(
       path.join(stubs.root, "log", "go.log"),
@@ -207,7 +207,7 @@ test("PR event, plan with more than two shards → rejected fail-closed (output 
   try {
     const { stderr, status, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
@@ -222,7 +222,7 @@ test("PR event, selector failure → exit non-zero, ::error:: on stderr, no outp
   try {
     const { status, stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(
@@ -247,7 +247,7 @@ test("PR event, zero-package plan → has_packages=false, one no-op shard", () =
   try {
     const { outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.equal(outputs.has_packages, "false");
     assert.equal(outputs.shards, "[0]");
@@ -263,7 +263,7 @@ test("PR event, selector emits malformed JSON → exit non-zero, no outputs (fai
   try {
     const { status, stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(
@@ -288,7 +288,7 @@ test("PR event, has_packages=false with populated selection → exit non-zero (f
   try {
     const { status, stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
@@ -310,7 +310,7 @@ test("PR event, selected package missing from shards → exit non-zero (fail-clo
   try {
     const { status, stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
@@ -332,7 +332,7 @@ test("PR event, package duplicated across shards → exit non-zero (fail-closed)
   try {
     const { status, stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
@@ -354,7 +354,7 @@ test("PR event, empty shard in nonempty plan → exit non-zero (fail-closed)", (
   try {
     const { status, stderr, outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     assert.notEqual(status, 0);
     assert.match(stderr, /::error::invalid targeted-testacc shard plan/);
@@ -383,7 +383,7 @@ test("PR event, 30-package plan → two populated shards covering the selection 
   try {
     const { outputs } = runScript({
       ...stubs,
-      env: { EVENT_NAME: "pull_request", PR_BASE_SHA: "deadbeef" },
+      env: { EVENT_NAME: "pull_request" },
     });
     const goArgs = readFileSync(path.join(stubs.root, "log", "go.log"), "utf8")
       .split("\n")
@@ -391,7 +391,7 @@ test("PR event, 30-package plan → two populated shards covering the selection 
     assert.deepEqual(goArgs, [
       "run",
       "./scripts/targeted-testacc/...",
-      "--base=refs/remotes/origin/pr-base",
+      "--base=HEAD^1",
       "--total-shards=2",
     ]);
     assert.equal(outputs.has_packages, "true");
