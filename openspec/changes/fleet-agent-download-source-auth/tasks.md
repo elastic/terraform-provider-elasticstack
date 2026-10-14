@@ -36,4 +36,4 @@
 
 ## 6. Docs (follow-up, not required for this proposal)
 
-- [ ] 6.1 Add an `auth` example to `examples/resources/elasticstack_fleet_agent_download_source/` and regenerate `docs/resources/fleet_agent_download_source.md`
+- [x] 6.1 Add an `auth` example to `examples/resources/elasticstack_fleet_agent_download_source/` and regenerate `docs/resources/fleet_agent_download_source.md`
