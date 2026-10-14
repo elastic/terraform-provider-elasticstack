@@ -40,6 +40,7 @@ resource "elasticstack_fleet_agent_download_source" "example" {
   host    = "https://artifacts.elastic.co/downloads/elastic-agent"
   default = false
 
+  # The ssl block requires Elastic Stack 9.1.0 or higher.
   ssl = {
     certificate_authorities = [trimspace(local.example_ca)]
     certificate             = trimspace(local.example_client_cert)

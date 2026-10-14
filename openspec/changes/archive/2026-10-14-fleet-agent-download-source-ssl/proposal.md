@@ -31,6 +31,9 @@ This closes the gap flagged in #5243.
   pre-implementation PUT-clearing probe outcome — see design.md) so that any transition the Fleet PUT
   API cannot actually honor in place (clearing a previously-set `ssl` or one of its children) is
   modeled as resource replacement rather than producing a plan/state inconsistency.
+  (Probe outcome: whole-block removal uses explicit `ssl = {}`; omitting the whole block preserves
+  it. Omitting a child from a supplied SSL object clears that child. No `RequiresReplace` fallback
+  was required; this bullet records the pre-implementation fallback framing.)
 
 ## Capabilities
 
