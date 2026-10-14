@@ -198,7 +198,7 @@ func jsonRawToNormalized(raw json.RawMessage) (jsontypes.Normalized, bool) {
 }
 
 func hydrateQueryDefaultFieldFromRaw(ctx context.Context, model *tfModel, raw json.RawMessage) {
-	elems := extractStringSliceFromFlatRaw(raw)
+	elems, _ := typeutils.StringSliceFromRawJSON(raw)
 	if len(elems) == 0 {
 		return
 	}
@@ -208,16 +208,6 @@ func hydrateQueryDefaultFieldFromRaw(ctx context.Context, model *tfModel, raw js
 		return
 	}
 	model.QueryDefaultField = fieldSet
-}
-
-// extractStringSliceFromFlatRaw extracts string values from a flat-settings JSON
-// value (scalar string or JSON array).
-func extractStringSliceFromFlatRaw(raw json.RawMessage) []string {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return nil
-	}
-	return stringSliceFromAny(v)
 }
 
 func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey string, raw json.RawMessage, modelType reflect.Type) {
@@ -238,7 +228,7 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 		}
 		setTFModelField(model, tfFieldKey, attrValue)
 	case types.Set:
-		elems := extractStringSliceFromFlatRaw(raw)
+		elems, _ := typeutils.StringSliceFromRawJSON(raw)
 		if len(elems) == 0 {
 			return
 		}
@@ -248,7 +238,7 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 		}
 		setTFModelField(model, tfFieldKey, fieldSet)
 	case types.List:
-		elems := extractStringSliceFromFlatRaw(raw)
+		elems, _ := typeutils.StringSliceFromRawJSON(raw)
 		if len(elems) == 0 {
 			return
 		}

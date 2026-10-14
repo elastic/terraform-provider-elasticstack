@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -311,11 +312,11 @@ func getFieldAttrElemType() types.ObjectType {
 }
 
 func getRuntimeFieldMapElemType(ctx context.Context) attr.Type {
-	return getDataViewAttrTypes(ctx)["runtime_field_map"].(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getDataViewAttrTypes(ctx)["runtime_field_map"])
 }
 
 func getFieldFormatElemType(ctx context.Context) attr.Type {
-	return getDataViewAttrTypes(ctx)["field_formats"].(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getDataViewAttrTypes(ctx)["field_formats"])
 }
 
 func getFieldFormatAttrTypes(ctx context.Context) map[string]attr.Type {
@@ -327,9 +328,9 @@ func getFieldFormatParamsAttrTypes(ctx context.Context) map[string]attr.Type {
 }
 
 func getFieldFormatParamsColorsElemType(ctx context.Context) attr.Type {
-	return getFieldFormatParamsAttrTypes(ctx)["colors"].(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getFieldFormatParamsAttrTypes(ctx)["colors"])
 }
 
 func getFieldFormatParamsLookupEntryElemType(ctx context.Context) attr.Type {
-	return getFieldFormatParamsAttrTypes(ctx)["lookup_entries"].(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getFieldFormatParamsAttrTypes(ctx)["lookup_entries"])
 }

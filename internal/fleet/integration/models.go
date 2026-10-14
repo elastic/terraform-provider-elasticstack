@@ -54,7 +54,7 @@ func (m integrationModel) GetID() types.String {
 }
 
 func (m integrationModel) GetResourceID() types.String {
-	return types.StringValue(getPackageID(m.Name.ValueString(), m.Version.ValueString()))
+	return types.StringValue(typeutils.HashedPackageID(m.Name.ValueString(), m.Version.ValueString()))
 }
 
 func (m integrationModel) GetSpaceID() types.String {
@@ -87,9 +87,4 @@ func (m integrationModel) GetVersionRequirements(_ context.Context) ([]entitycor
 		MinVersionSkipDataStreamRollover, "The 'skip_data_stream_rollover' parameter requires server version %s or higher.", MinVersionSkipDataStreamRollover.String())
 
 	return reqs, nil
-}
-
-func getPackageID(name string, version string) string {
-	hash, _ := typeutils.StringToHash(name + version)
-	return *hash
 }

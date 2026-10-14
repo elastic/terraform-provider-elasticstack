@@ -15,41 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package index
+package typeutils
 
-import (
-	"encoding/json"
-	"fmt"
-	"strings"
-)
+import "fmt"
 
-// stringSliceFromAny extracts a []string from a JSON-decoded any value
-// (scalar string, []string, []any). Returns nil when v is nil or unrecognised.
-func stringSliceFromAny(v any) []string {
-	if v == nil {
-		return nil
-	}
-	switch x := v.(type) {
-	case []string:
-		return x
-	case []any:
-		result := make([]string, len(x))
-		for i, e := range x {
-			result[i] = fmt.Sprint(e)
-		}
-		return result
-	case string:
-		trimmed := strings.TrimSpace(x)
-		if strings.HasPrefix(trimmed, "[") {
-			var arr []string
-			if err := json.Unmarshal([]byte(trimmed), &arr); err == nil {
-				return arr
-			}
-		}
-		if trimmed != "" {
-			return []string{trimmed}
-		}
-		return nil
-	}
-	return nil
+// HashedPackageID derives a Terraform resource ID from a Fleet package name
+// and version by hashing their concatenation. Used by resources whose ID
+// cannot safely embed the raw name/version (e.g. because either value may
+// contain characters unsafe for a resource ID).
+func HashedPackageID(name, version string) string {
+	hash, _ := StringToHash(name + version)
+	return *hash
+}
+
+// SlashJoinedPackageID derives a Terraform resource ID from a Fleet package
+// name and version by joining them with "/".
+func SlashJoinedPackageID(name, version string) string {
+	return fmt.Sprintf("%s/%s", name, version)
 }
