@@ -20,6 +20,7 @@ package queryrulesets_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -367,7 +368,7 @@ func TestAccDataSourceQueryRuleset(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_query_ruleset.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "ruleset_id", rulesetID),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "4"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.rule_id", "rule-1"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.type", "pinned"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.priority", "1"),
@@ -380,9 +381,68 @@ func TestAccDataSourceQueryRuleset(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.actions.ids.1", "doc-2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.rule_id", "rule-2"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.type", "exclude"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.priority"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.type", "contains"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.values", `["deprecated"]`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.actions.ids.0", "doc-old"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.rule_id", "rule-3"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.type", "always"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.metadata"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.values"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.rule_id", "rule-4"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.type", "gt"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.metadata", "popularity"),
+					// The Query Rules API normalizes numeric criteria values to strings on
+					// GET; the data source has no prior state to preserve the original
+					// numeric JSON formatting from, unlike the resource's Read.
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.values", `["100"]`),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceQueryRulesetCriteriaTypes verifies the data source preserves rule
+// declaration order across a 7-rule ruleset and correctly surfaces a rule with
+// multiple criteria entries, mirroring the resource-side TestAccResourceQueryRulesetCriteriaTypes.
+func TestAccDataSourceQueryRulesetCriteriaTypes(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.#", "7"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.rule_id", "rule-fuzzy"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.0.criteria.0.type", "fuzzy"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.rule_id", "rule-prefix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.1.criteria.0.type", "prefix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.rule_id", "rule-suffix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.2.criteria.0.type", "suffix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.rule_id", "rule-lt"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.type", "lt"),
+					// See the comment in TestAccDataSourceQueryRuleset: the API normalizes
+					// numeric criteria values to strings on GET, and the data source has no
+					// prior state to preserve the original numeric formatting from.
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.3.criteria.0.values", `["10"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.4.rule_id", "rule-lte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.4.criteria.0.type", "lte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.4.criteria.0.values", `["50"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.5.rule_id", "rule-gte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.5.criteria.0.type", "gte"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.5.criteria.0.values", `["5"]`),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.rule_id", "rule-multi"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.#", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.0.type", "exact"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.0.metadata", "query"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.1.type", "prefix"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_query_ruleset.test", "rules.6.criteria.1.metadata", "query"),
 				),
 			},
 		},
@@ -467,6 +527,101 @@ func TestAccResourceQueryRulesetNotFound(t *testing.T) {
 				ExpectNonEmptyPlan:       true,
 				Check:                    testAccCheckQueryRulesetAbsentFromState(queryRulesetResourceAddr),
 			},
+		},
+	})
+}
+
+// TestAccResourceQueryRulesetRuleMutations verifies update-in-place behavior for an
+// existing rule's priority and type, and for shrinking the rules list:
+//   - Step 1 (create): three pinned/exclude rules; rule-1 and rule-2 have priority set.
+//   - Step 2 (update): rule-1's priority changes to a different value, rule-2's type
+//     flips from pinned to exclude and its priority is cleared, and rule-3 is removed.
+func TestAccResourceQueryRulesetRuleMutations(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkQueryRulesetDestroy(rulesetID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.#", "3"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.rule_id", "rule-1"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.type", "pinned"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.priority", "1"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.rule_id", "rule-2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.type", "pinned"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.priority", "5"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.rule_id", "rule-3"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.type", "exclude"),
+					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.2.priority"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.#", "2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.rule_id", "rule-1"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.type", "pinned"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.priority", "2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.rule_id", "rule-2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.type", "exclude"),
+					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.1.priority"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceQueryRulesetValidationErrors exercises the plan-time validation error
+// paths of the resource's schema validators. Each step is plan-only and fails before
+// any API call is made.
+func TestAccResourceQueryRulesetValidationErrors(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	planErrStep := func(dir, pattern string) resource.TestStep {
+		return resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+			ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+			ConfigVariables:          vars,
+			PlanOnly:                 true,
+			ExpectError:              regexp.MustCompile(pattern),
+		}
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// rules: listvalidator.SizeAtLeast(1).
+			planErrStep("empty_rules", `(?is)list must contain at least 1 element`),
+			// rules[].type: stringvalidator.OneOf("pinned", "exclude").
+			planErrStep("invalid_rule_type", `(?is)value must be one of`),
+			// criteria[].type: stringvalidator.OneOf(...).
+			planErrStep("invalid_criteria_type", `(?is)value must be one of`),
+			// criteria: listvalidator.SizeAtLeast(1).
+			planErrStep("empty_criteria", `(?is)list must contain at least 1 element`),
+			// criteriaValuesJSONValidator: valid JSON that is not an array.
+			planErrStep("values_not_array", `(?is)values.*must be a valid JSON array string`),
+			// criteriaValuesJSONValidator: empty JSON array.
+			planErrStep("values_empty_array", `(?is)empty arrays are not allowed`),
+			// queryRuleCriteriaValidator: values must be omitted when type is always.
+			planErrStep("values_with_always", `(?is)values.*must be omitted or null when.*type.*is.*always`),
+			// queryRuleCriteriaValidator: values is required when type is not always.
+			planErrStep("values_missing", `(?is)values.*is required when.*type.*is not.*always`),
+			// queryRuleActionsValidator: neither ids nor docs set.
+			planErrStep("actions_neither", `(?is)Exactly one of .ids. or .docs. must be set in .actions.`),
+			// queryRuleActionsValidator: both ids and docs set.
+			planErrStep("actions_both", `(?is)both cannot be set`),
 		},
 	})
 }

@@ -18,9 +18,11 @@
 package lensxy
 
 import (
+	"fmt"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -356,9 +358,11 @@ func xyDataLayerAttributes() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"config_json": schema.StringAttribute{
-						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.",
-						CustomType:          jsontypes.NormalizedType{},
-						Required:            true,
+						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. " +
+							"For standard: axis, color, and metric definition. " +
+							fmt.Sprintf(`A format with type "duration" that also sets decimals and/or compact requires Elastic Stack %s or later.`, panelkit.MinKibanaAPISupportDurationFormatParams.Original()),
+						CustomType: jsontypes.NormalizedType{},
+						Required:   true,
 					},
 				},
 			},

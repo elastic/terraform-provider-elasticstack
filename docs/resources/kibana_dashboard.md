@@ -3808,7 +3808,7 @@ Optional:
 
 Required:
 
-- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.
+- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition. A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.
 
 
 
@@ -3968,6 +3968,7 @@ Optional:
 - `esql_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for an ES|QL control. Binds ES|QL variables for the dashboard. Mutually exclusive with `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--esql_control_config))
+- `grow` (Boolean) Whether the control expands to fill the available horizontal space. When omitted, Kibana applies its default (`false`). After `terraform import`, an entry whose `grow` was not configured shows Kibana's default (`false`).
 - `options_list_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set. Mutually exclusive with `time_slider_control_config`, `esql_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config))
@@ -3977,6 +3978,7 @@ Configuration for a range slider control. Provides a min/max range filter source
 - `time_slider_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for a time slider control. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `esql_control_config`, `options_list_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--time_slider_control_config))
+- `width` (String) Width of the control in the control bar. Valid values are `small`, `medium`, and `large`. When omitted, Kibana applies its default (`medium`). After `terraform import`, an entry whose `width` was not configured shows Kibana's default (`medium`).
 
 <a id="nestedatt--pinned_panels--esql_control_config"></a>
 ### Nested Schema for `pinned_panels.esql_control_config`
@@ -7801,7 +7803,7 @@ Optional:
 
 Required:
 
-- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.
+- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition. A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.
 
 
 

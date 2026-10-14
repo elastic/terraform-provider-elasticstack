@@ -43,6 +43,36 @@ resource "elasticstack_elasticsearch_query_ruleset" "test" {
         ids = ["doc-old"]
       }
     },
+    {
+      rule_id = "rule-3"
+      type    = "pinned"
+
+      criteria = [
+        {
+          type = "always"
+        }
+      ]
+
+      actions = {
+        ids = ["doc-always"]
+      }
+    },
+    {
+      rule_id = "rule-4"
+      type    = "pinned"
+
+      criteria = [
+        {
+          type     = "gt"
+          metadata = "popularity"
+          values   = jsonencode([100])
+        }
+      ]
+
+      actions = {
+        ids = ["doc-numeric"]
+      }
+    },
   ]
 }
 
