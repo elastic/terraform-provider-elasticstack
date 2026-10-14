@@ -145,6 +145,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          # The targeted-testacc selector diffs HEAD^1..HEAD of the PR merge commit.
+          fetch-depth: 2
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: "go.mod"
@@ -159,7 +161,6 @@ jobs:
         run: ./.github/scripts/targeted-testacc-compute.sh
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
 
   test:
     name: Matrix Acceptance Test

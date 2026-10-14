@@ -175,7 +175,7 @@ func TestProviderWorkflow_loadMatrixPreparesTargetedPlan(t *testing.T) {
 	require.NotEmpty(t, prepare.ID, "load-matrix job must prepare the targeted plan once")
 	assert.Equal(t, "./.github/scripts/targeted-testacc-compute.sh", prepare.Run)
 	assert.Equal(t, "${{ github.event_name }}", prepare.Env["EVENT_NAME"])
-	assert.Equal(t, "${{ github.event.pull_request.base.sha }}", prepare.Env["PR_BASE_SHA"])
+	assert.NotContains(t, prepare.Env, "PR_BASE_SHA", "selector diffs the merge commit's first parent, not the stale PR base sha")
 
 	// The test job must not re-run selection; it consumes the prepared plan.
 	raw := readWorkflowFile(t, providerWorkflowPath)
