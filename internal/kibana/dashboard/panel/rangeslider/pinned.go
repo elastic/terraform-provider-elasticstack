@@ -19,7 +19,6 @@ package rangeslider
 
 import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 )
 
@@ -41,13 +40,6 @@ func newPinnedHandler() pinnedHandler {
 		},
 		PopulateFromAPI: PopulateFromAPI,
 		BuildConfig:     BuildConfig,
-		AfterRemapToGroup: func(ppm models.PinnedPanelModel, group *kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl) {
-			group.Width = panelkit.EnumPointerFromString[kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControlWidth](ppm.Width)
-			group.Grow = panelkit.BoolPointer(ppm.Grow)
-		},
-		SizingFromGroup: func(group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl) (*string, *bool) {
-			return panelkit.StringPointerFromEnum(group.Width), group.Grow
-		},
 		FromGroup: func(item *kbapi.DashboardPinnedPanels_Item, group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl) error {
 			return item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl(group)
 		},

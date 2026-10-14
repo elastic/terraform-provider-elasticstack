@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -212,21 +211,4 @@ func Test_pinnedPanels_widthGrow_fromAPI(t *testing.T) {
 			require.Equal(t, types.BoolValue(true), out[0].Grow)
 		})
 	}
-}
-
-func Test_panelkit_pointerHelpers(t *testing.T) {
-	t.Parallel()
-
-	type testWidth string
-	require.Nil(t, panelkit.EnumPointerFromString[testWidth](types.StringNull()))
-	require.Nil(t, panelkit.EnumPointerFromString[testWidth](types.StringUnknown()))
-	got := panelkit.EnumPointerFromString[testWidth](types.StringValue("small"))
-	require.NotNil(t, got)
-	require.Equal(t, testWidth("small"), *got)
-
-	require.Nil(t, panelkit.BoolPointer(types.BoolNull()))
-	require.Nil(t, panelkit.BoolPointer(types.BoolUnknown()))
-	f := panelkit.BoolPointer(types.BoolValue(false))
-	require.NotNil(t, f)
-	require.False(t, *f)
 }
