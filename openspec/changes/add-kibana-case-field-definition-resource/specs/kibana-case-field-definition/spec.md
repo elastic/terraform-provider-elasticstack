@@ -28,7 +28,7 @@ resource "elasticstack_kibana_case_field_definition" "example" {
 
 ### Requirement: Field library CRUD API
 
-The resource SHALL create a field definition with `POST /api/cases/field_definitions`, read it with `GET /api/cases/field_definitions/{field_definition_id}`, update it with `PUT /api/cases/field_definitions/{field_definition_id}`, and delete it with `DELETE /api/cases/field_definitions/{field_definition_id}`, all routed through the space given by `space_id`. After a successful create or update, the resource SHALL perform a read and derive final Terraform state from that read response.
+The resource SHALL manage a field definition through `POST /api/cases/field_definitions` and `GET`/`PUT`/`DELETE /api/cases/field_definitions/{field_definition_id}`, routed through the space given by `space_id`. After a successful create or update, the resource SHALL read the field and derive final state from that read.
 Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-createcasefielddefinitiondefaultspace
 
 #### Scenario: Create writes the configured field
@@ -47,7 +47,7 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 
 ### Requirement: Schema and validation
 
-`owner` SHALL be required and SHALL force replacement when changed. `definition` SHALL be required, validated as YAML, and SHALL use semantic (not literal-string) equality so that insignificant formatting or map-key-order differences do not appear as a diff. `name` SHALL be optional, computed, and SHALL force replacement when changed; when omitted from configuration the provider SHALL accept whatever name the server extracts from `definition`'s YAML. `description` and `is_global` SHALL be optional and computed. `space_id` SHALL be optional, computed, default to `"default"`, and SHALL force replacement when changed.
+`owner` SHALL be required and force replacement. `definition` SHALL be required, validated as YAML, and compared semantically so formatting or key-order differences are not a diff. `name` SHALL be optional, computed, and force replacement; when omitted, the server-extracted name SHALL be accepted. `description` and `is_global` SHALL be optional and computed. `space_id` SHALL be optional, computed, default to `"default"`, and force replacement.
 
 #### Scenario: Invalid YAML is rejected
 
@@ -82,7 +82,7 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 
 ### Requirement: Identity mismatch errors surface from the API
 
-The resource SHALL NOT parse `definition`'s YAML to pre-empt the field library's identity constraints. When an in-place update edits `definition`'s internal YAML `name` key while the top-level `name` attribute is unchanged, the resource SHALL surface the API's resulting error diagnostic (expected: HTTP 400) without a special-cased message. When an in-place update edits `definition`'s internal YAML `type` key, the resource SHALL surface the API's resulting error diagnostic (expected: HTTP 409 with `attributes.code = "field_identity_immutable"`) without a special-cased message.
+The resource SHALL NOT parse `definition`'s YAML to pre-empt identity constraints. If an in-place update changes the YAML `name` key while top-level `name` is unchanged, or changes the YAML `type` key, the resource SHALL surface the API's error diagnostic (expected HTTP 400, or HTTP 409 with `attributes.code = "field_identity_immutable"`, respectively) without a special-cased message.
 
 #### Scenario: YAML-internal name no longer matches the top-level name
 
