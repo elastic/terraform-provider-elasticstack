@@ -313,6 +313,8 @@ func TestAccResourceKibanaCaseFieldDefinitionOwnerChange(t *testing.T) {
 			step("create", vars("cases"), attr("owner", "cases"), captureID(&firstID)),
 			// owner is immutable server-side; changing it must replace the resource.
 			step("change", vars("observability"), attr("owner", "observability"), idChanged(&firstID)),
+			// the third allowed owner value must also round-trip.
+			step("change", vars("securitySolution"), attr("owner", "securitySolution"), idChanged(&firstID)),
 		},
 	})
 }
@@ -378,6 +380,17 @@ func TestAccResourceKibanaCaseFieldDefinitionInvalidYAML(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
 		Steps:    []resource.TestStep{planErrStep("invalid", `Invalid YAML`)},
+	})
+}
+
+// TestAccResourceKibanaCaseFieldDefinitionDefinitionTooLong verifies a
+// `definition` longer than 30000 characters is rejected at validation time,
+// before any API call. The YAML itself is valid (the excess length is a
+// trailing comment) so only the length validator fires.
+func TestAccResourceKibanaCaseFieldDefinitionDefinitionTooLong(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("too_long", `(?is)Invalid Attribute Value Length.*at most 30000`)},
 	})
 }
 
