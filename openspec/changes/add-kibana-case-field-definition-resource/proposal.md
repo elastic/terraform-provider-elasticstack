@@ -11,7 +11,7 @@ Source: [elastic/terraform-provider-elasticstack#5192](https://github.com/elasti
 - `name` and the YAML-internal `type` are identity attributes enforced by the API as immutable after creation (400/409 on mismatch); the provider relies on those API errors rather than adding its own YAML-parsing plan modifier.
 - Built on the repo's `entitycore.KibanaResource` envelope (matching `connectors`, `agentbuilderworkflow`), with the existing `customtypes.NormalizedYamlType` for semantic YAML equality, space-aware routing, and a minimum Elastic Stack version of 9.6.0.
 - Add documentation, an example, and acceptance tests for the resource, with a Technical Preview note (the API's own `x-state`) alongside the 9.5+ GA badge on the feature itself (UI availability; the public API ships in 9.6.0).
-- `dry_run` is explicitly not exposed as a resource attribute in v1 (see design.md); server-side partial-update semantics for `description`/`is_global` omission are not yet verified against a live cluster and are tracked as an open question to resolve during implementation.
+- `dry_run` is explicitly not exposed as a resource attribute in v1 (see design.md) (live 9.6 probing showed the server preserves omitted `description`/`is_global` on update, so the implementation relies on preserve-on-omit).
 
 Non-goals:
 

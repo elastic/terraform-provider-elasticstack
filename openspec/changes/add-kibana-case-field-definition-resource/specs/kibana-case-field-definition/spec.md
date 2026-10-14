@@ -59,8 +59,8 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 #### Scenario: Equivalent YAML formatting
 
 - GIVEN two `definition` values that decode to the same YAML structure but differ in whitespace or map key order
-- WHEN Terraform compares the values for planning or state reconciliation
-- THEN the resource SHALL treat them as semantically equal
+- WHEN Terraform reconciles state against configuration
+- THEN the resource SHALL treat them as semantically equal when comparing state values
 - AND a reformat-only edit MAY still plan an in-place update (known v1 limitation, documented in the schema description), which SHALL apply without replacement
 
 #### Scenario: Omitting description or is_global preserves the stored value

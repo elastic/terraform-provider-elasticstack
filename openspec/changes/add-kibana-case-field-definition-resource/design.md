@@ -113,7 +113,7 @@ Verified live on 2026-10-14 against a freshly pulled Kibana/Elasticsearch `9.6.0
 
 ## Risks / Trade-offs
 
-- [A mistyped `owner` or a `name`/`type` identity conflict only surfaces as an apply-time 400/409, not a plan-time validation error] → Accepted: documented in the schema description (see "Identity-mismatch errors are not special-cased"); no client-side YAML parsing is added to pre-empt it (see proposal non-goals).
+- [A `name`/`type` identity conflict only surfaces as an apply-time 400/409, not a plan-time validation error; an invalid `owner` is rejected at plan time by the `OneOf` validator] → Accepted: documented in the schema description (see "Identity-mismatch errors are not special-cased"); no client-side YAML parsing is added to pre-empt it (see proposal non-goals).
 - [`description`/`is_global` Computed-field choice may not match the server's actual partial-update semantics once verified live] → Resolved: live probing showed PUT preserves omitted values, so Optional+Computed with `UseStateForUnknown` is correct (see Implementation findings).
 - [The envelope enforces the version requirement on every lifecycle operation, including read and delete] → Accepted: a state entry against a pre-9.6 server is not expected in practice, since the resource could never have been created there.
 - [Reformat-only YAML edits may not produce an empty plan in practice, despite `NormalizedYamlType`'s semantic-equality hook] → Confirmed live and accepted as a documented v1 limitation, not a release blocker (see Schema mapping note on `definition`).
