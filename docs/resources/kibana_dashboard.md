@@ -3808,7 +3808,7 @@ Optional:
 
 Required:
 
-- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.
+- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition. A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.
 
 
 
@@ -7803,7 +7803,7 @@ Optional:
 
 Required:
 
-- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.
+- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition. A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.
 
 
 
