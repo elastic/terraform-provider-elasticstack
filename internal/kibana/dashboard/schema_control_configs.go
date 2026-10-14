@@ -208,6 +208,19 @@ func pinnedPanelsNestedObject() schema.NestedAttributeObject {
 				MarkdownDescription: strings.TrimSpace(pinnedPanelTypeDescription),
 				Required:            true,
 			},
+			"width": schema.StringAttribute{
+				MarkdownDescription: "Width of the control in the control bar. Valid values are `small`, `medium`, and `large`. " +
+					"When omitted, Kibana applies its default (`medium`). After `terraform import`, " +
+					"an entry whose `width` was not configured shows Kibana's default (`medium`).",
+				Optional:   true,
+				Validators: []validator.String{stringvalidator.OneOf("small", "medium", "large")},
+			},
+			"grow": schema.BoolAttribute{
+				MarkdownDescription: "Whether the control expands to fill the available horizontal space. " +
+					"When omitted, Kibana applies its default (`false`). After `terraform import`, " +
+					"an entry whose `grow` was not configured shows Kibana's default (`false`).",
+				Optional: true,
+			},
 			controlBlockTimeSlider:  pinnedTimeSliderControlConfigSchema(),
 			controlBlockESQL:        pinnedEsqlControlConfigSchema(),
 			controlBlockOptionsList: pinnedOptionsListControlConfigSchema(),
