@@ -68,7 +68,7 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
  |        minus groups covered in memory (same fingerprint)                    |
  |        ordered (resource rotation, size, key) -> triage queue (<= 15)       |
  |        each group: pre-rendered issue title/body (incl. key marker line)    |
- |   upload report artifact; run_agent = slots > 0 && queue non-empty          |
+ |   upload report + binary; run_agent = slots > 0 && queue non-empty          |
  +-----------------------------------------------------------------------------+
             | (skipped when run_agent false)
  +-----------------------------------------------------------------------------+
@@ -77,7 +77,7 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
  |     verdict file|suppress + short reason                                    |
  |     file -> create-issue(pre-rendered title, body + reason)                 |
  |   stop at slots filled OR 15 triaged                                        |
- |   write verdicts.json -> go run ./scripts/kibana-api-gaps record            |
+ |   write verdicts.json -> prebuilt kibana-api-gaps record                    |
  |        validates verdicts vs report (unknown keys rejected), writes memory  |
  |   dispatch_research_factory(dispatch: true)                                 |
  +-----------------------------------------------------------------------------+

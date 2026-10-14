@@ -78,7 +78,10 @@ steps:
       name: kibana-api-gap-report
       path: /tmp/gh-aw/agent
   - name: Verify report artifact path
-    run: test -f /tmp/gh-aw/agent/report.json
+    run: |
+      test -f /tmp/gh-aw/agent/report.json
+      # upload-artifact does not preserve the executable bit.
+      chmod +x /tmp/gh-aw/agent/kibana-api-gaps
 jobs:
   discover:
     # A standard runner with a Go build/module cache: a cold build of the provider and its
@@ -148,7 +151,9 @@ jobs:
         timeout-minutes: 12
         env:
           CGO_ENABLED: "0"
-        run: go build -o "${RUNNER_TEMP}/kibana-api-gaps" ./scripts/kibana-api-gaps
+        run: |
+          mkdir -p /tmp/gh-aw/agent
+          go build -o /tmp/gh-aw/agent/kibana-api-gaps ./scripts/kibana-api-gaps
       - name: Discover Kibana API gaps
         id: discover_gaps
         timeout-minutes: 10
@@ -157,7 +162,7 @@ jobs:
           ISSUE_SLOTS_AVAILABLE: ${{ steps.compute_issue_slots.outputs.issue_slots_available }}
         run: |
           mkdir -p /tmp/gh-aw/agent
-          "${RUNNER_TEMP}/kibana-api-gaps" discover \
+          /tmp/gh-aw/agent/kibana-api-gaps discover \
             --repo . \
             --slots "${ISSUE_SLOTS_AVAILABLE}" \
             --memory gh-aw-repo-memory/kibana-api-gap-scanner/memory/kibana-api-gap-scanner/state.json \
@@ -167,12 +172,16 @@ jobs:
             echo "gate_reason=$(jq -r '.gate_reason' /tmp/gh-aw/agent/report.json)"
             echo "queue_size=$(jq -r '.queue | length' /tmp/gh-aw/agent/report.json)"
           } >> "$GITHUB_OUTPUT"
+      # The agent runs this prebuilt linux/amd64 binary (render-issue, record) instead of
+      # `go run`, so it needs neither a Go build nor any module download inside the sandbox.
       - name: Upload Kibana API gap report
         if: success()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: kibana-api-gap-report
-          path: /tmp/gh-aw/agent/report.json
+          path: |
+            /tmp/gh-aw/agent/report.json
+            /tmp/gh-aw/agent/kibana-api-gaps
           if-no-files-found: error
 ---
 
@@ -191,7 +200,11 @@ Do **not** query GitHub issue counts yourself; use only these values.
 
 ## Inputs
 
-Read `/tmp/gh-aw/agent/report.json` (downloaded from the discover job artifact). Only its `queue` matters to you. Each queue item has `key`, `resource`, `fingerprint`, `size`, `title`, and `body` (a pre-rendered issue body that ends with a hidden `<!-- kibana-api-gap ... -->` marker). Ignore `groups` and the diagnostics.
+Read `/tmp/gh-aw/agent/report.json` (downloaded from the discover job artifact). Only its `queue` matters to you. Each queue item has `key`, `resource`, `fingerprint`, `size`, `title`, and `body` (a pre-rendered issue body that ends with a `kibana-api-gap: key ... fingerprint ...` marker line). Ignore `groups` and the diagnostics.
+
+The locations in a body are JSON pointers into the Kibana OpenAPI specification, cited for human readers. The specification file (including `generated/kbapi/oas-filtered.yaml`) is **not available** in your sandbox: do not search for it. Judge each group from the pre-rendered fields and pointers, the Go struct documentation in `generated/kbapi`, and the resource implementation under `internal/`.
+
+The `/tmp/gh-aw/agent/kibana-api-gaps` binary is prebuilt (linux/amd64) and executable. Run it directly; never use `go run` or `go build` for it.
 
 ## Repository toolchain
 
@@ -201,7 +214,7 @@ Deterministic workflow steps have already installed Go from `go.mod`, exported `
 
 Work through the queue **strictly in order**, one group at a time. For each group:
 
-1. Read the pre-rendered issue body for the group (its fields, OAS pointers, and any `x-state` version) and the resource implementation under `internal/`.
+1. Read the pre-rendered issue body for the group (its fields, specification pointers, and any `x-state` version) and the resource implementation under `internal/`.
 2. Decide exactly one verdict, `file` or `suppress`, and write **one** short reason for it.
 3. If the verdict is `file`, call `create-issue` for that group (see below).
 
@@ -228,7 +241,7 @@ Suppress **only** when you are highly confident the group should not be exposed 
 For each `file` verdict call `create-issue` once:
 
 - **title**: the queue item's `title`, unchanged (the `[kibana-api-gap] ` prefix is added automatically, so do not repeat it).
-- **body**: the exact stdout of `go run ./scripts/kibana-api-gaps render-issue --report /tmp/gh-aw/agent/report.json --key '<queue key>' --reason '<your reason>'`, pasted byte for byte. The command inserts the `Triage reason:` paragraph before the hidden marker and strips newlines and HTML comment delimiters from the reason. Never edit, reflow, or add to the body yourself.
+- **body**: the exact stdout of `/tmp/gh-aw/agent/kibana-api-gaps render-issue --report /tmp/gh-aw/agent/report.json --key '<queue key>' --reason '<your reason>'`, pasted byte for byte. The command inserts the `Triage reason:` paragraph before the final marker line and flattens the reason to one line. Never edit, reflow, or add to the body yourself.
 
 Do not apply any labels yourself and do not add any factory trigger label; the safe output applies `kibana-api-gap` and `triaged`.
 
@@ -250,7 +263,7 @@ After the last verdict (and after all `create-issue` calls), write `/tmp/gh-aw/a
 Then run `record` exactly **once**:
 
 ```
-go run ./scripts/kibana-api-gaps record \
+/tmp/gh-aw/agent/kibana-api-gaps record \
   --report /tmp/gh-aw/agent/report.json \
   --verdicts /tmp/gh-aw/agent/verdicts.json \
   --memory /tmp/gh-aw/repo-memory/kibana-api-gap-scanner/memory/kibana-api-gap-scanner/state.json
