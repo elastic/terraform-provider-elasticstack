@@ -1,13 +1,13 @@
 ## Purpose
 
-Defines the `elasticstack_kibana_case_field_definition` resource, which manages a single field in the Kibana Cases field library (Technical Preview API, Stack 9.5+) so that case custom-field definitions can be declared as code, reviewed, and drift-detected instead of configured by hand in the Kibana UI.
+Defines the `elasticstack_kibana_case_field_definition` resource, which manages a single field in the Kibana Cases field library (Technical Preview API, Stack 9.6+) so that case custom-field definitions can be declared as code, reviewed, and drift-detected instead of configured by hand in the Kibana UI.
 
 ## Schema
 
 ```hcl
 resource "elasticstack_kibana_case_field_definition" "example" {
-  owner      = string                          # required, forces replacement
-  definition = <string, normalized YAML>       # required; type, label, control, metadata for a single field
+  owner      = string                          # required, one of cases|securitySolution|observability, forces replacement
+  definition = <string, normalized YAML>       # required, at most 30000 characters; type, label, control, metadata for a single field
   name       = <optional, computed, string>    # forces replacement; extracted from `definition` YAML when omitted
   description = <optional, computed, string>
   is_global   = <optional, computed, bool>
@@ -28,7 +28,7 @@ resource "elasticstack_kibana_case_field_definition" "example" {
 
 ### Requirement: Field library CRUD API
 
-The resource SHALL create a field definition with `POST /api/cases/field_definitions`, read it with `GET /api/cases/field_definitions/{field_definition_id}`, update it with `PUT /api/cases/field_definitions/{field_definition_id}`, and delete it with `DELETE /api/cases/field_definitions/{field_definition_id}`, all routed through the space given by `space_id`. After a successful create or update, the resource SHALL perform a read and derive final Terraform state from that read response.
+The resource SHALL manage a field definition through `POST /api/cases/field_definitions` and `GET`/`PUT`/`DELETE /api/cases/field_definitions/{field_definition_id}`, routed through the space given by `space_id`. After a successful create or update, the resource SHALL read the field and derive final state from that read.
 Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-createcasefielddefinitiondefaultspace
 
 #### Scenario: Create writes the configured field
@@ -47,7 +47,7 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 
 ### Requirement: Schema and validation
 
-`owner` SHALL be required and SHALL force replacement when changed. `definition` SHALL be required, validated as YAML, and SHALL use semantic (not literal-string) equality so that insignificant formatting or map-key-order differences do not appear as a diff. `name` SHALL be optional, computed, and SHALL force replacement when changed; when omitted from configuration the provider SHALL accept whatever name the server extracts from `definition`'s YAML. `description` and `is_global` SHALL be optional and computed. `space_id` SHALL be optional, computed, default to `"default"`, and SHALL force replacement when changed.
+`owner` SHALL be required, restricted to `cases`, `securitySolution`, or `observability`, and force replacement. `definition` SHALL be required, valid YAML of at most 30000 characters, using a semantic-equality type. `name` SHALL be optional, computed, and force replacement. `description` and `is_global` SHALL be optional and computed and keep their prior state value when omitted. `space_id` SHALL be optional, computed, default `"default"`, and force replacement.
 
 #### Scenario: Invalid YAML is rejected
 
@@ -59,8 +59,22 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 #### Scenario: Equivalent YAML formatting
 
 - GIVEN two `definition` values that decode to the same YAML structure but differ in whitespace or map key order
-- WHEN Terraform compares the values for planning or state reconciliation
-- THEN the resource SHALL treat them as semantically equal
+- WHEN Terraform reconciles state against configuration
+- THEN the resource SHALL treat them as semantically equal when comparing state values
+- AND a reformat-only edit MAY still plan an in-place update (known v1 limitation, documented in the schema description), which SHALL apply without replacement
+
+#### Scenario: Omitting description or is_global preserves the stored value
+
+- GIVEN the resource exists with `description` and `is_global` set
+- WHEN configuration removes those attributes and apply runs
+- THEN state SHALL keep the prior values (the provider carries them forward, and the API also preserves them on omission, verified live on 9.6)
+- AND setting `description = ""` SHALL clear the description
+
+#### Scenario: Invalid owner is rejected at validation
+
+- GIVEN a configuration with an `owner` other than `cases`, `securitySolution`, or `observability`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return a validation diagnostic and make no API call
 
 #### Scenario: Omitting name defers to the server
 
@@ -82,7 +96,7 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 
 ### Requirement: Identity mismatch errors surface from the API
 
-The resource SHALL NOT parse `definition`'s YAML to pre-empt the field library's identity constraints. When an in-place update edits `definition`'s internal YAML `name` key while the top-level `name` attribute is unchanged, the resource SHALL surface the API's resulting error diagnostic (expected: HTTP 400) without a special-cased message. When an in-place update edits `definition`'s internal YAML `type` key, the resource SHALL surface the API's resulting error diagnostic (expected: HTTP 409 with `attributes.code = "field_identity_immutable"`) without a special-cased message.
+The resource SHALL NOT parse `definition`'s YAML to pre-empt identity constraints. If an in-place update changes the YAML `name` key while top-level `name` is unchanged, or changes the YAML `type` key, the resource SHALL surface the API's error diagnostic (expected HTTP 400, or HTTP 409 with `attributes.code = "field_identity_immutable"`, respectively) without a special-cased message.
 
 #### Scenario: YAML-internal name no longer matches the top-level name
 
@@ -157,24 +171,24 @@ On destroy, the resource SHALL send `DELETE /api/cases/field_definitions/{field_
 
 ### Requirement: Minimum stack version
 
-The resource SHALL require Elastic Stack 9.5.0 or newer. When the target server is older, any lifecycle operation SHALL fail with an unsupported-version error stating the minimum version, and no field-definition API call SHALL be made.
+The resource SHALL require Elastic Stack 9.6.0 or newer. When the target server is older, any lifecycle operation SHALL fail with an unsupported-version error stating the minimum version, and no field-definition API call SHALL be made.
 
-#### Scenario: Server older than 9.5.0
+#### Scenario: Server older than 9.6.0
 
-- GIVEN the target stack version is 9.4.0
+- GIVEN the target stack version is 9.5.5
 - WHEN apply creates the resource
-- THEN the provider SHALL return an unsupported-version error mentioning `9.5.0`
+- THEN the provider SHALL return an unsupported-version error mentioning `9.6.0`
 - AND no field-definition API call SHALL be made
 
-#### Scenario: Refresh against a server older than 9.5.0
+#### Scenario: Refresh against a server older than 9.6.0
 
-- GIVEN the resource is in state and the target stack version is 9.4.0
+- GIVEN the resource is in state and the target stack version is 9.5.5
 - WHEN refresh runs
-- THEN the provider SHALL return an unsupported-version error mentioning `9.5.0`
+- THEN the provider SHALL return an unsupported-version error mentioning `9.6.0`
 
-#### Scenario: Server at 9.5.0 or newer
+#### Scenario: Server at 9.6.0 or newer
 
-- GIVEN the target stack version is 9.5.0 or newer
+- GIVEN the target stack version is 9.6.0 or newer
 - WHEN apply creates the resource
 - THEN the resource SHALL proceed with the create request
 
