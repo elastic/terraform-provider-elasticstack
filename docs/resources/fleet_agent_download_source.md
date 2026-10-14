@@ -16,10 +16,35 @@ provider "elasticstack" {
   kibana {}
 }
 
+# Placeholder PEM material for illustration only — replace with real certificates in production.
+locals {
+  example_ca          = <<-EOT
+    -----BEGIN CERTIFICATE-----
+    MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
+    -----END CERTIFICATE-----
+  EOT
+  example_client_cert = <<-EOT
+    -----BEGIN CERTIFICATE-----
+    MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
+    -----END CERTIFICATE-----
+  EOT
+  example_client_key  = <<-EOT
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIEpAIBAAKCAQEA0
+    -----END RSA PRIVATE KEY-----
+  EOT
+}
+
 resource "elasticstack_fleet_agent_download_source" "example" {
   name    = "Agent Download Source example"
   host    = "https://artifacts.elastic.co/downloads/elastic-agent"
   default = false
+
+  ssl = {
+    certificate_authorities = [trimspace(local.example_ca)]
+    certificate             = trimspace(local.example_client_cert)
+    key                     = trimspace(local.example_client_key)
+  }
 }
 ```
 
@@ -38,6 +63,7 @@ resource "elasticstack_fleet_agent_download_source" "example" {
 - `proxy_id` (String) The ID of the proxy to use for this download source.
 - `source_id` (String) Unique identifier of the Fleet agent download source.
 - `space_ids` (Set of String) The Kibana space IDs where this download source is available. When set, the download source will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
+- `ssl` (Attributes) SSL/TLS configuration for the download source host. (see [below for nested schema](#nestedatt--ssl))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
@@ -56,6 +82,16 @@ Optional:
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.
+
+
+<a id="nestedatt--ssl"></a>
+### Nested Schema for `ssl`
+
+Optional:
+
+- `certificate` (String) Client SSL certificate for the download source host.
+- `certificate_authorities` (List of String) Server SSL certificate authorities trusted for the download source host.
+- `key` (String, Sensitive) Client SSL certificate key for the download source host.
 
 
 <a id="nestedatt--timeouts"></a>

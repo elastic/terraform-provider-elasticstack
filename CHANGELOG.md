@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changes
+
+- Add the `ssl` attribute (with `certificate`, `certificate_authorities`, and a sensitive `key`) to `elasticstack_fleet_agent_download_source` for download source hosts using self-signed or privately-issued certificates. Requires Elastic Stack 9.1.0 or later. ([#5243](https://github.com/elastic/terraform-provider-elasticstack/issues/5243))
+
 ## [0.16.6] - 2026-10-12
 
 ### Breaking changes

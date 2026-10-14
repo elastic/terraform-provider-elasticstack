@@ -103,6 +103,20 @@ actually configured).
 
 ### Decision 4: PUT-clearing semantics — pre-implementation probe with a branch per outcome
 
+**Probe outcome (Kibana 9.4.0):** A live probe using the generated `kbapi` client
+created five independent download sources and verified each PUT with a separate GET.
+Omitting `ssl` preserved all three existing fields. Sending `ssl = {}` cleared all
+three fields; GET returned a present-but-empty object. In three independent
+single-child omission probes, the omitted child cleared and the retained two
+persisted. All PUTs returned HTTP 200, and all five probe sources were deleted.
+
+The pre-specified middle branch applies: `toAPIUpdateModel` must send a non-nil,
+all-nil-fields `Ssl` struct (explicit `{}`) for whole-block removal. Individual
+children can be removed in place by omitting them from a supplied SSL object.
+Neither whole-object nor per-child `RequiresReplace` modifiers are needed.
+Read hydration must normalize a present-but-empty response object to null.
+This behavior was measured on 9.4.0, not separately on the 9.1.0 minimum.
+
 Does omitting `ssl` (or sending `ssl = {}`, which the spec does not declare `nullable: true`, so there
 is no JSON `null` option) on `PUT /api/fleet/agent_download_sources/{sourceId}` clear a previously-set
 SSL config server-side, or leave it unchanged? The PUT operation description states no
@@ -149,10 +163,9 @@ every possible outcome has a specified, Terraform-consistent implementation.
 
 ## Open questions
 
-- The PUT-clearing probe in **Feasibility** above must still be run against a live Kibana before
-  `toAPIUpdateModel` is finalized — the decision branches (including the `RequiresReplace` fallback) are
-  fully specified for every outcome, so this is pre-implementation verification work rather than an
-  unresolved design question; not treated as blocking this research.
+- The PUT-clearing probe is complete on Kibana 9.4.0; see Decision 4's recorded
+  outcome. Use explicit `{}` for whole-block removal and ordinary child omission
+  for per-child removal. No replacement fallback is needed for the measured behavior.
 - Does the Kibana API enforce any pairing constraint (e.g. `certificate` and `key` must both be set, or
   neither) for client mTLS, or are all three `ssl` sub-fields independently optional as the spec's
   `additionalProperties: false` object with no internal `required` suggests? Not blocking the schema
