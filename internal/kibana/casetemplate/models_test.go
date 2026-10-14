@@ -99,7 +99,7 @@ func TestPopulateFromAPIEmptyValuesStayDistinctFromNull(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	assert.False(t, m.Description.IsNull())
-	assert.Equal(t, "", m.Description.ValueString())
+	assert.Empty(t, m.Description.ValueString())
 	assert.False(t, m.Tags.IsNull())
 	assert.Empty(t, m.Tags.Elements())
 }
@@ -136,7 +136,7 @@ func TestToAPIModel(t *testing.T) {
 		req := m.toAPIModel()
 
 		require.NotNil(t, req.Description)
-		assert.Equal(t, "", *req.Description)
+		assert.Empty(t, *req.Description)
 		require.NotNil(t, req.Tags)
 		assert.Empty(t, *req.Tags)
 		assert.False(t, *req.IsEnabled)

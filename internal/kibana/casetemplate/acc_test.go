@@ -18,6 +18,7 @@
 package casetemplate_test
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -153,7 +154,8 @@ func TestAccResourceKibanaCaseTemplate(t *testing.T) {
 	var firstID string
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { preCheck(t, supported) },
+		PreCheck:     func() { preCheck(t, supported) },
+		CheckDestroy: checkTemplatesDestroyed(t),
 		Steps: []resource.TestStep{
 			// Minimal create: only owner, name and definition_yaml. The
 			// read-after-write refresh supplies the final state.
@@ -219,8 +221,47 @@ func TestAccResourceKibanaCaseTemplate(t *testing.T) {
 				attr("tags.#", "0"),
 				attr("template_version", "8"),
 			),
+			withImportID(importStep("empty_description_tags", vars), idFunc),
 		},
 	})
+}
+
+// importStep builds an import step for the named test-case directory.
+func importStep(dir string, vars config.Variables) resource.TestStep {
+	s := step(dir, vars)
+	s.ResourceName = resourceName
+	s.ImportState = true
+	return s
+}
+
+func withImportID(s resource.TestStep, fn resource.ImportStateIdFunc) resource.TestStep {
+	s.ImportStateIdFunc = fn
+	s.ImportStateVerify = true
+	return s
+}
+
+func idFunc(s *terraform.State) (string, error) {
+	return attrOf(s, "id")
+}
+
+// checkTemplatesDestroyed asserts every template in state is gone after
+// destroy: the API answers 404 on read, which the wrapper reports as nil.
+func checkTemplatesDestroyed(t *testing.T) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, rs := range s.RootModule().Resources {
+			if rs.Type != "elasticstack_kibana_case_template" {
+				continue
+			}
+			got, diags := kibanaoapi.GetCaseTemplate(context.Background(), kibanaClient(t), rs.Primary.Attributes["space_id"], rs.Primary.Attributes["template_id"])
+			if diags.HasError() {
+				return fmt.Errorf("failed to read template %s: %v", rs.Primary.ID, diags)
+			}
+			if got != nil {
+				return fmt.Errorf("template %s still exists after destroy", rs.Primary.ID)
+			}
+		}
+		return nil
+	}
 }
 
 func withPlanCheck(s resource.TestStep, check plancheck.PlanCheck) resource.TestStep {
@@ -298,4 +339,130 @@ func TestAccResourceKibanaCaseTemplateKibanaConnection(t *testing.T) {
 			}), `(?is)connection refused|dial|unable|failed`),
 		},
 	})
+}
+
+// TestAccResourceKibanaCaseTemplateSpace creates a template in a named space
+// and imports it by its composite id.
+func TestAccResourceKibanaCaseTemplateSpace(t *testing.T) {
+	spaceID := "tf-acc-" + uuid.New().String()[:8]
+	vars := config.Variables{
+		"name":     config.StringVariable(uniqueName()),
+		"space_id": config.StringVariable(spaceID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			step("create", vars,
+				attr("space_id", spaceID),
+				resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^"+spaceID+"/.+")),
+				compositeIDMatches(spaceID),
+			),
+			withImportID(importStep("create", vars), idFunc),
+			withImportError(importStep("create", vars), "not-a-composite-id", `(?i)Wrong resource ID|Invalid import ID`),
+		},
+	})
+}
+
+func withImportError(s resource.TestStep, id, pattern string) resource.TestStep {
+	s.ImportStateId = id
+	s.ExpectError = regexp.MustCompile(pattern)
+	return s
+}
+
+// TestAccResourceKibanaCaseTemplateExternalDelete deletes the template outside
+// Terraform; refresh must drop it from state and apply must recreate it.
+func TestAccResourceKibanaCaseTemplateExternalDelete(t *testing.T) {
+	name := uniqueName()
+	var firstID string
+
+	recreate := step("create", nameVars(name), idChanged(&firstID))
+	recreate.PreConfig = func() { deleteTemplateByID(t, firstID) }
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			step("create", nameVars(name), captureID(&firstID)),
+			recreate,
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateDuplicateName verifies a second template
+// with the same owner and name (case-insensitive) surfaces the API's 409.
+func TestAccResourceKibanaCaseTemplateDuplicateName(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			errStep("duplicate", nameVars(uniqueName()), `(?is)already exists`),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateMalformedSchema verifies syntactically valid
+// YAML with an invalid field control surfaces the API's 400.
+func TestAccResourceKibanaCaseTemplateMalformedSchema(t *testing.T) {
+	name := uniqueName()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			errStep("malformed", nameVars(name), `(?is)got HTTP 400`),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateMalformedSchemaUpdate verifies the 400 is
+// also surfaced when an existing template is updated.
+func TestAccResourceKibanaCaseTemplateMalformedSchemaUpdate(t *testing.T) {
+	name := uniqueName()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			step("create", nameVars(name)),
+			errStep("malformed", nameVars(name), `(?is)got HTTP 400`),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateFieldRef creates a template whose
+// definition_yaml references a field-library field by $ref. The field library
+// API first shipped in 9.6.0.
+func TestAccResourceKibanaCaseTemplateFieldRef(t *testing.T) {
+	name := uniqueName()
+	fieldName := uniqueName() + "_field"
+	vars := config.Variables{
+		"name":       config.StringVariable(name),
+		"field_name": config.StringVariable(fieldName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			preCheck(t, version.MustConstraints(version.NewConstraint(">= 9.6.0-SNAPSHOT")))
+		},
+		Steps: []resource.TestStep{
+			step("create", vars,
+				attr("name", name),
+				attr("template_version", "1"),
+				attr("field_count", "1"),
+				resource.TestMatchResourceAttr(resourceName, "definition_yaml", regexp.MustCompile(`\$ref: `+fieldName)),
+			),
+		},
+	})
+}
+
+func idChanged(prev *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		got, err := attrOf(s, "template_id")
+		if err == nil && got == *prev {
+			err = fmt.Errorf("expected template_id to change from %q", *prev)
+		}
+		return err
+	}
+}
+
+func deleteTemplateByID(t *testing.T, id string) {
+	t.Helper()
+	if diags := kibanaoapi.DeleteCaseTemplate(context.Background(), kibanaClient(t), "default", id); diags.HasError() {
+		t.Fatalf("failed to delete template %s: %v", id, diags)
+	}
 }
