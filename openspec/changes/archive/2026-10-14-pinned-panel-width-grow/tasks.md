@@ -7,19 +7,17 @@
 - [x] 1.2 Add matching `Width types.String` / `Grow types.Bool` fields to `PinnedPanelModel`
       (`internal/kibana/dashboard/models/panel.go`). Do not add these fields to `PanelModel` or
       `SyntheticPanel()`.
-- [x] 1.3 Change `ControlPinnedHandler.AfterRemapToGroup`'s signature from `func(group *G)` to
-      `func(ppm models.PinnedPanelModel, group *G)` and update the `ToAPI` call site
-      (`internal/kibana/dashboard/panelkit/control_pinned_handler.go`) to pass `ppm` through. Update
-      the existing `esqlcontrol/pinned.go` callback for the new signature.
-- [x] 1.4 Add an `AfterRemapToGroup` callback to `optionslist/pinned.go`, `rangeslider/pinned.go`, and
-      `timeslider/pinned.go` that sets `group.Width`/`group.Grow` from `ppm.Width`/`ppm.Grow`.
-- [x] 1.5 Add a symmetric typed read callback to `ControlPinnedHandler`, invoked in `FromAPI` right
-      after `AsGroup(raw)`, and wire it in all four `panel/*/pinned.go` files to read
-      `group.Width`/`group.Grow` back onto the `PinnedPanelModel` being built.
+- [x] 1.3 In `panelkit/control_pinned_handler.go`, add a `pinnedSizing{Width *string; Grow *bool}`
+      struct (JSON keys `width`/`grow`, `omitempty`). In `ToAPI`, build it from `ppm.Width`/`ppm.Grow`
+      (null/unknown omitted) and `RemapViaJSON` it onto the group after the main remap. Leave
+      `AfterRemapToGroup` unchanged (`func(group *G)`).
+- [x] 1.4 In `FromAPI`, right after `AsGroup(raw)`, `RemapViaJSON` the group into a `pinnedSizing` to read
+      `width`/`grow` back onto the `PinnedPanelModel` being built. No per-control-type callbacks or
+      `panel/*/pinned.go` changes are needed, since the handler is shared by all four control types.
 
 ## 2. `width`/`grow` round-trip correctly on refresh and import
 
-- [x] 2.1 In the new read callback, when `prior` is nil (import or a missing index), set
+- [x] 2.1 In the `FromAPI` sizing read, when `prior` is nil (import or a missing index), set
       `width`/`grow` directly from the API's `Width`/`Grow` pointers; when any prior exists at that
       index (even with a different control type), use `PreserveString`/`PreserveBool` against
       `prior.Width`/`prior.Grow`.

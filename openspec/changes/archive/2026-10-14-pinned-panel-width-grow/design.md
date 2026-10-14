@@ -55,20 +55,15 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
    `width`/`grow` at all. This follows the existing `stringvalidator.OneOf` enum convention used
    elsewhere in the dashboard package (e.g. `internal/kibana/dashboard/panel/optionslist/schema.go`).
 
-2. **Conversion mechanism: typed `AfterRemapToGroup`/read-side callbacks on `ControlPinnedHandler`**
-   `control_pinned_handler.go`'s generic type parameter `G` is constrained only by `any`, so group
-   fields can't be accessed directly inside the generic handler. Today `AfterRemapToGroup` has
-   signature `func(group *G)` with no access to the Terraform model, and it is only invoked inside
-   `ToAPI`; only `esqlcontrol/pinned.go` wires it up today (to set `group.Type`) — `optionslist/pinned.go`,
-   `rangeslider/pinned.go`, and `timeslider/pinned.go` all leave it nil. Change the signature to
-   `func(ppm models.PinnedPanelModel, group *G)` and the `ToAPI` call site to pass `ppm` (the
-   existing `ToAPI` parameter) through. Update the existing `esqlcontrol` callback for the new
-   signature and add a new callback to each of the other three control types' handler construction;
-   each callback sets `group.Width`/`group.Grow` from `ppm.Width`/`ppm.Grow` (converting the
-   Terraform string to the generated `*...Width` enum pointer type, and the Terraform bool to
-   `*bool`). Add a symmetric typed read callback invoked right after `AsGroup(raw)` inside `FromAPI`,
-   wired per control type the same way, that reads `group.Width`/`group.Grow` back onto the
-   `PinnedPanelModel` being built.
+2. **Conversion mechanism: shared JSON-level sizing step in `ControlPinnedHandler`**
+   The group types differ per control type, but every generated group struct carries `width` and
+   `grow` with the same JSON keys, and `ControlPinnedHandler` already round-trips through
+   `RemapViaJSON`. Add a small `pinnedSizing{Width *string; Grow *bool}` struct (`omitempty` JSON
+   tags) to `control_pinned_handler.go`. `ToAPI` builds it from `ppm.Width`/`ppm.Grow` (null/unknown
+   omitted, an explicit `grow = false` still sent) and `RemapViaJSON`s it onto the group, which sets
+   only the present fields. `FromAPI` `RemapViaJSON`s the group into a `pinnedSizing` right after
+   `AsGroup(raw)` to read the values back. This needs no changes to `AfterRemapToGroup` (its
+   `func(group *G)` signature is unchanged) and no per-control-type code in `panel/*/pinned.go`.
 
 3. **Read-side default handling: explicit no-prior branch, then preserve**
    The package's convention is explicit null-preservation, not unconditional copy of the API value:
@@ -86,10 +81,8 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
 
 4. **Validator and type conversion for `width`**
    The Terraform attribute is a plain `types.String` validated with `stringvalidator.OneOf("small",
-   "medium", "large")`; the API field is a typed string enum (`*...ControlWidth`) distinct per
-   control type. The `AfterRemapToGroup`/read callbacks convert between the two by string value
-   (Terraform string ↔ enum's underlying string), not by importing a shared enum type, since each of
-   the four control types has its own generated enum type with an identical set of string values.
+   "medium", "large")`. Because sizing is carried through JSON, the per-control-type generated enum
+   types (identical string sets) never need to be referenced.
 
 5. **Alternatives considered**
    - *Extend the generated-client intermediate `DashboardPanelType*` structs to carry `Width`/`Grow`
@@ -106,11 +99,6 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
 
 ## Risks / Trade-offs
 
-- **[Risk]** Changing `AfterRemapToGroup`'s signature from `func(group *G)` to `func(ppm
-  models.PinnedPanelModel, group *G)` is a breaking change to an existing callback, not purely
-  additive. **Mitigation**: `AfterRemapToGroup` is private to the `panelkit`/`panel/*` packages and
-  has exactly one existing caller (`esqlcontrol/pinned.go`) to update; the blast radius is contained
-  to the four `pinned.go` files touched by this change.
 - **[Risk]** Practitioners who already rely on the server defaulting `width`/`grow` to
   `medium`/`false` after this change ships could see unexpected diffs if the no-prior/preserve branch
   is implemented incorrectly (e.g. always copying the API value instead of preserving a null on
