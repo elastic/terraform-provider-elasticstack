@@ -631,7 +631,13 @@ containing a fenced JSON block (language `json`) that conforms to the
 - `open_questions` (array, optional): each with `id`, `text`, and `blocking` boolean.
 - `affected_capabilities` (array of strings, optional).
 - `estimated_scope` (string): `"small"`, `"medium"`, `"large"`, or `"unknown"`.
-- `references` (array, optional): each with `type` and `url` or `path`.
+- `references` (array, optional): each with `type` and a non-empty `url` or `path`. `type` MUST be exactly one of:
+  - `repo-path`: a file or directory in this repository; use `path` (for example `internal/kibana/dashboard/schema.go`), not `url`. Do not use `file`.
+  - `elastic-docs`: an elastic.co documentation page; use `url`.
+  - `issue`: a GitHub issue; use `url`.
+  - `pr`: a GitHub pull request; use `url`.
+  - `external`: any other web page; use `url`. Do not use `url` as a type.
+  Any other `type` value causes the gate to override the outcome to `research-needs-human`.
 - `gate` (object, required):
   - `outcome` (string): `"ready-for-change-factory"` or `"research-needs-human"`.
   - `checklist` (object): booleans `grounded`, `mapped`, `compatible`, `versioned`, `testable`,
