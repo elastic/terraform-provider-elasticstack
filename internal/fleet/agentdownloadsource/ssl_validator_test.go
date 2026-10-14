@@ -75,6 +75,10 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 			}),
 		},
 		{
+			name: "fully unknown object defers validation",
+			obj:  types.ObjectUnknown(attrTypes),
+		},
+		{
 			name: "unknown child defers validation",
 			obj: types.ObjectValueMust(attrTypes, map[string]attr.Value{
 				"certificate":             types.StringUnknown(),

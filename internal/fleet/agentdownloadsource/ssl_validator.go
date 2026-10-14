@@ -29,8 +29,9 @@ var sslSubattrNames = []string{"certificate_authorities", "certificate", "key"}
 
 // sslAtLeastOneSubattrValidator rejects an ssl object whose sub-attributes
 // are all null, so a practitioner cannot send an ssl object the Fleet API
-// would persist as a present-but-empty object. Unknown children intentionally
-// defer validation: they may resolve to a set value later in the apply.
+// would persist as a present-but-empty object. Unknown values (the whole
+// object or any child) intentionally defer validation: they may resolve to a
+// set value later in the apply.
 type sslAtLeastOneSubattrValidator struct{}
 
 func (sslAtLeastOneSubattrValidator) Description(_ context.Context) string {
@@ -42,7 +43,7 @@ func (v sslAtLeastOneSubattrValidator) MarkdownDescription(ctx context.Context) 
 }
 
 func (sslAtLeastOneSubattrValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 
