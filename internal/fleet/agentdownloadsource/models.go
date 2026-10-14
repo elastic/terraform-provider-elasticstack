@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,11 +40,16 @@ type model struct {
 	Host             types.String `tfsdk:"host"`
 	Default          types.Bool   `tfsdk:"default"`
 	ProxyID          types.String `tfsdk:"proxy_id"`
+	Ssl              types.Object `tfsdk:"ssl"`
 	SpaceIDs         types.Set    `tfsdk:"space_ids"`         // > string
 	KibanaConnection types.List   `tfsdk:"kibana_connection"` // > provider schema connection block
 }
 
 var agentDownloadSourceMinVersion = version.Must(version.NewVersion("8.13.0"))
+
+// agentDownloadSourceSslMinVersion gates the ssl attribute on its own so
+// configurations without ssl keep the 8.13.0 resource floor.
+var agentDownloadSourceSslMinVersion = version.Must(version.NewVersion("9.1.0"))
 
 func (m model) GetID() types.String             { return m.ID }
 func (m model) GetResourceID() types.String     { return m.SourceID }
@@ -54,13 +60,21 @@ func (m model) GetSpaceID() types.String {
 }
 
 func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return entitycore.SingleVersionRequirement(
+	reqs := entitycore.SingleVersionRequirement(
 		*agentDownloadSourceMinVersion,
 		fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
-	), nil
+	)
+	if typeutils.IsKnown(m.Ssl) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("ssl"),
+			*agentDownloadSourceSslMinVersion,
+			fmt.Sprintf("ssl is only supported in Elastic Stack %s and above", agentDownloadSourceSslMinVersion),
+		))
+	}
+	return reqs, nil
 }
 
-func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadSourcesJSONRequestBody {
+func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownloadSourcesJSONRequestBody, diag.Diagnostics) {
 	body := kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
@@ -74,14 +88,28 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 		body.Id = &id
 	}
 
-	return body
+	ssl, sslDiags := objectValueToSSL(ctx, m.Ssl)
+	if sslDiags.HasError() {
+		return kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{}, sslDiags
+	}
+	body.Ssl = sslToKibana(ssl)
+
+	return body, nil
 }
 
-func (m model) toAPIUpdateModel(_ context.Context, prior model) kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody {
-	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
+func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
+	body := kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
 	}
+
+	ssl, sslDiags := objectValueToSSLUpdate(ctx, m.Ssl, prior.Ssl)
+	if sslDiags.HasError() {
+		return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{}, sslDiags
+	}
+	body.Ssl = sslToKibana(ssl)
+
+	return body, nil
 }

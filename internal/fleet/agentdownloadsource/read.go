@@ -89,5 +89,17 @@ func readAndHydrateState(
 	state.ProxyID = typeutils.NonEmptyStringishPointerValue(item.ProxyId)
 	state.SpaceIDs = preservedSpaceIDs
 	state.KibanaConnection = preservedKibanaConnection
+
+	if item.Ssl != nil {
+		sslObj, sslDiags := sslToObjectValue(ctx, item.Ssl.Certificate, item.Ssl.CertificateAuthorities, item.Ssl.Key)
+		diags.Append(sslDiags...)
+		if diags.HasError() {
+			return state, false, diags
+		}
+		state.Ssl = sslObj
+	} else {
+		state.Ssl = types.ObjectNull(getSslAttrTypes(ctx))
+	}
+
 	return state, true, diags
 }
