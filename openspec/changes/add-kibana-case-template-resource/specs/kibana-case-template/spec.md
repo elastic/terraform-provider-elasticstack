@@ -45,9 +45,10 @@ Reference: https://www.elastic.co/docs/explore-analyze/cases/create-case-templat
 #### Scenario: Update sends the full replacement body
 
 - GIVEN the resource exists with a given `template_id`
-- WHEN `definition_yaml`, `description`, `tags`, or `is_enabled` changes and apply runs
+- WHEN `name`, `definition_yaml`, `description`, `tags`, or `is_enabled` changes and apply runs
 - THEN the resource SHALL send an update request identifying the template by `template_id` and including the required `owner`, `name`, and `definition_yaml` fields
 - AND the resource SHALL perform a read after the update and SHALL NOT change `template_id` in the resulting state
+- AND the resulting state SHALL contain the configured `name`
 - AND `template_version` SHALL increment
 
 ### Requirement: Schema and validation
@@ -109,7 +110,7 @@ A config edit to `definition_yaml` that changes only whitespace, comments, or ma
 
 ### Requirement: Null-vs-empty handling for `description` and `tags`
 
-Omitting `description` or `tags` from configuration on create SHALL result in a null value in state. Omitting a previously set `description` or `tags` from configuration on a later update SHALL clear the stored value, and the resulting state SHALL be null. Setting `description = ""` or `tags = []` explicitly SHALL be accepted and SHALL be distinct from omitting the attribute only insofar as both produce an absent/empty value server-side; the resource SHALL NOT merge or coalesce the two forms.
+Omitting `description` or `tags` from configuration on create SHALL result in a null value in state. Omitting a previously set `description` or `tags` from configuration on a later update SHALL clear the stored value, and the resulting state SHALL be null. Setting `description = ""` or `tags = []` explicitly SHALL be accepted and SHALL remain an empty value in state, distinct from omission; the resource SHALL NOT merge or coalesce the two forms.
 
 #### Scenario: Omitted description and tags on create
 
@@ -122,6 +123,13 @@ Omitting `description` or `tags` from configuration on create SHALL result in a 
 - GIVEN the resource exists with `description` and `tags` set to non-empty values
 - WHEN the configuration removes both attributes and apply runs
 - THEN the resulting state SHALL contain `description = null` and `tags = null`
+
+#### Scenario: Explicit empty description and tags remain distinct from omission
+
+- GIVEN a configuration with `description = ""` and `tags = []`
+- WHEN apply creates or updates the resource
+- THEN the resulting state SHALL contain `description = ""` and `tags = []`
+- AND neither value SHALL be coalesced to null
 
 ### Requirement: Identity and import
 

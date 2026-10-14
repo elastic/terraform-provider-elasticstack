@@ -9,12 +9,12 @@ Source: [elastic/terraform-provider-elasticstack#5193](https://github.com/elasti
 ## What Changes
 
 - Add a new Terraform resource `elasticstack_kibana_case_template` that manages a single case template through `POST`/`GET`/`PUT`/`DELETE /api/cases/templates{,/{template_id}}`.
-- The template's case defaults and custom-field declarations (including `$ref` entries into the field library) are declared as a YAML string in `definition_yaml`; `owner` scopes the template to a solution (Stack Management/Observability/Security) and forces replacement; `name`, `description`, `tags`, and `is_enabled` are additional top-level, request-level attributes (not part of the YAML).
-- `definition_yaml` uses the repo's `customtypes.NormalizedYamlType` for plan-time YAML syntax validation and semantic-equality reconciliation; the resource adds explicit plan-time diff suppression on top of that type so whitespace-, comment-, and key-order-only edits produce an empty plan and skip the `PUT` call entirely, since every `PUT` (including a no-op resubmit of unchanged YAML) creates a new template version server-side.
-- Exposes computed `template_id` and `template_version` only; `latest_version` is not exposed because the resource always manages the latest version and historical-version management is out of scope.
-- `tags` is modeled as `List[String]` (not a set): the API preserves submission order and duplicate entries.
-- `description` and `tags` are plain Optional (not Computed): the API omits them from the response when not supplied on write, so the model maps an omitted config directly to a null/absent state without needing `UseStateForUnknown` reconciliation.
-- Built on the repo's `entitycore.KibanaResource` envelope (matching `casefielddefinition`, `agentbuilderworkflow`), with space-aware routing and a minimum Elastic Stack version of 9.5.2 (the backport commit that shipped kibana#280144 landed after the 9.5.0 and 9.5.1 tags).
+- The template's case defaults and custom-field declarations (including `$ref` entries into the field library) are declared as a YAML string in `definition_yaml`; `owner` scopes the template to a solution (Stack Management/Observability/Security), and changing it replaces the managed resource; `name`, `description`, `tags`, and `is_enabled` are additional top-level, request-level attributes (not part of the YAML).
+- Invalid YAML in `definition_yaml` is rejected before API operations, and formatting-only changes that preserve the YAML structure produce no update, avoiding unnecessary server-side versions.
+- Expose the server-assigned `template_id` and `template_version`; the resource manages the latest version only, not historical versions.
+- The API preserves the order of `tags` and duplicate entries.
+- `description` and `tags` distinguish omitted values from explicitly configured empty values in Terraform state; omitting either on update clears it.
+- Template operations use space-aware routing and require Elastic Stack 9.5.2 or newer, the minimum version containing the standalone templates API.
 - Add documentation, an example, and acceptance tests for the resource, with a Technical Preview note (the OpenAPI spec's own `x-state` on create/update/delete) and a note that the feature additionally requires the `xpack.cases.templates.enabled` setting (defaults to `true`).
 
 Non-goals:
