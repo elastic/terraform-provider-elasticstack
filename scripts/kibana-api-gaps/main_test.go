@@ -18,6 +18,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -98,5 +99,9 @@ func TestFinishDiscoverReportsErrors(t *testing.T) {
 	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: bad, reportPath: report}, io.Discard), "malformed memory")
 	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: none, reportPath: filepath.Join(blocker, "r.json")}, io.Discard), "unwritable report")
 	opts := discoverOptions{memoryPath: none, reportPath: report, summaryPath: filepath.Join(blocker, "s.md")}
-	require.Error(t, finishDiscover(d, opts, io.Discard), "unwritable summary")
+	var warnings bytes.Buffer
+	opts.warn = &warnings
+	require.NoError(t, finishDiscover(d, opts, io.Discard), "an unwritable summary is not fatal")
+	assert.Contains(t, warnings.String(), "step summary")
+	assert.FileExists(t, report)
 }

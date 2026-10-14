@@ -73,6 +73,7 @@ type discoverOptions struct {
 	memoryPath  string
 	reportPath  string
 	summaryPath string
+	warn        io.Writer // where a failed step summary is reported; nil discards it
 }
 
 func cmdDiscover(args []string, stdout, stderr io.Writer) error {
@@ -94,6 +95,7 @@ func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
+	opts.warn = stderr
 	if err := finishDiscover(result, opts, stdout); err != nil {
 		return err
 	}
@@ -117,7 +119,8 @@ func finishDiscover(result *Discovery, opts discoverOptions, stdout io.Writer) e
 	}
 	fmt.Fprintf(stdout, "wrote report to %s; run_agent=%t gate_reason=%s queue=%d groups=%d\n",
 		opts.reportPath, report.RunAgent, report.GateReason, len(report.Queue), len(report.Groups))
-	return appendSummary(opts.summaryPath, renderDiscoverSummary(report))
+	appendSummaryBestEffort(opts.warn, opts.summaryPath, renderDiscoverSummary(report))
+	return nil
 }
 
 // discoverRepository runs discovery over the provider and generated/kbapi/oas-filtered.yaml

@@ -18,6 +18,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"os"
@@ -147,6 +148,25 @@ func TestRecordCommandCreatesMemoryAndWritesSummary(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(text), "r#/a")
 	assert.Contains(t, string(text), "server-managed counter")
+}
+
+func TestRecordCommandSucceedsWhenTheStepSummaryIsUnwritable(t *testing.T) {
+	dir := t.TempDir()
+	writeJSON(t, filepath.Join(dir, "report.json"), recordTestReport(1))
+	writeJSON(t, filepath.Join(dir, "verdicts.json"), []Verdict{{Key: "r#/a", Verdict: verdictFile, Reason: "useful"}})
+	memory := filepath.Join(dir, "state.json")
+	var stdout, stderr bytes.Buffer
+
+	err := cmdRecord([]string{
+		"--report", filepath.Join(dir, "report.json"),
+		"--verdicts", filepath.Join(dir, "verdicts.json"),
+		"--memory", memory, "--time", "2026-10-13T12:00:00Z",
+		"--summary", filepath.Join(dir, "missing-dir", "step_summary"),
+	}, &stdout, &stderr)
+
+	require.NoError(t, err)
+	assert.Contains(t, stderr.String(), "step summary")
+	assert.FileExists(t, memory)
 }
 
 func TestRecordCommandLeavesMemoryUntouchedWhenVerdictsAreRejected(t *testing.T) {

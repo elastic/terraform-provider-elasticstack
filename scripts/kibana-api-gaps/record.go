@@ -158,7 +158,8 @@ func cmdRecord(args []string, stdout, stderr io.Writer) error {
 	}
 	summary := renderRecordSummary(verdicts, when)
 	fmt.Fprint(stdout, summary)
-	return appendSummary(*summaryPath, summary)
+	appendSummaryBestEffort(stderr, *summaryPath, summary)
+	return nil
 }
 
 func readJSON(path string, v any, strict bool) error {
@@ -177,6 +178,15 @@ func readJSON(path string, v any, strict bool) error {
 		return fmt.Errorf("parse %s: unexpected data after the JSON value", path)
 	}
 	return nil
+}
+
+// appendSummaryBestEffort appends text to the step summary and only warns when it cannot: the
+// summary is a convenience, and the agent sandbox cannot write $GITHUB_STEP_SUMMARY, so a failed
+// write must not fail a command whose real work (state.json, report.json) already succeeded.
+func appendSummaryBestEffort(warn io.Writer, path, text string) {
+	if err := appendSummary(path, text); err != nil && warn != nil {
+		fmt.Fprintf(warn, "warning: could not write the step summary: %v\n", err)
+	}
 }
 
 func appendSummary(path, text string) error {
