@@ -44,6 +44,25 @@ func SHA256HexDigest(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// ReadFileWithSHA256HexDigest reads the full contents of the file at path and
+// returns both the raw bytes and their hex-encoded SHA-256 digest. Use this
+// instead of SHA256HexDigest when the caller also needs the file contents
+// (e.g. to upload them), so the file is only read once.
+func ReadFileWithSHA256HexDigest(path string) ([]byte, string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	data, err := io.ReadAll(io.TeeReader(f, h))
+	if err != nil {
+		return nil, "", err
+	}
+	return data, hex.EncodeToString(h.Sum(nil)), nil
+}
+
 // FileChecksumDrifted computes the current SHA-256 digest of the file at path
 // and reports whether it differs from priorChecksum. hasPriorState must be
 // false when the resource is being created (there is no prior state to
