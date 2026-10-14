@@ -51,7 +51,7 @@ Per the OpenAPI spec (`oas.yaml:22125-22135,22331-22342`), `dry_run=true` runs s
 
 ### Technical Preview note
 
-The schema description states **Technical Preview**, sourced from the OpenAPI spec's `x-state: Technical preview` on all five field-definition operations (`oas.yaml:22113,22203,22263,22319`, and the PUT op) — the repo treats the API spec as authoritative for API-stability claims. The Elastic UI docs badge the *feature* itself as GA in Stack 9.5+ (UI/doc availability, not the public API's own stability marker); both facts are stated in the schema description since they could otherwise look contradictory to a reader.
+The schema description states **Technical Preview**, sourced from the OpenAPI spec's `x-state: Technical preview` on all five field-definition operations (`oas.yaml:22113,22203,22263,22319`, and the PUT op) — the repo treats the API spec as authoritative for API-stability claims. The Elastic UI docs badge the *feature* itself as GA in Stack 9.5+ (UI/doc availability, not the public API's own stability marker; the public routes were only added in 9.6.0 by elastic/kibana#289790, Stack 9.5 serves internal routes only); both facts are stated in the schema description since they could otherwise look contradictory to a reader.
 
 ### Identity-mismatch errors are not special-cased
 
@@ -67,7 +67,7 @@ Both surface through standard error-diagnostic reporting with no special-case lo
 | Unit | Responsibility |
 |---|---|
 | `schema.go` | Schema per "Schema mapping" above. |
-| `models.go` | `GetVersionRequirements` (9.5.0 minimum), `GetID`/`GetResourceID`/`GetSpaceID`, mapping between `kbapi.CasesFieldDefinitionResponse` and the model (composite id, `description`/`is_global` nullability), and `toAPICreateModel`/`toAPIUpdateModel`. |
+| `models.go` | `GetVersionRequirements` (9.6.0 minimum), `GetID`/`GetResourceID`/`GetSpaceID`, mapping between `kbapi.CasesFieldDefinitionResponse` and the model (composite id, `description`/`is_global` nullability), and `toAPICreateModel`/`toAPIUpdateModel`. |
 | `create.go` / `update.go` | `entitycore.SimpleKibanaCreate`/`SimpleKibanaUpdate` wiring, following the `agentbuilderworkflow` shape. |
 | `internal/clients/kibanaoapi/case_field_definition.go` | Thin wrapper (`CreateCaseFieldDefinition`, `GetCaseFieldDefinition`, `UpdateCaseFieldDefinition`, `DeleteCaseFieldDefinition`) calling the generated `...WithResponse` methods with `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, using `HandleMutateRawResponse[kbapi.CasesFieldDefinitionResponse]` / `HandleGetRawResponse[kbapi.CasesFieldDefinitionResponse]` for create/update/read and `diagutil.HandleStatusResponse` for delete (HTTP 204 and 404 treated as success), modeled on `internal/clients/kibanaoapi/agentbuilder_skill.go`. |
 
@@ -111,7 +111,7 @@ Recorded during implementation (stack probing on 2026-10-14):
 
 - [A mistyped `owner` or a `name`/`type` identity conflict only surfaces as an apply-time 400/409, not a plan-time validation error] → Accepted: documented in the schema description (see "Identity-mismatch errors are not special-cased"); no client-side YAML parsing is added to pre-empt it (see proposal non-goals).
 - [`description`/`is_global` Computed-field choice may not match the server's actual partial-update semantics once verified live] → Tracked as a blocking open question; the acceptance-test task group is scoped to resolve it and adjust the schema/mapping before this change is considered complete.
-- [The envelope enforces the version requirement on every lifecycle operation, including read and delete] → Accepted: a state entry against a pre-9.5 server is not expected in practice, since the resource could never have been created there.
+- [The envelope enforces the version requirement on every lifecycle operation, including read and delete] → Accepted: a state entry against a pre-9.6 server is not expected in practice, since the resource could never have been created there.
 - [Reformat-only YAML edits may not produce an empty plan in practice, despite `NormalizedYamlType`'s semantic-equality hook] → Accepted as a documented v1 limitation if the acceptance test shows this, rather than a release blocker (see Schema mapping note on `definition`).
 
 ## Migration Plan

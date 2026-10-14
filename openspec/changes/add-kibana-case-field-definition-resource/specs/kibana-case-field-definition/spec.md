@@ -1,6 +1,6 @@
 ## Purpose
 
-Defines the `elasticstack_kibana_case_field_definition` resource, which manages a single field in the Kibana Cases field library (Technical Preview API, Stack 9.5+) so that case custom-field definitions can be declared as code, reviewed, and drift-detected instead of configured by hand in the Kibana UI.
+Defines the `elasticstack_kibana_case_field_definition` resource, which manages a single field in the Kibana Cases field library (Technical Preview API, Stack 9.6+) so that case custom-field definitions can be declared as code, reviewed, and drift-detected instead of configured by hand in the Kibana UI.
 
 ## Schema
 
@@ -157,24 +157,24 @@ On destroy, the resource SHALL send `DELETE /api/cases/field_definitions/{field_
 
 ### Requirement: Minimum stack version
 
-The resource SHALL require Elastic Stack 9.5.0 or newer. When the target server is older, any lifecycle operation SHALL fail with an unsupported-version error stating the minimum version, and no field-definition API call SHALL be made.
+The resource SHALL require Elastic Stack 9.6.0 or newer. When the target server is older, any lifecycle operation SHALL fail with an unsupported-version error stating the minimum version, and no field-definition API call SHALL be made.
 
-#### Scenario: Server older than 9.5.0
+#### Scenario: Server older than 9.6.0
 
-- GIVEN the target stack version is 9.4.0
+- GIVEN the target stack version is 9.5.5
 - WHEN apply creates the resource
-- THEN the provider SHALL return an unsupported-version error mentioning `9.5.0`
+- THEN the provider SHALL return an unsupported-version error mentioning `9.6.0`
 - AND no field-definition API call SHALL be made
 
-#### Scenario: Refresh against a server older than 9.5.0
+#### Scenario: Refresh against a server older than 9.6.0
 
-- GIVEN the resource is in state and the target stack version is 9.4.0
+- GIVEN the resource is in state and the target stack version is 9.5.5
 - WHEN refresh runs
-- THEN the provider SHALL return an unsupported-version error mentioning `9.5.0`
+- THEN the provider SHALL return an unsupported-version error mentioning `9.6.0`
 
-#### Scenario: Server at 9.5.0 or newer
+#### Scenario: Server at 9.6.0 or newer
 
-- GIVEN the target stack version is 9.5.0 or newer
+- GIVEN the target stack version is 9.6.0 or newer
 - WHEN apply creates the resource
 - THEN the resource SHALL proceed with the create request
 

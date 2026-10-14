@@ -39,7 +39,7 @@ import (
 
 const resourceName = "elasticstack_kibana_case_field_definition.test"
 
-var minVersion = version.Must(version.NewVersion("9.5.0"))
+var minVersion = version.Must(version.NewVersion("9.6.0"))
 
 func uniqueName() string {
 	return "tf_acc_" + uuid.New().String()[:8]
@@ -318,7 +318,7 @@ func TestAccResourceKibanaCaseFieldDefinitionExternalDelete(t *testing.T) {
 // TestAccResourceKibanaCaseFieldDefinitionDestroyBlocked links the field into a
 // case template through the Kibana API, then expects destroy to fail with a
 // 409. NOTE: the template YAML (`$ref` entry) and response shape follow the
-// OpenAPI description and have not been verified against a live 9.5+ stack.
+// OpenAPI description and have not been verified against a live 9.6+ stack.
 func TestAccResourceKibanaCaseFieldDefinitionDestroyBlocked(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
 
@@ -398,9 +398,9 @@ func deleteTemplate(t *testing.T, id string) {
 }
 
 // TestAccResourceKibanaCaseFieldDefinitionVersionGate runs only against stacks
-// older than 9.5.0 and verifies the resource-level version diagnostic.
+// older than 9.6.0 and verifies the resource-level version diagnostic.
 func TestAccResourceKibanaCaseFieldDefinitionVersionGate(t *testing.T) {
-	versionutils.SkipIfUnsupportedConstraints(t, version.MustConstraints(version.NewConstraint("< 9.5.0")), versionutils.FlavorAny)
+	versionutils.SkipIfUnsupportedConstraints(t, version.MustConstraints(version.NewConstraint("< 9.6.0")), versionutils.FlavorAny)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },

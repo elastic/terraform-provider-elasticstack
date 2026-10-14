@@ -108,8 +108,8 @@ func TestVersionRequirement(t *testing.T) {
 	reqs, diags := fieldDefinitionModel{}.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
-	assert.Equal(t, "9.5.0", reqs[0].MinVersion.String())
-	assert.Contains(t, reqs[0].ErrorMessage, "9.5.0")
+	assert.Equal(t, "9.6.0", reqs[0].MinVersion.String())
+	assert.Contains(t, reqs[0].ErrorMessage, "9.6.0")
 }
 
 func TestSchema(t *testing.T) {
