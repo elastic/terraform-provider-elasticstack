@@ -28,12 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// updateExceptionItem reconciles required_comments against a fresh complete
-// comment read before any PUT: a failed read, a missing item, or a failed
-// version discovery aborts the update with no request sent, and a no-op
-// reconciliation yields a body that omits comments entirely. It wraps
-// SimpleKibanaUpdate (rather than hand-rolling the API/populate tail) so the
-// plan -> body -> API -> populate flow stays shared with other resources.
 func updateExceptionItem(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
@@ -41,7 +35,7 @@ func updateExceptionItem(
 ) (entitycore.KibanaWriteResult[ExceptionItemModel], diag.Diagnostics) {
 	return entitycore.SimpleKibanaUpdate[ExceptionItemModel, kbapi.UpdateExceptionListItemJSONRequestBody, kbapi.SecurityExceptionsAPIExceptionListItem](
 		func(plan ExceptionItemModel, ctx context.Context, writeID string) (kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
-			commentsBody, diags := reconcileRequiredComments(ctx, client, req, plan)
+			commentsBody, diags := reconcileRequiredComments(ctx, client, req)
 			if diags.HasError() {
 				return kbapi.UpdateExceptionListItemJSONRequestBody{}, diags
 			}
@@ -53,6 +47,7 @@ func updateExceptionItem(
 			}
 			return *body, diags
 		},
+		// The update endpoint takes the item ID in the request body, not the URL.
 		func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateExceptionListItemJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionListItem, diag.Diagnostics) {
 			return kibanaoapi.UpdateExceptionListItem(ctx, client, spaceID, body)
 		},
@@ -60,28 +55,18 @@ func updateExceptionItem(
 	)(ctx, client, req)
 }
 
-// reconcileRequiredComments returns the update-request comments body for the
-// plan's required_comments, or nil when the request must omit comments. The
-// fresh read happens on every update — even when required_comments is null,
-// unknown, or empty — so a failed read or a missing item aborts the update
-// before any PUT. Version discovery only runs when a required text is missing.
+// Even with no required texts, a failed fresh read must abort before PUT.
 func reconcileRequiredComments(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[ExceptionItemModel],
-	plan ExceptionItemModel,
 ) (*updateCommentsArray, diag.Diagnostics) {
-	required, _ := requiredCommentTexts(plan.RequiredComments)
+	required, _ := requiredCommentTexts(req.Plan.RequiredComments)
 
-	reconciler := newCommentReconciler(client, req.SpaceID, req.WriteID, plan.NamespaceType)
+	reconciler := newCommentReconciler(client, req.SpaceID, req.WriteID, req.Plan.NamespaceType)
 	return reconciler.reconcile(ctx, required)
 }
 
-// newCommentReconciler builds the update-path comment reconciler from a live
-// Kibana client: the fresh read fetches the complete current comment log, and
-// the body-shape check discovers the server version (serverless counts as
-// 8.6.0-or-later behavior). Both dependencies report diagnostics so a failed
-// fresh read or version discovery aborts the update before any PUT.
 func newCommentReconciler(
 	client *clients.KibanaScopedClient,
 	spaceID, writeID string,
@@ -104,8 +89,6 @@ func newCommentReconciler(
 	}
 }
 
-// populateUpdated only validates the update response is non-nil: the plan
-// already carries the correct field values for an update.
 func (m *ExceptionItemModel) populateUpdated(_ context.Context, _ string, updated *kbapi.SecurityExceptionsAPIExceptionListItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 	entitycore.RequireNonNilKibanaWriteResponse(&diags, updated, "update", "exception item")

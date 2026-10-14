@@ -20,18 +20,13 @@ package securityexceptionitem
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// commentsPlanModifiers returns the plan modifiers for the computed comments
-// log. comments is planned as unknown when required_comments is unknown or
-// when any of its known texts is absent from the prior state's stored comment
-// texts (an append will change the log). Otherwise the prior state value is
-// preserved, so a comment-only configuration change that appends nothing
-// keeps the plan quiet.
 func commentsPlanModifiers() []planmodifier.List {
 	return []planmodifier.List{unknownWhenRequiredCommentMissing{}}
 }
@@ -62,6 +57,10 @@ func (m unknownWhenRequiredCommentMissing) PlanModifyList(ctx context.Context, r
 	}
 
 	requiredTexts, _ := requiredCommentTexts(required)
+	if len(requiredTexts) == 0 {
+		return
+	}
+
 	storedTexts := storedCommentTexts(ctx, req.StateValue, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -72,11 +71,7 @@ func (m unknownWhenRequiredCommentMissing) PlanModifyList(ctx context.Context, r
 }
 
 func storedCommentTexts(ctx context.Context, comments types.List, diags *diag.Diagnostics) []string {
-	if !knownList(comments) {
-		return nil
-	}
-	var models []CommentModel
-	diags.Append(comments.ElementsAs(ctx, &models, false)...)
+	models := typeutils.ListTypeAs[CommentModel](ctx, comments, path.Root("comments"), diags)
 	if diags.HasError() {
 		return nil
 	}

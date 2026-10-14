@@ -124,7 +124,7 @@ func requireCommentsUnchanged(t *testing.T, required types.List, stored types.Li
 	t.Helper()
 	resp := runCommentsPlanModifier(t, required, stored)
 	require.False(t, resp.Diagnostics.HasError(), "%s: %s", name, resp.Diagnostics)
-	require.False(t, resp.PlanValue.IsUnknown(), "%s: comments must stay unchanged from prior state", name)
+	require.Equal(t, stored, resp.PlanValue, "%s: comments must stay unchanged from prior state", name)
 }
 
 func TestCommentsPlanModifier_UnknownWhenRequiredTextWillBeAppended(t *testing.T) {
@@ -164,6 +164,16 @@ func TestCommentsPlanModifier_UnchangedWhenKnownRequiredTextsReordered(t *testin
 		types.ListValueMust(types.StringType, []attr.Value{types.StringValue("beta"), types.StringValue("alpha")}),
 		storedCommentsList(t, "alpha", "beta"),
 		"required texts reordered with nothing missing",
+	)
+}
+
+func TestCommentsPlanModifier_KnownEmptyRequiredCommentsKeepsComments(t *testing.T) {
+	t.Parallel()
+
+	requireCommentsUnchanged(t,
+		types.ListValueMust(types.StringType, nil),
+		storedCommentsList(t, "alpha"),
+		"empty required_comments names nothing missing",
 	)
 }
 

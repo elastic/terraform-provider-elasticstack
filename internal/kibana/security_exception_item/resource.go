@@ -30,6 +30,7 @@ var (
 	_ resource.ResourceWithConfigure      = newExceptionItemResource()
 	_ resource.ResourceWithImportState    = newExceptionItemResource()
 	_ resource.ResourceWithValidateConfig = newExceptionItemResource()
+	_ resource.ResourceWithUpgradeState   = newExceptionItemResource()
 )
 
 type ExceptionItemResource struct {

@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -29,10 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// requiredCommentValidators returns the plan-time validators for the
-// required_comments attribute: every element must be a non-empty string that
-// is not only whitespace, and no element may repeat (exact, case-sensitive
-// comparison, no trimming).
 func requiredCommentValidators() []validator.List {
 	return []validator.List{
 		listvalidator.ValueStringsAre(nonWhitespaceStringValidator{}),
@@ -76,15 +73,12 @@ func (uniqueValuesValidator) MarkdownDescription(ctx context.Context) string {
 }
 
 func (uniqueValuesValidator) ValidateList(_ context.Context, req validator.ListRequest, resp *validator.ListResponse) {
-	if !knownList(req.ConfigValue) {
+	if !typeutils.IsKnown(req.ConfigValue) {
 		return
 	}
 	seen := make(map[string]struct{}, len(req.ConfigValue.Elements()))
 	for _, elem := range req.ConfigValue.Elements() {
 		if elem.(types.String).IsUnknown() {
-			// Unknown elements resolve later (the comments plan modifier keeps
-			// them unknown while required_comments is unknown) and must not be
-			// compared as duplicate empty strings.
 			continue
 		}
 		text := elem.(types.String).ValueString()
@@ -106,16 +100,10 @@ func (uniqueValuesValidator) ValidateList(_ context.Context, req validator.ListR
 // in 8.6.0).
 var minAppendOnlyCommentBodyVersion = version.Must(version.NewVersion("8.6.0"))
 
-// supportsMissingOnlyCommentBody reports whether the Kibana server accepts a
-// comments array made of only the missing texts on update.
 func supportsMissingOnlyCommentBody(kibanaVersion *version.Version) bool {
 	return kibanaVersion.GreaterThanOrEqual(minAppendOnlyCommentBodyVersion)
 }
 
-// missingCommentTexts returns the required texts that are not present among
-// storedTexts, in configuration order. Matching is exact and case-sensitive;
-// a stored text satisfies a required text whether or not Terraform created
-// that comment.
 func missingCommentTexts(required, storedTexts []string) []string {
 	stored := make(map[string]struct{}, len(storedTexts))
 	for _, text := range storedTexts {
@@ -159,10 +147,6 @@ func buildAppendComments(
 	return body
 }
 
-// commentReconciler computes the update-request comments body for the
-// required_comments of an update. Its dependencies are function fields so the
-// fresh-read and version-discovery failure paths can be exercised without a
-// live Kibana. A nil comments body means the update must omit comments.
 type commentReconciler struct {
 	readStoredComments      func(ctx context.Context) (stored []kbapi.SecurityExceptionsAPIExceptionListItemComment, found bool, diags diag.Diagnostics)
 	supportsMissingOnlyBody func(ctx context.Context) (bool, diag.Diagnostics)
@@ -203,10 +187,8 @@ func (r commentReconciler) reconcile(ctx context.Context, required []string) (*k
 	return &body, diags
 }
 
-// requiredCommentTexts returns the configured comment texts in configuration
-// order, and whether the list is known (not null and not unknown).
 func requiredCommentTexts(list types.List) ([]string, bool) {
-	if !knownList(list) {
+	if !typeutils.IsKnown(list) {
 		return nil, false
 	}
 	texts := make([]string, 0, len(list.Elements()))
@@ -214,8 +196,4 @@ func requiredCommentTexts(list types.List) ([]string, bool) {
 		texts = append(texts, elem.(types.String).ValueString())
 	}
 	return texts, true
-}
-
-func knownList(list types.List) bool {
-	return !list.IsNull() && !list.IsUnknown()
 }

@@ -1535,16 +1535,6 @@ func TestAccResourceExceptionItem_CommentsImmutableFieldReplace(t *testing.T) {
 	})
 }
 
-// TestAccResourceExceptionItem_CommentsUnsetToSet exercises the unset->set
-// transition for the optional comments list: the Security Exceptions API
-// appends whatever comments are sent on update to the comments the item
-// already has, so this is only safely verifiable (without the apply
-// producing an inconsistent-state error) when the item starts out with no
-// comments at all. Editing an existing comment, and a set->unset transition,
-// are not exercised here because the provider never forwards comment IDs on
-// update and always re-reads the full (server-appended) comment history
-// from the API, which makes those transitions inherently inconsistent with
-// the planned value for this non-Computed list attribute.
 func TestAccResourceExceptionItem_CommentsUnsetToSet(t *testing.T) {
 	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
 

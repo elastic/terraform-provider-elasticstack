@@ -33,9 +33,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newUpdatePathTestClient returns a KibanaScopedClient backed by an
-// httptest server that serves a single exception item, plus counters for the
-// requests the update path is expected to make.
 func newUpdatePathTestClient(t *testing.T, readStatus int) (*clients.KibanaScopedClient, *updatePathRequests) {
 	t.Helper()
 
@@ -67,11 +64,11 @@ func newUpdatePathTestClient(t *testing.T, readStatus int) (*clients.KibanaScope
 			w.WriteHeader(http.StatusInternalServerError)
 		case r.Method == http.MethodGet:
 			reqs.read++
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(readStatus)
 			if readStatus == http.StatusOK {
-				w.Header().Set("Content-Type", "application/json")
 				_, _ = w.Write(itemJSON)
 			}
-			w.WriteHeader(readStatus)
 		case r.Method == http.MethodPut:
 			reqs.put++
 			w.WriteHeader(http.StatusInternalServerError)
@@ -92,9 +89,6 @@ type updatePathRequests struct {
 	status int
 }
 
-// emptyRequiredPlan returns an update plan whose required_comments is a known,
-// empty list: nothing is missing, so a fresh read must happen but the update
-// body must omit comments and never discover the server version.
 func emptyRequiredPlan() ExceptionItemModel {
 	return ExceptionItemModel{
 		RequiredComments: types.ListValueMust(types.StringType, nil),
@@ -114,7 +108,7 @@ func TestReconcileRequiredComments_EmptyRequired(t *testing.T) {
 			Plan:    emptyRequiredPlan(),
 			WriteID: "item-id",
 			SpaceID: "default",
-		}, emptyRequiredPlan())
+		})
 
 		require.Nil(t, body)
 		require.True(t, diags.HasError(), "a failed fresh read must abort the update: %s", diags)
@@ -131,7 +125,7 @@ func TestReconcileRequiredComments_EmptyRequired(t *testing.T) {
 			Plan:    emptyRequiredPlan(),
 			WriteID: "item-id",
 			SpaceID: "default",
-		}, emptyRequiredPlan())
+		})
 
 		require.False(t, diags.HasError(), "%s", diags)
 		require.Nil(t, body, "the update body must omit comments when nothing is missing")
