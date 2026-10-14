@@ -45,14 +45,11 @@ type QueueItem struct {
 
 // Report is report.json: the ordered triage queue plus the full diagnostics of a discovery run.
 type Report struct {
-	RunAgent      bool           `json:"run_agent"`
-	GateReason    string         `json:"gate_reason"`
-	Slots         int            `json:"slots"`
-	Queue         []QueueItem    `json:"queue"`
-	Groups        []Group        `json:"groups"`
-	SkippedShapes []SkippedShape `json:"skipped_shapes"`
-	Operations    map[string]int `json:"operations"`
-	NoOperations  []string       `json:"no_operations"`
+	RunAgent   bool        `json:"run_agent"`
+	GateReason string      `json:"gate_reason"`
+	Slots      int         `json:"slots"`
+	Queue      []QueueItem `json:"queue"`
+	Discovery
 }
 
 // buildReport selects and orders the groups to triage. Groups covered by memory are skipped;
@@ -61,12 +58,9 @@ type Report struct {
 func buildReport(d *Discovery, mem *Memory, slots int) *Report {
 	slots = max(slots, 0)
 	report := &Report{
-		Slots:         slots,
-		Queue:         []QueueItem{},
-		Groups:        d.Groups,
-		SkippedShapes: d.SkippedShapes,
-		Operations:    d.Operations,
-		NoOperations:  d.NoOperations,
+		Slots:     slots,
+		Queue:     []QueueItem{},
+		Discovery: *d,
 	}
 	if slots > 0 {
 		report.Queue = triageQueue(d.Groups, mem)
