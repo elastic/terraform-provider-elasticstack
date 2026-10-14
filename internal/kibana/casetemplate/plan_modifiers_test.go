@@ -200,6 +200,70 @@ func TestOnlyFormattingChanged(t *testing.T) {
 	}
 }
 
+// TestOnlyFormattingChangedCoversConfigurableAttributes fails when a
+// configurable attribute is added to the schema without being compared by
+// onlyFormattingChanged, which would silently pin computed values on a plan
+// that does send a PUT.
+func TestOnlyFormattingChangedCoversConfigurableAttributes(t *testing.T) {
+	const stateYAML = "name: triage\nseverity: low\n"
+	const reformattedYAML = "# comment\nseverity: low\nname:   triage\n"
+
+	base := attrValues{
+		"owner":           strVal("cases"),
+		"name":            strVal("t"),
+		"description":     strVal("d"),
+		"tags":            tagsVal("a", "b"),
+		"space_id":        strVal("default"),
+		"is_enabled":      tftypes.NewValue(tftypes.Bool, true),
+		"definition_yaml": strVal(stateYAML),
+	}
+	configBase := merge(base, attrValues{"definition_yaml": strVal(reformattedYAML)})
+
+	changes := map[string]tftypes.Value{
+		"owner":             strVal("observability"),
+		"name":              strVal("renamed"),
+		"description":       strVal("other"),
+		"tags":              tagsVal("b", "a"),
+		"space_id":          strVal("other"),
+		"is_enabled":        tftypes.NewValue(tftypes.Bool, false),
+		"timeouts":          timeoutsVal(t, "5m"),
+		"kibana_connection": connectionVal(t, "rotated-key"),
+	}
+
+	s := fullSchema(t)
+	var configurable []string
+	for name, a := range s.Attributes {
+		if a.IsRequired() || a.IsOptional() {
+			configurable = append(configurable, name)
+		}
+	}
+	for name := range s.Blocks {
+		configurable = append(configurable, name)
+	}
+
+	for _, name := range configurable {
+		if name == "definition_yaml" {
+			continue
+		}
+		t.Run(name, func(t *testing.T) {
+			change, ok := changes[name]
+			require.True(t, ok, "configurable attribute %q has no change case; add it here and to onlyFormattingChanged", name)
+
+			ctx := context.Background()
+			config := merge(configBase, attrValues{name: change})
+			cfg := tfsdk.Config{Schema: s, Raw: buildObject(t, config)}
+			plan := tfsdk.Plan{Schema: s, Raw: buildObject(t, config)}
+			state := tfsdk.State{Schema: s, Raw: buildObject(t, base)}
+
+			var diags diag.Diagnostics
+			got := onlyFormattingChanged(ctx, cfg, plan, state, &diags)
+
+			require.False(t, diags.HasError(), "%s", diags)
+			assert.False(t, got, "a change to %q must not be treated as formatting-only", name)
+		})
+	}
+}
+
 // nullObject builds an object value of the given type with all attributes null,
 // overridden by the supplied values.
 func nullObject(objType tftypes.Object, values map[string]tftypes.Value) tftypes.Value {
