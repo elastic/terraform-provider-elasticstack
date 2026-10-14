@@ -482,7 +482,7 @@ func TestAccResourceKibanaCaseFieldDefinitionVersionGate(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          nameVars(uniqueName()),
-				ExpectError:              regexp.MustCompile(`(?i)requires Elastic Stack v9\.5\.0 or later`),
+				ExpectError:              regexp.MustCompile(`(?is)requires\s+Elastic\s+Stack\s+v9\.6\.0\s+or\s+later`),
 			},
 		},
 	})
