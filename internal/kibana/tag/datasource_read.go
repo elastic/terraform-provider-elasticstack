@@ -55,16 +55,11 @@ func readTagsDataSource(
 type listTagsPageFunc func(context.Context, *kibanaoapi.Client, string, *kbapi.GetTagsParams) (*kibanaoapi.TagListResult, diag.Diagnostics)
 
 func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string, query *string, listPage listTagsPageFunc) ([]kibanaoapi.TagDetail, diag.Diagnostics) {
-	var (
-		collected []kibanaoapi.TagDetail
-		page      float32 = 1
-		total     float32
-	)
-
-	for {
+	return kibanaoapi.CollectAllPages(func(page int) ([]kibanaoapi.TagDetail, int, diag.Diagnostics) {
+		pageNum := float32(page)
 		perPage := kibanaoapi.TagListMaxPerPage()
 		params := &kbapi.GetTagsParams{
-			Page:    &page,
+			Page:    &pageNum,
 			PerPage: &perPage,
 		}
 		if query != nil && *query != "" {
@@ -73,19 +68,9 @@ func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string,
 
 		result, diags := listPage(ctx, client, spaceID, params)
 		if diags.HasError() {
-			return nil, diags
+			return nil, 0, diags
 		}
 
-		collected = append(collected, result.Tags...)
-		if total == 0 {
-			total = result.Total
-		}
-
-		if len(collected) >= int(total) || len(result.Tags) == 0 {
-			break
-		}
-		page++
-	}
-
-	return collected, nil
+		return result.Tags, int(result.Total), nil
+	})
 }
