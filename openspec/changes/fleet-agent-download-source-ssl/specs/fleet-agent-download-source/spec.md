@@ -2,12 +2,17 @@
 
 ### Requirement: Auth and secrets not in v1 schema
 
-The initial implementation SHALL NOT expose the Fleet download source `auth` and `secrets` fields (API key, username/password, the `secrets.ssl.key` secret-reference variant) as Terraform schema attributes. Those fields remain managed outside this resource's schema for the first version. This exclusion no longer covers the plain `ssl` object (`certificate`, `certificate_authorities`, `key`), which is exposed per the "Optional ssl attribute" requirement below.
+The resource SHALL expose an optional `auth` nested attribute mapping to the Fleet API's `auth` request/response field: `username` (string), `password` (string, sensitive), `api_key` (string, sensitive), and `headers` (list of `{key, value}`, up to 100 entries). The resource SHALL NOT expose the Fleet download source `secrets.auth` or `secrets.ssl.key` secret-reference mechanisms (referencing an existing Fleet secret store entry by ID) as Terraform schema attributes; those remain managed outside this resource's schema. This exclusion no longer covers the plain `ssl` object (`certificate`, `certificate_authorities`, `key`), which is exposed per the "Optional ssl attribute" requirement below.
+
+#### Scenario: Auth attribute present in schema
+
+- **WHEN** the practitioner inspects the resource schema
+- **THEN** there SHALL be an `auth` attribute exposing `username`, `password`, `api_key`, and `headers`
 
 #### Scenario: No sensitive auth attributes
 
 - **WHEN** the practitioner inspects the resource schema
-- **THEN** there SHALL be no Terraform attributes exposing `auth` or the `secrets.auth` / `secrets.ssl.key` material for this resource in v1
+- **THEN** there SHALL be no Terraform attributes exposing the `secrets.auth` or `secrets.ssl.key` `{id}` reference mechanisms for this resource
 
 #### Scenario: Plain ssl object is exposed
 
