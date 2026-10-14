@@ -39,11 +39,19 @@ func renderTitle(g Group) string {
 	return g.Resource + ": " + g.Field
 }
 
-// checkMarkerSafe verifies that the group key and fingerprint can be read back from the hidden
-// marker with `key=(\S+) fp=(\S+)` and cannot close the HTML comment early.
+// markerPrefix starts the machine-readable marker line at the end of every issue body.
+// It is a visible footer, not an HTML comment with `key=`/`fp=` pairs: gh-aw's safe-output
+// sanitizer strips HTML comments from issue bodies and its log redaction masks `key=` values.
+const markerPrefix = "kibana-api-gap: key `"
+
+// markerPattern reads the group key and fingerprint back from a marker line.
+const markerPattern = "kibana-api-gap: key `([^\\s`]+)` fingerprint `([^\\s`]+)`"
+
+// checkMarkerSafe verifies that the group key and fingerprint can be read back from the marker
+// with markerPattern: non-empty, no whitespace and no backtick.
 func checkMarkerSafe(g Group) error {
 	for name, value := range map[string]string{"key": g.Key, "fingerprint": g.Fingerprint} {
-		if value == "" || strings.ContainsFunc(value, unicode.IsSpace) || strings.Contains(value, "-->") {
+		if value == "" || strings.ContainsFunc(value, unicode.IsSpace) || strings.Contains(value, "`") {
 			return fmt.Errorf("group %s %q cannot be embedded in an issue marker", name, value)
 		}
 	}
@@ -51,7 +59,7 @@ func checkMarkerSafe(g Group) error {
 }
 
 func marker(g Group) string {
-	return fmt.Sprintf("<!-- kibana-api-gap key=%s fp=%s -->", g.Key, g.Fingerprint)
+	return fmt.Sprintf("%s%s` fingerprint `%s`", markerPrefix, g.Key, g.Fingerprint)
 }
 
 func renderBody(g Group) string {
@@ -64,7 +72,7 @@ func renderBody(g Group) string {
 		}
 		b.WriteString("\n")
 	}
-	b.WriteString("\nThe locations are JSON pointers into `generated/kbapi/oas-filtered.yaml`.\n\n")
+	b.WriteString("\nThe locations are JSON pointers into the Kibana OpenAPI specification that `generated/kbapi` is generated from.\n\n")
 	b.WriteString(marker(g))
 	b.WriteString("\n")
 	return b.String()

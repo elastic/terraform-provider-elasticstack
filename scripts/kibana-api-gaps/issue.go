@@ -25,13 +25,10 @@ import (
 	"strings"
 )
 
-const markerPrefix = "<!-- kibana-api-gap "
-
 // injectReason inserts a single `Triage reason:` paragraph immediately before the hidden marker.
-// The reason is flattened to one line and stripped of HTML comment delimiters so it can neither
-// break the paragraph nor forge or close the marker.
+// The reason is flattened to one line and stripped of the marker prefix so it cannot forge a marker.
 func injectReason(body, reason string) (string, error) {
-	reason = strings.NewReplacer("<!--", "", "-->", "").Replace(reason)
+	reason = strings.ReplaceAll(reason, "kibana-api-gap:", "")
 	reason = strings.Join(strings.Fields(reason), " ")
 	if reason == "" {
 		return "", errors.New("reason is empty")

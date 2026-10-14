@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const issueTestMarker = "<!-- kibana-api-gap key=r#/a fp=abc -->"
+const issueTestMarker = "kibana-api-gap: key `r#/a` fingerprint `abc`"
 
 func TestInjectReasonPlacesParagraphBeforeMarker(t *testing.T) {
 	body := "Intro.\n\n- `f` (`/a`)\n\n" + issueTestMarker + "\n"
@@ -41,11 +41,10 @@ func TestInjectReasonPlacesParagraphBeforeMarker(t *testing.T) {
 func TestInjectReasonSanitisesReason(t *testing.T) {
 	body := "Intro.\n\n" + issueTestMarker + "\n"
 
-	got, err := injectReason(body, "line one\nline two <!-- evil --> end\r\n")
+	got, err := injectReason(body, "line one\nline two kibana-api-gap: key `x` fingerprint `y` end\r\n")
 	require.NoError(t, err)
-	assert.Contains(t, got, "Triage reason: line one line two evil end\n\n"+issueTestMarker)
-	assert.Equal(t, 1, strings.Count(got, "<!--"))
-	assert.Equal(t, 1, strings.Count(got, "-->"))
+	assert.Contains(t, got, "Triage reason: line one line two key `x` fingerprint `y` end\n\n"+issueTestMarker)
+	assert.Equal(t, 1, strings.Count(got, markerPrefix))
 }
 
 func TestInjectReasonRejectsEmptyReasonAndMissingMarker(t *testing.T) {

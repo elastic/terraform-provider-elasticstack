@@ -153,7 +153,7 @@ func TestBuildReportCarriesRenderedIssuesAndDiagnostics(t *testing.T) {
 
 	require.Len(t, r.Queue, 1)
 	assert.Equal(t, "r: a", r.Queue[0].Title)
-	assert.Contains(t, r.Queue[0].Body, "<!-- kibana-api-gap key="+r.Queue[0].Key+" fp=fp1 -->")
+	assert.Contains(t, r.Queue[0].Body, "kibana-api-gap: key `"+r.Queue[0].Key+"` fingerprint `fp1`")
 	assert.Equal(t, "r", r.Queue[0].Resource)
 	assert.Equal(t, "fp1", r.Queue[0].Fingerprint)
 	assert.Equal(t, d.SkippedShapes, r.SkippedShapes)

@@ -67,7 +67,7 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
  |   go/packages + oas-filtered.yaml -> all gap groups (key, fp, fields)       |
  |        minus groups covered in memory (same fingerprint)                    |
  |        ordered (resource rotation, size, key) -> triage queue (<= 15)       |
- |        each group: pre-rendered issue title/body (incl. hidden key marker)  |
+ |        each group: pre-rendered issue title/body (incl. key marker line)    |
  |   upload report artifact; run_agent = slots > 0 && queue non-empty          |
  +-----------------------------------------------------------------------------+
             | (skipped when run_agent false)
@@ -111,7 +111,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | `group` | Builds gap groups per (resource, top-level field name), keyed `<resource>#<OAS JSON pointer>`, whose members are the unused fields in the subtree; drops deprecated and response-only fields | If the top-level field itself is unused, its whole subtree forms one group. The same field name in several operation bodies or union variants (create and update, or every variant of a union body) is merged into one group keyed by the smallest pointer (so a new smaller sibling re-keys and re-triages the group once, accepted), kept apart for body properties versus query parameters, with a fingerprint over all constituent pointers and fingerprints; this was added after the spike, where per-variant groups made one resource report 506 groups |
 | `fingerprint` | SHA-256 of a canonical JSON projection of the resolved subtree over `type`, `format`, `properties`, `required`, `enum`, `items`, combinators, `additionalProperties`, and `deprecated`; excludes `description`, `title`, `example(s)`, and `x-*` | Implements the "structure only" fingerprint |
 | `memory` | Reads and writes `memory/kibana-api-gap-scanner/state.json`: `groups{key: {fingerprint, verdict, reason, date}}` and `resources{name: last_triaged}` | The issue reference in a `file` record is the group key itself |
-| `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a hidden marker `<!-- kibana-api-gap key=… fp=… -->` | The agent supplies only the reason paragraph |
+| `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a final visible marker line ``kibana-api-gap: key `…` fingerprint `…` `` | The agent supplies only the reason paragraph, inserted before the marker. The marker is deliberately not an HTML comment with `key=`/`fp=` pairs: gh-aw's safe-output sanitizer strips HTML comments (live run 38486620680: the issues arrived without it) and its log redaction masks `key=` values |
 | cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in the `discover` job, ahead of pre_activation |
 | cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, verdicts out of queue order, verdicts after the slots are filled with `file` verdicts, verdict lists that stop early (neither filling the slots with `file` verdicts nor covering the whole queue), and empty reasons; updates `last_triaged` (an RFC 3339 timestamp per resource, so same-day runs rotate) | Run by the agent, like `memory-record-from-report` |
 
