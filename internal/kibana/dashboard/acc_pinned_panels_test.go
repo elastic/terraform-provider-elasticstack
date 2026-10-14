@@ -111,6 +111,8 @@ func TestAccResourceKibanaDashboardPinnedPanels(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.options_list_control_config.by_field.display_settings.placeholder", "Pick a host..."),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.options_list_control_config.by_field.display_settings.hide_sort", "false"),
 
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.width", "medium"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.grow", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.range_slider_control_config.by_field.title", "Bytes Range Updated"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.range_slider_control_config.by_field.use_global_filters", "false"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.range_slider_control_config.by_field.ignore_validations", "true"),
@@ -137,8 +139,6 @@ func TestAccResourceKibanaDashboardPinnedPanels(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_dashboard.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				// Import has no prior state, so omitted width/grow read back as Kibana's defaults.
-				ImportStateVerifyIgnore: []string{"pinned_panels.1.width", "pinned_panels.1.grow"},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -154,6 +154,62 @@ func TestAccResourceKibanaDashboardPinnedPanels(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("removed"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("partial"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.width", "small"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.grow"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("partial"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceKibanaDashboardPinnedPanelsSizing(t *testing.T) {
+	dashboardTitle := "Test Dashboard with pinned sizing " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql_time_slider"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.type", "esql_control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.width", "large"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.0.grow", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.type", "time_slider_control"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.width", "small"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "pinned_panels.1.grow", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("esql_time_slider"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
@@ -177,6 +233,14 @@ func TestAccResourceKibanaDashboardPinnedPanelsInvalidConfig(t *testing.T) {
 					"dashboard_title": config.StringVariable("unused"),
 				},
 				ExpectError: regexp.MustCompile(`(?i)Pinned panel control does not match type`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_width"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable("unused"),
+				},
+				ExpectError: regexp.MustCompile(`(?i)width.*(small|must be one of)`),
 			},
 		},
 	})

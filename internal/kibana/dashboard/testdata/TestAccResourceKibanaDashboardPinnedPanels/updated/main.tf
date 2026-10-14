@@ -47,7 +47,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
     },
     {
-      type = "range_slider_control"
+      type  = "range_slider_control"
+      width = "medium"
+      grow  = true
       range_slider_control_config = {
         by_field = {
           data_view_id       = elasticstack_kibana_data_view.test.data_view.id
