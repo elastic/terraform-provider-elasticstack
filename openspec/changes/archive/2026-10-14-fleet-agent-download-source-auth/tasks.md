@@ -32,8 +32,8 @@
 
 ## 6. Spec sync
 
-- [ ] 6.1 After implementation, sync the delta spec in `openspec/changes/fleet-agent-download-source-auth/specs/fleet-agent-download-source/spec.md` into `openspec/specs/fleet-agent-download-source/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill)
+- [x] 6.1 After implementation, sync the delta spec in `openspec/changes/fleet-agent-download-source-auth/specs/fleet-agent-download-source/spec.md` into `openspec/specs/fleet-agent-download-source/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill)
 
-## 6. Docs (follow-up, not required for this proposal)
+## 7. Docs (follow-up, not required for this proposal)
 
-- [x] 6.1 Add an `auth` example to `examples/resources/elasticstack_fleet_agent_download_source/` and regenerate `docs/resources/fleet_agent_download_source.md`
+- [x] 7.1 Add an `auth` example to `examples/resources/elasticstack_fleet_agent_download_source/` and regenerate `docs/resources/fleet_agent_download_source.md`

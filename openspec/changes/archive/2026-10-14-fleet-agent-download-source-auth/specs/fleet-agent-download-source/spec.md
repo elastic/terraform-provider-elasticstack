@@ -13,7 +13,7 @@ resource "elasticstack_fleet_agent_download_source" "example" {
   auth = {                               # optional, single nested object
     username = "svc-account"             # optional, string; requires password
     password = "..."                     # optional, string, sensitive; requires username; conflicts with api_key
-    api_key  = "..."                     # optional, string, sensitive; conflicts with password/username
+    api_key  = "..."                     # optional, string, sensitive; conflicts with password
     headers = [                          # optional, list of { key, value }; max 100 entries
       { key = "X-Custom-Header", value = "value" },
     ]

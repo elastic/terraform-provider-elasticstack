@@ -155,6 +155,5 @@ func preserveRedactedSecret(apiValue *string, fallback types.String) types.Strin
 }
 
 func authHeadersElementType(ctx context.Context) attr.Type {
-	authAttr := getSchema(ctx).Attributes["auth"].(schema.SingleNestedAttribute)
-	return authAttr.Attributes["headers"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchema(ctx).Attributes["auth"].(schema.SingleNestedAttribute).Attributes["headers"].GetType())
 }
