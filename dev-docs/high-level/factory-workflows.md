@@ -30,7 +30,7 @@ The classifier never applies factory trigger labels itself. A maintainer (or fut
 
 > Maintainer setup: these labels must exist in repo settings before the workflows can be triggered by label events. See [`contributing.md`](./contributing.md#factory-workflow-labels-maintainers).
 
-All factories also support `workflow_dispatch` with an `issue_number` input, which is how the continuous-quality scanners fan out to `code-factory` (and, for the Kibana API Gap Scanner, `research-factory`) (see [`continuous-quality-workflows.md`](./continuous-quality-workflows.md)).
+All factories also support `workflow_dispatch` with an `issue_number` input, which is how the continuous-quality scanners fan out to `code-factory` (and, for the Kibana API Gap Scanner, `research-factory`) (see [`continuous-quality-workflows.md`](./continuous-quality-workflows.md)). Because those dispatches run as `github-actions[bot]`, the dispatched factory must list it under `on.bots` (as `code-factory-issue.md` and `research-factory-issue.md` do); otherwise the pre-activation membership check reports permission level `none` and silently skips the run.
 
 ## Phase labels
 

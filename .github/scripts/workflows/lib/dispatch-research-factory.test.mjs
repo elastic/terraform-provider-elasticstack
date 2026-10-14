@@ -64,3 +64,12 @@ test('compiled scanner lock declares schedule, kbapi push filter and dispatch', 
   assert.match(scannerLock, /\n  push:\n    branches:\n      - main\n    paths:\n      - generated\/kbapi\/\*\*\n/);
   assert.match(scannerLock, /\n  workflow_dispatch:/);
 });
+
+test('research-factory allows github-actions[bot] so producer dispatches are activated', () => {
+  const source = readFileSync(path.join(workflowsDir, 'research-factory-issue.md'), 'utf8');
+  assert.match(source, /\n  bots:\n    - github-actions\[bot\]\n/);
+  const lock = readFileSync(path.join(workflowsDir, 'research-factory-issue.lock.yml'), 'utf8');
+  const membership = lock.match(/- name: Check team membership for workflow\n[\s\S]*?\n {8}with:/);
+  assert.ok(membership, 'expected a team membership step');
+  assert.match(membership[0], /GH_AW_ALLOWED_BOTS: "github-actions\[bot\]"/);
+});
