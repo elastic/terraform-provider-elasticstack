@@ -32,7 +32,7 @@ const (
 )
 
 // Record is the persisted verdict for one gap group. For a `file` verdict Issue holds the group
-// key, which is also embedded in the filed issue as a hidden marker.
+// key, which is also embedded in the filed issue as a visible marker line.
 type Record struct {
 	Fingerprint string `json:"fingerprint"`
 	Verdict     string `json:"verdict"`
