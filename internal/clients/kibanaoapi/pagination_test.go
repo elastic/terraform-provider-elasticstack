@@ -120,9 +120,9 @@ func TestFindFirstPage_returnsNotFoundWhenExhausted(t *testing.T) {
 func TestFindFirstPage_propagatesError(t *testing.T) {
 	t.Parallel()
 
-	_, found, diags := kibanaoapi.FindFirstPage(func(page int) ([]int, int, diag.Diagnostics) {
+	_, found, diags := kibanaoapi.FindFirstPage(func(_ int) ([]int, int, diag.Diagnostics) {
 		return nil, 0, diag.Diagnostics{diag.NewErrorDiagnostic("boom", "page failed")}
-	}, func(item int) bool {
+	}, func(_ int) bool {
 		return true
 	})
 
