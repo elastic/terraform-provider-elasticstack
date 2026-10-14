@@ -20,6 +20,7 @@ package queryrulesets_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -467,6 +468,101 @@ func TestAccResourceQueryRulesetNotFound(t *testing.T) {
 				ExpectNonEmptyPlan:       true,
 				Check:                    testAccCheckQueryRulesetAbsentFromState(queryRulesetResourceAddr),
 			},
+		},
+	})
+}
+
+// TestAccResourceQueryRulesetRuleMutations verifies update-in-place behavior for an
+// existing rule's priority and type, and for shrinking the rules list:
+//   - Step 1 (create): three pinned/exclude rules; rule-1 and rule-2 have priority set.
+//   - Step 2 (update): rule-1's priority changes to a different value, rule-2's type
+//     flips from pinned to exclude and its priority is cleared, and rule-3 is removed.
+func TestAccResourceQueryRulesetRuleMutations(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkQueryRulesetDestroy(rulesetID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.#", "3"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.rule_id", "rule-1"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.type", "pinned"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.priority", "1"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.rule_id", "rule-2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.type", "pinned"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.priority", "5"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.rule_id", "rule-3"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.2.type", "exclude"),
+					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.2.priority"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.#", "2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.rule_id", "rule-1"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.type", "pinned"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.0.priority", "2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.rule_id", "rule-2"),
+					resource.TestCheckResourceAttr(queryRulesetResourceAddr, "rules.1.type", "exclude"),
+					resource.TestCheckNoResourceAttr(queryRulesetResourceAddr, "rules.1.priority"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceQueryRulesetValidationErrors exercises the plan-time validation error
+// paths of the resource's schema validators. Each step is plan-only and fails before
+// any API call is made.
+func TestAccResourceQueryRulesetValidationErrors(t *testing.T) {
+	rulesetID := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"ruleset_id": config.StringVariable(rulesetID)}
+
+	planErrStep := func(dir, pattern string) resource.TestStep {
+		return resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(queryrulesets.MinSupportedVersion),
+			ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+			ConfigVariables:          vars,
+			PlanOnly:                 true,
+			ExpectError:              regexp.MustCompile(pattern),
+		}
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			// rules: listvalidator.SizeAtLeast(1).
+			planErrStep("empty_rules", `(?is)list must contain at least 1 element`),
+			// rules[].type: stringvalidator.OneOf("pinned", "exclude").
+			planErrStep("invalid_rule_type", `(?is)value must be one of`),
+			// criteria[].type: stringvalidator.OneOf(...).
+			planErrStep("invalid_criteria_type", `(?is)value must be one of`),
+			// criteria: listvalidator.SizeAtLeast(1).
+			planErrStep("empty_criteria", `(?is)list must contain at least 1 element`),
+			// criteriaValuesJSONValidator: valid JSON that is not an array.
+			planErrStep("values_not_array", `(?is)values.*must be a valid JSON array string`),
+			// criteriaValuesJSONValidator: empty JSON array.
+			planErrStep("values_empty_array", `(?is)empty arrays are not allowed`),
+			// queryRuleCriteriaValidator: values must be omitted when type is always.
+			planErrStep("values_with_always", `(?is)values.*must be omitted or null when.*type.*is.*always`),
+			// queryRuleCriteriaValidator: values is required when type is not always.
+			planErrStep("values_missing", `(?is)values.*is required when.*type.*is not.*always`),
+			// queryRuleActionsValidator: neither ids nor docs set.
+			planErrStep("actions_neither", `(?is)Exactly one of .ids. or .docs. must be set in .actions.`),
+			// queryRuleActionsValidator: both ids and docs set.
+			planErrStep("actions_both", `(?is)both cannot be set`),
 		},
 	})
 }
