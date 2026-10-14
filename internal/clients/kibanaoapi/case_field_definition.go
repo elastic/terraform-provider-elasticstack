@@ -53,9 +53,8 @@ func UpdateCaseFieldDefinition(
 	spaceID, fieldDefinitionID string,
 	req kbapi.CasesFieldDefinitionPutRequest,
 ) (*kbapi.CasesFieldDefinitionResponse, diag.Diagnostics) {
-	params := &kbapi.UpdateCaseFieldDefinitionDefaultSpaceParams{}
 	resp, err := client.API.UpdateCaseFieldDefinitionDefaultSpaceWithResponse(
-		ctx, fieldDefinitionID, params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID),
+		ctx, fieldDefinitionID, &kbapi.UpdateCaseFieldDefinitionDefaultSpaceParams{}, req, kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)

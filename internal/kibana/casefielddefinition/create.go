@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var createFieldDefinition = entitycore.SimpleKibanaCreate[fieldDefinitionModel, kbapi.CasesFieldDefinitionWriteRequest, kbapi.CasesFieldDefinitionResponse](
+var createFieldDefinition = entitycore.SimpleKibanaCreate(
 	func(plan fieldDefinitionModel, _ context.Context) (kbapi.CasesFieldDefinitionWriteRequest, diag.Diagnostics) {
 		return plan.toAPICreateModel(), nil
 	},

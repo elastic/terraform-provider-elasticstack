@@ -27,7 +27,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,9 +52,7 @@ func newReadTestClient(t *testing.T, status int, body string) *clients.KibanaSco
 // is returned without errors (see TestNewKibanaResource_Read_shortCircuitReadFuncError),
 // so a transient failure is never treated as a deletion.
 func TestReadCallbackFailureRetainsState(t *testing.T) {
-	read := entitycore.SimpleKibanaRead[fieldDefinitionModel, kbapi.CasesFieldDefinitionResponse](
-		kibanaoapi.GetCaseFieldDefinition, (*fieldDefinitionModel).populateFromAPI,
-	)
+	read := readFieldDefinition
 	prior := fieldDefinitionModel{FieldDefinitionID: types.StringValue("fd-1"), Name: types.StringValue("prior")}
 
 	t.Run("500 is an error and prior is kept", func(t *testing.T) {

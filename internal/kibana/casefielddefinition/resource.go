@@ -19,7 +19,6 @@
 package casefielddefinition
 
 import (
-	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -32,6 +31,10 @@ var (
 	_ resource.ResourceWithImportState = newResource()
 )
 
+var readFieldDefinition = entitycore.SimpleKibanaRead(
+	kibanaoapi.GetCaseFieldDefinition, (*fieldDefinitionModel).populateFromAPI,
+)
+
 // Resource manages a single field in the Kibana Cases field library.
 type Resource struct {
 	*entitycore.KibanaResource[fieldDefinitionModel]
@@ -40,12 +43,12 @@ type Resource struct {
 
 func newResource() *Resource {
 	return &Resource{
-		KibanaResource: entitycore.NewKibanaResource[fieldDefinitionModel](
+		KibanaResource: entitycore.NewKibanaResource(
 			entitycore.ComponentKibana,
 			"case_field_definition",
 			entitycore.KibanaResourceOptions[fieldDefinitionModel]{
 				Schema: getResourceSchema,
-				Read:   entitycore.SimpleKibanaRead[fieldDefinitionModel, kbapi.CasesFieldDefinitionResponse](kibanaoapi.GetCaseFieldDefinition, (*fieldDefinitionModel).populateFromAPI),
+				Read:   readFieldDefinition,
 				Delete: entitycore.SimpleKibanaDelete[fieldDefinitionModel](kibanaoapi.DeleteCaseFieldDefinition),
 				Create: createFieldDefinition,
 				Update: updateFieldDefinition,

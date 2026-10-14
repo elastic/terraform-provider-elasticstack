@@ -79,46 +79,27 @@ func (m *fieldDefinitionModel) populateFromAPI(_ context.Context, spaceID string
 	m.Definition = customtypes.NewNormalizedYamlValue(data.Definition)
 	m.Description = types.StringPointerValue(data.Description)
 	m.IsGlobal = types.BoolPointerValue(data.IsGlobal)
-	if data.DisplayOrder != nil {
-		m.DisplayOrder = types.Int64Value(int64(*data.DisplayOrder))
-	} else {
-		m.DisplayOrder = types.Int64Null()
-	}
+	m.DisplayOrder = typeutils.IntPointerToInt64Value(data.DisplayOrder)
 
 	return nil
 }
 
-func (m fieldDefinitionModel) optionalFields() (name, description *string, isGlobal *bool) {
-	if typeutils.IsKnown(m.Name) {
-		name = m.Name.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.Description) {
-		description = m.Description.ValueStringPointer()
-	}
-	if typeutils.IsKnown(m.IsGlobal) {
-		isGlobal = m.IsGlobal.ValueBoolPointer()
-	}
-	return name, description, isGlobal
-}
-
 func (m fieldDefinitionModel) toAPICreateModel() kbapi.CasesFieldDefinitionWriteRequest {
-	name, description, isGlobal := m.optionalFields()
 	return kbapi.CasesFieldDefinitionWriteRequest{
 		Owner:       m.Owner.ValueString(),
 		Definition:  m.Definition.ValueString(),
-		Name:        name,
-		Description: description,
-		IsGlobal:    isGlobal,
+		Name:        typeutils.ValueStringPointer(m.Name),
+		Description: typeutils.ValueStringPointer(m.Description),
+		IsGlobal:    typeutils.OptionalBool(m.IsGlobal),
 	}
 }
 
 func (m fieldDefinitionModel) toAPIUpdateModel() kbapi.CasesFieldDefinitionPutRequest {
-	name, description, isGlobal := m.optionalFields()
 	return kbapi.CasesFieldDefinitionPutRequest{
 		Owner:       m.Owner.ValueString(),
 		Definition:  m.Definition.ValueString(),
-		Name:        name,
-		Description: description,
-		IsGlobal:    isGlobal,
+		Name:        typeutils.ValueStringPointer(m.Name),
+		Description: typeutils.ValueStringPointer(m.Description),
+		IsGlobal:    typeutils.OptionalBool(m.IsGlobal),
 	}
 }

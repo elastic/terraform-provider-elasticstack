@@ -26,7 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-var updateFieldDefinition = entitycore.SimpleKibanaUpdate[fieldDefinitionModel, kbapi.CasesFieldDefinitionPutRequest, kbapi.CasesFieldDefinitionResponse](
+var updateFieldDefinition = entitycore.SimpleKibanaUpdate(
 	func(plan fieldDefinitionModel, _ context.Context, _ string) (kbapi.CasesFieldDefinitionPutRequest, diag.Diagnostics) {
 		return plan.toAPIUpdateModel(), nil
 	},
