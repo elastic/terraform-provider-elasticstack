@@ -261,7 +261,16 @@ After recording the filtered candidates, proceed with the main task below.
    - Repeat reference checking after each helper removal. If more than three helpers or changes outside this boundary are required, revert the cleanup, record `build_failed` with explanatory context, call `noop`, and stop.
    - Include every removed helper and its reference evidence in the PR body.
 5. **Verify** the cleanup before opening a PR:
-   - Run `timeout 600 make build` (10-minute timeout). If it fails or times out:
+   - Run the full build **exactly once**, using the sandbox's memory-aware settings from the first attempt:
+
+     ```bash
+     GOMEMLIMIT=4GiB GOGC=20 timeout 600 make build GOLANGCIFLAGS='--concurrency=1'
+     ```
+
+     `GOMEMLIMIT` is a soft Go runtime limit, leaving headroom under the sandbox's 6 GiB cgroup limit; reduced GC target and lint concurrency further reduce peak memory. This remains the full `make build` gate, not a compilation-only substitute.
+   - The build has a 10-minute timeout. Preserve its exit status: run it directly, or capture the status before printing logs; never hide a failing build behind a successful pipe or log command.
+   - **Do not retry the build**, including after a kill, timeout, or failure, and do not try alternative lint flags, GC settings, or compilation-only commands as a substitute. Reserve the remaining execution time for recording the outcome and calling `noop`.
+   - If the build fails or times out:
      - Record the attempt as `build_failed` (or `verification_timeout` on timeout):
 
        ```
@@ -272,7 +281,8 @@ After recording the filtered candidates, proceed with the main task below.
          --reason <reason>
        ```
 
-     - Then call `noop` with a concise reason.
+     - Revert the candidate and helper cleanup edits, without modifying repo-memory.
+     - Then call `noop` with a concise reason, including the build exit status and whether it was killed or timed out.
      - Stop without creating a PR.
    - Run unit tests for the impacted packages:
 
