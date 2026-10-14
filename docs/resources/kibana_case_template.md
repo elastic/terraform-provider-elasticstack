@@ -120,7 +120,7 @@ resource "elasticstack_kibana_case_template" "in_space" {
 - `is_enabled` (Boolean) Whether the template is enabled. Disabled templates are hidden from the case creation flow but remain manageable. The server default of `true` applies only on create; omitting the attribute on a later update keeps the current value, so set it to `true` explicitly to re-enable a disabled template.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
-- `tags` (List of String) Optional tags (at most 200, each at most 256 characters). Order and duplicates are preserved. Removing the attribute from configuration clears the stored tags; an empty list is kept as an empty list.
+- `tags` (List of String) Optional tags (at most 200, each between 1 and 256 characters). Order and duplicates are preserved. Removing the attribute from configuration clears the stored tags; an empty list is kept as an empty list.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

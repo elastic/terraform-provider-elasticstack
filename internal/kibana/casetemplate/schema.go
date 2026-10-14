@@ -96,11 +96,11 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			"tags": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				MarkdownDescription: "Optional tags (at most 200, each at most 256 characters). Order and duplicates are preserved. " +
+				MarkdownDescription: "Optional tags (at most 200, each between 1 and 256 characters). Order and duplicates are preserved. " +
 					"Removing the attribute from configuration clears the stored tags; an empty list is kept as an empty list.",
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(200),
-					listvalidator.ValueStringsAre(stringvalidator.LengthAtMost(256)),
+					listvalidator.ValueStringsAre(stringvalidator.LengthBetween(1, 256)),
 				},
 			},
 			"is_enabled": schema.BoolAttribute{

@@ -116,7 +116,11 @@ func onlyFormattingChanged(ctx context.Context, config tfsdk.Config, plan tfsdk.
 		unchangedAttr[types.String](ctx, config, state, "description", false, diags) &&
 		unchangedAttr[types.List](ctx, config, state, "tags", false, diags) &&
 		unchangedAttr[types.String](ctx, config, state, "space_id", true, diags) &&
-		unchangedAttr[types.Bool](ctx, config, state, "is_enabled", true, diags)
+		unchangedAttr[types.Bool](ctx, config, state, "is_enabled", true, diags) &&
+		// Envelope-injected attributes: a change to either still triggers Update,
+		// whose PUT bumps template_version, so the keeper must not pin it.
+		unchangedAttr[attr.Value](ctx, config, state, "timeouts", false, diags) &&
+		unchangedAttr[attr.Value](ctx, config, state, "kibana_connection", false, diags)
 }
 
 // unchangedAttr reports whether the configured value of the named attribute

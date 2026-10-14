@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -111,7 +113,7 @@ func tagsVal(tags ...string) tftypes.Value {
 
 func buildObject(t *testing.T, values attrValues) tftypes.Value {
 	t.Helper()
-	objType, ok := getResourceSchema(context.Background()).Type().TerraformType(context.Background()).(tftypes.Object)
+	objType, ok := fullSchema(t).Type().TerraformType(context.Background()).(tftypes.Object)
 	require.True(t, ok)
 	full := make(map[string]tftypes.Value, len(objType.AttributeTypes))
 	for name, attrType := range objType.AttributeTypes {
@@ -122,6 +124,16 @@ func buildObject(t *testing.T, values attrValues) tftypes.Value {
 		}
 	}
 	return tftypes.NewValue(objType, full)
+}
+
+// fullSchema returns the resource schema including the attributes and blocks
+// injected by the Kibana resource envelope (kibana_connection, timeouts).
+func fullSchema(t *testing.T) rschema.Schema {
+	t.Helper()
+	resp := &resource.SchemaResponse{}
+	newResource().Schema(context.Background(), resource.SchemaRequest{}, resp)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+	return resp.Schema
 }
 
 func merge(base attrValues, overrides attrValues) attrValues {
@@ -162,13 +174,15 @@ func TestOnlyFormattingChanged(t *testing.T) {
 		{name: "reformat with is_enabled unset keeps state", config: merge(configBase, attrValues{"is_enabled": tftypes.NewValue(tftypes.Bool, nil)}), state: base, wantKeepsOld: true},
 		{name: "reformat with space_id unset keeps state", config: merge(configBase, attrValues{"space_id": tftypes.NewValue(tftypes.String, nil)}), state: base, wantKeepsOld: true},
 		{name: "structural yaml change stays unknown", config: merge(configBase, attrValues{"definition_yaml": strVal("name: triage\nseverity: high\n")}), state: base},
+		{name: "reformat and timeouts change stays unknown", config: merge(configBase, attrValues{"timeouts": timeoutsVal(t, "5m")}), state: base},
+		{name: "reformat and kibana_connection change stays unknown", config: merge(configBase, attrValues{"kibana_connection": connectionVal(t, "rotated-key")}), state: base},
 		{name: "create with null state stays unknown", config: configBase, nullState: true},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
-			s := getResourceSchema(ctx)
+			s := fullSchema(t)
 			cfg := tfsdk.Config{Schema: s, Raw: buildObject(t, tc.config)}
 			plan := tfsdk.Plan{Schema: s, Raw: buildObject(t, tc.config)}
 			objType := s.Type().TerraformType(ctx)
@@ -184,4 +198,45 @@ func TestOnlyFormattingChanged(t *testing.T) {
 			assert.Equal(t, tc.wantKeepsOld, got)
 		})
 	}
+}
+
+// nullObject builds an object value of the given type with all attributes null,
+// overridden by the supplied values.
+func nullObject(objType tftypes.Object, values map[string]tftypes.Value) tftypes.Value {
+	full := make(map[string]tftypes.Value, len(objType.AttributeTypes))
+	for name, attrType := range objType.AttributeTypes {
+		if v, ok := values[name]; ok {
+			full[name] = v
+		} else {
+			full[name] = tftypes.NewValue(attrType, nil)
+		}
+	}
+	return tftypes.NewValue(objType, full)
+}
+
+func schemaAttrType(t *testing.T, name string) tftypes.Type {
+	t.Helper()
+	objType, ok := fullSchema(t).Type().TerraformType(context.Background()).(tftypes.Object)
+	require.True(t, ok)
+	attrType, ok := objType.AttributeTypes[name]
+	require.True(t, ok, "attribute %s missing from schema", name)
+	return attrType
+}
+
+func timeoutsVal(t *testing.T, update string) tftypes.Value {
+	t.Helper()
+	objType, ok := schemaAttrType(t, "timeouts").(tftypes.Object)
+	require.True(t, ok)
+	return nullObject(objType, map[string]tftypes.Value{"update": strVal(update)})
+}
+
+func connectionVal(t *testing.T, apiKey string) tftypes.Value {
+	t.Helper()
+	listType, ok := schemaAttrType(t, "kibana_connection").(tftypes.List)
+	require.True(t, ok)
+	elemType, ok := listType.ElementType.(tftypes.Object)
+	require.True(t, ok)
+	return tftypes.NewValue(listType, []tftypes.Value{
+		nullObject(elemType, map[string]tftypes.Value{"api_key": strVal(apiKey)}),
+	})
 }
