@@ -1,0 +1,246 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package casetemplate_test
+
+import (
+	"fmt"
+	"regexp"
+	"testing"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+)
+
+const resourceName = "elasticstack_kibana_case_template.test"
+
+// The standalone Cases templates API first shipped in 9.5.2 (supported matches
+// the production minimum version, unsupported is its complement).
+var (
+	supported   = version.MustConstraints(version.NewConstraint(">= 9.5.2"))
+	unsupported = version.MustConstraints(version.NewConstraint("< 9.5.2"))
+)
+
+// preCheck skips the test unless the stack version satisfies constraints, then
+// runs the standard acceptance pre-check.
+func preCheck(t *testing.T, constraints version.Constraints) {
+	versionutils.SkipIfUnsupportedConstraints(t, constraints, versionutils.FlavorAny)
+	acctest.PreCheck(t)
+}
+
+func uniqueName() string {
+	return "tf_acc_" + uuid.New().String()[:8]
+}
+
+func nameVars(name string) config.Variables {
+	return config.Variables{"name": config.StringVariable(name)}
+}
+
+// step builds an apply step for the named test-case directory; checks are
+// aggregated.
+func step(dir string, vars config.Variables, checks ...resource.TestCheckFunc) resource.TestStep {
+	s := resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+		ConfigVariables:          vars,
+	}
+	if len(checks) > 0 {
+		s.Check = resource.ComposeAggregateTestCheckFunc(checks...)
+	}
+	return s
+}
+
+// errStep builds a step that is expected to fail with an error matching pattern.
+func errStep(dir string, vars config.Variables, pattern string) resource.TestStep {
+	s := step(dir, vars)
+	s.ExpectError = regexp.MustCompile(pattern)
+	return s
+}
+
+// planErrStep builds a plan-only step that fails validation before any API call.
+func planErrStep(dir, pattern string) resource.TestStep {
+	s := errStep(dir, nil, pattern)
+	s.PlanOnly = true
+	return s
+}
+
+func attr(key, value string) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttr(resourceName, key, value)
+}
+
+func attrOf(s *terraform.State, key string) (string, error) {
+	rs, ok := s.RootModule().Resources[resourceName]
+	if !ok {
+		return "", fmt.Errorf("resource %s not found in state", resourceName)
+	}
+	if key == "id" {
+		return rs.Primary.ID, nil
+	}
+	return rs.Primary.Attributes[key], nil
+}
+
+// captureID records the current template_id; idUnchanged / idChanged later
+// assert an in-place update or a replacement respectively.
+func captureID(dst *string) resource.TestCheckFunc {
+	return func(s *terraform.State) (err error) {
+		*dst, err = attrOf(s, "template_id")
+		return err
+	}
+}
+
+func idUnchanged(prev *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		got, err := attrOf(s, "template_id")
+		if err == nil && got != *prev {
+			err = fmt.Errorf("expected template_id %q to be unchanged, got %q", *prev, got)
+		}
+		return err
+	}
+}
+
+// compositeIDMatches asserts id is "<space_id>/<template_id>".
+func compositeIDMatches(spaceID string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		id, err := attrOf(s, "id")
+		if err != nil {
+			return err
+		}
+		templateID, err := attrOf(s, "template_id")
+		if err != nil {
+			return err
+		}
+		if want := spaceID + "/" + templateID; id != want {
+			return fmt.Errorf("expected id %q, got %q", want, id)
+		}
+		return nil
+	}
+}
+
+func kibanaClient(t *testing.T) *kibanaoapi.Client {
+	t.Helper()
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	return client.GetKibanaOapiClient()
+}
+
+func TestAccResourceKibanaCaseTemplate(t *testing.T) {
+	name := uniqueName()
+	vars := nameVars(name)
+	var firstID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			// Minimal create: only owner, name and definition_yaml. The
+			// read-after-write refresh supplies the final state.
+			step("minimal", vars,
+				attr("owner", "cases"),
+				attr("name", name),
+				attr("space_id", "default"),
+				attr("template_version", "1"),
+				attr("is_enabled", "true"),
+				resource.TestCheckResourceAttrSet(resourceName, "template_id"),
+				resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^default/.+`)),
+				compositeIDMatches("default"),
+				resource.TestCheckNoResourceAttr(resourceName, "description"),
+				resource.TestCheckNoResourceAttr(resourceName, "tags.#"),
+				captureID(&firstID),
+			),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateCreateAllFields creates a template with
+// every optional attribute set.
+func TestAccResourceKibanaCaseTemplateCreateAllFields(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			step("all_fields", nameVars(uniqueName()),
+				attr("description", "All fields"),
+				attr("tags.#", "3"),
+				attr("tags.0", "z"),
+				attr("tags.1", "a"),
+				attr("tags.2", "z"),
+				attr("is_enabled", "false"),
+				attr("template_version", "1"),
+				resource.TestCheckResourceAttrSet(resourceName, "template_id"),
+			),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateInvalidYAML verifies invalid YAML is
+// rejected at validation time, before any API call.
+func TestAccResourceKibanaCaseTemplateInvalidYAML(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("invalid", `Invalid YAML`)},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateInvalidOwner verifies an owner outside the
+// allowed set is rejected at validation time (plan only, no API call).
+func TestAccResourceKibanaCaseTemplateInvalidOwner(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Match.*owner|value must be one of`)},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateVersionGate runs only against stacks older
+// than 9.5.2 and verifies the resource-level version diagnostic.
+func TestAccResourceKibanaCaseTemplateVersionGate(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, unsupported) },
+		Steps: []resource.TestStep{
+			errStep("create", nameVars(uniqueName()), `(?is)requires\s+Elastic\s+Stack\s+v9\.5\.2\s+or\s+later`),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateKibanaConnection verifies a resource with
+// kibana_connection uses its scoped client: it succeeds with the real endpoint
+// and fails to connect when the block points at an unreachable one, which could
+// not happen if the provider-level client were used instead.
+func TestAccResourceKibanaCaseTemplateKibanaConnection(t *testing.T) {
+	name := uniqueName()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			preCheck(t, supported)
+		},
+		Steps: []resource.TestStep{
+			step("create", acctest.KibanaConnectionVariables(nameVars(name)),
+				attr("kibana_connection.#", "1"),
+				attr("name", name),
+			),
+			errStep("create", acctest.KibanaConnectionVariables(nameVars(name), config.Variables{
+				"kibana_endpoints": config.ListVariable(config.StringVariable("http://127.0.0.1:1")),
+			}), `(?is)connection refused|dial|unable|failed`),
+		},
+	})
+}
