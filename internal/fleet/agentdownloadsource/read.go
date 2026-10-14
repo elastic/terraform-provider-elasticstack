@@ -92,20 +92,24 @@ func readAndHydrateState(
 	state.ProxyID = typeutils.NonEmptyStringishPointerValue(item.ProxyId)
 	state.SpaceIDs = preservedSpaceIDs
 	state.KibanaConnection = preservedKibanaConnection
-	state.Auth = hydrateAuth(ctx, item.Auth, fallbackAuth)
+	auth, authDiags := hydrateAuth(ctx, item.Auth, fallbackAuth)
+	diags.Append(authDiags...)
+	state.Auth = auth
 	return state, true, diags
 }
 
-func hydrateAuth(ctx context.Context, apiAuth *downloadSourceAuth, fallback *authModel) *authModel {
+func hydrateAuth(ctx context.Context, apiAuth *downloadSourceAuth, fallback *authModel) (*authModel, diag.Diagnostics) {
 	if apiAuth == nil && fallback == nil {
-		return nil
+		return nil, nil
 	}
 
 	var apiUsername, apiPassword, apiKey *string
+	var apiHeaders *[]downloadSourceAuthHeader
 	if apiAuth != nil {
 		apiUsername = apiAuth.Username
 		apiPassword = apiAuth.Password
 		apiKey = apiAuth.ApiKey
+		apiHeaders = apiAuth.Headers
 	}
 
 	var fallbackPassword, fallbackAPIKey types.String
@@ -114,12 +118,29 @@ func hydrateAuth(ctx context.Context, apiAuth *downloadSourceAuth, fallback *aut
 		fallbackAPIKey = fallback.APIKey
 	}
 
+	headers, diags := authHeadersFromAPI(ctx, apiHeaders)
 	return &authModel{
 		Username: types.StringPointerValue(apiUsername),
 		Password: preserveRedactedSecret(apiPassword, fallbackPassword),
 		APIKey:   preserveRedactedSecret(apiKey, fallbackAPIKey),
-		Headers:  types.ListNull(authHeadersElementType(ctx)),
+		Headers:  headers,
+	}, diags
+}
+
+func authHeadersFromAPI(ctx context.Context, apiHeaders *[]downloadSourceAuthHeader) (types.List, diag.Diagnostics) {
+	elemType := authHeadersElementType(ctx)
+	if apiHeaders == nil {
+		return types.ListNull(elemType), nil
 	}
+
+	headerModels := make([]authHeaderModel, len(*apiHeaders))
+	for i, header := range *apiHeaders {
+		headerModels[i] = authHeaderModel{
+			Key:   types.StringValue(header.Key),
+			Value: types.StringValue(header.Value),
+		}
+	}
+	return types.ListValueFrom(ctx, elemType, headerModels)
 }
 
 func preserveRedactedSecret(apiValue *string, fallback types.String) types.String {

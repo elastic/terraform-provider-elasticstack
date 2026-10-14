@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -108,6 +109,9 @@ func getSchema(_ context.Context) schema.Schema {
 					"headers": schema.ListNestedAttribute{
 						Description: "Custom HTTP headers sent with every download request.",
 						Optional:    true,
+						Validators: []validator.List{
+							listvalidator.SizeAtMost(100),
+						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"key": schema.StringAttribute{

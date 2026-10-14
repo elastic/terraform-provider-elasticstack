@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -51,16 +52,24 @@ type authModel struct {
 	Headers  types.List   `tfsdk:"headers"`
 }
 
+type authHeaderModel struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
+}
+
+// downloadSourceAuthHeader is one generated Fleet download-source auth header.
+type downloadSourceAuthHeader = struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 // downloadSourceAuth is the generated Fleet download-source auth object, shared by
 // the create request, update request, and read response.
 type downloadSourceAuth = struct {
-	ApiKey  *string `json:"api_key,omitempty"` //nolint:revive // matches the generated kbapi field name
-	Headers *[]struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
-	} `json:"headers,omitempty"`
-	Password *string `json:"password,omitempty"`
-	Username *string `json:"username,omitempty"`
+	ApiKey   *string                     `json:"api_key,omitempty"` //nolint:revive // matches the generated kbapi field name
+	Headers  *[]downloadSourceAuthHeader `json:"headers,omitempty"`
+	Password *string                     `json:"password,omitempty"`
+	Username *string                     `json:"username,omitempty"`
 }
 
 var agentDownloadSourceMinVersion = version.Must(version.NewVersion("8.13.0"))
@@ -80,13 +89,14 @@ func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 	), nil
 }
 
-func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadSourcesJSONRequestBody {
+func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownloadSourcesJSONRequestBody, diag.Diagnostics) {
+	auth, diags := m.authRequest(ctx)
 	body := kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   m.ProxyID.ValueStringPointer(),
-		Auth:      m.authRequest(),
+		Auth:      auth,
 	}
 
 	// The API allows setting a custom id only at creation time.
@@ -95,27 +105,53 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 		body.Id = &id
 	}
 
-	return body
+	return body, diags
 }
 
-func (m model) authRequest() *downloadSourceAuth {
+func (m model) authRequest(ctx context.Context) (*downloadSourceAuth, diag.Diagnostics) {
 	if m.Auth == nil {
-		return nil
+		return nil, nil
 	}
 
+	headers, diags := m.Auth.toAPIHeaders(ctx)
 	return &downloadSourceAuth{
 		ApiKey:   m.Auth.APIKey.ValueStringPointer(),
 		Password: m.Auth.Password.ValueStringPointer(),
 		Username: m.Auth.Username.ValueStringPointer(),
-	}
+		Headers:  headers,
+	}, diags
 }
 
-func (m model) toAPIUpdateModel(_ context.Context, prior model) kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody {
+func (m authModel) toAPIHeaders(ctx context.Context) (*[]downloadSourceAuthHeader, diag.Diagnostics) {
+	if !typeutils.IsKnown(m.Headers) {
+		return nil, nil
+	}
+
+	var diags diag.Diagnostics
+	headerModels := typeutils.ListTypeAs[authHeaderModel](ctx, m.Headers, path.Root("auth").AtName("headers"), &diags)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	// make returns a non-nil slice even when headerModels is empty, so the
+	// request JSON is "headers":[] rather than an omitted field.
+	headers := make([]downloadSourceAuthHeader, len(headerModels))
+	for i, header := range headerModels {
+		headers[i] = downloadSourceAuthHeader{
+			Key:   header.Key.ValueString(),
+			Value: header.Value.ValueString(),
+		}
+	}
+	return &headers, nil
+}
+
+func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
+	auth, diags := m.authRequest(ctx)
 	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
-		Auth:      m.authRequest(),
-	}
+		Auth:      auth,
+	}, diags
 }

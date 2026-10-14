@@ -37,7 +37,8 @@ func TestModelToAPICreateModel(t *testing.T) {
 		SourceID: types.StringValue("source-123"),
 	}
 
-	body := state.toAPICreateModel(ctx)
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Equal(t, "download-source", body.Name)
 	require.Equal(t, "https://artifacts.example.com/elastic-agent", body.Host)
 	require.NotNil(t, body.IsDefault)
@@ -60,7 +61,8 @@ func TestModelToAPICreateModelIncludesBasicAuth(t *testing.T) {
 		},
 	}
 
-	body := state.toAPICreateModel(ctx)
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.Auth)
 	require.NotNil(t, body.Auth.Username)
 	require.Equal(t, "svc-account", *body.Auth.Username)
@@ -86,7 +88,8 @@ func TestModelToAPICreateModelIncludesAPIKeyAuth(t *testing.T) {
 		},
 	}
 
-	body := state.toAPICreateModel(ctx)
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.Auth)
 	require.NotNil(t, body.Auth.ApiKey)
 	require.Equal(t, "secret-key", *body.Auth.ApiKey)
@@ -100,6 +103,93 @@ func TestModelToAPICreateModelIncludesAPIKeyAuth(t *testing.T) {
 	require.NotContains(t, string(encoded), `"password"`)
 }
 
+func TestModelToAPICreateModelSendsHeadersOnly(t *testing.T) {
+	ctx := context.Background()
+	headerType := authHeadersElementType(ctx).(types.ObjectType)
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			Headers: types.ListValueMust(headerType, []attr.Value{
+				types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
+					"key":   types.StringValue("X-A"),
+					"value": types.StringValue("1"),
+				}),
+			}),
+		},
+	}
+
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, body.Auth)
+	require.Nil(t, body.Auth.Username)
+	require.Nil(t, body.Auth.Password)
+	require.Nil(t, body.Auth.ApiKey)
+	require.NotNil(t, body.Auth.Headers)
+	require.Equal(t, []downloadSourceAuthHeader{{Key: "X-A", Value: "1"}}, *body.Auth.Headers)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"headers":[{"key":"X-A","value":"1"}]`)
+	require.NotContains(t, string(encoded), `"username"`)
+	require.NotContains(t, string(encoded), `"password"`)
+	require.NotContains(t, string(encoded), `"api_key"`)
+}
+
+func TestModelToAPICreateModelOmitsNullHeaders(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+			Headers:  types.ListNull(authHeadersElementType(ctx)),
+		},
+	}
+
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, body.Auth)
+	require.Nil(t, body.Auth.Headers)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), `"headers"`)
+	require.Contains(t, string(encoded), `"username":"svc-account"`)
+	require.Contains(t, string(encoded), `"password":"secret"`)
+}
+
+func TestModelToAPICreateModelSendsEmptyHeadersList(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			Headers: types.ListValueMust(authHeadersElementType(ctx), []attr.Value{}),
+		},
+	}
+
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, body.Auth)
+	require.NotNil(t, body.Auth.Headers)
+	require.Empty(t, *body.Auth.Headers)
+	require.Nil(t, body.Auth.Username)
+	require.Nil(t, body.Auth.Password)
+	require.Nil(t, body.Auth.ApiKey)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"headers":[]`)
+	require.NotContains(t, string(encoded), `"username"`)
+	require.NotContains(t, string(encoded), `"password"`)
+	require.NotContains(t, string(encoded), `"api_key"`)
+}
+
 func TestModelToAPICreateModelOmitsUnsetAuth(t *testing.T) {
 	ctx := context.Background()
 	state := model{
@@ -108,7 +198,8 @@ func TestModelToAPICreateModelOmitsUnsetAuth(t *testing.T) {
 		Default: types.BoolValue(false),
 	}
 
-	body := state.toAPICreateModel(ctx)
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Nil(t, body.Auth)
 
 	encoded, err := json.Marshal(body)
@@ -126,7 +217,8 @@ func TestModelToAPICreateModelWithoutSourceID(t *testing.T) {
 		SourceID: types.StringNull(),
 	}
 
-	body := state.toAPICreateModel(ctx)
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Equal(t, "download-source", body.Name)
 	require.Equal(t, "https://artifacts.example.com/elastic-agent", body.Host)
 	require.NotNil(t, body.IsDefault)
@@ -196,7 +288,8 @@ func TestModelToAPIUpdateModel(t *testing.T) {
 		ProxyID: types.StringValue("proxy-456"),
 	}
 
-	body := state.toAPIUpdateModel(ctx, model{})
+	body, diags := state.toAPIUpdateModel(ctx, model{})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Equal(t, "updated-name", body.Name)
 	require.Equal(t, "https://artifacts.example.com/elastic-agent-updated", body.Host)
 	require.NotNil(t, body.IsDefault)
@@ -217,7 +310,8 @@ func TestModelToAPIUpdateModelIncludesBasicAuth(t *testing.T) {
 		},
 	}
 
-	body := plan.toAPIUpdateModel(ctx, model{})
+	body, diags := plan.toAPIUpdateModel(ctx, model{})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.Auth)
 	require.NotNil(t, body.Auth.Username)
 	require.Equal(t, "svc-account", *body.Auth.Username)
@@ -236,7 +330,8 @@ func TestModelToAPIUpdateModelClearsUnsetProxyID(t *testing.T) {
 	}
 	prior := model{ProxyID: types.StringValue("proxy-456")}
 
-	body := plan.toAPIUpdateModel(ctx, prior)
+	body, diags := plan.toAPIUpdateModel(ctx, prior)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.ProxyId, "clearing proxy_id must send empty string so omitempty does not drop the field")
 	require.Empty(t, *body.ProxyId)
 
@@ -254,6 +349,7 @@ func TestModelToAPIUpdateModelOmitsAlreadyUnsetProxyID(t *testing.T) {
 		ProxyID: types.StringNull(),
 	}
 
-	body := plan.toAPIUpdateModel(ctx, model{ProxyID: types.StringNull()})
+	body, diags := plan.toAPIUpdateModel(ctx, model{ProxyID: types.StringNull()})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Nil(t, body.ProxyId)
 }

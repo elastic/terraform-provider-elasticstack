@@ -134,6 +134,116 @@ func TestAccResourceFleetAgentDownloadSource_AuthUsernameWithoutPassword(t *test
 	})
 }
 
+func TestAccResourceFleetAgentDownloadSource_AuthEmpty(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_download_source.test", "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthHeadersOnly(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("headers_only"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.headers.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.headers.0.key", "X-A"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.headers.0.value", "1"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthHeadersEmpty(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_headers"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.headers.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthHeadersMax(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("max"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.headers.#", "100"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthHeadersOverMax(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("over_max"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)list must contain at most 100 elements`),
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
 
